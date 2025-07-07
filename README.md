@@ -5,14 +5,31 @@
 [![CRAN status](https://badges.cranchecks.info/flavor/release/data.table.svg)](https://cran.r-project.org/web/checks/check_results_data.table.html)
 [![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://app.codecov.io/github/Rdatatable/data.table?branch=master)
-[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/-/pipelines)
+[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![indirect usage](https://jangorecki.gitlab.io/rdeps/data.table/indirect_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
+[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
 <!-- badges: end -->
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
+
+[//]: # (numfocus-fiscal-sponsor-attribution)
+
+The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
+a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
+pay for developer time, professional services, travel, workshops, and a variety of other needs.
+
+<div align="center">
+  <a href="https://numfocus.org/project/data-table">
+    <img width="25%" 
+         src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png" 
+         align="center">
+  </a>
+</div>
+<br>
 
 ## Why `data.table`?
 

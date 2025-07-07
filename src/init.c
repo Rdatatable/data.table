@@ -46,8 +46,8 @@ SEXP sym_as_posixct;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
-size_t __sizes[100];
-size_t __typeorder[100];
+size_t r_type_sizes[100];
+size_t r_type_order[100];
 
 static const
 R_CallMethodDef callMethods[] = {
@@ -125,7 +125,6 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
-{"CbeforeR340", (DL_FUNC) &beforeR340, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
@@ -150,6 +149,9 @@ R_CallMethodDef callMethods[] = {
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
 {"Cnotchin", (DL_FUNC)&notchin, -1},
+{"Ccbindlist", (DL_FUNC) &cbindlist, -1},
+{"CperhapsDataTableR", (DL_FUNC) &perhapsDataTableR, -1},
+{"CcopyCols", (DL_FUNC) &copyCols, -1},
 {"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
 {NULL, NULL, 0}
 };
@@ -161,15 +163,15 @@ R_ExternalMethodDef externalMethods[] = {
 };
 
 static void setSizes(void) {
-  for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
+  for (int i=0; i<100; ++i) { r_type_sizes[i]=0; r_type_order[i]=0; }
   // only these types are currently allowed as column types :
-  __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
-  __sizes[RAWSXP] =  sizeof(Rbyte);     __typeorder[RAWSXP] =  1;
-  __sizes[INTSXP] =  sizeof(int);       __typeorder[INTSXP] =  2;   // integer and factor
-  __sizes[REALSXP] = sizeof(double);    __typeorder[REALSXP] = 3;   // numeric and integer64
-  __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
-  __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
-  __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
+  r_type_sizes[LGLSXP] =  sizeof(int);       r_type_order[LGLSXP] =  0;
+  r_type_sizes[RAWSXP] =  sizeof(Rbyte);     r_type_order[RAWSXP] =  1;
+  r_type_sizes[INTSXP] =  sizeof(int);       r_type_order[INTSXP] =  2;   // integer and factor
+  r_type_sizes[REALSXP] = sizeof(double);    r_type_order[REALSXP] = 3;   // numeric and integer64
+  r_type_sizes[CPLXSXP] = sizeof(Rcomplex);  r_type_order[CPLXSXP] = 4;
+  r_type_sizes[STRSXP] =  sizeof(SEXP *);    r_type_order[STRSXP] =  5;
+  r_type_sizes[VECSXP] =  sizeof(SEXP *);    r_type_order[VECSXP] =  6;   // list column
   if (sizeof(char *)>8) error(_("Pointers are %zu bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
@@ -210,16 +212,16 @@ void attribute_visible R_init_data_table(DllInfo *info)
   // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
   // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
   int i = 314;
-  memset(&i, 0, sizeof(int));
+  memset(&i, 0, sizeof(i));
   if (i != 0) error(_("Checking memset(&i,0,sizeof(int)); i == (int)0 %s"), msg);
   unsigned int ui = 314;
-  memset(&ui, 0, sizeof(unsigned int));
+  memset(&ui, 0, sizeof(ui));
   if (ui != 0) error(_("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"), msg);
   double d = 3.14;
-  memset(&d, 0, sizeof(double));
+  memset(&d, 0, sizeof(d));
   if (d != 0.0) error(_("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"), msg);
   long double ld = 3.14;
-  memset(&ld, 0, sizeof(long double));
+  memset(&ld, 0, sizeof(ld));
   if (ld != 0.0) error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg);
 
   // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
@@ -351,15 +353,6 @@ SEXP hasOpenMP(void) {
 
 }
 
-SEXP beforeR340(void) {
-  // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
-  // at C level to catch if user upgrades R but does not reinstall data.table
-  #if R_VERSION < R_Version(3,4,0)
-  return ScalarLogical(true);
-  #else
-  return ScalarLogical(false);
-  #endif
-}
 // # nocov end
 
 extern int *_Last_updated;  // assign.c
@@ -374,4 +367,3 @@ SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
   return(ScalarString(mkChar("1.17.99")));
 }
-

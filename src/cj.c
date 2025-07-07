@@ -36,7 +36,7 @@ SEXP cj(SEXP base_list) {
       }
       #pragma omp parallel for num_threads(getDTthreads(ncopy*blocklen, true))
       for (int i=1; i<ncopy; ++i) {
-        memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(int));
+        memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(*targetP));
       }
     } break;
     case REALSXP: {
@@ -99,4 +99,3 @@ SEXP cj(SEXP base_list) {
   UNPROTECT(1);
   return out;
 }
-

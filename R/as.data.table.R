@@ -96,9 +96,9 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
   val = if (is.null(dnx)) {
-    lapply(dx, seq.int)
+    lapply(dx, seq_len)
   } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
-    dnx[nulldnx] = lapply(dx[nulldnx], seq.int) #3636
+    dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
     dnx
   } else dnx
   val = rev(val)
@@ -107,7 +107,8 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   if (value.name %chin% names(val))
     stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
   N = NULL
-  ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
+  ans = do.call(CJ, c(val, sorted=FALSE))
+  set(ans, j="N", value=as.vector(x))
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
@@ -141,7 +142,11 @@ as.data.table.list = function(x,
       xi = x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {
       if (!is.data.table(xi)) {
-        xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+        if (is.matrix(xi) && NCOL(xi)<=1L && is.null(colnames(xi))) { # 1 column matrix naming #4124
+          xi = x[[i]] = c(xi)
+        } else {
+          xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+        }
       }
       # else avoid dispatching to as.data.table.data.table (which exists and copies)
     } else if (is.table(xi)) {

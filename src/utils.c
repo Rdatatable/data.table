@@ -232,19 +232,19 @@ SEXP copyAsPlain(SEXP x) {
   }
   switch (TYPEOF(x)) {
   case RAWSXP:
-    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
+    memcpy(RAW(ans),     RAW_RO(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(int));
+    memcpy(LOGICAL(ans), LOGICAL_RO(x), n*sizeof(int));
     break;
   case INTSXP:
-    memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
+    memcpy(INTEGER(ans), INTEGER_RO(x), n*sizeof(int));             // covered by 10:1 after test 178
     break;
   case REALSXP:
-    memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
+    memcpy(REAL(ans),    REAL_RO(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
     break;
   case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
+    memcpy(COMPLEX(ans), COMPLEX_RO(x), n*sizeof(Rcomplex));
     break;
   case STRSXP: {
     const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
@@ -265,8 +265,8 @@ SEXP copyAsPlain(SEXP x) {
 void copySharedColumns(SEXP x) {
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
-  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
-  int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
+  bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
+  int *savetl = (int *)R_alloc(ncol, sizeof(*savetl));  // on R heap for convenience but could be a calloc
   const SEXP *xp = SEXPPTR_RO(x);
   // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
   // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
@@ -412,11 +412,11 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #include <zlib.h>
 #endif
 SEXP dt_zlib_version(void) {
-  char out[71];
+  char out[70];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
+  snprintf(out, sizeof(out), "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
-  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
+  snprintf(out, sizeof(out), _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
@@ -430,8 +430,7 @@ SEXP dt_has_zlib(void) {
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   // for is_url in fread.R added in #5097
-  // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
-  // short and simple ascii-only
+  // basically any(startsWith()), short and simple ascii-only
   if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
     internal_error(__func__, "types or lengths incorrect");
   const char *xd = CHAR(STRING_ELT(x, 0));
@@ -454,12 +453,101 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+// if (length(x)) length(x[[1L]]) else 0L
+// used in src/mergelist.c and below in commented out set_row_names
+int n_rows(SEXP x) {
+  if (!LENGTH(x))
+    return 0; // # nocov. Not yet reached from anywhere, cbindlist uses it but escapes for !n_columns(x)
+  return length(VECTOR_ELT(x, 0));
+}
+
+// length(x)
+// used in src/mergelist.c
+// to be an abstraction layer on C level
+int n_columns(SEXP x) {
+  return LENGTH(x);
+}
+
+/*
+ Below commented out functions will be uncommented when addressing #4439
+ // c("data.table","data.frame")
+ static SEXP char2_dtdf() {
+ SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
+ SET_STRING_ELT(char2_dtdf, 0, char_datatable);
+ SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
+ UNPROTECT(1);
+ return char2_dtdf;
+ }
+ 
+ // .set_row_names(x)
+ static SEXP set_row_names(int n) {
+ SEXP ans = R_NilValue;
+ if (n) {
+ ans = PROTECT(allocVector(INTSXP, 2));
+ INTEGER(ans)[0] = NA_INTEGER;
+ INTEGER(ans)[1] = -n;
+ } else {
+ ans = PROTECT(allocVector(INTSXP, 0));
+ }
+ UNPROTECT(1);
+ return ans;
+ }
+ 
+ // setDT(x) ## not in-place!
+ SEXP setDT(SEXP x) {
+ if (!isNewList(x))
+ error("internal error: C setDT should be called only on a list"); // # nocov
+ setAttrib(x, R_ClassSymbol, char2_dtdf());
+ setAttrib(x, sym_rownames, set_row_names(n_rows(x)));
+ return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
+ }*/
+
+// inherits(x, "data.table")
+bool isDataTable(SEXP x) {
+  return INHERITS(x, char_datatable);
+}
+
+// rectangular list; NB does not allow length-1 recycling
+// length(x) <= 1L || length(unique(lengths(x))) == 1L
+static inline bool isRectangular(SEXP x) {
+  int n = LENGTH(x);
+  if (n < 2)
+    return true;
+  R_xlen_t nr = xlength(VECTOR_ELT(x, 0));
+  for (int i=1; i<n; ++i) {
+    if (xlength(VECTOR_ELT(x, i)) != nr)
+      return false;
+  }
+  return true;
+}
+
+// setDT()-friendly rectangular list, i.e.
+//   a named list() with all entries of equal length()
+bool isRectangularList(SEXP x) {
+  if (!isNewList(x))
+    return false;
+  if (!LENGTH(x))
+    return true;
+  if (isNull(getAttrib(x, R_NamesSymbol)))
+    return false;
+  return isRectangular(x);
+}
+
+// TODO: use isDataFrame (when included in any R release).
+// isDataTable(x) || isFrame(x) || isRectangularList(x)
+bool perhapsDataTable(SEXP x) {
+  return isDataTable(x) || isFrame(x) || isRectangularList(x);
+}
+SEXP perhapsDataTableR(SEXP x) {
+  return ScalarLogical(perhapsDataTable(x));
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));

@@ -215,7 +215,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
-    bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
+    bool *keep = (bool *)R_alloc(max, sizeof(*keep));    // 4 times less memory that INTSXP in src/main/subscript.c
     for (int i=0; i<max; i++) keep[i] = true;
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
@@ -376,4 +376,3 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   UNPROTECT(nprotect);
   return ans;
 }
-

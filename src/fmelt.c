@@ -20,7 +20,7 @@ SEXP set_diff(SEXP x, int n) {
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
   const int *ixmatch = INTEGER(xmatch);
-  int *buf = (int *) R_alloc(n, sizeof(int));
+  int *buf = (int *) R_alloc(n, sizeof(*buf));
   int j=0;
   for (int i=0; i<n; ++i) {
     if (ixmatch[i] == 0) {
@@ -40,7 +40,7 @@ SEXP which(SEXP x, Rboolean val) {
   SEXP ans;
   if (!isLogical(x)) error(_("Argument to 'which' must be logical"));
   const int *ix = LOGICAL(x);
-  int *buf = (int *) R_alloc(n, sizeof(int));
+  int *buf = (int *) R_alloc(n, sizeof(*buf));
   for (int i=0; i<n; ++i) {
     if (ix[i] == val) {
       buf[j++] = i+1;
@@ -317,10 +317,10 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   }
   if (length(varnames) != 1)
     error(_("'variable.name' must be a character/integer vector of length 1."));
-  data->leach = (int *)R_alloc(data->lvalues, sizeof(int));
-  data->isidentical = (int *)R_alloc(data->lvalues, sizeof(int));
-  data->isfactor = (int *)R_alloc(data->lvalues, sizeof(int));
-  data->maxtype = (SEXPTYPE *)R_alloc(data->lvalues, sizeof(SEXPTYPE));
+  data->leach = (int *)R_alloc(data->lvalues, sizeof(*data->leach));
+  data->isidentical = (int *)R_alloc(data->lvalues, sizeof(*data->isidentical));
+  data->isfactor = (int *)R_alloc(data->lvalues, sizeof(*data->isfactor));
+  data->maxtype = (SEXPTYPE *)R_alloc(data->lvalues, sizeof(*data->maxtype));
   // first find max type of each output column.
   for (int i=0; i<data->lvalues; ++i) { // for each output column.
     tmp = VECTOR_ELT(data->valuecols, i);
@@ -401,7 +401,7 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   if (!isString(target)) internal_error(__func__, "expects a character target to factorize");  // # nocov
   int nrow = length(target);
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
-  SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
+  SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(*levelsRaw));  // allocate for worst-case all-unique levels
   int *ansd = INTEGER(ans);
   const SEXP *targetd = STRING_PTR_RO(target);
   savetl_init();
@@ -492,7 +492,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     data->totlen = data->nrow * data->lmax;
   }
   SEXP flevels = PROTECT(allocVector(VECSXP, data->lmax));
-  Rboolean *isordered = (Rboolean *)R_alloc(data->lmax, sizeof(Rboolean));
+  Rboolean *isordered = (Rboolean *)R_alloc(data->lmax, sizeof(*isordered));
   SEXP ansvals = PROTECT(allocVector(VECSXP, data->lvalues));
   for (int i=0; i<data->lvalues; ++i) {//for each output/value column.
     bool thisvalfactor = (data->maxtype[i] == VECSXP) ? false : valfactor;
@@ -524,7 +524,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           ithisidx = INTEGER(thisidx);
           thislen = length(thisidx);
         }
-        size_t size = SIZEOF(thiscol);
+        size_t size = RTYPE_SIZEOF(thiscol);
         switch (TYPEOF(target)) {
         case VECSXP :
           if (data->narm) {
@@ -612,7 +612,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
-          snprintf(buff, 20, "%d", level++); // # notranslate
+          snprintf(buff, sizeof(buff), "%d", level++); // # notranslate
           for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
         }
       }
@@ -649,7 +649,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
-          snprintf(buff, 20, "%d", nlevel+1); // # notranslate
+          snprintf(buff, sizeof(buff), "%d", nlevel + 1); // # notranslate
           SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
           for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
         }
@@ -697,7 +697,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
   for (int i=0; i<data->lids; ++i) {
     int counter = 0;
     SEXP thiscol = VECTOR_ELT(DT, INTEGER(data->idcols)[i]-1);
-    size_t size = SIZEOF(thiscol);
+    size_t size = RTYPE_SIZEOF(thiscol);
     SEXP target;
     SET_VECTOR_ELT(ansids, i, target=allocVector(TYPEOF(thiscol), data->totlen) );
     copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.

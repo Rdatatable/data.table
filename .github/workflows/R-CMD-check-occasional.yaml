@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
-        r: ['devel', 'release', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
+        r: ['devel', 'release', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
         locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
         exclude:
           # only run non-English locale CI on Ubuntu
@@ -28,8 +28,6 @@ jobs:
           - os: windows-latest
             locale: 'lv_LV.utf8'
           # macOS/arm64 only available for R>=4.1.0
-          - os: macOS-latest
-            r: '3.3'
           - os: macOS-latest
             r: '3.4'
           - os: macOS-latest

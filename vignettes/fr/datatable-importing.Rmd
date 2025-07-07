@@ -75,7 +75,7 @@ dt2 = aggr(dt)
 stopifnot(nrow(dt2) < 100)
 ```
 
-Lorsque vous testez votre package, vous pouvez utiliser `R CMD check --no-stop-on-test-error`, qui continuera après une erreur et exécutera tous vos tests (au lieu de s'arrêter à la première ligne de script qui a échoué) NB ceci nécessite R 3.4.0 ou plus.
+Lorsque vous testez votre package, vous pouvez utiliser `R CMD check --no-stop-on-test-error`, qui continuera après une erreur et exécutera tous vos tests (au lieu de s'arrêter à la première ligne de script qui a échoué).
 
 ## Tester en utilisant `testthat`
 

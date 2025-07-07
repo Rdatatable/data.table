@@ -137,6 +137,11 @@ hours. Because \code{ITime} is stored in seconds, you can add it to a
 \code{POSIXct} object, but you should not add it to a \code{Date}
 object.
 
+For \code{as.ITime}, note that the string \code{"24:00:00"} is parsed as \code{"00:00:00"}.
+This is because the conversion uses \code{as.POSIXct}, which treats \code{"24:00:00"} as midnight of the next day. 
+This differs from ISO 8601 (which allows \code{"24:00:00"} to represent end-of-day), but aligns with POSIX standards.
+To represent end-of-day intervals, use \code{"23:59:59"} or arithmetic (e.g., \code{as.ITime("23:59:59") + 1L}).
+
 We also provide S3 methods to convert to and from \code{Date} and \code{POSIXct}.
 
 \code{ITime} is time zone-agnostic. When converting \code{ITime} and
@@ -200,7 +205,7 @@ accounting for both year transitions and varying day counts per week.
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
    \code{yearmon} and \code{yearqtr} return double values representing
-   respectively `year + (month-1) / 12` and `year + (quarter-1) / 4`.
+   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}.
 
    \code{second}, \code{minute}, \code{hour} are taken directly from
    the \code{POSIXlt} representation.
@@ -212,7 +217,7 @@ accounting for both year transitions and varying day counts per week.
 }
 \references{
 
-  G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
+  G. Grothendieck and T. Petzoldt, \dQuote{Date and Time Classes in R},
   R News, vol. 4, no. 1, June 2004.
 
   H. Wickham, https://gist.github.com/hadley/10238.
@@ -244,6 +249,12 @@ identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 (t <- as.ITime("10:45:04"))
 
 (t <- as.ITime("10:45:04", format = "\%H:\%M:\%S"))
+
+# "24:00:00" is parsed as "00:00:00"
+as.ITime("24:00:00")
+
+# Workaround for end-of-day: add 1 second to "23:59:59"
+as.ITime("23:59:59") + 1L
 
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 

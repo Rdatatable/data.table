@@ -101,7 +101,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     copyMostAttrib(VECTOR_ELT(groups, j), VECTOR_ELT(BY,i));  // not names, otherwise test 778 would fail
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
-    if (SIZEOF(VECTOR_ELT(BY,i))==0)
+    if (RTYPE_SIZEOF(VECTOR_ELT(BY,i))==0)
       internal_error(__func__, "unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
     SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
@@ -139,11 +139,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall))
     internal_error(__func__, "length(names)!=length(SD)"); // # nocov
-  SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
+  SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(*nameSyms));
 
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
-    if (SIZEOF(this)==0 && TYPEOF(this)!=EXPRSXP)
+    if (RTYPE_SIZEOF(this)==0 && TYPEOF(this)!=EXPRSXP)
       internal_error(__func__, "size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(this), i); // # nocov
     if (LENGTH(this) != maxGrpSize)
       internal_error(__func__, "SDall %d length = %d != %d", i+1, LENGTH(this), maxGrpSize); // # nocov
@@ -156,9 +156,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
   if (length(xknames) != length(xSD))
     internal_error(__func__, "length(xknames)!=length(xSD)"); // # nocov
-  SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
+  SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(*xknameSyms));
   for(int i=0; i<length(xSD); ++i) {
-    if (SIZEOF(VECTOR_ELT(xSD, i))==0)
+    if (RTYPE_SIZEOF(VECTOR_ELT(xSD, i))==0)
       internal_error(__func__, "type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
@@ -541,11 +541,11 @@ SEXP growVector(SEXP x, const R_len_t newlen)
     return newx;
   }
   switch (TYPEOF(x)) {
-  case RAWSXP:  memcpy(RAW(newx),     RAW(x),     len*SIZEOF(x)); break;
-  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x)); break;
-  case INTSXP:  memcpy(INTEGER(newx), INTEGER(x), len*SIZEOF(x)); break;
-  case REALSXP: memcpy(REAL(newx),    REAL(x),    len*SIZEOF(x)); break;
-  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX(x), len*SIZEOF(x)); break;
+  case RAWSXP:  memcpy(RAW(newx),     RAW_RO(x),     len*RTYPE_SIZEOF(x)); break;
+  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL_RO(x), len*RTYPE_SIZEOF(x)); break;
+  case INTSXP:  memcpy(INTEGER(newx), INTEGER_RO(x), len*RTYPE_SIZEOF(x)); break;
+  case REALSXP: memcpy(REAL(newx),    REAL_RO(x),    len*RTYPE_SIZEOF(x)); break;
+  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX_RO(x), len*RTYPE_SIZEOF(x)); break;
   case STRSXP : {
     const SEXP *xd = SEXPPTR_RO(x);
     for (int i=0; i<len; ++i)
