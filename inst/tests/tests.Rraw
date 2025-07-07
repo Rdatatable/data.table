@@ -21381,3 +21381,7 @@ if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
   test(2329.7, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
   test(2329.8, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
 }
+# edge case of weird, though technically valid, names
+`.123` = 'a'
+DT = data.table(a = 4L)
+test(2329.9, DT[, ...123], DT) # _not_ '..N' style and distinct from '...'
