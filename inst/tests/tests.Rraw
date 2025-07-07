@@ -21383,9 +21383,20 @@ if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
 }
 # edge case of weird, though technically valid, names:
 #  _not_ '..N' style and distinct from '...'
-`123` = `.123` = ..123 = ...123 = 'a'
 DT = data.table(a = 4L)
-test(2329.09, DT[, ..123], DT)
-test(2329.10, DT[, ...123], DT)
-test(2329.11, DT[, ....123], DT)
-test(2329.12, DT[, .....123], DT)
+local({
+  `123` = 'a'
+  test(2329.09, DT[, ..123], DT)
+})
+local({
+  `.123` = 'a'
+  test(2329.10, DT[, ...123], DT)
+})
+local({
+  ..123 = 'a'
+  test(2329.11, DT[, ....123], DT)
+})
+local({
+  ...123 = 'a'
+  test(2329.12, DT[, .....123], DT)
+})
