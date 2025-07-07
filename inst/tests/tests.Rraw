@@ -21358,3 +21358,10 @@ test(2327.1, cube(DT, .(min(value)), "var"),
 test(2327.2, cube(DT, .(as.numeric(base::min(value, na.rm=TRUE))), "var"),
      data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, Inf, 1.0)),
      warning="no non-missing arguments to min")
+
+# droplevels should still work on a 0-row table, #7043
+DT = data.table(f=factor(character(), levels='a'))
+test(2328.1, levels(droplevels(DT)$f), character())
+DT[, i := integer()]
+DT[, f2 := factor()]
+test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
