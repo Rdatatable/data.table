@@ -133,6 +133,22 @@ as.data.table.list = function(x,
   missing.check.names = missing(check.names)
   origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
   empty_atomic = FALSE
+
+  #Handle keep.rownames for vectors (mimicking data.frame behavior)
+  vector_rownames = NULL
+  if(!identical(keep.rownames, FALSE)) {
+    for(i in seq_len(n)){
+      xi = x[[i]]
+      if (!is.null(xi) && is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi)) && length(names(xi)) > 0) {
+        valid_names = names(xi)
+        if(any(nzchar(valid_names))) {
+          vector_rownames = valid_names
+          x[[i]] = unname(xi) 
+          break
+        }
+      } 
+    }
+  }
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
@@ -200,6 +216,13 @@ as.data.table.list = function(x,
   }
   if (any(vnames==".SD")) stopf("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
+
+  # Add rownames column when vector names were found
+  if(!is.null(vector_rownames)){
+    rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
+    ans = c(list(recycle(vector_rownames, nrow)), ans)
+    vnames = c(rn_name, vnames)
+  }
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
   if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
