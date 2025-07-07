@@ -15,13 +15,7 @@ vignette: >
 
 ```{r init, include = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+litedown::reactor(comment = "# ")
 ```
 
 ## Introduction

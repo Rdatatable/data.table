@@ -297,6 +297,6 @@ knit_print.data.table = function(x, ...) {
   NextMethod()
 }
 record_print.data.table = function(x, ...) {
-  if (!shouldPrint(x)) return(character())
-  NextMethod()
+  if (!shouldPrint(x)) return(character()) # nocov
+  NextMethod() # nocov
 }
