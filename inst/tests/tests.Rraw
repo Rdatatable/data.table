@@ -21369,19 +21369,20 @@ test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
 # '..1' is ...elt(1), not a variable named '1', when doing "up-a-level" search (#5460)
 DT = data.table(a=1.0)
 sqrt_dot_sym = function(...) sqrt(..1)
-test(2329.1, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
-test(2329.2, lapply(DT, sqrt_dot_sym), list(a=1.0))
-test(2329.3, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
-test(2329.4, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
+test(2329.01, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
+test(2329.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
+test(2329.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
+test(2329.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
 sqrt_elt_sym = function(...) sqrt(...elt(1))
 # TODO(R>=3.5.0): run this unconditionally
 if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
-  test(2329.5, lapply(DT, sqrt_elt_sym), list(a=1.0))
-  test(2329.6, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
-  test(2329.7, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
-  test(2329.8, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
+  test(2329.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
+  test(2329.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+  test(2329.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+  test(2329.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
 }
 # edge case of weird, though technically valid, names
-`.123` = 'a'
+`.123` = ...123 = 'a'
 DT = data.table(a = 4L)
-test(2329.9, DT[, ...123], DT) # _not_ '..N' style and distinct from '...'
+test(2329.09, DT[, ...123], DT) # _not_ '..N' style and distinct from '...'
+test(2329.10, DT[, .....123], DT)
