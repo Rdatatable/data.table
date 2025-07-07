@@ -4,10 +4,10 @@
 static int ngrp = 0;         // number of groups
 static int *grpsize = NULL;  // size of each group, used by gmean (and gmedian) not gsum
 static int nrow = 0;         // length of underlying x; same as length(ghigh) and length(glow)
-static int *irows;           // GForce support for subsets in 'i' (TODO: joins in 'i')
+static int *irows;           // GForce support for subsets in 'i' (todo: joins in 'i')
 static int irowslen = -1;    // -1 is for irows = NULL
 static uint16_t *high=NULL, *low=NULL;  // the group of each x item; a.k.a. which-group-am-I
-static int *restrict grp;    // TODO: eventually this can be made local for gforce as won't be needed globally when all functions here use gather
+static int *restrict grp;    // todo: eventually this can be made local for gforce as won't be needed globally when all functions here use gather
 static size_t highSize;
 static int bitshift, mask;
 static char *gx=NULL;
@@ -77,19 +77,19 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
   int nb = nbit(ngrp-1);
   bitshift = nb/2;    // /2 so that high and low can be uint16_t, and no limit (even for nb=4) to stress-test.
-  // bitshift=MAX(nb-8,0); if (bitshift>16) bitshift=nb/2;     // TODO: when we have stress-test off mode, do this
+  // bitshift=MAX(nb-8,0); if (bitshift>16) bitshift=nb/2;     // todo: when we have stress-test off mode, do this
   mask = (1<<bitshift)-1;
   highSize = ((ngrp-1)>>bitshift) + 1;
 
-  grp = (int *)R_alloc(nrow, sizeof(*grp));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
+  grp = (int *)R_alloc(nrow, sizeof(*grp));   // todo: use malloc and made this local as not needed globally when all functions here use gather
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER(f);
 
-  nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
+  nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. todo: experiment. The higher this is though, the bigger is counts[]
   batchSize = MAX(1, (nrow-1)/nBatch);
   lastBatchSize = nrow - (nBatch-1)*batchSize;
   // We deliberate use, for example, 40 batches of just 14 rows, to stress-test tests. This strategy proved to be a good one as #3204 immediately came to light.
-  // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
+  // todo: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
     internal_error(__func__, "nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%zu  nBatch=%zu  batchSize=%zu  lastBatchSize=%zu\n",  // # nocov
@@ -114,10 +114,10 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
     const int *restrict op = INTEGER(o);  // o is a permutation of 1:nrow
     int nb = nbit(nrow-1);
-    int bitshift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
+    int bitshift = MAX(nb-8, 0);  // todo: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>bitshift) + 1;
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  bitshift=%d  nBatch=%d\n"), highSize, nb, bitshift, nBatch);
-    int *counts = calloc(nBatch*highSize, sizeof(*counts));  // TODO: cache-line align and make highSize a multiple of 64
+    int *counts = calloc(nBatch*highSize, sizeof(*counts));  // todo: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(sizeof(*TMP) * nrow*2l); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) {
       free(counts); free(TMP); // # nocov
@@ -154,7 +154,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
         const int end   = counts[ b*highSize + h ];
         const int *restrict p = TMP + b*2*batchSize + start*2;
         for (int k=start; k<end; k++, p+=2) {
-          grp[p[0]] = p[1];  // TODO: could write high here, and initial low.   ** If so, same in initial population when o is missing **
+          grp[p[0]] = p[1];  // todo: could write high here, and initial low.   ** If so, same in initial population when o is missing **
         }
       }
     }
@@ -168,9 +168,9 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // global ghigh and glow because the g* functions (inside jsub) share this common memory
 
   gx = (char *)R_alloc(nrow, sizeof(Rcomplex));  // enough for a copy of one column (or length(irows) if supplied)
-  // TODO: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
+  // todo: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
 
-  counts = (int *)S_alloc(nBatch*highSize, sizeof(*counts));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
+  counts = (int *)S_alloc(nBatch*highSize, sizeof(*counts));  // (S_ zeros) todo: cache-line align and make highSize a multiple of 64
   tmpcounts = (int *)R_alloc(getDTthreads(nBatch, false)*highSize, sizeof(*tmpcounts));
 
   const int *restrict gp = grp;
@@ -1018,7 +1018,7 @@ SEXP gnthvalue(SEXP x, SEXP nArg) {
   return gfirstlast(x, true, INTEGER(nArg)[0], false);
 }
 
-// TODO: gwhich.min, gwhich.max
+// todo: gwhich.min, gwhich.max
 // implemented this similar to gmedian to balance well between speed and memory usage. There's one extra allocation on maximum groups and that's it.. and that helps speed things up extremely since we don't have to collect x's values for each group for each step (mean, residuals, mean again and then variance).
 static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
 {
