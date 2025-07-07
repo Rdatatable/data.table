@@ -219,7 +219,7 @@ SEXP setdt_nrows(SEXP x)
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
-    SEXP dim_xi = getAttrib(xi, R_DimSymbol);
+    SEXP dim_xi = PROTECT(getAttrib(xi, R_DimSymbol));
     R_len_t len_xi, n_dim = length(dim_xi);
     if (n_dim) {
       if (test_matrix_cols && n_dim > 1) {
@@ -230,6 +230,7 @@ SEXP setdt_nrows(SEXP x)
     } else {
       len_xi = length(xi);
     }
+    UNPROTECT(1);
     if (!base_length) {
       base_length = len_xi;
     } else if (len_xi != base_length) {
@@ -364,7 +365,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(rows)) {
       rows = PROTECT(coerceVector(rows, INTSXP)); protecti++;
-      warning(_("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+      if (verbose)
+        Rprintf(_("Coerced %s from numeric to integer. Passing integer directly may be more efficient, e.g., 2L rather than 2"), "i");
     }
     if (!isInteger(rows))
       error(_("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency."), type2char(TYPEOF(rows)));
@@ -417,7 +419,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(cols)) {
       cols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
-      warning(_("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+      if (verbose)
+        Rprintf(_("Coerced %s from numeric to integer. Passing integer directly may be more efficient, e.g., 2L rather than 2"), "j");
     }
     if (!isInteger(cols))
       error(_("j is type '%s'. Must be integer, character, or numeric is coerced with warning."), type2char(TYPEOF(cols)));
