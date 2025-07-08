@@ -84,6 +84,8 @@
  
 20. `droplevels()` works on 0-row data.tables, [#7043](https://github.com/Rdatatable/data.table/issues/7043). The result will have factor columns `factor(character())`, consistent with the data.frame method. Thanks @advieser for the report and @MichaelChirico for the fix.
 
+21. `print(..., col.names = 'none')` now correctly adapts column widths to the data content, ignoring the original column names and producing a more compact output, [#6882](https://github.com/Rdatatable/data.table/issues/6882). Thanks to @brooksambrose for the report and @venom1204 for the PR.
+
 ### NOTES
 
 1. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
