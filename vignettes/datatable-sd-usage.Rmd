@@ -83,10 +83,10 @@ Pitching[ , .SD, .SDcols = c('W', 'L', 'G')]
 This is just for illustration and was pretty boring. In addition to accepting a character vector, `.SDcols` also accepts:
 
 1. any function such as `is.character` to filter _columns_
-2. the function^{*} `patterns()` to filter _column names_ by regular expression
+2. the function[^*] `patterns()` to filter _column names_ by regular expression
 3. integer and logical vectors
 
-*see `?patterns` for more details
+[^*]: see `?patterns` for more details
 
 This simple usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
 
