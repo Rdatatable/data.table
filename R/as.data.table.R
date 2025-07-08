@@ -139,11 +139,21 @@ as.data.table.list = function(x,
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
-    if (check_rownames && is.null(vector_rownames) && !is.null(xi) && is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi))) {
-      valid_names = names(xi)
-      if (any(nzchar(valid_names))) {
-        vector_rownames = valid_names
-        x[[i]] = unname(xi)
+    if (check_rownames && is.null(vector_rownames)) {
+      # Check for named vectors
+      if (is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi))) {
+        valid_names = names(xi) 
+        if (any(nzchar(valid_names))) {
+          vector_rownames = valid_names
+          x[[i]] = unname(xi)
+        }
+      }
+      # Check for data.frames or matrices with explicit rownames
+      else if (!is.null(dim(xi)) && !is.null(rownames(xi))) {
+        valid_names = rownames(xi)
+        if (any(nzchar(valid_names))) {
+          vector_rownames = valid_names
+        }
       }
     }
     if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
@@ -155,7 +165,7 @@ as.data.table.list = function(x,
         if (is.matrix(xi) && NCOL(xi)<=1L && is.null(colnames(xi))) { # 1 column matrix naming #4124
           xi = x[[i]] = c(xi)
         } else {
-          xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+          xi = x[[i]] = as.data.table(xi, keep.rownames=FALSE)  # we will never allow a matrix to be a column; always unpack the columns
         }
       }
       # else avoid dispatching to as.data.table.data.table (which exists and copies)
