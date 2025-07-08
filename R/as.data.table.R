@@ -137,11 +137,11 @@ as.data.table.list = function(x,
   #Handle keep.rownames for vectors (mimicking data.frame behavior)
   vector_rownames = NULL
   if(!isFALSE(keep.rownames)) {
-    for(i in seq_len(n)){
+    for (i in seq_len(n)) {
       xi = x[[i]]
       if (!is.null(xi) && is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi)) && length(names(xi)) > 0) {
         valid_names = names(xi)
-        if(any(nzchar(valid_names))) {
+        if (any(nzchar(valid_names))) {
           vector_rownames = valid_names
           x[[i]] = unname(xi)
           break
@@ -218,7 +218,7 @@ as.data.table.list = function(x,
   if (check.names) vnames = make.names(vnames, unique=TRUE)
 
   # Add rownames column when vector names were found
-  if(!is.null(vector_rownames)){
+  if (!is.null(vector_rownames)) {
     rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
     ans = c(list(recycle(vector_rownames, nrow)), ans)
     vnames = c(rn_name, vnames)
