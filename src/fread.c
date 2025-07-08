@@ -1199,21 +1199,21 @@ static void parse_bool_yesno(FieldParseContext *ctx)
  */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &Field,        // CT_DROP
-  (reader_fun_t) &parse_empty,  // CT_EMPTY
-  (reader_fun_t) &parse_bool_numeric,
-  (reader_fun_t) &parse_bool_uppercase,
-  (reader_fun_t) &parse_bool_titlecase,
-  (reader_fun_t) &parse_bool_lowercase,
-  (reader_fun_t) &parse_bool_yesno,
-  (reader_fun_t) &StrtoI32,
-  (reader_fun_t) &StrtoI64,
-  (reader_fun_t) &parse_double_regular,
-  (reader_fun_t) &parse_double_extended,
-  (reader_fun_t) &parse_double_hexadecimal,
-  (reader_fun_t) &parse_iso8601_date,
-  (reader_fun_t) &parse_iso8601_timestamp,
-  (reader_fun_t) &Field
+  &Field,        // CT_DROP
+  &parse_empty,  // CT_EMPTY
+  &parse_bool_numeric,
+  &parse_bool_uppercase,
+  &parse_bool_titlecase,
+  &parse_bool_lowercase,
+  &parse_bool_yesno,
+  &StrtoI32,
+  &StrtoI64,
+  &parse_double_regular,
+  &parse_double_extended,
+  &parse_double_hexadecimal,
+  &parse_iso8601_date,
+  &parse_iso8601_timestamp,
+  &Field
 };
 
 static int disabled_parsers[NUMTYPE] = { 0 };
