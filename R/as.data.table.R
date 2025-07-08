@@ -136,7 +136,7 @@ as.data.table.list = function(x,
 
   #Handle keep.rownames for vectors (mimicking data.frame behavior)
   vector_rownames = NULL
-  if(!identical(keep.rownames, FALSE)) {
+  if(!isFALSE(keep.rownames)) {
     for(i in seq_len(n)){
       xi = x[[i]]
       if (!is.null(xi) && is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi)) && length(names(xi)) > 0) {
