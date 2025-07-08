@@ -2050,7 +2050,7 @@ replace_dot_alias = function(e) {
 
   # see #1010. don't set key when i has no key, but irows is ordered and isFALSE(roll)
   #   NB: roll could still be a string like 'nearest', #7146
-  if (!isFALSE(roll) && length(irows) != 1L)
+  if (!is.character(roll) && roll && length(irows) != 1L)
     return(NULL)
 
   new_key <- head(x_key, key_length)
