@@ -42,6 +42,8 @@
 
 8. `groupingsets()` gets a new argument `enclos` for use together with the `jj` argument in functions wrapping `groupingsets()`, including the existing wrappers `rollup()` and `cube()`. When forwarding a `j`-expression as `groupingsets(jj = substitute(j))`, make sure to pass `enclos = parent.frame()` as well, so that the `j`-expression will be evaluated in the right context. This makes it possible for `j` to refer to variables outside the `data.table`.
 
+9. `tables()` now supports a `recursive=TRUE` argument to detect `data.table` objects nested within plain lists, such as those produced by `split()` or manual list construction, [#2606](https://github.com/Rdatatable/data.table/issues/2606). The recursive search skips data.frame and data.table objects to avoid descending into list-columns. Nested data.tables are reported with intuitive R-like names using $ and [[ ]] notation. Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
