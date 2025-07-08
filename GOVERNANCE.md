@@ -63,7 +63,7 @@ Functionality that is out of current scope:
 ## Committer
 
 * Definition: permission to commit to, and merge PRs into, master branch. 
-* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
+* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' substantial PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
 * How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/committers which gives permission to merge PRs into master branch. 
 
 ## CRAN Maintainer
@@ -138,6 +138,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+July 2025: require potential new committers' considered history to be of "substantial" PRs
 
 May 2025: update Finance and CoC language for NumFOCUS incorporation.
 
