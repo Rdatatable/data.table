@@ -19,21 +19,62 @@ type_size = function(DT) {
 }
 
 tables = function(mb=type_size, order.col="NAME", width=80L,
-                  env=parent.frame(), silent=FALSE, index=FALSE)
+                  env=parent.frame(), silent=FALSE, index=FALSE, recursive=FALSE)
 {
   # Prints name, size and colnames of all data.tables in the calling environment by default
   mb_name = as.character(substitute(mb))
   if (isTRUE(mb)) { mb=type_size; mb_name="type_size" }
   names = ls(envir=env, all.names=TRUE)  # include "hidden" objects (starting with .)
   obj = mget(names, envir=env)  # doesn't copy; mget is ok with ... unlike get, #5197
-  w = which(vapply_1b(obj, is.data.table))
-  if (!length(w)) {
-    if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
+  found_items = list()
+  if (recursive) {
+    agenda <- lapply(seq_along(obj), function(i) list(obj = obj[[i]], name = names[i]))
+    visited_env <- new.env(hash = TRUE)
+
+    while (length(agenda) > 0L) {
+      current_item <- agenda[[1L]]
+      agenda[[1L]] <- NULL
+      x <- current_item$obj
+      x_name <- current_item$name
+      if (is.data.table(x)) {
+        found_items[[length(found_items) + 1L]] <- list(name = x_name, obj = x)
+        next
+      }
+      if (is.list(x) && !is.data.frame(x)) {
+        # Cycle detection
+        addr <- address(x)
+        if (exists(addr, envir = visited_env, inherits = FALSE)) next
+        assign(addr, TRUE, envir = visited_env)
+
+        item_names <- names(x)
+        children_to_add <- vector("list", length(x))
+        for (i in seq_along(x)) {
+          child_name <- if (!is.null(item_names) && nzchar(item_names[i])) {
+            paste0(x_name, "$", item_names[i])
+          } else {
+            paste0(x_name, "[[", i, "]]")
+          }
+          children_to_add[[i]] <- list(obj = x[[i]], name = child_name)
+        }
+        agenda <- c(rev(children_to_add), agenda)
+      }
+    }
+  } else {
+    w = which(vapply_1b(obj, is.data.table))
+    if (length(w)) {
+      found_items = lapply(w, function(i) list(name=names[i], obj=obj[[i]]))
+    }
+  }
+  if (!length(found_items)) { # MODIFIED: Check `found_items` instead of `w`
+    if (!silent) catf("No objects of class data.table exist in %s%s\n",
+                      if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env),
+                      if (recursive) " (recursively)" else "") # NEW: More informative message
     return(invisible(data.table(NULL)))
   }
-  info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
-  for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
-    DT = obj[[w[i]]]
+  info = data.table(NAME=vapply(found_items, `[[`, "name", FUN.VALUE=character(1L)),
+                    NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
+  for (i in seq_along(found_items)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
+    DT = found_items[[i]]$obj
     set(info, i, "NROW", nrow(DT))
     set(info, i, "NCOL", ncol(DT))
     if (is.function(mb)) set(info, i, "MB", as.integer(mb(DT)/1048576L)) # i.e. 1024**2

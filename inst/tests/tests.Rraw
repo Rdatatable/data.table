@@ -21365,3 +21365,28 @@ test(2328.1, levels(droplevels(DT)$f), character())
 DT[, i := integer()]
 DT[, f2 := factor()]
 test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
+
+#2606
+test(2329.1, {
+  dt1 <- data.table(a = 1)
+  lst <- list(inner = dt1)
+  res <- tables(recursive=TRUE)
+  any(res$NAME == "lst$inner")
+}, TRUE)
+test(2329.2, {
+  lst <- list(data.table(b = 2))
+  res <- tables(recursive=TRUE)
+  any(grepl("^lst\\[\\[1\\]\\]$", res$NAME))
+}, TRUE)
+test(2329.3, {
+  nested <- list(l1 = list(l2 = data.table(c = 3)))
+  res <- tables(recursive=TRUE)
+  any(res$NAME == "nested$l1$l2")
+}, TRUE)
+test(2329.4, {
+  cycle <- list()
+  cycle[[1]] <- cycle
+  cycle[[2]] <- data.table(x = 1)
+  res <- tables(recursive=TRUE)
+  any(res$NAME == "cycle[[2]]") && !"cycle[[1]]" %in% res$NAME
+}, TRUE)
