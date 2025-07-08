@@ -638,7 +638,7 @@ static void StrtoI64(FieldParseContext *ctx)
   const bool neg = (*ch == '-');
 
   if (neg) ch++;
-  if (*ch == '+') ch++;
+  else if (*ch == '+') ch++;
   
   const char *start = ch;
   while (*ch == '0') ch++;
@@ -700,7 +700,7 @@ static void parse_double_regular_core(const char **pch, double *target)
   const bool neg = (*ch == '-');
 
   if (neg) ch++;
-  if (*ch == '+') ch++;
+  else if (*ch == '+') ch++;
 
   const char *start = ch; // beginning of the number, without the initial sign
   uint_fast64_t acc = 0;  // mantissa NNN.MMM as a single 64-bit integer NNNMMM
@@ -839,7 +839,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   
   if (quoted) ch++;
   if (neg) ch++;
-  if (*ch == '+') ch++;
+  else if (*ch == '+') ch++;
 
   if (ch[0] == 'n' && ch[1] == 'a' && ch[2] == 'n' && (ch += 3)) goto return_nan;
   if (ch[0] == 'i' && ch[1] == 'n' && ch[2] == 'f' && (ch += 3)) goto return_inf;
@@ -925,7 +925,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   const bool neg = (*ch == '-');
   
   if (neg) ch++;
-  if (*ch == '+') ch++;
+  else if (*ch == '+') ch++;
 
   const bool subnormal = ch[2] == '0';
 
@@ -935,7 +935,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     uint64_t acc = 0;
     uint8_t digit;
     const char *ch0 = ch;
-    while ((digit = hexdigits[(uint8_t)(*ch)]) < 16) {
+    while ((digit = hexdigits[(int)*ch]) < 16) {
       acc = (acc << 4) + digit;
       ch++;
     }
@@ -953,7 +953,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     E = 1023 + (Eneg ? -E : E) - subnormal;
     if (subnormal ? E : (E < 1 || E > 2046)) return;
 
-    *((uint64_t*)target) = (neg << 63) | (E << 52) | (acc);
+    *((uint64_t*)target) = ((1ULL * neg) << 63) | (E << 52) | (acc);
     *ctx->ch = ch;
     return;
   }
