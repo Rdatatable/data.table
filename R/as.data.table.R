@@ -139,7 +139,7 @@ as.data.table.list = function(x,
   if(!isFALSE(keep.rownames)) {
     for (i in seq_len(n)) {
       xi = x[[i]]
-      if (!is.null(xi) && is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi)) && length(names(xi)) > 0) {
+      if (!is.null(xi) && is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi))) {
         valid_names = names(xi)
         if (any(nzchar(valid_names))) {
           vector_rownames = valid_names
