@@ -138,29 +138,24 @@ as.data.table.list = function(x,
   empty_atomic = FALSE
 
   # Handle keep.rownames for vectors (mimicking data.frame behavior)
-  vector_rownames = NULL
+  rownames_ = NULL
   check_rownames = !isFALSE(keep.rownames)
-  
+
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
-    if (check_rownames && is.null(vector_rownames)) {
-      # Check for named vectors
-      if (is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi))) {
-        valid_names = names(xi) 
-        if (any(nzchar(valid_names))) {
-          vector_rownames = valid_names
+    if (check_rownames && is.null(rownames_)) {
+      if (is.null(dim(xi))) {
+        if (!is.null(nm <- names(xi)) && any(nzchar(nm))) {
+          rownames_ = nm
           x[[i]] = unname(xi)
         }
-      }
-      # Check for data.frames or matrices with explicit rownames
-      else if (!is.null(dim(xi)) && !is.null(rownames(xi))) {
-        valid_names = rownames(xi)
-        if (any(nzchar(valid_names))) {
-          vector_rownames = valid_names
+      } else {
+        if (!is.null(nm <- rownames(xi)) && any(nzchar(nm))) {
+          rownames_ = nm
         }
       }
-    }  
+    }
     if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
     if ("POSIXlt" %chin% class(xi)) {
       warningf("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
@@ -170,8 +165,7 @@ as.data.table.list = function(x,
         if (is.matrix(xi) && NCOL(xi)<=1L && is.null(colnames(xi))) { # 1 column matrix naming #4124
           xi = x[[i]] = c(xi)
         } else {
-          xi = x[[i]] = as.data.table(xi, keep.rownames=FALSE)  # we will never allow a matrix to be a column; always unpack the columns
-          xi = x[[i]] = as.data.table(xi, keep.rownames=FALSE)  # we will never allow a matrix to be a column; always unpack the columns
+          xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
         }
       }
       # else avoid dispatching to as.data.table.data.table (which exists and copies)
@@ -228,10 +222,15 @@ as.data.table.list = function(x,
   if (check.names) vnames = make.names(vnames, unique=TRUE)
 
   # Add rownames column when vector names were found
-  if (!is.null(vector_rownames)) {
+  if (!is.null(rownames_)) {
     rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
-    ans = c(list(recycle(vector_rownames, nrow)), ans)
-    vnames = c(rn_name, vnames)
+    if (!is.na(idx <- chmatch(rn_name, vnames)[1L])) {
+      ans = c(list(ans[[idx]]), ans[-idx])
+      vnames = c(vnames[idx], vnames[-idx])
+    } else {
+      ans = c(list(recycle(rownames_, nrow)), ans)
+      vnames = c(rn_name, vnames)
+    }
   }
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
