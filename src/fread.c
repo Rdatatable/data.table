@@ -2544,7 +2544,8 @@ int freadMain(freadMainArgs _args)
             if (thisType != joldType) {             // rare out-of-sample type exception.
               if (!checkedNumberOfFields && !fill) {
                 // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStopEarly below.
-                if (j + countfields(&(const char*) { fieldStart }) != ncol) break;
+                  char* fieldsRemaining = fieldStart;
+                if (j + countfields(&fieldsRemaining) != ncol) break;
                 checkedNumberOfFields = true;
               }
               if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
