@@ -165,7 +165,7 @@ as.data.table.list = function(x,
         if (is.matrix(xi) && NCOL(xi)<=1L && is.null(colnames(xi))) { # 1 column matrix naming #4124
           xi = x[[i]] = c(xi)
         } else {
-          xi = x[[i]] = as.data.table(xi, keep.rownames=FALSE)  # we will never allow a matrix to be a column; always unpack the columns
+          xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
         }
       }
       # else avoid dispatching to as.data.table.data.table (which exists and copies)
