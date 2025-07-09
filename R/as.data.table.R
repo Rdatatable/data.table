@@ -138,21 +138,21 @@ as.data.table.list = function(x,
   empty_atomic = FALSE
 
   # Handle keep.rownames for vectors (mimicking data.frame behavior)
-  vector_rownames = NULL
+  rownames_ = NULL
   check_rownames = !isFALSE(keep.rownames)
 
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
-    if (check_rownames && is.null(vector_rownames) && is.atomic(xi)) {
+    if (check_rownames && is.null(rownames_)) {
       if (is.null(dim(xi))) {
         if (!is.null(nm <- names(xi)) && any(nzchar(nm))) {
-          vector_rownames = nm
+          rn = nm
           x[[i]] = unname(xi)
         }
       } else {
         if (!is.null(nm <- rownames(xi)) && any(nzchar(nm))) {
-          vector_rownames = nm
+          rownames_ = nm
         }
       }
     }
@@ -222,13 +222,22 @@ as.data.table.list = function(x,
   if (check.names) vnames = make.names(vnames, unique=TRUE)
 
   # Add rownames column when vector names were found
-  if (!is.null(vector_rownames)) {
+  if (!is.null(rownames_)) {
     rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
-    ans = c(list(recycle(vector_rownames, nrow)), ans)
+    ans = c(list(recycle(rownames_, nrow)), ans)
     vnames = c(rn_name, vnames)
+  } else if (check_rownames) {
+    # case like data.table(a = 1, data.frame(b = 2, row.names='c')) where expanding the inner DF picks up the row names --
+    #   we want to bump the resulting column to the front of the output
+    rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
+    if (!is.na(idx <- chmatch(rn_name, names(ans))[1L]) && idx != 1L) {
+      ans = c(ans[[idx]], ans[-idx])
+      vnames = c(vnames[idx], vnames[-idx])
+    }
   }
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
+  if (!is.null(rownames_) && match(rn_name, names(
   if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
   ans
 }
