@@ -935,7 +935,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     uint64_t acc = 0;
     uint8_t digit;
     const char *ch0 = ch;
-    while ((digit = hexdigits[(int)*ch]) < 16) {
+    while ((digit = hexdigits[(uint8_t)*ch]) < 16) {
       acc = (acc << 4) + digit;
       ch++;
     }
