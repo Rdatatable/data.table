@@ -2562,6 +2562,8 @@ int freadMain(freadMainArgs _args)
                       j + 1, colNames ? " <<" : "", colNames ? (colNames[j].len) : 0, colNames ? (colNamesAnchor + colNames[j].off) : "", colNames ? ">>" : "",
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
                       (int)(tch - fieldStart), fieldStart, (int64_t)(ctx.DTi + myNrow));
+
+                    len = iminInt(len, sizeof(buffer) - 1);
                     
                     typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
                     strcpy(typeBumpMsg + typeBumpMsgSize, buffer);
