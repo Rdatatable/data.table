@@ -171,6 +171,7 @@ as.data.table.list = function(x,
           xi = x[[i]] = c(xi)
         } else {
           xi = x[[i]] = as.data.table(xi, keep.rownames=FALSE)  # we will never allow a matrix to be a column; always unpack the columns
+          xi = x[[i]] = as.data.table(xi, keep.rownames=FALSE)  # we will never allow a matrix to be a column; always unpack the columns
         }
       }
       # else avoid dispatching to as.data.table.data.table (which exists and copies)
@@ -227,7 +228,7 @@ as.data.table.list = function(x,
   if (check.names) vnames = make.names(vnames, unique=TRUE)
 
   # Add rownames column when vector names were found
-  if(!is.null(vector_rownames)){
+  if (!is.null(vector_rownames)) {
     rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
     ans = c(list(recycle(vector_rownames, nrow)), ans)
     vnames = c(rn_name, vnames)
