@@ -147,7 +147,7 @@ as.data.table.list = function(x,
     if (check_rownames && is.null(rownames_)) {
       if (is.null(dim(xi))) {
         if (!is.null(nm <- names(xi)) && any(nzchar(nm))) {
-          rn = nm
+          rownames_ = nm
           x[[i]] = unname(xi)
         }
       } else {
@@ -224,15 +224,12 @@ as.data.table.list = function(x,
   # Add rownames column when vector names were found
   if (!is.null(rownames_)) {
     rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
-    ans = c(list(recycle(rownames_, nrow)), ans)
-    vnames = c(rn_name, vnames)
-  } else if (check_rownames) {
-    # case like data.table(a = 1, data.frame(b = 2, row.names='c')) where expanding the inner DF picks up the row names --
-    #   we want to bump the resulting column to the front of the output
-    rn_name = if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
-    if (!is.na(idx <- chmatch(rn_name, names(ans))[1L]) && idx != 1L) {
-      ans = c(ans[[idx]], ans[-idx])
+    if (!is.na(idx <- chmatch(rn_name, vnames)[1L])) {
+      ans = c(list(ans[[idx]]), ans[-idx])
       vnames = c(vnames[idx], vnames[-idx])
+    } else {
+      ans = c(list(recycle(rownames_, nrow)), ans)
+      vnames = c(rn_name, vnames)
     }
   }
   setattr(ans, "names", vnames)

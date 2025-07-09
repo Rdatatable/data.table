@@ -21424,4 +21424,4 @@ b <- setNames(c(10, 11, 12), c("", "B", ""))
 test(2330.7, as.data.table(list(b), keep.rownames=TRUE), data.table(rn=c("", "B", ""), V1=c(10, 11, 12)))
 
 DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with explicit rownames
-test(2330.8, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=c("a", "b", "c", "d", "e", "f"), a=c(6, 5, 4, 3, 2, 1), V=1:6))
+test(2330.8, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=c("a", "b", "c", "d", "e", "f"), a=6:1, V=1:6))
