@@ -140,14 +140,14 @@ as.data.table.list = function(x,
   # Handle keep.rownames for vectors (mimicking data.frame behavior)
   vector_rownames = NULL
   check_rownames = !isFALSE(keep.rownames)
-  
+
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
     if (check_rownames && is.null(vector_rownames)) {
       # Check for named vectors
       if (is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi))) {
-        valid_names = names(xi) 
+        valid_names = names(xi)
         if (any(nzchar(valid_names))) {
           vector_rownames = valid_names
           x[[i]] = unname(xi)
@@ -160,7 +160,7 @@ as.data.table.list = function(x,
           vector_rownames = valid_names
         }
       }
-    }  
+    }
     if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
     if ("POSIXlt" %chin% class(xi)) {
       warningf("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
