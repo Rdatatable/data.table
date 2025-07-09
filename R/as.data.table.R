@@ -48,6 +48,9 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (!identical(keep.rownames, FALSE)) {
     # can specify col name to keep.rownames, #575
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+    # auto-inferred name 'x' is not back-compatible & inconsistent, #7145
+    if (ncol(x) == 1L && is.null(colnames(x)))
+      setnames(ans, 'x', 'V1')
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
