@@ -144,20 +144,15 @@ as.data.table.list = function(x,
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
-    if (check_rownames && is.null(vector_rownames)) {
-      # Check for named vectors
-      if (is.atomic(xi) && !is.null(names(xi)) && is.null(dim(xi))) {
-        valid_names = names(xi)
-        if (any(nzchar(valid_names))) {
-          vector_rownames = valid_names
+    if (check_rownames && is.null(vector_rownames) && is.atomic(xi)) {
+      if (is.null(dim(xi))) {
+        if (!is.null(nm <- names(xi)) && any(nzchar(nm))) {
+          vector_rownames = nm
           x[[i]] = unname(xi)
         }
-      }
-      # Check for data.frames or matrices with explicit rownames
-      else if (!is.null(dim(xi)) && !is.null(rownames(xi))) {
-        valid_names = rownames(xi)
-        if (any(nzchar(valid_names))) {
-          vector_rownames = valid_names
+      } else {
+        if (!is.null(nm <- rownames(xi)) && any(nzchar(nm))) {
+          vector_rownames = nm
         }
       }
     }
