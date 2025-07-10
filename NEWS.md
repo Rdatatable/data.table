@@ -42,7 +42,9 @@
 
 8. `groupingsets()` gets a new argument `enclos` for use together with the `jj` argument in functions wrapping `groupingsets()`, including the existing wrappers `rollup()` and `cube()`, [#5560](https://github.com/Rdatatable/data.table/issues/5560). When forwarding a `j`-expression as `groupingsets(jj = substitute(j))`, make sure to pass `enclos = parent.frame()` as well, so that the `j`-expression will be evaluated in the right context. This makes it possible for `j` to refer to variables outside the `data.table`. Thanks @sindribaldur for the report and @aitap for the fix.
 
-9. `data.table()` and `as.data.table()` with `keep.rownames=TRUE` now extract row names from named vectors, matching `data.frame()` behavior. Names from the first named vector in the input are used to create the row names column (default name `"rn"` or custom name via `keep.rownames="column_name"`), [#1916](https://github.com/Rdatatable/data.table/issues/1916). Thanks to @richierocks for the feature request and @Mukulyadav2004 for the implementation.
+9. `isoweek()` is much faster (e.g. 20x) by re-using an implementation from {base}, [#5111](https://github.com/Rdatatable/data.table/issues/5111). Thanks @MichaelChirico for the report and PR.
+
+10. `data.table()` and `as.data.table()` with `keep.rownames=TRUE` now extract row names from named vectors, matching `data.frame()` behavior. Names from the first named vector in the input are used to create the row names column (default name `"rn"` or custom name via `keep.rownames="column_name"`), [#1916](https://github.com/Rdatatable/data.table/issues/1916). Thanks to @richierocks for the feature request and @Mukulyadav2004 for the implementation.
 
 ### BUG FIXES
 
