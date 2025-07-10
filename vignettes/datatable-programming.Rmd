@@ -458,7 +458,7 @@ DT[, cl, env = list(cl = cl)]
 
 ## Error handling with classed conditions
 
-Starting from version 1.17.0, `data.table` provides specific error classes for common operations, making it easier to handle errors programmatically. This is particularly useful when writing robust code or packages that use `data.table`.
+`data.table` provides specific condition classes for common operations, making it easier to handle errors programmatically. This is particularly useful when writing robust code or packages that use `data.table`. Relying on the exact text of error messages is fragile (it is not uncommon to change the wording slightly, or for the user's session not to be in English); prefer using the signal class where possible. Please also request new signal classes if they would benefit your use case.
 
 ### Available error classes
 
