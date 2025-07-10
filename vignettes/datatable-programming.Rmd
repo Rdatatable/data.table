@@ -471,7 +471,7 @@ DT[, cl, env = list(cl = cl)]
 
 ### Usage examples
 
-```{r error_handling, error=TRUE}
+```{r error_handling}
 DT <- data.table(a = 1:3, b = 4:6)
 
 # Handle missing column errors specifically

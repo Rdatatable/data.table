@@ -52,7 +52,7 @@ funique = function(x) {
   }
   if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
     w = which.first(sx!=sy)
-    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class1(x[[w]]), class1(y[[w]]))
+    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class1(x[[w]]), class1(y[[w]]), class="dt_join_type_mismatch_error")
   }
   if (.seqn && ".seqn" %chin% names(x)) stopf("None of the datasets should contain a column named '.seqn'")
 }
