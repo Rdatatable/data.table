@@ -456,50 +456,6 @@ DT[, eval(cl)]
 DT[, cl, env = list(cl = cl)]
 ```
 
-## Error handling with classed conditions
-
-Starting from version 1.17.0, `data.table` provides specific error classes for common operations, making it easier to handle errors programmatically. This is particularly useful when writing robust code or packages that use `data.table`.
-
-### Available error classes
-
-`data.table` now provides four specific error classes:
-
-- `dt_missing_column_error`: When referencing columns that don't exist
-- `dt_invalid_input_error`: When providing invalid input types or empty required arguments  
-- `dt_unsortable_type_error`: When trying to sort/key unsupported types
-- `dt_join_type_mismatch_error`: When column types are incompatible in joins/set operations
-
-### Usage examples
-
-```{r error_handling, error=TRUE}
-DT <- data.table(a = 1:3, b = 4:6)
-
-# Handle missing column errors specifically
-tryCatch({
-  setkey(DT, "nonexistent_col")
-}, dt_missing_column_error = function(e) {
-  cat("Missing column detected:", conditionMessage(e), "\n")
-}, error = function(e) {
-  cat("Other error:", conditionMessage(e), "\n")
-})
-
-# Handle type mismatches in operations  
-DT1 <- data.table(id = 1:3, value = c("a", "b", "c"))
-DT2 <- data.table(id = 1:3, value = 1:3)
-
-tryCatch({
-  fintersect(DT1, DT2)
-}, dt_join_type_mismatch_error = function(e) {
-  cat("Type mismatch in join:", conditionMessage(e), "\n")
-}, error = function(e) {
-  cat("Other error:", conditionMessage(e), "\n")
-})
-```
-
-### Backward compatibility
-
-All error classes inherit from base R's condition system, so existing `tryCatch(..., error = ...)` code continues to work unchanged. The new classes simply provide more specific handling options when needed.
-
 ```{r cleanup, echo=FALSE}
 options(.opts)
 registerS3method("print", "data.frame", base::print.data.frame)
