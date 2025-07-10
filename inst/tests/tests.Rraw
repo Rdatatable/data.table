@@ -21406,3 +21406,23 @@ dt = data.table(x = 123456, y = "wide_string")
 test(2329.2, print(dt, col.names = "none"), output = "1: 123456 wide_string\n")
 dt = data.table(a = NA_integer_, b = NaN)
 test(2329.3, print(dt, col.names = "none"), output = "1: NA NaN\n")
+
+# Row name extraction from multiple vectors, #7136
+x <- 1:3 
+y <- setNames(4:6, c("A", "B", "C"))  
+test(2330.1, as.data.table(list(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=1:3, V2=4:6))
+test(2330.2, as.data.table(list(x, y), keep.rownames="custom"), data.table(custom=c("A", "B", "C"), V1=1:3, V2=4:6))
+test(2330.3, as.data.table(list(y, x), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=4:6, V2=1:3)) 
+
+# Behavior under data.frame()
+test(2330.4, as.data.table(data.frame(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), x=1:3, y=4:6))
+test(2330.5, as.data.table(data.frame(y, x), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), y=4:6, x=1:3))
+
+DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with explicit rownames
+test(2330.6, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=letters[1:6], a=6:1, V=1:6))
+
+z <- setNames(1:3, rep("", 3))  # vector with all-empty names     # behaviour with all-empty row names
+test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3))
+
+M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
+test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
