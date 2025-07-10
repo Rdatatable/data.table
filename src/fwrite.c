@@ -62,34 +62,34 @@ inline void write_chars(const char *x, char **pch)
 
 void writeBool8(const void *col, int64_t row, char **pch)
 {
-  int8_t x = ((const int8_t *)col)[row];
+  int8_t x = ((const int8_t*)col)[row];
   char *ch = *pch;
-  *ch++ = '0'+(x==1);
-  *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
+  *ch++ = '0' + (x == 1);
+  *pch = ch - (x == INT8_MIN);  // if NA then step back, to save a branch
 }
 
 void writeBool32(const void *col, int64_t row, char **pch)
 {
-  int32_t x = ((const int32_t *)col)[row];
+  int32_t x = ((const int32_t*)col)[row];
   char *ch = *pch;
-  if (x==INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
+  if (x == INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
     write_chars(na, &ch);
   } else {
-    *ch++ = '0'+x;
+    *ch++ = '0' + x;
   }
   *pch = ch;
 }
 
 void writeBool32AsString(const void *col, int64_t row, char **pch)
 {
-  int32_t x = ((const int32_t *)col)[row];
+  int32_t x = ((const int32_t*)col)[row];
   char *ch = *pch;
   if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else if (x) {
-    *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
+    *ch++ = 'T'; *ch++ = 'R'; *ch++ = 'U'; *ch++ = 'E';
   } else {
-    *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
+    *ch++ = 'F'; *ch++ = 'A'; *ch++ = 'L'; *ch++ = 'S'; *ch++ = 'E';
   }
   *pch = ch;
 }
@@ -97,7 +97,7 @@ void writeBool32AsString(const void *col, int64_t row, char **pch)
 static inline void reverse(char *upp, char *low)
 {
   upp--;
-  while (upp>low) {
+  while (upp > low) {
     char tmp = *upp;
     *upp = *low;
     *low = tmp;
@@ -109,14 +109,14 @@ static inline void reverse(char *upp, char *low)
 void writeInt32(const void *col, int64_t row, char **pch)
 {
   char *ch = *pch;
-  int32_t x = ((const int32_t *)col)[row];
+  int32_t x = ((const int32_t*)col)[row];
   if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else {
-    if (x<0) { *ch++ = '-'; x = -x; }
+    if (x < 0) { *ch++ = '-'; x = -x; }
     // Avoid log() for speed. Write backwards then reverse when we know how long.
     char *low = ch;
-    do { *ch++ = '0'+x%10; x/=10; } while (x>0);
+    do { *ch++ = '0' + x % 10; x /= 10; } while (x > 0);
     reverse(ch, low);
   }
   *pch = ch;
@@ -125,13 +125,13 @@ void writeInt32(const void *col, int64_t row, char **pch)
 void writeInt64(const void *col, int64_t row, char **pch)
 {
   char *ch = *pch;
-  int64_t x = ((const int64_t *)col)[row];
+  int64_t x = ((const int64_t*)col)[row];
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x = -x; }
     char *low = ch;
-    do { *ch++ = '0'+x%10; x/=10; } while (x>0);
+    do { *ch++ = '0' + x % 10; x /= 10; } while (x > 0);
     reverse(ch, low);
   }
   *pch = ch;
@@ -187,13 +187,13 @@ void writeFloat64(const void *col, int64_t row, char **pch)
   //  ii) no C library calls such as sprintf() where the fmt string has to be interpreted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
-  double x = ((const double *)col)[row];
+  double x = ((const double*)col)[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     if (isnan(x)) {
       write_chars(na, &ch);
     } else {
-      if (x<0) *ch++ = '-';
+      if (x < 0) *ch++ = '-';
       *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
     }
   } else if (x == 0.0) {
@@ -203,7 +203,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
     union { double d; uint64_t l; } u;
     u.d = x;
     uint64_t fraction = u.l & 0xFFFFFFFFFFFFF;           // (1<<52)-1;
-    uint32_t exponent = (int32_t)((u.l>>52) & 0x7FF);    // [0,2047]
+    uint32_t exponent = (int32_t)((u.l >> 52) & 0x7FF);    // [0,2047]
 
     // Now sum the appropriate powers 2^-(1:52) of the fraction
     // Important for accuracy to start with the smallest first; i.e. 2^-52
@@ -214,9 +214,9 @@ void writeFloat64(const void *col, int64_t row, char **pch)
     double acc = 0;  // 'long double' not needed
     int i = 52;
     if (fraction) {
-      while ((fraction & 0xFF) == 0) { fraction >>= 8; i-=8; }
+      while ((fraction & 0xFF) == 0) { fraction >>= 8; i -= 8; }
       while (fraction) {
-        acc += sigparts[(((fraction & 1u)^1u)-1u) & i];
+        acc += sigparts[(((fraction & 1u) ^ 1u) - 1u) & i];
         i--;
         fraction >>= 1;
       }
@@ -226,59 +226,59 @@ void writeFloat64(const void *col, int64_t row, char **pch)
     // Therefore y in range [1.5,20.0)
     // Avoids (potentially inaccurate and potentially slow) log10/log10l, pow/powl, ldexp/ldexpl
     // By design we can just lookup the power from the tables
-    double y = (1.0+acc) * expsig[exponent];  // low magnitude mult
+    double y = (1.0 + acc) * expsig[exponent];  // low magnitude mult
     int exp = exppow[exponent];
-    if (y>=9.99999999999999) { y /= 10; exp++; }
+    if (y >= 9.99999999999999) { y /= 10; exp++; }
     uint64_t l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 
     // if (verbose) Rprintf(_("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%"PRIu64" ; e=%d     "), acc, y, l, exp);
 
-    if (l%10 >= 5) l+=10; // use the last digit to round
+    if (l % 10 >= 5) l += 10; // use the last digit to round
     l /= 10;
     if (l == 0) {
-      if (*(ch-1)=='-') ch--;
+      if (*(ch - 1) == '-') ch--;
       *ch++ = '0';
     } else {
       // Count trailing zeros and therefore s.f. present in l
       int trailZero = 0;
-      while (l%10 == 0) { l /= 10; trailZero++; }
+      while (l % 10 == 0) { l /= 10; trailZero++; }
       int sf = NUM_SF - trailZero;
-      if (sf==0) {sf=1; exp++;}  // e.g. l was 9999999[5-9] rounded to 10000000 which added 1 digit
+      if (sf == 0) {sf = 1; exp++;}  // e.g. l was 9999999[5-9] rounded to 10000000 which added 1 digit
 
       // l is now an unsigned long that doesn't start or end with 0
       // sf is the number of digits now in l
       // exp is e<exp> were l to be written with the decimal sep after the first digit
-      int dr = sf-exp-1; // how many characters to print to the right of the decimal place
-      int width=0;       // field width were it written decimal format. Used to decide whether to or not.
-      int dl0=0;         // how many 0's to add to the left of the decimal place before starting l
-      if (dr<=0) { dl0 = -dr; dr=0; width=sf+dl0; }  // 1, 10, 100, 99000
+      int dr = sf - exp - 1; // how many characters to print to the right of the decimal place
+      int width = 0;       // field width were it written decimal format. Used to decide whether to or not.
+      int dl0 = 0;         // how many 0's to add to the left of the decimal place before starting l
+      if (dr <= 0) { dl0 = -dr; dr = 0; width = sf + dl0; }  // 1, 10, 100, 99000
       else {
-        if (sf>dr) width=sf+1;                     // 1.234 and 123.4
-        else { dl0=1; width=dr+1+dl0; }            // 0.1234, 0.0001234
+        if (sf > dr) width = sf + 1;                     // 1.234 and 123.4
+        else { dl0 = 1; width = dr + 1 + dl0; }            // 0.1234, 0.0001234
       }
       // So:  3.1416 => l=31416, sf=5, exp=0     dr=4; dl0=0; width=6
       //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
       //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
-      if (width <= sf + (sf>1) + 2 + (abs(exp)>99?3:2) + scipen) {
-        //               ^^^^ to not include 1 char for dec in -7e-04 where sf==1
-        //                       ^ 2 for 'e+'/'e-'
+      if (width <= sf + (sf > 1) + 2 + (abs(exp) > 99 ? 3 : 2) + scipen) {
+        //               ^^^^^^ to not include 1 char for dec in -7e-04 where sf==1
+        //                         ^ 2 for 'e+'/'e-'
         // decimal format ...
-        ch += width-1;
+        ch += width - 1;
         if (dr) {
-          while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
-          while (dr) { *ch--='0'; dr--; }
+          while (dr && sf) { *ch-- = '0' + l % 10; l /= 10; dr--; sf--; }
+          while (dr) { *ch-- = '0'; dr--; }
           *ch-- = dec;
         }
-        while (dl0) { *ch--='0'; dl0--; }
-        while (sf) { *ch--='0'+l%10; l/=10; sf--; }
+        while (dl0) { *ch-- = '0'; dl0--; }
+        while (sf) { *ch-- = '0' + l % 10; l /= 10; sf--; }
         // ch is now 1 before the first char of the field so position it afterward again, and done
-        ch += width+1;
+        ch += width + 1;
       } else {
         // scientific ...
         ch += sf;  // sf-1 + 1 for dec
-        for (int i=sf; i>1; i--) {
-          *ch-- = '0' + l%10;
+        for (int i = sf; i > 1; i--) {
+          *ch-- = '0' + l % 10;
           l /= 10;
         }
         if (sf == 1) ch--; else *ch-- = dec;
@@ -303,7 +303,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
 
 void writeComplex(const void *col, int64_t row, char **pch)
 {
-  Rcomplex x = ((const Rcomplex *)col)[row];
+  Rcomplex x = ((const Rcomplex*)col)[row];
   char *ch = *pch;
   writeFloat64(&x.r, 0, &ch);
   if (!ISNAN(x.i)) {
@@ -316,32 +316,32 @@ void writeComplex(const void *col, int64_t row, char **pch)
 
 // DATE/TIME
 
-static inline void write_time(int32_t x, char **pch)
 // just a helper called below by the real writers (time-only and datetime)
+static inline void write_time(int32_t x, char **pch)
 {
   char *ch = *pch;
-  if (x<0) {  // <0 covers NA_INTEGER too (==INT_MIN checked in init.c)
+  if (x < 0) {  // <0 covers NA_INTEGER too (==INT_MIN checked in init.c)
     write_chars(na, &ch);
   } else {
-    int hh = x/3600;
-    int mm = (x - hh*3600) / 60;
-    int ss = x%60;
-    *ch++ = '0'+hh/10;
-    *ch++ = '0'+hh%10;
+    int hh = x / 3600;
+    int mm = (x - hh * 3600) / 60;
+    int ss = x % 60;
+    *ch++ = '0' + hh / 10;
+    *ch++ = '0' + hh % 10;
     *ch++ = ':';
     ch -= squashDateTime;
-    *ch++ = '0'+mm/10;
-    *ch++ = '0'+mm%10;
+    *ch++ = '0' + mm / 10;
+    *ch++ = '0' + mm % 10;
     *ch++ = ':';
     ch -= squashDateTime;
-    *ch++ = '0'+ss/10;
-    *ch++ = '0'+ss%10;
+    *ch++ = '0' + ss / 10;
+    *ch++ = '0' + ss % 10;
   }
   *pch = ch;
 }
 
 void writeITime(const void *col, int64_t row, char **pch) {
-  write_time(((const int32_t *)col)[row], pch);
+  write_time(((const int32_t*)col)[row], pch);
 }
 
 static inline void write_date(int32_t x, char **pch)
@@ -366,40 +366,40 @@ static inline void write_date(int32_t x, char **pch)
   // as.integer(as.Date(c("0000-03-01","9999-12-31"))) == c(-719468,+2932896)
 
   char *ch = *pch;
-  if (x< -719468 || x>2932896) {
+  if (x < -719468 || x > 2932896) {
     // NA_INTEGER<(-719468) (==INT_MIN checked in init.c)
     write_chars(na, &ch);
   } else {
     x += 719468;  // convert days from 1970-01-01 to days from 0000-03-01 (the day after 29 Feb 0000)
-    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceding March 1st
-    int z =  x - y*365 - y/4 + y/100 - y/400 + 1;     // days from March 1st in year y
+    int y = (x - x / 1461 + x / 36525 - x / 146097) / 365;  // year of the preceding March 1st
+    int z =  x - y * 365 - y / 4 + y / 100 - y / 400 + 1;     // days from March 1st in year y
     int md = monthday[z];  // See fwriteLookups.h for how the 366 item lookup 'monthday' is arranged
-    y += z && (md/100)<3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
+    y += z && (md / 100) < 3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
 
-    ch += 7 + 2*!squashDateTime;
-    *ch-- = '0'+md%10; md/=10;
-    *ch-- = '0'+md%10; md/=10;
+    ch += 7 + 2 * !squashDateTime;
+    *ch-- = '0' + md % 10; md /= 10;
+    *ch-- = '0' + md % 10; md /= 10;
     *ch-- = '-';
     ch += squashDateTime;
-    *ch-- = '0'+md%10; md/=10;
-    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '0' + md % 10; md /= 10;
+    *ch-- = '0' + md % 10; md /= 10;
     *ch-- = '-';
     ch += squashDateTime;
-    *ch-- = '0'+y%10; y/=10;
-    *ch-- = '0'+y%10; y/=10;
-    *ch-- = '0'+y%10; y/=10;
-    *ch   = '0'+y%10; y/=10;
-    ch += 8 + 2*!squashDateTime;
+    *ch-- = '0' + y % 10; y /= 10;
+    *ch-- = '0' + y % 10; y /= 10;
+    *ch-- = '0' + y % 10; y /= 10;
+    *ch   = '0' + y % 10; y /= 10;
+    ch += 8 + 2 * !squashDateTime;
   }
   *pch = ch;
 }
 
 void writeDateInt32(const void *col, int64_t row, char **pch) {
-  write_date(((const int32_t *)col)[row], pch);
+  write_date(((const int32_t*)col)[row], pch);
 }
 
 void writeDateFloat64(const void *col, int64_t row, char **pch) {
-  double x = ((const double *)col)[row];
+  double x = ((const double*)col)[row];
   write_date(isfinite(x) ? (int)(x) : INT32_MIN, pch);
 }
 
@@ -412,51 +412,51 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   // All positive integers up to 2^53 (9e15) are exactly representable by double which is relied
   // on in the ops here; number of seconds since epoch.
 
-  double x = ((const double *)col)[row];
+  double x = ((const double*)col)[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     write_chars(na, &ch);
   } else {
     int64_t xi, d, t;
     xi = floor(x);
-    int m = ((x-xi)*10000000); // 7th digit used to round up if 9
-    m += (m%10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
+    int m = ((x - xi) * 10000000); // 7th digit used to round up if 9
+    m += (m % 10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
     m /= 10;
     int carry = m / 1000000; // Need to know if we rounded up to a whole second
     m -= carry * 1000000;
     xi += carry;
-    if (xi>=0) {
+    if (xi >= 0) {
       d = xi / 86400;
       t = xi % 86400;
     } else {
       // before 1970-01-01T00:00:00Z
-      d = (xi+1)/86400 - 1;
-      t = xi - d*86400;  // xi and d are both negative here; t becomes the positive number of seconds into the day
+      d = (xi + 1) / 86400 - 1;
+      t = xi - d * 86400;  // xi and d are both negative here; t becomes the positive number of seconds into the day
     }
     write_date(d, &ch);
     *ch++ = 'T';
     ch -= squashDateTime;
     write_time(t, &ch);
-    if (squashDateTime || (m && m%1000==0)) {
+    if (squashDateTime || (m && m % 1000 == 0)) {
       // when squashDateTime always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
       // don't use writeInteger() because it doesn't 0 pad which we need here
       // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
       m /= 1000;
       *ch++ = dec;
       ch -= squashDateTime;
-      *(ch+2) = '0'+m%10; m/=10;
-      *(ch+1) = '0'+m%10; m/=10;
-      *ch     = '0'+m;
+      *(ch + 2) = '0' + m % 10; m /= 10;
+      *(ch + 1) = '0' + m % 10; m /= 10;
+      *(ch + 0) = '0' + m;
       ch += 3;
     } else if (m) {
       // microseconds are present and !squashDateTime
       *ch++ = dec;
-      *(ch+5) = '0'+m%10; m/=10;
-      *(ch+4) = '0'+m%10; m/=10;
-      *(ch+3) = '0'+m%10; m/=10;
-      *(ch+2) = '0'+m%10; m/=10;
-      *(ch+1) = '0'+m%10; m/=10;
-      *ch     = '0'+m;
+      *(ch + 5) = '0' + m % 10; m /= 10;
+      *(ch + 4) = '0' + m % 10; m /= 10;
+      *(ch + 3) = '0' + m % 10; m /= 10;
+      *(ch + 2) = '0' + m % 10; m /= 10;
+      *(ch + 1) = '0' + m % 10; m /= 10;
+      *(ch + 0) = '0' + m;
       ch += 6;
     }
     *ch++ = 'Z';
@@ -468,7 +468,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
 // # nocov start. Covered in other.Rraw test 22, not the main suite.
 void writeNanotime(const void *col, int64_t row, char **pch)
 {
-  int64_t x = ((const int64_t *)col)[row];
+  int64_t x = ((const int64_t*)col)[row];
   char *ch = *pch;
   if (x == INT64_MIN) {
     write_chars(na, &ch);
@@ -476,14 +476,14 @@ void writeNanotime(const void *col, int64_t row, char **pch)
     int d/*days*/, s/*secs*/, n/*nanos*/;
     n = x % 1000000000;
     x /= 1000000000;
-    if (x>=0 && n>=0) {
+    if (x >= 0 && n >= 0) {
       d = x / 86400;
       s = x % 86400;
     } else {
       // before 1970-01-01T00:00:00.000000000Z
       if (n) { x--; n += 1000000000; }
-      d = (x+1)/86400 - 1;
-      s = x - d*86400;  // x and d are both negative here; secs becomes the positive number of seconds into the day
+      d = (x + 1)/86400 - 1;
+      s = x - d * 86400;  // x and d are both negative here; secs becomes the positive number of seconds into the day
     }
     write_date(d, &ch);
     *ch++ = 'T';
@@ -491,7 +491,7 @@ void writeNanotime(const void *col, int64_t row, char **pch)
     write_time(s, &ch);
     *ch++ = dec;
     ch -= squashDateTime;
-    for (int i=8; i>=0; i--) { *(ch+i) = '0'+n%10; n/=10; }  // always 9 digits for nanoseconds
+    for (int i = 8; i >= 0; i--) { *(ch + i) = '0' + n % 10; n /= 10; }  // always 9 digits for nanoseconds
     ch += 9;
     *ch++ = 'Z';
     ch -= squashDateTime;
@@ -508,18 +508,18 @@ static inline void write_string(const char *x, char **pch)
     write_chars(na, &ch);
   } else {
     int8_t q = doQuote;
-    if (q==INT8_MIN) { // NA means quote="auto"
+    if (q == INT8_MIN) { // NA means quote="auto"
       const char *tt = x;
-      if (*tt=='\0') {
+      if (*tt == '\0') {
         // Empty strings are always quoted to distinguish from ,,==NA
-        *ch++='"'; *ch++='"';   // test 1732.7 covers this (confirmed in gdb) so it's unknown why codecov claims no coverage
+        *ch++ = '"'; *ch++ = '"';   // test 1732.7 covers this (confirmed in gdb) so it's unknown why codecov claims no coverage
         *pch = ch;
         return;
       }
-      while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='\r' && *tt!='"') *ch++ = *tt++;
+      while (*tt != '\0' && *tt != sep && *tt != sep2 && *tt != '\n' && *tt != '\r' && *tt != '"') *ch++ = *tt++;
       // Windows includes \n in its \r\n so looking for \n only is sufficient
       // sep2 is set to '\0' when no list columns are present
-      if (*tt=='\0') {
+      if (*tt == '\0') {
         // most common case: no sep, newline or " contained in string
         *pch = ch;  // advance caller over the field already written
         return;
@@ -527,20 +527,20 @@ static inline void write_string(const char *x, char **pch)
       ch = *pch; // rewind the field written since it needs to be quoted
       q = true;
     }
-    if (q==false) {
+    if (q == false) {
       write_chars(x, &ch);
     } else {
       *ch++ = '"';
       const char *tt = x;
       if (qmethodEscape) {
-        while (*tt!='\0') {
-          if (*tt=='"' || *tt=='\\') *ch++ = '\\';
+        while (*tt != '\0') {
+          if (*tt == '"' || *tt == '\\') *ch++ = '\\';
           *ch++ = *tt++;
         }
       } else {
         // qmethod='double'
-        while (*tt!='\0') {
-          if (*tt=='"') *ch++ = '"';
+        while (*tt != '\0') {
+          if (*tt == '"') *ch++ = '"';
           *ch++ = *tt++;
         }
       }
@@ -552,12 +552,12 @@ static inline void write_string(const char *x, char **pch)
 
 void writeString(const void *col, int64_t row, char **pch)
 {
-  write_string(getString((const SEXP *)col, row), pch);
+  write_string(getString((const SEXP*)col, row), pch);
 }
 
 void writeCategString(const void *col, int64_t row, char **pch)
 {
-  write_string(getCategString((const SEXP *)col, row), pch);
+  write_string(getCategString((const SEXP*)col, row), pch);
 }
 
 #ifndef NOZLIB
@@ -581,12 +581,12 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
 {
   stream->next_out = dest;
   stream->avail_out = *destLen;
-  stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
+  stream->next_in = (Bytef*)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
   int err = deflate(stream, Z_SYNC_FLUSH);
-  *destLen = *destLen - stream->avail_out;
+  *destLen -= stream->avail_out;
   // *destLen = stream->total_out;
-  return (err != Z_STREAM_ERROR) ? Z_OK : err;
+  return err != Z_STREAM_ERROR ? Z_OK : err;
 }
 #endif
 
@@ -603,11 +603,11 @@ OpenMP is used here primarily to parallelize the process of writing rows
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
-  double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
+  double nextTime = startTime + 2; // start printing progress meter in 2 sec if not completed by then
 
   na = args.na;
   sep = args.sep;
-  sepLen = sep=='\0' ? 0 : 1;
+  sepLen = sep == '\0' ? 0 : 1;
   sep2 = args.sep2;
   dec = args.dec;
   scipen = args.scipen;
@@ -627,13 +627,13 @@ void fwriteMain(fwriteMainArgs args)
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
   // na is recommended to be empty, though
-  if (na[0]!='\0' && doQuote==INT8_MIN)
+  if (na[0] != '\0' && doQuote == INT8_MIN)
     doQuote = true;
 
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-  int eolLen=strlen(args.eol), naLen=strlen(args.na);
+  int eolLen = strlen(args.eol), naLen = strlen(args.na);
   // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
@@ -643,12 +643,12 @@ void fwriteMain(fwriteMainArgs args)
   if (verbose) {
     DTPRINT(_("Column writers: "));
     // # notranslate start
-    if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+    if (args.ncol <= 50) {
+      for (int j = 0; j < args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
+      for (int j = 0; j < 30; j++) DTPRINT("%d ", args.whichFun[j]);
       DTPRINT(_("... "));
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+      for (int j = args.ncol - 10; j < args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
     DTPRINT("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n", args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
     // # notranslate end
@@ -666,16 +666,16 @@ void fwriteMain(fwriteMainArgs args)
   // could be console output) and writing column names to it.
 
   double t0 = wallclock();
-  size_t maxLineLen = eolLen + args.ncol * (2*(doQuote!=0) + sepLen);
+  size_t maxLineLen = eolLen + args.ncol * (2 * (doQuote != 0) + sepLen);
   if (args.doRowNames) {
-    maxLineLen += args.rowNames==NULL ? 1 + (int)log10(args.nrow)   // the width of the row number
-                  : (args.rowNameFun==WF_String ? getMaxStringLen(args.rowNames, args.nrow) * 2  // *2 in case longest row name is all quotes (!) and all get escaped
+    maxLineLen += args.rowNames == NULL ? 1 + (int)log10(args.nrow)   // the width of the row number
+                  : (args.rowNameFun == WF_String ? getMaxStringLen(args.rowNames, args.nrow) * 2  // *2 in case longest row name is all quotes (!) and all get escaped
                   : 11); // specific integer names could be MAX_INT 2147483647 (10 chars) even on a 5 row table, and data.frame allows negative integer rownames hence 11 for the sign
     maxLineLen += 2/*possible quotes*/ + sepLen;
   }
-  for (int j=0; j<args.ncol; j++) {
+  for (int j = 0; j < args.ncol; j++) {
     int width = writerMaxLen[args.whichFun[j]];
-    if (width==0) {
+    if (width == 0) {
       switch(args.whichFun[j]) {
       case WF_String:
         width = getMaxStringLen(args.columns[j], args.nrow);
@@ -699,10 +699,10 @@ void fwriteMain(fwriteMainArgs args)
     maxLineLen += width * 2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
   if (verbose)
-    DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
+    DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), (uint64_t)maxLineLen, 1.0 * (wallclock() - t0));
 
   int f = 0;
-  if (*args.filename=='\0') {
+  if (*args.filename == '\0') {
     f = -1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
   } else {
@@ -740,7 +740,7 @@ void fwriteMain(fwriteMainArgs args)
     headerLen += 3;
   headerLen += yamlLen;
   if (args.colNames) {
-    for (int j=0; j<args.ncol; j++)
+    for (int j = 0; j < args.ncol; j++)
       headerLen += 2 * getStringLen(args.colNames, j);  // * 2 in case quotes are escaped or doubled
     headerLen += args.ncol * (sepLen + 2 * (doQuote != 0)) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
   }
@@ -860,9 +860,9 @@ void fwriteMain(fwriteMainArgs args)
     char *buff = buffPool;
     char *ch = buff;
     if (args.bom) {
-      *ch++=(char)0xEF;
-      *ch++=(char)0xBB;
-      *ch++=(char)0xBF;
+      *ch++ = (char)0xEF;
+      *ch++ = (char)0xBB;
+      *ch++ = (char)0xBF;
     }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
     ch += yamlLen;
@@ -871,15 +871,15 @@ void fwriteMain(fwriteMainArgs args)
         // Unusual: the extra blank column name when row_names are added as the first column
         if (doQuote !=0) {
           // to match write.csv
-          *ch++='"';
-          *ch++='"';
+          *ch++ = '"';
+          *ch++ = '"';
         }
         *ch = sep;
         ch += sepLen;
       }
       int8_t tempDoQuote = doQuote;
       doQuote = quoteHeaders; // temporary overwrite since headers might get different quoting behavior, #2964
-      for (int j=0; j < args.ncol; j++) {
+      for (int j = 0; j < args.ncol; j++) {
         writeString(args.colNames, j, &ch);
         *ch = sep;
         ch += sepLen;
@@ -892,7 +892,7 @@ void fwriteMain(fwriteMainArgs args)
       *ch = '\0';
       DTPRINT("%s", buff); // # notranslate
     } else {
-      int ret1=0, ret2=0;
+      int ret1 = 0, ret2 = 0;
 #ifndef NOZLIB
       if (args.is_gzip) {
         char* zbuff = zbuffPool;
@@ -902,13 +902,13 @@ void fwriteMain(fwriteMainArgs args)
         crc = crc32(crc, (unsigned char*)buff, len);
         ret1 = compressbuff(&strm, zbuff, &zbuffUsed, buff, len);
         deflateEnd(&strm);
-        if (ret1==Z_OK) {
+        if (ret1 == Z_OK) {
           ret2 = WRITE(f, zbuff, (int)zbuffUsed);
           compress_len += zbuffUsed;
         }
       } else {
 #endif
-        ret2 = WRITE(f,  buff, (int)(ch-buff));
+        ret2 = WRITE(f,  buff, (int)(ch - buff));
 #ifndef NOZLIB
       }
 #endif
@@ -933,7 +933,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 #endif
   if (verbose)
-    DTPRINT(_("Initialization done in %.3fs\n"), 1.0*(wallclock()-t0));
+    DTPRINT(_("Initialization done in %.3fs\n"), 1.0 * (wallclock() - t0));
 
   // empty file is test in fwrite.R
   if (args.nrow == 0) {
@@ -961,7 +961,7 @@ void fwriteMain(fwriteMainArgs args)
 
 // main parallel loop ----
 #pragma omp parallel for ordered num_threads(nth) schedule(dynamic)
-  for(int64_t start=0; start < args.nrow; start += rowsPerBatch) {
+  for(int64_t start = 0; start < args.nrow; start += rowsPerBatch) {
     int me = omp_get_thread_num();
     int my_failed_compress = 0;
     char* myBuff = buffPool + me * buffSize;
@@ -989,25 +989,25 @@ void fwriteMain(fwriteMainArgs args)
     for (int64_t i = start; i < end; i++) {
       // Tepid starts here (once at beginning of each line)
       if (args.doRowNames) {
-        if (args.rowNames==NULL) {
-          if (doQuote==1)
-            *ch++='"';
-          int64_t rn = i+1;
+        if (args.rowNames == NULL) {
+          if (doQuote == 1)
+            *ch++ = '"';
+          int64_t rn = i + 1;
           writeInt64(&rn, 0, &ch);
-          if (doQuote==1)
-            *ch++='"';
+          if (doQuote == 1)
+            *ch++ = '"';
         } else {
-          if (args.rowNameFun != WF_String && doQuote==1)
-            *ch++='"';
+          if (args.rowNameFun != WF_String && doQuote == 1)
+            *ch++ = '"';
           (args.funs[args.rowNameFun])(args.rowNames, i, &ch);  // #5098
-          if (args.rowNameFun != WF_String && doQuote==1)
-            *ch++='"';
+          if (args.rowNameFun != WF_String && doQuote == 1)
+            *ch++ = '"';
         }
         *ch = sep;
         ch += sepLen;
       }
       // Hot loop
-      for (int j=0; j<args.ncol; j++) {
+      for (int j = 0; j < args.ncol; j++) {
         (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
         *ch = sep;
         ch += sepLen;
@@ -1026,8 +1026,8 @@ void fwriteMain(fwriteMainArgs args)
       int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, mylen);
       deflateEnd(&mystream);
       if (ret) {
-        failed=true;
-        my_failed_compress=ret;
+        failed = true;
+        my_failed_compress = ret;
       }
     }
 #endif
@@ -1035,15 +1035,15 @@ void fwriteMain(fwriteMainArgs args)
       // ordered region ----
 #pragma omp ordered
     if (failed) {
-      if (failed_compress==0 && my_failed_compress!=0) {
+      if (failed_compress == 0 && my_failed_compress != 0) {
         failed_compress = my_failed_compress; // # nocov
       }
       // else another thread could have failed below while I was working or waiting above; their reason got here first
     } else {
-      errno=0;
+      errno = 0;
       int ret = 0;
       if (f == -1) {
-        *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
+        *ch = '\0';  // standard C string end marker so DTPRINT knows where to stop
         DTPRINT("%s", myBuff); // # notranslate
       } else
 #ifndef NOZLIB
@@ -1053,11 +1053,11 @@ void fwriteMain(fwriteMainArgs args)
         } else
 #endif
       {
-        ret = WRITE(f, myBuff,  (int)(ch-myBuff));
+        ret = WRITE(f, myBuff,  (int)(ch - myBuff));
       }
       if (ret == -1) {
-        failed=true;         // # nocov
-        failed_write=errno;  // # nocov
+        failed = true;         // # nocov
+        failed_write = errno;  // # nocov
       }
 
 #ifndef NOZLIB
@@ -1071,19 +1071,19 @@ void fwriteMain(fwriteMainArgs args)
       if (used > maxBuffUsedPC)
         maxBuffUsedPC = used;
       double now;
-      if (me == 0 && !failed && args.showProgress && (now=wallclock()) >= nextTime) {
+      if (me == 0 && !failed && args.showProgress && (now = wallclock()) >= nextTime) {
         // See comments above inside the f==-1 clause.
         // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
         // master thread (me==0) and hopefully this will work on Windows. If not, user should set
         // showProgress=FALSE until this can be fixed or removed.
-        int ETA = (int)((args.nrow - end) * (now-startTime) /end);
+        int ETA = (int)((args.nrow - end) * (now - startTime) / end);
         if (hasPrinted || ETA >= 2) {
           // # nocov start
           if (verbose && !hasPrinted) DTPRINT("\n"); // # notranslate
           DTPRINT(Pl_(nth,
                   "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
                   "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
-                  (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA); // # nocov
+                  (100.0 * end) / args.nrow, args.nrow, (int)(now - startTime), nth, maxBuffUsedPC, ETA); // # nocov
           // TODO: use progress() as in fread
           nextTime = now + 1;
           hasPrinted = true;
@@ -1100,7 +1100,7 @@ void fwriteMain(fwriteMainArgs args)
   free(zbuffPool);
 
 /* put a 4-byte integer into a byte array in LSB order */
-#define PUT4(a,b) ((a)[0]=(b), (a)[1]=(b)>>8, (a)[2]=(b)>>16, (a)[3]=(b)>>24)
+#define PUT4(a,b) ((a)[0] = (b), (a)[1] = (b) >> 8, (a)[2] = (b) >> 16, (a)[3] = (b) >> 24)
 
   // write gzip tailer with crc and len
   if (args.is_gzip) {
@@ -1139,7 +1139,7 @@ void fwriteMain(fwriteMainArgs args)
                                     "Wrote %"PRId64" rows in %.3f secs using %d thread. MaxBuffUsed=%d%%\n"),
                      Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d threads. MaxBuffUsed=%d%%\n",
                                     "Wrote %"PRId64" rows in %.3f secs using %d threads. MaxBuffUsed=%d%%\n")),
-            args.nrow, 1.0*(wallclock()-t0), nth, maxBuffUsedPC);
+            args.nrow, 1.0 * (wallclock() - t0), nth, maxBuffUsedPC);
   }
 
   if (f != -1 && CLOSE(f) && !failed)
