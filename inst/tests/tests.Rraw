@@ -21420,3 +21420,9 @@ test(2330.5, as.data.table(data.frame(y, x), keep.rownames=TRUE), data.table(rn=
 
 DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with explicit rownames
 test(2330.6, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=letters[1:6], a=6:1, V=1:6))
+
+z <- setNames(1:3, rep("", 3))  # vector with all-empty names     # behaviour with all-empty row names
+test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3))
+
+M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
+test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
