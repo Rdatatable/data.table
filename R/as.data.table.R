@@ -146,12 +146,12 @@ as.data.table.list = function(x,
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
     if (check_rownames && is.null(rownames_)) {
       if (is.null(dim(xi))) {
-        if (!is.null(nm <- names(xi)) && any(nzchar(nm))) {
+        if (!is.null(nm <- names(xi))) {
           rownames_ = nm
           x[[i]] = unname(xi)
         }
       } else {
-        if (!is.null(nm <- rownames(xi)) && any(nzchar(nm))) {
+        if (!is.null(nm <- rownames(xi))) {
           rownames_ = nm
         }
       }
