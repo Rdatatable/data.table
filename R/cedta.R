@@ -1,6 +1,4 @@
 
-cedta.override = NULL  # If no need arises, will deprecate.
-
 cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdown","knitr","ezknitr","IRkernel", "rtvs")
 # These packages run user code in their own environment and thus do not
 # themselves Depend or Import data.table. knitr's eval is passed envir=globalenv() so doesn't
@@ -59,7 +57,6 @@ cedta = function(n=2L) {
       (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]] %iscall% 'example')) ) || # 'example' for #2972
     (nsname=="base" && all(c("FUN", "X") %chin% ls(parent.frame(n)))) || # lapply
     (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack()) ||
-    nsname %chin% cedta.override ||
     isTRUE(ns$.datatable.aware) ||  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
     tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
   if (!ans && getOption("datatable.verbose")) {
