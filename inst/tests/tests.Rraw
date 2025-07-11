@@ -21402,4 +21402,6 @@ if (test_bit64) {
   test(2327.71, frev(x), rev(x))
   test(2327.72, setrev(x), x)
 }
-
+# support rotate idiom
+M1 = M2 = matrix(1:4, nrow=2)
+test(2327.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
