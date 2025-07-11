@@ -106,7 +106,7 @@ replace_dot_alias = function(e) {
     "'____missing_datatable_variable____'",
     "'(?<obj_name>[^']+)'",
     # expression() to avoid "no visible binding for global variable" note from R CMD check
-    conditionMessage(tryCatch(eval(expression(`____missing_datatable_variable____`)), error=identity)),
+    conditionMessage(tryCatch(eval(quote(`____missing_datatable_variable____`)), error=identity)),
     fixed=TRUE
   )
   idx = regexpr(missing_obj_regex, err_str, perl=TRUE)
