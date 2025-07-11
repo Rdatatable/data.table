@@ -21351,15 +21351,15 @@ local({
 
 # 5885 implement frev
 d = c(NA, NaN, Inf, -Inf)
-test(2327.00, frev(c(FALSE, NA)),     c(NA, FALSE))
-test(2327.01, frev(c(0L, NA)),        c(NA, 0L))
-test(2327.02, frev(d),                c(-Inf, Inf, NaN, NA))
-test(2327.03, frev(c(NA, 1, 0+2i)),   c(0+2i, 1, NA))
-test(2327.04, frev(as.raw(0:1)),      as.raw(1:0))
-test(2327.05, frev(NULL),             NULL)
-test(2327.06, frev(character(5)),     character(5))
-test(2327.07, frev(integer(0)),       integer(0))
-test(2327.08, frev(list(1, "a")),     list("a", 1))
+test(2327.00, frev(c(FALSE, NA)),     rev(c(FALSE, NA)))
+test(2327.01, frev(c(0L, NA)),        rev(c(0L, NA)))
+test(2327.02, frev(d),                rev(d))
+test(2327.03, frev(c(NA, 1, 0+2i)),   rev(c(NA, 1, 0+2i)))
+test(2327.04, frev(as.raw(0:1)),      rev(as.raw(0:1)))
+test(2327.05, frev(NULL),             rev(NULL))
+test(2327.06, frev(character(5)),     rev(character(5)))
+test(2327.07, frev(integer(0)),       rev(integer(0)))
+test(2327.08, frev(list(1, "a")),     rev(list(1, "a")))
 test(2327.09, setrev(c(0L, NA)),      c(NA, 0L))
 test(2327.10, setrev(d),              c(-Inf, Inf, NaN, NA))
 test(2327.11, setrev(c(NA, 1, 0+2i)), c(0+2i, 1, NA))
@@ -21403,3 +21403,4 @@ if (test_bit64) {
   test(2327.71, frev(x), rev(x))
   test(2327.72, setrev(x), x)
 }
+
