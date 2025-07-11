@@ -6,7 +6,7 @@
 
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
-1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 14 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
+1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 10 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
 
 ### NEW FEATURES
 
