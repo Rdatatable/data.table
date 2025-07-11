@@ -18,15 +18,15 @@ frev(x)
 }
 
 \value{
-  \code{frev} returns the input reversed.
+  Returns the input reversed.
 }
 
 \examples{
 # on vectors
-x = setNames(1:26, letters)
-frev(x[1:10])
+x = setNames(1:10, letters[1:10])
+frev(x)
 
 # list
-frev(list(1, "a"))
+frev(list(1, "a", TRUE))
 }
 \keyword{ data }
