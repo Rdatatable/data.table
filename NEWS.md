@@ -72,6 +72,8 @@
 
 12. `print(..., col.names = 'none')` now correctly adapts column widths to the data content, ignoring the original column names and producing a more compact output, [#6882](https://github.com/Rdatatable/data.table/issues/6882). Thanks to @brooksambrose for the report and @venom1204 for the PR.
 
+13. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
