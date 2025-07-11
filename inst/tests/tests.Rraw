@@ -21430,4 +21430,4 @@ test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3
 #5829 checking the RHS of :=
 DT = data.table(x = 1:3)
 test(2331.1, DT[, y := mean], error = "RHS of `:=` is a function")
-test(2331.2, DT[, y := list(mean)], error = "RHS of `:=` is a length-1 list containing a function")
+test(2331.2, DT[, y := function(x) x], error = "RHS of `:=` is a function")
