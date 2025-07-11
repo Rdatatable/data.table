@@ -1412,7 +1412,6 @@ replace_dot_alias = function(e) {
 
     if (!is.null(lhs)) {
       newnames = setdiff(lhs, names(x))
-    
       if (length(newnames) > 0) {
         if (is.function(jval)) {
           stopf("RHS of `:=` is a function. To create a new column of functions, it must be a list column (e.g., wrap the function in `list()`).")
