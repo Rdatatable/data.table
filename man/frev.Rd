@@ -14,7 +14,7 @@ frev(x)
 }
 
 \details{
-  \code{frev} does not retain attributes other than names and class (similar to \code{\link[base]{rev}}).
+  Similar to \code{\link[base]{rev}}, \code{frev} only retains three attributes: names, class, and factor levels.
 }
 
 \value{
