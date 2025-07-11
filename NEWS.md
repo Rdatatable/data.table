@@ -72,6 +72,8 @@
 
 12. `print(..., col.names = 'none')` now correctly adapts column widths to the data content, ignoring the original column names and producing a more compact output, [#6882](https://github.com/Rdatatable/data.table/issues/6882). Thanks to @brooksambrose for the report and @venom1204 for the PR.
 
+13. Assigning a raw `function` to a new column, e.g. `DT[, new_col := mean]`, now throws an informative error. This prevents a common mistake and guides the user to wrap the `function` in a `list()`, e.g. `DT[, new_col := list(mean)]`, if the intent is to create a list-column of functions. Thanks to @tdhock for the report and @venom1204 for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:

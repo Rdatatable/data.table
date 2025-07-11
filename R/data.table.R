@@ -1411,7 +1411,13 @@ replace_dot_alias = function(e) {
     }
 
     if (!is.null(lhs)) {
-      # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
+      newnames = setdiff(lhs, names(x))
+      if (length(newnames) > 0) {
+        if (is.function(jval)) {
+          stopf("RHS of `:=` is a function. To create a new column of functions, it must be a list column (e.g., wrap the function in `list()`).")
+        }
+      }
+      # TODO?: use set() here now that it can add new columns.Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
     }
