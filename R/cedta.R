@@ -31,8 +31,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 .any_eval_calls_in_stack = function(calls) {
   # likelier to be close to the end of the call stack, right?
   for (ii in length(calls):1) { # nolint: seq_linter. rev(seq_len(length(calls)))? See https://bugs.r-project.org/show_bug.cgi?id=18406.
-    the_call = calls[[ii]][[1L]]
-    if (is.name(the_call) && (the_call %chin% c("eval", "evalq"))) return(TRUE)
+    if (calls[[ii]] %iscall% c("eval", "evalq")) return(TRUE)
   }
   FALSE
 }
@@ -40,8 +39,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 
 .any_sd_queries_in_stack = function(calls) {
   for (ii in length(calls):1) { # nolint: seq_linter. As above.
-    the_call = calls[[ii]][1L]
-    if (!is.name(the_call) || the_call != "[") next
+    if (!calls[[ii]] %iscall% "[") next
     the_lhs = calls[[ii]][[2L]]
     if (!is.name(the_lhs) || the_lhs != ".SD") next
     return(TRUE)
@@ -95,7 +93,7 @@ cedta = function(n=2L) {
     return(env$.datatable.aware)
   }
   ns = topenv(env)
-  ans = .cedta_impl_(ns, n)
+  ans = .cedta_impl_(ns, n+1L)
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
     catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", getNamespaceName(ns))
