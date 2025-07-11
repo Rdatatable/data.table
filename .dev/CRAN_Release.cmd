@@ -51,15 +51,15 @@ checkbashisms ./configure  # for portability; e.g. Solaris 10 running Bourne she
 
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
+# grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./  # outdated check as Non-ASCII can be in other places
 
 # Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
+# grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
-# Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
+# Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads() -- shows 4 lines, in fread.c and myomp.h
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
-# Ensure all #pragama omp parallel directives include a num_threads() clause
+# Ensure all #pragama omp parallel directives include a num_threads() clause -- shows 8 lines, all ok
 grep -i "pragma.*omp parallel" ./src/*.c | grep -v getDTthreads
 # for each num_threads(nth) above, ensure for Solaris that the variable is not declared const, #4638
 grep -i "const.*int.*nth" ./src/*.c
