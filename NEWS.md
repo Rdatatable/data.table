@@ -109,6 +109,44 @@
    + On non-Windows systems, `fread()` now prints the reason why the file couldn't be opened, which could also be due to it being too large to map.
    + With `verbose=TRUE`, file sizes are now printed using correct binary SI prefixes (the sizes have always been reported as bytes denominated in powers of `2^10`, so e.g. `1024*1024` bytes was reported as `1 MB` where `1 MiB` or `1.05 MB` is correct).
 
+
+# data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
+
+1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
+
+# data.table [v1.17.6](https://github.com/Rdatatable/data.table/milestone/40) (15 June 2025)
+
+1. On a heavily loaded machine, a `forder` thread could try to perform a zero-length copy from a null pointer, which was de-facto harmless but is against the C standard and was caught by additional CRAN checks, [#7051](https://github.com/Rdatatable/data.table/issues/7051). Thanks to @helske for the report and @aitap for the PR.
+
+# data.table [v1.17.4](https://github.com/Rdatatable/data.table/milestone/39) (25 May 2025)
+
+1. The C code now avoids passing invalid data pointers from 0-length vectors to `memcpy()`, which previously caused undefined behaviour. Thanks to Prof. Brian D. Ripley for the report and Michael Chirico for the fix, [#6911](https://github.com/Rdatatable/data.table/pull/6911).
+
+# data.table [v1.17.2](https://github.com/Rdatatable/data.table/milestone/38) (7 May 2025)
+
+## BUG FIXES
+
+1. `fwrite(compress="gzip")` once again produces a gzip header when the column names are missing or disabled, [@6852](https://github.com/Rdatatable/data.table/issues/6852). Thanks @maxscheiber for the report and @aitap for the fix.
+
+2. `fread(keepLeadingZeros=TRUE)` now correctly parses dates with components with leading zeros as dates instead of strings, [#6851](https://github.com/Rdatatable/data.table/issues/6851). Thanks @TurnaevEvgeny for the report and @ben-schwen for the fix.
+
+3. `as.data.table()` on `x` avoids an infinite loop if the output of the corresponding `as.data.frame()` method has the same class as the input, [#6874](https://github.com/Rdatatable/data.table/issues/6874). Concretely, we had `class(x) = c('foo', 'data.frame')` and `class(as.data.frame(x)) = c('foo', 'data.frame')`, so `as.data.frame.foo` wound up getting called repeatedly. Thanks @matschmitz for the report and @ben-schwen for the fix.
+
+4. By-reference sub-assignments to factor columns now match the levels in UTF-8, preventing their duplication when the same level exists in different encodings, [#6886](https://github.com/Rdatatable/data.table/issues/6886). Thanks @iagogv3 for the report and @aitap for the fix.
+
+5. `fwrite()` now avoids a crash when translating strings into a different encoding, [#6883](https://github.com/Rdatatable/data.table/issues/6883). Thanks @filipemsc for the report and @aitap for the fix.
+
+6. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
+
+7. `as.data.table()` now properly handles keys: specifying keys sets them, omitting keys preserves existing ones, and setting `key=NULL` clears them, [#6859](https://github.com/Rdatatable/data.table/issues/6859). Thanks @brookslogan for the report and @Mukulyadav2004 for the fix.
+
+8. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
+
+## BUG FIXES
+
+1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
+
+
 ## data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
 ### POTENTIALLY BREAKING CHANGES
