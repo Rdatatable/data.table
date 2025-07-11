@@ -52,6 +52,11 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 # in a helper to promote readability
 # NB: put the most common and recommended cases first for speed
 .cedta_impl_ <- function(ns, n) {
+  if (!isNamespace(ns)) {
+    # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
+    return(TRUE)
+  }
+
   nsname = getNamespaceName(ns)
   if (nsname == "data.table") return(TRUE)
 
@@ -90,10 +95,6 @@ cedta = function(n=2L) {
     return(env$.datatable.aware)
   }
   ns = topenv(env)
-  if (!isNamespace(ns)) {
-    # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
-    return(TRUE)
-  }
   ans = .cedta_impl_(ns, n)
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
