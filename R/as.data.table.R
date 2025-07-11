@@ -36,11 +36,11 @@ as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
   # prevent #4179 & just cut out here
   if (any(dim(x) == 0L)) return(null.data.table())
   # Fix for bug #43 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
-  val = rev(dimnames(provideDimnames(x)))
+  val = frev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
-    setattr(val, 'names', paste0("V", rev(seq_along(val))))
+    setattr(val, 'names', paste0("V", frev(seq_along(val))))
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x), key=key)
-  setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
+  setcolorder(ans, c(frev(head(names(ans), -1L)), "N"))
   ans
 }
 
@@ -104,18 +104,18 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
     dnx
   } else dnx
-  val = rev(val)
+  setfrev(val)
   if (is.null(names(val)) || !any(nzchar(names(val))))
-    setattr(val, 'names', paste0("V", rev(seq_along(val))))
+    setattr(val, 'names', paste0("V", frev(seq_along(val))))
   if (value.name %chin% names(val))
-    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
+    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(frev(names(val))))
   N = NULL
   ans = do.call(CJ, c(val, sorted=FALSE))
   set(ans, j="N", value=as.vector(x))
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
-  dims = rev(head(names(ans), -1L))
+  dims = frev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
   if (isTRUE(sorted) && is.null(key)) key = dims
   setkeyv(ans, key)

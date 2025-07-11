@@ -153,6 +153,7 @@ R_CallMethodDef callMethods[] = {
 {"CperhapsDataTableR", (DL_FUNC) &perhapsDataTableR, -1},
 {"CcopyCols", (DL_FUNC) &copyCols, -1},
 {"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
+{"Cfrev", (DL_FUNC) &frev, -1},
 {NULL, NULL, 0}
 };
 

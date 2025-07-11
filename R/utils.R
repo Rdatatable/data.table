@@ -86,7 +86,7 @@ which.last = function(x)
   if (!is.logical(x)) {
     stopf("x not boolean")
   }
-  length(x) - match(TRUE, rev(x)) + 1L
+  length(x) - match(TRUE, frev(x)) + 1L
 }
 
 require_bit64_if_needed = function(DT) {
@@ -226,7 +226,7 @@ fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
   if (!isTRUEorFALSE(rev))
     stopf("argument 'rev' must be TRUE or FALSE")
   if (sort) levels = sort(levels)
-  if (rev) levels = rev(levels)
+  if (rev) levels = frev(levels)
   factor(x, levels=levels, ...)
 }
 
