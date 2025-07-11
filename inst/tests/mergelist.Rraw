@@ -1,0 +1,409 @@
+require(methods)
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  mergepair = data.table:::mergepair
+  perhaps.data.table = data.table:::perhaps.data.table
+  hasindex = data.table:::hasindex
+  fdistinct = data.table:::fdistinct
+  forderv = data.table:::forderv
+}
+
+addresses = function(x) vapply(x, address, "")
+copied = function(ans, l) {
+  !any(addresses(ans) %chin% unlist(recursive=FALSE, lapply(l, addresses)))
+}
+# check that the "baseline" table (as inferred from 'how') is _not_ copied in
+#   cases where it need not necessarily be copied.
+notcopied = function(ans, l, how="left") {
+  if (how == "full") return( ## either side, left|right, notcopied is fine
+    all(addresses(l[[1L]]) %chin% addresses(ans)) ||
+      all(addresses(l[[length(l)]]) %chin% addresses(ans))
+  )
+  idx = if (how == "right") length(l) else 1L
+  all(addresses(l[[idx]]) %chin% addresses(ans))
+}
+
+# internal helpers
+
+test(1.01, perhaps.data.table(list()))
+test(1.02, perhaps.data.table(list(a=1:2)))
+test(1.03, perhaps.data.table(list(a=1:2, b=1:2)))
+test(1.04, perhaps.data.table(list(1:2, 1:2)), FALSE)
+
+test(2.01, fdistinct(list(x=c(1L, 1:2), b=1:2), on="x", mult="last"), error="must be data.table")
+test(2.02, fdistinct(data.table(x=c(1L, 1:2)), on="z", mult="last"), error="must be character column names of")
+test(2.03, fdistinct(data.table(x=c(1L, 1:2)), on="x", mult="last", cols=character()), error="must be non-zero length, non-NA, integer or character columns of")
+test(2.04, fdistinct(data.table(x=c(1L, 1:2, y=1:3)), on="x", mult="last", copy=NA), error="must be TRUE or FALSE")
+local({
+  d = data.table(x=1:2, y=1:2)
+  test(2.05, ans <- fdistinct(d, on="x", mult="last"), d)
+  test(2.06, intersect(addresses(ans), addresses(d)), character())
+  test(2.07, ans <- fdistinct(d, on="x", mult="last", copy=FALSE), d)
+  test(2.08, addresses(ans), addresses(d))
+})
+local({
+  d = data.table(x=c(2:1, 2L), y=1:3)
+  test(2.09, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
+  test(2.10, fdistinct(d, on="x", mult="last"), data.table(x=1:2, y=2:3))
+  setattr(attr(setattr(d, "index", integer()), "index", TRUE), "__x", forderv(d, "x", retGrp=TRUE)) ## retGrp=T index #4386
+  test(2.11, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
+
+  test(3.01, hasindex(d, "x"))
+  test(3.02, hasindex(d, "x", retGrp=TRUE))
+  setattr(attr(setattr(d, "index", integer()), "index", TRUE), "__x", forderv(d, "x"))              ## retGrp=F index #4386
+  test(3.03, hasindex(d, "x"))
+  test(3.04, !hasindex(d, "x", retGrp=TRUE))
+  setattr(d, "index", NULL)
+  test(3.05, !hasindex(d, "x"))
+  test(3.06, !hasindex(d, "x", retGrp=TRUE))
+  setattr(d, "index", integer())
+  test(3.07, !hasindex(d, "x"))
+  test(3.08, !hasindex(d, "x", retGrp=TRUE))
+})
+
+# cbindlist, setcbindlist
+
+local({
+  l = list(
+    d1 = data.table(x=1:3, v1=1L),
+    d2 = data.table(y=3:1, v2=2L),
+    d3 = data.table(z=2:4, v3=3L)
+  )
+  ans = cbindlist(l)
+  expected = data.table(l$d1, l$d2, l$d3)
+  test(11.01, ans, expected)
+  test(11.02, intersect(vapply(ans, address, ""), unlist(lapply(l, vapply, address, ""))), character())
+  ans = setcbindlist(l)
+  expected = setDT(c(l$d1, l$d2, l$d3))
+  test(11.03, ans, expected)
+  test(11.04, length(intersect(vapply(ans, address, ""), unlist(lapply(l, vapply, address, "")))), ncol(expected))
+})
+
+test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), data.table(f=3L))), data.table(a=1L, d=2L, f=3L))
+## codecov
+test(12.01, cbindlist(data.frame(a=1L)), error="must be a list")
+test(12.02, cbindlist(TRUE), error="must be a list")
+test(12.03, cbindlist(list(data.table(a=1L), 1L)), error="is not a data.table")
+test(12.04, options = c(datatable.verbose=TRUE), cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
+test(12.05, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.06, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.07, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.table(a=integer(), b=integer()))
+## duplicated names
+test(12.08, cbindlist(list(data.table(a=1L, b=2L), data.table(b=3L, d=4L))), data.table(a=1L, b=2L, b=3L, d=4L))
+local({
+  # also test that keys, indices are wiped
+  ans = cbindlist(list(setindexv(data.table(a=2:1, b=1:2), "a"), data.table(a=1:2, b=2:1, key="a"), data.table(a=2:1, b=1:2)))
+  test(12.09, ans, data.table(a=2:1, b=1:2, a=1:2, b=2:1, a=2:1, b=1:2))
+  test(12.10, indices(ans), NULL)
+})
+## recycling, first ensure cbind recycling that we want to match to
+test(12.11, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA_integer_, NA), a=1:2))
+test(12.12, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L, 1L), a=1:2))
+test(12.13, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="Recycling.*not yet implemented")
+test(12.14, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="Recycling.*not yet implemented")
+test(12.15, setcbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="have to have the same number of rows")
+test(12.16, setcbindlist(list(data.table(a=1L), data.table(b=1:2))), error="have to have the same number of rows")
+
+## retain indices
+local({
+  l = list(
+    data.table(id1=1:5, id2=5:1, id3=1:5, v1=1:5),
+    data.table(id4=5:1, id5=1:5, v2=1:5),
+    data.table(id6=5:1, id7=1:5, v3=1:5),
+    data.table(id8=5:1, id9=5:1, v4=1:5)
+  )
+  setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], list("id1", "id2", "id3", c("id1","id2","id3"))); setindexv(l[[3L]], list("id6", "id7")); setindexv(l[[4L]], "id9")
+  ii = lapply(l, indices)
+  ans = cbindlist(l)
+  test(13.1, key(ans), "id1")
+  test(13.2, indices(ans), c("id1", "id2", "id3", "id1__id2__id3", "id6", "id7", "id9"))
+  test(13.3, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
+})
+test(13.4, cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key="b"))
+# TODO(#7116): this could be supported
+# test(13.5, cbindlist(list(data.table(a=1:2, key="a"), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key=c("a", "b")))
+
+# mergepair
+
+## test copy-ness argument in mergepair
+
+### LHS equal to RHS: no copy in all cases
+local({
+  l = list(
+    lhs = data.table(id1=1:2, v1=1:2),
+    rhs = data.table(id1=1:2, v2=1:2)
+  )
+  expected = data.table(id1=1:2, v1=1:2, v2=1:2)
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected) ## copy=TRUE: no shared columns
+      test(21 + (frac <- frac + 0.001), copied(ans, l))
+      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected) ## copy=FALSE: LHS shared but no RHS
+      test(21 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+### RHS includes LHS: no copy in inner, left, right
+local({
+  l = list(
+    lhs = data.table(id1=1:2, v1=1:2),
+    rhs = data.table(id1=1:3, v2=1:3)
+  )
+  expected = list(
+    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+    left = data.table(id1=1:2, v1=1:2, v2=1:2),
+    right = data.table(id1=1:3, v1=c(1:2, NA), v2=1:3),
+    full = data.table(id1=1:3, v1=c(1:2, NA), v2=1:3)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(22 + (frac <- frac + 0.001), copied(ans, l))
+      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how == "full") {
+        test(22 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(22 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS includes RHS: no copy in left, right, full
+local({
+  l = list(
+    lhs = data.table(id1=1:3, v1=1:3),
+    rhs = data.table(id1=1:2, v2=1:2)
+  )
+  expected = list(
+    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+    left = data.table(id1=1:3, v1=1:3, v2=c(1:2, NA)),
+    right = data.table(id1=1:2, v1=1:2, v2=1:2),
+    full = data.table(id1=1:3, v1=1:3, v2=c(1:2, NA))
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(23 + (frac <- frac + 0.001), copied(ans, l))
+      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how == "inner") {
+        test(23 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(23 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS single nonmatch RHS on both sides: no copy in left, right
+local({
+  l = list(
+    lhs = data.table(id1=c(3L, 2:1), v1=1:3),
+    rhs = data.table(id1=c(4L, 2:1), v2=1:3)
+  )
+  expected = list(
+    inner = data.table(id1=2:1, v1=2:3, v2=2:3),
+    left = data.table(id1=c(3L, 2:1), v1=1:3, v2=c(NA, 2:3)),
+    right = data.table(id1=c(4L, 2:1), v1=c(NA, 2:3), v2=1:3),
+    full = data.table(id1=c(3:1, 4L), v1=c(1:3, NA), v2=c(NA, 2:3, 1L))
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(24 + (frac <- frac + 0.001), copied(ans, l))
+      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how %in% c("inner", "full")) {
+        test(24 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(24 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS zero match RHS: no copy in left, right
+local({
+  l = list(
+    lhs = data.table(id1=2:1, v1=1:2),
+    rhs = data.table(id1=3:4, v2=1:2)
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=2:1, v1=1:2, v2=NA_integer_),
+    right = data.table(id1=3:4, v1=NA_integer_, v2=1:2),
+    full = data.table(id1=c(2:1, 3:4), v1=c(1:2, NA, NA), v2=c(NA, NA, 1:2))
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(25 + (frac <- frac + 0.001), copied(ans, l))
+      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how %in% c("inner", "full")) {
+        test(25 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(25 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS and RHS zero nrow: no copies
+local({
+  l = list(
+    lhs = data.table(id1=integer(), v1=integer()),
+    rhs = data.table(id1=integer(), v2=integer())
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=integer(), v1=integer(), v2=integer()),
+    right = data.table(id1=integer(), v1=integer(), v2=integer()),
+    full = data.table(id1=integer(), v1=integer(), v2=integer())
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(26 + (frac <- frac + 0.001), copied(ans, l))
+      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(26 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+### LHS has zero nrow: no copies
+local({
+  l = list(
+    lhs = data.table(id1=integer(), v1=integer()),
+    rhs = data.table(id1=2:1, v2=1:2)
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=integer(), v1=integer(), v2=integer()),
+    right = data.table(id1=2:1, v1=NA_integer_, v2=1:2),
+    full = data.table(id1=2:1, v1=NA_integer_, v2=1:2)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(27 + (frac <- frac + 0.001), copied(ans, l))
+      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(27 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+### RHS has zero nrow
+local({
+  l = list(
+    lhs = data.table(id1=2:1, v1=1:2),
+    rhs = data.table(id1=integer(), v2=integer())
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=2:1, v1=1:2, v2=NA_integer_),
+    right = data.table(id1=integer(), v1=integer(), v2=integer()),
+    full = data.table(id1=2:1, v1=1:2, v2=NA_integer_)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(28 + (frac <- frac + 0.001), copied(ans, l))
+      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how == "inner") {
+        test(28 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(28 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS and RHS same, different order
+local({
+  l = list(
+    lhs = data.table(id1=1:2, v1=1:2),
+    rhs = data.table(id1=2:1, v2=2:1)
+  )
+  expected = list(
+    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+    left = data.table(id1=1:2, v1=1:2, v2=1:2),
+    right = data.table(id1=2:1, v1=2:1, v2=2:1),
+    full = data.table(id1=1:2, v1=1:2, v2=1:2)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(29 + (frac <- frac + 0.001), copied(ans, l))
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(29 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+
+## fdistinct, another round
+
+local({
+  dt = data.table(x = c(
+    74L, 103L, 158L, 250L, 56L, 248L, 260L, 182L, 174L, 17L, 57L,
+    49L, 189L, 106L, 212L, 137L, 198L, 273L, 105L, 214L, 258L, 59L,
+    180L, 35L, 74L, 107L, 4L, 106L, 240L, 94L, 133L, 165L, 136L,
+    52L, 228L, 184L, 219L, 30L, 200L, 114L, 226L, 178L, 216L, 153L,
+    146L, 218L, 7L, 132L, 202L, 191L, 132L, 237L, 121L, 68L, 20L,
+    28L, 87L, 143L, 183L, 112L, 252L, 81L, 127L, 92L, 179L, 71L,
+    132L, 211L, 24L, 241L, 94L, 231L, 96L, 92L, 131L, 246L, 238L,
+    108L, 214L, 265L, 120L, 196L, 110L, 90L, 209L, 56L, 196L, 34L,
+    68L, 40L, 66L, 17L, 177L, 241L, 215L, 220L, 126L, 113L, 223L,
+    167L, 181L, 98L, 75L, 273L, 175L, 59L, 36L, 132L, 255L, 165L,
+    269L, 202L, 99L, 119L, 41L, 4L, 197L, 29L, 123L, 177L, 273L,
+    137L, 134L, 48L, 208L, 125L, 141L, 58L, 63L, 164L, 159L, 22L,
+    10L, 177L, 256L, 165L, 155L, 145L, 271L, 140L, 188L, 166L, 66L,
+    71L, 201L, 125L, 49L, 206L, 29L, 238L, 170L, 154L, 91L, 125L,
+    138L, 50L, 146L, 21L, 77L, 59L, 79L, 247L, 123L, 215L, 243L,
+    114L, 18L, 93L, 200L, 93L, 174L, 232L, 236L, 108L, 105L, 247L,
+    178L, 204L, 167L, 249L, 81L, 53L, 244L, 139L, 242L, 53L, 209L,
+    200L, 260L, 151L, 196L, 107L, 28L, 256L, 78L, 163L, 31L, 232L,
+    88L, 216L, 74L, 61L, 143L, 74L, 50L, 143L, 155L, 36L, 71L, 198L,
+    265L, 28L, 210L, 261L, 226L, 85L, 179L, 263L, 263L, 94L, 73L,
+    46L, 89L, 141L, 255L, 141L, 71L, 13L, 115L, 235L, 96L, 37L, 103L,
+    174L, 108L, 190L, 190L, 153L, 119L, 125L, 85L, 160L, 251L, 40L,
+    115L, 59L, 118L, 37L, 127L, 260L, 210L, 257L, 130L, 166L, 134L,
+    30L, 69L, 138L, 103L, 258L, 145L, 88L, 77L, 217L, 194L, 46L,
+    18L, 208L, 171L, 47L, 18L, 30L, 105L, 47L, 83L
+  ))
+  ans = unique(dt, by="x")
+  test(301.01, data.table(x=unique(dt$x)), ans) ## OK
+  test(301.02, fdistinct(dt, on="x"), ans)      ## force sort=TRUE for the moment
+})

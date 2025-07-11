@@ -31,7 +31,7 @@ is.data.table(x)
 }
 \arguments{
   \item{x}{An R object.}
-  \item{keep.rownames}{Default is \code{FALSE}. If \code{TRUE}, adds the input object's names as a separate column named \code{"rn"}. \code{keep.rownames = "id"} names the column \code{"id"} instead.}
+  \item{keep.rownames}{Default is \code{FALSE}. If \code{TRUE}, adds the input object's names as a separate column named \code{"rn"}. \code{keep.rownames = "id"} names the column \code{"id"} instead. For lists and when calling \code{data.table()}, names from the first named vector are extracted and used as row names, similar to \code{data.frame()} behavior.}
   \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkeyv}}. }
   \item{sorted}{logical used in \emph{array} method, default \code{TRUE} is overridden when \code{key} is provided. }
   \item{value.name}{character scalar used in \emph{array} method, default \code{"value"}.}

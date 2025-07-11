@@ -29,7 +29,7 @@ static SEXP nqgrp;
 static int ncol, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
 static int *op, nqmaxgrp;
 static int ctr, nomatch; // populating matches for non-equi joins
-enum {ALL, FIRST, LAST} mult = ALL;
+enum {ALL, FIRST, LAST, ERR} mult = ALL;
 static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
@@ -49,8 +49,10 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   // iArg, xArg, icolsArg and xcolsArg
   idtVec = SEXPPTR_RO(idt);  // set globals so bmerge_r can see them.
   xdtVec = SEXPPTR_RO(xdt);
-  if (!isInteger(icolsArg)) internal_error(__func__, "icols is not integer vector"); // # nocov
-  if (!isInteger(xcolsArg)) internal_error(__func__, "xcols is not integer vector"); // # nocov
+  if (!isInteger(icolsArg))
+    internal_error(__func__, "icols is not integer vector"); // # nocov
+  if (!isInteger(xcolsArg))
+    internal_error(__func__, "xcols is not integer vector"); // # nocov
   if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) // We let through LENGTH(i) == 0 for tests 2126.*
     internal_error(__func__, "icols and xcols must be non-empty integer vectors");
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) internal_error(__func__, "length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
@@ -60,10 +62,14 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   iN = ilen = anslen = LENGTH(idt) ? LENGTH(VECTOR_ELT(idt,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
   for(int col=0; col<ncol; col++) {
-    if (icols[col]==NA_INTEGER) internal_error(__func__, "icols[%d] is NA", col); // # nocov
-    if (xcols[col]==NA_INTEGER) internal_error(__func__, "xcols[%d] is NA", col); // # nocov
-    if (icols[col]>LENGTH(idt) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(idt));
-    if (xcols[col]>LENGTH(xdt) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(xdt));
+    if (icols[col]==NA_INTEGER)
+      internal_error(__func__, "icols[%d] is NA", col); // # nocov
+    if (xcols[col]==NA_INTEGER)
+      internal_error(__func__, "xcols[%d] is NA", col); // # nocov
+    if (icols[col]>LENGTH(idt) || icols[col]<1)
+      internal_error(__func__, "icols[%d]=%d outside range [1,length(i)=%d]", col, icols[col], LENGTH(idt)); // # nocov. Should have been caught already.
+    if (xcols[col]>LENGTH(xdt) || xcols[col]<1)
+      internal_error(__func__, "xcols[%d]=%d outside range [1,length(x)=%d]", col, xcols[col], LENGTH(xdt)); // # nocov
     int it = TYPEOF(VECTOR_ELT(idt, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
     if (iN && it!=xt)
@@ -75,11 +81,14 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   // rollArg, rollendsArg
   roll = 0.0; rollToNearest = FALSE;
   if (isString(rollarg)) {
-    if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error(_("roll is character but not 'nearest'"));
-    if (ncol>0 && TYPEOF(VECTOR_ELT(idt, icols[ncol-1]-1))==STRSXP) error(_("roll='nearest' can't be applied to a character column, yet."));
+    if (strcmp(CHAR(STRING_ELT(rollarg, 0)), "nearest") != 0)
+      internal_error(__func__, "roll is character but not 'nearest'"); // # nocov. Only [.data.table exposes roll= directly, and this is already checked there.
+    if (ncol>0 && TYPEOF(VECTOR_ELT(idt, icols[ncol-1]-1))==STRSXP)
+      error(_("roll='nearest' can't be applied to a character column, yet."));
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
   } else {
-    if (!isReal(rollarg)) internal_error(__func__, "roll is not character or double"); // # nocov
+    if (!isReal(rollarg))
+      internal_error(__func__, "roll is not character or double"); // # nocov
     roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
   }
   rollabs = fabs(roll);
@@ -98,10 +107,16 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   }
 
   // mult arg
-  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
-  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
-  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else internal_error(__func__, "invalid value for 'mult'"); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))
+    mult = ALL;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first"))
+    mult = FIRST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last"))
+    mult = LAST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "error"))
+    mult = ERR;
+  else
+    internal_error(__func__, "invalid value for 'mult'"); // # nocov
 
   // opArg
   if (!isInteger(opArg) || length(opArg)!=ncol)
@@ -132,7 +147,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     retLength = R_Calloc(anslen, int);
     retIndex = R_Calloc(anslen, int);
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
-    for (int j=0; j<anslen; j++) retIndex[j] = j+1;
+    for (int j=0; j<anslen; j++)
+      retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
     retFirstArg = PROTECT(allocVector(INTSXP, anslen));
     retFirst = INTEGER(retFirstArg);
@@ -145,9 +161,11 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   for (int j=0; j<anslen; j++) {
     // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
     retFirst[j] = nomatch;   // default to no match for NA goto below
-    // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
-    retLength[j] = nomatch==0 ? 0 : 1;
   }
+  // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
+  int retLengthVal = (int)(nomatch != 0);
+  for (int j=0; j<anslen; j++)
+    retLength[j] = retLengthVal;
 
   // allLen1Arg
   allLen1Arg = PROTECT(allocVector(LGLSXP, 1));
@@ -174,7 +192,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   // xo arg
   xo = NULL;
   if (length(xoArg)) {
-    if (!isInteger(xoArg)) internal_error(__func__, "xoArg is not an integer vector"); // # nocov
+    if (!isInteger(xoArg))
+      internal_error(__func__, "xoArg is not an integer vector"); // # nocov
     xo = INTEGER(xoArg);
   }
 
@@ -391,10 +410,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       // final two 1's are lowmax and uppmax
     } else {
       int len = xupp-xlow-1+rollLow+rollUpp; // rollLow and rollUpp cannot both be true
-      if (mult==ALL && len>1) allLen1[0] = FALSE;
+      if (len>1) {
+        if (mult==ALL)
+          allLen1[0] = FALSE;                           // bmerge()$allLen1
+      }
       if (nqmaxgrp == 1) {
-        const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // extra +1 for 1-based indexing at R level
-        const int rl = (mult==ALL) ? len : 1;
+        const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // bmerge()$starts thus extra +1 for 1-based indexing at R level
+        const int rl = (mult==ALL) ? len : 1;                        // bmerge()$lens
         for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
           const int k = o ? o[j]-1 : j;
           retFirst[k] = rf;
@@ -406,7 +428,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         for (int j=ilow+1; j<iupp; j++) {
           const int k = o ? o[j]-1 : j;
           if (retFirst[k] != nomatch) {
-            if (mult == ALL) {
+            if (mult == ALL || mult == ERR) { // len>1 && mult==ERR already checked, no dup matches, continue as mult=ALL
               // for this irow, we've matches on more than one group
               allGrp1[0] = FALSE;
               retFirst[ctr+ilen] = xlow+2;
@@ -428,7 +450,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
           } else {
             // none of the groups so far have filled in for this index. So use it!
-            if (mult == ALL) {
+            if (mult == ALL || mult == ERR) {
               retFirst[k] = xlow+2;
               retLength[k] = len;
               retIndex[k] = k+1;

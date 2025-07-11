@@ -209,7 +209,7 @@ as.character.ITime = format.ITime = function(x, ...) {
   res
 }
 
-as.data.frame.ITime = function(x, ...) {
+as.data.frame.ITime = function(x, ..., optional=FALSE) {
   # This method is just for ggplot2, #1713
   # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
   # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.
@@ -219,7 +219,8 @@ as.data.frame.ITime = function(x, ...) {
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
   setattr(ans, "class", "data.frame")
   setattr(ans, "row.names", .set_row_names(length(x)))
-  setattr(ans, "names", "V1")
+  # require 'optional' support for passing back to e.g. data.frame() without overriding names there
+  if (!optional) setattr(ans, "names", "V1")
   ans
 }
 
@@ -341,7 +342,8 @@ yday    = function(x) convertDate(as.IDate(x), "yday")
 wday    = function(x) convertDate(as.IDate(x), "wday")
 mday    = function(x) convertDate(as.IDate(x), "mday")
 week    = function(x) convertDate(as.IDate(x), "week")
-isoweek = function(x) {
+# TODO(#3279): Investigate if improved as.IDate() makes our below implementation faster than this
+isoweek = function(x) as.integer(format(as.IDate(x), "%V"))
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
   # Approach:
@@ -349,11 +351,11 @@ isoweek = function(x) {
   # * Find the number of weeks having passed between
   #   January 1st of the year of the nearest Thursdays and x
 
-  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
-  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
-  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
-  1L + (nearest_thurs - year_start) %/% 7L
-}
+#  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
+#  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
+#  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
+#  1L + (nearest_thurs - year_start) %/% 7L
+
 
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")

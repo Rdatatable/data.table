@@ -2281,15 +2281,40 @@ test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=
             output = "RHS for item 2 has been duplicated")
 test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
-test(754.1, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
-test(754.2, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
+test(754.01, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(754.02, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
 # And non-recycling i.e. that a single column copy does copy the column
 DT = data.table(a=1:3)
-test(754.3, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
-test(754.4, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
-test(754.5, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy")
+test(754.03, DT[, b := a][1, a := 4L][2, b := 5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
+test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
+test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
-test(754.6, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
+test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
+if (base::getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
+  # Expand ALTREPS in assign.c, #5400
+  # String conversion gets deferred
+  ## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
+  test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
+  test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
+  # Executing the code inside of test expands the ALTREP so we repeat the code
+  # in order to check the result after a further assignment
+  DT = data.table(a=1:3)
+  DT[, b := as.character(a)]
+  DT[, a := 5L]
+  test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
+  # This function returns an ALTREP wrapper if the input is at least length 64
+  testFun = function(x) {
+    x[FALSE] = 1
+    x
+  }
+  DT = data.table(id=1:64, col1=0, col2=0)
+  test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
+  DT = data.table(id=1:64, col1=0, col2=0)
+  DT[, col1 := testFun(col2)]
+  DT[, col2 := 999]
+  test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
+  rm(testFun)
+}
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key=c('a', 'b'))
@@ -5443,7 +5468,7 @@ test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
-# data from 12GB file in comments on http://stackoverflow.com/a/23858323/403310 ...
+# data from 12GiB file in comments on http://stackoverflow.com/a/23858323/403310 ...
 # note that read.csv gets this wrong and puts jacoleman high school into the previous field, then fills the rest of the line silently.
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"",""jacoleman high school","",""
@@ -7053,6 +7078,50 @@ y <- data.table(country=factor("USA"))
 test(1483.3, merge(x,y,by="country",all=TRUE), data.table(country=factor(c("US", "USA")), key="country"))
 setkey(y)
 test(1483.4, y[x], data.table(country="US", key="country"))
+
+# 5361 merge on character and factor should only have key(x) if result is really sorted
+lett = c("a", "b", "c")
+rlet = c("c", "b", "a")
+x = data.table(i=rlet)
+y = data.table(i=factor(lett, levels=rlet), key="i")
+test(1483.51, x[y, on="i"], x)
+test(1483.52, y[x, on="i"], x)
+test(1483.53, merge(x, y, by="i"), data.table(i=lett, key="i"))
+test(1483.54, merge(y, x, by="i"), data.table(i=lett, key="i"))
+x = data.table(i1=1:3, i2=rlet)
+y = data.table(i1=1:3, i2=factor(lett, levels=rlet), key=c("i1", "i2"))
+test(1483.55, x[y, on=c("i1", "i2")], data.table(i1=1:3, i2=lett))
+test(1483.56, y[x, on=c("i1", "i2")], x)
+test(1483.57, merge(x, y, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+test(1483.58, merge(y, x, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+
+x = data.table(i=rlet, key="i")
+y = data.table(i=factor(lett, levels=rlet))
+test(1483.61, x[y, on="i"], x)
+test(1483.62, y[x, on="i"], data.table(i=lett))
+test(1483.63, merge(x, y, by="i"), data.table(i=lett, key="i"))
+test(1483.64, merge(y, x, by="i"), data.table(i=lett, key="i"))
+x = data.table(i1=1:3, i2=rlet, key=c("i1", "i2"))
+y = data.table(i1=1:3, i2=factor(lett, levels=rlet))
+test(1483.65, x[y, on=c("i1", "i2")], data.table(i1=1:3, i2=lett))
+test(1483.66, y[x, on=c("i1", "i2")], data.table(i1=1:3, i2=rlet))
+test(1483.67, merge(x, y, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+test(1483.68, merge(y, x, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+
+x = data.table(i=rlet, a=rlet)
+y = data.table(i=factor(lett, levels=rlet), b=lett, key="i")
+test(1483.71, x[y, on="i"], data.table(i=rlet, a=rlet, b=rlet))
+test(1483.72, y[x, on="i"], data.table(i=rlet, b=rlet, a=rlet))
+test(1483.73, merge(x, y, by="i"), data.table(i=lett, a=lett, b=lett, key="i"))
+test(1483.74, merge(y, x, by="i"), data.table(i=lett, b=lett, a=lett, key="i"))
+
+some_letters <- c("c", "b", "a")
+some_more_letters <- rep(c("a", "b", "c"), 2L)
+dt1 <- data.table(x = some_letters, y=1:3)
+dt2 <- data.table(x = factor(some_more_letters, levels=some_letters), z=1:6, key=c("x", "z"))
+dt3 <- merge(dt1, dt2, by="x")
+test(1483.81, key(dt3), "x")
+test(1483.82, nrow(dt3[x %in% "c", ]), 2L)
 
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
@@ -9701,7 +9770,7 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 nq_fun = function(n=100L) {
   i1 = sample(sample.int(n, 10L), n, TRUE)
   i2 = sample.int(n, n, TRUE) - as.integer(n/2)    # this used to be type numeric before #5517 which didn't seem intentional
-  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MB, #5517
+  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MiB, #5517
   i4 = sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE)
 
   d1 = sample(rnorm(10L), n, TRUE)
@@ -9792,7 +9861,7 @@ y = na.omit(dt2)
 
 if (.Machine$sizeof.pointer>4) {
 
-  # temporarily off due to hitting 2GB limit on 32bit, #2767
+  # temporarily off due to hitting 2GiB limit on 32bit, #2767
   # turn off temporarily using FALSE when using valgrind, too, as very slow
 
   set.seed(1509611616L)
@@ -11895,7 +11964,7 @@ test(1800.2, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c("1e555
 #
 # Tests thanks to Pasha copied verbatim from his PR#2200
 #
-# Test files with "round" sizes (different multiples of 2, from 512B to 64KB)
+# Test files with "round" sizes (different multiples of 2, from 512B to 64KiB)
 for (mul in c(16, 128, 512, 1024, 2048)) {
   ff = file(f<-tempfile(), open="wb")
   cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
@@ -12874,7 +12943,7 @@ test(1903.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1
 txt = 'A,   B,    C\n17,  34, 2.3\n3.,  NA,   1\nNA ,  2, NA \n0,0.1,0'
 test(1904.1, fread(txt, na.strings="NA", verbose=TRUE),
   ans <- data.table(A=c(17,3,NA,0), B=c(34,NA,2,0.1), C=c(2.3,1.0,NA,0.0)),
-  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
+  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MiB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
 test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\]==" " consists only of whitespace, ignoring. Since strip.white=TRUE.*use.*"".*<NA>')
 test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
 test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
@@ -15879,8 +15948,12 @@ test(2074.03, data.table(grade=c(50L, 91L, 95L, 51L, 89L))[ , .N, by=evaluate(gr
      data.table(evaluate=c('F', 'A', 'B'), N=c(2L, 2L, 1L)))
 ## error: use recursive character list indexing to assign when also doing alloc.col()
 opt = options(datatable.alloccol=1L)
-l = list(foo = list(bar = data.table(a = 1:3, b = 4:6)))
-test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'under-allocated recursively indexed list')
+l = list(foo=list(bar=data.frame(a=1:3, b=4:6)))
+test(2074.041, setDT(l[[c('foo', 'bar')]]), error='Invalid set* operation on a recursive index L[[i]]')
+setDT(l[['foo']][['bar']])
+test(2074.042, is.data.table(l[[c('foo', 'bar')]]))
+l = list(foo=list(bar=data.table(a=1:3, b=4:6)))
+test(2074.043, l[[c('foo', 'bar')]][ , (letters) := 16:18], error='Invalid set* operation on a recursive index L[[i]]')
 options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
@@ -16773,7 +16846,7 @@ registerS3method("format_col", "complex", format_col.default)
 # then i) test 1610.1 fails if test.data.table() is rerun, ii) user display of complex data would be affected
 # did try wrapping with on.exit(,add=TRUE) but perhaps because this is a script that is sys.source'd, it ran straight away
 
-# format method for column takes predecedence over format method for each list item
+# as of #6637, format individual list items but not the whole list
 registerS3method("format", "myclass2130", function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">"))
 DT = data.table(row=1:2, objs=list(structure(list(id="foo"), class="myclass2130"), structure(list(id="bar"), class="myclass2130")))
 test(2130.13, print(DT), output="myclass2130:foo.*myclass2130:bar")
@@ -16781,7 +16854,7 @@ setattr(DT$objs, "class", "foo2130")
 registerS3method("format", "foo2130", function(x, ...) "All hail foo")
 test(2130.14, print(DT), output="myclass2130:foo.*myclass2130:bar") # because length 1 from format but needs to be length(x)
 registerS3method("format", "foo2130", function(x, ...) rep("All hail foo",length(x)))
-test(2130.15, print(DT), output="All hail foo")  # e.g. sf:::format.sfc rather than sf:::format.sfg on each item
+test(2130.15, print(DT), output="myclass2130:foo.*myclass2130:bar") # used to call format(column), not vapply_1c(column, format)
 setattr(DT$objs, "class", "bar2130_with_no_method")
 test(2130.16, print(DT), output="myclass2130:foo.*myclass2130:bar")
 registerS3method("format", "myclass2130", format.default)
@@ -17900,7 +17973,7 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
                 r = as.raw(sample(1:5, 20, TRUE)))
-load(testDir("test2224.Rdata")) # 47KB array 24x8 where each cell contains a length-20 result
+load(testDir("test2224.Rdata")) # 47KiB array 24x8 where each cell contains a length-20 result
 if (test_bit64) {
   DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
 } else {
@@ -17911,7 +17984,7 @@ for (col in names(DT)[-1]) {
   for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
     for (type in c('lag','lead','shift','cyclic')) {
       # fill is tested by group in tests 2218.*; see comments in #5205
-      # sapply(sapply()) changed to for(for(for())) to save 29MB, #5517
+      # sapply(sapply()) changed to for(for(for())) to save 29MiB, #5517
       test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
            EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
            ans[[i]])
@@ -17981,14 +18054,26 @@ test(2229.6, fread(testDir("multi-file.zip")), error="Compressed files containin
 x = data.frame(k1 = c(NA,NA,3,4,5), k2 = c(1,NA,NA,4,5), data = 1:5)
 y = data.frame(k1 = c(NA,2,NA,4,5), k2 = c(NA,NA,3,4,5), data = 1:5)
 DT = as.data.table(x)
-test(2230.1, setDF(merge(DT, y, by="k2", incomparables=NA)),         merge(x, y, by="k2", incomparables=NA))
-test(2230.2, setDF(merge(DT, y, by="k2", incomparables=c(NA,4))),    merge(x, y, by="k2", incomparables=c(NA,4)))
-test(2230.3, setDF(merge(DT, y, by="k2", incomparables=c(4,5))),     merge(x, y, by="k2", incomparables=c(4,5)))
-test(2230.4, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1,NA,4,5)))
-test(2230.5, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
-test(2230.6, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="Unknown argument 'unk' has been passed.")
-test(2230.7, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
-             merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
+test(2230.01, setDF(merge(DT, y, by="k2", incomparables=NA)),         merge(x, y, by="k2", incomparables=NA))
+test(2230.02, setDF(merge(DT, y, by="k2", incomparables=c(NA,4))),    merge(x, y, by="k2", incomparables=c(NA,4)))
+test(2230.03, setDF(merge(DT, y, by="k2", incomparables=c(4,5))),     merge(x, y, by="k2", incomparables=c(4,5)))
+test(2230.04, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1,NA,4,5)))
+test(2230.05, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
+test(2230.06, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="1 unknown keyword argument which will be ignored: [unk]")
+test(2230.07, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument in '...' which will be ignored."))
+test(2230.08, merge(DT, y, by="k2", unk1=1, unk2=2), merge(DT, y, by="k2"), warning="2 unknown keyword arguments which will be ignored: [unk1, unk2]")
+test(2230.09, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L, 2L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments in '...' which will be ignored."))
+test(2230.10, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk=1L, 2L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument .*1 unknown keyword argument,.*\\[unk\\]"))
+test(2230.11, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk1=1L, unk2=2L, 3L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument .*2 unknown keyword arguments.*\\[unk1, unk2\\]"))
+test(2230.12, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk=1L, 2L, 3L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments.*1 unknown keyword argument,.*\\[unk\\]"))
+test(2230.13, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk1=1L, unk2=2L, 3L, 4L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments.*2 unknown keyword arguments.*\\[unk1, unk2\\]"))
+
 
 # weighted.mean GForce optimized, #3977
 old = options(datatable.optimize=1L)
@@ -21091,16 +21176,16 @@ class(DF) = c("tbl_df", "tbl", "data.frame")
 test(2309.02, key(as.data.table(DF, key="t")), "t")
 
 # data.table keyed with "b"
-DT = data.table(a = 1:5, b = 1:5, x = 1:5, key = "b") 
-test(2309.03, key(as.data.table(DT, key="a")), "a")   
-test(2309.04, key(as.data.table(DT)), "b")            
-test(2309.05, key(as.data.table(DT, key=NULL)), NULL) 
+DT = data.table(a = 1:5, b = 1:5, x = 1:5, key = "b")
+test(2309.03, key(as.data.table(DT, key="a")), "a")
+test(2309.04, key(as.data.table(DT)), "b")
+test(2309.05, key(as.data.table(DT, key=NULL)), NULL)
 
 # non-keyed data.table
 DT = data.table(a = 1:5, b = 1:5, x = 1:5)
-test(2309.06, key(as.data.table(DT, key="a")), "a")   
-test(2309.07, key(as.data.table(DT)), NULL)          
-test(2309.08, key(as.data.table(DT, key=NULL)), NULL) 
+test(2309.06, key(as.data.table(DT, key="a")), "a")
+test(2309.07, key(as.data.table(DT)), NULL)
+test(2309.08, key(as.data.table(DT, key=NULL)), NULL)
 
 # as.data.table(x, keep.rownames=TRUE) keeps rownames for class(x)==c("*", "data.frame")
 df = structure(list(i = 1:2), class = c("tbl", "data.frame"), row.names = c("a","b"))
@@ -21168,7 +21253,182 @@ test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
 
-DT = data.table(x = 1:3)
+#6864
+dt_get = data.frame(a = 1:3, b = letters[1:3])
+setDT(get("dt_get"))
+test(2319.1, !is.null(attr(dt_get, ".internal.selfref")))
 
-test(2318.1, DT[, y := mean], error = "RHS of `:=` is a function")
-test(2318.2, DT[, y := function(x) x], error = "RHS of `:=` is a function")
+dt_get0 = data.frame(a = 1:3, b = letters[1:3])
+setDT(get0("dt_get0"))
+test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
+
+# Improved fread error handling for cmd exe and decompression #5415
+test(2320.1, fread(cmd="false"), error="External command failed with exit code", warning = if (.Platform$OS.type=="windows") "execution failed")
+
+if (test_R.utils) local({
+  tmp <- tempfile(fileext=".gz")
+  file.create(tmp); on.exit(unlink(tmp))
+  local({
+    conn <- file(tmp, 'wb'); on.exit(close(conn))
+    writeBin(as.raw(c(31L, 139L)), conn) # Gzip header magic numbers to trigger that read path
+  })
+  test(2320.2, fread(tmp), error="R.utils::decompressFile failed to decompress", warning="invalid")
+})
+
+# Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
+test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+## but respect named column vectors
+test(2321.05, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
+test(2321.06, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
+## also respect old naming pattern when invoked indirectly, #7145
+M = cbind(1:3)
+test(2321.07, as.data.table(M), data.table(V1=1:3))
+rownames(M) = c('a', 'b', 'c')
+test(2321.08, as.data.table(M), data.table(V1=1:3))
+test(2321.09, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3))
+colnames(M) = 'zz'
+test(2321.10, as.data.table(M), data.table(zz=1:3))
+test(2321.11, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), zz=1:3))
+colnames(M) = 'x'
+test(2321.12, as.data.table(M), data.table(x=1:3))
+test(2321.13, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), x=1:3))
+M = cbind(M, y=4:6)
+test(2321.14, as.data.table(M), data.table(x=1:3, y=4:6))
+test(2321.15, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), x=1:3, y=4:6))
+colnames(M) = c('A', 'B')
+test(2321.16, as.data.table(M), data.table(A=1:3, B=4:6))
+test(2321.17, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, B=4:6))
+colnames(M) = NULL
+test(2321.18, as.data.table(M), data.table(V1=1:3, V2=4:6))
+test(2321.19, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3, V2=4:6))
+colnames(M) = c('x', '')
+test(2321.20, as.data.table(M), data.table(x=1:3, V2=4:6))
+test(2321.21, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), x=1:3, V2=4:6))
+colnames(M) = c('', 'x')
+test(2321.22, as.data.table(M), data.table(V1=1:3, x=4:6))
+test(2321.23, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3, x=4:6))
+colnames(M) = c('', '')
+test(2321.24, as.data.table(M), data.table(V1=1:3, V2=4:6))
+test(2321.25, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3, V2=4:6))
+colnames(M) = c('A', '')
+test(2321.26, as.data.table(M), data.table(A=1:3, V2=4:6))
+test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, V2=4:6))
+
+# New fctr() helper: like factor() but retaining order by default #4837
+test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))
+test(2322.02, levels(fctr(c(3,1,2))), c("3","1","2"))
+test(2322.11, levels(fctr(c("b","a","c"), rev=TRUE)), c("c","a","b"))
+test(2322.12, levels(fctr(c("b","a","c"), rev=NA)), error="TRUE or FALSE")
+test(2322.21, levels(fctr(c("b","a","c"), sort=TRUE)), c("a","b","c"))
+test(2322.22, levels(fctr(c("b","a","c"), sort=NA)), error="TRUE or FALSE")
+test(2322.31, levels(fctr(c("b","a","c"), rev=TRUE, sort=TRUE)), c("c","b","a"))
+
+# data.frame() uses provided names of ITime inputs
+it <- as.ITime('00:00:00')
+test(2323.1, names(data.frame(COL = it)), "COL")
+test(2323.2, names(data.frame(b = 1, COL = it)), c("b", "COL"))
+test(2323.3, names(as.data.frame(it, optional=TRUE)), NULL)
+
+# 'sets' is a local variable in groupingsets(), cube(), rollup() and shouldn't leak into the 'j' expression
+n = 24L
+set.seed(25)
+DT = data.table(
+    color = sample(c("green","yellow","red"), n, TRUE),
+    year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
+    status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
+    amount = sample(1:5, n, TRUE),
+    value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
+)
+sets = 0
+test(2324.0,
+  groupingsets(DT, j = c(list(count=.N + ..sets)), by = c("color","year","status"), sets = list("color", c("year","status"), character()), id=TRUE),
+  groupingsets(DT, j = c(list(count=.N + 0)), by = c("color","year","status"), sets = list("color", c("year","status"), character()), id=TRUE)
+)
+test(2324.1,
+  cube(DT, j = sum(value) + ..sets, by = c("color","year","status"), id=TRUE),
+  cube(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
+)
+test(2324.2,
+  rollup(DT, j = sum(value) + ..sets, by=c("color","year","status"), label="total"),
+  rollup(DT, j = sum(value), by=c("color","year","status"), label="total")
+)
+
+# allow na.strings to be quoted, #6974
+f = tempfile()
+DT = data.table(
+  "Date Example"=c("12/5/2012", NA),
+  "Question 1"=c("Yes", NA),
+  "Question 2"=c("Yes", NA),
+  "Site: Country"=c("Chile", "Virgin Islands, British")
+)
+fwrite(DT, f, na='""')
+test(2325.1, fread(f, na.strings='""'), DT)
+unlink(f)
+test(2325.2,
+     fread('"foo","bar","baz"\n"a","b","c"', na.strings=c('"foo"', '"bar"', '"baz"'), header=FALSE),
+     data.table(V1=c(NA, "a"), V2=c(NA, "b"), V3=c(NA, "c")))
+
+## ensure setDT will retain key and indices when it is called on the list (cbindlist assumes this)
+local({
+  d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2)
+  setkeyv(d, "x"); setindexv(d, list("y", "z"))
+  a = attributes(d)
+  attributes(d) = a[!names(a) %in% c("class", ".internal.selfref", "row.names")]
+  test(2326.1, class(d), "list")
+  setDT(d)
+  test(2326.2, key(d), "x")
+  test(2326.3, indices(d), c("y", "z"))
+})
+
+#6964
+# Test 1: No warning from min() with simple data
+DT = data.table(var = c("a", "b", "c", "d"), value=c(1:3, NA))
+test(2327.1, cube(DT, .(min(value)), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, NA, NA)))
+test(2327.2, cube(DT, .(as.numeric(base::min(value, na.rm=TRUE))), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, Inf, 1.0)),
+     warning="no non-missing arguments to min")
+
+# droplevels should still work on a 0-row table, #7043
+DT = data.table(f=factor(character(), levels='a'))
+test(2328.1, levels(droplevels(DT)$f), character())
+DT[, i := integer()]
+DT[, f2 := factor()]
+test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
+
+#6882 print() output with col.names="none"
+dt = data.table(short = 1:3, verylongcolumnname = 4:6)
+test(2329.1, print(dt, col.names = "none"), output = "1: 1 4\n2: 2 5\n3: 3 6\n")
+dt = data.table(x = 123456, y = "wide_string")
+test(2329.2, print(dt, col.names = "none"), output = "1: 123456 wide_string\n")
+dt = data.table(a = NA_integer_, b = NaN)
+test(2329.3, print(dt, col.names = "none"), output = "1: NA NaN\n")
+
+# Row name extraction from multiple vectors, #7136
+x <- 1:3 
+y <- setNames(4:6, c("A", "B", "C"))  
+test(2330.1, as.data.table(list(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=1:3, V2=4:6))
+test(2330.2, as.data.table(list(x, y), keep.rownames="custom"), data.table(custom=c("A", "B", "C"), V1=1:3, V2=4:6))
+test(2330.3, as.data.table(list(y, x), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=4:6, V2=1:3)) 
+
+# Behavior under data.frame()
+test(2330.4, as.data.table(data.frame(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), x=1:3, y=4:6))
+test(2330.5, as.data.table(data.frame(y, x), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), y=4:6, x=1:3))
+
+DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with explicit rownames
+test(2330.6, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=letters[1:6], a=6:1, V=1:6))
+
+z <- setNames(1:3, rep("", 3))  # vector with all-empty names     # behaviour with all-empty row names
+test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3))
+
+M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
+test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
+
+#5829 checking the RHS of :=
+DT = data.table(x = 1:3)
+test(2331.1, DT[, y := mean], error = "RHS of `:=` is a function")
+test(2331.2, DT[, y := list(mean)], error = "RHS of `:=` is a length-1 list containing a function")
+

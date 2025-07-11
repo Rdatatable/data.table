@@ -229,8 +229,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # notranslate start
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
-    ", sizeof(long double)==", .Machine$sizeof.longdouble,
-    ", longdouble.digits==", .Machine$longdouble.digits, # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
+    ", sizeof(long double)==", format(.Machine$sizeof.longdouble),
+    ", capabilities('long.double')==", capabilities('long.double'), # almost certainly overkill, but that's OK; see #6154
+    ", longdouble.digits==", format(.Machine$longdouble.digits), # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
     ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
@@ -276,13 +277,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     y = head(order(-diff(timings$RSS)), 10L)
     ans = timings[, diff := c(NA_real_, round(diff(RSS), 1L))][y + 1L]
     ans[, time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
-    catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
+    catf("10 largest RAM increases (MiB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
     get("dev.new")(width=14.0, height=7.0)
     get("par")(mfrow=1:2)
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0.0, max(timings$RSS)))
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MiB)", ylim=c(0.0, max(timings$RSS)))
     get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4L, at=lastRSS, las=1L, font=2L)
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MiB)")
     get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
@@ -315,7 +316,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 gc_mem = function() {
   # nocov start
-  # gc reports memory in MB
+  # gc reports memory in MiB
   m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m

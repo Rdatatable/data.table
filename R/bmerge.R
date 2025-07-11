@@ -27,6 +27,13 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
+  if (roll != 0.0 && length(icols)) {
+    last_x_idx = tail(xcols, 1L)
+    last_i_idx = tail(icols, 1L)
+    if (is.factor(x[[last_x_idx]]) || is.factor(i[[last_i_idx]]))
+      stopf("Attempting roll join on factor column when joining x.%s to i.%s. Only integer, double or character columns may be roll joined.", names(x)[last_x_idx], names(i)[last_i_idx])
+  }
+
   callersi = i
   i = shallow(i)
   # Just before the call to bmerge() in [.data.table there is a shallow() copy of i to prevent coercions here
@@ -64,9 +71,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     iname = paste0("i.", names(i)[icol])
     if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
     if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
+    # we check factors first because they might have different levels
     if (x_merge_type=="factor" || i_merge_type=="factor") {
-      if (roll!=0.0 && a==length(icols))
-        stopf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname)
       if (x_merge_type=="factor" && i_merge_type=="factor") {
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=icol, value=chmatch(levels(i[[icol]]), levels(x[[xcol]]), nomatch=0L)[i[[icol]]])  # nomatch=0L otherwise a level that is missing would match to NA values
@@ -86,7 +92,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
-    # we check factors first to cater for the case when trying to do rolling joins on factors
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
