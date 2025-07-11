@@ -21320,6 +21320,9 @@ test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c
 # also respect old auto-naming rules by default (to be deprecated)
 test(2321.28, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
 test(2321.29, options=c(datatable.old.matrix.autoname=FALSE), names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
+# particularly buggy old behavior: can easily result in duplicate names
+test(2321.30, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
+test(2321.31, options=c(datatable.old.matrix.autoname=FALSE), names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
 
 # New fctr() helper: like factor() but retaining order by default #4837
 test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))
