@@ -226,7 +226,7 @@ fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
   if (!isTRUEorFALSE(rev))
     stopf("argument 'rev' must be TRUE or FALSE")
   if (sort) levels = sort(levels)
-  if (rev) setrev(levels)
+  if (rev) setfrev(levels)
   factor(x, levels=levels, ...)
 }
 

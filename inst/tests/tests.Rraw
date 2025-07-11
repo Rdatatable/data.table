@@ -71,7 +71,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
-  setrev = data.table:::setrev
+  setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -4228,7 +4228,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# test 1160 was for setrev, now removed
+# test 1160 was for setfrev, now removed
 
 # tests for setreordervec
 # integer
@@ -21439,23 +21439,23 @@ test(2331.05, frev(NULL),             rev(NULL))
 test(2331.06, frev(character(5)),     rev(character(5)))
 test(2331.07, frev(integer(0)),       rev(integer(0)))
 test(2331.08, frev(list(1, "a")),     rev(list(1, "a")))
-test(2331.09, {x=c(0L, NA); setrev(x); x},      c(NA, 0L))
-test(2331.10, {x=d; setrev(x); x},              c(-Inf, Inf, NaN, NA))
-test(2331.11, {x=c(NA, 1, 0+2i); setrev(x); x}, c(0+2i, 1, NA))
-test(2331.12, {x=as.raw(0:1); setrev(x); x},    as.raw(1:0))
-test(2331.13, {x=NULL; setrev(x); x},           NULL)
-test(2331.14, {x=character(5); setrev(x); x},   character(5))
-test(2331.15, {x=integer(0); setrev(x); x},     integer(0))
-test(2331.16, {x=list(1, "a"); setrev(x); x},   list("a", 1))
+test(2331.09, {x=c(0L, NA); setfrev(x); x},      c(NA, 0L))
+test(2331.10, {x=d; setfrev(x); x},              c(-Inf, Inf, NaN, NA))
+test(2331.11, {x=c(NA, 1, 0+2i); setfrev(x); x}, c(0+2i, 1, NA))
+test(2331.12, {x=as.raw(0:1); setfrev(x); x},    as.raw(1:0))
+test(2331.13, {x=NULL; setfrev(x); x},           NULL)
+test(2331.14, {x=character(5); setfrev(x); x},   character(5))
+test(2331.15, {x=integer(0); setfrev(x); x},     integer(0))
+test(2331.16, {x=list(1, "a"); setfrev(x); x},   list("a", 1))
 test(2331.17, frev(1:1e2),            rev(1:1e2))
 # copy arguments
 x = 1:3
 test(2331.21, {frev(x);  x}, 1:3)
-test(2331.22, {setrev(x); x}, 3:1)
-test(2331.23, address(x) == address(setrev(x)))
+test(2331.22, {setfrev(x); x}, 3:1)
+test(2331.23, address(x) == address(setfrev(x)))
 test(2331.24, address(x) != address(frev(x)))
 # do not alter on subsets
-test(2331.25, {setrev(x[1:2]);  x}, 1:3)
+test(2331.25, {setfrev(x[1:2]);  x}, 1:3)
 # levels
 f = as.factor(letters)
 test(2331.31, frev(f), rev(f))
@@ -21464,13 +21464,13 @@ test(2331.33, frev(as.IDate(1:10)), as.IDate(10:1))
 # names
 x = c(a=1L, b=2L, c=3L)
 test(2331.41, frev(x), rev(x))
-test(2331.42, setrev(x), x)
+test(2331.42, setfrev(x), x)
 # attributes
 x = structure(1:10, class = c("IDate", "Date"), att = 1L)
 test(2331.51, attr(frev(x), "att"), attr(rev(x), "att"))
 test(2331.52, class(frev(x)), class(rev(x)))
-test(2331.53, attr(setrev(x), "att"), 1L)
-test(2331.54, class(setrev(x)), c("IDate", "Date"))
+test(2331.53, attr(setfrev(x), "att"), 1L)
+test(2331.54, class(setfrev(x)), c("IDate", "Date"))
 x = structure(integer(0), att = 1L)
 test(2331.55, attr(frev(x), "att"), attr(rev(x), "att"))
 # errors
@@ -21479,7 +21479,7 @@ test(2331.62, frev(expression(1)), error="is not supported by frev")
 if (test_bit64) {
   x = as.integer64(c(1, NA, 3))
   test(2331.71, frev(x), rev(x))
-  test(2331.72, setrev(x), x)
+  test(2331.72, setfrev(x), x)
 }
 # support rotate idiom
 M1 = M2 = matrix(1:4, nrow=2)

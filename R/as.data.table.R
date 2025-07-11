@@ -104,7 +104,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
     dnx
   } else dnx
-  setrev(val)
+  setfrev(val)
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", frev(seq_along(val))))
   if (value.name %chin% names(val))
