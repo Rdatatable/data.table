@@ -21276,10 +21276,15 @@ if (test_R.utils) local({
 })
 
 # Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
-test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
-test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
-test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
-test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+local({
+  old = options(datatable.old.matrix.autoname=FALSE)
+  on.exit(options(old))
+
+  test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+  test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+  test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+  test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+})
 ## but respect named column vectors
 test(2321.05, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
 test(2321.06, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
