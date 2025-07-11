@@ -21319,10 +21319,23 @@ test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c
 
 # also respect old auto-naming rules by default (to be deprecated)
 test(2321.28, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
-test(2321.29, options=c(datatable.old.matrix.autoname=FALSE), names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
-# particularly buggy old behavior: can easily result in duplicate names
-test(2321.30, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
-test(2321.31, options=c(datatable.old.matrix.autoname=FALSE), names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
+test(2321.29, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
+# also test behavior with a 0-column matrix
+M = cbind(1:3)
+test(2321.30, data.table(M[, 0L]), data.table(NULL))
+test(2321.31, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+
+local({
+  old = options(datatable.old.matrix.autoname=FALSE)
+  on.exit(options(old))
+  
+  test(2321.32, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
+  # particularly buggy old behavior: can easily result in duplicate names
+  test(2321.33, names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
+  M = cbind(1:3)
+  test(2321.34, data.table(M[, 0L]), data.table(NULL))
+  test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+})
 
 # New fctr() helper: like factor() but retaining order by default #4837
 test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))
@@ -21429,7 +21442,9 @@ DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with e
 test(2330.6, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=letters[1:6], a=6:1, V=1:6))
 
 z <- setNames(1:3, rep("", 3))  # vector with all-empty names     # behaviour with all-empty row names
-test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3))
+test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn="", V1=1:3))
 
-M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
-test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
+M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3L), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
+test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn="", V1=1:3, V2=4:6))
+# 0-column input can still provide rownames
+test(2330.9, as.data.table(list(M[, 0L], 1:3), keep.rownames=TRUE), data.table(rn="", V2=1:3))
