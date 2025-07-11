@@ -205,7 +205,7 @@ accounting for both year transitions and varying day counts per week.
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
    \code{yearmon} and \code{yearqtr} return double values representing
-   respectively `year + (month-1) / 12` and `year + (quarter-1) / 4`.
+   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}.
 
    \code{second}, \code{minute}, \code{hour} are taken directly from
    the \code{POSIXlt} representation.
@@ -217,7 +217,7 @@ accounting for both year transitions and varying day counts per week.
 }
 \references{
 
-  G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
+  G. Grothendieck and T. Petzoldt, \dQuote{Date and Time Classes in R},
   R News, vol. 4, no. 1, June 2004.
 
   H. Wickham, https://gist.github.com/hadley/10238.

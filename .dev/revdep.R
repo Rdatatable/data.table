@@ -67,7 +67,7 @@ options(repos = BiocManager::repositories())
 
 options(warn=1)  # warning at the time so we can more easily see what's going on package by package when we scroll through output
 cat("options()$timeout==", options()$timeout," set by R_DEFAULT_INTERNET_TIMEOUT in .dev/.bash_aliases revdepsh\n",sep="")
-# R's default is 60. Before Dec 2020, we used 300 but that wasn't enough to download Bioc package BSgenome.Hsapiens.UCSC.hg19 (677GB) which is
+# R's default is 60. Before Dec 2020, we used 300 but that wasn't enough to download Bioc package BSgenome.Hsapiens.UCSC.hg19 (677MiB) which is
 # suggested by CRAN package CNVScope which imports data.table. From Dec 2020 we use 3600.
 
 if (is.null(utils::old.packages(.libPaths()[2]))) {
