@@ -39,6 +39,36 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 }
 # nocov end
 
+# in a helper to promote readability
+# NB: put the most common and recommended cases first for speed
+.cedta_impl_ <- function(ns, n) {
+  nsname = getNamespaceName(ns)
+  if (nsname == "data.table") return(TRUE)
+  
+  if ("data.table" %chin% names(getNamespaceImports(ns))) return(TRUE)
+  
+  if (nsname == "utils") {
+    if (exists("debugger.look", parent.frame(n+1L))) return(TRUE)
+
+    # 'example' for #2972
+    sc <- sys.calls()
+    if (length(sc) >= 8L && sc[[length(sc) - 7L]] %iscall% 'example') return(TRUE)
+  }
+
+  if (nsname == "base" && all(c("FUN", "X") %chin% ls(parent.frame(n)))) return(TRUE) # lapply
+
+  if (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack()) return(TRUE)
+  
+  if (nsname %chin% cedta.override) return(TRUE)
+  
+  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
+  if (isTRUE(ns$.datatable.aware)) return(TRUE)
+  
+  # both ns$.Depends and get(.Depends,ns) are not sufficient
+  pkg_ns = paste("package", nsname, sep=":")
+  tryCatch("data.table" %chin% get(".Depends", pkg_ns, inherits=FALSE), error=function(e) FALSE)
+}
+
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
@@ -51,20 +81,10 @@ cedta = function(n=2L) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
     return(TRUE)
   }
-  nsname = getNamespaceName(ns)
-  ans = nsname=="data.table" ||
-    "data.table" %chin% names(getNamespaceImports(ns)) ||   # most common and recommended cases first for speed
-    (nsname=="utils" &&
-      (exists("debugger.look", parent.frame(n+1L)) ||
-      (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]] %iscall% 'example')) ) || # 'example' for #2972
-    (nsname=="base" && all(c("FUN", "X") %chin% ls(parent.frame(n)))) || # lapply
-    (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack()) ||
-    nsname %chin% cedta.override ||
-    isTRUE(ns$.datatable.aware) ||  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
-    tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
+  ans = .cedta_impl_(ns, n)
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
-    catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname)
+    catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", getNamespaceName(ns))
     print(sapply(sys.calls(), `[[`, 1L))
     # nocov end
     # so we can trace the namespace name that may need to be added (very unusually)
