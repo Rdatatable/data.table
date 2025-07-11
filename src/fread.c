@@ -83,7 +83,8 @@ static double NAND;
 static double INFD;
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-static void init(void) {
+static void init(void)
+{
   NAND = (double)NAN;
   INFD = (double)INFINITY;
 }
@@ -132,7 +133,8 @@ static void Field(FieldParseContext *ctx);
  * Drops `const` qualifier from a `const char*` variable, equivalent of
  * `const_cast<char*>` in C++.
  */
-static char* const_cast(const char *ptr) {
+static char* const_cast(const char *ptr)
+{
   union { const char *a; char *b; } tmp = { ptr };
   return tmp.b;
 }
@@ -146,7 +148,7 @@ static char* const_cast(const char *ptr) {
  */
 bool freadCleanup(void)
 {
-  bool neededCleanup = (type || tmpType || size || colNames || mmp || mmp_copy);
+  const bool neededCleanup = (type || tmpType || size || colNames || mmp || mmp_copy);
   free(type); type = NULL;
   free(tmpType); tmpType = NULL;
   free(size); size = NULL;
@@ -196,7 +198,8 @@ static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
 static inline   int iminInt(     int a,      int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
-static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
+static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper)
+{
   return x < lower ? lower : x > upper? upper : x;
 }
 
@@ -211,10 +214,10 @@ static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
  * is constructed manually (using say snprintf) that warning(), stop()
  * and Rprintf() are all called as warning(_("%s"), msg) and not warning(msg).
  */
-static const char* strlim(const char *ch, char buf[static 500], size_t limit) {
+static const char* strlim(const char *ch, char buf[static 500], size_t limit)
+{
   char *ch2 = buf;
-  size_t width = 0;
-  while ((*ch > '\r' || (*ch != '\0' && *ch != '\r' && *ch != '\n')) && width++ < limit) {
+  for (size_t width = 0; (*ch > '\r' || (*ch != '\0' && *ch != '\r' && *ch != '\n')) && width < limit; width++) {
     *ch2++ = *ch++;
   }
   *ch2 = '\0';
@@ -224,7 +227,7 @@ static const char* strlim(const char *ch, char buf[static 500], size_t limit) {
 static const char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 static char *typesAsString(int ncol) {
-  int nLetters = strlen(typeLetter);
+  const int nLetters = strlen(typeLetter);
   if (NUMTYPE > nLetters) INTERNAL_STOP("NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
   static char str[101];
   int i = 0;
@@ -239,7 +242,8 @@ static char *typesAsString(int ncol) {
   return str;
 }
 
-static inline void skip_white(const char **pch) {
+static inline void skip_white(const char **pch)
+{
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
   // always skip any \0 (NUL) that occur before end of file, #3400
   const char *ch = *pch;
@@ -261,7 +265,8 @@ static inline void skip_white(const char **pch) {
  * 5. \\n\\r     Acorn BBC (!) and RISC OS according to Wikipedia.
  * 6. \\r\\r\\r  Not supported. So that blank lines in single column files generate NA ok, #2542.
  */
-static inline bool eol(const char **pch) {
+static inline bool eol(const char **pch)
+{
   const char *ch = *pch;
   // we call eol() when we expect to be on an eol(), so optimize as if we are on an eol
   while (*ch == '\r') ch++;  // commonly happens once on Windows for type 2
@@ -279,7 +284,8 @@ static inline bool eol(const char **pch) {
  * Return True iff `ch` is a valid field terminator character: either a field
  * separator or a newline.
  */
-static inline bool end_of_field(const char *ch) {
+static inline bool end_of_field(const char *ch)
+{
   // \r is 13, \n is 10, and \0 is 0. The second part is optimized based on the
   // fact that the characters in the ASCII range 0..13 are very rare, so a
   // single check `ch<=13` is almost equivalent to checking whether `ch` is one
@@ -287,10 +293,11 @@ static inline bool end_of_field(const char *ch) {
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
-  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch)));
+  return *ch == sep || (*ch <= 13 && (ch == eof || eol(&ch)));
 }
 
-static inline const char *end_NA_string(const char *start) {
+static inline const char *end_NA_string(const char *start)
+{
   // start should be at the beginning of any potential NA string, after leading whitespace skipped by caller
   const char* const* nastr = NAstrings;
   const char *mostConsumed = start; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
@@ -330,7 +337,7 @@ static inline int countfields(const char **pch)
     .targets = targets,
     .anchor = NULL,
   };
-  while (ch<eof) {
+  while (ch < eof) {
     Field(&ctx);
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
     if (sep == ' ' && *ch == sep) {
@@ -367,8 +374,8 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   const char *simpleNext = ch;  // simply the first newline after the jump
   // if a better one can't be found, return this one (simpleNext). This will be the case when
   // fill=TRUE and the jump lands before 5 too-short lines, for example.
-  int attempts = 0;
-  while (attempts++ < 5 && ch < eof) {
+  
+  for (int attempts = 0; attempts < 5 && ch < eof; attempts++) {
     const char *ch2 = ch;
     if (countfields(&ch2) == ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
     while (*ch != '\n' && *ch != '\r' && (*ch != '\0' || ch < eof)) ch++;
@@ -382,11 +389,11 @@ double wallclock(void)
   double ans = 0;
   #ifdef HAS_CLOCK_REALTIME
   struct timespec tp;
-  if (0 == clock_gettime(CLOCK_REALTIME, &tp))
+  if (clock_gettime(CLOCK_REALTIME, &tp) == 0)
     ans = (double) tp.tv_sec + 1e-9 * (double) tp.tv_nsec;
   #else
   struct timeval tv;
-  if (0 == gettimeofday(&tv, NULL))
+  if (gettimeofday(&tv, NULL) == 0)
     ans = (double) tv.tv_sec + 1e-6 * (double) tv.tv_usec;
   #endif
   return ans;
@@ -490,7 +497,7 @@ double copyFile(size_t fileSize)  // only called in very very rare cases
 static void Field(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  lenOff *target = (lenOff*) ctx->targets[sizeof(lenOff)];
+  lenOff *target = ctx->targets[sizeof(lenOff)];
 
   // need to skip_white first for the reason that a quoted field might have space before the
   // quote; e.g. test 1609. We need to skip the space(s) to then switch on quote or not.
@@ -583,9 +590,9 @@ static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)
 {
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1]) && !parse_date) return;
-  bool neg = *ch=='-';
-  ch += (neg || *ch=='+');
+  if (*ch == '0' && args.keepLeadingZeros && IS_DIGIT(ch[1]) && !parse_date) return;
+  bool neg = *ch == '-';
+  ch += (neg || *ch == '+');
   const char *start = ch;  // to know if at least one digit is present
   // acc needs to be 64bit so that 5bn (still 10 digits but greater than 4bn) does not overflow. It could be
   //   signed but we use unsigned to be clear it will never be negative
@@ -625,10 +632,14 @@ static void StrtoI32(FieldParseContext *ctx)
 static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
+  int64_t *target = ctx->targets[sizeof(int64_t)];
   if (*ch == '0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
-  bool neg = *ch == '-';
-  ch += (neg || *ch=='+');
+
+  const bool neg = (*ch == '-');
+
+  if (neg) ch++;
+  else if (*ch == '+') ch++;
+  
   const char *start = ch;
   while (*ch == '0') ch++;
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
@@ -685,10 +696,13 @@ static void parse_double_regular_core(const char **pch, double *target)
   *target = NA_FLOAT64;
 
   if (*ch == '0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
-  bool neg, Eneg;
-  ch += (neg = *ch == '-') + (*ch=='+');
 
-  const char* start = ch; // beginning of the number, without the initial sign
+  const bool neg = (*ch == '-');
+
+  if (neg) ch++;
+  else if (*ch == '+') ch++;
+
+  const char *start = ch; // beginning of the number, without the initial sign
   uint_fast64_t acc = 0;  // mantissa NNN.MMM as a single 64-bit integer NNNMMM
   int_fast32_t e = 0;     // the number's exponent. The value being parsed is
                           // equal to acc * pow(10,e)
@@ -757,7 +771,9 @@ static void parse_double_regular_core(const char **pch, double *target)
   // Finally parse the "exponent" part of the number (if present)
   if (*ch == 'E' || *ch == 'e') {
     if (ch == start) return;  // something valid must be between [+|-] and E, character E alone is invalid.
-    ch += 1/*E*/ + (Eneg = ch[1] == '-') + (ch[1] == '+');
+    
+    const bool Eneg = ch[1] == '-';
+    ch += 1/*E*/ + (Eneg) + (ch[1] == '+');
     int_fast32_t E = 0;
     if ((digit = AS_DIGIT(*ch)) < 10) {
       E = digit;
@@ -797,7 +813,8 @@ static void parse_double_regular_core(const char **pch, double *target)
   *pch = ch;
 }
 
-static void parse_double_regular(FieldParseContext *ctx) {
+static void parse_double_regular(FieldParseContext *ctx)
+{
   parse_double_regular_core(ctx->ch, (double*) ctx->targets[sizeof(double)]);
 }
 
@@ -812,12 +829,17 @@ static void parse_double_regular(FieldParseContext *ctx) {
  */
 static void parse_double_extended(FieldParseContext *ctx)
 {
-  const char *ch = *ctx->ch;
-  double *target = (double*) ctx->targets[sizeof(double)];
-  bool neg, quoted;
   init();
-  ch += (quoted = (*ch == quote && quote));
-  ch += (neg = (*ch == '-')) + (*ch == '+');
+
+  double* target = ctx->targets[sizeof(double)];
+  const char *ch = *ctx->ch;
+
+  const bool quoted = (*ch == quote && quote);
+  const bool neg = (*ch == '-');
+  
+  if (quoted) ch++;
+  if (neg) ch++;
+  else if (*ch == '+') ch++;
 
   if (ch[0] == 'n' && ch[1] == 'a' && ch[2] == 'n' && (ch += 3)) goto return_nan;
   if (ch[0] == 'i' && ch[1] == 'n' && ch[2] == 'f' && (ch += 3)) goto return_inf;
@@ -853,7 +875,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   return;
 
   return_inf:
-    *target = neg? -INFD : INFD;
+    *target = neg ? -INFD : INFD;
     goto ok;
   return_nan:
     *target = NAND;
@@ -894,29 +916,35 @@ static void parse_double_extended(FieldParseContext *ctx)
  */
 static void parse_double_hexadecimal(FieldParseContext *ctx)
 {
-  const char *ch = *ctx->ch;
-  double *target = (double*) ctx->targets[sizeof(double)];
-  uint64_t neg;
-  bool Eneg, subnormal = 0;
   init();
 
-  ch += (neg = (*ch == '-')) + (*ch == '+');
+  const char *ch = *ctx->ch;
+  double *target = ctx->targets[sizeof(double)];
   *target = NA_FLOAT64;
+  
+  const bool neg = (*ch == '-');
+  
+  if (neg) ch++;
+  else if (*ch == '+') ch++;
+
+  const bool subnormal = ch[2] == '0';
 
   if (ch[0] == '0' && (ch[1] == 'x' || ch[1] == 'X') &&
-      (ch[2] == '1' || (subnormal = ch[2] == '0')) && ch[3] == '.') {
+      (ch[2] == '1' || (subnormal)) && ch[3] == '.') {
     ch += 4;
     uint64_t acc = 0;
     uint8_t digit;
     const char *ch0 = ch;
-    while ((digit = hexdigits[(uint8_t)(*ch)]) < 16) {
+    while ((digit = hexdigits[(uint8_t)*ch]) < 16) {
       acc = (acc << 4) + digit;
       ch++;
     }
     ptrdiff_t ndigits = ch - ch0;
     if (ndigits > 13 || !(*ch == 'p' || *ch == 'P')) return;
     acc <<= (13 - ndigits) * 4;
-    ch += 1 + (Eneg = ch[1] == '-') + (ch[1] == '+');
+
+    const bool Eneg = ch[1] == '-';
+    ch += 1 + (Eneg) + (ch[1] == '+');
     uint64_t E = 0;
     while ((digit = AS_DIGIT(*ch)) < 10) {
       E = 10 * E + digit;
@@ -925,7 +953,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     E = 1023 + (Eneg ? -E : E) - subnormal;
     if (subnormal ? E : (E < 1 || E > 2046)) return;
 
-    *((uint64_t*)target) = (neg << 63) | (E << 52) | (acc);
+    *((uint64_t*)target) = ((1ULL * neg) << 63) | (E << 52) | (acc);
     *ctx->ch = ch;
     return;
   }
@@ -953,11 +981,9 @@ cat(146097, '// total days in 400 years\n};\n', sep = '', file=f, append=TRUE)
 static void parse_iso8601_date_core(const char **pch, int32_t *target)
 {
   const char *ch = *pch;
-
-  int32_t year = 0, month = 0, day = 0;
-
   *target = NA_INT32;
 
+  int32_t year;
   str_to_i32_core(&ch, &year, true);
 
   // .Date(.Machine$integer.max*c(-1, 1)):
@@ -971,11 +997,13 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year / 100 % 4 == 0);
   ch++;
 
+  int32_t month;
   str_to_i32_core(&ch, &month, true);
   if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
     return;
   ch++;
 
+  int32_t day;
   str_to_i32_core(&ch, &day, true);
   if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month - 1] : normYearDays[month - 1])))
     return;
@@ -989,20 +1017,19 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   *pch = ch;
 }
 
-static void parse_iso8601_date(FieldParseContext *ctx) {
+static void parse_iso8601_date(FieldParseContext *ctx)
+{
   parse_iso8601_date_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
 }
 
 static void parse_iso8601_timestamp(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  double *target = (double*) ctx->targets[sizeof(double)];
-
-  int32_t date, hour = 0, minute = 0, tz_hour = 0, tz_minute = 0;
-  double second = 0;
-
+  double *target = ctx->targets[sizeof(double)];
+  
   *target = NA_FLOAT64;
 
+  int32_t date;
   parse_iso8601_date_core(&ch, &date);
   if (date == NA_INT32)
     return;
@@ -1015,19 +1042,24 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
   ch++;
 
+  int32_t hour;
   str_to_i32_core(&ch, &hour, true);
   if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
     return;
   ch++;
 
+  int32_t minute;
   str_to_i32_core(&ch, &minute, true);
   if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
     return;
   ch++;
 
+  double second;
   parse_double_regular_core(&ch, &second);
   if (second == NA_FLOAT64 || second < 0 || second >= 60)
     return;
+
+  int32_t tz_hour = 0, tz_minute = 0;
 
   if (*ch == 'Z') {
     ch++; // "Zulu time"=UTC
@@ -1072,7 +1104,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
 
 static void parse_empty(FieldParseContext *ctx)
 {
-  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  int8_t *target = ctx->targets[sizeof(int8_t)];
   *target = NA_BOOL8;
 }
 
@@ -1080,7 +1112,7 @@ static void parse_empty(FieldParseContext *ctx)
 static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  int8_t *target = ctx->targets[sizeof(int8_t)];
   uint_fast8_t d = AS_DIGIT(*ch);  // '0'=>0, '1'=>1, everything else > 1
   if (d <= 1) {
     *target = (int8_t) d;
@@ -1094,7 +1126,7 @@ static void parse_bool_numeric(FieldParseContext *ctx)
 static void parse_bool_uppercase(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  int8_t *target = ctx->targets[sizeof(int8_t)];
   if (ch[0] == 'T' && ch[1] == 'R' && ch[2] == 'U' && ch[3] == 'E') {
     *target = 1;
     *ctx->ch = ch + 4;
@@ -1114,7 +1146,7 @@ static void parse_bool_uppercase(FieldParseContext *ctx)
 static void parse_bool_titlecase(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  int8_t *target = ctx->targets[sizeof(int8_t)];
   if (ch[0] == 'T' && ch[1] == 'r' && ch[2] == 'u' && ch[3] == 'e') {
     *target = 1;
     *ctx->ch = ch + 4;
@@ -1130,7 +1162,7 @@ static void parse_bool_titlecase(FieldParseContext *ctx)
 static void parse_bool_lowercase(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  int8_t *target = ctx->targets[sizeof(int8_t)];
   if (ch[0] == 't' && ch[1] == 'r' && ch[2] == 'u' && ch[3] == 'e') {
     *target = 1;
     *ctx->ch = ch + 4;
@@ -1146,7 +1178,7 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
 static void parse_bool_yesno(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
-  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  int8_t *target = ctx->targets[sizeof(int8_t)];
   if (ch[0] == 'Y' || ch[0] == 'y') {
     *target = 1;
     *ctx->ch = ch + 1;
@@ -1167,26 +1199,27 @@ static void parse_bool_yesno(FieldParseContext *ctx)
  */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &Field,        // CT_DROP
-  (reader_fun_t) &parse_empty,  // CT_EMPTY
-  (reader_fun_t) &parse_bool_numeric,
-  (reader_fun_t) &parse_bool_uppercase,
-  (reader_fun_t) &parse_bool_titlecase,
-  (reader_fun_t) &parse_bool_lowercase,
-  (reader_fun_t) &parse_bool_yesno,
-  (reader_fun_t) &StrtoI32,
-  (reader_fun_t) &StrtoI64,
-  (reader_fun_t) &parse_double_regular,
-  (reader_fun_t) &parse_double_extended,
-  (reader_fun_t) &parse_double_hexadecimal,
-  (reader_fun_t) &parse_iso8601_date,
-  (reader_fun_t) &parse_iso8601_timestamp,
-  (reader_fun_t) &Field
+  &Field,        // CT_DROP
+  &parse_empty,  // CT_EMPTY
+  &parse_bool_numeric,
+  &parse_bool_uppercase,
+  &parse_bool_titlecase,
+  &parse_bool_lowercase,
+  &parse_bool_yesno,
+  &StrtoI32,
+  &StrtoI64,
+  &parse_double_regular,
+  &parse_double_extended,
+  &parse_double_hexadecimal,
+  &parse_iso8601_date,
+  &parse_iso8601_timestamp,
+  &Field
 };
 
 static int disabled_parsers[NUMTYPE] = { 0 };
 
-static int detect_types(const char **pch, int ncol, bool *bumped) {
+static int detect_types(const char **pch, int ncol, bool *bumped)
+{
   // used in sampling column types and whether column names are present
   // test at most ncol fields. If there are fewer fields, the data read step later
   // will error (if fill==false) when the line number is known, so we don't need to handle that here.
@@ -1280,7 +1313,8 @@ static int detect_types(const char **pch, int ncol, bool *bumped) {
 //    rows and columns, but the efficiency is more pronounced across rows.
 //
 //=================================================================================================
-int freadMain(freadMainArgs _args) {
+int freadMain(freadMainArgs _args)
+{
   args = _args;  // assign to global for use by DTPRINT() in other functions
   double t0 = wallclock();
 
@@ -1307,7 +1341,7 @@ int freadMain(freadMainArgs _args) {
   const uint64_t ui64 = NA_FLOAT64_I64;
   memcpy(&NA_FLOAT64, &ui64, 8);
 
-  int64_t nrowLimit = args.nrowLimit;
+  const int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
   if (NAstrings == NULL) INTERNAL_STOP("NAstrings is itself NULL. When empty it should be pointer to NULL"); // # nocov
   any_number_like_NAstrings = false;
@@ -1530,7 +1564,7 @@ int freadMain(freadMainArgs _args) {
       while (ch >= sof && *ch != '\n') ch--;
       while (ch > sof && ch[-1] == '\r') ch--;  // the first of any preceding \r to avoid a dangling \r
     }
-    if (ch>=sof) {
+    if (ch >= sof) {
       const char *lastNewLine = ch;  // the start of the final newline sequence.
       while (++ch < eof && isspace(*ch)) {};
       if (ch == eof) {
@@ -1691,7 +1725,7 @@ int freadMain(freadMainArgs _args) {
         seps[1] = '\0';
         nseps = 1;
         //topSep = args.sep;
-        if (verbose) DTPRINT(_("  Using supplied sep '%s'\n"), args.sep=='\t' ? "\\t" : seps);
+        if (verbose) DTPRINT(_("  Using supplied sep '%s'\n"), args.sep == '\t' ? "\\t" : seps);
       }
       int topNumLines = 0;        // the most number of lines with the same number of fields, so far
       int topNumFields = 1;       // how many fields that was, to resolve ties
@@ -2455,6 +2489,7 @@ int freadMain(freadMainArgs _args) {
             if (eol(&tch) && skipEmptyLines) { tch++; continue; }
             tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
           }
+
           bool checkedNumberOfFields = false;
           if (fill || ncol == 1 || (*tch != '\n' && *tch != '\r')) while (j < ncol) {
             fieldStart = tch;
@@ -2509,9 +2544,8 @@ int freadMain(freadMainArgs _args) {
             if (thisType != joldType) {             // rare out-of-sample type exception.
               if (!checkedNumberOfFields && !fill) {
                 // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStopEarly below.
-                const char *tt = fieldStart;
-                int fieldsRemaining = countfields(&tt);
-                if (j + fieldsRemaining != ncol) break;
+                const char* fieldsRemaining = fieldStart;
+                if (j + countfields(&fieldsRemaining) != ncol) break;
                 checkedNumberOfFields = true;
               }
               if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
@@ -2529,9 +2563,9 @@ int freadMain(freadMainArgs _args) {
                       j + 1, colNames ? " <<" : "", colNames ? (colNames[j].len) : 0, colNames ? (colNamesAnchor + colNames[j].off) : "", colNames ? ">>" : "",
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
                       (int)(tch - fieldStart), fieldStart, (int64_t)(ctx.DTi + myNrow));
-                    
-                    len = iminInt(len, sizeof(buffer));
 
+                    len = iminInt(len, sizeof(buffer) - 1);
+                    
                     typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
                     strcpy(typeBumpMsg + typeBumpMsgSize, buffer);
                     typeBumpMsgSize += len;
@@ -2774,7 +2808,7 @@ int freadMain(freadMainArgs _args) {
       }
     }
   }
-  if (quoteRuleBumpedCh != NULL && quoteRuleBumpedCh<headPos) {
+  if (quoteRuleBumpedCh != NULL && quoteRuleBumpedCh < headPos) {
     DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRId64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, (char[500]) {}, 500));
   }
 
