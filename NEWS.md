@@ -46,8 +46,6 @@
 
 10. `data.table()` and `as.data.table()` with `keep.rownames=TRUE` now extract row names from named vectors, matching `data.frame()` behavior. Names from the first named vector in the input are used to create the row names column (default name `"rn"` or custom name via `keep.rownames="column_name"`), [#1916](https://github.com/Rdatatable/data.table/issues/1916). Thanks to @richierocks for the feature request and @Mukulyadav2004 for the implementation.
 
-11. Assigning a raw `function` to a new column, e.g. `DT[, new_col := mean]`, now throws an informative error. This prevents a common mistake and guides the user to wrap the `function` in a `list()`, e.g. `DT[, new_col := list(mean)]`, if the intent is to create a list-column of functions. Thanks to @tdhock for the report and @venom1204 for the fix.
-
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
@@ -73,6 +71,8 @@
 11. `droplevels()` works on 0-row data.tables, [#7043](https://github.com/Rdatatable/data.table/issues/7043). The result will have factor columns `factor(character())`, consistent with the data.frame method. Thanks @advieser for the report and @MichaelChirico for the fix.
 
 12. `print(..., col.names = 'none')` now correctly adapts column widths to the data content, ignoring the original column names and producing a more compact output, [#6882](https://github.com/Rdatatable/data.table/issues/6882). Thanks to @brooksambrose for the report and @venom1204 for the PR.
+
+13. Assigning a raw `function` to a new column, e.g. `DT[, new_col := mean]`, now throws an informative error. This prevents a common mistake and guides the user to wrap the `function` in a `list()`, e.g. `DT[, new_col := list(mean)]`, if the intent is to create a list-column of functions. Thanks to @tdhock for the report and @venom1204 for the fix.
 
 ### NOTES
 
