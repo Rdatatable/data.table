@@ -21397,7 +21397,6 @@ test(2327.55, attr(frev(x), "att"), attr(rev(x), "att"))
 # errors
 test(2327.61, frev(data.table()), error="should not be data.frame or data.table")
 test(2327.62, frev(expression(1)), error="is not supported by frev")
-test(2327.63, frev(matrix(1)), error="should not be matrix or array")
 if (test_bit64) {
   x = as.integer64(c(1, NA, 3))
   test(2327.71, frev(x), rev(x))

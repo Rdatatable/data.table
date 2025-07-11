@@ -546,8 +546,6 @@ SEXP frev(SEXP x, SEXP copyArg) {
   SEXP names, klass, levels;
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
-  if (!isNull(getAttrib(x, R_DimSymbol)))
-    error(_("'x' should not be matrix or array"));
   if (!IS_TRUE_OR_FALSE(copyArg))
     error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
   bool copy = LOGICAL(copyArg)[0];
