@@ -3,7 +3,7 @@
 \alias{rev}
 \title{Fast reverse}
 \description{
-  Similar to \code{\link[base]{rev}} but \emph{much faster}.
+  Similar to \code{\link[base]{rev}} but \emph{faster}.
 }
 
 \usage{
@@ -14,7 +14,7 @@ frev(x)
 }
 
 \details{
-  \code{frev} does not retain attributes (similar to \code{\link[base]{rev}}).
+  \code{frev} does not retain attributes other than names and class (similar to \code{\link[base]{rev}}).
 }
 
 \value{
