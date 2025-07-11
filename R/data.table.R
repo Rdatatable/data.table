@@ -96,20 +96,20 @@ replace_dot_alias = function(e) {
   x
 }
 
-# a slightly wonky workaround so that this still works in non-English sessions, #4989
-# generate this at run time (as opposed to e.g. onAttach) since session language is
-#   technically OK to update (though this should be rare), and since it's low-cost
-#   to do so here because we're about to error anyway.
-.missing_obj_regex = gsub(
-  "'____missing_datatable_variable____'",
-  "'(?<obj_name>[^']+)'",
-  # expression() to avoid "no visible binding for global variable" note from R CMD check
-  conditionMessage(tryCatch(eval(expression(`____missing_datatable_variable____`)), error=identity)),
-  fixed=TRUE
-)
 .checkTypos = function(err, ref) {
   err_str <- conditionMessage(err)
-  idx = regexpr(.missing_obj_regex, err_str, perl=TRUE)
+  # a slightly wonky workaround so that this still works in non-English sessions, #4989
+  # generate this at run time (as opposed to e.g. onAttach) since session language is
+  #   technically OK to update (though this should be rare), and since it's low-cost
+  #   to do so here because we're about to error anyway.
+  missing_obj_regex = gsub(
+    "'____missing_datatable_variable____'",
+    "'(?<obj_name>[^']+)'",
+    # expression() to avoid "no visible binding for global variable" note from R CMD check
+    conditionMessage(tryCatch(eval(expression(`____missing_datatable_variable____`)), error=identity)),
+    fixed=TRUE
+  )
+  idx = regexpr(missing_obj_regex, err_str, perl=TRUE)
   if (idx == -1L)
     stopf("%s", err_str, domain=NA) # Don't use stopf() directly, since err_str might have '%', #6588
   start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
