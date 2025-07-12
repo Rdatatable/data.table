@@ -43,7 +43,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (!all(nzchar(cols))) stopf("cols contains some blanks.")
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]), class = "dt_missing_column_error")
 
   if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
     ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
@@ -54,7 +54,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (".xi" %chin% names(x)) stopf("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi), class="dt_unsortable_type_error")
   }
   if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
@@ -266,11 +266,11 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   # remove backticks from cols
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]), class = "dt_missing_column_error")
   if (".xi" %chin% colnames(x)) stopf("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi), class="dt_unsortable_type_error")
   }
   if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 

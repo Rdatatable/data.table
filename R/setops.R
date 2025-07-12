@@ -14,11 +14,11 @@ setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE)
     icnam = names(y)[lc]
     xcnam = names(x)[rc]
     if ( is.character(x[[rc]]) && !(is.character(y[[lc]]) || is.factor(y[[lc]])) ) {
-      stopf("When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]))
+      stopf("When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]), class="dt_join_type_mismatch_error")
     } else if ( is.factor(x[[rc]]) && !(is.character(y[[lc]]) || is.factor(y[[lc]])) ) {
-      stopf("When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]))
+      stopf("When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]), class="dt_join_type_mismatch_error")
     } else if ( (is.integer(x[[rc]]) || is.double(x[[rc]])) && (is.logical(y[[lc]]) || is.character(y[[lc]])) ) {
-      stopf("When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]))
+      stopf("When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]), class="dt_join_type_mismatch_error")
     }
   }
   ux = unique(shallow(x, by.x))
@@ -52,7 +52,7 @@ funique = function(x) {
   }
   if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
     w = which.first(sx!=sy)
-    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class1(x[[w]]), class1(y[[w]]))
+    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class1(x[[w]]), class1(y[[w]]), class="dt_join_type_mismatch_error")
   }
   if (.seqn && ".seqn" %chin% names(x)) stopf("None of the datasets should contain a column named '.seqn'")
 }
