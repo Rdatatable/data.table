@@ -46,7 +46,7 @@
 
 10. `data.table()` and `as.data.table()` with `keep.rownames=TRUE` now extract row names from named vectors, matching `data.frame()` behavior. Names from the first named vector in the input are used to create the row names column (default name `"rn"` or custom name via `keep.rownames="column_name"`), [#1916](https://github.com/Rdatatable/data.table/issues/1916). Thanks to @richierocks for the feature request and @Mukulyadav2004 for the implementation.
 
-9. `tables()` now supports a `recursive=TRUE` argument to detect `data.table` objects nested within plain lists, such as those produced by `split()` or manual list construction, [#2606](https://github.com/Rdatatable/data.table/issues/2606). The recursive search skips data.frame and data.table objects to avoid descending into list-columns. Nested data.tables are reported with intuitive R-like names using $ and [[ ]] notation. Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+11. `tables()` now supports a `recursive=TRUE` argument to detect `data.table` objects nested within plain lists, such as those produced by `split()` or manual list construction, [#2606](https://github.com/Rdatatable/data.table/issues/2606). The recursive search skips data.frame and data.table objects to avoid descending into list-columns. Nested data.tables are reported with intuitive R-like names using $ and [[ ]] notation. Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
 ### BUG FIXES
 
