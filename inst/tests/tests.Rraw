@@ -21427,27 +21427,24 @@ test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3
 M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
 test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
 
-#2606
-test(2331.1, {
-  dt1 = data.table(a = 1)
-  lst = list(inner = dt1)
-  res = tables(recursive=TRUE)
-  any(res$NAME == "lst$inner")
-}, TRUE)
-test(2331.2, {
-  lst = list(data.table(b = 2))
-  res = tables(recursive=TRUE)
-  any(grepl("^lst\\[\\[1\\]\\]$", res$NAME))
-}, TRUE)
-test(2331.3, {
-  nested = list(l1 = list(l2 = data.table(c = 3)))
-  res = tables(recursive=TRUE)
-  any(res$NAME == "nested$l1$l2")
-}, TRUE)
-test(2331.4, {
-  cycle = list()
-  cycle[[1]] = cycle
-  cycle[[2]] = data.table(x = 1)
-  res = tables(recursive=TRUE)
-  any(res$NAME == "cycle[[2]]") && !"cycle[[1]]" %in% res$NAME
-}, TRUE)
+#2606 Recursive tables() naming convention
+test(2331.1, local({
+  dt1 <- data.table(a = 1)
+  lst <- list(inner = dt1)
+  "lst$inner" %in% tables(recursive = TRUE)$NAME
+}))
+test(2331.2, local({
+  lst <- list(data.table(b = 2))
+  "lst[[1]]" %in% tables(recursive = TRUE)$NAME
+}))
+test(2331.3, local({
+  nested <- list(l1 = list(l2 = data.table(c = 3)))
+  "nested$l1$l2" %in% tables(recursive = TRUE)$NAME
+}))
+test(2331.4, local({
+  cycle <- list()
+  cycle[[1]] <- cycle
+  cycle[[2]] <- data.table(x = 1)
+  res <- tables(recursive = TRUE)$NAME
+  "cycle[[2]]" %in% res && !"cycle[[1]]" %in% res
+}))

@@ -65,10 +65,10 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
       found_items = lapply(w, function(i) list(name=names[i], obj=obj[[i]]))
     }
   }
-  if (!length(found_items)) { # MODIFIED: Check `found_items` instead of `w`
+  if (!length(found_items)) {
     if (!silent) catf("No objects of class data.table exist in %s%s\n",
                       if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env),
-                      if (recursive) " (recursively)" else "") # NEW: More informative message
+                      if (recursive) " (recursively)" else "")
     return(invisible(data.table(NULL)))
   }
   info = data.table(NAME=vapply(found_items, `[[`, "name", FUN.VALUE=character(1L)),
