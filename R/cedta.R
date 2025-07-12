@@ -75,6 +75,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
   
   if (nsname %chin% cedta.override) return(TRUE)
   
+  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
   if (isTRUE(ns$.datatable.aware)) return(TRUE)
   
   # both ns$.Depends and get(.Depends,ns) are not sufficient
