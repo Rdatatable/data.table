@@ -54,9 +54,9 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 .cedta_impl_ <- function(ns, n) {
   nsname = getNamespaceName(ns)
   if (nsname == "data.table") return(TRUE)
-
+  
   if ("data.table" %chin% names(getNamespaceImports(ns))) return(TRUE)
-
+  
   sc <- sys.calls()
   if (nsname == "utils") {
     if (exists("debugger.look", parent.frame(n+1L))) return(TRUE)
@@ -72,11 +72,11 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
   }
 
   if (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack(sc)) return(TRUE)
-
+  
   if (nsname %chin% cedta.override) return(TRUE)
-
+  
   if (isTRUE(ns$.datatable.aware)) return(TRUE)
-
+  
   # both ns$.Depends and get(.Depends,ns) are not sufficient
   pkg_ns = paste("package", nsname, sep=":")
   tryCatch("data.table" %chin% get(".Depends", pkg_ns, inherits=FALSE), error=function(e) FALSE)
