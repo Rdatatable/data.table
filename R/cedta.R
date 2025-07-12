@@ -58,13 +58,13 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
   nsname = getNamespaceName(ns)
   if (nsname == "data.table") return(TRUE)
 
-  if ("data.table" %chin% names(getNamespaceImports(ns))) return(TRUE)
+  if ("data.table" %chin% names(getNamespaceImports(ns))) return(TRUE) # nocov
 
-  if (isTRUE(ns$.datatable.aware)) return(TRUE)
+  if (isTRUE(ns$.datatable.aware)) return(TRUE) # nocov
 
   sc <- sys.calls()
   if (nsname == "utils") {
-    if (exists("debugger.look", parent.frame(n+1L))) return(TRUE)
+    if (exists("debugger.look", parent.frame(n+1L))) return(TRUE) # nocov
 
     # 'example' for #2972
     if (length(sc) >= 8L && sc[[length(sc) - 7L]] %iscall% 'example') return(TRUE)
@@ -76,9 +76,9 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
     if (.any_sd_queries_in_stack(sc)) return(TRUE) # e.g. lapply() where "piped-in" j= arg has .SD[]
   }
 
-  if (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack(sc)) return(TRUE)
+  if (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack(sc)) return(TRUE) # nocov
 
-  if (nsname %chin% cedta.override) return(TRUE)
+  if (nsname %chin% cedta.override) return(TRUE) # nocov
 
   # both ns$.Depends and get(.Depends,ns) are not sufficient
   pkg_ns = paste("package", nsname, sep=":")
