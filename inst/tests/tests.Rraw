@@ -21444,7 +21444,9 @@ test(2331.3, local({
 test(2331.4, local({
   cycle <- list()
   cycle[[1]] <- cycle
-  cycle[[2]] <- data.table(x = 1)
+  cycle[[2]] <- list(cycle)  # deeper nesting to increase chance of second encounter
+  cycle[[3]] <- data.table(x = 1)
   res <- tables(recursive = TRUE)$NAME
-  "cycle[[2]]" %in% res && !"cycle[[1]]" %in% res
+  "cycle[[3]]" %in% res && all(!grepl("cycle\\[\\[1\\]\\]", res)) && all(!grepl("cycle\\[\\[2\\]", res))
 }))
+
