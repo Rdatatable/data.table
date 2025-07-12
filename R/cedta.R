@@ -67,7 +67,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
     if (exists("debugger.look", parent.frame(n+1L))) return(TRUE) # nocov
 
     # 'example' for #2972
-    if (length(sc) >= 8L && sc[[length(sc) - 7L]] %iscall% 'example') return(TRUE)
+    if (length(sc) >= 8L && sc[[length(sc) - 7L]] %iscall% 'example') return(TRUE) # nocov
   }
 
   if (nsname == "base") {
