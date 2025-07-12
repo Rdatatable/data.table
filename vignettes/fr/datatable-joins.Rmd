@@ -89,7 +89,7 @@ ProductReceived
 ```{r define_product_sales}
 set.seed(5415)
 
-# Monday-Friday (4 days later) for each of the weeks present in ProductReceived
+# lundi-vendredi (4 jours plus tard) pour chaque semaine présente dans ProductReceived
 possible_weekdays <- as.IDate(sapply(receipt_dates, `+`, 0:4))
 
 ProductSales = data.table(
