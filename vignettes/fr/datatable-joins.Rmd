@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r, echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
 `r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
