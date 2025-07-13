@@ -21455,8 +21455,10 @@ test(2331.4, local({
   identical(out, "dt")
 }))
 test(2331.5, local({
-  shared <- list(dt = data.table(x = 1))
-  repeated <- list(shared, shared)  # same list object appears twice
-  out <- tables(recursive = TRUE)$NAME
-  identical(out, "repeated[[1]]$dt")  # only the first should be processed
+  dt <- data.table(x = 1)
+  e <- new.env()
+  e$dt <- dt
+  e$self <- e  # actual cycle
+  out <- tables(recursive = TRUE, env = e)$NAME
+  identical(out, "dt")  # should only find 'dt', not 'self$dt' or worse
 }))
