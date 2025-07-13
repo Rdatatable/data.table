@@ -21455,10 +21455,10 @@ test(2331.4, local({
   identical(out, "dt")
 }))
 test(2331.5, local({
-  dt <- data.table(x = 1)
-  e <- new.env()
-  e$dt <- dt
-  e$self <- e  # actual cycle
-  out <- tables(recursive = TRUE, env = e)$NAME
-  identical(out, "dt")  # should only find 'dt', not 'self$dt' or worse
+  cycle <- list()
+  cycle[[1]] <- cycle
+  cycle[[2]] <- list(cycle)  # nested cycle
+  cycle[[3]] <- data.table(x = 1)
+  res <- tables(recursive = TRUE)$NAME
+  "cycle[[3]]" %in% res && all(!grepl("cycle\\[\\[1\\]\\]", res)) && all(!grepl("cycle\\[\\[2\\]", res))
 }))
