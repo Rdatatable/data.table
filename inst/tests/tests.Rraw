@@ -21429,13 +21429,11 @@ test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3
 
 #2606 Recursive tables() naming convention
 test(2331.1, local({
-  dt_shared = data.table(shared = 99)
-  lst_named = list(inner = dt_shared)
-  lst_unnamed = list(dt_shared)
-  nested = list(l1 = list(l2 = dt_shared))
+  lst_named = list(inner = data.table(a = 1))
+  lst_unnamed = list(data.table(b = 2))
+  nested = list(l1 = list(l2 = data.table(c = 3)))
   out = tables(recursive = TRUE)$NAME
-  expected = c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2")
-  all(expected %in% out)
+  all(c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2") %in% out)
 }))
 test(2331.2, local({
   mixed = list(data.table(x = 1), y = data.table(z = 2))
@@ -21455,4 +21453,10 @@ test(2331.4, local({
   e$self <- e
   out = tables(recursive = TRUE, env = e)$NAME
   identical(out, "dt")
+}))
+test(2331.5, local({
+  shared <- list(dt = data.table(x = 1))
+  repeated <- list(shared, shared)  # same list object appears twice
+  out <- tables(recursive = TRUE)$NAME
+  identical(out, "repeated[[1]]$dt")  # only the first should be processed
 }))
