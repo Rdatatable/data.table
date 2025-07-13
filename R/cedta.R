@@ -39,6 +39,16 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 }
 # nocov end
 
+.any_sd_queries_in_stack = function(calls) {
+  for (ii in length(calls):1) { # nolint: seq_linter. As above.
+    if (!calls[[ii]] %iscall% "[") next
+    the_lhs = calls[[ii]][[2L]]
+    if (!is.name(the_lhs) || the_lhs != ".SD") next
+    return(TRUE)
+  }
+  FALSE
+}
+
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
@@ -52,12 +62,15 @@ cedta = function(n=2L) {
     return(TRUE)
   }
   nsname = getNamespaceName(ns)
+  sc = sys.calls()
   ans = nsname=="data.table" ||
     "data.table" %chin% names(getNamespaceImports(ns)) ||   # most common and recommended cases first for speed
     (nsname=="utils" &&
       (exists("debugger.look", parent.frame(n+1L)) ||
-      (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]] %iscall% 'example')) ) || # 'example' for #2972
-    (nsname=="base" && all(c("FUN", "X") %chin% ls(parent.frame(n)))) || # lapply
+      (length(sc)>=8L && sc[[length(sc)-7L]] %iscall% 'example')) ) || # 'example' for #2972
+    (nsname=="base" && # lapply
+      (all(c("FUN", "X") %chin% ls(parent.frame(n))) ||
+      .any_sd_queries_in_stack(sc))) ||
     (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack()) ||
     nsname %chin% cedta.override ||
     isTRUE(ns$.datatable.aware) ||  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
