@@ -21427,26 +21427,29 @@ test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3
 M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
 test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
 
+# .SD reference in '...' passed to lapply(FUN=) is recognized as data.table
+test(2331, lapply(list(data.table(a=1:2)), `[`, j=.SD[1L]), list(data.table(a=1L)))
+
 #2606 Recursive tables() naming convention
-test(2331.1, local({
+test(2332.1, local({
   lst_named = list(inner = data.table(a = 1))
   lst_unnamed = list(data.table(b = 2))
   nested = list(l1 = list(l2 = data.table(c = 3)))
   out = tables(recursive = TRUE)$NAME
   all(c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2") %in% out)
 }))
-test(2331.2, local({
+test(2332.2, local({
   mixed = list(data.table(x = 1), y = data.table(z = 2))
   out = tables(recursive = TRUE)$NAME
   all(c("mixed[[1]]", "mixed$y") %in% out)
 }))
-test(2331.3, local({
+test(2332.3, local({
   mixed_nested = list(
   A = list(data.table(p = 1), q = data.table(q = 2)))
   out = tables(recursive = TRUE)$NAME
   all(c("mixed_nested$A[[1]]", "mixed_nested$A$q") %in% out)
 }))
-test(2331.4, local({
+test(2332.4, local({
   dt <- data.table(val = 42)
   e <- new.env()
   e$dt <- dt
@@ -21454,7 +21457,7 @@ test(2331.4, local({
   out = tables(recursive = TRUE, env = e)$NAME
   identical(out, "dt")
 }))
-test(2331.5, local({
+test(2332.5, local({
   cycle <- list()
   cycle[[1]] <- cycle
   cycle[[2]] <- list(cycle)  # nested cycle
