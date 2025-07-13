@@ -4,7 +4,7 @@ condition_classes_documentation_linter = function(rd_file) {
 
   # Find condition classes in R code 
   walk_r_ast_for_classes = function(expr) {
-    if (is.call(expr) && length(expr) >= 2L && identical(expr[[1L]], quote(stopf)) && "class" %in% names(expr) && is.character(class_arg <- expr[["class"]]) && startsWith(class_arg, "dt_") && endsWith(class_arg, "_error")) {
+    if (is.call(expr) && length(expr) >= 2L && identical(expr[[1L]], quote(stopf)) && "class" %in% names(expr) && is.character(class_arg <- expr[["class"]]) && startsWith(class_arg, "dt_")) {
       class_arg
     } else if (is.recursive(expr)) {
       unlist(lapply(expr, walk_r_ast_for_classes))
@@ -18,7 +18,7 @@ condition_classes_documentation_linter = function(rd_file) {
     result = character()
     if (isTRUE(attr(rd_element, "Rd_tag") == "\\code") && length(rd_element) >= 1L) {
       content = rd_element[[1L]]
-      if (is.character(content) && startsWith(content, "dt_") && endsWith(content, "_error")) {
+      if (is.character(content) && startsWith(content, "dt_")) {
         result = content
       }
     }
