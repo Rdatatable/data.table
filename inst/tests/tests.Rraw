@@ -21458,10 +21458,16 @@ test(2332.4, local({
   identical(out, "dt")
 }))
 test(2332.5, local({
-  cycle <- list()
-  cycle[[1]] <- cycle
-  cycle[[2]] <- list(cycle)  # nested cycle
-  cycle[[3]] <- data.table(x = 1)
-  res <- tables(recursive = TRUE)$NAME
-  "cycle[[3]]" %in% res && all(!grepl("cycle\\[\\[1\\]\\]", res)) && all(!grepl("cycle\\[\\[2\\]", res))
+  test_obj <- local({
+    common_list <- list(dt_inner = data.table(d = 4))
+    outer_list <- list(
+    first = common_list,
+    unique = data.table(e = 5))
+    outer_list$second <- outer_list$first 
+    outer_list
+  })
+  out <- tables(recursive = TRUE)$NAME
+  (length(out) == 2) &&
+  ("test_obj$unique" %in% out) &&
+  (sum(grepl("\\$dt_inner$", out)) == 1)
 }))
