@@ -1,11 +1,11 @@
 \name{data.table-error-handling}
 \alias{data.table-error-handling}
-\title{Error Handling with Classed Conditions}
+\title{Condition Handling with Classed Conditions}
 \description{
-\code{data.table} provides specific condition classes for common operations, making it easier to handle errors programmatically. This is particularly useful when writing robust code or packages that use \code{data.table}. Relying on the exact text of error messages is fragile (it is not uncommon to change the wording slightly, or for the user's session not to be in English); prefer using the signal class where possible.
+\code{data.table} provides specific condition classes for common operations, making it easier to handle comditions programmatically. This is particularly useful when writing robust code or packages that use \code{data.table}. Relying on the exact text of condition messages is fragile (it is not uncommon to change the wording slightly, or for the user's session not to be in English); prefer using the signal class where possible.
 }
 \details{
-\subsection{Available Error Classes}{
+\subsection{Available error Classes}{
 \code{data.table} provides four specific error classes:
 
 \itemize{
@@ -17,7 +17,7 @@
 }
 
 \subsection{Backward Compatibility}{
-All error classes inherit from base R's condition system, so existing \code{tryCatch(..., error = ...)} code continues to work unchanged. The new classes simply provide more specific handling options when needed.
+All condition classes inherit from base R's condition system, so existing \code{tryCatch(..., error = ...)} code continues to work unchanged. The new classes simply provide more specific handling options when needed.
 }
 }
 \examples{
@@ -33,5 +33,6 @@ tryCatch({
 })
 }
 \seealso{
-\code{\link{tryCatch}}, \url{https://adv-r.hadley.nz/conditions.html}
+\code{\link{tryCatch}}, \code{\link{test}}, \url{https://adv-r.hadley.nz/conditions.html}
+For advanced exception handling patterns, see data.table's internal helper `tryCatch2` here - \url{https://github.com/jangorecki/logR/blob/master/R/logR.R}
 }
