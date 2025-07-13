@@ -21429,11 +21429,13 @@ test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3
 
 #2606 Recursive tables() naming convention
 test(2331.1, local({
-  lst_named = list(inner = data.table(a = 1))
-  lst_unnamed = list(data.table(b = 2))
-  nested = list(l1 = list(l2 = data.table(c = 3)))
+  dt_shared = data.table(shared = 99)
+  lst_named = list(inner = dt_shared)
+  lst_unnamed = list(dt_shared)
+  nested = list(l1 = list(l2 = dt_shared))
   out = tables(recursive = TRUE)$NAME
-  all(c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2") %in% out)
+  expected = c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2")
+  all(expected %in% out)
 }))
 test(2331.2, local({
   mixed = list(data.table(x = 1), y = data.table(z = 2))
