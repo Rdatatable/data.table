@@ -21426,3 +21426,6 @@ test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3
 
 M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
 test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
+
+# .SD reference in '...' passed to lapply(FUN=) is recognized as data.table
+test(2331, lapply(list(data.table(a=1:2)), `[`, j=.SD[1L]), list(data.table(a=1L)))
