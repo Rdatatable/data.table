@@ -21429,24 +21429,28 @@ test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3
 
 #2606 Recursive tables() naming convention
 test(2331.1, local({
-  dt1 <- data.table(a = 1)
-  lst <- list(inner = dt1)
-  "lst$inner" %in% tables(recursive = TRUE)$NAME
+  lst_named = list(inner = data.table(a = 1))
+  lst_unnamed = list(data.table(b = 2))
+  nested = list(l1 = list(l2 = data.table(c = 3)))
+  out = tables(recursive = TRUE)$NAME
+  all(c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2") %in% out)
 }))
 test(2331.2, local({
-  lst <- list(data.table(b = 2))
-  "lst[[1]]" %in% tables(recursive = TRUE)$NAME
+  mixed = list(data.table(x = 1), y = data.table(z = 2))
+  out = tables(recursive = TRUE)$NAME
+  all(c("mixed[[1]]", "mixed$y") %in% out)
 }))
 test(2331.3, local({
-  nested <- list(l1 = list(l2 = data.table(c = 3)))
-  "nested$l1$l2" %in% tables(recursive = TRUE)$NAME
+  mixed_nested = list(
+  A = list(data.table(p = 1), q = data.table(q = 2)))
+  out = tables(recursive = TRUE)$NAME
+  all(c("mixed_nested$A[[1]]", "mixed_nested$A$q") %in% out)
 }))
 test(2331.4, local({
-  cycle <- list()
-  cycle[[1]] <- cycle
-  cycle[[2]] <- list(cycle)  # deeper nesting to increase chance of second encounter
-  cycle[[3]] <- data.table(x = 1)
-  res <- tables(recursive = TRUE)$NAME
-  "cycle[[3]]" %in% res && all(!grepl("cycle\\[\\[1\\]\\]", res)) && all(!grepl("cycle\\[\\[2\\]", res))
+  dt <- data.table(val = 42)
+  e <- new.env()
+  e$dt <- dt
+  e$self <- e
+  out = tables(recursive = TRUE, env = e)$NAME
+  identical(out, "dt")
 }))
-
