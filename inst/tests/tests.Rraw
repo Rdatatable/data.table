@@ -71,6 +71,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
+  setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -2290,29 +2291,31 @@ test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
 test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
 test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
-# Expand ALTREPS in assign.c, #5400
-# String conversion gets deferred
-## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
-test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
-test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
-# Executing the code inside of test expands the ALTREP so we repeat the code
-# in order to check the result after a further assignment
-DT = data.table(a=1:3)
-DT[, b := as.character(a)]
-DT[, a := 5L]
-test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
-# This function returns an ALTREP wrapper if the input is at least length 64
-testFun = function(x) {
-  x[FALSE] = 1
-  x
+if (base::getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
+  # Expand ALTREPS in assign.c, #5400
+  # String conversion gets deferred
+  ## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
+  test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
+  test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
+  # Executing the code inside of test expands the ALTREP so we repeat the code
+  # in order to check the result after a further assignment
+  DT = data.table(a=1:3)
+  DT[, b := as.character(a)]
+  DT[, a := 5L]
+  test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
+  # This function returns an ALTREP wrapper if the input is at least length 64
+  testFun = function(x) {
+    x[FALSE] = 1
+    x
+  }
+  DT = data.table(id=1:64, col1=0, col2=0)
+  test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
+  DT = data.table(id=1:64, col1=0, col2=0)
+  DT[, col1 := testFun(col2)]
+  DT[, col2 := 999]
+  test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
+  rm(testFun)
 }
-DT = data.table(id=1:64, col1=0, col2=0)
-test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
-DT = data.table(id=1:64, col1=0, col2=0)
-DT[, col1 := testFun(col2)]
-DT[, col2 := 999]
-test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
-rm(testFun)
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key=c('a', 'b'))
@@ -4225,7 +4228,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# test 1160 was for setrev, now removed
+# test 1160 was for setfrev, now removed
 
 # tests for setreordervec
 # integer
@@ -5466,7 +5469,7 @@ test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
-# data from 12GB file in comments on http://stackoverflow.com/a/23858323/403310 ...
+# data from 12GiB file in comments on http://stackoverflow.com/a/23858323/403310 ...
 # note that read.csv gets this wrong and puts jacoleman high school into the previous field, then fills the rest of the line silently.
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"",""jacoleman high school","",""
@@ -7076,6 +7079,50 @@ y <- data.table(country=factor("USA"))
 test(1483.3, merge(x,y,by="country",all=TRUE), data.table(country=factor(c("US", "USA")), key="country"))
 setkey(y)
 test(1483.4, y[x], data.table(country="US", key="country"))
+
+# 5361 merge on character and factor should only have key(x) if result is really sorted
+lett = c("a", "b", "c")
+rlet = c("c", "b", "a")
+x = data.table(i=rlet)
+y = data.table(i=factor(lett, levels=rlet), key="i")
+test(1483.51, x[y, on="i"], x)
+test(1483.52, y[x, on="i"], x)
+test(1483.53, merge(x, y, by="i"), data.table(i=lett, key="i"))
+test(1483.54, merge(y, x, by="i"), data.table(i=lett, key="i"))
+x = data.table(i1=1:3, i2=rlet)
+y = data.table(i1=1:3, i2=factor(lett, levels=rlet), key=c("i1", "i2"))
+test(1483.55, x[y, on=c("i1", "i2")], data.table(i1=1:3, i2=lett))
+test(1483.56, y[x, on=c("i1", "i2")], x)
+test(1483.57, merge(x, y, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+test(1483.58, merge(y, x, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+
+x = data.table(i=rlet, key="i")
+y = data.table(i=factor(lett, levels=rlet))
+test(1483.61, x[y, on="i"], x)
+test(1483.62, y[x, on="i"], data.table(i=lett))
+test(1483.63, merge(x, y, by="i"), data.table(i=lett, key="i"))
+test(1483.64, merge(y, x, by="i"), data.table(i=lett, key="i"))
+x = data.table(i1=1:3, i2=rlet, key=c("i1", "i2"))
+y = data.table(i1=1:3, i2=factor(lett, levels=rlet))
+test(1483.65, x[y, on=c("i1", "i2")], data.table(i1=1:3, i2=lett))
+test(1483.66, y[x, on=c("i1", "i2")], data.table(i1=1:3, i2=rlet))
+test(1483.67, merge(x, y, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+test(1483.68, merge(y, x, by=c("i1", "i2")), data.table(i1=2L, i2="b", key=c("i1", "i2")))
+
+x = data.table(i=rlet, a=rlet)
+y = data.table(i=factor(lett, levels=rlet), b=lett, key="i")
+test(1483.71, x[y, on="i"], data.table(i=rlet, a=rlet, b=rlet))
+test(1483.72, y[x, on="i"], data.table(i=rlet, b=rlet, a=rlet))
+test(1483.73, merge(x, y, by="i"), data.table(i=lett, a=lett, b=lett, key="i"))
+test(1483.74, merge(y, x, by="i"), data.table(i=lett, b=lett, a=lett, key="i"))
+
+some_letters <- c("c", "b", "a")
+some_more_letters <- rep(c("a", "b", "c"), 2L)
+dt1 <- data.table(x = some_letters, y=1:3)
+dt2 <- data.table(x = factor(some_more_letters, levels=some_letters), z=1:6, key=c("x", "z"))
+dt3 <- merge(dt1, dt2, by="x")
+test(1483.81, key(dt3), "x")
+test(1483.82, nrow(dt3[x %in% "c", ]), 2L)
 
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
@@ -9724,7 +9771,7 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 nq_fun = function(n=100L) {
   i1 = sample(sample.int(n, 10L), n, TRUE)
   i2 = sample.int(n, n, TRUE) - as.integer(n/2)    # this used to be type numeric before #5517 which didn't seem intentional
-  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MB, #5517
+  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MiB, #5517
   i4 = sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE)
 
   d1 = sample(rnorm(10L), n, TRUE)
@@ -9815,7 +9862,7 @@ y = na.omit(dt2)
 
 if (.Machine$sizeof.pointer>4) {
 
-  # temporarily off due to hitting 2GB limit on 32bit, #2767
+  # temporarily off due to hitting 2GiB limit on 32bit, #2767
   # turn off temporarily using FALSE when using valgrind, too, as very slow
 
   set.seed(1509611616L)
@@ -11918,7 +11965,7 @@ test(1800.2, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c("1e555
 #
 # Tests thanks to Pasha copied verbatim from his PR#2200
 #
-# Test files with "round" sizes (different multiples of 2, from 512B to 64KB)
+# Test files with "round" sizes (different multiples of 2, from 512B to 64KiB)
 for (mul in c(16, 128, 512, 1024, 2048)) {
   ff = file(f<-tempfile(), open="wb")
   cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
@@ -12897,7 +12944,7 @@ test(1903.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1
 txt = 'A,   B,    C\n17,  34, 2.3\n3.,  NA,   1\nNA ,  2, NA \n0,0.1,0'
 test(1904.1, fread(txt, na.strings="NA", verbose=TRUE),
   ans <- data.table(A=c(17,3,NA,0), B=c(34,NA,2,0.1), C=c(2.3,1.0,NA,0.0)),
-  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
+  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MiB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
 test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\]==" " consists only of whitespace, ignoring. Since strip.white=TRUE.*use.*"".*<NA>')
 test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
 test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
@@ -17927,7 +17974,7 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
                 r = as.raw(sample(1:5, 20, TRUE)))
-load(testDir("test2224.Rdata")) # 47KB array 24x8 where each cell contains a length-20 result
+load(testDir("test2224.Rdata")) # 47KiB array 24x8 where each cell contains a length-20 result
 if (test_bit64) {
   DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
 } else {
@@ -17938,7 +17985,7 @@ for (col in names(DT)[-1]) {
   for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
     for (type in c('lag','lead','shift','cyclic')) {
       # fill is tested by group in tests 2218.*; see comments in #5205
-      # sapply(sapply()) changed to for(for(for())) to save 29MB, #5517
+      # sapply(sapply()) changed to for(for(for())) to save 29MiB, #5517
       test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
            EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
            ans[[i]])
@@ -21230,13 +21277,46 @@ if (test_R.utils) local({
 })
 
 # Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
-test(2321.1, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
-test(2321.2, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
-test(2321.3, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
-test(2321.4, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
 ## but respect named column vectors
-test(2321.5, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
-test(2321.6, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
+test(2321.05, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
+test(2321.06, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
+## also respect old naming pattern when invoked indirectly, #7145
+M = cbind(1:3)
+test(2321.07, as.data.table(M), data.table(V1=1:3))
+rownames(M) = c('a', 'b', 'c')
+test(2321.08, as.data.table(M), data.table(V1=1:3))
+test(2321.09, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3))
+colnames(M) = 'zz'
+test(2321.10, as.data.table(M), data.table(zz=1:3))
+test(2321.11, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), zz=1:3))
+colnames(M) = 'x'
+test(2321.12, as.data.table(M), data.table(x=1:3))
+test(2321.13, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), x=1:3))
+M = cbind(M, y=4:6)
+test(2321.14, as.data.table(M), data.table(x=1:3, y=4:6))
+test(2321.15, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), x=1:3, y=4:6))
+colnames(M) = c('A', 'B')
+test(2321.16, as.data.table(M), data.table(A=1:3, B=4:6))
+test(2321.17, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, B=4:6))
+colnames(M) = NULL
+test(2321.18, as.data.table(M), data.table(V1=1:3, V2=4:6))
+test(2321.19, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3, V2=4:6))
+colnames(M) = c('x', '')
+test(2321.20, as.data.table(M), data.table(x=1:3, V2=4:6))
+test(2321.21, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), x=1:3, V2=4:6))
+colnames(M) = c('', 'x')
+test(2321.22, as.data.table(M), data.table(V1=1:3, x=4:6))
+test(2321.23, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3, x=4:6))
+colnames(M) = c('', '')
+test(2321.24, as.data.table(M), data.table(V1=1:3, V2=4:6))
+test(2321.25, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), V1=1:3, V2=4:6))
+colnames(M) = c('A', '')
+test(2321.26, as.data.table(M), data.table(A=1:3, V2=4:6))
+test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, V2=4:6))
 
 # New fctr() helper: like factor() but retaining order by default #4837
 test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))
@@ -21303,3 +21383,109 @@ local({
   test(2326.2, key(d), "x")
   test(2326.3, indices(d), c("y", "z"))
 })
+
+#6964
+# Test 1: No warning from min() with simple data
+DT = data.table(var = c("a", "b", "c", "d"), value=c(1:3, NA))
+test(2327.1, cube(DT, .(min(value)), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, NA, NA)))
+test(2327.2, cube(DT, .(as.numeric(base::min(value, na.rm=TRUE))), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, Inf, 1.0)),
+     warning="no non-missing arguments to min")
+
+# droplevels should still work on a 0-row table, #7043
+DT = data.table(f=factor(character(), levels='a'))
+test(2328.1, levels(droplevels(DT)$f), character())
+DT[, i := integer()]
+DT[, f2 := factor()]
+test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
+
+#6882 print() output with col.names="none"
+dt = data.table(short = 1:3, verylongcolumnname = 4:6)
+test(2329.1, print(dt, col.names = "none"), output = "1: 1 4\n2: 2 5\n3: 3 6\n")
+dt = data.table(x = 123456, y = "wide_string")
+test(2329.2, print(dt, col.names = "none"), output = "1: 123456 wide_string\n")
+dt = data.table(a = NA_integer_, b = NaN)
+test(2329.3, print(dt, col.names = "none"), output = "1: NA NaN\n")
+
+# Row name extraction from multiple vectors, #7136
+x <- 1:3 
+y <- setNames(4:6, c("A", "B", "C"))  
+test(2330.1, as.data.table(list(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=1:3, V2=4:6))
+test(2330.2, as.data.table(list(x, y), keep.rownames="custom"), data.table(custom=c("A", "B", "C"), V1=1:3, V2=4:6))
+test(2330.3, as.data.table(list(y, x), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=4:6, V2=1:3)) 
+
+# Behavior under data.frame()
+test(2330.4, as.data.table(data.frame(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), x=1:3, y=4:6))
+test(2330.5, as.data.table(data.frame(y, x), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), y=4:6, x=1:3))
+
+DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with explicit rownames
+test(2330.6, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=letters[1:6], a=6:1, V=1:6))
+
+z <- setNames(1:3, rep("", 3))  # vector with all-empty names     # behaviour with all-empty row names
+test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3))
+
+M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
+test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
+
+# .SD reference in '...' passed to lapply(FUN=) is recognized as data.table
+test(2331, lapply(list(data.table(a=1:2)), `[`, j=.SD[1L]), list(data.table(a=1L)))
+
+# 5885 implement frev
+d = c(NA, NaN, Inf, -Inf)
+test(2332.00, frev(c(FALSE, NA)),     rev(c(FALSE, NA)))
+test(2332.01, frev(c(0L, NA)),        rev(c(0L, NA)))
+test(2332.02, frev(d),                rev(d))
+test(2332.03, frev(c(NA, 1, 0+2i)),   rev(c(NA, 1, 0+2i)))
+test(2332.04, frev(as.raw(0:1)),      rev(as.raw(0:1)))
+test(2332.05, frev(NULL),             rev(NULL))
+test(2332.06, frev(character(5)),     rev(character(5)))
+test(2332.07, frev(integer(0)),       rev(integer(0)))
+test(2332.08, frev(list(1, "a")),     rev(list(1, "a")))
+test(2332.09, {x=c(0L, NA); setfrev(x); x},      c(NA, 0L))
+test(2332.10, {x=d; setfrev(x); x},              c(-Inf, Inf, NaN, NA))
+test(2332.11, {x=c(NA, 1, 0+2i); setfrev(x); x}, c(0+2i, 1, NA))
+test(2332.12, {x=as.raw(0:1); setfrev(x); x},    as.raw(1:0))
+test(2332.13, {x=NULL; setfrev(x); x},           NULL)
+test(2332.14, {x=character(5); setfrev(x); x},   character(5))
+test(2332.15, {x=integer(0); setfrev(x); x},     integer(0))
+test(2332.16, {x=list(1, "a"); setfrev(x); x},   list("a", 1))
+test(2332.17, frev(1:1e2),            rev(1:1e2))
+# copy arguments
+x = 1:3
+test(2332.21, {frev(x);  x}, 1:3)
+test(2332.22, {setfrev(x); x}, 3:1)
+test(2332.23, address(x) == address(setfrev(x)))
+test(2332.24, address(x) != address(frev(x)))
+# do not alter on subsets
+test(2332.25, {setfrev(x[1:2]);  x}, 1:3)
+# levels
+f = as.factor(letters)
+test(2332.31, frev(f), rev(f))
+test(2332.32, frev(as.IDate(1:10)), as.IDate(10:1))
+test(2332.33, frev(as.IDate(1:10)), as.IDate(10:1))
+# names
+x = c(a=1L, b=2L, c=3L)
+test(2332.41, frev(x), rev(x))
+test(2332.42, setfrev(x), x)
+x = c(a=1L, b=2L, c=3L)
+test(2332.43, {frev(x); names(x)}, c("a","b","c"))
+# attributes
+x = structure(1:10, class = c("IDate", "Date"), att = 1L)
+test(2332.51, attr(frev(x), "att"), attr(rev(x), "att"))
+test(2332.52, class(frev(x)), class(rev(x)))
+test(2332.53, attr(setfrev(x), "att"), 1L)
+test(2332.54, class(setfrev(x)), c("IDate", "Date"))
+x = structure(integer(0), att = 1L)
+test(2332.55, attr(frev(x), "att"), attr(rev(x), "att"))
+# errors
+test(2332.61, frev(data.table()), error="should not be data.frame or data.table")
+test(2332.62, frev(expression(1)), error="is not supported by frev")
+if (test_bit64) {
+  x = as.integer64(c(1, NA, 3))
+  test(2332.71, frev(x), rev(x))
+  test(2332.72, setfrev(x), x)
+}
+# support rotate idiom
+M1 = M2 = matrix(1:4, nrow=2)
+test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})

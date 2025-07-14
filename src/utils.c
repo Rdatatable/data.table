@@ -412,11 +412,11 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #include <zlib.h>
 #endif
 SEXP dt_zlib_version(void) {
-  char out[71];
+  char out[70];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
+  snprintf(out, sizeof(out), "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
-  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
+  snprintf(out, sizeof(out), _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
@@ -542,12 +542,119 @@ SEXP perhapsDataTableR(SEXP x) {
   return ScalarLogical(perhapsDataTable(x));
 }
 
+SEXP frev(SEXP x, SEXP copyArg) {
+  SEXP names;
+  if (INHERITS(x, char_dataframe))
+    error(_("'x' should not be data.frame or data.table."));
+  if (!IS_TRUE_OR_FALSE(copyArg))
+    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
+  bool copy = LOGICAL(copyArg)[0];
+  R_xlen_t n = xlength(x);
+  int nprotect = 0;
+  if (copy) {
+    x = PROTECT(duplicate(x));
+    nprotect++;
+  }
+  if (n==0) {
+    UNPROTECT(nprotect);
+    return x;
+  }
+  switch (TYPEOF(x)) {
+    case LGLSXP: case INTSXP: {
+      int *restrict xd = INTEGER(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case REALSXP: if (INHERITS(x, char_integer64)) {
+      int64_t *xd = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int64_t tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } else {
+      double *xd = REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const double tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case STRSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = xd[i];
+        SET_STRING_ELT(x, i, xd[k]);
+        SET_STRING_ELT(x, k, tmp);
+      }
+    } break;
+    case VECSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = xd[i];
+        SET_VECTOR_ELT(x, i, xd[k]);
+        SET_VECTOR_ELT(x, k, tmp);
+      }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *xd = COMPLEX(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rcomplex tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case RAWSXP: {
+      Rbyte *xd = RAW(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rbyte tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+  default:
+    error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
+  }
+  names = PROTECT(getAttrib(x, R_NamesSymbol));
+  nprotect++;
+  if (copy) {
+    SEXP klass = PROTECT(getAttrib(x, R_ClassSymbol));
+    SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
+    nprotect += 2;
+    // swipe attributes from x
+    SET_ATTRIB(x, R_NilValue);
+    setAttrib(x, R_NamesSymbol, names);
+    setAttrib(x, R_ClassSymbol, klass);
+    setAttrib(x, R_LevelsSymbol, levels);
+  }
+  if (!isNull(names)) {
+    frev(names, ScalarLogical(FALSE));
+  }
+  UNPROTECT(nprotect);
+  return x;
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
