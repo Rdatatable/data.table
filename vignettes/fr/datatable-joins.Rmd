@@ -294,7 +294,7 @@ Même si les deux tables contiennent la même information, il existe quelques di
    - La colonne `id` de la première table contient les mêmes informations que `product_id` de la seconde table.
    - La colonne `i.id` de la première table a les mêmes informations que `id` de la seconde table.
 
-### 3.3. Non jointure
+### 3.3. Anti-jointure
 
 Cette méthode **ne garde que les lignes qui ne correspondent pas aux lignes de la seconde table**.
 
@@ -372,7 +372,7 @@ Voici les éléments importants à prendre en compte :
 - **Niveau colonne**
    - Le *premier groupe* de colonnes provient maintenant de la table `ProductReceived` car il est la table `x` .
    - Le *second groupe* de colonnes provient maintenant de la table `Products` car il est la table `i` .
-   - Le préfixe `i.` a été ajouté à aucune colonne.
+   - Le préfixe `i.` n'a été ajouté à aucune colonne.
 
 - **Niveau ligne**
    - Toutes les lignes de la table `i` ont été gardées : l'entrée soda de `Products` ne correspond à aucune ligne de `ProductReceived` et fait encore partie des résultats.
