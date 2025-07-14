@@ -50,7 +50,40 @@
 
 12. New `cbindlist()` and `setcbindlist()` for concatenating a `list` of data.tables column-wise, evocative of the analogous `do.call(rbind, l)` <-> `rbindlist(l)`, [#2576](https://github.com/Rdatatable/data.table/issues/2576). `setcbindlist()` does so without making any copies. Thanks @MichaelChirico for the FR, @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
+    ```r
+    l = list(
+      data.table(id = 1:3, a = letters[1:3]),
+      data.table(b = 4:6, c = 7:9)
+    )
+    cbindlist(l)
+    #    id a b c
+    # 1:  1 a 4 7
+    # 2:  2 b 5 8
+    # 3:  3 c 6 9
+    ```
+
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
+
+```r
+    l = list(
+      data.table(id = c(1, 2, 3), x = c("a", "b", "c")),
+      data.table(id = c(1, 2, 4), y = c("d", "e", "f")),
+      data.table(id = c(1, 3, 4), z = c("g", "h", "i"))
+    )
+
+    # Recursive inner join
+    mergelist(l, on = "id", how = "inner")
+    #    id x y z
+    # 1:  1 a d g
+
+    # Recursive full outer join
+    mergelist(l, on = "id", how = "full")
+    #    id    x    y    z
+    # 1:  1    a    d    g
+    # 2:  2    b    e <NA>
+    # 3:  3    c <NA>    h
+    # 4:  4 <NA>    f    i
+    ```
 
 ### BUG FIXES
 
