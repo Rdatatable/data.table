@@ -1,6 +1,3 @@
-
-cedta.override = NULL  # If no need arises, will deprecate.
-
 cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdown","knitr","ezknitr","IRkernel", "rtvs")
 # These packages run user code in their own environment and thus do not
 # themselves Depend or Import data.table. knitr's eval is passed envir=globalenv() so doesn't
@@ -77,8 +74,6 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
   }
 
   if (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack(sc)) return(TRUE) # nocov
-
-  if (nsname %chin% cedta.override) return(TRUE) # nocov
 
   # both ns$.Depends and get(.Depends,ns) are not sufficient
   pkg_ns = paste("package", nsname, sep=":")

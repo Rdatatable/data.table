@@ -110,7 +110,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
     if (x_merge_type=="integer64" || i_merge_type=="integer64") {
       nm = c(iname, xname)
-      if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; nm=rev(nm) }  # w is which to coerce
+      if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; setfrev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && fitsInInt64(w[[wc]]))) {
         from_detail = if (wclass == "double") gettext(" (which has integer64 representation, e.g. no fractions)") else ""
         coerce_col(w, wc, wclass, "integer64", nm[1L], nm[2L], from_detail, verbose=verbose)
