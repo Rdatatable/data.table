@@ -21340,6 +21340,10 @@ local({
   M = cbind(1:3)
   test(2321.34, data.table(M[, 0L]), data.table(NULL))
   test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+
+  # a more subtle version of this as expressed in #5367
+  DT <- data.table(Counts=c(10, 20), Severity=c(1, 2))
+  test(2321.36, names(DT[,.(New_name = Severity %*% Counts)]), "New_name")
 })
 
 # New fctr() helper: like factor() but retaining order by default #4837
