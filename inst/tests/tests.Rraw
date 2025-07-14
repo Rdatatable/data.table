@@ -21469,7 +21469,7 @@ x = c(a=1L, b=2L, c=3L)
 test(2332.41, frev(x), rev(x))
 test(2332.42, setfrev(x), x)
 x = c(a=1L, b=2L, c=3L)
-test(2381.43, {frev(x); names(x)}, c("a","b","c"))
+test(2332.43, {frev(x); names(x)}, c("a","b","c"))
 # attributes
 x = structure(1:10, class = c("IDate", "Date"), att = 1L)
 test(2332.51, attr(frev(x), "att"), attr(rev(x), "att"))
