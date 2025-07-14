@@ -543,7 +543,7 @@ SEXP perhapsDataTableR(SEXP x) {
 }
 
 SEXP frev(SEXP x, SEXP copyArg) {
-  SEXP names, klass, levels;
+  SEXP names;
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!IS_TRUE_OR_FALSE(copyArg))
@@ -631,14 +631,13 @@ SEXP frev(SEXP x, SEXP copyArg) {
     error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
   }
   names = PROTECT(getAttrib(x, R_NamesSymbol));
-  klass = PROTECT(getAttrib(x, R_ClassSymbol));
-  levels = PROTECT(getAttrib(x, R_LevelsSymbol));
-  nprotect += 3;
+  nprotect++;
   if (copy) {
     SET_ATTRIB(x, R_NilValue);
     setAttrib(x, R_NamesSymbol, names);
-    setAttrib(x, R_ClassSymbol, klass);
-    setAttrib(x, R_LevelsSymbol, levels);
+    setAttrib(x, R_ClassSymbol, PROTECT(getAttrib(x, R_ClassSymbol)));
+    setAttrib(x, R_LevelsSymbol, PROTECT(getAttrib(x, R_LevelsSymbol)));
+    nprotect += 2;
   }
   if (!isNull(names)) {
     frev(names, ScalarLogical(FALSE));
