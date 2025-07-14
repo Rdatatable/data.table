@@ -50,6 +50,12 @@
 
 10. `data.table()` and `as.data.table()` with `keep.rownames=TRUE` now extract row names from named vectors, matching `data.frame()` behavior. Names from the first named vector in the input are used to create the row names column (default name `"rn"` or custom name via `keep.rownames="column_name"`), [#1916](https://github.com/Rdatatable/data.table/issues/1916). Thanks to @richierocks for the feature request and @Mukulyadav2004 for the implementation.
 
+11. New `frev(x)` as a faster analogue to `base::rev()` for atomic vectors/lists, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Twice as fast as `base::rev()` on large inputs, and faster with more threads. Thanks to Benjamin Schwendinger for suggesting and implementing.
+
+12. New `cbindlist()` and `setcbindlist()` for concatenating a `list` of data.tables column-wise, evocative of the analogous `do.call(rbind, l)` <-> `rbindlist(l)`, [#2576](https://github.com/Rdatatable/data.table/issues/2576). `setcbindlist()` does so without making any copies. Thanks @MichaelChirico for the FR, @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
+
+13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
