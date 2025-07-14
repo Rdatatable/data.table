@@ -21489,3 +21489,6 @@ if (test_bit64) {
 # support rotate idiom
 M1 = M2 = matrix(1:4, nrow=2)
 test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
+
+# regression test of edge case report #4964
+test(2333, as.expression(data.table(a = 1))[["a"]], 1)
