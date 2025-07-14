@@ -278,6 +278,7 @@ bool isDataTable(SEXP x);
 bool isRectangularList(SEXP x);
 bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
+SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c

@@ -413,6 +413,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       if (len>1) {
         if (mult==ALL)
           allLen1[0] = FALSE;                           // bmerge()$allLen1
+        else if (mult==ERR)
+          error("mult='error' and multiple matches during merge");
       }
       if (nqmaxgrp == 1) {
         const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // bmerge()$starts thus extra +1 for 1-based indexing at R level
