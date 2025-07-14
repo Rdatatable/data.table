@@ -170,7 +170,7 @@ Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
-- Inclure les colonnes associées dans l'alias `data.table` `list`.
+- Inclure les colonnes associées dans l'alias `data.table` `list` : `.`.
 
 ```{r, eval=FALSE}
 Products[ProductReceived,
@@ -181,7 +181,7 @@ Products[ProductReceived,
 
 Dans tous les exemples précédents, nous avons passé le nom des colonnes à sélectionner avec l'argument `on` mais `data.table` possède également des alternatives à cette syntaxe.
 
-- **Jointure naturelle** : sélectionne les colonnes pour réaliser la correspondance en fonction des noms des colonnes communes. Pour illustrer cette méthode, modifions la colonne de la table `Products` de `id` en `product_id` et utilisons le mot clé `.NATURAL`.
+- **Jointure naturelle** : sélectionne les colonnes pour réaliser la correspondance en fonction des noms des colonnes en commun. Pour illustrer cette méthode, modifions la colonne de la table `Products` de `id` en `product_id` et utilisons le mot clé `.NATURAL`.
 
 ```{r}
 ProductsChangedName = setnames(copy(Products), "id", "product_id")
@@ -213,7 +213,7 @@ Notre recommendation est d'utiliser la seconde alternative si possible, car elle
 
 ##### Gestion de la colonne partagée Names avec l'argument j
 
-L'argument `j` autorise plusieurs alternatives intéressantes pour gérer les jointures avec les tables en **partageant les mêmes noms de plusieurs colonnes**. Par défaut toutes les colonnes prennent leur source dans la table `x`, mais nous pouvons aussi utiliser le préfixe `x.` pour clarifier la source et utiliser le préfixe `i.` pour toutes les colonnes de la table déclarée dans l'argument `i` de la table `x`.
+L'argument `j` autorise plusieurs alternatives intéressantes pour gérer les jointures avec les tables en **partageant les mêmes noms pour plusieurs colonnes**. Par défaut toutes les colonnes prennent leur source dans la table `x`, mais nous pouvons aussi utiliser le préfixe `x.` pour clarifier la source et utiliser le préfixe `i.` pour toutes les colonnes de la table déclarée dans l'argument `i` de la table `x`.
 
 Si nous retournons au petit supermarché, après avoir mis à jour la table `ProductReceived` avec la table `Products` , supposez que l'on veuille appliquer les modifications suivantes :
 
@@ -272,7 +272,7 @@ NewTax[Products, on = c("unit", "type")]
 
 ### 3.2. Jointure interne
 
-Utilisez cette méthode pour combiner les colonnes de deux tables en se basant sur une ou plusieurs références mais ***en gardant seulement les lignes sélectionnées dans les deux tables***.
+Utilisez cette méthode pour combiner les colonnes de deux tables en se basant sur une ou plusieurs références mais ***en conservant seulement les lignes qui correspondent entre les deux tables***.
 
 Pour réaliser cette opération il suffit d'ajouter `nomatch = NULL` ou `nomatch = 0` à l'une quelconque des opérations de jointure précédentes pour renvoyer le même résultat.
 
@@ -443,9 +443,9 @@ ProductReceived[ProductSales,
 > `allow.cartesian` vaut par défaut FALSE car c'est ce que l'utilisateur a souhaité, et une telle jointure croisée peut conduire à un très grand nombre de lignes dans le résultat. Par exemple, si Table A possède 100 lignes et Table
 B en a 50, leur produit cartésien sera de 5000 lignes (100 * 50). Ce qui peut rapidement accroître la mémoire occupée pour de grands ensembles de données.
 
-#### 3.6.1. Selection d'une correspondance
+#### 3.6.1. Selection d'une seule correspondance
 
-Après avoir fait la jointure de la table, nous pourrions penser qu'on aurait pu utiliser une seule jointure pour extraire les informations nécessaires. Dans ce cas il y a deux alternatives :
+Après avoir fait la jointure de la table, nous pouvons voir que l'on peut utiliser une seule jointure pour extraire les informations nécessaires. Dans ce cas il y a deux alternatives :
 
 - Nous pouvons sélectionner la **première correspondance**, représentée dans l'exemple suivant par `id = 2`.
 
@@ -574,6 +574,7 @@ x[i, on = .(x_int >= i_int)]
 ```
 
 Remarques clé :
+
 - Le nom de la colonne de sortie (`x_int`) vient de `x`, mais les valeurs viennent de `i_int` dans `i`.
 - La dernière ligne contient `NA` car aucune ligne de `x` ne correspond à la dernière ligne de `i` (`UPPER == "C"`).
 - Les lignes multiples de `x` sont renvoyées pour correspondre à la première ligne de `i` pour laquelle `UPPER == "A"`.
@@ -650,7 +651,7 @@ ProductReceived[list(c(1L, 3L), 100L),
                 on = c("product_id", "count")]
 ```
 
-Nous voici à la fin, nous filtrons le code **ligne absente dans la table originale** renvoyé suite à la jointure. Pour éviter ce comportement il est recommandé de toujours ajouter l'argument `nomatch = NULL`.
+Comme à la fin nous filtrons sur la base d'une opération de jointure, le code a renvoyé une **ligne absente de la table d'origine**. Pour éviter ce comportement il est recommandé de toujours ajouter l'argument `nomatch = NULL`.
 
 ```{r}
 ProductReceived[list(c(1L, 3L), 100L),
@@ -681,7 +682,7 @@ Products[!"popcorn",
 
 L'opérateur `:=` de data.table est utilisé pour modifier des colonnes par référence (c'est à dire sans recopie) lors de la jointure. Syntaxe générale : `x[i, on=, (cols) := val]`. 
 
-**Mise à jour Simple de un vers un**  
+**Mise à jour Simple un à un**  
 
 Mise à jour de `Products` avec les prix de `ProductPriceHistory` :
 
