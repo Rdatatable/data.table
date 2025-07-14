@@ -633,11 +633,14 @@ SEXP frev(SEXP x, SEXP copyArg) {
   names = PROTECT(getAttrib(x, R_NamesSymbol));
   nprotect++;
   if (copy) {
+    SEXP klass = PROTECT(getAttrib(x, R_ClassSymbol));
+    SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
+    nprotect += 2;
+    // swipe attributes from x
     SET_ATTRIB(x, R_NilValue);
     setAttrib(x, R_NamesSymbol, names);
-    setAttrib(x, R_ClassSymbol, PROTECT(getAttrib(x, R_ClassSymbol)));
-    setAttrib(x, R_LevelsSymbol, PROTECT(getAttrib(x, R_LevelsSymbol)));
-    nprotect += 2;
+    setAttrib(x, R_ClassSymbol, klass);
+    setAttrib(x, R_LevelsSymbol, levels);
   }
   if (!isNull(names)) {
     frev(names, ScalarLogical(FALSE));
