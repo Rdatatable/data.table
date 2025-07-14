@@ -99,7 +99,6 @@ ProductSales = data.table(
   count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
 )
 
-
 ProductSales
 ```
 
@@ -350,7 +349,7 @@ SubSetRowsSorted
 ```
 
 
-3. Sélectionner les rangées `x` à garder.
+3. Sélectionner les lignes `x` à garder.
 
 ```{r}
 Products[SubSetRowsSorted]
@@ -416,7 +415,7 @@ Pour illustrer cette situation, prenons par exemple le `product_id == 1L`, qui a
 ProductReceived[product_id == 1L]
 ```
 
-Et quatre rangées dans notre table `ProductSales`.
+Et quatre lignes dans notre table `ProductSales`.
 
 ```{r}
 ProductSales[product_id == 1L]
