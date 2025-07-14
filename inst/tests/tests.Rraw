@@ -71,6 +71,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
+  setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -4227,7 +4228,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# test 1160 was for setrev, now removed
+# test 1160 was for setfrev, now removed
 
 # tests for setreordervec
 # integer
@@ -21427,20 +21428,82 @@ test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3
 M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
 test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
 
+# .SD reference in '...' passed to lapply(FUN=) is recognized as data.table
+test(2331, lapply(list(data.table(a=1:2)), `[`, j=.SD[1L]), list(data.table(a=1L)))
+
+# 5885 implement frev
+d = c(NA, NaN, Inf, -Inf)
+test(2332.00, frev(c(FALSE, NA)),     rev(c(FALSE, NA)))
+test(2332.01, frev(c(0L, NA)),        rev(c(0L, NA)))
+test(2332.02, frev(d),                rev(d))
+test(2332.03, frev(c(NA, 1, 0+2i)),   rev(c(NA, 1, 0+2i)))
+test(2332.04, frev(as.raw(0:1)),      rev(as.raw(0:1)))
+test(2332.05, frev(NULL),             rev(NULL))
+test(2332.06, frev(character(5)),     rev(character(5)))
+test(2332.07, frev(integer(0)),       rev(integer(0)))
+test(2332.08, frev(list(1, "a")),     rev(list(1, "a")))
+test(2332.09, {x=c(0L, NA); setfrev(x); x},      c(NA, 0L))
+test(2332.10, {x=d; setfrev(x); x},              c(-Inf, Inf, NaN, NA))
+test(2332.11, {x=c(NA, 1, 0+2i); setfrev(x); x}, c(0+2i, 1, NA))
+test(2332.12, {x=as.raw(0:1); setfrev(x); x},    as.raw(1:0))
+test(2332.13, {x=NULL; setfrev(x); x},           NULL)
+test(2332.14, {x=character(5); setfrev(x); x},   character(5))
+test(2332.15, {x=integer(0); setfrev(x); x},     integer(0))
+test(2332.16, {x=list(1, "a"); setfrev(x); x},   list("a", 1))
+test(2332.17, frev(1:1e2),            rev(1:1e2))
+# copy arguments
+x = 1:3
+test(2332.21, {frev(x);  x}, 1:3)
+test(2332.22, {setfrev(x); x}, 3:1)
+test(2332.23, address(x) == address(setfrev(x)))
+test(2332.24, address(x) != address(frev(x)))
+# do not alter on subsets
+test(2332.25, {setfrev(x[1:2]);  x}, 1:3)
+# levels
+f = as.factor(letters)
+test(2332.31, frev(f), rev(f))
+test(2332.32, frev(as.IDate(1:10)), as.IDate(10:1))
+test(2332.33, frev(as.IDate(1:10)), as.IDate(10:1))
+# names
+x = c(a=1L, b=2L, c=3L)
+test(2332.41, frev(x), rev(x))
+test(2332.42, setfrev(x), x)
+x = c(a=1L, b=2L, c=3L)
+test(2332.43, {frev(x); names(x)}, c("a","b","c"))
+# attributes
+x = structure(1:10, class = c("IDate", "Date"), att = 1L)
+test(2332.51, attr(frev(x), "att"), attr(rev(x), "att"))
+test(2332.52, class(frev(x)), class(rev(x)))
+test(2332.53, attr(setfrev(x), "att"), 1L)
+test(2332.54, class(setfrev(x)), c("IDate", "Date"))
+x = structure(integer(0), att = 1L)
+test(2332.55, attr(frev(x), "att"), attr(rev(x), "att"))
+# errors
+test(2332.61, frev(data.table()), error="should not be data.frame or data.table")
+test(2332.62, frev(expression(1)), error="is not supported by frev")
+if (test_bit64) {
+  x = as.integer64(c(1, NA, 3))
+  test(2332.71, frev(x), rev(x))
+  test(2332.72, setfrev(x), x)
+}
+# support rotate idiom
+M1 = M2 = matrix(1:4, nrow=2)
+test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
+
 # '..1' is ...elt(1), not a variable named '1', when doing "up-a-level" search (#5460)
 DT = data.table(a=1.0)
 sqrt_dot_sym = function(...) sqrt(..1)
-test(2331.01, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
-test(2331.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
-test(2331.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
-test(2331.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
+test(2333.01, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
+test(2333.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
+test(2333.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
+test(2333.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
 sqrt_elt_sym = function(...) sqrt(...elt(1))
 # TODO(R>=3.5.0): run this unconditionally
 if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
-  test(2331.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
-  test(2331.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
-  test(2331.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
-  test(2331.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
+  test(2333.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
+  test(2333.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+  test(2333.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+  test(2333.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
 }
 # edge case of weird, though technically valid, names:
 #  _not_ '..N' style and distinct from '...'
@@ -21448,13 +21511,13 @@ if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
 DT = data.table(a = 4L)
 local({
   `.123` = 'a'
-  test(2331.09, DT[, ...123], DT)
+  test(2333.09, DT[, ...123], DT)
 })
 local({
   ..123 = 'a'
-  test(2331.10, DT[, ....123], DT)
+  test(2333.10, DT[, ....123], DT)
 })
 local({
   ...123 = 'a'
-  test(2331.11, DT[, .....123], DT)
+  test(2333.11, DT[, .....123], DT)
 })
