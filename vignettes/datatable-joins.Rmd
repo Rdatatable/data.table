@@ -99,7 +99,6 @@ ProductSales = data.table(
   count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
 )
 
-
 ProductSales
 ```
 
@@ -574,6 +573,7 @@ x[i, on = .(x_int >= i_int)]
 ```
 
 Key Takeaways:
+
 - The name of the output column (`x_int`) comes from `x`, but the values come from `i_int` in `i`.
 - The last row contains `NA` because no rows in `x` match the last row in `i` (`UPPER == "C"`).
 - Multiple rows in `x` are returned to match the first row in `i` with `UPPER == "A"`.
@@ -740,4 +740,3 @@ ProductPriceHistory
 - *How does one do a full join using data.table?*: https://stackoverflow.com/questions/15170741/how-does-one-do-a-full-join-using-data-table
 
 - *Enhanced data.frame*: https://rdatatable.gitlab.io/data.table/reference/data.table.html
-
