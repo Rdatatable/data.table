@@ -1,4 +1,4 @@
-pkgs = c("bit64", "caret", "dplyr", "gdata", "ggplot2", "hexbin", "knitr", "nanotime", "nlme", "parallel", "plyr", "R.utils", "sf", "vctrs", "xts", "yaml", "zoo")
+pkgs = c("DBI", "RSQLite", "bit64", "caret", "dplyr", "gdata", "ggplot2", "hexbin", "knitr", "nanotime", "nlme", "parallel", "plyr", "R.utils", "sf", "vctrs", "xts", "yaml", "zoo")
 # First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
 # So that these dependencies of other.Rraw are maintained in a single place.
 # TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
@@ -508,13 +508,12 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
-  old = options(datatable.verbose=FALSE)
-  test(18.18, capture.output(as.data.table(x, key="index")),
+  test(18.18, options=c(datatable.verbose=FALSE),
+       capture.output(as.data.table(x, key="index")),
        c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2",
          " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5",
          " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
          " 9: 1970-01-10  9", "10: 1970-01-11 10"))
-  options(old)
 
   # as.data.table.xts(foo) had incorrect integer index with a column name called 'x', #4897
   M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
@@ -529,23 +528,24 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 # was 2108 in tests.Rraw, #5516
 # first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
 # stopifnot("xts"%in%installed.packages(), !isNamespaceLoaded("xts")); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!isNamespaceLoaded("xts"))
-x = as.POSIXct("2019-09-09")+0:1
-old = options(datatable.verbose=TRUE)
-test(19.01, last(x), x[length(x)], output="!is.xts(x)")
-test(19.02, first(x), x[1L], output="!is.xts(x)")
-if (loaded[["xts"]]) {
-  xt = xts(1:2, x)
-  test(19.03, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(19.04, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
-  xt = xts(matrix(1:4, 2L, 2L), x)
-  test(19.05, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(19.06, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
-}
-# first on empty df now match head(df, n=1L), #3858
-df = data.frame(a=integer(), b=integer())
-test(19.11, first(df), df, output="!is.xts(x)")
-test(19.12, last(df), df, output="!is.xts(x)")
-options(datatable.verbose=FALSE)  # so the as.data.table() doesn't pollute output
+local({
+  x = as.POSIXct("2019-09-09")+0:1
+  old = options(datatable.verbose=TRUE); on.exit(options(old))
+  test(19.01, last(x), x[length(x)], output="!is.xts(x)")
+  test(19.02, first(x), x[1L], output="!is.xts(x)")
+  if (loaded[["xts"]]) {
+    xt = xts(1:2, x)
+    test(19.03, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
+    test(19.04, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
+    xt = xts(matrix(1:4, 2L, 2L), x)
+    test(19.05, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
+    test(19.06, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
+  }
+  # first on empty df now match head(df, n=1L), #3858
+  df = data.frame(a=integer(), b=integer())
+  test(19.11, first(df), df, output="!is.xts(x)")
+  test(19.12, last(df), df, output="!is.xts(x)")
+})
 # xts last-first dispatch fix #4053
 x = 1:3
 y = as.POSIXct(x, origin="1970-01-01")
@@ -561,75 +561,76 @@ xt = structure(
   index = structure(c(1167782400, 1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
   .Dim = c(3L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
 )
-options(datatable.verbose=TRUE)
-if (loaded[["xts"]]) {
-  test(19.21, last(x, n=2L), 2:3, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.22, last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.23, last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.24, last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  xt_last = structure(
-    c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(1167955200, tzone = "UTC", tclass = "Date"),
-    .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  xt_last2 = structure(
-    c(141.229996, 141.330002, 142.050003, 141.399994, 140.610001, 140.380005,
-      141.669998, 140.539993, 69620600, 76645300, 109.231255, 108.360008),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-    .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  test(19.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
-  test(19.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
-  test(19.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  xt_first = structure(
-    c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(1167782400, tzone = "UTC", tclass = "Date"),
-    .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  xt_first2 = structure(
-    c(142.25, 141.229996, 142.860001, 142.050003, 140.570007, 140.610001, 141.369995, 141.669998, 94807600, 69620600, 108.999954, 109.231255),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
-    .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  test(19.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
-  test(19.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
-} else {
-  test(19.21, last(x, n=2L), 2:3, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.22, last(y, n=2L), y[2:3], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.23, last(x, n=1L), 3L, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.24, last(y, n=1L), y[3L], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.25, last(xt), error="you should have 'xts' installed already")
-  test(19.26, last(xt, n=2L), error="you should have 'xts' installed already")
-  test(19.31, first(x, n=2L), 1:2, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.32, first(y, n=2L), y[1:2], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.33, first(x, n=1L), 1L, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.34, first(y, n=1L), y[1L], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.35, first(xt), error="you should have 'xts' installed already")
-  test(19.36, first(xt, n=2L), error="you should have 'xts' installed already")
-}
-test(19.41, last(x), 3L, output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.42, last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.51, first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.52, first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.61, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(19.62, last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(19.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(19.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-# matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-test(19.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
-test(19.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-test(19.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
-test(19.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-options(old)
+local({
+  old = options(datatable.verbose=TRUE); on.exit(options(old))
+  if (loaded[["xts"]]) {
+    test(19.21, last(x, n=2L), 2:3, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    test(19.22, last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    test(19.23, last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    test(19.24, last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    xt_last = structure(
+      c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
+      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
+      index = structure(1167955200, tzone = "UTC", tclass = "Date"),
+      .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+    )
+    xt_last2 = structure(
+      c(141.229996, 141.330002, 142.050003, 141.399994, 140.610001, 140.380005,
+        141.669998, 140.539993, 69620600, 76645300, 109.231255, 108.360008),
+      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
+      index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
+      .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+    )
+    test(19.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
+    test(19.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
+    test(19.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    test(19.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    test(19.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    test(19.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+    xt_first = structure(
+      c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
+      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
+      index = structure(1167782400, tzone = "UTC", tclass = "Date"),
+      .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+    )
+    xt_first2 = structure(
+      c(142.25, 141.229996, 142.860001, 142.050003, 140.570007, 140.610001, 141.369995, 141.669998, 94807600, 69620600, 108.999954, 109.231255),
+      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
+      index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
+      .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+    )
+    test(19.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
+    test(19.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
+  } else {
+    test(19.21, last(x, n=2L), 2:3, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.22, last(y, n=2L), y[2:3], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.23, last(x, n=1L), 3L, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.24, last(y, n=1L), y[3L], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.25, last(xt), error="you should have 'xts' installed already")
+    test(19.26, last(xt, n=2L), error="you should have 'xts' installed already")
+    test(19.31, first(x, n=2L), 1:2, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.32, first(y, n=2L), y[1:2], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.33, first(x, n=1L), 1L, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.34, first(y, n=1L), y[1L], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+    test(19.35, first(xt), error="you should have 'xts' installed already")
+    test(19.36, first(xt, n=2L), error="you should have 'xts' installed already")
+  }
+  test(19.41, last(x), 3L, output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+  test(19.42, last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+  test(19.51, first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+  test(19.52, first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+  test(19.61, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+  test(19.62, last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+  test(19.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+  test(19.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+  # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
+  test(19.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
+  test(19.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  test(19.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
+  test(19.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+})
 
 if (loaded[["xts"]]) {  # was 2133 in tests.Rraw, #5516
   # keep.rownames in as.data.table.xts() supports a string, #4232
@@ -682,11 +683,12 @@ if (loaded[["nanotime"]]) {
   # was 2080.01-05 in tests.Rraw, #5516
   n = nanotime(1:4)
   n[2L] = NA
-  opt = options(datatable.verbose=TRUE)
-  test(24.1, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
-  test(24.2, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
-  test(24.3, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
-  options(opt)
+  local({
+    old = options(datatable.verbose=TRUE); on.exit(options(old))
+    test(24.1, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
+    test(24.2, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
+    test(24.3, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
+  })
   test(24.4, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
   test(24.5, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
 
@@ -719,14 +721,17 @@ if (loaded[["nanotime"]]) {
   test(27.14, lapply(nafill(l, fill=nanotime(0)), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
 
   # coerceAs verbose. Was 10.91-10.96 in nafill.Rraw, #6139
-  x = nanotime(1L)
-  test(27.21, options=c(datatable.verbose=2L), coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
-  test(27.22, options=c(datatable.verbose=2L), coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
-  test(27.23, options=c(datatable.verbose=2L), substring(coerceAs(x, "1"),1,11) %in% c("1","1970-01-01T"), output="double[nanotime] into character[character]")
-                                                     # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
-  test(27.24, options=c(datatable.verbose=2L), coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
-  test(27.25, options=c(datatable.verbose=2L), coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
-  test(27.26, options=c(datatable.verbose=2L), coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
+  local({
+    x = nanotime(1L)
+    old = options(datatable.verbose=2L); on.exit(options(old))
+    test(27.21, coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
+    test(27.22, coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
+    test(27.23, substring(coerceAs(x, "1"), 1, 11) %in% c("1", "1970-01-01T"), output="double[nanotime] into character[character]")
+                # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
+    test(27.24, coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
+    test(27.25, coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
+    test(27.26, coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
+  })
 }
 
 # that plot works; moved from tests.Rraw 167 to here to save ram of loading graphics package and possible screen device issues on overloaded servers, #5517
@@ -780,4 +785,301 @@ if (loaded[["vctrs"]]) {
   # vctrs::list_of() columns are treated the same as other list() columns
   DT = data.table(a = 1, b = list_of(mtcars))
   test(33, DT, output="<vctrs_list_of>.*<data\\.frame\\[32x11\\]>")
+}
+
+# NB: currently, RSQLite requires DBI, so partially redundant, but future-proof.
+if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
+  # mergelist join tester vs SQLite, based on v1.9.8 non-equi join tester
+
+  # funs ----
+
+  # produce SQL statement
+  # ln, rn: lhs names, rhs names, symmult: symmetric mult
+  mult_all = function(tbl, cols, ...) sprintf(
+    "(\n  SELECT %s FROM %s \n) %s",
+    toString(setdiff(cols, "row_id")), tbl, tbl
+  )
+  mult_one = function(tbl, cols, on, mult) sprintf(
+    "(SELECT %s FROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY %s ORDER BY row_id %s) AS rownum FROM %s \n) %s WHERE rownum=1) %s",
+    toString(setdiff(cols, c("row_id", "rownum"))),
+    toString(on),
+    if (mult == "first") "ASC" else "DESC",
+    tbl, tbl, tbl
+  )
+  sql = function(how, on, mult, ln, rn, symmult=FALSE, notjoin=FALSE) {
+    stopifnot(length(on) == 1L)
+    # building sql query
+    if (how == "full") {
+      return(sprintf(
+        "%s \n UNION ALL \n %s",
+        sql("left", on, mult, ln, rn, symmult=mult %in% c("first", "last")),
+        sql("right", on, mult, ln, rn, symmult=mult %in% c("first", "last"), notjoin=TRUE)
+      ))
+    }
+    nm = list()
+    nm[["lhs"]] = ln; nm[["rhs"]] = rn
+    using = sprintf("USING (%s)", toString(on))
+    lhs = "lhs"; rhs = "rhs"
+    join = if (how == "inner") {
+      if (mult == "all") sprintf("%s \n INNER JOIN \n %s \n %s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
+      else               sprintf("%s \n INNER JOIN \n %s \n %s", mult_one(lhs, nm[[lhs]], on, mult), mult_one(rhs, nm[[rhs]], on, mult), using)
+    } else if (how == "left") {
+      if (mult == "all") sprintf("%s \n LEFT JOIN \n %s \n %s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
+      else               sprintf("%s \n LEFT JOIN \n %s \n %s", (if (symmult) mult_one else mult_all)(lhs, nm[[lhs]], on, mult), mult_one(rhs, nm[[rhs]], on, mult), using)
+    } else if (how == "right") { ## lhs-rhs swap happens here, mult_one is applied on new rhs
+      if (mult == "all") sprintf("%s \n LEFT JOIN \n %s \n %s", mult_all(rhs, nm[[rhs]]), mult_all(lhs, nm[[lhs]]), using)
+      else               sprintf("%s \n LEFT JOIN \n %s \n %s", (if (symmult) mult_one else mult_all)(rhs, nm[[rhs]], on, mult), mult_one(lhs, nm[[lhs]], on, mult), using)
+    }
+    if (how == "right") {lhs = "rhs"; rhs = "lhs"} ## this name swap is for notjoin and select below
+    where = if (!notjoin) "" else sprintf("\nWHERE %s IS NULL", paste(rhs, on, sep="."))
+    select = sprintf("%s, %s, %s",
+                     paste(lhs, on, sep="."),
+                     paste("lhs", setdiff(nm[["lhs"]], c("row_id", on)), sep=".", collapse=", "),
+                     paste("rhs", setdiff(nm[["rhs"]], c("row_id", on)), sep=".", collapse=", "))
+    sprintf("SELECT %s FROM \n %s%s", select, join, where)
+  }
+
+  dbSend = function(..., silent=FALSE) try(suppressWarnings(DBI::dbSendQuery(...)), silent=silent)
+
+  # .conn SQLite connection, if provided it will use it instead of creating temporary one
+  # .drop logical TRUE (default) will drop db tables before and after and populate new, when FALSE it expects tables to be populated
+  join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, .conn, .drop=TRUE, .debug=interactive(), ans, err=FALSE) {
+    nm = names(l)
+    stopifnot(is.null(nm) || identical(nm, c("x", "i")) || identical(nm, c("lhs", "rhs")))
+    names(l) = c("lhs", "rhs")
+    lhs = l[["lhs"]]; rhs = l[["rhs"]]
+    stopifnot(is.data.table(lhs), is.data.table(rhs),
+              is.character(how), is.character(mult), length(mult) == 1L,
+              is.character(on),
+              is.logical(allow.cartesian), is.logical(.drop))
+    if (err && mult == "error") {
+      dt = try(silent=TRUE, mergelist(list(lhs, rhs), on=on, how=how, mult=mult))
+      if (!inherits(dt, "try-error")) {
+        if (.debug) browser()
+        stop("no error returned from mergelist(mult='error') but err flag set to TRUE in join.sql.equal")
+      }
+      err_msg = "mult='error' and multiple matches during merge"
+      if (!identical(attr(dt, "condition", TRUE)[["message"]], err_msg)) {
+        if (.debug) browser()
+        stop("different error returned than expected: ", attr(dt, "condition", TRUE)[["message"]])
+      }
+      return(TRUE)
+    }
+    # row_id column required as SQL is not ordered, creating on R side
+    if (!"row_id" %in% names(lhs)) lhs = copy(lhs)[, "row_id" := seq_len(.N)]
+    if (!"row_id" %in% names(rhs)) rhs = copy(rhs)[, "row_id" := seq_len(.N)]
+    # preparing sql environment
+    conn = if (new.conn <- missing(.conn)) DBI::dbConnect(RSQLite::SQLite()) else .conn
+    if (.drop) {
+      dbSend(conn, "DROP TABLE lhs;", silent=TRUE)
+      dbSend(conn, "DROP TABLE rhs;", silent=TRUE)
+      DBI::dbWriteTable(conn, name="lhs", value=lhs)
+      DBI::dbWriteTable(conn, name="rhs", value=rhs)
+    }
+    # building sql query
+    s = sql(how, on, mult, names(lhs), names(rhs))
+    s = paste0(s, ";\n")
+    # run data.table and SQLite
+    dt = mergelist(list(lhs[, !"row_id"], rhs[, !"row_id"]), on=on, how=how, mult=mult)
+    sq = try(silent=TRUE, as.data.table(DBI::dbGetQuery(conn, s)))
+    if (inherits(sq, "try-error")) {
+      if (.debug) {message("error during sql statement"); browser()}
+      stop("error during sql statement")
+    }
+    if (!is.data.table(dt) || !is.data.table(sq)) {
+      if (.debug) {message("dt and sq must be data.table already"); browser()}
+      stop("dt and sq must be data.table already")
+    }
+    if (how %in% c("inner", "full")) {
+      dt2 = mergelist(list(rhs[, !"row_id"], lhs[, !"row_id"]), on=on, how=how, mult=mult)
+      setcolorder(dt2, neworder=names(dt))
+      setattr(dt, "index", integer())
+      setattr(dt2, "index", integer())
+      r = all.equal(dt, dt2, ignore.row.order=TRUE)
+      ## check it is symetric
+      if (!isTRUE(r)) {
+        if (.debug) {message("mergelist is not symmetric for ", how); browser()}
+        stop("mergelist is not symmetric for ", how)
+      }
+    }
+    setattr(sq, "index", integer())
+    setattr(dt, "index", integer())
+    # compare results
+    a = all.equal(dt, sq, ignore.row.order=TRUE)
+    b = all.equal(dt, sq, ignore.row.order=TRUE, ignore.col.order=TRUE)
+    if (!missing(ans)) {
+      r = all.equal(ans, sq, ignore.row.order=TRUE)
+      if (!isTRUE(r)) {
+        if (.debug) browser()
+        stop("sql does not match to reference answer")
+      }
+    }
+    if (.drop) {
+      dbSend(conn, "DROP TABLE lhs;")
+      dbSend(conn, "DROP TABLE rhs;")
+    }
+    if (new.conn) suppressWarnings(DBI::dbDisconnect(conn))
+    if (isTRUE(b) && !isTRUE(a)) {
+      if (.debug) browser()
+      stop("only column order mismatch")
+    }
+    if (!isTRUE(a)) {
+      if (.debug) browser()
+      cat(sep="\n", c(
+        sprintf("# dtq:\nmergelist(l, on='%s', how='%s', mult='%s')", toString(on), how, mult),
+        sprintf("# sql:\n%s", s),
+        a, "\n"))
+    }
+    isTRUE(a)
+  }
+
+  batch.join.sql.equal = function(cases, on, hows=c("inner", "left", "right", "full"), mults=c("all", "first", "last"), .debug=FALSE) {
+    if ("error" %in% mults) stop("mult=error is not supported")
+    p = proc.time()[[3L]]
+    conn = DBI::dbConnect(RSQLite::SQLite())
+    ans = list()
+    dup_n = 0L
+    for (case in cases) {
+      l = case_data(case)
+      stopifnot(c("lhs", "rhs") %in% names(l))
+      case = as.character(case)
+      lhs = l$lhs; rhs = l$rhs
+      ans[[case]] = list()
+      # reuse tables, to test if affects sqlite efficiency
+      dbSend(conn, "DROP TABLE lhs;", silent = TRUE)
+      dbSend(conn, "DROP TABLE rhs;", silent = TRUE)
+      # row_id column required as SQL is not ordered, creating on R side
+      if (!"row_id" %in% names(lhs)) lhs = copy(lhs)[, "row_id" := seq_len(.N)]
+      if (!"row_id" %in% names(rhs)) rhs = copy(rhs)[, "row_id" := seq_len(.N)]
+      DBI::dbWriteTable(conn, name="lhs", value=lhs)
+      DBI::dbWriteTable(conn, name="rhs", value=rhs)
+      len = prod(length(cases), length(hows), length(mults))
+      if (len > (len.warn <- getOption("tests.length.warning", 1000L)))
+        warning("You are about to run ", len.warn, " tests. To suppress this warning use the 'tests.length.warning' option.")
+      for (how in hows) {
+        ans[[case]][[how]] = list()
+        for (mult in mults) {
+          if (!is.null(ans[[case]][[how]][[mult]])) {
+            dup_n = dup_n + 1L
+            next #warning("Some tests are duplicated, so far ", dup_n)
+          }
+          ans[[case]][[how]][[mult]] = join.sql.equal(list(lhs=lhs, rhs=rhs), on=on, how=how, mult=mult, .conn=conn, .drop=FALSE, .debug=.debug)
+        }
+      }
+      dbSend(conn, "DROP TABLE lhs;")
+      dbSend(conn, "DROP TABLE rhs;")
+    }
+    suppressWarnings(DBI::dbDisconnect(conn))
+    cat(sprintf("batch.join.sql.equal: %s%s tests completed in %.1fs\n",
+                len, if (dup_n) sprintf(" (%s duplicated)", dup_n) else "", proc.time()[[3L]] - p))
+    ans
+  }
+  case_data = function(case) {
+    set.seed(108L)
+    if (case == 1L) {         # 2 match
+      lhs = data.table(id = c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id = c(2L, 4L, 3L, 5L), v2=1:4)
+    } else if (case == 2L) {  # 4 match
+      lhs = data.table(id = c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id = c(7L, 5L, 3L, 1L), v2=1:4)
+    } else if (case == 3L) {  # 1 match
+      lhs = data.table(id =c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id =c(1L, 2L, 4L, 6L), v2=1:4)
+    } else if (case == 4L) {  # 0 match
+      lhs = data.table(id =c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id =c(0L, 2L, 4L, 6L), v2=1:4)
+    } else if (case == 5L) {  # 0 match dup
+      lhs = data.table(id =c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id =c(0L, 2L, 2L, 6L), v2=1:4)
+    } else if (case == 6L) {  # 1 match dup
+      lhs = data.table(id =c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id =c(1L, 2L, 2L, 6L), v2=1:4)
+    } else if (case == 7L) {  # 1 match dup match
+      lhs = data.table(id =c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id =c(3L, 3L, 4L, 6L), v2=1:4)
+    } else if (case == 8L) {  # 2 match 2 dup match
+      lhs = data.table(id =c(1L, 5L, 3L, 7L), v1=1:4)
+      rhs = data.table(id = c(3L, 3L, 7L, 7L), v2=1:4)
+    } else if (case == 9L) {  # 2 dup 2 dup
+      lhs = data.table(id = c(1L, 5L, 1L, 5L), v1=1:4)
+      rhs = data.table(id = c(5L, 5L, 1L, 1L), v2=1:4)
+    } else if (case == 10L) { # 4 dup 4 dup match
+      lhs = data.table(id = c(1L, 1L, 1L, 1L), v1=1:4)
+      rhs = data.table(id = c(1L, 1L, 1L, 1L), v2=1:4)
+    } else if (case == 11L) { # 4 dup 4 dup nomatch
+      lhs = data.table(id = c(1L, 1L, 1L, 1L), v1=1:4)
+      rhs = data.table(id = c(2L, 2L, 2L, 2L), v2=1:4)
+    } else if (case == 12L) { # no match, no overlap
+      lhs = data.table(id = 1:4, v1=1:4)
+      rhs = data.table(id = 6:9, v2=1:4)
+    } else if (case == 13L) { # all i matches
+      lhs = data.table(id = c(1L, 5L, 3L, 7L, 9L), v1=1:5)
+      rhs = data.table(id = c(7L, 5L, 3L, 1L), v2=1:4)
+    } else if (case == 14L) { # dup match and 1 non-match
+      ## inner join short circuit test
+      ## what if some row is excluded but another is duplicated? nrow(i) match
+      lhs = data.table(id = c(1L, 5L, 3L, 7L, 3L), v1=1:5)
+      rhs = data.table(id = c(7L, 5L, 3L, 2L), v2=1:4)
+    } else if (case == 15L) {
+      # does not raise error on mult="error" because dups '13' does not have matching rows!
+      lhs = data.table(id = INT(17, 14, 11, 10, 5, 1, 19, 7, 16, 15), v1=1:10)
+      rhs = data.table(id = INT(6, 20, 13, 1, 8, 13, 3, 10, 17, 9), v2=1:10)
+    }  else if (case == 16L) {
+      lhs = data.table(id = sample(10L, 10L, TRUE), v1=1:10)
+      rhs = data.table(id = sample(10L, 10L, TRUE), v2=1:10)
+    } else if (case == 17L) {
+      lhs = data.table(id = sample(100L, 100L, TRUE), v1=1:100)
+      rhs = data.table(id = sample(100L, 100L, TRUE), v2=1:100)
+    } else if (case == 18L) {
+      lhs = data.table(id = sample(100L, 100L, TRUE), v1=1:100)
+      rhs = data.table(id = sample(10L, 20L, TRUE), v2=1:100)
+    } else if (case == 19L) {
+      lhs = as.data.table(list(id=sample(1000L), v1=1:1000))
+      rhs = as.data.table(list(id=sample(1000L), v2=1:1000))
+    } else if (case == 20L) {
+      lhs = as.data.table(list(id=sample(2000L, 1000L), v1=1:1000))
+      rhs = as.data.table(list(id=sample(2000L, 1000L), v2=1:1000))
+    } else if (case == 21L) {
+      lhs = as.data.table(list(id=sample(1000L, 2000L, TRUE), v1=1:1000))
+      rhs = as.data.table(list(id=sample(1000L, 2000L, TRUE), v2=1:1000))
+    } else if (case == 22L) { ## LHS equals RHS
+      lhs = data.table(id=1:2, v1=1:2)
+      rhs = data.table(id=1:2, v2=1:2)
+    } else if (case == 23L) { ## cross join
+      lhs = data.table(id=c(1L, 1L), v1=1:2)
+      rhs = data.table(id=c(1L, 1L), v2=1:2)
+    } else if (case == 24L) { ## cartesian match, dups on both sides of match
+      lhs = data.table(id=c(1L, 1:2), v1=1:3)
+      rhs = data.table(id=c(1L, 1L, 3L), v2=1:3)
+    } else if (case == 25L) { ## duplicates in RHS
+      lhs = data.table(id=1:2, v1=1:2)
+      rhs = data.table(id=c(2L, 2:3), v2=1:3)
+    } else if (case == 26L) { ## duplicates in RHS and LHS, some RHS dups does not have matches in LHS (merge.data.table+mult fails)
+      lhs = data.table(id=c(1:3, 3L), v1=1:4)
+      rhs = data.table(id=c(1L, 1L, 3:4, 4L), v2=1:5)
+    } else if (case == 27L) { ## duplicates in RHS and LHS, some LHS dups does not have matches in RHS
+      lhs = data.table(id=c(1L, 1L, 3:4, 4L), v1=1:5)
+      rhs = data.table(id=c(1:3, 3L), v2=1:4)
+    } else if (case == 28L) { ## duplicates in RHS and LHS
+      lhs = data.table(id=c(1:3, 3L), v1=1:4)
+      rhs = data.table(id=c(1L, 1L, 3:4), v2=1:4)
+    } else if (case == 29L) { ## duplicates in RHS
+      lhs = data.table(id=1:2, v1=1:2)
+      rhs = data.table(id=c(2L, 2:3), v2=1:3)
+    } else if (case == 30L) { ## duplicates in LHS
+      lhs = data.table(id=c(1:2, 2L), v1=1:3)
+      rhs = data.table(id=2:3, v2=1:2)
+    } else if (case == 31L) {
+      lhs = data.table(id=integer(), v1=integer())
+      rhs = data.table(id=integer(), v2=integer())
+    } else stop("case not found")
+    list(lhs=lhs, rhs=rhs)
+  }
+
+  # tests ----
+
+  y = batch.join.sql.equal(cases=1:31, on="id", hows=c("inner", "left", "right", "full"), mults=c("all", "first", "last"), .debug=interactive())
+  y = rapply(y, isTRUE)
+  if (!all(y))
+    stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
 }
