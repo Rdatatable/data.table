@@ -21,7 +21,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          packages: gh
+          packages: |
+            gh
+            glue
 
       - name: Check for existing CRAN issues
         id: check-issues
@@ -57,11 +59,11 @@ jobs:
             "POST /repos/{owner_repo}/issues",
             owner_repo = Sys.getenv("GITHUB_REPOSITORY"),
             title = paste("Fix CRAN R CMD check issues by", deadline),
-            body = paste0(
-              "This package is failing CRAN checks and is at risk of archival.\n",
-              "https://cran.r-project.org/web/checks/check_results_",
-              pkgname,
-              ".html"
+            body = glue::glue(
+              "This package is failing CRAN checks and is at risk of archival.",
+              "https://cran.r-project.org/web/checks/check_results_{pkgname}.html",
+              "This issue was opened by https://github.com/{Sys.getenv('GITHUB_REPOSITORY')}/actions/runs/{Sys.getenv('GITHUB_RUN_ID')}.",
+              .sep = "\n\n"
             ),
             labels = list("cran-deadline")
           )
