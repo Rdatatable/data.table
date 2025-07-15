@@ -66,9 +66,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     }
   }
   if (!length(found_items)) {
-    if (!silent) catf("No objects of class data.table exist in %s%s\n",
-                      if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env),
-                      if (recursive) " (recursively)" else "")
+    if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
     return(invisible(data.table(NULL)))
   }
   info = data.table(NAME=vapply_1c(found_items, `[[`, "name"),
