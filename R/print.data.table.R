@@ -141,6 +141,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     print_default(toprint)
     return(invisible(x))
   }
+  if (col.names == "none")
+    colnames(toprint) = rep.int("", ncol(toprint))
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
