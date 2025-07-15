@@ -21525,7 +21525,7 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 #2606 Recursive tables() naming convention
-test(2334.1, local({
+local({
   lst_named    <- list(inner = data.table(a = 1))
   lst_unnamed  <- list(data.table(b = 2))
   nested       <- list(l1 = list(l2 = data.table(c = 3)))
@@ -21535,28 +21535,28 @@ test(2334.1, local({
   expected <- c(
     "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
     "mixed[[1]]", "mixed$y",
-    "mixed_nested$A[[1]]", "mixed_nested$A$q"
-  )  
-  identical(out, sort(expected))
-}))
-test(2334.2, local({
+    "mixed_nested$A[[1]]", "mixed_nested$A$q")
+  test(2334.1, identical(out, sort(expected)))
+})
+local({
   dt <- data.table(val = 42)
   e <- new.env()
   e$dt <- dt
   e$self <- e
   out <- tables(recursive = TRUE, env = e)$NAME
-  identical(out, "dt")
-}))
-test(2334.3, local({
+  test(2334.2, identical(out, "dt"))
+})
+local({
   test_obj <- local({
     common_list <- list(dt_inner = data.table(d = 4))
     outer_list <- list(
       first = common_list,
       unique = data.table(e = 5))
-    outer_list$second <- outer_list$first 
+    outer_list$second <- outer_list$first
     outer_list})
   out <- tables(recursive = TRUE)$NAME
-  (length(out) == 2) &&
-  ("test_obj$unique" %in% out) &&
-  (sum(grepl("\\$dt_inner$", out)) == 1)
-}))
+  test(2334.3,
+       (length(out) == 2) &&
+       ("test_obj$unique" %in% out) &&
+       (sum(grepl("\\$dt_inner$", out)) == 1))
+})
