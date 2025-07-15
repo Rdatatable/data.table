@@ -100,13 +100,13 @@ De plus, data.table *hérite* de `data.frame`. C'est aussi un `data.frame`. Un d
 
 Nous avons également proposé des améliorations à R chaque fois que cela était possible. L'une d'entre elles a été acceptée comme nouvelle fonctionnalité dans R 2.12.0 :
 
-> `unique()` et `match()` sont maintenant plus rapides sur les vecteurs de caractères où tous les éléments sont dans le cache global CHARSXP et ont un encodage non marqué (ASCII). Merci à Matt Dowle pour avoir suggéré des améliorations dans la façon dont le code de hachage est généré dans unique.c.
+Note : `unique()` et `match()` sont maintenant plus rapides sur les vecteurs de caractères où tous les éléments sont dans le cache global CHARSXP et ont un encodage non marqué (ASCII). Merci à Matt Dowle pour avoir suggéré des améliorations dans la façon dont le code de hachage est généré dans unique.c.
 
 Une deuxième proposition était d'utiliser `memcpy` dans duplicate.c, qui est beaucoup plus rapide qu'une boucle for en C. Cela améliorerait la *manière* dont R copie les données en interne (sur certaines mesures, de 13 fois). Le fil de discussion sur r-devel est [ici] (https://stat.ethz.ch/pipermail/r-devel/2010-April/057249.html).
 
 Une troisième proposition plus significative qui a été acceptée est que R utilise maintenant le code de tri par base (radix sort) de data.table à partir de R 3.3.0 :
 
-> L'algorithme de tri par base (radix sort) et l'implémentation de data.table (forder) remplace l'ancien tri par base (comptage) et ajoute une nouvelle méthode pour order(). Proposé par Matt Dowle et Arun Srinivasan, le nouvel algorithme supporte les vecteurs de logiques, d’entiers (même avec de grandes valeurs), de réels et de caractères. Il est plus performant que toutes les autres méthodes, mais il y a quelques mises en garde (voir ?sort).
+Note : l'algorithme de tri par base (radix sort) et l'implémentation de data.table (forder) remplace l'ancien tri par base (comptage) et ajoute une nouvelle méthode pour order(). Proposé par Matt Dowle et Arun Srinivasan, le nouvel algorithme supporte les vecteurs de logiques, d’entiers (même avec de grandes valeurs), de réels et de caractères. Il est plus performant que toutes les autres méthodes, mais il y a quelques mises en garde (voir ?sort).
 
 C'était un grand événement pour nous et nous l'avons fêté jusqu'à ce que les vaches rentrent à la maison. (Pas vraiment.)
 
@@ -315,7 +315,7 @@ A[c(1, 3), c(2, 3)]
 
 Cependant, cette méthode renvoie l'union de ces lignes et de ces colonnes. Pour référencer les cellules, une matrice à 2 colonnes est nécessaire. `?Extract` dit :
 
-> Lors de l'indexation des tableaux par `[`, un seul argument `i` peut être une matrice avec autant de colonnes qu'il y a de dimensions de `x` ; le résultat est alors un vecteur avec des éléments correspondant aux ensembles d'indices dans chaque ligne de `i`.
+Note : lors de l'indexation des tableaux par `[`, un seul argument `i` peut être une matrice avec autant de colonnes qu'il y a de dimensions de `x` ; le résultat est alors un vecteur avec des éléments correspondant aux ensembles d'indices dans chaque ligne de `i`.
 
 Essayons encore une fois.
 
@@ -458,7 +458,7 @@ On en parle souvent, mais c'est d'une simplicité déconcertante. Une fonction t
 
 Vous pouvez maintenant vous demander : où cela est-il documenté dans R ? Réponse : c'est assez clair, mais vous devez d'abord savoir qu'il faut chercher dans `?UseMethod` et *ce* fichier d'aide contient :
 
-> Lorsqu'une fonction appelant `UseMethod('fun')` est appliquée à un objet avec l'attribut de classe `c('first', 'second')`, le système recherche une fonction appelée `fun.first` et, s'il la trouve, l'applique à l'objet. Si aucune fonction de ce type n'est trouvée, une fonction appelée `fun.second` est essayée. Si aucun nom de classe ne produit une fonction appropriée, la fonction `fun.default` est utilisée, si elle existe, ou une erreur se produit.
+Note : lorsqu'une fonction appelant `UseMethod('fun')` est appliquée à un objet avec l'attribut de classe `c('first', 'second')`, le système recherche une fonction appelée `fun.first` et, s'il la trouve, l'applique à l'objet. Si aucune fonction de ce type n'est trouvée, une fonction appelée `fun.second` est essayée. Si aucun nom de classe ne produit une fonction appropriée, la fonction `fun.default` est utilisée, si elle existe, ou une erreur se produit.
 
 Heureusement, une recherche internet sur "How does R method dispatch work" (à l'heure où j'écris ces lignes) renvoie la page d'aide `?UseMethod` dans les premiers liens. Certes, les autres liens sortent rapidement dans les subtilités de S3 vs S4, les génériques internes et ainsi de suite.
 
