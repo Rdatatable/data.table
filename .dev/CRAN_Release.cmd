@@ -323,7 +323,7 @@ Rdevel-strict-[gcc|clang] CMD check data.table_1.16.99.tar.gz
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "knitr", "markdown"),
+install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "litedown"),
                  Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
