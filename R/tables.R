@@ -71,7 +71,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
                       if (recursive) " (recursively)" else "")
     return(invisible(data.table(NULL)))
   }
-  info = data.table(NAME=vapply(found_items, `[[`, "name", FUN.VALUE=character(1L)),
+  info = data.table(NAME=vapply_1c(found_items, `[[`, "name"),
                     NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
   for (i in seq_along(found_items)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = found_items[[i]]$obj
