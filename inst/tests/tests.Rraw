@@ -21524,6 +21524,12 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 # regression test of edge case report #4964
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
+# regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
+f = tempfile()
+writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
+test(2334, names(fread(f)), "a")
+unlink(f)
+
 #2606 Recursive tables() naming convention
 local({
   lst_named    <- list(inner = data.table(a = 1))
@@ -21536,7 +21542,7 @@ local({
     "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
     "mixed[[1]]", "mixed$y",
     "mixed_nested$A[[1]]", "mixed_nested$A$q")
-  test(2334.1, identical(out, sort(expected)))
+  test(2335.1, identical(out, sort(expected)))
 })
 local({
   dt <- data.table(val = 42)
@@ -21544,7 +21550,7 @@ local({
   e$dt <- dt
   e$self <- e
   out <- tables(recursive = TRUE, env = e)$NAME
-  test(2334.2, identical(out, "dt"))
+  test(2335.2, identical(out, "dt"))
 })
 local({
   test_obj <- local({
@@ -21555,7 +21561,7 @@ local({
     outer_list$second <- outer_list$first
     outer_list})
   out <- tables(recursive = TRUE)$NAME
-  test(2334.3,
+  test(2335.3,
        (length(out) == 2) &&
        ("test_obj$unique" %in% out) &&
        (sum(grepl("\\$dt_inner$", out)) == 1))
