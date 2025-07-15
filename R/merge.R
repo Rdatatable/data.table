@@ -34,7 +34,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     warningf("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
     if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
-      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
+      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.", class="dt_invalid_input_error")
     if (!all(idx <- by.x %chin% nm_x)) {
       stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(by.x[!idx]))
     }

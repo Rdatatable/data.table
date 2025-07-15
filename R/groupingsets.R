@@ -4,7 +4,7 @@ rollup = function(x, ...) {
 rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
   if (!is.character(by))
     stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
@@ -22,7 +22,7 @@ cube = function(x, ...) {
 cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
   if (!is.character(by))
     stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
