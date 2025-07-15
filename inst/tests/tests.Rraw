@@ -21526,10 +21526,6 @@ test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 # regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
 f = tempfile()
-writeLines('a', f)
-writeLines(rep('0x1.ffffp0', 10000), f)
-writeLines('0x1.ff\x9fp0\n', f)
-writeLines(rep('0x1.ffffp0', 20000), f)
-test(2334, fread(f), TRUE)
-
+writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
+test(2334, names(fread(f)), "a")
 unlink(f)
