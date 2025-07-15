@@ -66,9 +66,9 @@
 
 ```r
     l = list(
-      data.table(id = c(1, 2, 3), x = c("a", "b", "c")),
-      data.table(id = c(1, 2, 4), y = c("d", "e", "f")),
-      data.table(id = c(1, 3, 4), z = c("g", "h", "i"))
+      data.table(id = c(1L, 2L, 3L), x = c("a", "b", "c")),
+      data.table(id = c(1L, 2L, 4L), y = c("d", "e", "f")),
+      data.table(id = c(1L, 3L, 4L), z = c("g", "h", "i"))
     )
 
     # Recursive inner join
@@ -76,13 +76,12 @@
     #    id x y z
     # 1:  1 a d g
 
-    # Recursive full outer join
-    mergelist(l, on = "id", how = "full")
-    #    id    x    y    z
-    # 1:  1    a    d    g
-    # 2:  2    b    e <NA>
-    # 3:  3    c <NA>    h
-    # 4:  4 <NA>    f    i
+    # Recursive left join (the default 'how')
+    mergelist(l, on = "id", how = "left")
+    #    id x    y    z
+    # 1:  1 a    d    g
+    # 2:  2 b    e <NA>
+    # 3:  3 c <NA>    h
     ```
 
 ### BUG FIXES
