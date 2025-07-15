@@ -6,7 +6,7 @@
 }
 \details{
 \subsection{Available Condition Classes}{
-\code{data.table} provides four specific condition classes:
+\code{data.table} provides the following specific condition classes:
 
 Error Classes:
 \itemize{
