@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: between 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: between.c:18
+#, c-format
+msgid ""
+"Incompatible vector lengths: length(x)==%d length(lower)==%d "
+"length(upper)==%d. Each should be either length 1 or the length of the "
+"longest."
+msgstr ""
+"असंगत वेक्टर (vector) लेंथ (length): length(x)==%d length(lower)==%d length(upper)==%d।"
+“प्रत्येक की लेंथ (length) या तो 1 होनी चाहिए या सबसे लंबी लेंथ (length) के बराबर होनी चाहिए।"
+
+#: between.c:22 between.c:28
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr "%s को TRUE या FALSE होना चाहिए"
+
+#: between.c:25
+msgid "NAbounds must be TRUE or NA"
+msgstr "NAbounds को TRUE या NA होना चाहिए"
+
+#: between.c:70
+#, c-format
+msgid "Item %d of lower (%d) is greater than item %d of upper (%d)"
+msgstr "lower (%d) का आइटम (item) %d upper (%d) के आइटम (item) %d से बड़ा है"
+
+#: between.c:88
+#, c-format
+msgid "between parallel processing of integer took %8.3fs\n"
+msgstr "समांतर प्रोसेसिंग (processing) में पूर्णांक %8.3fs में लिया गया\n"
+
+#: between.c:94
+msgid "x is integer64 but lower and/or upper are not."
+msgstr "x integer64 है लेकिन lower और/या upper नहीं हैं"
+
+#: between.c:101
+#, c-format
+msgid ""
+"Item %d of lower (%<PRId64>) is greater than item %d of upper (%<PRId64>)"
+msgstr ""
+"lower (%<PRId64>) का आइटम (item) %d (%<PRId64>) upper (%<PRId64>) के आइटम (item) %d (%<PRId64>) से बड़ा है"
+
+#: between.c:118
+#, c-format
+msgid "between parallel processing of integer64 took %8.3fs\n"
+msgstr "integer64 की समांतर प्रोसेसिंग (processing) में %8.3fs लिया गया\n"
+
+#: between.c:121
+msgid ""
+"x is not integer64 but lower and/or upper is integer64. Please align classes."
+msgstr ""
+"x integer64 नहीं है, लेकिन lower और/या upper integer64 हैं। कृपया क्लासेस (classes) को संरेखित करें।"
+
+#: between.c:128
+#, c-format
+msgid "Item %d of lower (%f) is greater than item %d of upper (%f)"
+msgstr "lower (%f) का आइटम (item) %d upper (%f) के आइटम (item) %d से बड़ा है"
+
+#: between.c:146
+#, c-format
+msgid "between parallel processing of double with open bounds took %8.3fs\n"
+msgstr "double की समांतर प्रोसेसिंग (processing) (open) बाउंड्स (bounds) के साथ %8.3fs में लिया गया\n"
+
+#: between.c:163
+#, c-format
+msgid "between parallel processing of double with closed bounds took %8.3fs\n"
+msgstr "double की समांतर प्रोसेसिंग (processing) (closed) बाउंड्स (bounds) के साथ %8.3fs में लिया गया\n"
+
+#: between.c:178
+#, c-format
+msgid "Item %d of lower ('%s') is greater than item %d of upper ('%s')"
+msgstr "lower ('%s') का आइटम (item) %d upper ('%s') के आइटम (item) %d से बड़ा है"
+
+#: between.c:193
+#, c-format
+msgid "between non-parallel processing of character took %8.3fs\n"
+msgstr "character की गैर-समांतर प्रोसेसिंग (processing) में %8.3fs लिया गया\n"
