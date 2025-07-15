@@ -44,11 +44,9 @@ jobs:
         if: steps.check-issues.outputs.should-run == 'true'
         shell: Rscript {0}
         run: |
-          crandb <- tools::CRAN_package_db()
-
           pkgname <- drop(read.dcf("DESCRIPTION", "Package"))
 
-          deadline <- crandb[crandb$Package == pkgname, "Deadline"]
+          deadline <- subset(tools::CRAN_package_db(), Package == pkgname, "Deadline", drop=TRUE)
 
           if (is.na(deadline)) {
             quit()
