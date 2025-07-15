@@ -37,7 +37,7 @@ jobs:
             echo "✅ Will run CRAN check"
           else
             SHOULD_RUN="false"
-            echo "⏭️  Skipping CRAN check - existing issues found"
+            echo "⏭️ Skipping CRAN check - existing issues found"
           fi
           echo "should-run=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
