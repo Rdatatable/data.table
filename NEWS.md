@@ -4,6 +4,10 @@
 
 ## data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
 
+### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
+
+1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
+
 ### NEW FEATURES
 
 1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also match `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
@@ -46,6 +50,12 @@
 
 10. `data.table()` and `as.data.table()` with `keep.rownames=TRUE` now extract row names from named vectors, matching `data.frame()` behavior. Names from the first named vector in the input are used to create the row names column (default name `"rn"` or custom name via `keep.rownames="column_name"`), [#1916](https://github.com/Rdatatable/data.table/issues/1916). Thanks to @richierocks for the feature request and @Mukulyadav2004 for the implementation.
 
+11. New `frev(x)` as a faster analogue to `base::rev()` for atomic vectors/lists, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Twice as fast as `base::rev()` on large inputs, and faster with more threads. Thanks to Benjamin Schwendinger for suggesting and implementing.
+
+12. New `cbindlist()` and `setcbindlist()` for concatenating a `list` of data.tables column-wise, evocative of the analogous `do.call(rbind, l)` <-> `rbindlist(l)`, [#2576](https://github.com/Rdatatable/data.table/issues/2576). `setcbindlist()` does so without making any copies. Thanks @MichaelChirico for the FR, @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
+
+13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
@@ -56,7 +66,7 @@
 
 4. In rare cases, `data.table` failed to expand ALTREP columns when assigning a full column by reference. This could result in the target column getting modified unintentionally if the next call to the data.table was a modification by reference of the source column. E.g. in `DT[, b := as.character(a)]` the string conversion gets deferred and subsequent modification of column `a` would also modify column `b`, [#5400](https://github.com/Rdatatable/data.table/issues/5400). Thanks to @aquasync for the report and Václav Tlapák for the PR.
 
-5. `data.table()` function is now more aligned with `data.frame()` with respect to the names of the output when one of its inputs is a single-column matrix object, [#4124](https://github.com/Rdatatable/data.table/issues/4124). Thanks @PavoDive for the report, @jangorecki for the PR, and @MichaelChirico for a follow-up for back-compatibility.
+5. `data.table()` function is now more aligned with `data.frame()` with respect to the names of the output when one of its inputs is a single-column matrix object, [#4124](https://github.com/Rdatatable/data.table/issues/4124), [#3193](https://github.com/Rdatatable/data.table/issues/3193), and [#5367](https://github.com/Rdatatable/data.table/issues/5367). Thanks @PavoDive for the report, @jangorecki for the PR, and @MichaelChirico for a follow-up for back-compatibility.
 
 6. Including an `ITime` object as a named input to `data.frame()` respects the provided name, i.e. `data.frame(a = as.ITime(...))` will have column `a`, [#4673](https://github.com/Rdatatable/data.table/issues/4673). Thanks @shrektan for the report and @MichaelChirico for the fix.
 
