@@ -33,13 +33,12 @@ jobs:
           # Count open issues with CRAN-related labels
           ISSUE_COUNT=$(gh issue list --label "cran-deadline" --state open --json number | jq length)
           if [ $ISSUE_COUNT -eq 0 ]; then
-            SHOULD_RUN="true"
+            echo "should-run=true" >> $GITHUB_OUTPUT
             echo "✅ Will run CRAN check"
           else
-            SHOULD_RUN="false"
+            echo "should-run=false" >> $GITHUB_OUTPUT
             echo "⏭️ Skipping CRAN check - existing issues found"
           fi
-          echo "should-run=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
       - name: Fetch deadline for this package
         if: steps.check-issues.outputs.should-run == 'true'
