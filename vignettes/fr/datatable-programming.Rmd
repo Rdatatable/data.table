@@ -99,7 +99,7 @@ Nous devons utiliser `deparse(substitute(...))` pour récupérer les noms réels
 
 Martin Machler, R Project Core Developer, [a dit](https://stackoverflow.com/a/40164111/2490497) :
 
-> Désolé, mais je ne comprends pas pourquoi tant de gens pensent qu'une chaîne de caractères est quelque chose qui peut être évalué. Il faut vraiment changer d'état d'esprit. Oubliez toutes les connexions entre les chaînes d'un côté et les expressions, les appels, l'évaluation de l'autre côté. La (possible) seule connexion est via `parse(text = ....)` et tous les bons programmeurs R devraient savoir que c'est rarement un moyen efficace ou sûr de construire des expressions (ou des appels). Apprenez plutôt à connaître `substitute()`, `quote()`, et peut-être la puissance de l'utilisation de `do.call(substitute, ......)`.
+Note : désolé, mais je ne comprends pas pourquoi tant de gens pensent qu'une chaîne de caractères est quelque chose qui peut être évalué. Il faut vraiment changer d'état d'esprit. Oubliez toutes les connexions entre les chaînes d'un côté et les expressions, les appels, l'évaluation de l'autre côté. La (possible) seule connexion est via `parse(text = ....)` et tous les bons programmeurs R devraient savoir que c'est rarement un moyen efficace ou sûr de construire des expressions (ou des appels). Apprenez plutôt à connaître `substitute()`, `quote()`, et peut-être la puissance de l'utilisation de `do.call(substitute, ......)`.
 
 #### Calculs sur le langage
 
