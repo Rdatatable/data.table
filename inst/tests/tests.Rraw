@@ -21532,12 +21532,12 @@ unlink(f)
 
 #2606 Recursive tables() naming convention
 local({
-  lst_named    <- list(inner = data.table(a = 1))
-  lst_unnamed  <- list(data.table(b = 2))
-  nested       <- list(l1 = list(l2 = data.table(c = 3)))
-  mixed        <- list(data.table(x = 1), y = data.table(z = 2))
-  mixed_nested <- list(A = list(data.table(p = 1), q = data.table(q = 2)))
-  out <- tables(recursive = TRUE)$NAME
+  lst_named    <- list(inner=data.table(a=1))
+  lst_unnamed  <- list(data.table(b=2))
+  nested       <- list(l1=list(l2=data.table(c=3)))
+  mixed        <- list(data.table(x=1), y=data.table(z=2))
+  mixed_nested <- list(A=list(data.table(p=1), q=data.table(q=2)))
+  out <- tables(recursive=TRUE)$NAME
   expected <- c(
     "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
     "mixed[[1]]", "mixed$y",
@@ -21545,22 +21545,22 @@ local({
   test(2335.1, identical(out, sort(expected)))
 })
 local({
-  dt <- data.table(val = 42)
+  dt <- data.table(val=42)
   e <- new.env()
   e$dt <- dt
   e$self <- e
-  out <- tables(recursive = TRUE, env = e)$NAME
+  out <- tables(recursive=TRUE, env=e)$NAME
   test(2335.2, identical(out, "dt"))
 })
 local({
   test_obj <- local({
-    common_list <- list(dt_inner = data.table(d = 4))
+    common_list <- list(dt_inner=data.table(d=4))
     outer_list <- list(
-      first = common_list,
-      unique = data.table(e = 5))
+      first=common_list,
+      unique=data.table(e=5))
     outer_list$second <- outer_list$first
     outer_list})
-  out <- tables(recursive = TRUE)$NAME
+  out <- tables(recursive=TRUE)$NAME
   test(2335.3,
        (length(out) == 2) &&
        ("test_obj$unique" %in% out) &&
