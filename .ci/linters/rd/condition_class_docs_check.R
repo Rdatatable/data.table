@@ -1,6 +1,6 @@
 # Ensure that data.table condition classes in code match documentation
 condition_classes_documentation_linter = function(rd_file) {
-  if (!grepl("\\name{datatable-condition-classes}", readChar(rd_file, 100L), fixed = TRUE)) return(invisible())
+  if (!grepl("\\name{data.table-condition-classes}", readChar(rd_file, 100L), fixed = TRUE)) return(invisible())
 
   # Find condition classes in R code 
   walk_r_ast_for_classes = function(expr) {
