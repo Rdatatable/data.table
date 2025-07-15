@@ -69,8 +69,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
     return(invisible(data.table(NULL)))
   }
-  info = data.table(NAME=vapply_1c(found_items, `[[`, "name"),
-                    NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
+  info = data.table(NAME=vapply_1c(found_items, `[[`, "name"), NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
   for (i in seq_along(found_items)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = found_items[[i]]$obj
     set(info, i, "NROW", nrow(DT))
