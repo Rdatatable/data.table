@@ -31,7 +31,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     agenda = lapply(seq_along(obj), function(i) list(obj=obj[[i]], name=names[i]))
     visited_env = new.env(hash=TRUE)
 
-    while (length(agenda) > 0L) {
+    while (length(agenda)) {
       current_item = agenda[[1L]]
       agenda[[1L]] = NULL
       x = current_item$obj
