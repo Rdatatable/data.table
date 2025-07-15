@@ -33,7 +33,6 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
 
     while (length(agenda)) {
       current_item = agenda[[1L]]
-      agenda[[1L]] = NULL
       x = current_item$obj
       x_name = current_item$name
       if (is.data.table(x)) {
@@ -56,7 +55,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
           }
           children_to_add[[i]] = list(obj=x[[i]], name=child_name)
         }
-        agenda = c(rev(children_to_add), agenda)
+        agenda = c(rev(children_to_add), agenda[-1L])
       }
     }
   } else {
