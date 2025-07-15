@@ -109,13 +109,13 @@ Furthermore, data.table _inherits_ from `data.frame`. It _is_ a `data.frame`, to
 
 We _have_ proposed enhancements to R wherever possible, too. One of these was accepted as a new feature in R 2.12.0:
 
-Note: `unique()` and `match()` are now faster on character vectors where all elements are in the global CHARSXP cache and have unmarked encoding (ASCII).  Thanks to Matt Dowle for suggesting improvements to the way the hash code is generated in unique.c.
+> `unique()` and `match()` are now faster on character vectors where all elements are in the global CHARSXP cache and have unmarked encoding (ASCII).  Thanks to Matt Dowle for suggesting improvements to the way the hash code is generated in unique.c.
 
 A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://stat.ethz.ch/pipermail/r-devel/2010-April/057249.html).
 
 A third more significant proposal that was accepted is that R now uses data.table's radix sort code as from R 3.3.0:
 
-Note: The radix sort algorithm and implementation from data.table (forder) replaces the previous radix (counting) sort and adds a new method for order(). Contributed by Matt Dowle and Arun Srinivasan, the new algorithm supports logical, integer (even with large values), real, and character vectors. It outperforms all other methods, but there are some caveats (see ?sort).
+> The radix sort algorithm and implementation from data.table (forder) replaces the previous radix (counting) sort and adds a new method for order(). Contributed by Matt Dowle and Arun Srinivasan, the new algorithm supports logical, integer (even with large values), real, and character vectors. It outperforms all other methods, but there are some caveats (see ?sort).
 
 This was big event for us and we celebrated until the cows came home. (Not really.)
 
@@ -321,7 +321,7 @@ A[c(1, 3), c(2, 3)]
 
 However, this returns the union of those rows and columns. To reference the cells, a 2-column matrix is required. `?Extract` says:
 
-Note: When indexing arrays by `[` a single argument `i` can be a matrix with as many columns as there are dimensions of `x`; the result is then a vector with elements corresponding to the sets of indices in each row of `i`.
+> When indexing arrays by `[` a single argument `i` can be a matrix with as many columns as there are dimensions of `x`; the result is then a vector with elements corresponding to the sets of indices in each row of `i`.
 
 Let's try again.
 
@@ -463,7 +463,7 @@ This comes up quite a lot but it's really earth-shatteringly simple. A function 
 
 You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in `?UseMethod` and _that_ help file contains:
 
-Note: When a function calling `UseMethod('fun')` is applied to an object with class attribute `c('first', 'second')`, the system searches for a function called `fun.first` and, if it finds it, applies it to the object. If no such function is found a function called `fun.second` is tried. If no class name produces a suitable function, the function `fun.default` is used, if it exists, or an error results.
+> When a function calling `UseMethod('fun')` is applied to an object with class attribute `c('first', 'second')`, the system searches for a function called `fun.first` and, if it finds it, applies it to the object. If no such function is found a function called `fun.second` is tried. If no class name produces a suitable function, the function `fun.default` is used, if it exists, or an error results.
 
 Happily, an internet search for "How does R method dispatch work" (at the time of this writing) returns the `?UseMethod` help page in the top few links. Admittedly, other links rapidly descend into the intricacies of S3 vs S4, internal generics and so on.
 
