@@ -4,7 +4,7 @@ condition_classes_documentation_linter = function(rd_file) {
 
   # Find condition classes in R code 
   walk_r_ast_for_classes = function(expr) {
-    if (is.call(expr) && expr[[1L]] %in% list(quote(stopf), quote(warningf), quote(messagef), quote(packageStartupMessagef)) && is.character(class_arg <- expr[["class"]]) && startsWith(class_arg, "dt_")) {
+    if (is.call(expr) && is.name(e <- expr[[1L]]) && as.character(e) %in% c("stopf", "warningf", "messagef", "packageStartupMessagef") && is.character(class_arg <- expr[["class"]]) && startsWith(class_arg, "dt_")) {
       class_arg
     } else if (is.recursive(expr)) {
       unlist(lapply(expr, walk_r_ast_for_classes))
