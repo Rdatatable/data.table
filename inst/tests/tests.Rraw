@@ -21492,40 +21492,35 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 
 #2606 Recursive tables() naming convention
 test(2333.1, local({
-  lst_named = list(inner = data.table(a = 1))
-  lst_unnamed = list(data.table(b = 2))
-  nested = list(l1 = list(l2 = data.table(c = 3)))
-  out = tables(recursive = TRUE)$NAME
-  all(c("lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2") %in% out)
+  lst_named    <- list(inner = data.table(a = 1))
+  lst_unnamed  <- list(data.table(b = 2))
+  nested       <- list(l1 = list(l2 = data.table(c = 3)))
+  mixed        <- list(data.table(x = 1), y = data.table(z = 2))
+  mixed_nested <- list(A = list(data.table(p = 1), q = data.table(q = 2)))
+  out <- tables(recursive = TRUE)$NAME
+  expected <- c(
+    "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
+    "mixed[[1]]", "mixed$y",
+    "mixed_nested$A[[1]]", "mixed_nested$A$q"
+  )  
+  identical(out, sort(expected))
 }))
 test(2333.2, local({
-  mixed = list(data.table(x = 1), y = data.table(z = 2))
-  out = tables(recursive = TRUE)$NAME
-  all(c("mixed[[1]]", "mixed$y") %in% out)
-}))
-test(2333.3, local({
-  mixed_nested = list(
-  A = list(data.table(p = 1), q = data.table(q = 2)))
-  out = tables(recursive = TRUE)$NAME
-  all(c("mixed_nested$A[[1]]", "mixed_nested$A$q") %in% out)
-}))
-test(2333.4, local({
   dt <- data.table(val = 42)
   e <- new.env()
   e$dt <- dt
   e$self <- e
-  out = tables(recursive = TRUE, env = e)$NAME
+  out <- tables(recursive = TRUE, env = e)$NAME
   identical(out, "dt")
 }))
-test(2333.5, local({
+test(2333.3, local({
   test_obj <- local({
     common_list <- list(dt_inner = data.table(d = 4))
     outer_list <- list(
-    first = common_list,
-    unique = data.table(e = 5))
+      first = common_list,
+      unique = data.table(e = 5))
     outer_list$second <- outer_list$first 
-    outer_list
-  })
+    outer_list})
   out <- tables(recursive = TRUE)$NAME
   (length(out) == 2) &&
   ("test_obj$unique" %in% out) &&
