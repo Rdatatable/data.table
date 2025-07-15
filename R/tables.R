@@ -28,8 +28,8 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   obj = mget(names, envir=env)  # doesn't copy; mget is ok with ... unlike get, #5197
   found_items = list()
   if (recursive) {
-    agenda = lapply(seq_along(obj), function(i) list(obj = obj[[i]], name = names[i]))
-    visited_env = new.env(hash = TRUE)
+    agenda = lapply(seq_along(obj), function(i) list(obj=obj[[i]], name=names[i]))
+    visited_env = new.env(hash=TRUE)
 
     while (length(agenda) > 0L) {
       current_item = agenda[[1L]]
@@ -37,14 +37,14 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
       x = current_item$obj
       x_name = current_item$name
       if (is.data.table(x)) {
-        found_items[[length(found_items) + 1L]] = list(name = x_name, obj = x)
+        found_items[[length(found_items) + 1L]] = list(name=x_name, obj=x)
         next
       }
       if (is.list(x) && !is.data.frame(x)) {
         # Cycle detection
         addr = address(x)
-        if (exists(addr, envir = visited_env, inherits = FALSE)) next
-        assign(addr, TRUE, envir = visited_env)
+        if (exists(addr, envir=visited_env, inherits=FALSE)) next
+        assign(addr, TRUE, envir=visited_env)
 
         item_names = names(x)
         children_to_add = vector("list", length(x))
@@ -54,7 +54,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
           } else {
             paste0(x_name, "[[", i, "]]")
           }
-          children_to_add[[i]] = list(obj = x[[i]], name = child_name)
+          children_to_add[[i]] = list(obj=x[[i]], name=child_name)
         }
         agenda = c(rev(children_to_add), agenda)
       }
