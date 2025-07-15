@@ -160,14 +160,15 @@ names(dt) <- NULL
 test(4.36, colnamesInt(dt, "a"), error="has no names")
 
 # verbose
-dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
-old=options(datatable.verbose=TRUE)
-test(5.01, nafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
-test(5.02, setnafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
-if (test_bit64) {
-  test(5.03, nafill(as.integer64(c(NA,2,NA,3)), "locf"), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
-}
-options(old)
+local({
+  dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
+  old = options(datatable.verbose=TRUE); on.exit(options(old))
+  test(5.01, nafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+  test(5.02, setnafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+  if (test_bit64) {
+    test(5.03, nafill(as.integer64(c(NA,2,NA,3)), "locf"), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
+  }
+})
 
 # coerceAs int/numeric/int64 as used in nafill
 if (test_bit64) {
@@ -250,59 +251,61 @@ if (test_bit64) {
 }
 
 # coerceAs verbose
-options(datatable.verbose=2L)
-input = 1
-# use levels= explicitly to avoid locale-related sorting of letters
-xy_factor = factor(c("x", "y"), levels=c("x", "y"))
-test(10.01, ans<-coerceAs(input, 1), 1, output="double[numeric] into double[numeric]")
-test(10.02, address(input)!=address(ans))
-test(10.03, ans<-coerceAs(input, 1, copy=FALSE), 1, output="copy=false and input already of expected type and class double[numeric]")
-test(10.04, address(input), address(ans))
-test(10.05, ans<-coerceAs(input, 1L), 1L, output="double[numeric] into integer[integer]")
-test(10.06, address(input)!=address(ans))
-test(10.07, ans<-coerceAs(input, 1L, copy=FALSE), 1L, output="double[numeric] into integer[integer]", notOutput="copy=false")
-test(10.08, address(input)!=address(ans))
-test(10.09, coerceAs("1", 1L), 1L, output="character[character] into integer[integer]", warning="Coercing.*character.*integer")
-test(10.10, coerceAs("1", 1), 1, output="character[character] into double[numeric]", warning="Coercing.*character.*double")
-test(10.11, coerceAs("a", factor("x")), factor("a", levels=c("x","a")), output="character[character] into integer[factor]") ## levels of 'as' are retained!
-test(10.12, coerceAs("a", factor()), factor("a"), output="character[character] into integer[factor]")
-test(10.13, coerceAs(1, factor("x")), factor("x"), output="double[numeric] into integer[factor]")
-test(10.14, coerceAs(1, factor("x", levels=c("x","y"))), factor("x", levels=c("x","y")), output="double[numeric] into integer[factor]")
-test(10.15, coerceAs(2, factor("x", levels=c("x","y"))), factor("y", levels=c("x","y")), output="double[numeric] into integer[factor]")
-test(10.16, coerceAs(1:2, xy_factor), xy_factor, output="integer[integer] into integer[factor]")
-test(10.17, coerceAs(1:3, xy_factor), output="integer[integer] into integer[factor]", error="factor numbers.*3 is outside the level range")
-test(10.18, coerceAs(c(1,2,3), xy_factor), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
-test(10.19, coerceAs(factor("x"), xy_factor), factor("x", levels=c("x","y")), output="integer[factor] into integer[factor]")
-test(10.20, coerceAs(factor("x"), xy_factor, copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
-a = structure("a", class="a")
-b = structure("b", class="b")
-test(10.21, coerceAs(a, b), structure("a", class="b"), output="character[a] into character[b]")
-a = structure(1L, class="a")
-b = structure(2L, class="b")
-test(10.22, coerceAs(a, b), structure(1L, class="b"), output="integer[a] into integer[b]")
-a = structure(1, class="a")
-b = structure(2, class="b")
-test(10.23, coerceAs(a, b), structure(1, class="b"), output="double[a] into double[b]")
-a = structure(1, class="a")
-b = structure(2L, class="b")
-test(10.24, coerceAs(a, b), structure(1L, class="b"), output="double[a] into integer[b]")
-if (test_bit64) {
-  x = as.integer64(1L)
-  test(10.81, coerceAs(x, 1), 1, output="double[integer64] into double[numeric]")
-  test(10.82, coerceAs(x, 1L), 1L, output="double[integer64] into integer[integer]")
-  test(10.83, coerceAs(x, "1"), "1", output="double[integer64] into character[character]")
-  test(10.84, coerceAs(1, x), x, output="double[numeric] into double[integer64]")
-  test(10.85, coerceAs(1L, x), x, output="integer[integer] into double[integer64]")
-  test(10.86, coerceAs("1", x), x, output="character[character] into double[integer64]", warning="Coercing.*character")
-  options(datatable.verbose=3L)
-  test(10.87, coerceAs(x, 1L), 1L, output=c("double[integer64] into integer[integer]","Zero-copy coerce when assigning 'integer64' to 'integer'"))
-  test(10.88, coerceAs(1L, x), x, output=c("integer[integer] into double[integer64]","Zero-copy coerce when assigning 'integer' to 'integer64'"))
-  options(datatable.verbose=2L)
-  test(10.89, coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
-}
-# 10.91 tested nanotime moved to other.Rraw 27.21, #6139
+local({
+  old = options(datatable.verbose=2L); on.exit(options(old))
+  input = 1
+  # use levels= explicitly to avoid locale-related sorting of letters
+  xy_factor = factor(c("x", "y"), levels=c("x", "y"))
+  test(10.01, ans<-coerceAs(input, 1), 1, output="double[numeric] into double[numeric]")
+  test(10.02, address(input)!=address(ans))
+  test(10.03, ans<-coerceAs(input, 1, copy=FALSE), 1, output="copy=false and input already of expected type and class double[numeric]")
+  test(10.04, address(input), address(ans))
+  test(10.05, ans<-coerceAs(input, 1L), 1L, output="double[numeric] into integer[integer]")
+  test(10.06, address(input)!=address(ans))
+  test(10.07, ans<-coerceAs(input, 1L, copy=FALSE), 1L, output="double[numeric] into integer[integer]", notOutput="copy=false")
+  test(10.08, address(input)!=address(ans))
+  test(10.09, coerceAs("1", 1L), 1L, output="character[character] into integer[integer]", warning="Coercing.*character.*integer")
+  test(10.10, coerceAs("1", 1), 1, output="character[character] into double[numeric]", warning="Coercing.*character.*double")
+  test(10.11, coerceAs("a", factor("x")), factor("a", levels=c("x","a")), output="character[character] into integer[factor]") ## levels of 'as' are retained!
+  test(10.12, coerceAs("a", factor()), factor("a"), output="character[character] into integer[factor]")
+  test(10.13, coerceAs(1, factor("x")), factor("x"), output="double[numeric] into integer[factor]")
+  test(10.14, coerceAs(1, factor("x", levels=c("x","y"))), factor("x", levels=c("x","y")), output="double[numeric] into integer[factor]")
+  test(10.15, coerceAs(2, factor("x", levels=c("x","y"))), factor("y", levels=c("x","y")), output="double[numeric] into integer[factor]")
+  test(10.16, coerceAs(1:2, xy_factor), xy_factor, output="integer[integer] into integer[factor]")
+  test(10.17, coerceAs(1:3, xy_factor), output="integer[integer] into integer[factor]", error="factor numbers.*3 is outside the level range")
+  test(10.18, coerceAs(c(1,2,3), xy_factor), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
+  test(10.19, coerceAs(factor("x"), xy_factor), factor("x", levels=c("x","y")), output="integer[factor] into integer[factor]")
+  test(10.20, coerceAs(factor("x"), xy_factor, copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
+  a = structure("a", class="a")
+  b = structure("b", class="b")
+  test(10.21, coerceAs(a, b), structure("a", class="b"), output="character[a] into character[b]")
+  a = structure(1L, class="a")
+  b = structure(2L, class="b")
+  test(10.22, coerceAs(a, b), structure(1L, class="b"), output="integer[a] into integer[b]")
+  a = structure(1, class="a")
+  b = structure(2, class="b")
+  test(10.23, coerceAs(a, b), structure(1, class="b"), output="double[a] into double[b]")
+  a = structure(1, class="a")
+  b = structure(2L, class="b")
+  test(10.24, coerceAs(a, b), structure(1L, class="b"), output="double[a] into integer[b]")
+  if (test_bit64) {
+    x = as.integer64(1L)
+    test(10.81, coerceAs(x, 1), 1, output="double[integer64] into double[numeric]")
+    test(10.82, coerceAs(x, 1L), 1L, output="double[integer64] into integer[integer]")
+    test(10.83, coerceAs(x, "1"), "1", output="double[integer64] into character[character]")
+    test(10.84, coerceAs(1, x), x, output="double[numeric] into double[integer64]")
+    test(10.85, coerceAs(1L, x), x, output="integer[integer] into double[integer64]")
+    test(10.86, coerceAs("1", x), x, output="character[character] into double[integer64]", warning="Coercing.*character")
+    test(10.87, options=c(datatable.verbose=3L),
+         coerceAs(x, 1L), 1L, output=c("double[integer64] into integer[integer]", "Zero-copy coerce when assigning 'integer64' to 'integer'"))
+    test(10.88, options=c(datatable.verbose=3L),
+         coerceAs(1L, x), x, output=c("integer[integer] into double[integer64]", "Zero-copy coerce when assigning 'integer' to 'integer64'"))
+    test(10.89, options=c(datatable.verbose=2L),
+         coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
+  }
+  # 10.91 tested nanotime moved to other.Rraw 27.21, #6139
+})
 
-options(datatable.verbose=FALSE)
 test(11.01, coerceAs(list(a=1), 1), error="is not atomic")
 test(11.02, coerceAs(1, list(a=1)), list(1))
 test(11.03, coerceAs(sum, 1), error="is not atomic")
@@ -328,6 +331,4 @@ test(11.09, coerceAs(1L, a), error="must not be matrix or array")
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")
 test(99.2, data.table(a=1,b=2)[1,1, verbose=1:2], error="verbose must be length 1 non-NA")
 test(99.3, data.table(a=1,b=2)[1,1, verbose=NA], error="verbose must be length 1 non-NA")
-options(datatable.verbose=1)
-test(99.4, coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
-options(datatable.verbose=FALSE)
+test(99.4, options=c(datatable.verbose=1), coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
