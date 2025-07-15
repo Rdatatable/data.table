@@ -3106,6 +3106,15 @@ test(1017.4, fread(f, integer64="character"), fread(f, colClasses=c("integer", "
 
 unlink(f)
 
+f = tempfile()
+writeLines('a', f)
+writeLines(rep('0x1.ffffp0', 10000), f)
+writeLines('0x1.ff\x9fp0', f)
+writeLines(rep('0x1.ffffp0', 20000), f)
+fread(f)
+
+unlink(f)
+
 # ERANGE errno handled, #106 #4165
 test(1018.1, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
 test(1018.2, identical(fread("1.46761e+313\n"), data.table(V1=1.46761e+313)))
