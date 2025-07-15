@@ -2,7 +2,7 @@
 \alias{data.table-error-handling}
 \title{Condition Handling with Classed Conditions}
 \description{
-\code{data.table} provides specific condition classes for common operations, making it easier to handle comditions programmatically. This is particularly useful when writing robust code or packages that use \code{data.table}. Relying on the exact text of condition messages is fragile (it is not uncommon to change the wording slightly, or for the user's session not to be in English); prefer using the signal class where possible.
+\code{data.table} provides specific condition classes for common operations, making it easier to handle conditions programmatically. This is particularly useful when writing robust code or packages that use \code{data.table}. Relying on the exact text of condition messages is fragile (it is not uncommon to change the wording slightly, or for the user's session not to be in English); prefer using the signal class where possible.
 }
 \details{
 \subsection{Available error Classes}{
