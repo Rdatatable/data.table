@@ -1,0 +1,742 @@
+---
+title: "Jointures avec data.table"
+date: "`r Sys.Date()`"
+output:
+  markdown::html_format
+vignette: >
+  %\VignetteIndexEntry{Jointures avec data.table}
+  %\VignetteEngine{knitr::knitr}
+  \usepackage[utf8]{inputenc}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, echo = FALSE, message = FALSE}
+require(data.table)
+knitr::opts_chunk$set(
+  comment = "#",
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE
+)
+```
+
+```{r, echo=FALSE, file='../_translation_links.R'}
+```
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
+
+Dans cette vignette nous apprendrons à réaliser les opérations de jointure en utilisant les ressources de la syntaxe `data.table`.
+
+Cela suppose que vous êtes déjà familiarisé avec la syntaxe `data.table` . Si ce n'est pas le cas, reportez-vous aux vignettes suivantes :
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
+
+***
+
+## 1. Définissons nos données d'exemple
+
+Pour illustrer la méthode proposée avec des exemples de la vie courante, nous allons simuler une **base de données normalisée** à partir d'un petit supermarché en définissant les tables suivantes dans une base de données :
+
+1. `Products`, une table où chaque ligne donne les caractéristiques de différents produits. Pour montrer comment l'environnement réagit avec les ***valeurs absentes***, nous laissons un `id` à NA.
+
+```{r, define_products}
+Products = rowwiseDT(
+  id=,        name=, price=,   unit=, type=,
+   1L,     "banana",   0.63,  "unit", "natural",
+   2L,    "carrots",   0.89,    "lb", "natural",
+   3L,    "popcorn",   2.99,  "unit", "processed",
+   4L,       "soda",   1.49, "ounce", "processed",
+   NA, "toothpaste",   2.99,  "unit", "processed"
+)
+```
+
+2. `NewTax`, une table donnant le pourcentage des taxes à appliquer aux produits traités en fonction de leurs unités.
+
+```{r define_new_tax}
+NewTax = data.table(
+  unit = c("unit", "ounce"),
+  type = "processed",
+  tax_prop = c(0.65, 0.20)
+)
+
+NewTax
+```
+
+
+3. `ProductReceived`, une table dont les lignes simulent l'inventaire des ventes hebdomadaires.
+
+```{r define_product_received}
+set.seed(2156)
+
+# NB: le 8 janvier 2024 est un lundi.
+receipt_dates = seq(from=as.IDate("2024-01-08"), length.out=10L, by="week")
+
+ProductReceived = data.table(
+  id=1:10, # identifiant unique pour suivre une transaction 
+  date=receipt_dates,
+  product_id=sample(c(NA, 1:3, 6L), size=10L, replace=TRUE), # NB: le produit '6' n'existe pas dans Products.
+  count=sample(c(50L, 100L, 150L), size=10L, replace=TRUE)
+)
+
+ProductReceived
+```
+
+4. `ProductSales`, une table dont les lignes simulent les transactions des clients.
+
+```{r define_product_sales}
+set.seed(5415)
+
+# lundi-vendredi (4 jours plus tard) pour chaque semaine présente dans ProductReceived
+possible_weekdays <- as.IDate(sapply(receipt_dates, `+`, 0:4))
+
+ProductSales = data.table(
+  id = 1:10,
+  date = sort(sample(possible_weekdays, 10L)),
+  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE), # NB: product '7' is in neither Products nor ProductReceived.
+  count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
+)
+
+ProductSales
+```
+
+## 2. Syntaxe de la jointure `data.table`
+
+Avant de voir les avantages de la syntaxe `data.table` pour faire des opérations de jointure nous devons savoir quels arguments peuvent nous aider à les réaliser avec succès.
+
+Le diagramme suivant affiche une description pour chaque argument de base. Dans les sections suivantes nous verrons progressivement comment les utiliser tout en y apportant un peu de complexité à chaque fois.
+
+```
+x[i, on, nomatch]
+| |  |   |
+| |  |   \__ Si NULL, renvoie seulement les lignes liées des tables x et i
+| |  \____ vecteur de caractères ou liste définissant la logique de correspondance
+| \_____ data.table primaire, liste ou data.frame
+\____ data.table secondaire
+```
+
+Note : n'oubliez pas que l'ordre standard des arguments dans data.table est `dt[i, j, by]`. Pour les opérations de jointure, il est recommandé de passer les arguments `on` et `nomatch` par nom pour éviter d'utiliser `j` et `by` quand ce n'est pas nécessaire.
+
+## 3. Jointures équilibrées
+
+C'est le cas le plus général et facile où il existe des éléments communs entre les tables à combiner.
+
+La relation entre les tables peut être :
+
+- **De un vers un** : lorsque chaque valeur sélectionnée est unique dans chaque table.
+- **De un vers plusieurs** : lorsque certaines valeurs sélectionnées sont répétées dans une table et à la fois uniques dans l'autre.
+- **De plusieurs vers plusieurs** : lorsque les valeurs sélectionnées sont répétées plusieurs fois dans chaque table.
+
+Dans la plupart des exemples suivants nous réaliserons des correspondances *de un vers plusieurs* , mais nous prendrons aussi le temps d'expliquer les ressources disponibles pour réaliser les correspondances *de plusieurs vers plusieurs* .
+
+
+### 3.1. Jointure droite
+
+Utilisez cette méthode pour combiner les colonnes de deux tables en se basant sur une ou plusieurs références mais ***en gardant toutes les lignes présentes dans la table située à droite (entre crochets)***.
+
+Dans le contexte de notre supermarché nous pouvons réaliser une jointure droite pour avoir davantage de détails à propos des produits reçus car c'est une relation de *un vers plusieurs* en passant un vecteur dans l'argument `on`.
+
+```{r}
+Products[ProductReceived,
+         on = c(id = "product_id")]
+```
+
+Comme beaucoup de choses ont changé, nous allons expliquer les nouvelles caractéristiques dans les groupes suivants :
+
+- **Niveau colonne**
+   - Le *premier groupe* de colonnes dans le nouveau data.table vient de la table `x` .
+   - Le *second groupe* de colonnes de la nouvelle data.table vient de la table `i`.
+   - Si l'opération de jointure fait apparaître un **conflit de nom** (quand les deux tables ont un même nom de colonne) le ***prefixe*** `i.` est ajouté aux noms des colonnes de la **table de droite** (table en position `i`).
+
+- **Niveau ligne**
+   - Le `product_id` qui est absent, mais présent dans la table `ProductReceived` à la ligne 1 a été sélectionné avec le `id` absent de la table `Products`, donc ***les valeurs `NA` sont traitées comme toute autre valeur***.
+   - Toutes les lignes de la table `i` ont été gardées y compris :
+     - Les lignes qui ne correspondent pas, comme celle avec `product_id = 6`.
+     - Lignes qui répètent le même `product_id` plusieurs fois.
+
+#### 3.1.1. Jointure avec un argument de liste
+
+Si vous suivez la vignette, vous avez pu voir que nous avons utilisé un vecteur pour définir les relations entre les tables dans l'argument `on`, ce qui réellement utile si vous **créez vos propres fonctions**, mais une autre alternative est d'utiliser une **liste** pour définir les colonnes à sélectionner. 
+
+Pour utiliser cette possibilité, nous avons a disposition les alternatives suivantes :
+
+- Inclure les colonnes associées dans la fonction R de base `list` .
+
+```{r, eval=FALSE}
+Products[ProductReceived,
+         on = list(id = product_id)]
+```
+
+- Inclure les colonnes associées dans l'alias `data.table` `list` : `.`.
+
+```{r, eval=FALSE}
+Products[ProductReceived,
+         on = .(id = product_id)]
+```
+
+#### 3.1.2. Alternatives pour définir l'argument `on`
+
+Dans tous les exemples précédents, nous avons passé le nom des colonnes à sélectionner avec l'argument `on` mais `data.table` possède également des alternatives à cette syntaxe.
+
+- **Jointure naturelle** : sélectionne les colonnes pour réaliser la correspondance en fonction des noms des colonnes en commun. Pour illustrer cette méthode, modifions la colonne de la table `Products` de `id` en `product_id` et utilisons le mot clé `.NATURAL`.
+
+```{r}
+ProductsChangedName = setnames(copy(Products), "id", "product_id")
+ProductsChangedName
+
+ProductsChangedName[ProductReceived, on = .NATURAL]
+```
+
+- **Jointure par clé** : sélectionne les colonnes pour rechercher la correspondance en fonction des colonnes clé quelque soit leur nom. Pour illustrer cette méthode, nous devons définir les clés dans le même ordre pour les deux tables.
+
+```{r}
+ProductsKeyed = setkey(copy(Products), id)
+key(ProductsKeyed)
+
+ProductReceivedKeyed = setkey(copy(ProductReceived), product_id)
+key(ProductReceivedKeyed)
+
+ProductsKeyed[ProductReceivedKeyed]
+```
+
+#### 3.1.3. Opérations après la jointure
+
+La plupart du temps après avoir terminé une jointure il faut faire des adaptations supplémentaires. Pour cela plusieurs alternatives vous sont proposées :
+
+- Chaîner une nouvelle instruction en ajoutant une paire de crochets `[]`.
+- En passant comme argument `j` une liste des colonnes que l'on veut conserver ou créer.
+
+Notre recommendation est d'utiliser la seconde alternative si possible, car elle est **plus rapide** et demande **moins de mémoire** que la première.
+
+##### Gestion de la colonne partagée Names avec l'argument j
+
+L'argument `j` autorise plusieurs alternatives intéressantes pour gérer les jointures avec les tables en **partageant les mêmes noms pour plusieurs colonnes**. Par défaut toutes les colonnes prennent leur source dans la table `x`, mais nous pouvons aussi utiliser le préfixe `x.` pour clarifier la source et utiliser le préfixe `i.` pour toutes les colonnes de la table déclarée dans l'argument `i` de la table `x`.
+
+Si nous retournons au petit supermarché, après avoir mis à jour la table `ProductReceived` avec la table `Products` , supposez que l'on veuille appliquer les modifications suivantes :
+
+- Modifier le nom des colonnes de `id` en `product_id` et de `i.id` en `received_id`.
+- Ajouter `total_value`.
+
+```{r}
+Products[
+  ProductReceived,
+  on = c("id" = "product_id"),
+  j = .(product_id = x.id,
+        name = x.name,
+        price,
+        received_id = i.id,
+        date = i.date,
+        count,
+        total_value = price * count)
+]
+```
+
+
+##### Résumer avec`on` dans `data.table`
+
+Nous pouvons aussi utiliser cette alternative pour renvoyer les résultats agrégés en fonction des colonnes présentes dans la table `x` .
+
+Par exemple on pourrait s'intéresser à la somme dépensée pour acheter chaque produit au fil des jours, quelque soient ces produits.
+
+```{r}
+dt1 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+  by = .EACHI,
+  j = .(total_value_received  = sum(price * count))
+]
+
+# alternative using multiple [] queries
+dt2 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+][, .(total_value_received  = sum(price * count)),
+  by = "product_id"
+]
+
+identical(dt1, dt2)
+```
+
+#### 3.1.4. Jointure basée sur plusieurs colonnes
+
+Jusqu'à présent, nous avons réalisé les jointures en se basant sur une colonne `data.table`, mais il est important de savoir que le package peut joindre des tables en prenant en compte plusieurs colonnes.
+
+Pour illustrer cela supposons que nous voulions ajouter `tax_prop` de `NewTax` pour **mettre à jour** la table `Products`.
+
+```{r}
+NewTax[Products, on = c("unit", "type")]
+```
+
+### 3.2. Jointure interne
+
+Utilisez cette méthode pour combiner les colonnes de deux tables en se basant sur une ou plusieurs références mais ***en conservant seulement les lignes qui correspondent entre les deux tables***.
+
+Pour réaliser cette opération il suffit d'ajouter `nomatch = NULL` ou `nomatch = 0` à l'une quelconque des opérations de jointure précédentes pour renvoyer le même résultat.
+
+```{r}
+# First Table
+Products[ProductReceived,
+         on = c("id" = "product_id"),
+         nomatch = NULL]
+
+# Second Table
+ProductReceived[Products,
+                on = .(product_id = id),
+                nomatch = NULL]
+```
+
+Même si les deux tables contiennent la même information, il existe quelques différences importantes :
+
+- L'ordre des colonnes est différent
+- Elles comportent certaines différences de noms dans le nom des colonnes :
+   - La colonne `id` de la première table contient les mêmes informations que `product_id` de la seconde table.
+   - La colonne `i.id` de la première table a les mêmes informations que `id` de la seconde table.
+
+### 3.3. Anti-jointure
+
+Cette méthode **ne garde que les lignes qui ne correspondent pas aux lignes de la seconde table**.
+
+Pour appliquer cette technique il suffit d'utiliser la négation  (`!`) sur la table qui se trouve dans l'argument `i` .
+
+```{r}
+Products[!ProductReceived,
+         on = c("id" = "product_id")]
+```
+
+Comme on peut le voir, le résultat ne comporte que 'soda' car c'est le seul produit qui ne figure pas dans la table `ProductReceived`.
+
+```{r}
+ProductReceived[!Products,
+                on = c("product_id" = "id")]
+```
+
+Dans ce cas l'opération renvoie la ligne de `product_id = 6,` car il ne figure pas dans la table `Products`.
+
+### 3.4. Semi jointure
+
+Cette méthode **ne garde que les lignes qui correspondent à une ligne de la seconde table** sans combiner les colonnes des tables.
+
+En tant que jointure ceci est très similaire aux sous-ensembles, mais comme cette fois nous passons une table complète dans `i` nous devons vérifier que : 
+
+- Chaque ligne de la table `x` est dupliquée à cause de la duplication des lignes dans la table passée dans l'argument `i`.
+
+- Toutes les lignes renommées de `x` doivent conserver l'ordre originel des lignes.
+
+
+Pour faire ceci, suivez les étapes ci-après :
+
+1. Réaliser une **jointure interne** avec `which = TRUE` pour sauvegarder les numéros de ligne liés à chaque ligne sélectionnée de la table `x` .
+
+```{r}
+SubSetRows = Products[
+  ProductReceived,
+  on = .(id = product_id),
+  nomatch = NULL,
+  which = TRUE
+]
+
+SubSetRows
+```
+
+2. Sélectionner et trier les id uniques de lignes.
+
+```{r}
+SubSetRowsSorted = sort(unique(SubSetRows))
+
+SubSetRowsSorted
+```
+
+
+3. Sélectionner les lignes `x` à garder.
+
+```{r}
+Products[SubSetRowsSorted]
+```
+
+
+### 3.5. Jointure gauche
+
+Utiliser cette méthode pour combiner les colonnes de deux tables en se basant sur une ou plusieurs références mais ***en gardant toutes les lignes présentes dans la table située à gauche***.
+
+Pour réaliser cette opération, il suffit d'**échanger l'ordre entre les deux tables** ainsi que le nom des colonnes dans l'argument `on`.
+
+```{r}
+ProductReceived[Products,
+                on = list(product_id = id)]
+```
+
+Voici les éléments importants à prendre en compte :
+
+- **Niveau colonne**
+   - Le *premier groupe* de colonnes provient maintenant de la table `ProductReceived` car il est la table `x` .
+   - Le *second groupe* de colonnes provient maintenant de la table `Products` car il est la table `i` .
+   - Le préfixe `i.` n'a été ajouté à aucune colonne.
+
+- **Niveau ligne**
+   - Toutes les lignes de la table `i` ont été gardées : l'entrée soda de `Products` ne correspond à aucune ligne de `ProductReceived` et fait encore partie des résultats.
+   - La ligne concernant `product_id = 6` ne fait plus partie des résultats car elle n'est pas présente dans la table `Products`.
+
+
+#### 3.5.1. Jointure après des opérations sur les chaînes
+
+Une des fonctionnalités clé de `data.table` est que l'on peut appliquer plusieurs opérations en chaînant les crochets, avant d'enregistrer le résultat final.
+
+```r
+DT[
+  ...
+][
+  ...
+][
+  ...
+]
+```
+
+Jusqu'à présent, si après avoir exécuté toutes ces opérations **nous souhaitons joindre de nouvelles colonnes sans supprimer aucune ligne**, il faut arrêter le processus de chaînage, sauvegarder dans une table temporaire puis effectuer ultérieurement l'opération de jointure.
+
+Pour éviter cette situation, nous pouvons utiliser le symbole spécial `.SD`, pour appliquer une **jointure droite en fonction de la table modifiée**.
+
+```{r}
+NewTax[Products,
+       on = c("unit", "type")
+][, ProductReceived[.SD,
+                    on = list(product_id = id)],
+  .SDcols = !c("unit", "type")]
+```
+
+### 3.6. Jointure de plusieurs à plusieurs
+
+Quelques fois nous voulons joindre des tables en se basant sur les colonnes ayant des **valeurs `id` dupliquées** pour faires des transformations ultérieurement.
+
+Pour illustrer cette situation, prenons par exemple le `product_id == 1L`, qui a quatre lignes dans notre table `ProductReceived` .
+
+```{r}
+ProductReceived[product_id == 1L]
+```
+
+Et quatre lignes dans notre table `ProductSales`.
+
+```{r}
+ProductSales[product_id == 1L]
+```
+
+Pour réaliser cette jointure il nous suffit de filtrer `product_id == 1L` dans la table `i` pour limiter la jointure uniquement à ce produit et déclarer l'argument `allow.cartesian = TRUE` pour permettre la combinaison de chaque ligne d'une table avec chaque ligne de l'autre table.
+
+```{r}
+ProductReceived[ProductSales[list(1L),
+                             on = "product_id",
+                             nomatch = NULL],
+                on = "product_id",
+                allow.cartesian = TRUE]
+```
+
+Une fois que nous avons compris les résultats, nous pouvont appliquer le même processus à **tous les produits**.
+
+```{r}
+ProductReceived[ProductSales,
+                on = "product_id",
+                allow.cartesian = TRUE]
+```
+
+Note : `allow.cartesian` vaut par défaut FALSE car c'est ce que l'utilisateur a souhaité, et une telle jointure croisée peut conduire à un très grand nombre de lignes dans le résultat. Par exemple, si Table A possède 100 lignes et Table
+B en a 50, leur produit cartésien sera de 5000 lignes (100 * 50). Ce qui peut rapidement accroître la mémoire occupée pour de grands ensembles de données.
+
+#### 3.6.1. Selection d'une seule correspondance
+
+Après avoir fait la jointure de la table, nous pouvons voir que l'on peut utiliser une seule jointure pour extraire les informations nécessaires. Dans ce cas il y a deux alternatives :
+
+- Nous pouvons sélectionner la **première correspondance**, représentée dans l'exemple suivant par `id = 2`.
+
+```{r}
+ProductReceived[ProductSales[product_id == 1L],
+                on = .(product_id),
+                allow.cartesian = TRUE,
+                mult = "first"]
+```
+
+- Nous pouvons sélectionner la **dernière correspondance**, représentée dans l'exemple suivant par `id = 9`.
+
+```{r}
+ProductReceived[ProductSales[product_id == 1L],
+                on = .(product_id),
+                allow.cartesian = TRUE,
+                mult = "last"]
+```
+
+#### 3.6.2. Jointure croisée
+
+Si vous voulez obtenir **toutes les combinaisons possibles de lignes** quelque soit l'id de colonne, vous pouvez suivre le processus suivant :
+
+1. Créer une nouvelle colonne dans les deux tables avec une constante.
+
+```{r}
+ProductsTempId = copy(Products)[, temp_id := 1L]
+```
+
+2. Joindre les deux tables en fonction de la nouvelle colonne et supprimer cette dernnière à la fin de la manipulation parce qu'il n'y a pas de raison de la garder.
+
+```{r}
+AllProductsMix =
+  ProductsTempId[ProductsTempId,
+                 on = "temp_id",
+                 allow.cartesian = TRUE]
+
+AllProductsMix[, temp_id := NULL]
+
+# Removing type to make easier to see the result when printing the table
+AllProductsMix[, !c("type", "i.type")]
+```
+
+
+### 3.7. Jointure complète
+
+Utilisez cette méthode pour combiner les colonnes de deux tables en se basant sur une ou plusieurs références mais ***sans supprimer aucune ligne***.
+
+Comme vu dans la section précédente, toutes les opérations ci-avant peuvent conserver le `product_id = 6` absent et le **soda** (`product_id = 4`) comme faisant partie du résultat.
+
+Pour résoudre ce problème nous pouvons utiliser la fonction `merge` bien qu'elle soit moins préférable à l'utilisation de la syntaxe de jointure native de `data.table`.
+
+```{r}
+merge(x = Products,
+      y = ProductReceived,
+      by.x = "id",
+      by.y = "product_id",
+      all = TRUE,
+      sort = FALSE)
+```
+
+
+## 4. Jointure de non équivalence
+
+Une jointure de non équivalence est un type de jointure où la condition pour sélectionner les lignes n'est pas basée sur une égalité mais sur d'autres opérateurs de comparaison tels que <, >, <=, ou >=. Ceci permet des **critères plus flexibles de jointure**. Dans `data.table`, le jointures non équivalentes sont particulièrement utiles pour les opérations telles que :
+
+- Rechercher la correspondance la plus proche
+- Comparer des intervalles de valeurs entre deux tables
+
+C'est une alternative intéressante si, après avoir fait une jointure droite ou interne : 
+
+- Vous souhaitez diminuer le nombre de lignes renvoyées en fonction du résultat de la comparaison des colonnes numériques de tables différentes.
+- Il n'est pas nécessaire de garder les colonnes de la table x *(data.table secondaire)* dans la table finale.
+
+Pour illustrer le fonctionnement, concentrons-nous sur les promotions et les réceptions de product 2.
+
+```{r}
+ProductSalesProd2 = ProductSales[product_id == 2L]
+ProductReceivedProd2 = ProductReceived[product_id == 2L]
+```
+
+Si l'on veut savoir par exemple si quelque chose a été reçu avant la date des promotions, nous pouvons utiliser le code suivant.
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = "product_id",
+                     allow.cartesian = TRUE
+][date < i.date]
+```
+
+Que se passe-t-il si nous appliquons simplement la même logique à la liste passée à `on` ?
+
+- Comme cette opération est encore une jointure droite, elle renvoie toutes les lignes de la table `i` , mais n'affiche que les valeurs de `id` et `count` lorsque les règles sont vérifiées.
+
+- La date correspondant à `ProductReceivedProd2` a été omise de cette nouvelle table.
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, date < date)]
+```
+
+Maintenant après avoir appliqué la jointure, nous pouvons limiter les résultats pour n'afficher que les cas qui satisfont tous les critères de jointure.
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, date < date),
+                     nomatch = NULL]
+```
+
+### 4.1 Noms des colonnes de sortie dans les jointures non équivalentes
+
+Lorsque vous réalisez des jointures non équivalentes (`<`, `>`, `<=`, `>=`), le nom des colonnes est assigné ainsi :
+
+- L'opérande de gauche (`x` column) determine le nom de la colonne du résultat.
+- L'opérande de droite (`i` column) contribue avec ses valeurs mais ne garde pas son nom d'origine.
+- Par défaut, `data.table` ne conserve pas la colonne `i` utilisée dans la condition du join sauf si vous le demandez explicitement.
+
+Dans les jointures non équivalentes, le côté gauche de l'opérateur (comme `x_int` dans `x_int >= i_int`) doit être une colonne de `x`, alors que le côté droit (ici `i_int`) doit être une colonne de `i`.
+
+Les jointures non équivalentes ne reconnaissent pas actuellement les expressions arbitraires (mais voir [#1639](https://github.com/Rdatatable/data.table/issues/1639)). Par exemple, `on = .(x_int >= i_int)` est correct, mais `on = .(x_int >= i_int + 1L)` n'est pas accepté. Pour réaliser une telle jointure non équivalente, ajoutez d'abord l'expression en tant que nouvelle colonne, comme `i[, i_int_plus_one := i_int + 1L]`, puis faites `.on(x_int >= i_int_plus_one)`.
+
+```{r non_equi_join_example}
+x <- data.table(x_int = 2:4, lower = letters[1:3])
+i <- data.table(i_int = c(2L, 4L, 5L), UPPER = LETTERS[1:3])
+x[i, on = .(x_int >= i_int)]
+```
+
+Remarques clé :
+
+- Le nom de la colonne de sortie (`x_int`) vient de `x`, mais les valeurs viennent de `i_int` dans `i`.
+- La dernière ligne contient `NA` car aucune ligne de `x` ne correspond à la dernière ligne de `i` (`UPPER == "C"`).
+- Les lignes multiples de `x` sont renvoyées pour correspondre à la première ligne de `i` pour laquelle `UPPER == "A"`.
+
+Si vous souhaitez conserver la colonne `i_int` de `i`, vous devez la sélectionner explicitement dans le résultat :
+
+```{r retain_i_column}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
+```
+
+Il n'est pas strictement nécessaire d'utiliser les préfixes (`x.` et `i.`) dans ce cas car les noms ne sont pas ambigüs, mais en les utilisant vous verrez clairement dans la sortie la distinction entre `i_int` (de `i`) et `x_int` (de `x`).
+
+Pour exclure les lignes qui ne correspondent pas (une _joointure interne_), utiliser `nomatch = NULL`:
+
+```{r retain_i_column_inner_join}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER), nomatch = NULL]
+```
+
+## 5. Jointure glissante
+
+Les jointures glissantes sont particulièrement utiles si vous faites des analyses de données sur des séries temporelles. Elles permettent de **prendre en compte les lignes basées sur la valeur la plus proche** dans une colonne triée, typiquement une colonne avec une date ou un horodatage.
+
+C'est utile lorsque vous avez besoin d'aligner des données de sources différentes **qui n'ont pas forcément les mêmes horodatages**, ou si vous souhaitez continuer avec la valeur la plus récente.
+
+Par exemple, avec des données financières, vous pourriez utiliser une jointure glissante pour assigner la valeur la plus récente d'une action à chaque transaction, même si les mises à jour du prix et les transactions ne correspondent pas exactement aux mêmes instants.
+
+
+Dans notre exemple de supermarché nous pouvons utiliser une jointure glissante pour correspondre aux promotions avec les informations de produit les plus récentes.
+
+Supposons que le prix des bananes et des carottes change le premier jour de chaque mois.
+
+```{r}
+ProductPriceHistory = data.table(
+  product_id = rep(1:2, each = 3),
+  date = rep(as.IDate(c("2024-01-01", "2024-02-01", "2024-03-01")), 2),
+  price = c(0.59, 0.63, 0.65,  # Banana prices
+            0.79, 0.89, 0.99)  # Carrot prices
+)
+
+ProductPriceHistory
+```
+
+Maintenant nous pouvons réaliser une jointure droite en donnant un prix différent à chaque produit en fonction de la date de promotion.
+
+```{r}
+ProductPriceHistory[ProductSales,
+                    on = .(product_id, date),
+                    roll = TRUE,
+                    j = .(product_id, date, count, price)]
+```
+
+Si nous voulons simplement voir les cas de correspondance, il suffit d'ajouter l'argument `nomatch = NULL` pour réaliser une jointure glissante interne.
+
+```{r}
+ProductPriceHistory[ProductSales,
+                    on = .(product_id, date),
+                    roll = TRUE,
+                    nomatch = NULL,
+                    j = .(product_id, date, count, price)]
+```
+
+## 7. Avantage de la vitesse de jointure
+
+### 7.1. Sous-ensembles en tant que jointures
+
+Comme nous venons de le voir, dans la section précédente la table `x` est filtrée par les valeurs de la table `i` . Actuellement cette méthode est plus rapide que de passer une expression booléenne dans l'argument `i`.
+
+Pour filtrer la table `x` rapidement nous ne passons pas la `data.table` entière, nous pouvons passer une `list()` de vecteurs avec les valeurs de la table originale que nous voulons garder ou omettre.
+
+Par exemple pour filtrer les dates auxquelles le marché a reçu 100 unités de bananes (`product_id = 1`) ou de popcorn (`product_id = 3`) nous pouvons utiliser ceci :
+
+```{r}
+ProductReceived[list(c(1L, 3L), 100L),
+                on = c("product_id", "count")]
+```
+
+Comme à la fin nous filtrons sur la base d'une opération de jointure, le code a renvoyé une **ligne absente de la table d'origine**. Pour éviter ce comportement il est recommandé de toujours ajouter l'argument `nomatch = NULL`.
+
+```{r}
+ProductReceived[list(c(1L, 3L), 100L),
+                on = c("product_id", "count"),
+                nomatch = NULL]
+```
+
+
+Nous pouvons aussi utiliser cette technique pour filtrer toute combinaison de valeurs en les préfixant avec `!` pour obtenir la négation de l'expression dans l'argument `i` et en gardant le `nomatch` à sa valeur par défaut. Par exemple nous pouvons filtrer les deux lignes filtrées précédemment.
+
+```{r}
+ProductReceived[!list(c(1L, 3L), 100L),
+                on = c("product_id", "count")]
+```
+
+Si vous voulez simplement filtrer une valeur pour une **colonne de caractères** seule, vous pouvez ne pas appeler la fonction `list()` et passer la valeur pour être filtrée dans l'argument `i`.
+
+```{r}
+Products[c("banana","popcorn"),
+         on = "name",
+         nomatch = NULL]
+
+Products[!"popcorn",
+         on = "name"]
+```
+
+### 7.2. Mise à jour par référence
+
+L'opérateur `:=` de data.table est utilisé pour modifier des colonnes par référence (c'est à dire sans recopie) lors de la jointure. Syntaxe générale : `x[i, on=, (cols) := val]`. 
+
+**Mise à jour Simple un à un**  
+
+Mise à jour de `Products` avec les prix de `ProductPriceHistory` :
+
+```{r}
+Products[ProductPriceHistory, 
+         on = .(id = product_id), 
+         price := i.price]
+
+Products
+```
+
+- `i.price` est le prix dans `ProductPriceHistory`.
+- on modifie directement le contenu de `Products`.
+
+**Mises à jour groupées avec `.EACHI`**
+
+Obtenir le dernier prix et la date pour chaque produit :
+
+```{r Updating_with_the_Latest_Record}
+Products[ProductPriceHistory,
+         on = .(id = product_id),
+         `:=`(price = last(i.price), last_updated = last(i.date)),
+         by = .EACHI]
+
+Products
+```
+
+- `by = .EACHI` groupe les lignes de i (un groupe ar ligne ProductPriceHistory).
+- `last()` renvoie la dernière valeur
+
+**Mise à jour efficace par jointure droite**
+
+Ajouter les détails des produits dans `ProductPriceHistory` sans recopier :
+
+```{r}
+cols <- setdiff(names(Products), "id")
+ProductPriceHistory[, (cols) := 
+  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
+
+ProductPriceHistory
+```
+
+- Dans `i`, `.SD` référence `ProductPriceHistory`.
+- Dans `j`, `.SD` référence `Products`.
+- `:=` et `setnafill()` mettent ensemble à jour `ProductPriceHistory` par référence.
+
+## Référence
+
+- *Comprendre les jointures glissantes de data.table* : https://www.r-bloggers.com/2016/06/understanding-data-table-rolling-joins/
+
+- *Demi-jointure avec data.table* : https://stackoverflow.com/questions/18969420/perform-a-semi-join-with-data-table
+
+- *Jointure croisée avec with data.table* : https://stackoverflow.com/questions/10600060/how-to-do-cross-join-in-r
+
+- *Comment réaliser une jointure complète à l'aide de data.table ?* : https://stackoverflow.com/questions/15170741/how-does-one-do-a-full-join-using-data-table
+
+- *data.frame étendu* : https://rdatatable.gitlab.io/data.table/reference/data.table.html

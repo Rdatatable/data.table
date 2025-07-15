@@ -21,8 +21,8 @@
 // Where no halt is happening, we can just use raw Rprintf() or warning()
 void halt__(bool warn, const char *format, ...);   // see freadR.c
 #define STOP(...)   halt__(0, __VA_ARGS__)
-static char internal_error_buff[1001] __attribute__((unused)); // match internalErrSize // todo: fix imports such that compiler warns correctly #6468
-#define INTERNAL_STOP(...) do {snprintf(internal_error_buff, 1000, __VA_ARGS__); halt__(0, "%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
+static char internal_error_buff[1000] __attribute__((unused)); // match internalErrSize // todo: fix imports such that compiler warns correctly #6468
+#define INTERNAL_STOP(...) do {snprintf(internal_error_buff, sizeof(internal_error_buff), __VA_ARGS__); halt__(0, "%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
 #define DTPRINT     Rprintf
 #define DTWARN(...) warningsAreErrors ? halt__(1, __VA_ARGS__) : warning(__VA_ARGS__)
 

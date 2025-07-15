@@ -562,9 +562,9 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  3) dllVersion() at the end of init.c
 # DO NOT push to GitHub's master branch. Prevents even a slim possibility of user getting premature version. 
 # Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
-du -k inst/tests                # 1.5MB before
+du -k inst/tests                # 1.5MiB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
-du -k inst/tests                # 0.75MB after
+du -k inst/tests                # 0.75MiB after
 R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 Rdevel -q -e "packageVersion('xml2')"   # ensure installed

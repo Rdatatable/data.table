@@ -21,3 +21,6 @@ fitsInInt32 = function(x) .Call(CfitsInInt32R, x)
 fitsInInt64 = function(x) .Call(CfitsInInt64R, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
+
+frev   = function(x) .Call(Cfrev, x, TRUE)
+setfrev = function(x) invisible(.Call(Cfrev, x, FALSE))

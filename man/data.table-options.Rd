@@ -72,6 +72,7 @@
   \describe{
     \item{\code{datatable.allow.cartesian}}{A logical, default \code{FALSE}. Controls the default value of the 
     \code{allow.cartesian} parameter; see \code{\link{data.table}}. If the value of this parameter is FALSE, an error is raised as a safeguard against an explosive Cartesian join.}
+    \item{\code{datatable.join.many}}{A logical. Stub description to be embellished later in PR #4370. }
   }
 }
 
@@ -104,6 +105,15 @@
     \item{\code{datatable.enlist}}{Experimental feature. Default is \code{NULL}. If set to a function
       (e.g., \code{list}), the \code{j} expression can return a \code{list}, which will then
       be "enlisted" into columns in the result.}
+  }
+}
+
+\section{Back-compatibility Options}{
+  \describe{
+    \item{\code{datatable.old.matrix.autoname}}{Logical, default \code{TRUE}. Governs how the output of
+      expressions like \code{data.table(x=1, cbind(1))} will be named. When \code{TRUE}, it will be named
+      \code{V1}, otherwise it will be named \code{V2}.
+    }
   }
 }
 

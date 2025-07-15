@@ -412,11 +412,11 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #include <zlib.h>
 #endif
 SEXP dt_zlib_version(void) {
-  char out[71];
+  char out[70];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
+  snprintf(out, sizeof(out), "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
-  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
+  snprintf(out, sizeof(out), _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
@@ -453,12 +453,208 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+// if (length(x)) length(x[[1L]]) else 0L
+// used in src/mergelist.c and below in commented out set_row_names
+int n_rows(SEXP x) {
+  if (!LENGTH(x))
+    return 0; // # nocov. Not yet reached from anywhere, cbindlist uses it but escapes for !n_columns(x)
+  return length(VECTOR_ELT(x, 0));
+}
+
+// length(x)
+// used in src/mergelist.c
+// to be an abstraction layer on C level
+int n_columns(SEXP x) {
+  return LENGTH(x);
+}
+
+/*
+ Below commented out functions will be uncommented when addressing #4439
+ // c("data.table","data.frame")
+ static SEXP char2_dtdf() {
+ SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
+ SET_STRING_ELT(char2_dtdf, 0, char_datatable);
+ SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
+ UNPROTECT(1);
+ return char2_dtdf;
+ }
+ 
+ // .set_row_names(x)
+ static SEXP set_row_names(int n) {
+ SEXP ans = R_NilValue;
+ if (n) {
+ ans = PROTECT(allocVector(INTSXP, 2));
+ INTEGER(ans)[0] = NA_INTEGER;
+ INTEGER(ans)[1] = -n;
+ } else {
+ ans = PROTECT(allocVector(INTSXP, 0));
+ }
+ UNPROTECT(1);
+ return ans;
+ }
+ 
+ // setDT(x) ## not in-place!
+ SEXP setDT(SEXP x) {
+ if (!isNewList(x))
+ error("internal error: C setDT should be called only on a list"); // # nocov
+ setAttrib(x, R_ClassSymbol, char2_dtdf());
+ setAttrib(x, sym_rownames, set_row_names(n_rows(x)));
+ return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
+ }*/
+
+// inherits(x, "data.table")
+bool isDataTable(SEXP x) {
+  return INHERITS(x, char_datatable);
+}
+
+// rectangular list; NB does not allow length-1 recycling
+// length(x) <= 1L || length(unique(lengths(x))) == 1L
+static inline bool isRectangular(SEXP x) {
+  int n = LENGTH(x);
+  if (n < 2)
+    return true;
+  R_xlen_t nr = xlength(VECTOR_ELT(x, 0));
+  for (int i=1; i<n; ++i) {
+    if (xlength(VECTOR_ELT(x, i)) != nr)
+      return false;
+  }
+  return true;
+}
+
+// setDT()-friendly rectangular list, i.e.
+//   a named list() with all entries of equal length()
+bool isRectangularList(SEXP x) {
+  if (!isNewList(x))
+    return false;
+  if (!LENGTH(x))
+    return true;
+  if (isNull(getAttrib(x, R_NamesSymbol)))
+    return false;
+  return isRectangular(x);
+}
+
+// TODO: use isDataFrame (when included in any R release).
+// isDataTable(x) || isFrame(x) || isRectangularList(x)
+bool perhapsDataTable(SEXP x) {
+  return isDataTable(x) || isFrame(x) || isRectangularList(x);
+}
+SEXP perhapsDataTableR(SEXP x) {
+  return ScalarLogical(perhapsDataTable(x));
+}
+
+SEXP frev(SEXP x, SEXP copyArg) {
+  SEXP names;
+  if (INHERITS(x, char_dataframe))
+    error(_("'x' should not be data.frame or data.table."));
+  if (!IS_TRUE_OR_FALSE(copyArg))
+    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
+  bool copy = LOGICAL(copyArg)[0];
+  R_xlen_t n = xlength(x);
+  int nprotect = 0;
+  if (copy) {
+    x = PROTECT(duplicate(x));
+    nprotect++;
+  }
+  if (n==0) {
+    UNPROTECT(nprotect);
+    return x;
+  }
+  switch (TYPEOF(x)) {
+    case LGLSXP: case INTSXP: {
+      int *restrict xd = INTEGER(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case REALSXP: if (INHERITS(x, char_integer64)) {
+      int64_t *xd = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int64_t tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } else {
+      double *xd = REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const double tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case STRSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = xd[i];
+        SET_STRING_ELT(x, i, xd[k]);
+        SET_STRING_ELT(x, k, tmp);
+      }
+    } break;
+    case VECSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = xd[i];
+        SET_VECTOR_ELT(x, i, xd[k]);
+        SET_VECTOR_ELT(x, k, tmp);
+      }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *xd = COMPLEX(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rcomplex tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case RAWSXP: {
+      Rbyte *xd = RAW(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rbyte tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+  default:
+    error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
+  }
+  names = PROTECT(getAttrib(x, R_NamesSymbol));
+  nprotect++;
+  if (copy) {
+    SEXP klass = PROTECT(getAttrib(x, R_ClassSymbol));
+    SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
+    nprotect += 2;
+    // swipe attributes from x
+    SET_ATTRIB(x, R_NilValue);
+    setAttrib(x, R_NamesSymbol, names);
+    setAttrib(x, R_ClassSymbol, klass);
+    setAttrib(x, R_LevelsSymbol, levels);
+  }
+  if (!isNull(names)) {
+    frev(names, ScalarLogical(FALSE));
+  }
+  UNPROTECT(nprotect);
+  return x;
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
