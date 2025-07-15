@@ -21523,3 +21523,9 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 
 # regression test of edge case report #4964
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
+
+# regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
+f = tempfile()
+writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
+test(2334, names(fread(f)), "a")
+unlink(f)
