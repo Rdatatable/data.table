@@ -30,9 +30,9 @@ Dans cette vignette nous apprendrons à réaliser les opérations de jointure en
 
 Cela suppose que vous êtes déjà familiarisé avec la syntaxe `data.table` . Si ce n'est pas le cas, reportez-vous aux vignettes suivantes :
 
-- [`vignette("datatable-intro", package="data.table")`](fr/datatable-intro.html)
-- [`vignette("datatable-reference-semantics", package="data.table")`](fr/datatable-reference-semantics.html)
-- [`vignette("datatable-keys-fast-subset", package="data.table")`](fr/datatable-keys-fast-subset.html)
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
 
 ***
 
