@@ -25,10 +25,10 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   mb_name = as.character(substitute(mb))
   if (isTRUE(mb)) { mb=type_size; mb_name="type_size" }
   names = ls(envir=env, all.names=TRUE)  # include "hidden" objects (starting with .)
-  obj = mget(names, envir=env)  # doesn't copy; mget is ok with ... unlike get, #5197
+  objs = mget(names, envir=env)  # doesn't copy; mget is ok with ... unlike get, #5197
   found_items = list()
   if (recursive) {
-    agenda = lapply(seq_along(obj), function(i) list(obj=obj[[i]], name=names[i]))
+    agenda = mapply(function(obj, name) list(obj=obj, name=name), objs, names, SIMPLIFY=FALSE, USE.NAMES=FALSE)
     visited_env = new.env(hash=TRUE)
 
     while (length(agenda)) {
@@ -60,7 +60,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
       }
     }
   } else {
-    w = which(vapply_1b(obj, is.data.table))
+    w = which(vapply_1b(objs, is.data.table))
     if (length(w)) {
       found_items = lapply(w, function(i) list(name=names[i], obj=obj[[i]]))
     }
