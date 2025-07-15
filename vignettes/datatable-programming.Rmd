@@ -99,7 +99,7 @@ We have to use `deparse(substitute(...))` to catch the actual names of objects p
 
 Martin Machler, R Project Core Developer, [once said](https://stackoverflow.com/a/40164111/2490497):
 
-> Sorry but I don't understand why too many people even think a string was something that could be evaluated. You must change your mindset, really. Forget all connections between strings on one side and expressions, calls, evaluation on the other side.
+Note: Sorry but I don't understand why too many people even think a string was something that could be evaluated. You must change your mindset, really. Forget all connections between strings on one side and expressions, calls, evaluation on the other side.
 The (possibly) only connection is via `parse(text = ....)` and all good R programmers should know that this is rarely an efficient or safe means to construct expressions (or calls). Rather learn more about `substitute()`, `quote()`, and possibly the power of using `do.call(substitute, ......)`.
 
 #### Computing on the language
