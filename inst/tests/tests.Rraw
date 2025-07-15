@@ -21525,7 +21525,7 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 #2606 Recursive tables() naming convention
-test(2333.1, local({
+test(2334.1, local({
   lst_named    <- list(inner = data.table(a = 1))
   lst_unnamed  <- list(data.table(b = 2))
   nested       <- list(l1 = list(l2 = data.table(c = 3)))
@@ -21539,7 +21539,7 @@ test(2333.1, local({
   )  
   identical(out, sort(expected))
 }))
-test(2333.2, local({
+test(2334.2, local({
   dt <- data.table(val = 42)
   e <- new.env()
   e$dt <- dt
@@ -21547,7 +21547,7 @@ test(2333.2, local({
   out <- tables(recursive = TRUE, env = e)$NAME
   identical(out, "dt")
 }))
-test(2333.3, local({
+test(2334.3, local({
   test_obj <- local({
     common_list <- list(dt_inner = data.table(d = 4))
     outer_list <- list(
