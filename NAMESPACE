@@ -59,6 +59,7 @@ export(nafill)
 export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
+export(mergelist, setmergelist)
 export(cbindlist, setcbindlist)
 export(substitute2)
 #export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
@@ -208,6 +209,7 @@ S3method(format_list_item, data.frame)
 
 export(fdroplevels, setdroplevels)
 S3method(droplevels, data.table)
+export(frev)
 
 # sort_by added in R 4.4.0, #6662, https://stat.ethz.ch/pipermail/r-announce/2024/000701.html
 if (getRversion() >= "4.4.0") S3method(sort_by, data.table)  

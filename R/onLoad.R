@@ -91,7 +91,8 @@
     datatable.alloccol=1024L,           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
     datatable.auto.index=TRUE,          # DT[col=="val"] to auto add index so 2nd time faster
     datatable.use.index=TRUE,           # global switch to address #1422
-    datatable.prettyprint.char=NULL     # FR #1091
+    datatable.prettyprint.char=NULL,    # FR #1091
+    datatable.old.matrix.autoname=TRUE, # #7145: how data.table(x=1, matrix(1)) is auto-named set to change
   )
   opts = opts[!names(opts) %chin% names(options())]
   options(opts)
