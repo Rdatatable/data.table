@@ -99,7 +99,7 @@ Si ce n'est pas ce que vous voulez vraiment mesurer, vous devez préparer des ob
 
 Répéter un benchmark plusieurs fois ne donne généralement pas l'image la plus claire des outils de traitement des données. Bien sûr, c'est parfaitement logique pour les calculs plus atomiques, mais ce n'est pas une bonne représentation de la manière la plus courante dont ces outils seront utilisés, à savoir pour les tâches de traitement des données, qui consistent en des lots de transformations fournies de manière séquentielle, chacune exécutée une fois. Matt a dit un jour :
 
-Note : je me méfie beaucoup des benchmarks qui prennent moins d'une seconde. Je préfère de loin 10 secondes ou plus pour une seule exécution, obtenues en augmentant la taille des données. Un nombre de répétitions de 500 tire la sonnette d'alarme. 3 à 5 exécutions devraient suffire à convaincre sur des données plus importantes. Le coût des appels de fonctions et le temps nécessaire au GC affectent les calculs à une si petite échelle.
+> Je me méfie beaucoup des benchmarks qui prennent moins d'une seconde. Je préfère de loin 10 secondes ou plus pour une seule exécution, obtenues en augmentant la taille des données. Un nombre de répétitions de 500 tire la sonnette d'alarme. 3 à 5 exécutions devraient suffire à convaincre sur des données plus importantes. Le coût des appels de fonctions et le temps nécessaire au GC affectent les calculs à une si petite échelle.
 
 Ceci est tout à fait vrai. Plus la mesure du temps est petite, plus le bruit est important, de manière relative. Le bruit est généré par le dispatching des méthodes, l'initialisation de packages/classes, etc. Le benchmark devrait se concentrer sur des scénarios d'utilisation réelle.
 
