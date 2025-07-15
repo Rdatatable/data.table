@@ -41,5 +41,4 @@ tryCatch({
 }
 \seealso{
 \code{\link{tryCatch}}, \code{\link{test}}, \url{https://adv-r.hadley.nz/conditions.html}
-For advanced exception handling patterns, see data.table's internal helper `tryCatch2` here - \url{https://github.com/jangorecki/logR/blob/master/R/logR.R}
 }
