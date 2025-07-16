@@ -296,7 +296,7 @@ test.list <- atime::atime_test_list(
       }
     },
     expr = data.table::tables(silent=TRUE),
-    "before" = "def1e47eea8822993a829e3fe8d36acc117d806b",
+    "before" = "5bb645082aa5c4a295cdd211a5a75c849d590b75",
     "after" = "8978cf201d8d228506e1e96d3eda7e542471720a"),
 
     tests=extra.test.list)
