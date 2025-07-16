@@ -190,20 +190,24 @@ DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
 test(301.1, nrow(DT[,sum(B),by=C])==100010)
 
 # Test := by key, and that := to the key by key unsets the key. Make it non-trivial in size too.
-options(datatable.optimize=0L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(637.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(637.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(637.3, key(DT[,a:=99L,by=a]), NULL)
-options(datatable.optimize=2L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(638.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(638.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(638.3, key(DT[,a:=99L,by=a]), NULL)
+local({
+  old = options(datatable.optimize=0L); on.exit(options(old))
+  set.seed(1)
+  DT = data.table(a=sample(1:100, 1e6, replace=TRUE), b=sample(1:1000, 1e6, replace=TRUE), key="a")
+  test(637.1, DT[, m:=sum(b), by=a][1:3], data.table(a=1L, b=c(156L, 808L, 848L), m=DT[J(1), sum(b)], key="a"))
+  test(637.2, key(DT[J(43L), a:=99L]), NULL)
+  setkey(DT, a)
+  test(637.3, key(DT[, a:=99L, by=a]), NULL)
+})
+local({
+  options(datatable.optimize=2L); on.exit(options(old))
+  set.seed(1)
+  DT = data.table(a=sample(1:100, 1e6, replace=TRUE), b=sample(1:1000, 1e6, replace=TRUE), key="a")
+  test(638.1, DT[, m:=sum(b), by=a][1:3], data.table(a=1L, b=c(156L, 808L, 848L), m=DT[J(1), sum(b)], key="a"))
+  test(638.2, key(DT[J(43L), a:=99L]), NULL)
+  setkey(DT,a)
+  test(638.3, key(DT[, a:=99L, by=a]), NULL)
+})
 
 # Test X[Y] slowdown, #2216
 # Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
