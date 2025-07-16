@@ -5,10 +5,10 @@
 ## added ver argument to produce R version independent urls
 ## https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=17420
 contrib.url <-
-function (repos, type = getOption("pkgType"), ver) 
+function (repos, type = getOption("pkgType"), ver)
 {
   type <- utils:::resolvePkgType(type)
-  if (is.null(repos)) 
+  if (is.null(repos))
     return(NULL)
   if ("@CRAN@" %in% repos && interactive()) {
     cat(gettext("--- Please select a CRAN mirror for use in this session ---"), "\n", sep = "")
@@ -17,12 +17,12 @@ function (repos, type = getOption("pkgType"), ver)
     m <- match("@CRAN@", repos)
     nm <- names(repos)
     repos[m] <- getOption("repos")["CRAN"]
-    if (is.null(nm)) 
+    if (is.null(nm))
       nm <- rep("", length(repos))
     nm[m] <- "CRAN"
     names(repos) <- nm
   }
-  if ("@CRAN@" %in% repos) 
+  if ("@CRAN@" %in% repos)
     stop("trying to use CRAN without setting a mirror")
   if(missing(ver)) {
     ver <- paste(R.version$major, strsplit(R.version$minor, ".", fixed=TRUE)[[1L]][1L], sep = ".")
@@ -37,7 +37,7 @@ function (repos, type = getOption("pkgType"), ver)
   res <- switch(
     type,
     source = paste(gsub("/$", "", repos), "src", "contrib", sep = "/"),
-    mac.binary = paste(gsub("/$", "", repos), "bin", mac.path, "contrib", ver, sep = "/"), 
+    mac.binary = paste(gsub("/$", "", repos), "bin", mac.path, "contrib", ver, sep = "/"),
     win.binary = paste(gsub("/$", "", repos), "bin", "windows", "contrib", ver, sep = "/")
   )
   res
@@ -45,9 +45,10 @@ function (repos, type = getOption("pkgType"), ver)
 
 ## returns dependencies for a package based on its DESCRIPTION file
 dcf.dependencies <-
-function(file = "DESCRIPTION", 
+function(file = "DESCRIPTION",
          which = NA,
-         except.priority = "base") {
+         except.priority = "base",
+         exclude = NULL) {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
     stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
   if (!is.character(except.priority))
@@ -71,7 +72,7 @@ function(file = "DESCRIPTION",
   }, which = which), use.names = FALSE)
   local.extract_dependency_package_names = function (x) {
     ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
-    if (is.na(x)) 
+    if (is.na(x))
       return(character())
     x <- unlist(strsplit(x, ",[[:space:]]*"))
     x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
@@ -79,7 +80,13 @@ function(file = "DESCRIPTION",
   }
   x <- unlist(lapply(x, local.extract_dependency_package_names))
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
-  setdiff(x, except)
+  x = setdiff(x, except)
+  if (length(exclude)) {  # to exclude knitr/rmarkdown, 5294
+    if (!is.character(exclude) || anyDuplicated(exclude))
+      stop("exclude may be NULL or a character vector containing no duplicates")
+    x = setdiff(x, exclude)
+  }
+  x
 }
 
 ## returns additional repositories for dependency packages based on its DESCRIPTION file
@@ -101,13 +108,13 @@ function(file = "DESCRIPTION") {
 ## download dependencies recursively for provided packages
 ## put all downloaded packages into local repository
 mirror.packages <-
-function(pkgs, 
-         which = c("Depends", "Imports", "LinkingTo"), 
-         repos = getOption("repos"), 
-         type = c("source", "mac.binary", "win.binary"), 
-         repodir, 
-         except.repodir = repodir, 
-         except.priority = "base", 
+function(pkgs,
+         which = c("Depends", "Imports", "LinkingTo"),
+         repos = getOption("repos"),
+         type = c("source", "mac.binary.big-sur-arm64", "win.binary"),
+         repodir,
+         except.repodir = repodir,
+         except.priority = "base",
          method,
          quiet = TRUE,
          binary.ver,
@@ -148,10 +155,11 @@ function(pkgs,
   db <- utils::available.packages(repos.url, type = type)
   allpkgs <- c(pkgs, unlist(tools::package_dependencies(unique(pkgs), db, which, recursive = TRUE), use.names = FALSE))
   except <- c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
-  ## do not re-download existing packages, ignore version
+  ## do not re-download existing packages with the right version
   if (length(except.repodir) && file.exists(file.path(contrib.url(except.repodir, type = type, ver = binary.ver), "PACKAGES"))) {
     except.curl <- contrib.url(file.path("file:", normalizePath(except.repodir)), type = type, ver = binary.ver)
-    except <- c(except, rownames(utils::available.packages(except.curl, type = type, fields = "Package")))
+    except.db <- utils::available.packages(except.curl, type = type, fields = "Package")
+    except <- c(except, merge(db, except.db, by = c("Package", "Version", "MD5sum"))[,"Package"])
   }
   newpkgs <- setdiff(allpkgs, except)
   if (!all(availpkgs<-newpkgs %in% rownames(db))) {
@@ -161,24 +169,28 @@ function(pkgs,
     warning(sprintf("Packages binaries could not be found in provided reposistories for R version %s: %s", binary.ver, paste(newpkgs[!availpkgs], collapse = ", ")))
     newpkgs <- newpkgs[availpkgs]
   }
-  
-  pkgsext <- switch(type,
+
+  typeshort <- if (startsWith(type, "mac.binary.")) "mac.binary" else type
+  pkgsext <- switch(typeshort,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
                     "win.binary" = "zip")
+  ## clean up stale package files for which new versions will be downloaded
+  if (file.exists(file.path(destdir, "PACKAGES"))) {
+    repo.db <- utils::available.packages(file.path("file:", normalizePath(destdir)), type = type)
+    oldver <- repo.db[repo.db[, "Package"] %in% newpkgs, c("Package", "Version"), drop=FALSE]
+    oldfiles <- file.path(destdir, sprintf("%s_%s.%s", oldver[,"Package"], oldver[,"Version"], pkgsext))
+    unlink(oldfiles[file.exists(oldfiles)])
+  }
   pkgsver <- db[db[, "Package"] %in% newpkgs, c("Package", "Version"), drop=FALSE]
   dlfiles <- file.path(destdir, sprintf("%s_%s.%s", pkgsver[,"Package"], pkgsver[,"Version"], pkgsext))
   unlink(dlfiles[file.exists(dlfiles)])
   ## repos argument is not used in download.packages, only as default for contriburl argument
   ## we provide contriburl to avoid interactive CRAN menu popup twice in mirror.packages
-  dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir, 
-                                 available = db, contriburl = repos.url, 
+  dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir,
+                                 available = db, contriburl = repos.url,
                                  type = type, method = method, quiet = quiet)
-  tools::write_PACKAGES(dir = destdir, type = type, ...)
+  tools::write_PACKAGES(dir = destdir, type = typeshort, ...)
   dp
 }
 
-## set repositories for CI tests
-if (as.logical(Sys.getenv("GITLAB_CI","false")) && identical(Sys.getenv("CI_PROJECT_NAME"), "data.table")) {
-  options("repos" = if (.Platform$OS.type == "windows") file.path("file://",getwd(),"bus/mirror-packages/cran") else file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)))
-}

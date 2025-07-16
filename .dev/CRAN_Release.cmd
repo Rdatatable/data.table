@@ -3,66 +3,29 @@
 ###############################################
 
 # 1) Update messages for new release
-## (a) Update C template file: src/data.table.pot
-##     ideally, we are including _() wrapping in
-##     new PRs throughout dev cycle, and this step
-##     becomes about tying up loose ends
-## Appending _() char array wrapping to all messages
-##   that might be shown to the user. This step is slightly
-##   too greedy, as it includes too many msg, some of which
-##   need not be translated [more work to do here to make
-##   this less manual] some things to watch out for:
-##     * quote embedded (and escaped) within message [could be fixed with smarter regex]
-##     * multi-line implicit-concat arrays (in C, `"a" "b"` is the same as `"ab"`) should be wrapped "on the outside" not individually
-##     * `data.table` shares some of its `src` with `pydatatable`, so the requirement to `#include <R.h>` before the `#define _` macro meant we need to be careful about including this macro only in the R headers for these files (hence I created `po.h`)
-##     * Can't use `_()` _inside_ another functional macro. Only wrap the string passed to the macro later.
-for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
-  do for SRC_FILE in src/*.c;
-    # no inplace -i in default mac sed
-    do sed -E "s/$MSG[(]("[^"]*")/$MSG(_(\1)/g" $SRC_FILE > out;
-    mv out $SRC_FILE;
-  done
-done
+dt_custom_translators = list(
+  R = 'catf:fmt|1',
+  # TODO(MichaelChirico/potools#318): restore snprintf:3 here too
+  src = c('STOP:1', 'DTWARN:1', 'DTPRINT:1')
+)
+message_db =
+  potools::get_message_data(custom_translation_functions = dt_custom_translators)
+potools::check_cracked_messages(message_db)
+potools::check_untranslated_cat(message_db)
+potools::check_untranslated_src(message_db)
 
-## checking for other lines calling these that didn't get _()-wrapped
-for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
-  do grep -Er "\b$MSG[(]" src --include=*.c | grep -v _ | grep -Ev "(?://|[*]).*$MSG[(]"
-
-## similar, but a bit more manual to check snprintf usage
-
-## look for char array that haven't been covered yet
-grep -Er '"[^"]+"' src --include=*.c | grep -Fv '_("' | grep -v "#include" | grep -v '//.*".*"'
-
-## look for lines starting with a char array (likely continued from prev line & can be combined)
-grep -Er '^\s*"' src/*.c
-
-## Now extract these messages with xgettext
-cd src
-xgettext --keyword=_ -o data.table.pot *.c
-cd ..
-
-## (b) Update R template file: src/R-data.table.pot
-## much easier, once the update_pkg_po bug is fixed
-R --no-save
-## a bug fix in R still hadn't made the 2019-12-12 release,
-##   so run the following to source the corrected function manually
-STEM='https://raw.githubusercontent.com/wch/r-source/trunk/src/library/tools/R'
-source(file.path(STEM, 'utils.R'))
-source(file.path(STEM, 'xgettext.R'))
-source(file.path(STEM, 'translations.R'))
-## shouldn't be any errors from this...
-update_pkg_po('.')
-q()
+## (b) Update R template files (po/*.pot)
+potools::po_extract(custom_translation_functions = dt_custom_translators)
 
 # 2) Open a PR with the new templates & contact the translators
-#   * zh_CN:
+#    using @Rdatatable/<lang>, e.g. @Rdatatable/chinese
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
 
-## 3) Check validity
-##   update_pkg_po('.') to be run again for the PR
-##     [can this be done via Travis?]
+## 3) Check validity with tools::checkPoFiles(".*")
+
+## 4) Compile the new .mo binary files with potools::po_compile()
 
 ###############################################
 #  Basic checks
@@ -90,14 +53,6 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P 
 
 # Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
-
-# Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
-# Only comments referring to it should be in openmp-utils.c
-grep omp_set_num_threads ./src/*
-
-# Ensure no calls to omp_set_nested() as i) it's hard to fully honor OMP_THREAD_LIMIT as required by CRAN, and
-#                                        ii) a simpler non-nested approach is always preferable if possible, as has been the case so far
-grep omp_set_nested ./src/*.c
 
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
@@ -140,17 +95,6 @@ grep "PROTECT_PTR" ./src/*.c
 # No use of long long, instead use int64_t. TODO
 # grep "long long" ./src/*.c
 
-// No use of llu, lld, zd or zu
-grep -nE "(llu|lld|zd|zu)" src/*.[hc]
-// Comment moved here from fread.c on 19 Nov 2019
-// [Moved from fread.c on 19 Nov 2019] On Windows variables of type `size_t` cannot be printed
-// with "%zu" in the `snprintf()` function. For those variables we used to cast them into
-// `unsigned long long int` before printing, and defined (llu) to make the cast shorter.
-// We're now observing warnings from gcc-8 with -Wformat-extra-args, #4062. So
-// now we're more strict and cast to [u]int64_t and use PRIu64/PRId64 from <inttypes.h>
-// In many cases the format specifier is passed to our own macro (e.g. DTPRINT) or to Rprintf(),
-// error() etc, and even if they don't call sprintf() now, they could in future.
-
 # No tabs in C or R code (sorry, Richard Hendricks)
 grep -P "\t" ./R/*.R
 grep -P "\t" ./src/*.c
@@ -159,17 +103,17 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
-# All integers internally should have L suffix to avoid lots of one-item coercions
-# Where 0 numeric is intended we should perhaps use 0.0 for clarity and make the grep easier
-# 1) tolerance=0 usages in setops.R are valid numeric 0, as are anything in strings
-# 2) leave the rollends default using roll>=0 though; comments in PR #3803
-grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
-
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
- grep -Enr "\bifelse" R
+grep -Enr "\bifelse" R
+
+# use substr() instead of substring(), #4447
+grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
-grep -n "system[.]time" ./inst/tests/tests.Rraw
+grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
+
+# No tryCatch in *.Rraw -- tryCatch should be handled only in test() itself to avoid silently missed warnings/errors/output
+grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
@@ -208,24 +152,31 @@ grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
+# Enforce local scope for loop index (`for (int i=0; ...)` instead of `int i; for (i=0; ...)`)
+#   exceptions are tagged with #loop_counter_not_local_scope_ok
+grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=" src/*.c | grep -Fv "#loop_counter_not_local_scope_ok"
+
 cd ..
 R
-cc(test=TRUE, clean=TRUE, CC="gcc-10")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
+cc(test=TRUE, clean=TRUE, CC="gcc-12")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.13.1.tar.gz --as-cran
-R CMD INSTALL data.table_1.13.1.tar.gz --html
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+# avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
+# Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
+R CMD check data.table_1.16.99.tar.gz --as-cran
+R CMD INSTALL data.table_1.16.99.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.13.1.tar.gz
+R CMD check data.table_1.16.99.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -242,42 +193,54 @@ q("no")
 
 # User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
 # Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
-PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.13.1.tar.gz
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.16.99.tar.gz
 # Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
-PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.13.1.tar.gz
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.16.99.tar.gz
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
+f1 = tempfile()
+f2 = tempfile()
+suppressWarnings(try(rm(list=c(".Last",".Random.seed"))))
+save.image(f1)
 test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+suppressWarnings(try(rm(list=c(".Last",".Random.seed"))))
+save.image(f2)
+system(paste("diff",f1,f2))  # to detect any changes to .GlobalEnv, #5514
+# print(load(f1)); print(load(f2)) # run if diff found any difference
+
+# check example() works on every exported function, with these sticter options too, and also that all help pages have examples
+options(warn=2, warnPartialMatchArgs=TRUE, warnPartialMatchAttr=TRUE, warnPartialMatchDollar=TRUE)
+invisible(lapply(objects(pos="package:data.table"), example, character.only=TRUE, echo=FALSE, ask=FALSE))
+
 gctorture2(step=50)
 system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
 # Upload to win-builder: release, dev & old-release
-# Turn on Travis OSX; it's off in dev until it's added to GLCI (#3326) as it adds 17min after 11min Linux.
-# Turn on r-devel in Appveyor; it may be off in dev for similar dev cycle speed reasons
+# Turn on Travis OSX until it's added to GLCI (#3326). If it's off it's because as it adds 17min after 11min Linux.
 
 
 ###############################################
-#  R 3.1.0 (stated dependency)
+#  R 3.4.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
-tar xvf R-3.1.0.tar.gz
-cd R-3.1.0
-./configure --without-recommended-packages
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.4.0.tar.gz
+tar xvf R-3.4.0.tar.gz
+cd R-3.4.0
+CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
-alias R310=~/build/R-3.1.0/bin/R
+alias R340=~/build/R-3.4.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.13.1.tar.gz
-R310
+R340 CMD INSTALL ./data.table_1.16.99.tar.gz
+R340
 require(data.table)
 test.data.table(script="*.Rraw")
 
@@ -288,7 +251,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.13.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.16.99.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -296,7 +259,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.13.1.tar.gz
+R CMD check data.table_1.16.99.tar.gz
 
 
 #####################################################
@@ -307,25 +270,30 @@ cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 rm -rf R-devel-strict-*
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 mv R-devel R-devel-strict-gcc
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 
-cd R-devel  # used for revdep testing: .dev/revdep.R.
+sudo apt-get -y build-dep r-base
+cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 # important to change directory name before building not after because the path is baked into the build, iiuc
-./configure CFLAGS="-O2 -Wall -pedantic"
+./configure CFLAGS="-O0 -Wall -pedantic"
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
+# wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+# sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main'
+# sudo apt-get install clang-15
+
 cd ~/build/R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-10 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-15 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-sanitize=alignment -fno-omit-frame-pointer" CFLAGS="-g -O3 -Wall -pedantic"
 make
 
 cd ~/build/R-devel-strict-gcc
-# gcc-10 (in dev currently) failed to build R, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-9 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+# gcc-10 failed to build R-devel at some point, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-11 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
 # See R-exts#4.3.3
@@ -346,22 +314,30 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.13.1.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.13.1.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
-Rdevel-strict-gcc
-Rdevel-strict-clang  # repeat below with clang and gcc
+Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.16.99.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so they should be
+# passed through to here. However, our configure script seems to get in the way and gets them from {R_HOME}/bin/R
+# So I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
+Rdevel-strict-[gcc|clang] CMD check data.table_1.16.99.tar.gz
+# Use the (failed) output to get the list of currently needed packages and install them
+Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64","xts","nanotime","R.utils","yaml")) # minimum packages needed to not skip any tests in test.data.table()
-# install.packages(c("curl","knitr"))                          # for `R CMD check` when not strict. Too slow to install when strict
+install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "knitr", "markdown"),
+                 Ncpus=4)
+# Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
+q("no")
+Rdevel-strict-[gcc|clang] CMD check data.table_1.16.99.tar.gz
+# UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
+find data.table.Rcheck -name "*Rout*" -exec grep -H "runtime error" {} \;
+
 require(data.table)
 test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
                                  # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
 for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
-# gctorture(TRUE)      # very slow, many days
-gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
+# gctorture(TRUE)      # very slow, many days maybe weeks
+gctorture2(step=100)   # 74 hours under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
 
 ## In case want to ever try again with 32bit on 64bit Ubuntu for tracing any 32bit-only problems
@@ -369,7 +345,7 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 ## apt-get update
 ## apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
 ## sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
-## sudo apt-get install libcurl4-openssl-dev:i386
+## sudo apt-get install libcurl4-openssl-dev:i386 ## may not be needed anymore as we dropped dependency on curl, try and update when reproducing
 ## cd ~/build/32bit/R-devel
 ## ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
 ##
@@ -388,7 +364,7 @@ cd R-devel-valgrind
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
-Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
+Rdevel-valgrind CMD INSTALL data.table_1.16.99.tar.gz
 R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
 # the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
 #   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
@@ -426,7 +402,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.13.1.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.16.99.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -487,14 +463,15 @@ shutdown now   # doesn't return you to host prompt properly so just kill the win
 #  Downstream dependencies
 ###############################################
 
-# IF NOT ALREADY INSTALLED
+# IF NOT ALREADY INSTALLED, OR AFTER AN OS UPGRADE
+# No harm rerunning these commands; they do not reinstall if already latest version
 sudo apt-get update
 sudo apt-get -y install htop
 sudo apt-get -y install r-base r-base-dev
 sudo apt-get -y build-dep r-base-dev
 sudo apt-get -y build-dep qpdf
 sudo apt-get -y install aptitude
-sudo aptitude -y build-dep r-cran-rgl   # leads to libglu1-mesa-dev
+sudo apt-get -y build-dep r-cran-rgl   # leads to libglu1-mesa-dev
 sudo apt-get -y build-dep r-cran-rmpi
 sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
@@ -536,6 +513,14 @@ sudo apt-get -y install libzmq3-dev   # for rzmq
 sudo apt-get -y install libimage-exiftool-perl   # for camtrapR
 sudo apt-get -y install parallel   # for revdepr.R
 sudo apt-get -y install pandoc-citeproc   # for basecallQC
+sudo apt-get -y install libquantlib0-dev  # for RQuantLib
+sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
+sudo apt-get -y install libgit2-dev  # for gert
+sudo apt-get -y install cmake  # for symengine for RxODE
+sudo apt-get -y install libxslt1-dev  # for xslt
+sudo apt-get -y install flex  # for RcppCWB
+sudo apt-get -y install libavfilter-dev libsodium-dev libgmp-dev libssh-dev librdf0-dev
+sudo apt-get -y install libmariadb-dev mariadb-client   # RMySQL for xQTLbiolinks
 sudo R CMD javareconf
 # ENDIF
 
@@ -544,6 +529,7 @@ inst()   # *** ensure latest dev version of data.table installed into revdeplib 
 run()    # prints menu of options
 status() # includes timestamp of installed data.table that is being tested.
 log()    # cats all fail logs to ~/fail.log
+cran()   # compare packages with error or warning to their status on CRAN
 
 # Once all issues resolved with CRAN packages, tackle long-term unfixed bioconductor packages as follows.
 # 1. Note down all error and warning bioc packages
@@ -570,48 +556,73 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  Release to CRAN
 ###############################################
 
-Bump version to even release number in 3 places :
-  1) DESCRIPTION
-  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
-  3) dllVersion() at the end of init.c
-DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
-du -k inst/tests                # 1.5MB before
+# Bump version to even release number in 3 places :
+#  1) DESCRIPTION
+#  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
+#  3) dllVersion() at the end of init.c
+# DO NOT push to GitHub's master branch. Prevents even a slim possibility of user getting premature version. 
+# Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
+du -k inst/tests                # 1.5MiB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
-du -k inst/tests                # 0.75MB after
+du -k inst/tests                # 0.75MiB after
 R CMD build .
-R CMD check data.table_1.13.0.tar.gz --as-cran
-#
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+Rdevel -q -e "packageVersion('xml2')"   # ensure installed
+Rdevel CMD check data.table_1.17.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
+
 #
-Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
-Submit to CRAN. Message template :
-------------------------------------------------------------
-Hello,
-870 CRAN revdeps checked.
-The following 3 are impacted and we have communicated with their maintainers:
-  expss nc memochange
-All known issues resolved including clang-UBSAN additional issue.
-Solaris is not resolved but this release will write more output upon that error so I can continue to trace that problem.
-Many thanks!
-Best, Matt
-------------------------------------------------------------
-DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
-DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
-Leave milestone open with a 'release checks' issue open. Keep updating status there.
-** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
-If it's evening, SLEEP.
-It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
-CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
-When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
-###### Bump dev
-0. Close milestone to prevent new issues being tagged with it. Update its name to the even release. The final 'release checks' issue can be left open in a closed milestone.
-1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
-2. Bump version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
-3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
-4. Bump dllVersion() in init.c
-5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.9 to 1.13.1, and 1.12.8 to 1.13.0 (e.g. in step 8 and 9 below)
-7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.13.0 on CRAN. Bump to 1.13.1"
-9. Take sha from step 8 and run `git tag 1.13.0 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.13.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+# Final Release steps
+#
+# Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
+# Submit to R-Hub
+# If RESUBMISSION, update date in NEWS file
+# Submit to CRAN. Message template :
+# ------------------------------------------------------------
+# Hello,
+# XXXX CRAN revdeps checked. None are impacted.
+# Many thanks!
+# Best, Tyson
+# ------------------------------------------------------------
+# DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
+# DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
+# Leave milestone open with a 'release checks' issue open. Keep updating status there.
+# ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
+# If it's evening, SLEEP.
+# It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
+# CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
+# When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
+
+###### Bump dev for NON-PATCH RELEASE
+# 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+# 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
+# 2. Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+# 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
+# 4. Bump minor version in dllVersion() in init.c
+# 5. Bump 3 minor version numbers in Makefile
+# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.16.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
+# 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 8. Push to master with this consistent commit message: "1.17.0 on CRAN. Bump to 1.17.99"
+# 9. Take sha from the previous step and run `git tag 1.17.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+######
+
+###### Branching policy for PATCH RELEASE
+# Patch releases handle regressions and CRAN-required off-cycle fixes (e.g. when changes to r-devel break data.table).
+# * Start a branch `patch-x.y.z` corresponding to the target release version. It should be branched from the previous CRAN release,
+#   e.g. branch `patch-1.15.4` from tag `v1.15.2`, `patch-1.15.6` from tag `v1.15.4`, etc.
+# * Add fixes for issues tagged to the corresponding milestone as PRs targeting the `master` branch. These PRs should be reviewed as usual
+#   and include a NEWS item under the ongoing development release.
+# * After merging a patch PR, `cherry-pick` the corresponding commit into the target patch branch. Edit the NEWS item to be under the heading
+#   for the patch release.
+# * Delete the patch branch after the corresponding tag is pushed.
+
+###### Bump dev for PATCH RELEASE
+# 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+# 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
+# 2. Bump patch version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+# 3. Add "(submitted to CRAN on <today>)" on the released heading for the NEWS.
+# 4. Bump patch version in dllVersion() in init.c
+# 5. Bump 3 patch version numbers in Makefile
+# 6. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 7. Commit the changes, then take the SHA and run `git tag 1.15.{2,4,6,...} ${SHA}` then `git push origin 1.15.{2,4,6,...}` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######

@@ -1,6 +1,39 @@
 
+
+mergeType = function(x) {
+  ans = typeof(x)
+  if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
+  else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
+  # do not call fitsInInt*(x) yet because i) if both types are double we don't need to coerce even if one or both sides
+  # are int-as-double, and ii) to save calling it until we really need it
+  ans
+}
+
+cast_with_attrs = function(x, cast_fun) {
+  ans = cast_fun(x)
+  # do not copy attributes when coercing factor (to character)
+  if (!is.factor(x) && !is.null(attributes(x))) attributes(ans) = attributes(x)
+  ans
+}
+
+coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_detail="", to_detail="", verbose) {
+  if (verbose) catf(
+    "Coercing %s column %s%s to type %s to match type of %s%s.\n",
+    from_type, from_name, from_detail, to_type, to_name, to_detail
+  )
+  cast_fun = switch(to_type, integer64 = bit64::as.integer64, match.fun(paste0("as.", to_type)))
+  set(dt, j=col, value=cast_with_attrs(dt[[col]], cast_fun))
+}
+
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
+  if (roll != 0.0 && length(icols)) {
+    last_x_idx = tail(xcols, 1L)
+    last_i_idx = tail(icols, 1L)
+    if (is.factor(x[[last_x_idx]]) || is.factor(i[[last_i_idx]]))
+      stopf("Attempting roll join on factor column when joining x.%s to i.%s. Only integer, double or character columns may be roll joined.", names(x)[last_x_idx], names(i)[last_i_idx])
+  }
+
   callersi = i
   i = shallow(i)
   # Just before the call to bmerge() in [.data.table there is a shallow() copy of i to prevent coercions here
@@ -25,99 +58,107 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
 
   supported = c(ORDERING_TYPES, "factor", "integer64")
 
-  getClass = function(x) {
-    ans = typeof(x)
-    if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
-    else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
-    # do not call isReallyReal(x) yet because i) if both types are double we don't need to coerce even if one or both sides
-    # are int-as-double, and ii) to save calling it until we really need it
-    ans
-  }
-
   if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
     # - do type coercions if necessary on just the shallow local copies for the purpose of join
     # - handle factor columns appropriately
     # Note that if i is keyed, if this coerces i's key gets dropped by set()
-    ic = icols[a]
-    xc = xcols[a]
-    xclass = getClass(x[[xc]])
-    iclass = getClass(i[[ic]])
-    if (!xclass %chin% supported) stop("x.", names(x)[xc]," is type ", xclass, " which is not supported by data.table join")
-    if (!iclass %chin% supported) stop("i.", names(i)[ic]," is type ", iclass, " which is not supported by data.table join")
-    if (xclass=="factor" || iclass=="factor") {
-      if (roll!=0.0 && a==length(icols))
-        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
-      if (xclass=="factor" && iclass=="factor") {
-        if (verbose) cat("Matching i.",names(i)[ic]," factor levels to x.",names(x)[xc]," factor levels.\n",sep="")
-        set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
+    icol = icols[a]
+    xcol = xcols[a]
+    x_merge_type = mergeType(x[[xcol]])
+    i_merge_type = mergeType(i[[icol]])
+    xname = paste0("x.", names(x)[xcol])
+    iname = paste0("i.", names(i)[icol])
+    if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
+    if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
+    # we check factors first because they might have different levels
+    if (x_merge_type=="factor" || i_merge_type=="factor") {
+      if (x_merge_type=="factor" && i_merge_type=="factor") {
+        if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
+        set(i, j=icol, value=chmatch(levels(i[[icol]]), levels(x[[xcol]]), nomatch=0L)[i[[icol]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
       } else {
-        if (xclass=="character") {
-          if (verbose) cat("Coercing factor column i.",names(i)[ic]," to type character to match type of x.",names(x)[xc],".\n",sep="")
-          set(i, j=ic, value=val<-as.character(i[[ic]]))
-          set(callersi, j=ic, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
+        if (x_merge_type=="character") {
+          coerce_col(i, icol, "factor", "character", iname, xname, verbose=verbose)
+          set(callersi, j=icol, value=i[[icol]])  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
-        } else if (iclass=="character") {
-          if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
-          newvalue = chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L)
-          if (anyNA(i[[ic]])) newvalue[is.na(i[[ic]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
-          set(i, j=ic, value=newvalue)
+        } else if (i_merge_type=="character") {
+          if (verbose) catf("Matching character column %s to factor levels in %s.\n", iname, xname)
+          newvalue = chmatch(i[[icol]], levels(x[[xcol]]), nomatch=0L)
+          if (anyNA(i[[icol]])) newvalue[is.na(i[[icol]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
+          set(i, j=icol, value=newvalue)
           next
         }
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,"). Factor columns must join to factor or character columns.")
+      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type, class="dt_join_type_mismatch_error")
     }
-    if (xclass == iclass) {
-      if (verbose) cat("i.",names(i)[ic]," has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
+    if (x_merge_type == i_merge_type) {
+      if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
     }
-    if (xclass=="character" || iclass=="character" ||
-        xclass=="logical" || iclass=="logical" ||
-        xclass=="factor" || iclass=="factor") {
-      if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
-        if (verbose) cat("Coercing all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
-        set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
+    cfl = c("character", "logical", "factor")
+    if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
+      if (anyNA(i[[icol]]) && allNA(i[[icol]])) {
+        coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
-      else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
-        if (verbose) cat("Coercing all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
-        set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
+      if (anyNA(x[[xcol]]) && allNA(x[[xcol]])) {
+        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
+      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type, class="dt_join_type_mismatch_error")
     }
-    if (xclass=="integer64" || iclass=="integer64") {
-      nm = paste0(c("i.","x."), c(names(i)[ic], names(x)[xc]))
-      if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
-      if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
-        if (verbose) cat("Coercing ",wclass," column ", nm[1L], if(wclass=="double")" (which contains no fractions)"," to type integer64 to match type of ", nm[2L],".\n",sep="")
-        set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
-      } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
+    if (x_merge_type=="integer64" || i_merge_type=="integer64") {
+      nm = c(iname, xname)
+      if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; setfrev(nm) }  # w is which to coerce
+      if (wclass=="integer" || (wclass=="double" && fitsInInt64(w[[wc]]))) {
+        from_detail = if (wclass == "double") gettext(" (which has integer64 representation, e.g. no fractions)") else ""
+        coerce_col(w, wc, wclass, "integer64", nm[1L], nm[2L], from_detail, verbose=verbose)
+      } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L], class="dt_join_type_mismatch_error")
     } else {
       # just integer and double left
-      if (iclass=="double") {
-        if (!isReallyReal(i[[ic]])) {
+      ic_idx = which(icol == icols) # check if on is joined on multiple conditions, #6602
+      if (i_merge_type=="double") {
+        coerce_x = FALSE
+        if (fitsInInt32(i[[icol]])) {
+          coerce_x = TRUE
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          if (verbose) cat("Coercing double column i.",names(i)[ic]," (which contains no fractions) to type integer to match type of x.",names(x)[xc],".\n",sep="")
-          val = as.integer(i[[ic]])
-          if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
-          set(i, j=ic, value=val)
-          set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
-        } else {
-          if (verbose) cat("Coercing integer column x.",names(x)[xc]," to type double to match type of i.",names(i)[ic]," which contains fractions.\n",sep="")
-          set(x, j=xc, value=as.double(x[[xc]]))
+          if (length(ic_idx)>1L) {
+            xc_idx = xcols[ic_idx]
+            for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
+              if (!fitsInInt32(x[[xb]])) {
+                coerce_x = FALSE
+                break
+              }
+            }
+          }
+          if (coerce_x) {
+            from_detail = gettext(" (which contains no fractions)")
+            coerce_col(i, icol, "double", "integer", iname, xname, from_detail, verbose=verbose)
+            set(callersi, j=icol, value=i[[icol]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
+            if (length(ic_idx)>1L) {
+              xc_idx = xcols[ic_idx]
+              for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
+                coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, from_detail, verbose=verbose)
+              }
+            }
+          }
+        }
+        if (!coerce_x) {
+          coerce_col(x, xcol, "integer", "double", xname, iname, to_detail=gettext(" (which contains fractions)"), verbose=verbose)
         }
       } else {
-        if (verbose) cat("Coercing integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
-        set(i, j=ic, value=as.double(i[[ic]]))
+        coerce_col(i, icol, "integer", "double", iname, xname, from_detail=gettext(" (for join)"), verbose=verbose)
+        if (length(ic_idx)>1L) {
+          xc_idx = xcols[ic_idx]
+          for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "integer")]) {
+            coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, verbose=verbose)
+          }
+        }
       }
     }
   }
-
-  ## after all modifications of i, check if i has a proper key on all icols
-  io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
 
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
@@ -126,17 +167,17 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # equi join. use existing key (#1825) or existing secondary index (#1439)
     if (identical(xcols, head(chmatch(key(x), names(x)), length(xcols)))) {
       xo = integer(0L)
-      if (verbose) cat("on= matches existing key, using key\n")
+      if (verbose) catf("on= matches existing key, using key\n")
     } else {
       xo = NULL
       if (isTRUE(getOption("datatable.use.index"))) {
         xo = getindex(x, names(x)[xcols])
-        if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
+        if (verbose && !is.null(xo)) catf("on= matches existing index, using index\n")
       }
       if (is.null(xo)) {
         if (verbose) {last.started.at=proc.time(); flush.console()}
         xo = forderv(x, by = xcols)
-        if (verbose) {cat("Calculated ad hoc index in",timetaken(last.started.at),"\n"); flush.console()}
+        if (verbose) {catf("Calculated ad hoc index in %s\n", timetaken(last.started.at)); flush.console()}
         # TODO: use setindex() instead, so it's cached for future reuse
       }
     }
@@ -147,42 +188,42 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # non-equi operators present.. investigate groups..
     nqgrp = integer(0L)
     nqmaxgrp = 1L
-    if (verbose) cat("Non-equi join operators detected ... \n")
-    if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")
-    if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
+    if (verbose) catf("Non-equi join operators detected ... \n")
+    if (roll != FALSE) stopf("roll is not implemented for non-equi joins yet.")
+    if (verbose) {last.started.at=proc.time();catf("  forder took ... ");flush.console()}
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
-    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
     xg = attr(xo, 'starts', exact=TRUE)
     resetcols = head(xcols, non_equi-1L)
     if (length(resetcols)) {
       # TODO: can we get around having to reorder twice here?
       # or at least reuse previous order?
-      if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
+      if (verbose) {last.started.at=proc.time();catf("  Generating group lengths ... ");flush.console()}
       resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts', exact=TRUE)
       resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
-      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+      if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else resetlen = integer(0L)
-    if (verbose) {last.started.at=proc.time();cat("  Generating non-equi group ids ... ");flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("  Generating non-equi group ids ... ");flush.console()}
     nqgrp = .Call(Cnestedid, x, xcols[non_equi:length(xcols)], xo, xg, resetlen, mult)
-    if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
     if (nqmaxgrp > 1L) { # got some non-equi join work to do
-      if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
-      if (verbose) {last.started.at=proc.time();cat("  Recomputing forder with non-equi ids ... ");flush.console()}
+      if ("_nqgrp_" %in% names(x)) stopf("Column name '_nqgrp_' is reserved for non-equi joins.")
+      if (verbose) {last.started.at=proc.time();catf("  Recomputing forder with non-equi ids ... ");flush.console()}
       set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
       xo = forderv(nqx, c(ncol(nqx), xcols))
-      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+      if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else nqgrp = integer(0L)
-    if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
+    if (verbose)
+      catf(ngettext(nqmaxgrp, "  Found %d non-equi group ...\n", "  Found %d non-equi groups ...\n"), nqmaxgrp, domain=NA)
   }
 
-  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
-  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("Starting bmerge ...\n");flush.console()}
+  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
+  if (verbose) {catf("bmerge done in %s\n",timetaken(last.started.at)); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table
-  return(ans)
+  ans
 }
-

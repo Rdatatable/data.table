@@ -16,11 +16,11 @@ could be changed.
 }
 
 \usage{
-foverlaps(x, y, by.x = if (!is.null(key(x))) key(x) else key(y),
+foverlaps(x, y, by.x = key(x) \%||\% key(y),
     by.y = key(y), maxgap = 0L, minoverlap = 1L,
     type = c("any", "within", "start", "end", "equal"),
     mult = c("all", "first", "last"),
-    nomatch = getOption("datatable.nomatch", NA),
+    nomatch = NA,
     which = FALSE, verbose = getOption("datatable.verbose"))
 }
 \arguments{
@@ -29,15 +29,15 @@ foverlaps(x, y, by.x = if (!is.null(key(x))) key(x) else key(y),
 \item{by.x, by.y}{A vector of column names (or numbers) to compute the overlap
 joins. The last two columns in both \code{by.x} and \code{by.y} should each
 correspond to the \code{start} and \code{end} interval columns in \code{x} and
-\code{y} respectively. And the \code{start} column should always be <= \code{end}
-column. If \code{x} is keyed,  \code{by.x} is equal to \code{key(x)}, else
+\code{y} respectively. We should always have \code{start <= end}.
+If \code{x} is keyed,  \code{by.x} is equal to \code{key(x)}, else
 \code{key(y)}. \code{by.y} defaults to \code{key(y)}. }
-\item{maxgap}{It should be a non-negative integer value, >= 0. Default is 0 (no
+\item{maxgap}{Non-negative integer, i.e., \code{maxgap >= 0}. Default is 0 (no
 gap). For intervals \code{[a,b]} and \code{[c,d]}, where \code{a<=b} and
 \code{c<=d}, when \code{c > b} or \code{d < a}, the two intervals don't overlap.
 If the gap between these two intervals is \code{<= maxgap}, these two intervals
 are considered as overlapping. Note: This is not yet implemented.}
-\item{minoverlap}{ It should be a positive integer value, > 0. Default is 1. For
+\item{minoverlap}{Positive integer, i.e., \code{minoverlap > 0}. Default is 1. For
 intervals \code{[a,b]} and \code{[c,d]}, where \code{a<=b} and \code{c<=d}, when
 \code{c<=b} and \code{d>=a}, the two intervals overlap. If the length of overlap
 between these two intervals is \code{>= minoverlap}, then these two intervals are
@@ -66,11 +66,10 @@ of the overlap. This will be updated once \code{maxgap} is implemented.}
 match in \code{y}, \code{nomatch=NA} (default) means \code{NA} is returned for
 \code{y}'s non-\code{by.y} columns for that row of \code{x}. \code{nomatch=NULL}
 (or \code{0} for backward compatibility) means no rows will be returned for that
-row of \code{x}. Use \code{options(datatable.nomatch=NULL)} to change the default
-value (used when \code{nomatch} is not supplied).}
+row of \code{x}. }
 \item{which}{ When \code{TRUE}, if \code{mult="all"} returns a two column
 \code{data.table} with the first column corresponding to \code{x}'s row number
-and the second corresponding to \code{y}'s. when \code{nomatch=NA}, no matches
+and the second corresponding to \code{y}'s. When \code{nomatch=NA}, no matches
 return \code{NA} for \code{y}, and if \code{nomatch=NULL}, those rows where no
 match is found will be skipped; if \code{mult="first" or "last"}, a vector of
 length equal to the number of rows in \code{x} is returned, with no-match entries
@@ -116,7 +115,7 @@ NB: When \code{which=TRUE}: \code{a)} \code{mult="first" or "last"} returns a
 containing row numbers of \code{x} and the second column with corresponding
 row numbers of \code{y}.
 
-\code{nomatch=NA or 0} also influences whether non-matching rows are returned
+\code{nomatch=NA|NULL} also influences whether non-matching rows are returned
 or not, as explained above.
 }
 
@@ -155,7 +154,7 @@ foverlaps(x, y, by.x=c("seq", "start", "end"),
 }
 \seealso{
 \code{\link{data.table}},
-\url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html},
+\url{https://www.bioconductor.org/packages/release/bioc/html/IRanges.html},
 \code{\link{setNumericRounding}}
 }
 \keyword{ data }

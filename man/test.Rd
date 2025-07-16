@@ -9,6 +9,7 @@
 test(num, x, y = TRUE,
      error = NULL, warning = NULL, message = NULL,
      output = NULL, notOutput = NULL, ignore.warning = NULL)
+     options = NULL, env = NULL)
 benchmark(num, expr, limit, tolerance=0.025, verbose=FALSE)
 }
 \arguments{
@@ -21,6 +22,8 @@ benchmark(num, expr, limit, tolerance=0.025, verbose=FALSE)
 \item{output}{ If you are testing the printing/console output behaviour; e.g. with \code{verbose=TRUE} or \code{options(datatable.verbose=TRUE)}. Again, regex-compatible and case sensitive. }
 \item{notOutput}{ Or if you are testing that a feature does \emph{not} print particular console output. Case insensitive (unlike output) so that the test does not incorrectly pass just because the string is not found due to case. }
 \item{ignore.warning}{ A single character string. Any warnings emitted by \code{x} that contain this string are dropped. Remaining warnings are compared to the expected \code{warning} as normal. }
+\item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to \code{test()} (usually, \code{x}, or maybe \code{y}) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
+\item{env}{ A named list of environment variables to set for the duration of the test, much like \code{options}. A list entry set to \code{NULL} will unset (i.e., \code{\link{Sys.unsetenv}}) the corresponding variable. }
 \item{expr}{ An expression to be timed by \code{benchmark} function. }
 \item{limit}{ An expression that \code{expr} should be compared to, or a constant numeric to compared to. Must not be a variable. }
 \item{tolerance}{ An extra tolerance ratio to be applied to time. When provided as numeric it will be used to multiply \code{limit} argument, default value \code{0.025} extends the limit value by 2.5 percent. To specify exact number of seconds to \code{tolerance} one may use \code{AsIs} class object, so \code{I(2)} will specify tolerance of 2 seconds. The argument can take a length 2 vector as well, to specify range of expected timing, to be used to compare absolute difference of \code{expr} and \code{limit}. In such case, usually first argument will be a negative one and second positive, for example \code{c(-0.2, 0.2)} will check if time of \code{expr} is equal to time of \code{limit} +/- 20 percent. }

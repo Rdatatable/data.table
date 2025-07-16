@@ -29,7 +29,7 @@ static int getIntEnv(const char *name, int def)
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 
-void initDTthreads() {
+void initDTthreads(void) {
   // called at package startup from init.c
   // also called by setDTthreads(threads=NULL) (default) to reread environment variables; see setDTthreads below
   // No verbosity here in this setter. Verbosity is in getDTthreads(verbose=TRUE)
@@ -61,7 +61,7 @@ int getDTthreads(const int64_t n, const bool throttle) {
   // this is the main getter used by all parallel regions; they specify num_threads(n, true|false).
   // Keep this light, simple and robust. initDTthreads() ensures 1 <= DTthreads <= omp_get_num_proc()
   // throttle introduced in 1.12.10 (see NEWS item); #4484
-  // throttle==true  : a number of iterations per thread (DTthrottle) is applied before a second thread is utilized 
+  // throttle==true  : a number of iterations per thread (DTthrottle) is applied before a second thread is utilized
   // throttle==false : parallel region is already pre-chunked such as in fread; e.g. two batches intended for two threads
   if (n<1) return 1; // 0 or negative could be deliberate in calling code for edge cases where loop is not intended to run at all
   int64_t ans = throttle ? 1+(n-1)/DTthrottle :  // 1 thread for n<=1024, 2 thread for n<=2048, etc
@@ -75,23 +75,28 @@ static const char *mygetenv(const char *name, const char *unset) {
 }
 
 SEXP getDTthreads_R(SEXP verbose) {
-  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error(_("'verbose' must be TRUE or FALSE"));
+  if(!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
       Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));
+    #else
+      Rprintf(_("  OpenMP version (_OPENMP)       %d\n"), _OPENMP); // user can use Google to map 201511 to 4.5; it's odd that OpenMP API does not provide 4.5
     #endif
     // this output is captured, paste0(collapse="; ")'d, and placed at the end of test.data.table() for display in the last 13 lines of CRAN check logs
     // it is also printed at the start of test.data.table() so that we can trace any Killed events on CRAN before the end is reached
     // this is printed verbatim (e.g. without using data.table to format the output) in case there is a problem even with simple data.table creation/printing
-    Rprintf(_("  omp_get_num_procs()            %d\n"), omp_get_num_procs());
-    Rprintf(_("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n"), mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
-    Rprintf(_("  R_DATATABLE_NUM_THREADS        %s\n"), mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
-    Rprintf(_("  R_DATATABLE_THROTTLE           %s\n"), mygetenv("R_DATATABLE_THROTTLE", "unset (default 1024)"));
-    Rprintf(_("  omp_get_thread_limit()         %d\n"), omp_get_thread_limit());
-    Rprintf(_("  omp_get_max_threads()          %d\n"), omp_get_max_threads());
-    Rprintf(_("  OMP_THREAD_LIMIT               %s\n"), mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
-    Rprintf(_("  OMP_NUM_THREADS                %s\n"), mygetenv("OMP_NUM_THREADS", "unset"));
-    Rprintf(_("  RestoreAfterFork               %s\n"), RestoreAfterFork ? "true" : "false");
+    // # notranslate start
+    Rprintf("  omp_get_num_procs()            %d\n", omp_get_num_procs());
+    Rprintf("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n", mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
+    Rprintf("  R_DATATABLE_NUM_THREADS        %s\n", mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
+    Rprintf("  R_DATATABLE_THROTTLE           %s\n", mygetenv("R_DATATABLE_THROTTLE", "unset (default 1024)"));
+    Rprintf("  omp_get_thread_limit()         %d\n", omp_get_thread_limit());
+    Rprintf("  omp_get_max_threads()          %d\n", omp_get_max_threads());
+    Rprintf("  OMP_THREAD_LIMIT               %s\n", mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
+    Rprintf("  OMP_NUM_THREADS                %s\n", mygetenv("OMP_NUM_THREADS", "unset"));
+    Rprintf("  RestoreAfterFork               %s\n", RestoreAfterFork ? "true" : "false");
+    // # notranslate end
     Rprintf(_("  data.table is using %d threads with throttle==%d. See ?setDTthreads.\n"), getDTthreads(INT_MAX, false), DTthrottle);
   }
   return ScalarInteger(getDTthreads(INT_MAX, false));
@@ -124,10 +129,10 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
     }
     int num_procs = imax(omp_get_num_procs(), 1); // max just in case omp_get_num_procs() returns <= 0 (perhaps error, or unsupported)
     if (!isLogical(percent) || length(percent)!=1 || LOGICAL(percent)[0]==NA_LOGICAL) {
-      error(_("Internal error: percent= must be TRUE or FALSE at C level"));  // # nocov
+      internal_error(__func__, "percent= must be TRUE or FALSE at C level");  // # nocov
     }
     if (LOGICAL(percent)[0]) {
-      if (n<2 || n>100) error(_("Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C level)."), n);  // # nocov
+      if (n<2 || n>100) internal_error(__func__, "threads==%d should be between 2 and 100 (percent=TRUE at C level)", n);  // # nocov
       n = num_procs*n/100;  // if 0 it will be reset to 1 in the imax() below
     } else {
       if (n==0 || n>num_procs) n = num_procs; // setDTthreads(0) == setDTthread(percent=100); i.e. use all logical CPUs (the default in 1.12.0 and before, from 1.12.2 it's 50%)
@@ -148,7 +153,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
   Automatically drop down to 1 thread when called from parallel package (e.g. mclapply) to avoid
   deadlock when data.table is used from within parallel::mclapply; #1745 and #1727.
   GNU OpenMP seems ok with just setting DTthreads to 1 which limits the next parallel region
-  if data.table is used within the fork'd proceess. This is tested by test 1705.
+  if data.table is used within the fork'd process. This is tested by test 1705.
 
   From v1.12.0 we're trying again to RestoreAferFork (#2285) with optional-off due to success
   reported by Ken Run and Mark Klik in fst#110 and fst#112. We had tried that before but had
@@ -166,19 +171,18 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
 
 static int pre_fork_DTthreads = 0;
 
-void when_fork() {
+void when_fork(void) {
   pre_fork_DTthreads = DTthreads;
   DTthreads = 1;
 }
 
-void after_fork() {
+void after_fork(void) {
   if (RestoreAfterFork) DTthreads = pre_fork_DTthreads;
 }
 
-void avoid_openmp_hang_within_fork() {
+void avoid_openmp_hang_within_fork(void) {
   // Called once on loading data.table from init.c
 #ifdef _OPENMP
   pthread_atfork(&when_fork, &after_fork, NULL);
 #endif
 }
-
