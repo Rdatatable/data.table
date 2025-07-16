@@ -289,13 +289,13 @@ test.list <- atime::atime_test_list(
   "tables() !recursive refactor in #2606" = atime::atime_test(
     N = as.integer(10^seq(1, 4, by=0.5)),
     setup = {
-      rm(list=ls()[grepl("^(dt|vec)_perf_test", ls())])
+      test_env <- new.env()
       for (i in 1:N) {
-        assign(paste0("dt_perf_test", i), data.table(a=1))
-        assign(paste0("vec_perf_test", i), 1)
+        assign(paste0("dt_perf_test", i), data.table(a=1), envir = test_env)
+        assign(paste0("vec_perf_test", i), 1, envir = test_env)
       }
     },
-    expr = { data.table::tables(silent=TRUE, index=TRUE); NULL }, 
+    expr = {data.table::tables(env = test_env, silent = TRUE, index = TRUE) NULL},
     "before" = "5bb645082aa5c4a295cdd211a5a75c849d590b75",
     "after" = "8978cf201d8d228506e1e96d3eda7e542471720a"),
 
