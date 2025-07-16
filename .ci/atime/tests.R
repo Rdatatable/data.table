@@ -298,7 +298,7 @@ test.list <- atime::atime_test_list(
     "GForce aggregation (benchmark across # groups)" = atime::atime_test(
       setup = {
         set.seed(34893)
-        DT = data.table(grp = sample.int(1e7, N, TRUE), v=rnorm(1e7), i=sample(1e7))
+        DT = data.table(grp = sample.int(1e7, N, TRUE), v=rnorm(1e7), i=sample(1e7), vna=rnorm(N))
       },
       expr = data.table:::`[.data.table`(DT, j=.(mean(v), sum(v), mean(i), sum(i), mean(vna, na.rm=TRUE), sum(vna, na.rm=TRUE))),
       `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
