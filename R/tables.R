@@ -79,8 +79,8 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     if (!is.null(tt<-key(DT))) set(info, i, "KEY", tt)
     if (index && !is.null(tt<-indices(DT))) set(info, i, "INDICES", tt)
   }
-  if (!is.function(mb)) info[,MB:=NULL]
-  if (!index)           info[,INDICES:=NULL]
+  if (!is.function(mb)) info$MB = NULL
+  if (!index)           info$INDICES = NULL
   if (!order.col %chin% names(info)) stopf("order.col='%s' not a column name of info", order.col)
   info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
   if (!silent) {
