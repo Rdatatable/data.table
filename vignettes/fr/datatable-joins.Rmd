@@ -117,7 +117,7 @@ x[i, on, nomatch]
 \____ data.table secondaire
 ```
 
-Note : n'oubliez pas que l'ordre standard des arguments dans data.table est `dt[i, j, by]`. Pour les opérations de jointure, il est recommandé de passer les arguments `on` et `nomatch` par nom pour éviter d'utiliser `j` et `by` quand ce n'est pas nécessaire.
+**Note** : n'oubliez pas que l'ordre standard des arguments dans data.table est `dt[i, j, by]`. Pour les opérations de jointure, il est recommandé de passer les arguments `on` et `nomatch` par nom pour éviter d'utiliser `j` et `by` quand ce n'est pas nécessaire.
 
 ## 3. Jointures équilibrées
 
@@ -439,7 +439,7 @@ ProductReceived[ProductSales,
                 allow.cartesian = TRUE]
 ```
 
-Note : `allow.cartesian` vaut par défaut FALSE car c'est ce que l'utilisateur a souhaité, et une telle jointure croisée peut conduire à un très grand nombre de lignes dans le résultat. Par exemple, si Table A possède 100 lignes et Table
+**Note** : `allow.cartesian` vaut par défaut FALSE car c'est ce que l'utilisateur a souhaité, et une telle jointure croisée peut conduire à un très grand nombre de lignes dans le résultat. Par exemple, si Table A possède 100 lignes et Table
 B en a 50, leur produit cartésien sera de 5000 lignes (100 * 50). Ce qui peut rapidement accroître la mémoire occupée pour de grands ensembles de données.
 
 #### 3.6.1. Selection d'une seule correspondance
