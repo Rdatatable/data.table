@@ -317,7 +317,7 @@ test.list <- atime::atime_test_list(
         DT = data.table(i=N:1)
       },
       expr = for (ii in seq_len(nrow(DT))) set(DT, ii, "i", ii),
-      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0") # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
 
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
