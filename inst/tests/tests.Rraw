@@ -6851,6 +6851,13 @@ test(1463.78, shift(x,1:2,   type="cyclic"), list(as.raw(c(5, 1:4)), as.raw(c(4:
 test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
 test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
+# shift incompatible types (e.g. Date and POSIXct)
+d = .Date(0:4)
+p = .POSIXct(1:5)
+test(1463.81, shift(d, fill=p[1L]), error="Filling Date with POSIXct .* unsupported.*")
+test(1463.82, shift(p, fill=d[1L]), error="Filling POSIXct with Date .* unsupported.*")
+test(1463.83, shift(d, fill=as.IDate(2000L)), .Date(c(2000L, 0:3)))
+
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
 # Seemingly superfluous 'foo' is needed to test fix for #1942
