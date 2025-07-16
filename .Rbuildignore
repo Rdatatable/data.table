@@ -1,6 +1,8 @@
 .dir-locals.el
+.check.translations.R
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
+^config\.log$
 ^vignettes/plots/figures$
 ^\.Renviron$
 ^[^/]+\.R$
@@ -15,8 +17,9 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.vscode$
+^\.zed$
 
-^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
 ^Makefile$
@@ -26,6 +29,7 @@
 ^src/Makevars$
 ^CODEOWNERS$
 ^GOVERNANCE\.md$
+^Seal_of_Approval\.md$
 
 ^\.RData$
 ^\.Rhistory$
@@ -45,3 +49,6 @@
 ^lib$
 ^library$
 ^devwd$
+
+# only the inst/po compressed files are needed, not raw .pot/.po
+^po$

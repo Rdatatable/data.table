@@ -11,8 +11,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = key(x)
     }
   }
-  x0 = length(x)==0L
-  y0 = length(y)==0L
+  x0 = length(x) == 0L
+  y0 = length(y) == 0L
   if (x0 || y0) {
     if (x0 && y0)
       warningf("Neither of the input data.tables to join have columns.")
@@ -21,23 +21,26 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     else
       warningf("Input data.table '%s' has no columns.", "y")
   }
+  check_duplicate_names(x)
+  check_duplicate_names(y)
+
   nm_x = names(x)
   nm_y = names(y)
-  if (anyDuplicated(nm_x)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)]))
-  if (anyDuplicated(nm_y)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]))
 
   ## set up 'by'/'by.x'/'by.y'
-  if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
+  if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
     stopf("`by.x` and `by.y` must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warningf("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
+    warningf("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
-    if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
-      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+    if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
+      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.", class="dt_invalid_input_error")
+    if (!all(idx <- by.x %chin% nm_x)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(by.x[!idx]))
+    }
+    if (!all(idx <- by.y %chin% nm_y)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.y", "y", brackify(by.y[!idx]))
+    }
     by = by.x
     names(by) = by.y
   } else {
@@ -49,20 +52,19 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+    if (!all(idx <- by %in% nm_x)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(by[!idx]))
+    }
+    if (!all(idx <- by %in% nm_y)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(by[!idx]))
+    }
     by = unname(by)
     by.x = by.y = by
   }
 
   # warn about unused arguments #2587
-  if (length(list(...))) {
-    ell = as.list(substitute(list(...)))[-1L]
-    for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
-    unnamed_n = length(ell) - sum(names(ell) != "")
-    if (unnamed_n)
-      warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
-  }
+  .maybe_warn_merge_dots(...)
+
   # with i. prefix in v1.9.3, this goes away. Left here for now ...
   ## sidestep the auto-increment column number feature-leading-to-bug by
   ## ensuring no names end in ".1", see unit test
@@ -96,21 +98,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
-    # TO DO: replace by following once #5446 is merged
-    # if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
-    if (length(missingyidx)) {
-      yy = y[missingyidx]
-      othercolsx = setdiff(nm_x, by)
-      if (length(othercolsx)) {
-        # create NA rectangle with correct types and attributes of x to cbind to y
-        tmp = rep.int(NA_integer_, length(missingyidx))
-        # TO DO: use set() here instead..
-        yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
-      }
-      # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #24 without having to save names. This is how it should be, IMHO.
-      dt = rbind(dt, yy, use.names=FALSE)
-    }
+    if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(nm_y, by.y)
@@ -131,4 +119,29 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # retain custom classes of first argument that resulted in dispatch to this method, #1378
   setattr(dt, "class", class_x)
   dt
+}
+
+.maybe_warn_merge_dots <- function(...) {
+  # TODO(R >= 3.5.0): use ...length()
+  n_dots <- length(dots <- list(...))
+  if (!n_dots) return(invisible())
+
+  nm <- names(dots)
+  if (is.null(nm)) {
+    warningf(ngettext(n_dots, "merge.data.table() received %d unnamed argument in '...' which will be ignored.",
+                              "merge.data.table() received %d unnamed arguments in '...' which will be ignored."),
+              n_dots)
+  } else {
+    named_idx = nzchar(nm)
+    if (all(named_idx)) {
+      warningf(ngettext(n_dots, "merge.data.table() received %d unknown keyword argument which will be ignored: %s",
+                                "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
+                n_dots, brackify(nm))
+    } else {
+      n_named <- sum(named_idx)
+      unnamed_clause <- sprintf(ngettext(n_dots - n_named, "%d unnamed argument in '...'", "%d unnamed arguments in '...'"), n_dots - n_named)
+      named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword arguments"), n_named)
+      warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
+    }
+  }
 }

@@ -127,8 +127,8 @@ SEXP convertDate(SEXP x, SEXP type)
     const int *ix = INTEGER(x);
     const int n = length(x);
     if (!isString(type) || length(type) != 1)
-        error(_("Internal error: invalid type for convertDate(), should have been caught before. please report to data.table issue tracker")); // # nocov
-    datetype ctype;
+        internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
+    datetype ctype=0;
     bool ansint = true;
     if (!strcmp(CHAR(STRING_ELT(type, 0)), "yday")) ctype = YDAY;
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "wday")) ctype = WDAY;
@@ -139,7 +139,7 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "year")) ctype = YEAR;
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearmon")) { ctype = YEARMON; ansint = false; }
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearqtr")) { ctype = YEARQTR; ansint = false; }
-    else error(_("Internal error: invalid type for convertDate, should have been caught before. please report to data.table issue tracker")); // # nocov
+    else internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
 
     SEXP ans;
     if (ansint) {

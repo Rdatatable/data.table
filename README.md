@@ -4,16 +4,32 @@
 <!-- badges: start -->
 [![CRAN status](https://badges.cranchecks.info/flavor/release/data.table.svg)](https://cran.r-project.org/web/checks/check_results_data.table.html)
 [![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
-[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/kayjdh5qtgymhoxr/branch/master?svg=true)](https://ci.appveyor.com/project/Rdatatable/data-table)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://app.codecov.io/github/Rdatatable/data.table?branch=master)
-[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/-/pipelines)
+[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![indirect usage](https://jangorecki.gitlab.io/rdeps/data.table/indirect_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
+[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
 <!-- badges: end -->
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
+
+[//]: # (numfocus-fiscal-sponsor-attribution)
+
+The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
+a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
+pay for developer time, professional services, travel, workshops, and a variety of other needs.
+
+<div align="center">
+  <a href="https://numfocus.org/project/data-table">
+    <img width="25%" 
+         src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png" 
+         align="center">
+  </a>
+</div>
+<br>
 
 ## Why `data.table`?
 
@@ -86,14 +102,18 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 `data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://medium.datadriveninvestor.com/most-starred-and-forked-github-repos-for-r-in-data-science-fb87a54d2a6a) R packages on GitHub, and was highly rated by the [Depsy project](http://depsy.org/package/r/data.table). If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
 
+A list of packages that significantly support, extend, or make use of `data.table` can be found in the [Seal of Approval](https://github.com/Rdatatable/data.table/blob/master/Seal_of_Approval.md) document.
+
 ### Stay up-to-date
 
 - click the **Watch** button at the top and right of GitHub project page
 - read [NEWS file](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)
-- follow [#rdatatable](https://twitter.com/hashtag/rdatatable) on twitter
-- follow [#rdatatable](https://fosstodon.org/tags/rdatatable) on fosstodon
+- follow [#rdatatable](https://twitter.com/hashtag/rdatatable) and the [r_data_table](https://x.com/r_data_table) account on X/Twitter
+- follow [#rdatatable](https://fosstodon.org/tags/rdatatable) and the [r_data_table account](https://fosstodon.org/@r_data_table) on fosstodon
+- follow the [data.table community page](https://www.linkedin.com/company/data-table-community) on LinkedIn
 - watch recent [Presentations](https://github.com/Rdatatable/data.table/wiki/Presentations)
 - read recent [Articles](https://github.com/Rdatatable/data.table/wiki/Articles)
+- read posts on [The Raft](https://rdatatable-community.github.io/The-Raft/)
 
 ### Contributing
 

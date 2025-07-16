@@ -37,6 +37,11 @@ static int nbit(int n)
   return nb;
 }
 
+/*
+  Functions with GForce optimization are internally parallelized to speed up
+    grouped summaries over a large data.table. OpenMP is used here to
+    parallelize operations involved in calculating common group-wise statistics.
+*/
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   double started = wallclock();
   const bool verbose = GetVerbose();
@@ -55,7 +60,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
   else error(_("irowsArg is neither an integer vector nor NULL"));  // # nocov
   ngrp = LENGTH(l);
-  if (LENGTH(f) != ngrp) error(_("length(f)=%d != length(l)=%d"), LENGTH(f), ngrp);
+  if (LENGTH(f) != ngrp)
+    error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp); // # notranslate
   nrow=0;
   grpsize = INTEGER(l);
   maxgrpn = 0;
@@ -66,7 +72,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(o) && LENGTH(o)!=nrow) error(_("o has length %d but sum(l)=%d"), LENGTH(o), nrow);
   {
     SEXP tt = getAttrib(o, install("maxgrpn"));
-    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) error(_("Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn")); // # nocov
+    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) internal_error(__func__, "o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
   }
 
   int nb = nbit(ngrp-1);
@@ -75,7 +81,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   mask = (1<<bitshift)-1;
   highSize = ((ngrp-1)>>bitshift) + 1;
 
-  grp = (int *)R_alloc(nrow, sizeof(int));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
+  grp = (int *)R_alloc(nrow, sizeof(*grp));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER(f);
 
@@ -86,8 +92,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
-    error(_("Internal error: nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%zu  nBatch=%zu  batchSize=%zu  lastBatchSize=%zu\n"),  // # nocov
-           nrow, ngrp, nb, bitshift, highSize, nBatch, batchSize, lastBatchSize);                                                     // # nocov
+    internal_error(__func__, "nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%zu  nBatch=%zu  batchSize=%zu  lastBatchSize=%zu\n",  // # nocov
+                   nrow, ngrp, nb, bitshift, highSize, nBatch, batchSize, lastBatchSize);                                   // # nocov
   }
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
@@ -111,9 +117,12 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int bitshift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>bitshift) + 1;
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  bitshift=%d  nBatch=%d\n"), highSize, nb, bitshift, nBatch);
-    int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
-    int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
-    if (!counts || !TMP ) error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
+    int *counts = calloc(nBatch*highSize, sizeof(*counts));  // TODO: cache-line align and make highSize a multiple of 64
+    int *TMP   = malloc(sizeof(*TMP) * nrow*2l); // must multiple the long int otherwise overflow may happen, #4295
+    if (!counts || !TMP ) {
+      free(counts); free(TMP); // # nocov
+      error(_("Failed to allocate counts or TMP when assigning g in gforce")); // # nocov
+    }
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -154,15 +163,15 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //Rprintf(_("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n"), wallclock()-started); started=wallclock();
   }
 
-  high = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
-  low  = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));
+  high = (uint16_t *)R_alloc(nrow, sizeof(*high));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
+  low  = (uint16_t *)R_alloc(nrow, sizeof(*low));
   // global ghigh and glow because the g* functions (inside jsub) share this common memory
 
   gx = (char *)R_alloc(nrow, sizeof(Rcomplex));  // enough for a copy of one column (or length(irows) if supplied)
   // TODO: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
 
-  counts = (int *)S_alloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
-  tmpcounts = (int *)R_alloc(getDTthreads(nBatch, false)*highSize, sizeof(int));
+  counts = (int *)S_alloc(nBatch*highSize, sizeof(*counts));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
+  tmpcounts = (int *)R_alloc(getDTthreads(nBatch, false)*highSize, sizeof(*tmpcounts));
 
   const int *restrict gp = grp;
   #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
@@ -183,7 +192,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     }
     uint16_t *restrict my_low = low + b*batchSize;
     int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-    memcpy(my_tmpcounts, my_counts, highSize*sizeof(int));
+    memcpy(my_tmpcounts, my_counts, highSize*sizeof(*my_tmpcounts));
     for (int i=0; i<howMany; i++) {
       const int w = my_pg[i] >> bitshift;   // could use my_high but may as well use my_pg since we need my_pg anyway for the lower bits next too
       my_low[my_tmpcounts[w]++] = (uint16_t)(my_pg[i] & mask);
@@ -213,14 +222,13 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
-  if (verbose) Rprintf(_("gather took ... "));
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));   // original cumulated   // already cumulated for this batch
+      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(*my_tmpcounts));   // original cumulated   // already cumulated for this batch
       int *restrict my_gx = (int *)gx + b*batchSize;
       const uint16_t *my_high = high + b*batchSize;
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -249,7 +257,7 @@ void *gather(SEXP x, bool *anyNA)
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int b=0; b<nBatch; b++) {
         int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-        memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
+        memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(*my_tmpcounts));
         double *restrict my_gx = (double *)gx + b*batchSize;
         const uint16_t *my_high = high + b*batchSize;
         const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -276,7 +284,7 @@ void *gather(SEXP x, bool *anyNA)
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int b=0; b<nBatch; b++) {
         int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-        memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
+        memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(*my_tmpcounts));
         int64_t *restrict my_gx = (int64_t *)gx + b*batchSize;
         const uint16_t *my_high = high + b*batchSize;
         const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -305,7 +313,7 @@ void *gather(SEXP x, bool *anyNA)
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
+      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(*my_tmpcounts));
       Rcomplex *restrict my_gx = (Rcomplex *)gx + b*batchSize;
       const uint16_t *my_high = high + b*batchSize;
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -330,10 +338,10 @@ void *gather(SEXP x, bool *anyNA)
       if (my_anyNA) *anyNA = true;  // naked write ok since just bool and always writing true; and no performance issue as maximum nBatch writes
     }
   } break;
-  default :
+  default : // # nocov
     error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
   }
-  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
+  if (verbose) { Rprintf(_("gather took %.3fs\n"), wallclock()-started); }
   return gx;
 }
 
@@ -356,7 +364,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     const int *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(INTSXP, ngrp));
     int *restrict ansp = INTEGER(ans);
-    memset(ansp, 0, ngrp*sizeof(int));
+    memset(ansp, 0, ngrp*sizeof(*ansp));
     bool overflow=false;
     //double started = wallclock();
     if (!anyNA) {
@@ -468,7 +476,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
       const int64_t *restrict gx = gather(x, &anyNA);
       ans = PROTECT(allocVector(REALSXP, ngrp));
       int64_t *restrict ansp = (int64_t *)REAL(ans);
-      memset(ansp, 0, ngrp*sizeof(int64_t));
+      memset(ansp, 0, ngrp*sizeof(*ansp));
       if (!anyNA) {
         #pragma omp parallel for num_threads(getDTthreads(highSize, false))
         for (int h=0; h<highSize; h++) {
@@ -591,7 +599,9 @@ SEXP gmean(SEXP x, SEXP narmArg)
     x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      x = PROTECT(coerceAs(x, /*as=*/ScalarReal(1), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      SEXP as = PROTECT(ScalarReal(1));
+      x = PROTECT(coerceAs(x, as, /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      UNPROTECT(2); PROTECT(x); // PROTECT() is stack-based, UNPROTECT() back to 'as' then PROTECT() 'x' again
     }
     const double *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
@@ -615,8 +625,9 @@ SEXP gmean(SEXP x, SEXP narmArg)
       for (int i=0; i<ngrp; i++) ansp[i] /= grpsize[i];
     } else {
       // narm==true and anyNA==true
-      int *restrict nna_counts = calloc(ngrp, sizeof(int));
-      if (!nna_counts) error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      int *restrict nna_counts = calloc(ngrp, sizeof(*nna_counts));
+      if (!nna_counts)
+        error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(*nna_counts)); // # nocov
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<bitshift);
@@ -667,12 +678,11 @@ SEXP gmean(SEXP x, SEXP narmArg)
       }
     } else {
       // narm==true and anyNA==true
-      int *restrict nna_counts_r = calloc(ngrp, sizeof(int));
-      int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
+      int *restrict nna_counts_r = calloc(ngrp, sizeof(*nna_counts_r));
+      int *restrict nna_counts_i = calloc(ngrp, sizeof(*nna_counts_i));
       if (!nna_counts_r || !nna_counts_i) {
         // # nocov start
-        free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
-        free(nna_counts_i);
+        free(nna_counts_r); free(nna_counts_i);
         error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
         // # nocov end
       }
@@ -758,8 +768,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     break;
   case STRSXP: {
     ans = PROTECT(allocVector(STRSXP, ngrp));
-    const SEXP *ansd = STRING_PTR(ans);
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *ansd = STRING_PTR_RO(ans);
+    const SEXP *xd = STRING_PTR_RO(x);
     if (!LOGICAL(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
       for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init);
@@ -829,7 +839,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
             ansd[thisgrp] = elem;
         }
       }
-    }}
+    }
+  }
     break;
   case CPLXSXP:
     error(_("Type 'complex' has no well-defined min/max"));
@@ -916,7 +927,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-  if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
+  if (w==1 && headw) internal_error(__func__, "headw should only be true when w>1");
   int anslen = ngrp;
   if (headw) {
     anslen = 0;
@@ -962,8 +973,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     } else {                                                                                       \
       /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
       /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"),          \
-              first, w, headw);                                                                    \
+      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);      \
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
@@ -973,7 +983,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
            int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
            else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
   case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
-  case STRSXP:  DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val))        break;
+  case STRSXP:  DO(SEXP, STRING_PTR_RO, NA_STRING,              SET_STRING_ELT(ans,ansi++,val))        break;
   case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
@@ -992,19 +1002,19 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? glast(x) : gfirstlast(x, false, n, true);
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
   return gfirstlast(x, true, INTEGER(nArg)[0], false);
 }
 
@@ -1115,8 +1125,9 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
-  long double *s = malloc(ngrp * sizeof(long double));
-  if (!s) error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double));
+  long double *s = malloc(sizeof(*s) * ngrp);
+  if (!s)
+    error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double)); // # nocov
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
@@ -1125,7 +1136,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
       const int thisgrp = grp[i];
       const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
       if (elem==NA_INTEGER) {
-        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propagate from here. R_NaReal is IEEE.
         continue;
       }
       s[thisgrp] *= elem; // no under/overflow here, s is long double (like base)
@@ -1185,7 +1196,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
   const int n = nosubset ? length(x) : irowslen;
-  if (nrow != n) error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
+  if (nrow != n) internal_error(__func__, "nrow [%d] != length(x) [%d] in %s", nrow, n, "gshift");
 
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
@@ -1193,18 +1204,19 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     error(_("fill must be a vector of length 1"));
 
   if (!isString(typeArg) || length(typeArg) != 1)
-    error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+    internal_error(__func__, "invalid type, should have been caught before"); // # nocov
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "cyclic")) stype = CYCLIC;
-  else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
 
   bool lag;
   const bool cycle = stype == CYCLIC;
 
-  R_xlen_t nx = xlength(x), nk = length(nArg);
-  if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
+  R_xlen_t nk = length(nArg);
+  if (!isInteger(nArg))
+    internal_error(__func__, "n must be integer"); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
@@ -1220,7 +1232,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     }
     R_xlen_t ansi = 0;
     SEXP tmp;
-    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), n));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
       const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
@@ -1260,7 +1272,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
                     // integer64 is shifted as if it's REAL; and assigning fill=NA_INTEGER64 is ok as REAL
       case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
-      case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
+      case STRSXP: { SHIFT(SEXP, STRING_PTR_RO,                       SET_STRING_ELT(tmp,ansi++,val)); } break;
       //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
       default:
         error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
@@ -1268,6 +1280,6 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     copyMostAttrib(x, tmp); // needed for integer64 because without not the correct class of int64 is assigned
   }
   UNPROTECT(nprotect);
-  return(ans);
+  // consistency with plain shift(): "strip" the list in the 1-input case, for convenience
+  return isVectorAtomic(x) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
-
