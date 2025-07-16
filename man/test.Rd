@@ -1,16 +1,14 @@
 \name{test}
 \alias{test}
-\alias{benchmark}
-\title{ Test assertions for equality, exceptions and console output or call elapsed timing }
+\title{ Test assertions for equality, exceptions and console output }
 \description{
-  \code{test} is an internal testing function used in \code{data.table} test scripts that are run by \code{\link{test.data.table}}. \code{benchmark} is a very similar function to \code{test} function but it does verify if provided expression computes within expected time.
+  An internal testing function used in \code{data.table} test scripts that are run by \code{\link{test.data.table}}.
 }
 \usage{
 test(num, x, y = TRUE,
      error = NULL, warning = NULL, message = NULL,
-     output = NULL, notOutput = NULL, ignore.warning = NULL)
+     output = NULL, notOutput = NULL, ignore.warning = NULL,
      options = NULL, env = NULL)
-benchmark(num, expr, limit, tolerance=0.025, verbose=FALSE)
 }
 \arguments{
 \item{num}{ A unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as \code{n.m}, where essentially \code{n} indexes an issue and \code{m} indexes aspects of that issue. For the most part, your new PR should only have one value of \code{n} (scroll to the end of \code{inst/tests/tests.Rraw} to see the next available ID) and then index the tests within your PR by increasing \code{m}. Note -- \code{n.m} is interpreted as a number, so \code{123.4} and \code{123.40} are actually the same -- please \code{0}-pad as appropriate. Test identifiers are checked to be in increasing order at runtime to prevent duplicates being possible. }
@@ -24,10 +22,6 @@ benchmark(num, expr, limit, tolerance=0.025, verbose=FALSE)
 \item{ignore.warning}{ A single character string. Any warnings emitted by \code{x} that contain this string are dropped. Remaining warnings are compared to the expected \code{warning} as normal. }
 \item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to \code{test()} (usually, \code{x}, or maybe \code{y}) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
 \item{env}{ A named list of environment variables to set for the duration of the test, much like \code{options}. A list entry set to \code{NULL} will unset (i.e., \code{\link{Sys.unsetenv}}) the corresponding variable. }
-\item{expr}{ An expression to be timed by \code{benchmark} function. }
-\item{limit}{ An expression that \code{expr} should be compared to, or a constant numeric to compared to. Must not be a variable. }
-\item{tolerance}{ An extra tolerance ratio to be applied to time. When provided as numeric it will be used to multiply \code{limit} argument, default value \code{0.025} extends the limit value by 2.5 percent. To specify exact number of seconds to \code{tolerance} one may use \code{AsIs} class object, so \code{I(2)} will specify tolerance of 2 seconds. The argument can take a length 2 vector as well, to specify range of expected timing, to be used to compare absolute difference of \code{expr} and \code{limit}. In such case, usually first argument will be a negative one and second positive, for example \code{c(-0.2, 0.2)} will check if time of \code{expr} is equal to time of \code{limit} +/- 20 percent. }
-\item{verbose}{ Logical scalar, when \code{TRUE} then \code{benchmark} function will print timings to console. }
 }
 \note{
    \code{NA_real_} and \code{NaN} are treated as equal, use \code{identical} if distinction is needed. See examples below.
