@@ -286,5 +286,18 @@ test.list <- atime::atime_test_list(
     Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
     Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
 
+  "tables() !recursive refactor in #2606" = atime::atime_test(
+    N = as.integer(10^seq(1, 4, by=0.5)),
+    setup = {
+      rm(list=ls()[grepl("^(dt|vec)_perf_test", ls())])
+      for (i in 1:N) {
+        assign(paste0("dt_perf_test", i), data.table(a=1))
+        assign(paste0("vec_perf_test", i), 1)
+      }
+    },
+    expr = data.table::tables(silent=TRUE),
+    "before" = "def1e47eea8822993a829e3fe8d36acc117d806b",
+    "after" = "8978cf201d8d228506e1e96d3eda7e542471720a"),
+
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

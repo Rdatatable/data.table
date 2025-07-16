@@ -62,7 +62,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   } else {
     w = which(vapply_1b(objs, is.data.table))
     if (length(w)) {
-      found_items = lapply(w, function(i) list(name=names[i], obj=obj[[i]]))
+      found_items = lapply(w, function(i) list(name=names[i], obj=objs[[i]]))
     }
   }
   if (!length(found_items)) {

@@ -21549,7 +21549,7 @@ local({
     "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
     "mixed[[1]]", "mixed$y",
     "mixed_nested$A[[1]]", "mixed_nested$A$q")
-  test(2335.1, out, expected)
+  test(2335.1, out, sort(expected))
 })
 local({
   dt <- data.table(val=42)
@@ -21568,5 +21568,5 @@ local({
   out <- tables(recursive=TRUE)$NAME
   test(2335.3, length(out), 2L)
   test(2335.4, "test_obj$unique" %in% out)
-  test(2335.5, sum(endsWith(out, "$dt_inner")), 1L)
+  test(2335.5, sum(grepl("\\$dt_inner$", out)), 1L)
 })
