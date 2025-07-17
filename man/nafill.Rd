@@ -10,8 +10,8 @@
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-nafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA)
-setnafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x))
+nafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA)
+setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x))
 }
 \arguments{
   \item{x}{ Vector, list, data.frame or data.table of numeric columns. }
@@ -48,6 +48,6 @@ setnafill(dt, "locf", cols=c("v2","v3"))
 dt
 }
 \seealso{
-  \code{\link{shift}}, \code{\link{data.table}}
+  \code{\link{shift}}, \code{\link{data.table}}, \code{\link{fcoalesce}}
 }
 \keyword{ data }
