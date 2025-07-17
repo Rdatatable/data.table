@@ -40,7 +40,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     SEXP elem  = VECTOR_ELT(x, i);
     size_t size  = RTYPE_SIZEOF(elem);
     R_xlen_t xrows = xlength(elem);
-    if (INHERITS(elem, char_Date) && INHERITS(fill, char_POSIXct) || INHERITS(elem, char_POSIXct) && INHERITS(fill, char_Date)) {
+    if ((INHERITS(elem, char_Date) && INHERITS(fill, char_POSIXct)) || (INHERITS(elem, char_POSIXct) && INHERITS(fill, char_Date))) {
       const char* elem_type = INHERITS(elem, char_Date) ? "Date" : "POSIXct";
       const char* fill_type = INHERITS(fill, char_Date) ? "Date" : "POSIXct";
       error(_("Filling %s with %s using shift() is unsupported. Please convert fill to %s first."),
