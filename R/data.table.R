@@ -312,7 +312,7 @@ replace_dot_alias = function(e) {
         root = root_name(jsub)
       } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
         #2142 -- j can be {} and have length 1
-        stopf("You have wrapped `:=` with `{}` which is ok, but then `:=` must be the only thing inside `{}` and must be used only once. You have other statements inside the `{}`. Consider placing `{}` on the RHS of `:=` instead, e.g., DT[, someCol := { tmpVar <- ...; tmpVar*2 }].")      
+        stopf("You have wrapped `:=` with `{}` which is ok, but then `:=` must be the only thing inside `{}` and must be used only once. You have other statements inside the `{}`. Consider placing `{}` on the RHS of `:=` instead, e.g., DT[, someCol := { tmpVar <- ...; tmpVar*2 }].")
       }
     }
     if (root=="eval" && !any(all.vars(jsub[[2L]]) %chin% names_x)) {
