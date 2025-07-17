@@ -1,6 +1,6 @@
 dim.data.table = function(x)
 {
-  if (!cedta()) return(NextMethod()) # nocov
+  if (!cedta(verbose=FALSE)) return(NextMethod()) # nocov
   .Call(Cdim, x)
 }
 
