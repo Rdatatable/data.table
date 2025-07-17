@@ -1,5 +1,6 @@
 dim.data.table = function(x)
 {
+  if (!cedta(verbose=FALSE)) return(NextMethod()) # nocov
   .Call(Cdim, x)
 }
 

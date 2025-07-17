@@ -48,7 +48,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 }
 
 # cedta = Calling Environment Data.Table-Aware
-cedta = function(n=2L) {
+cedta = function(n=2L, verbose = getOption("datatable.verbose", FALSE)) {
   # Calling Environment Data Table Aware
   env = parent.frame(n)
   if (isTRUEorFALSE(env$.datatable.aware)) { # dtplyr#184, #5654
@@ -72,7 +72,7 @@ cedta = function(n=2L) {
     (nsname %chin% cedta.pkgEvalsUserCode && .any_eval_calls_in_stack()) ||
     isTRUE(ns$.datatable.aware) ||  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
     tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
-  if (!ans && getOption("datatable.verbose")) {
+  if (!ans && verbose) {
     # nocov start
     catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname)
     print(sapply(sys.calls(), `[[`, 1L))

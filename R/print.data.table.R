@@ -72,7 +72,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       setnames(index_dt, print_names)
     }
   }
-  n_x = nrow(x)
+  n_x = dim(x)[1L] # manually dispatch nrow() to avoid dispatching to S3 method
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
