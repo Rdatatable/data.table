@@ -114,8 +114,9 @@ test(3.02, setnafill(list(copy(x)), "locf", fill=0L), list(x))
 test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
 test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
 test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
-test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
-test(3.07, nafill(x, fill="asd"), x, warning=c("Coercing.*character.*integer","NAs introduced by coercion"))
+test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1.*fcoalesce")
+test(3.07, nafill(x, "locf", fill=1:2), error="fill must be a vector of length 1.*x\\.$")
+test(3.08, nafill(x, fill="asd"), x, warning=c("Coercing.*character.*integer","NAs introduced by coercion"))
 
 # colnamesInt helper
 dt = data.table(a=1, b=2, d=3)
