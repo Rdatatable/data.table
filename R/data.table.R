@@ -97,34 +97,32 @@ replace_dot_alias = function(e) {
 }
 
 .checkTypos = function(err, ref) {
+  err_str <- conditionMessage(err)
   # a slightly wonky workaround so that this still works in non-English sessions, #4989
   # generate this at run time (as opposed to e.g. onAttach) since session language is
   #   technically OK to update (though this should be rare), and since it's low-cost
   #   to do so here because we're about to error anyway.
-  missing_obj_fmt = gsub(
-    "'missing_datatable_variable____'",
+  missing_obj_regex = gsub(
+    "'____missing_datatable_variable____'",
     "'(?<obj_name>[^']+)'",
-    tryCatch(eval(parse(text="missing_datatable_variable____")), error=identity)$message
-    # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
-    # names starting with _ don't parse, so no leading _ in the name
+    # expression() to avoid "no visible binding for global variable" note from R CMD check
+    conditionMessage(tryCatch(eval(quote(`____missing_datatable_variable____`)), error=identity)),
+    fixed=TRUE
   )
-  idx = regexpr(missing_obj_fmt, err$message, perl=TRUE)
-  if (idx > 0L) {
-    start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
-    used = substr(
-      err$message,
-      start,
-      start + attr(idx, "capture.length", exact=TRUE)[ , "obj_name"] - 1L
-    )
-    found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
-    if (length(found)) {
-      stopf("Object '%s' not found. Perhaps you intended %s", used, brackify(found))
-    } else {
-      stopf("Object '%s' not found amongst %s", used, brackify(ref))
-    }
+  idx = regexpr(missing_obj_regex, err_str, perl=TRUE)
+  if (idx == -1L)
+    stopf("%s", err_str, domain=NA) # Don't use stopf() directly, since err_str might have '%', #6588
+  start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
+  used = substr(
+    err_str,
+    start,
+    start + attr(idx, "capture.length", exact=TRUE)[ , "obj_name"] - 1L
+  )
+  found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
+  if (length(found)) {
+    stopf("Object '%s' not found. Perhaps you intended %s", used, brackify(found))
   } else {
-    # Don't use stopf() directly, since err$message might have '%', #6588
-    stopf("%s", err$message, domain=NA)
+    stopf("Object '%s' not found amongst %s", used, brackify(ref))
   }
 }
 
