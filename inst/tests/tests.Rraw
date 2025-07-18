@@ -21536,3 +21536,37 @@ f = tempfile()
 writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
 test(2334, names(fread(f)), "a")
 unlink(f)
+
+#2606 Recursive tables() naming convention
+local({
+  lst_named    <- list(inner=data.table(a=1))
+  lst_unnamed  <- list(data.table(b=2))
+  nested       <- list(l1=list(l2=data.table(c=3)))
+  mixed        <- list(data.table(x=1), y=data.table(z=2))
+  mixed_nested <- list(A=list(data.table(p=1), q=data.table(q=2)))
+  out <- tables(recursive=TRUE)$NAME
+  expected <- c(
+    "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
+    "mixed[[1]]", "mixed$y",
+    "mixed_nested$A[[1]]", "mixed_nested$A$q")
+  test(2335.1, out, sort(expected))
+})
+local({
+  dt <- data.table(val=42)
+  e <- new.env()
+  e$dt <- dt
+  e$self <- e # possible infinite loop if we're not careful
+  test(2335.2, tables(recursive=TRUE, env=e)$NAME, "dt")
+})
+local({
+  test_obj <- local({
+    common_list <- list(dt_inner=data.table(d=4))
+    outer_list <- list(first=common_list, unique=data.table(e=5))
+    outer_list$second <- outer_list$first
+    outer_list
+  })
+  out <- tables(recursive=TRUE)$NAME
+  test(2335.3, length(out), 2L)
+  test(2335.4, "test_obj$unique" %in% out)
+  test(2335.5, sum(grepl("\\$dt_inner$", out)), 1L)
+})

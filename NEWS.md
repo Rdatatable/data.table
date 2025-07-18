@@ -56,6 +56,8 @@
 
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
+14. `tables()` now supports a `recursive=TRUE` argument to detect `data.table` objects nested within plain lists, such as those produced by `split()` or manual list construction, [#2606](https://github.com/Rdatatable/data.table/issues/2606). The recursive search skips data.frame and data.table objects to avoid descending into list-columns. Nested data.tables are reported with intuitive R-like names using $ and [[ ]] notation. Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
