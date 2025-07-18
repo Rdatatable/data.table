@@ -7,7 +7,7 @@ Fill in missing values in a vector by successively pulling from candidate vector
 Written in C, and multithreaded for numeric and factor types.
 }
 \usage{
-  fcoalesce(\dots, nan = NA)
+  fcoalesce(\dots, nan=NA)
 }
 \arguments{
   \item{\dots}{ A set of same-class vectors. These vectors can be supplied as separate arguments or as a single plain list, data.table or data.frame, see examples. }
@@ -23,7 +23,7 @@ Atomic vector of the same type and length as the first vector, having \code{NA} 
 If the first item is \code{NULL}, the result is \code{NULL}.
 }
 \seealso{
-  \code{\link{fifelse}}
+  \code{\link{fifelse}}, \code{\link{nafill}}
 }
 \examples{
 x = c(11L, NA, 13L, NA, 15L, NA)
