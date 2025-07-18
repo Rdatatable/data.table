@@ -11,7 +11,7 @@ Written in C, and multithreaded for numeric and factor types.
 }
 \arguments{
   \item{\dots}{ A set of same-class vectors. These vectors can be supplied as separate arguments or as a single plain list, data.table or data.frame, see examples. }
-  \item{nan}{ (numeric vectors only) Either \code{NaN} or \code{NA}; if \code{NaN}, then \code{NaN} is treated as distinct from \code{NA}, otherwise they are treated the same during replacement. }
+  \item{nan}{ Either \code{NaN} or \code{NA}; if \code{NaN}, then \code{NaN} is treated as distinct from \code{NA}, otherwise they are treated the same during replacement (double columns only). }
 }
 \details{
 Factor type is supported only when the factor levels of each item are equal.
