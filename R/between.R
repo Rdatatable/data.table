@@ -30,8 +30,8 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, 
   }
   if (is.i64(x)) {
     if (!requireNamespace("bit64", quietly=TRUE)) stopf("trying to use integer64 class when 'bit64' package is not installed") # nocov
-    if (!is.i64(lower) && is.numeric(lower)) lower = bit64::as.integer64(lower)
-    if (!is.i64(upper) && is.numeric(upper)) upper = bit64::as.integer64(upper)
+    if (!is.i64(lower) && (is.integer(lower) || fitsInInt64(lower))) lower = bit64::as.integer64(lower)
+    if (!is.i64(upper) && (is.integer(upper) || fitsInInt64(upper))) upper = bit64::as.integer64(upper)
   }
   is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
