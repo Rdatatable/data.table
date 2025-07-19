@@ -15090,6 +15090,8 @@ if (test_bit64) {
   test(2039.21, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   # must not blindly read integer64 values as doubles when the latter fit into int32, #7164
   test(2039.22, between(42L, structure(41., class="integer64"), structure(43., class="integer64")), error="x is not integer64 but.*Please align classes")
+  # must not blindly convert numeric bounds to integer64, #7164
+  test(2039.23, between(as.i64(42), -2^99, -2^98), error="x is integer64 but lower and/or upper are not")
   options(old)
 }
 
