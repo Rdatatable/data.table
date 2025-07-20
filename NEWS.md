@@ -86,6 +86,8 @@
 
 14. Filling columns of class Date with POSIXct (and vice versa) using `shift()` now yields a clear, informative error message specifying the class mismatch, [#5218](https://github.com/Rdatatable/data.table/issues/5218). Thanks @ashbaldry for the report and @ben-schwen for the fix.
 
+15. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
