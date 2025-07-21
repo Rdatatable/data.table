@@ -457,8 +457,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
     } else {
       int nprotect = 0;
-      SEXP tt = PROTECT(allocVector(STRSXP, ncol - ndrop));
-      setAttrib(DT, R_NamesSymbol, tt); nprotect++;
+      SEXP tt = PROTECT(allocVector(STRSXP, ncol - ndrop)); nprotect++;
+      setAttrib(DT, R_NamesSymbol, tt);
       
       SEXP ss;
       if (colClassesAs) {
