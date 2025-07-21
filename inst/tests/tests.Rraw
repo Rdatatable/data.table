@@ -71,9 +71,9 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
+  setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
-  split.data.table = data.table:::split.data.table
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -348,7 +348,7 @@ xenv = new.env()   # to control testing tables()
 xenv$DT = data.table(a = 1)
 test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS    KEY\n1:   DT    1    1  0    a [NULL]\nTotal: 0MB")
 xenv$DT = data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key=c("A", "D", "F", "G"))
-test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB            COLS     KEY\n1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
+test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB\\s+COLS\\s+KEY\n1:   DT    2    8  0 A,B,C,D,E,F,\\.\\.\\.\\[8\\] A,D,F,G.*Total: 0MB")
 rm(xenv)
 test(69.7, tables(order.col='asdf'), error="not a column name of info")
 
@@ -1731,8 +1731,8 @@ test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible futu
 
 # Test printing on nested data.table, bug #1803
 DT = data.table(x=letters[1:3], y=list(1:10, letters[1:4], data.table(a=1:3,b=4:6)))
-test(558, capture.output(print(DT)),
-     c("   x                 y", "1: a   1,2,3,4,5,6,...", "2: b           a,b,c,d", "3: c <data.table[3x2]>"))
+test(558.1, DT, output="\\ba\\s+1,2,3,4,5,6,\\.\\.\\.\\[10\\]") # row 1
+test(558.2, DT, output="\\bc\\s+<data\\.table\\[3x2\\]>")       # row 3
 test(559, setkey(DT,x)["a",y][[1]], 1:10)   # y is symbol representing list column, specially detected in dogroups
 
 # Test renaming of .N to N
@@ -4227,7 +4227,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# test 1160 was for setrev, now removed
+# test 1160 was for setfrev, now removed
 
 # tests for setreordervec
 # integer
@@ -6849,6 +6849,14 @@ test(1463.77, shift(x,1L,    type="cyclic"), as.raw(c(5, 1:4)))
 test(1463.78, shift(x,1:2,   type="cyclic"), list(as.raw(c(5, 1:4)), as.raw(c(4:5, 1:3))))
 test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
 test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
+
+# shift incompatible types (e.g. Date and POSIXct)
+# TODO(R>=3.5): use .Date() instead of setting class by hand
+d = structure(0:4, class="Date")
+p = .POSIXct(1:5)
+test(1463.81, shift(d, fill=p[1L]), error="Filling Date with POSIXct .* unsupported.*")
+test(1463.82, shift(p, fill=d[1L]), error="Filling POSIXct with Date .* unsupported.*")
+test(1463.83, shift(d, fill=as.IDate(2000L)), structure(c(2000L, 0:3), class="Date"))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -9755,6 +9763,14 @@ test(1639.141, all(sapply(dtL, truelength) > 1000))
 dt <- data.table(x = factor("a"), y = 1)
 test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
 test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
+
+# retain a custom class after splitting, #7105
+DT = data.table(x=letters[1:10], y=1:10, z=rnorm(10))
+setattr(DT, "class", c("my_class", class(DT)))
+test(1639.144, "my_class" %in% unlist(lapply(split(DT, by="x"), class)))
+test(1639.145, "my_class" %in% unlist(lapply(split(DT, ~x), class)))
+test(1639.146, "my_class" %in% unlist(lapply(split(DT, by=c("x", "y")), class)))
+test(1639.147, "my_class" %in% unlist(lapply(split(DT, ~x+y), class)))
 rm_all()
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
@@ -14268,7 +14284,7 @@ test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2,
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
 test(1984.27, identical(shallow(DF), DF))  # shallow (which is not exported) works on DF from v1.14.2. identical() to force checking the selfref attribute for #5286.
-test(1984.28, split.data.table(DF), error='argument must be a data.table')
+# 1984.28 was a coverage test converted to 'nocov' of an internal_error instead
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
 setnames(DT, '.ll.tech.split')
@@ -21281,10 +21297,15 @@ if (test_R.utils) local({
 })
 
 # Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
-test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
-test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
-test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
-test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+local({
+  old = options(datatable.old.matrix.autoname=FALSE)
+  on.exit(options(old))
+
+  test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+  test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+  test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+  test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+})
 ## but respect named column vectors
 test(2321.05, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
 test(2321.06, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
@@ -21321,6 +21342,30 @@ test(2321.25, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c
 colnames(M) = c('A', '')
 test(2321.26, as.data.table(M), data.table(A=1:3, V2=4:6))
 test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, V2=4:6))
+
+# also respect old auto-naming rules by default (to be deprecated)
+test(2321.28, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
+test(2321.29, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
+# also test behavior with a 0-column matrix
+M = cbind(1:3)
+test(2321.30, data.table(M[, 0L]), data.table(NULL))
+test(2321.31, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+
+local({
+  old = options(datatable.old.matrix.autoname=FALSE)
+  on.exit(options(old))
+  
+  test(2321.32, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
+  # particularly buggy old behavior: can easily result in duplicate names
+  test(2321.33, names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
+  M = cbind(1:3)
+  test(2321.34, data.table(M[, 0L]), data.table(NULL))
+  test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+
+  # a more subtle version of this as expressed in #5367
+  DT <- data.table(Counts=c(10, 20), Severity=c(1, 2))
+  test(2321.36, names(DT[,.(New_name = Severity %*% Counts)]), "New_name")
+})
 
 # New fctr() helper: like factor() but retaining order by default #4837
 test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))
@@ -21427,7 +21472,80 @@ DF <- data.frame(row.names = letters[1:6], V = 1:6)     # Test data.frame with e
 test(2330.6, as.data.table(list(a = 6:1, DF), keep.rownames=TRUE), data.table(rn=letters[1:6], a=6:1, V=1:6))
 
 z <- setNames(1:3, rep("", 3))  # vector with all-empty names     # behaviour with all-empty row names
-test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3))
+test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn="", V1=1:3))
 
-M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
-test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
+M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3L), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
+test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn="", V1=1:3, V2=4:6))
+# 0-column input can still provide rownames
+test(2330.9, as.data.table(list(M[, 0L], 1:3), keep.rownames=TRUE), data.table(rn="", V2=1:3))
+
+# .SD reference in '...' passed to lapply(FUN=) is recognized as data.table
+test(2331, lapply(list(data.table(a=1:2)), `[`, j=.SD[1L]), list(data.table(a=1L)))
+
+# 5885 implement frev
+d = c(NA, NaN, Inf, -Inf)
+test(2332.00, frev(c(FALSE, NA)),     rev(c(FALSE, NA)))
+test(2332.01, frev(c(0L, NA)),        rev(c(0L, NA)))
+test(2332.02, frev(d),                rev(d))
+test(2332.03, frev(c(NA, 1, 0+2i)),   rev(c(NA, 1, 0+2i)))
+test(2332.04, frev(as.raw(0:1)),      rev(as.raw(0:1)))
+test(2332.05, frev(NULL),             rev(NULL))
+test(2332.06, frev(character(5)),     rev(character(5)))
+test(2332.07, frev(integer(0)),       rev(integer(0)))
+test(2332.08, frev(list(1, "a")),     rev(list(1, "a")))
+test(2332.09, {x=c(0L, NA); setfrev(x); x},      c(NA, 0L))
+test(2332.10, {x=d; setfrev(x); x},              c(-Inf, Inf, NaN, NA))
+test(2332.11, {x=c(NA, 1, 0+2i); setfrev(x); x}, c(0+2i, 1, NA))
+test(2332.12, {x=as.raw(0:1); setfrev(x); x},    as.raw(1:0))
+test(2332.13, {x=NULL; setfrev(x); x},           NULL)
+test(2332.14, {x=character(5); setfrev(x); x},   character(5))
+test(2332.15, {x=integer(0); setfrev(x); x},     integer(0))
+test(2332.16, {x=list(1, "a"); setfrev(x); x},   list("a", 1))
+test(2332.17, frev(1:1e2),            rev(1:1e2))
+# copy arguments
+x = 1:3
+test(2332.21, {frev(x);  x}, 1:3)
+test(2332.22, {setfrev(x); x}, 3:1)
+test(2332.23, address(x) == address(setfrev(x)))
+test(2332.24, address(x) != address(frev(x)))
+# do not alter on subsets
+test(2332.25, {setfrev(x[1:2]);  x}, 1:3)
+# levels
+f = as.factor(letters)
+test(2332.31, frev(f), rev(f))
+test(2332.32, frev(as.IDate(1:10)), as.IDate(10:1))
+test(2332.33, frev(as.IDate(1:10)), as.IDate(10:1))
+# names
+x = c(a=1L, b=2L, c=3L)
+test(2332.41, frev(x), rev(x))
+test(2332.42, setfrev(x), x)
+x = c(a=1L, b=2L, c=3L)
+test(2332.43, {frev(x); names(x)}, c("a","b","c"))
+# attributes
+x = structure(1:10, class = c("IDate", "Date"), att = 1L)
+test(2332.51, attr(frev(x), "att"), attr(rev(x), "att"))
+test(2332.52, class(frev(x)), class(rev(x)))
+test(2332.53, attr(setfrev(x), "att"), 1L)
+test(2332.54, class(setfrev(x)), c("IDate", "Date"))
+x = structure(integer(0), att = 1L)
+test(2332.55, attr(frev(x), "att"), attr(rev(x), "att"))
+# errors
+test(2332.61, frev(data.table()), error="should not be data.frame or data.table")
+test(2332.62, frev(expression(1)), error="is not supported by frev")
+if (test_bit64) {
+  x = as.integer64(c(1, NA, 3))
+  test(2332.71, frev(x), rev(x))
+  test(2332.72, setfrev(x), x)
+}
+# support rotate idiom
+M1 = M2 = matrix(1:4, nrow=2)
+test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
+
+# regression test of edge case report #4964
+test(2333, as.expression(data.table(a = 1))[["a"]], 1)
+
+# regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
+f = tempfile()
+writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
+test(2334, names(fread(f)), "a")
+unlink(f)
