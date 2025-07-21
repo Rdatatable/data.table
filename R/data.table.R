@@ -2568,6 +2568,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   if (flatten || length(by) == 1L) {
     for (xi in ll) .Call(C_unlock, xi)
     out = lapply(ll, setDT)
+    # TODO(#2000): just let setDT handle this
     if (!identical(old_class <- class(x), c("data.table", "data.frame"))) for (xi in out) setattr(xi, "class", old_class)
     out
     # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd

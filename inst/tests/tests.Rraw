@@ -9766,7 +9766,7 @@ test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
 
 # retain a custom class after splitting, #7105
 DT = data.table(x=letters[1:10], y=1:10, z=rnorm(10))
-setattr(DT, "class", c("my_class", class(dt)))
+setattr(DT, "class", c("my_class", class(DT)))
 test(1639.144, "my_class" %in% unlist(lapply(split(DT, by="x"), class)))
 test(1639.145, "my_class" %in% unlist(lapply(split(DT, ~x), class)))
 test(1639.146, "my_class" %in% unlist(lapply(split(DT, by=c("x", "y")), class)))
