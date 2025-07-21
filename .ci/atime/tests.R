@@ -287,7 +287,6 @@ test.list <- atime::atime_test_list(
     Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
 
   "tables() !recursive refactor in #2606" = atime::atime_test(
-    N = as.integer(10^seq(1, 4, by=0.5)),
     setup = {
       test_env <- new.env()
       for (i in 1:N) {
@@ -295,9 +294,12 @@ test.list <- atime::atime_test_list(
         assign(paste0("vec_perf_test", i), 1, envir = test_env)
       }
     },
-    expr = {data.table::tables(env = test_env, silent = TRUE, index = TRUE); NULL},
-    "before" = "5bb645082aa5c4a295cdd211a5a75c849d590b75",
-    "after" = "8978cf201d8d228506e1e96d3eda7e542471720a"),
+    expr = {
+      data.table::tables(env = test_env, silent = TRUE, index = TRUE);
+      NULL
+    },
+    before = "2b191aec3df51675a7ab5e6701384a8b89470af6",  # The merge-base parent commit for PR #2606
+    after =  "66024e6ea5304ae059b18c71de9973715ddb77ce"), # The final commit of PR #2606
 
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
