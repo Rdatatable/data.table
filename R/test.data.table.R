@@ -323,7 +323,10 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+test = function(num, x, y=TRUE,
+                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
+                options=NULL, env=NULL,
+                context=NULL) {
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
@@ -569,6 +572,9 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
     }
     # nocov end
+  }
+  if (fail && !is.null(context)) {
+    catf("Test context: %s\n", context)
   }
   if (fail && .test.data.table && num>0.0) {
     # nocov start

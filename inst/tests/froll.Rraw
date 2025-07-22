@@ -878,12 +878,10 @@ base_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
       for (fill in c(NA_real_, 0)) {
         for (algo in algos) {
           num <<- num + num.step
-          eval(substitute( # so we can have values displayed in output/log rather than variables
-            test(.num,
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo),
-                 rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact")
-          ))
+          test(num,
+               froll(fun, x, n, fill=fill, na.rm=na.rm, algo=algo),
+               rollfun(x, n, FUN=fun, fill=fill, na.rm=na.rm, nf.rm=algo != "exact"),
+               context=sprintf("fun=%s\tfill=%s\tna.rm=%s\talgo=%s", fun, fill, na.rm, algo))
         }
       }
     }
@@ -911,12 +909,10 @@ if (requireNamespace("zoo", quietly=TRUE)) {
           for (fill in c(NA_real_, 0)) {
             for (algo in algos) {
               num <<- num + num.step
-              eval(substitute( # so we can have values displayed in output/log rather than variables
-                test(.num,
-                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo),
-                     drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm)),
-                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo)
-              ))
+              test(num,
+                   froll(fun, x, n, align=align, fill=fill, na.rm=na.rm, algo=algo),
+                   drollapply(x, n, FUN=fun, fill=fill, align=align, na.rm=na.rm),
+                   context=sprintf("fun=%s\talign=%s\tfill=%s\tna.rm=%s\talgo=%s", fun, align, fill, na.rm, algo))
             }
           }
         }
@@ -974,12 +970,10 @@ afun_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
       for (fill in c(NA_real_, 0)) {
         for (algo in algos) {
           num <<- num + num.step
-          eval(substitute(
-            test(.num,
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE),
-                 arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact")
-          ))
+          test(num,
+               froll(fun, x, n, fill=fill, na.rm=na.rm, algo=algo, adaptive=TRUE),
+               arollfun(fun, x, n, fill=fill, na.rm=na.rm, nf.rm=algo != "exact"),
+               context=sprintf("fun=%s\tfill=%s\tna.rm=%s\talgo=%s", fun, fill, na.rm, algo))
         }
       }
     }
