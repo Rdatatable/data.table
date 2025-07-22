@@ -122,21 +122,21 @@
 
 5. A GitHub Actions workflow is now in place to warn the entire maintainer team, as well as any contributor following the GitHub repository, when the package is at risk of archival on CRAN [#7008](https://github.com/Rdatatable/data.table/issues/7008). Thanks @tdhock for the original report and @Bisaloo and @TysonStanley for the fix.
 
-# data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
+## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
 
-# data.table [v1.17.6](https://github.com/Rdatatable/data.table/milestone/40) (15 June 2025)
+## data.table [v1.17.6](https://github.com/Rdatatable/data.table/milestone/40) (15 June 2025)
 
 1. On a heavily loaded machine, a `forder` thread could try to perform a zero-length copy from a null pointer, which was de-facto harmless but is against the C standard and was caught by additional CRAN checks, [#7051](https://github.com/Rdatatable/data.table/issues/7051). Thanks to @helske for the report and @aitap for the PR.
 
-# data.table [v1.17.4](https://github.com/Rdatatable/data.table/milestone/39) (25 May 2025)
+## data.table [v1.17.4](https://github.com/Rdatatable/data.table/milestone/39) (25 May 2025)
 
 1. The C code now avoids passing invalid data pointers from 0-length vectors to `memcpy()`, which previously caused undefined behaviour. Thanks to Prof. Brian D. Ripley for the report and Michael Chirico for the fix, [#6911](https://github.com/Rdatatable/data.table/pull/6911).
 
-# data.table [v1.17.2](https://github.com/Rdatatable/data.table/milestone/38) (7 May 2025)
+## data.table [v1.17.2](https://github.com/Rdatatable/data.table/milestone/38) (7 May 2025)
 
-## BUG FIXES
+### BUG FIXES
 
 1. `fwrite(compress="gzip")` once again produces a gzip header when the column names are missing or disabled, [@6852](https://github.com/Rdatatable/data.table/issues/6852). Thanks @maxscheiber for the report and @aitap for the fix.
 
@@ -152,7 +152,7 @@
 
 7. `as.data.table()` now properly handles keys: specifying keys sets them, omitting keys preserves existing ones, and setting `key=NULL` clears them, [#6859](https://github.com/Rdatatable/data.table/issues/6859). Thanks @brookslogan for the report and @Mukulyadav2004 for the fix.
 
-## NOTES
+### NOTES
 
 1. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
 
