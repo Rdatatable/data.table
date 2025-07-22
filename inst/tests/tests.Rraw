@@ -21554,8 +21554,6 @@ unlink(f)
 test(2335.1, isoyear(as.IDate("2019-12-30")), 2020L)  # End of year edge case
 test(2335.2, isoyear(as.IDate("2016-01-01")), 2015L)  # Start of year edge case
 test(2335.3, isoyear(as.IDate("2023-08-15")), 2023L)  # Normal mid-year case
-test(2335.4, 
-     isoyear(as.IDate(c("2019-12-30", "2016-01-01", "2023-08-15"))),
-     c(2020L, 2015L, 2023L))
+test(2335.4, isoyear(as.IDate(c("2019-12-30", "2016-01-01", "2023-08-15"))),c(2020L, 2015L, 2023L))
 test(2335.5, isoyear("2019-12-30"), 2020L)
 test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
