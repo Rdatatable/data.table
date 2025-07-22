@@ -38,6 +38,7 @@
 \alias{mday}
 \alias{week}
 \alias{isoweek}
+\alias{isoyear}
 \alias{month}
 \alias{quarter}
 \alias{year}
@@ -92,6 +93,7 @@ wday(x)
 mday(x)
 week(x)
 isoweek(x)
+isoyear(x)     
 month(x)
 quarter(x)
 year(x)
@@ -187,6 +189,8 @@ which specify that the first week of the year is the one containing the first Th
 This convention ensures that week boundaries align consistently with year boundaries,
 accounting for both year transitions and varying day counts per week.
 
+Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO week.
+
 }
 
 \value{
@@ -200,7 +204,7 @@ accounting for both year transitions and varying day counts per week.
    \code{itime} in \code{IDate} and \code{ITime} format.
 
    \code{second}, \code{minute}, \code{hour}, \code{yday}, \code{wday},
-   \code{mday}, \code{week}, \code{month}, \code{quarter},
+   \code{mday}, \code{week}, \code{isoweek}, \code{isoyear}, \code{month}, \code{quarter},
    and \code{year} return integer values
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
@@ -280,6 +284,17 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
+
+# Examples for isoyear() and isoweek()
+d1 = as.IDate("2019-12-30")
+year(d1)
+isoweek(d1)
+isoyear(d1)
+
+d2 = as.IDate("2016-01-01")
+year(d2)
+isoweek(d2)
+isoyear(d2)
 
 }
 \keyword{utilities}

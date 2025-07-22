@@ -10,7 +10,16 @@
 
 ### NEW FEATURES
 
-1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also match `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
+1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also matches `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
+
+    ```r
+    DT = data.table(a=c(1L, 2L, 1L), b=c(3L, 1L, 2L))
+    sort_by(DT, ~a + b)
+    #    a b
+    # 1: 1 2
+    # 2: 1 3
+    # 3: 2 1
+    ```
 
 2. `melt()` now supports using `patterns()` with `id.vars`, [#6867](https://github.com/Rdatatable/data.table/issues/6867). Thanks to Toby Dylan Hocking for the suggestion and PR.
 
@@ -56,6 +65,10 @@
 
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
+14. `fcoalesce()` and `setcoalesce()` gain `nan` argument to control whether `NaN` values should be treated as missing (`nan=NA`, the default) or non-missing (`nan=NaN`), [#4567](https://github.com/Rdatatable/data.table/issues/4567). This provides full compatibility with `nafill()` behavior. Thanks to @ethanbsmith for the feature request and @Mukulyadav2004 for the implementation.
+
+15. New function `isoyear()` has been implemented as a complement to `isoweek()`, returning the ISO 8601 year corresponding to a given date, [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
@@ -85,6 +98,8 @@
 13. Reference to `.SD` in `...` arguments to `lapply()`, e.g. ``lapply(list_of_tables, `[`, j=.SD[1L])`` is evaluated correctly, [#2982](https://github.com/Rdatatable/data.table/issues/2982). Thanks @franknarf1 for the report and @MichaelChirico for the fix.
 
 14. Filling columns of class Date with POSIXct (and vice versa) using `shift()` now yields a clear, informative error message specifying the class mismatch, [#5218](https://github.com/Rdatatable/data.table/issues/5218). Thanks @ashbaldry for the report and @ben-schwen for the fix.
+
+15. `split.data.table()` output list elements retain the S3 class of the generating data.table, e.g. in `l=split(x, ...)` if `x` has class `my_class`, so will `l[[1]]` and so on, [#7105](https://github.com/Rdatatable/data.table/issues/7105). Thanks @m-muecke for the bug report and @MichaelChirico for the fix.
 
 ### NOTES
 
