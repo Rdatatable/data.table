@@ -574,7 +574,7 @@ test = function(num, x, y=TRUE,
     # nocov end
   }
   if (fail && !is.null(context)) {
-    catf("Test context: %s\n", context)
+    catf("Test context: %s\n", context) # nocov
   }
   if (fail && .test.data.table && num>0.0) {
     # nocov start
