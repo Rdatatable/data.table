@@ -17938,31 +17938,31 @@ for (f1 in funs) {
   DT = data.table(x=f1(1:4), g=g)
   for (f2 in funs) {
     testnum = testnum + 1L
-    test(2218.0 + testnum*0.001, DT[, shift(x)],               f1(c(NA, 1:3)))
+    test(2218.0 + testnum*0.001, DT[, shift(x)], f1(c(NA, 1:3)), context=sprintf("f1=%s, f2=%s, ungrouped, no fill", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
-    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
-    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
+    w = if (identical(f2, as.character) && !identical(f1, as.character)) "Coercing.*character.*to match the type of target vector"
+    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(NA))], f1(c(NA, 1:3)), warning=w, context=sprintf("f1=%s, f2=%s, ungrouped, fill=NA", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
-    if (identical(f1,as.character) && identical(f2,as.complex)) {
+    if (identical(f1, as.character) && identical(f2, as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0")],   f1(0:3))
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0")], f1(0:3), context="f1=as.character, f2=as.complex, ungrouped")
     } else {
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w, context=sprintf("f1=%s, f2=%s, ungrouped, fill=0", deparse(f1), deparse(f2)))
     }
 
     testnum = testnum + 1L
-    test(2218.0 + testnum*0.001, DT[, shift(x), by=g],               data.table(g=g, V1=f1(c(NA, 1, NA, 3))))
+    test(2218.0 + testnum*0.001, DT[, shift(x), by=g], data.table(g=g, V1=f1(c(NA, 1, NA, 3))), context=sprintf("f1=%s, f2=%s, grouped, no fill", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
     w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
     f = f2(NA)
-    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g],  data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w)
+    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w, context=sprintf("f1=%s, f2=%s, grouped, fill=NA", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
-    if (identical(f1,as.character) && identical(f2,as.complex)) {
+    if (identical(f1, as.character) && identical(f2, as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0"), by=g],   data.table(g=g, V1=f1(c(0,1,0,3))))
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0"), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), context="f1=as.character, f2=as.complex, grouped")
     } else {
       f = f2(0)
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), warning=w)
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), warning=w, context=sprintf("f1=%s, f2=%s, grouped, fill=0", deparse(f1), deparse(f2)))
     }
   }
 }
@@ -17979,9 +17979,9 @@ funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
 testnum = 0L
 for (fun in funs) {
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE")
+  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
+  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun), context=sprintf("fun=%s [factor]", fun))
 }
 testnum = testnum + 1L
 test(2220.0 + testnum*0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
@@ -18018,13 +18018,14 @@ if (test_bit64) {
 }
 i = 1L
 for (col in names(DT)[-1]) {
-  for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
-    for (type in c('lag','lead','shift','cyclic')) {
+  for (n in list(1, 5, -1, -5, c(1, 2), c(-1, 1))) {
+    for (type in c('lag', 'lead', 'shift', 'cyclic')) {
       # fill is tested by group in tests 2218.*; see comments in #5205
       # sapply(sapply()) changed to for(for(for())) to save 29MiB, #5517
       test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
            EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
-           ans[[i]])
+           ans[[i]],
+           context=sprintf("col=%s, n=%s", type=%s", col, paste(n, collapse=","), type))
       i = i+1L
     }
   }
@@ -18283,18 +18284,18 @@ test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=I
 set.seed(10)
 n = 100
 a = data.table(id1=1:n, id2=sample(1:900,n,replace=TRUE), flag=sample(c(0,0,0,1),n,replace=TRUE))
-for (opt in c(0,Inf)) {
+for (opt in c(0, Inf)) {
   options(datatable.optimize=opt)
   out = if (opt) "GForce.*gsum" else "GForce FALSE"
   B = copy(a)
   A = a[sample(seq_len(nrow(a)), nrow(a))] # shuffle
   num_bump = (opt>0)/100
-  test(2233.39+num_bump+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)  # y=A dummy just to test output=
+  test(2233.39+num_bump+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out, context=sprintf("optimize=%s [I]", format(opt)))  # y=A dummy just to test output=
   setorder(A, id1)
-  test(2233.39+num_bump+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)
-  test(2233.39+num_bump+0.003, any(A[,t1!=t2]), FALSE)
-  test(2233.39+num_bump+0.004, any(A[, length(unique(t1))>1, by=id2]$V1), FALSE)
-  test(2233.39+num_bump+0.005, any(A[, length(unique(t2))>1, by=id2]$V1), FALSE)
+  test(2233.39+num_bump+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out, context=sprintf("optimize=%s [II]", format(opt)))
+  test(2233.39+num_bump+0.003, !any(A[,t1!=t2]))
+  test(2233.39+num_bump+0.004, !any(A[, length(unique(t1))>1, by=id2]$V1), context=sprintf("optimize=%s [III]", format(opt)))
+  test(2233.39+num_bump+0.005, !any(A[, length(unique(t2))>1, by=id2]$V1), context=sprintf("optimize=%s [IV]", format(opt)))
 }
 # test from #5337
 n=4; k=2
@@ -19283,61 +19284,80 @@ names(sdlist) <- sdnames
 for (opt in c(0, 1, 2)) {
   test(2283 + opt/10 + 0.001, options=c(datatable.optimize=opt),
        names(M[, c(m=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(m=sdlist))))
+       c("cyl", names(c(m=sdlist))),
+       context=sprintf("optimize=%s [I]", format(opt)))
   test(2283 + opt/10 + 0.002, options=c(datatable.optimize=opt),
        names(M[, c(Mpg=list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "Mpg", sdnames))
+       c("cyl", "Mpg", sdnames),
+       context=sprintf("optimize=%s [II]", format(opt)))
   test(2283 + opt/10 + 0.003, options=c(datatable.optimize=opt),
        names(M[, c(Mpg=list(mpg), m=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "Mpg", names(c(m=sdlist))))
+       c("cyl", "Mpg", names(c(m=sdlist))),
+       context=sprintf("optimize=%s [III]", format(opt)))
   test(2283 + opt/10 + 0.004, options=c(datatable.optimize=opt),
        names(M[, c(mpg=list(mpg), mpg=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "mpg", names(c(mpg=sdlist))))
+       c("cyl", "mpg", names(c(mpg=sdlist))),
+       context=sprintf("optimize=%s [IV]", format(opt)))
   test(2283 + opt/10 + 0.005, options=c(datatable.optimize=opt),
        names(M[, c(list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "V1", sdnames))
+       c("cyl", "V1", sdnames),
+       context=sprintf("optimize=%s [V]", format(opt)))
   test(2283 + opt/10 + 0.006, options=c(datatable.optimize=opt),
        names(M[, c(lapply(.SD, mean), list(mpg)), by="cyl"]),
-       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)))
+       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)),
+       context=sprintf("optimize=%s [VI]", format(opt)))
   test(2283 + opt/10 + 0.007, options=c(datatable.optimize=opt),
        names(M[, c(lapply(.SD, mean), lapply(.SD, sum)), by="cyl"]),
-       c("cyl", sdnames, sdnames))
+       c("cyl", sdnames, sdnames),
+       context=sprintf("optimize=%s [VII]", format(opt)))
   test(2283 + opt/10 + 0.008, options=c(datatable.optimize=opt),
        names(M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", names(c(mean=sdlist, sum=sdlist))))
+       c("cyl", names(c(mean=sdlist, sum=sdlist))),
+       context=sprintf("optimize=%s [VIII]", format(opt)))
   test(2283 + opt/10 + 0.009, options=c(datatable.optimize=opt),
        names(M[, c(lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", sdnames, names(c(sum=sdlist))) )
+       c("cyl", sdnames, names(c(sum=sdlist))) ,
+       context=sprintf("optimize=%s [IX]", format(opt)))
   test(2283 + opt/10 + 0.010, options=c(datatable.optimize=opt),
        names(M[, c(" "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", names(c(" "=sdlist, "."=sdlist))))
+       c("cyl", names(c(" "=sdlist, "."=sdlist))),
+       context=sprintf("optimize=%s [X]", format(opt)))
   test(2283 + opt/10 + 0.011, options=c(datatable.optimize=opt),
        names(M[, c(A=list(a=mpg, b=hp), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(a=0, b=0))), sdnames))
+       c("cyl", names(c(A=list(a=0, b=0))), sdnames),
+       context=sprintf("optimize=%s [XI]", format(opt)))
   test(2283 + opt/10 + 0.012, options=c(datatable.optimize=opt),
        names(M[, c(A=list(mpg, hp), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0, 0))), sdnames))
+       c("cyl", names(c(A=list(0, 0))), sdnames),
+       context=sprintf("optimize=%s [XII]", format(opt)))
   test(2283 + opt/10 + 0.013, options=c(datatable.optimize=opt),
        names(M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0, b=0, 0))), sdnames))
+       c("cyl", names(c(A=list(0, b=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XIII]", format(opt)))
   test(2283 + opt/10 + 0.014, options=c(datatable.optimize=opt),
        names(M[, c(A=list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0))), sdnames))
+       c("cyl", names(c(A=list(0))), sdnames),
+       context=sprintf("optimize=%s [XIV]", format(opt)))
   test(2283 + opt/10 + 0.015, options=c(datatable.optimize=opt),
        names(M[, c(" "=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames))
+       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XV]", format(opt)))
   test(2283 + opt/10 + 0.016, options=c(datatable.optimize=opt),
        names(M[, c("."=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames))
+       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XVI]", format(opt)))
   test(2283 + opt/10 + 0.017, options=c(datatable.optimize=opt),
        names(M[, c(list(mpg, b=hp), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "b", "vs", "am"))
+       c("cyl", "V1", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XVII]", format(opt)))
   test(2283 + opt/10 + 0.018, options=c(datatable.optimize=opt),
        names(M[, c(list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "b", "vs", "am"))
+       c("cyl", "V1", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XVIII]", format(opt)))
   test(2283 + opt/10 + 0.019, options=c(datatable.optimize=opt),
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "V2", "b", "vs", "am"))
+       c("cyl", "V1", "V2", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XIX]", format(opt)))
 }
 
 # Confusing behavior with DT[, min(var):max(var)] #2069
