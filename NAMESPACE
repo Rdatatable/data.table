@@ -153,7 +153,7 @@ if (getRversion() >= "3.6.0") {
 
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
-export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year,yearmon,yearqtr)
+export(second,minute,hour,yday,wday,mday,week,isoweek,isoyear,month,quarter,year,yearmon,yearqtr)
 
 S3method("[", ITime)
 S3method("+", IDate)

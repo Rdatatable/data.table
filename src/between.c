@@ -29,6 +29,19 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   const bool check = LOGICAL(checkArg)[0];
   const bool verbose = GetVerbose();
 
+  // check before potential coercion which ignores methods, #7164
+  if (INHERITS(x, char_integer64)) {
+    if (!INHERITS(lower, char_integer64))
+      error(_("x is integer64 but %s is not. Please align classes."), "lower"); // e.g. between(int64, character, character)
+    if (!INHERITS(upper, char_integer64))
+      error(_("x is integer64 but %s is not. Please align classes."), "upper"); // e.g. between(int64, character, character)
+  } else {
+    if (INHERITS(lower, char_integer64))
+      error(_("x is not integer64 but %s is. Please align classes."), "lower");
+    if (INHERITS(upper, char_integer64))
+      error(_("x is not integer64 but %s is. Please align classes."), "upper");
+  }
+
   if (isInteger(x)) {
     if ((isInteger(lower) || fitsInInt32(lower)) &&
         (isInteger(upper) || fitsInInt32(upper))) { // #3517 coerce to num to int when possible
@@ -90,8 +103,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
 
   case REALSXP:
     if (INHERITS(x, char_integer64)) {
-      if (!INHERITS(lower, char_integer64) || !INHERITS(upper, char_integer64))
-        error(_("x is integer64 but lower and/or upper are not.")); // e.g. between(int64, character, character)
       const int64_t *lp = (int64_t *)REAL(lower);
       const int64_t *up = (int64_t *)REAL(upper);
       const int64_t *xp = (int64_t *)REAL(x);
@@ -117,8 +128,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       }
       if (verbose) Rprintf(_("between parallel processing of integer64 took %8.3fs\n"), omp_get_wtime()-tic);
     } else {
-      if (INHERITS(lower, char_integer64) || INHERITS(upper, char_integer64))
-        error(_("x is not integer64 but lower and/or upper is integer64. Please align classes."));
       const double *lp = REAL(lower);
       const double *up = REAL(upper);
       const double *xp = REAL(x);

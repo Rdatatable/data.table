@@ -293,7 +293,7 @@ static inline bool end_of_field(const char *ch)
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
-  return *ch == sep || (*ch <= 13 && (ch == eof || eol(&ch)));
+  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch)));
 }
 
 static inline const char *end_NA_string(const char *start)
@@ -927,10 +927,13 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   if (neg) ch++;
   else if (*ch == '+') ch++;
 
-  const bool subnormal = ch[2] == '0';
+  bool subnormal = false;
 
+  // Important!
+  // Keep in mind that only ch[0] is guaranteed to be mapped.
+  // Rearranging these checks (e.g. to make 'subnormal' const) will lead to segfaults in rare cases.
   if (ch[0] == '0' && (ch[1] == 'x' || ch[1] == 'X') &&
-      (ch[2] == '1' || (subnormal)) && ch[3] == '.') {
+      (ch[2] == '1' || (subnormal = (ch[2] == '0'))) && ch[3] == '.') {
     ch += 4;
     uint64_t acc = 0;
     uint8_t digit;
