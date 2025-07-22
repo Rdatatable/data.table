@@ -5972,7 +5972,7 @@ for (run in seq_len(times)) {
       # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
       idx = paste(type, mult, run, sep="_")
       # ans[[idx]] contains fo(gr(i), gr(x), type=type, select=mult)
-      test(1372.0 + test_no*0.01, thisans, ans[[idx]], context=sprintf("run=%d, type=%s, mult=%s", run, type, mult"))
+      test(1372.0 + test_no*0.01, thisans, ans[[idx]], context=sprintf("run=%d, type=%s, mult=%s", run, type, mult))
       this = this+1L
     }
   }
@@ -18025,7 +18025,7 @@ for (col in names(DT)[-1]) {
       test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
            EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
            ans[[i]],
-           context=sprintf("col=%s, n=%s", type=%s", col, paste(n, collapse=","), type))
+           context=sprintf("col=%s, n=%s, type=%s", col, paste(n, collapse=","), type))
       i = i+1L
     }
   }
