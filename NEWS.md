@@ -67,6 +67,8 @@
 
 14. `fcoalesce()` and `setcoalesce()` gain `nan` argument to control whether `NaN` values should be treated as missing (`nan=NA`, the default) or non-missing (`nan=NaN`), [#4567](https://github.com/Rdatatable/data.table/issues/4567). This provides full compatibility with `nafill()` behavior. Thanks to @ethanbsmith for the feature request and @Mukulyadav2004 for the implementation.
 
+15. `tables()` now supports a `recursive=TRUE` argument to detect `data.table` objects nested within plain lists, such as those produced by `split()` or manual list construction, [#2606](https://github.com/Rdatatable/data.table/issues/2606). The recursive search skips data.frame and data.table objects to avoid descending into list-columns. Nested data.tables are reported with intuitive R-like names using $ and [[ ]] notation. Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
