@@ -189,9 +189,7 @@ which specify that the first week of the year is the one containing the first Th
 This convention ensures that week boundaries align consistently with year boundaries,
 accounting for both year transitions and varying day counts per week.
 
-Similarly, \code{isoyear()} returns the year corresponding to the ISO week,
-which is essential for correct analysis as this may differ from the calendar
-year for dates near the beginning or end of a year.
+Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO week.
 
 }
 
