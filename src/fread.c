@@ -927,10 +927,10 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   if (neg) ch++;
   else if (*ch == '+') ch++;
 
-  bool subnormal;
+  bool subnormal = false;
 
   if (ch[0] == '0' && (ch[1] == 'x' || ch[1] == 'X') &&
-      (ch[2] == '1' || (subnormal = ch[2] == '0')) && ch[3] == '.') {
+      (ch[2] == '1' || (subnormal = (ch[2] == '0'))) && ch[3] == '.') {
     ch += 4;
     uint64_t acc = 0;
     uint8_t digit;
