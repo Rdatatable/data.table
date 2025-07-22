@@ -117,7 +117,7 @@ x[i, on, nomatch]
 \____ secondary data.table
 ```
 
-Note: Please keep in mind that the standard argument order in `data.table` is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
+**Note**: Please keep in mind that the standard argument order in `data.table` is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
 
 ## 3. Equi joins
 
@@ -439,7 +439,7 @@ ProductReceived[ProductSales,
                 allow.cartesian = TRUE]
 ```
 
-Note: `allow.cartesian` is defaulted to FALSE as this is seldom what the user wants, and such a cross join can lead to a very large number of rows in the result. For example, if Table A has 100 rows and Table B has 50 rows, their Cartesian product would result in 5000 rows (100 * 50). This can quickly become memory-intensive for large datasets.
+**Note**: `allow.cartesian` is defaulted to FALSE as this is seldom what the user wants, and such a cross join can lead to a very large number of rows in the result. For example, if Table A has 100 rows and Table B has 50 rows, their Cartesian product would result in 5000 rows (100 * 50). This can quickly become memory-intensive for large datasets.
 
 
 #### 3.6.1. Selecting one match
