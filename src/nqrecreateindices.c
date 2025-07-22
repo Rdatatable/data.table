@@ -17,7 +17,7 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
   const int inomatch = isNull(nomatch) ? 0 : INTEGER(nomatch)[0];
   int *inewstarts = INTEGER(newstarts);
 
-  memset(inewlen, 0, n * sizeof(*inewlen));
+  for (int i = 0; i < n; i++) inewlen[i] = 0;
 
   // simplifying logic ... also fixes #2275
   for (int i = 0; i < length(indices); i++) {
