@@ -149,10 +149,10 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected) ## copy=TRUE: no shared columns
-      test(21 + (frac <- frac + 0.001), copied(ans, l))
-      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected) ## copy=FALSE: LHS shared but no RHS
-      test(21 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected, context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult)) ## copy=TRUE: no shared columns
+      test(21 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected, context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult)) ## copy=FALSE: LHS shared but no RHS
+      test(21 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-notcopied]", how, mult))
     }
   }
 })
@@ -174,13 +174,13 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(22 + (frac <- frac + 0.001), copied(ans, l))
-      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(22 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
       if (how == "full") {
-        test(22 + (frac <- frac + 0.001), copied(ans, l))
+        test(22 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       } else {
-        test(22 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+        test(22 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       }
     }
   }
@@ -203,13 +203,13 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(23 + (frac <- frac + 0.001), copied(ans, l))
-      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(23 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
       if (how == "inner") {
-        test(23 + (frac <- frac + 0.001), copied(ans, l))
+        test(23 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       } else {
-        test(23 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+        test(23 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       }
     }
   }
@@ -232,13 +232,13 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(24 + (frac <- frac + 0.001), copied(ans, l))
-      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(24 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
       if (how %in% c("inner", "full")) {
-        test(24 + (frac <- frac + 0.001), copied(ans, l))
+        test(24 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       } else {
-        test(24 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+        test(24 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       }
     }
   }
@@ -261,13 +261,13 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(25 + (frac <- frac + 0.001), copied(ans, l))
-      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(25 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
       if (how %in% c("inner", "full")) {
-        test(25 + (frac <- frac + 0.001), copied(ans, l))
+        test(25 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       } else {
-        test(25 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+        test(25 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       }
     }
   }
@@ -290,10 +290,10 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(26 + (frac <- frac + 0.001), copied(ans, l))
-      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(26 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(26 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
+      test(26 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-notcopied]", how, mult))
     }
   }
 })
@@ -315,10 +315,10 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(27 + (frac <- frac + 0.001), copied(ans, l))
-      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(27 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(27 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
+      test(27 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-notcopied]", how, mult))
     }
   }
 })
@@ -340,13 +340,13 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(28 + (frac <- frac + 0.001), copied(ans, l))
-      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(28 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
       if (how == "inner") {
-        test(28 + (frac <- frac + 0.001), copied(ans, l))
+        test(28 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       } else {
-        test(28 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+        test(28 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-copiedness]", how, mult))
       }
     }
   }
@@ -369,10 +369,10 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-      test(29 + (frac <- frac + 0.001), copied(ans, l))
-      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(29 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=TRUE]", how, mult))
+      test(29 + (frac <- frac + 0.001), copied(ans, l), context=sprintf("how=%s, mult=%s [check-copied]", how, mult))
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]], context=sprintf("how=%s, mult=%s [copy=FALSE]", how, mult))
+      test(29 + (frac <- frac + 0.001), notcopied(ans, l, how=how), context=sprintf("how=%s, mult=%s [check-notcopied]", how, mult))
     }
   }
 })
@@ -974,9 +974,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(221 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(221 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(221 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(221 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
@@ -1017,9 +1017,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(222 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(222 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(222 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(222 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
@@ -1060,9 +1060,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(223 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(223 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(223 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(223 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
@@ -1103,9 +1103,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(224 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(224 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(224 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(224 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
@@ -1146,9 +1146,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(225 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(225 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(225 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(225 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
@@ -1189,9 +1189,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(226 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(226 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(226 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(226 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
@@ -1232,9 +1232,9 @@ local({
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       if (is.null(expected[[how]][[mult]])) {
-        test(227 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+        test(227 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge", context=sprintf("how=%s, mult=%s", how, mult))
       } else {
-        test(227 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+        test(227 + (frac <- frac + 0.001), mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]], context=sprintf("how=%s, mult=%s", how, mult))
       }
     }
   }
