@@ -74,7 +74,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
-  split.data.table = data.table:::split.data.table
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -6852,11 +6851,12 @@ test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
 test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # shift incompatible types (e.g. Date and POSIXct)
-d = .Date(0:4)
+# TODO(R>=3.5): use .Date() instead of setting class by hand
+d = structure(0:4, class="Date")
 p = .POSIXct(1:5)
 test(1463.81, shift(d, fill=p[1L]), error="Filling Date with POSIXct .* unsupported.*")
 test(1463.82, shift(p, fill=d[1L]), error="Filling POSIXct with Date .* unsupported.*")
-test(1463.83, shift(d, fill=as.IDate(2000L)), .Date(c(2000L, 0:3)))
+test(1463.83, shift(d, fill=as.IDate(2000L)), structure(c(2000L, 0:3), class="Date"))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -9763,6 +9763,14 @@ test(1639.141, all(sapply(dtL, truelength) > 1000))
 dt <- data.table(x = factor("a"), y = 1)
 test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
 test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
+
+# retain a custom class after splitting, #7105
+DT = data.table(x=letters[1:10], y=1:10, z=rnorm(10))
+setattr(DT, "class", c("my_class", class(DT)))
+test(1639.144, "my_class" %in% unlist(lapply(split(DT, by="x"), class)))
+test(1639.145, "my_class" %in% unlist(lapply(split(DT, ~x), class)))
+test(1639.146, "my_class" %in% unlist(lapply(split(DT, by=c("x", "y")), class)))
+test(1639.147, "my_class" %in% unlist(lapply(split(DT, ~x+y), class)))
 rm_all()
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
@@ -14276,7 +14284,7 @@ test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2,
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
 test(1984.27, identical(shallow(DF), DF))  # shallow (which is not exported) works on DF from v1.14.2. identical() to force checking the selfref attribute for #5286.
-test(1984.28, split.data.table(DF), error='argument must be a data.table')
+# 1984.28 was a coverage test converted to 'nocov' of an internal_error instead
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
 setnames(DT, '.ll.tech.split')
@@ -15060,7 +15068,7 @@ if (test_bit64) {
   as.i64 = bit64::as.integer64
   test(2039.01, between(1:10, as.i64(3), as.i64(6)),  error="x is not integer64 but.*Please align classes")
   test(2039.02, between(1:10, 3, as.i64(6)),          error="x is not integer64 but.*Please align classes")
-  test(2039.03, between(as.i64(1:3), "2", as.i64(4)), error="x is integer64 but lower and/or upper are not")
+  test(2039.03, between(as.i64(1:3), "2", as.i64(4)), error="x is integer64 but lower is not.*Please align classes")
   old = options("datatable.verbose"=TRUE)
   x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
@@ -15087,6 +15095,10 @@ if (test_bit64) {
   test(2039.19, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   test(2039.20, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
   test(2039.21, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  # must not blindly read integer64 values as doubles when the latter fit into int32, #7164
+  test(2039.22, between(42L, structure(41., class="integer64"), structure(43., class="integer64")), error="x is not integer64 but.*Please align classes")
+  # must not blindly convert numeric bounds to integer64, #7164
+  test(2039.23, between(as.i64(42), 41, -2^98), error="x is integer64 but upper is not.*Please align classes")
   options(old)
 }
 
@@ -15578,6 +15590,11 @@ test(2060.154, fcoalesce(list(x)), x)
 test(2060.155, setcoalesce(list(x)), x)
 test(2060.156, setcoalesce(list(x,y,z)), ans)
 test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
+# nan parameter, #4567
+test(2060.158, fcoalesce(c(NA_real_, NaN), 0, nan=NA), c(0, 0))
+test(2060.159, fcoalesce(c(NA_real_, NaN), 0, nan=NaN), c(0, NaN))
+test(2060.160, fcoalesce(c(NA_real_, NaN), c(1, 2), nan=NA), c(1, 2))
+test(2060.161, fcoalesce(c(NA_real_, NaN), c(1, 2), nan=NaN), c(1, NaN))
 # factor of different levels
 x = factor(c('a','b',NA,NA,'b'))
 y = factor(c('b','b','a',NA,'b'))
@@ -21536,3 +21553,11 @@ f = tempfile()
 writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
 test(2334, names(fread(f)), "a")
 unlink(f)
+
+# Tests for new isoyear() helper (complement to isoweek) #7154
+test(2335.1, isoyear(as.IDate("2019-12-30")), 2020L)  # End of year edge case
+test(2335.2, isoyear(as.IDate("2016-01-01")), 2015L)  # Start of year edge case
+test(2335.3, isoyear(as.IDate("2023-08-15")), 2023L)  # Normal mid-year case
+test(2335.4, isoyear(as.IDate(c("2019-12-30", "2016-01-01", "2023-08-15"))),c(2020L, 2015L, 2023L))
+test(2335.5, isoyear("2019-12-30"), 2020L)
+test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
