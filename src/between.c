@@ -32,9 +32,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   // check before potential coercion which ignores methods, #7164
   if (INHERITS(x, char_integer64)) {
     if (!INHERITS(lower, char_integer64))
-      error(_("x is integer64 but %s is not."), "lower"); // e.g. between(int64, character, character)
+      error(_("x is integer64 but %s is not. Please align classes."), "lower"); // e.g. between(int64, character, character)
     if (!INHERITS(upper, char_integer64))
-      error(_("x is integer64 but %s is not."), "upper"); // e.g. between(int64, character, character)
+      error(_("x is integer64 but %s is not. Please align classes."), "upper"); // e.g. between(int64, character, character)
   } else {
     if (INHERITS(lower, char_integer64))
       error(_("x is not integer64 but %s is. Please align classes."), "lower");
