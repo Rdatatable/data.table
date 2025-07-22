@@ -927,10 +927,13 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   if (neg) ch++;
   else if (*ch == '+') ch++;
 
-  const bool subnormal = ch[2] == '0';
+  bool subnormal = false;
 
+  // Important!
+  // Keep in mind that only ch[0] is guaranteed to be mapped.
+  // Rearranging these checks (e.g. to make 'subnormal' const) will lead to segfaults in rare cases.
   if (ch[0] == '0' && (ch[1] == 'x' || ch[1] == 'X') &&
-      (ch[2] == '1' || (subnormal)) && ch[3] == '.') {
+      (ch[2] == '1' || (subnormal = (ch[2] == '0'))) && ch[3] == '.') {
     ch += 4;
     uint64_t acc = 0;
     uint8_t digit;
