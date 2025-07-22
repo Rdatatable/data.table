@@ -67,7 +67,7 @@
 
 14. `fcoalesce()` and `setcoalesce()` gain `nan` argument to control whether `NaN` values should be treated as missing (`nan=NA`, the default) or non-missing (`nan=NaN`), [#4567](https://github.com/Rdatatable/data.table/issues/4567). This provides full compatibility with `nafill()` behavior. Thanks to @ethanbsmith for the feature request and @Mukulyadav2004 for the implementation.
 
-15. New function `isoyear()` has been added as a complement to `isoweek()`, returning the year that corresponds to the ISO 8601 week. For example, `isoyear("2019-12-30")` is 2020. Closes [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the fix.
+15. New function `isoyear()` has been implemented as a complement to `isoweek()`, returning the ISO 8601 year corresponding to a given date. For example, `isoyear("2019-12-30")` returns 2020. [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
 ### BUG FIXES
 

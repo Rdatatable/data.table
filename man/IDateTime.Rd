@@ -288,15 +288,15 @@ round(seqtimes, "hours")
 trunc(seqtimes, "hours")
 
 # Examples for isoyear() and isoweek()
-d1 <- as.IDate("2019-12-30")
-year(d1)     # Returns 2019
-isoweek(d1)  # Returns 1
-isoyear(d1)  # Correctly returns 2020
+d1 = as.IDate("2019-12-30")
+year(d1)
+isoweek(d1)
+isoyear(d1)
 
-d2 <- as.IDate("2016-01-01")
-year(d2)     # Returns 2016
-isoweek(d2)  # Returns 53
-isoyear(d2)  # Correctly returns 2015
+d2 = as.IDate("2016-01-01")
+year(d2)
+isoweek(d2)
+isoyear(d2)
 
 }
 \keyword{utilities}
