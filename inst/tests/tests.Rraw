@@ -7594,7 +7594,7 @@ dt = data.table(x=1:5, y=6:10)
 test(1536, duplicated(dt, incomparables=TRUE), error = base_messages$not_yet_used('incomparables != FALSE'))
 
 # test for covering melt 100%
-test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
+test(1537, names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
 
 # test for tables()
 test(1538.1, tables(), output="Total:")
@@ -7899,20 +7899,20 @@ DT = data.table(int = 1:K,
                  bool = sample( c(TRUE, FALSE), K, replace = TRUE))
 
 DT_NA = DT
-for (j in seq_len( ncol(DT) )) {
+for (j in seq_len(ncol(DT))) {
   set(x = DT_NA, i = j, j = j, value = NA)
 }
 
-for(k in seq_along(nastrings)) {
+for (k in seq_along(nastrings)) {
   dt0 = copy(DT)
-  for (j in seq_len( ncol(DT) )) {
+  for (j in seq_len(ncol(DT))) {
     set(x = dt0, i = NULL, j = j, value = as.character(dt0[[j]]))
     set(x = dt0, i = j, j = j, value = nastrings[[k]])
   }
   str = do.call(paste, c(dt0, collapse="\n", sep=","))
   str = paste(paste(names(dt0), collapse=","), str, sep="\n")
   DT_fread = fread(str, na.strings = nastrings, verbose = FALSE)
-  test(1550 + k * 0.1, DT_fread, DT_NA)
+  test(1550 + k * 0.1, DT_fread, DT_NA, context=sprintf("nastrings=%s", nastrings[k]))
 }
 
 # FR #568
@@ -11371,7 +11371,7 @@ for (i in seq_len(nrow(dt))) {
          groupingsets(dt[i], j = lapply(.SD, sum), by = c("color", "year", "status"), sets=list(c("color", "year", "status"), "year", "status", character())),
          by=c("amount", "value")),
        1L,
-       context = sprintf("dt[%d]", i))
+       context=sprintf("dt[%d]", i))
 }
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
@@ -11616,7 +11616,7 @@ test(1762, DT[ , {}], NULL)
 # rbindlist empty items segfault, #2019
 x = list(list(a = 1), list(), list(a = 2))
 ans = data.table(id=c(1L,3L),a=c(1,2))
-for (i in 1:100) test(1763+i/1000, rbindlist(x, idcol="id"), ans)
+for (i in 1:100) test(1763+i/1000, rbindlist(x, idcol="id"), ans, context=sprintf("i=%d", i))
 
 # as.ITime(character(0)) used to fail, #2032
 test(1764.1, format(as.ITime(character(0))), character(0))
@@ -11989,8 +11989,8 @@ for (mul in c(16, 128, 512, 1024, 2048)) {
   cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
   close(ff)
   DT = data.table(V1=rep(1234L, mul), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=4L)
-  test(1801 + log2(mul)/100 + 0.001, file.info(f)$size, mul*32)
-  test(1801 + log2(mul)/100 + 0.002, fread(f), DT)
+  test(1801 + log2(mul)/100 + 0.001, file.info(f)$size, mul*32, context=sprintf("mul=%d [file size]", mul))
+  test(1801 + log2(mul)/100 + 0.002, fread(f), DT, context=sprintf("mul=%d [fread]", mul))
 }
 # Test without the newline
 ff = file(f<-tempfile(), open="wb")
@@ -12444,7 +12444,7 @@ DTs = list(                                      # passed fread(fwrite(DT))==DT 
 f = tempfile()
 for (i in seq_along(DTs)) {
   fwrite(DTs[[i]], file=f)
-  test(1857.0 + i/100, fread(f), DTs[[i]])
+  test(1857.0 + i/100, fread(f), DTs[[i]], context=sprintf("%d", i))
 }
 unlink(f)
 
@@ -12624,7 +12624,7 @@ test(1871.13, fread("A\n100\n200", verbose=TRUE), data.table(A=c(100L,200L)), ou
 test(1871.14, fread("col1, col2, col3\n1, 2, 3\n3, 5, 6\n7, 8, 9\n\nsome text to ignore", nrows = 3L), data.table(col1=INT(1,3,7), col2=INT(2,5,8), col3=INT(3,6,9)))  # from #1671 (no warning expected)
 for (i in 100:1) {
   lines <- paste(c(rep("2,3,4",i), "2,3"), collapse='\n')
-  test(1871.2 + (100-i)/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L))
+  test(1871.2 + (100-i)/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L), context=sprintf("i=%d", i))
 }
 
 # miscellaneous missing tests uncovered by CodeCov difference in the process of PR #2573
@@ -13084,7 +13084,7 @@ test(1913.10, all(names(M) %in% union(names(M), names(m))))
 test_no = 0L
 for (name in names(m)) {
   test_no = test_no + 1L
-  test(1913.11 + test_no*0.0001, M[[name]], m[[name]])
+  test(1913.11 + test_no*0.0001, M[[name]], m[[name]], context=sprintf("name=%s", name))
 }
 #
 # Original example that smoked out the bug
@@ -13102,7 +13102,7 @@ test(1913.13, all(names(M) %in% union(names(M), names(m))))
 test_no = 0L
 for (name in names(m)) {
   test_no = test_no + 1L
-  test(1913.14 + test_no*0.0001, M[[name]], m[[name]])
+  test(1913.14 + test_no*0.0001, M[[name]], m[[name]], context=sprintf("name=%s", name))
 }
 #
 # simple subset maintains keys
@@ -13140,7 +13140,7 @@ test(1913.23, is.null(key(t2)))  # transforming a key column nukes the key
 test_no = 0L
 for (col in c('b', 'c')) {
   test_no = test_no + 1L
-  test(1913.24 + test_no*0.0001, t2[[col]], dt[[col]])  # mutating-key-transform maintains other columns
+  test(1913.24 + test_no*0.0001, t2[[col]], dt[[col]], context=sprintf("col=%s", col))  # mutating-key-transform maintains other columns
 }
 
 # Test 1914 of S4 compatibility was moved to S4.Rraw for #3808
@@ -13513,7 +13513,7 @@ eols = c("\n", "\r\n", "\r", "\n\r")
 for (i in 1:4) {
   eol = eols[i]
   src = paste(c("A", "B", "...", ",,,,,", "c1,c2,c3", "1,2,3"), collapse=eol)
-  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L))
+  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L), context=sprintf("i=%d", i))
 }
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
@@ -14872,17 +14872,17 @@ f = tempfile()
 for (nNUL in 0:3) {
   writeBin(c(charToRaw("a=b\nA  B  C\n1  3  5\n"), rep(as.raw(0), nNUL), charToRaw("2  4  6\n")), con=f)
   num_major = (1+nNUL)/10
-  test(2025 + num_major + .01, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
-  test(2025 + num_major + .02, fread(f), ans)  # auto detect skip and header works too
+  test(2025 + num_major + .01, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6), context=sprintf("nNul=%d [I]", nNul))
+  test(2025 + num_major + .02, fread(f), ans, context=sprintf("nNul=%d [II]", nNul))  # auto detect skip and header works too
   writeBin(c(charToRaw("a=b\nA,B,C\n1,3,5\n"), rep(as.raw(0), nNUL), charToRaw("2,4,6\n")), con=f)
-  test(2025 + num_major + .03, fread(f, skip=1, header=TRUE), ans)
-  test(2025 + num_major + .04, fread(f), ans)
+  test(2025 + num_major + .03, fread(f, skip=1, header=TRUE), ans, context=sprintf("nNul=%d [III]", nNul))
+  test(2025 + num_major + .04, fread(f), ans, context=sprintf("nNul=%d [IV]", nNul))
   writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A  B  C\n1  3  5\n2  4  6\n")), con=f)
-  test(2025 + num_major + .05, fread(f, skip=1, header=TRUE), ans)
-  test(2025 + num_major + .06, fread(f), ans)
+  test(2025 + num_major + .05, fread(f, skip=1, header=TRUE), ans, context=sprintf("nNul=%d [V]", nNul))
+  test(2025 + num_major + .06, fread(f), ans, context=sprintf("nNul=%d [VI]", nNul))
   writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A,B,C\n1,3,5\n2,4,6\n")), con=f)
-  test(2025 + num_major + .07, fread(f, skip=1, header=TRUE), ans)
-  test(2025 + num_major + .08, fread(f), ans)
+  test(2025 + num_major + .07, fread(f, skip=1, header=TRUE), ans, context=sprintf("nNul=%d [VII]", nNul))
+  test(2025 + num_major + .08, fread(f), ans, context=sprintf("nNul=%d [VIII]", nNul))
 }
 makeNul = function(str){ tt=charToRaw(str); tt[tt==42L]=as.raw(0); writeBin(tt, con=f)}  # "*" (42) represents NUL
 makeNul("A,B,C\n1,foo,5\n2,*bar**,6\n")
@@ -17148,8 +17148,8 @@ DT = data.table(A=INT(1,1,2,3,3,4,5,5,6,7),
                 B=lapply(1:10, function(x) structure(rnorm(90), foo=c(42,12,36))))
 for (i in 0:4) test(2155+i/10,
   { gctorture2(step=20); ans=DT[, .(attr(B[[1L]],"foo")[1L]), by=A]; gctorture2(step=0); gc(); ans },
-  data.table(A=1:7, V1=42)
-)
+  data.table(A=1:7, V1=42),
+  context=sprintf("i=%d", i))
 
 # dogroups.c eval(j) could create list columns containing altrep references to the specials, #4759
 # thanks to revdep testing of 1.13.2 where package tstools revealed this via ts() creating ALTREP, #4758
@@ -17791,27 +17791,36 @@ test(2210.26, DT[-c(1L,0L), nomatch=0], data.table(x=2:4), warning="Please use n
 # NA in i would segfault gforce, #1994
 DT = data.table(a=1L, b=2, c="a", grp=1L)
 i = c(1L,NA,NA,NA)   # 3 NA to trigger segfault in var (min 3 obs) otherwise just c(1L,NA) is enough to trigger the others
-funs = c("sum","mean","var","sd","median","prod","min","max","`[`","first","last","head","tail")
+funs = list(
+  supports_na_rm = list(
+    no_character = c("sum", "mean", "var", "sd", "median", "prod"),
+    supports_character = c("min", "max")),
+  needs_index = c("`[`", "first", "last", "head", "tail")
+)
+n_numeric_only = length(funs$supports_na_rm$no_character)
+n_supporting_na_rm = sum(lengths(funs$supports_na_rm))
+funs = unlist(funs)
 EVAL = function(...) {
   e = paste0(...)
-  # cat(e,"\n")  # uncomment to check the queries tested
   eval(parse(text=e))
 }
 testnum = 0L
-for (col in c("a","b","c")) {
+for (col in c("a", "b", "c")) {
   testnum = testnum + 100L
   for (fi in seq_along(funs)) {
-    if (col=="c" && fi<=6L) next  # first 6 funs don't support type character
+    if (col == "c" && fi <= n_numeric_only) next
     f = funs[fi]
     testnum = testnum + 1L
     test(2211.0 + testnum*0.001,
-         EVAL("DT[i,   ",f,"(",col, if(fi>8L)", 1L","), by=grp]"),  # segfault before when NA in i
-         EVAL("DT[i][, ",f,"(",col, if(fi>8L)", 1L","), by=grp]"))  # ok before by taking DT[i] subset first
-    if (fi<=8L) {
+         EVAL("DT[i,   ",f,"(",col, if(fi > n_supporting_na_rm)", 1L","), by=grp]"),  # segfault before when NA in i
+         EVAL("DT[i][, ",f,"(",col, if(fi > n_supporting_na_rm)", 1L","), by=grp]"),  # ok before by taking DT[i] subset first
+         context=sprintf("col=%s, f=%s", col, f))
+    if (fi <= n_supporting_na_rm) {
       testnum = testnum + 1L
       test(2211.0 + testnum*0.001,
            EVAL("DT[i,   ",f,"(",col,", na.rm=TRUE), by=grp]"),
-           EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"))
+           EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"),
+           context=sprintf("col=%s, f=%s [na.rm=TRUE]", col, f))
     }
   }
 }
