@@ -2687,11 +2687,11 @@ for (ne in seq_along(eols)) {
   # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
   num_major = nr/100 + nc/1000 + ne/10000
   # if (isTRUE(all.equal(testIDtail, 0.4103))) browser()
-  test(894+num_major+0.00001, fread(f,na.strings=""), headDT)
-  cat(eol,file=f,append=TRUE)                     # now a normal file properly ending with final \n
-  test(894+num_major+0.00002, fread(f,na.strings=""), headDT)
-  cat(eol,file=f,append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
-  test(894+num_major+0.00003, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
+  test(894 + num_major + 0.00001, fread(f, na.strings=""), headDT, context=sprintf("nr=%d, nc=%d, ne=%d [I]", nr, nc, ne))
+  cat(eol, file=f, append=TRUE)                     # now a normal file properly ending with final \n
+  test(894 + num_major + 0.00002, fread(f, na.strings=""), headDT, context=sprintf("nr=%d, nc=%d, ne=%d [II]", nr, nc, ne))
+  cat(eol, file=f, append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
+  test(894 + num_major + 0.00003, fread(f, na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT, context=sprintf("nr=%d, nc=%d, ne=%d [III]", nr, nc, ne))
   unlink(f)
 }}}
 if (test_bit64) {
@@ -4462,13 +4462,13 @@ old_rounding = getNumericRounding()
 DT = data.table(A=c(1,2,-Inf,+Inf,3,-1.1,NaN,NA,3.14,NaN,2.8,NA), B=1:12, key="A")
 for (i in 0:1) {  # tests 1207 & 1208
   setNumericRounding(if (i==0L) 0L else 2L)
-  test(1207+i+0.1, DT[.(c(NA_real_,Inf)),B], INT(8,12,4))
-  test(1207+i+0.2, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
-  test(1207+i+0.3, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
-  test(1207+i+0.4, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
-  test(1207+i+0.5, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4))
-  test(1207+i+0.6, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
-  test(1207+i+0.7, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
+  test(1207 + i + 0.1, DT[.(c(NA_real_,Inf)), B], INT(8, 12, 4), context=sprintf("setNumericRounding(%d) [I]", 2*i))
+  test(1207 + i + 0.2, DT[.(c(Inf,NA_real_)), B], INT(4, 8, 12), context=sprintf("setNumericRounding(%d) [II]", 2*i))
+  test(1207 + i + 0.3, DT[.(c(NaN,NA_real_)), B], INT(7, 10, 8, 12), context=sprintf("setNumericRounding(%d) [III]", 2*i))
+  test(1207 + i + 0.4, DT[.(c(NA_real_,NaN)), B], INT(8, 12, 7, 10), context=sprintf("setNumericRounding(%d) [IV]", 2*i))
+  test(1207 + i + 0.5, DT[, sum(B), by=A]$V1, INT(20, 17, 3, 6, 1, 2, 11, 5, 9, 4), context=sprintf("setNumericRounding(%d) [V]", 2*i))
+  test(1207 + i + 0.6, DT[, sum(B), by=list(g=abs(trunc(A)))], data.table(g=c(NA, NaN, Inf, 1, 2, 3), V1=INT(20, 17, 7, 7, 13, 14)), context=sprintf("setNumericRounding(%d) [VI]", 2*i))
+  test(1207 + i + 0.7, DT[, sum(B), keyby=list(g=abs(trunc(A)))], data.table(g=c(NA, NaN, 1, 2, 3, Inf), V1=INT(20, 17, 7, 13, 14, 7), key="g"), context=sprintf("setNumericRounding(%d) [VII]", 2*i))
   # test(1207+i+0.8, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 }
 setNumericRounding(old_rounding)
@@ -4537,7 +4537,7 @@ seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 test_no = 0L
 oldnfail = nfail
 for (nvars in seq_along(names(DT))) {
-  signs = expand.grid(replicate(nvars, c(-1L,1L), simplify=FALSE))
+  signs = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
   combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
       test_no <<- test_no + 1L
@@ -4555,7 +4555,7 @@ for (nvars in seq_along(names(DT))) {
           }
         })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)), context=sprintf("signs[%d, ]==%s", i, paste(unlist(signs[i, ]), collapse=",")))
     }
     integer()
   })
@@ -4679,10 +4679,10 @@ for (i in seq_along(names(DT))) {
   cc = combn(names(DT), i)
   apply(cc, 2L, function(jj) {
     test_no <<- test_no + 1L # first without key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
     test_no <<- test_no + 1L
     setkeyv(DT, jj) # with key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
   })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4702,10 +4702,10 @@ for (i in seq_along(names(DT))) {
   cc = combn(names(DT), i)
   apply(cc, 2L, function(jj) {
     test_no <<- test_no + 1L # first without key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
     test_no <<- test_no + 1L
     setkeyv(DT, jj) # with key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
   })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4801,22 +4801,23 @@ for (i in seq_along(names(DT))) {
         as.name("base_order"),
         method = "radix",
         lapply(seq_along(x), function(j) {
+          x_nm = as.name(x[j])
           if (y[j] == 1L)
-            as.name(x[j])
+            x_nm
           else {
             if (is.character(DT[[x[j]]]))
-              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
+              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), x_nm))))
             else
-              as.call(list(as.name("-"), as.name(x[j])))
+              as.call(list(as.name("-"), x_nm))
           }
         })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
     })
     dim(tmp)=NULL
     list(tmp)
@@ -4942,12 +4943,12 @@ setNumericRounding(old_rounding)
 # http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
 old_rounding = getNumericRounding()
 test_no = 0L
-for (dround in c(0,2)) {
+for (dround in c(0, 2)) {
   setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
-  for (i in c(-30:-1,1:30)) {
-    DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
+  for (i in c(-30:-1, 1:30)) {
+    DT = data.table(c(1 * (10^i), 2, 9999, -1, 0, 1))
     test_no = test_no + 1L
-    test(1278.0 + test_no*0.001, nrow(DT[, .N, by=V1]), 6L)
+    test(1278.0 + test_no*0.001, nrow(DT[, .N, by=V1]), 6L, context=sprintf("dround=%d, i=%d", dround, i))
   }
 }
 setNumericRounding(old_rounding)
@@ -5781,9 +5782,9 @@ for (i in seq_along(dt)) {
       r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
 
       test_no = test_no + 1L
-      test(1368.0 + test_no*0.0001, r1, r3)
+      test(1368.0 + test_no*0.0001, r1, r3, context=sprintf("i=%d, j=%s, k=%s [asc]", i, j, k))
       test_no = test_no + 1L
-      test(1368.0 + test_no*0.0001, r2, r4)
+      test(1368.0 + test_no*0.0001, r2, r4, context=sprintf("i=%d, j=%s, k=%s [desc]", i, j, k))
     }
   }
 }
@@ -5813,9 +5814,9 @@ for (i in seq_along(dt)) {
     r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
 
     test_no = test_no + 1L
-    test(1369.0 + test_no*0.0001, r1, r3)
+    test(1369.0 + test_no*0.0001, r1, r3, context=sprintf("i=%d, k=%s [asc]", i, k))
     test_no = test_no + 1L
-    test(1369.0 + test_no*0.0001, r2, r4)
+    test(1369.0 + test_no*0.0001, r2, r4, context=sprintf("i=%d, k=%s [desc]", i, k))
   }
 }
 
@@ -5838,13 +5839,13 @@ for (i in seq_along(dt)) {
     ans1 = is_na(dt[cols])
     ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
     test_no <<- test_no + 1L
-    test(1370.0 + test_no*0.0001, ans1, ans2)
+    test(1370.0 + test_no*0.0001, ans1, ans2, context=sprintf("cols=%s [is_na]", paste(cols, collapse=",")))
 
     # update: tests for any_na
     test_no <<- test_no + 1L
-    test(1370.0 + test_no*0.0001, any_na(dt[cols]), TRUE)
+    test(1370.0 + test_no*0.0001, any_na(dt[cols]), context=sprintf("cols=%s [any_na]", paste(cols, collapse=",")))
     test_no <<- test_no + 1L
-    test(1370.0 + test_no*0.0001, any_na(ans[cols]), FALSE)
+    test(1370.0 + test_no*0.0001, !any_na(ans[cols]), context=sprintf("cols=%s [!any_na]", paste(cols, collapse=",")))
     TRUE
   })
 }
@@ -5971,7 +5972,7 @@ for (run in seq_len(times)) {
       # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
       idx = paste(type, mult, run, sep="_")
       # ans[[idx]] contains fo(gr(i), gr(x), type=type, select=mult)
-      test(1372.0 + test_no*0.01, thisans, ans[[idx]])
+      test(1372.0 + test_no*0.01, thisans, ans[[idx]], context=sprintf("run=%d, type=%s, mult=%s", run, type, mult"))
       this = this+1L
     }
   }
@@ -6197,7 +6198,7 @@ for (i in seq_along(DT)) {
     ans1 = na.omit(DT, cols=cols)
     ans2 = DT[stats::complete.cases(DT[, cols, with=FALSE])]
     test_no <<- test_no + 1L
-    test(1394.0 + test_no*0.001, ans1, ans2)
+    test(1394.0 + test_no*0.001, ans1, ans2, context=sprintf("cols=%s", paste(cols, collapse=",")))
     0L
   })
 }
@@ -6566,7 +6567,7 @@ bys <- c("groupCol", "sortedGroupCol", character(0))
 test_no <- 1438.0000
 if (.Machine$sizeof.pointer>4) {  # temporarily disabled for 32bit, #2767
 
-for(t in seq_len(nrow(all))){
+for (t in seq_len(nrow(all))) {
   ## test the query with missing j
   thisQuery <- all$query[t]
   options("datatable.optimize" = 3L)
@@ -6574,24 +6575,24 @@ for(t in seq_len(nrow(all))){
   options("datatable.optimize" = 2L)
   ansRef <- DT[eval(parse(text = thisQuery))]
   test_no <- test_no + 1L
-  test(1438.0 + test_no*0.0001, ansOpt, ansRef)
+  test(1438.0 + test_no*0.0001, ansOpt, ansRef, context=sprintf("t=%d [I]", t))
   ## repeat the test with 'which = TRUE'
   options("datatable.optimize" = 3L)
   ansOpt <- DT[eval(parse(text = thisQuery)), which = TRUE]
   options("datatable.optimize" = 2L)
   ansRef <- DT[eval(parse(text = thisQuery)), which = TRUE]
   test_no <- test_no + 1L
-  test(1438.0 + test_no*0.0001, ansOpt, ansRef)
+  test(1438.0 + test_no*0.0001, ansOpt, ansRef, context=sprintf("t=%d [II]", t))
   ## repeat the test with the j queries
-  for(thisJquery in jQueries) {
+  for (thisJquery in jQueries) {
     ## do it with and without existing "by"
-    for(thisBy in bys){
+    for (thisBy in bys) {
       options("datatable.optimize" = 3L)
       ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
       options("datatable.optimize" = 2L)
       ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
       test_no <- test_no + 1L
-      test(1438.0 + test_no*0.0001, ansOpt, ansRef)
+      test(1438.0 + test_no*0.0001, ansOpt, ansRef, context=sprintf("t=%d, thisJquery=%s, thisBy=%s", t, thisJquery, thisBy))
     }
   }
 }
@@ -6890,12 +6891,12 @@ test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
 # fix for #1001, #1002 and #759
 # When adding a column, even if i results in no rows, the RHS needs to evaluate so we can know the
 # column type to create. Always create the column for consistency that does not depend on the data in i
-for (bool in c(FALSE,TRUE)) {
+for (bool in c(FALSE, TRUE)) {
   options(datatable.auto.index=bool)
   DT = data.table(a=1:2)
-  test(1467.01 + bool*0.03, copy(DT)[a==3, b:=notExist+1], error="notExist")
-  test(1467.02 + bool*0.03, copy(DT)[a==3, b:=a+5L], data.table(a=1:2, b=NA_integer_))
-  test(1467.03 + bool*0.03, copy(DT)[a==3, b:=a+5], data.table(a=1:2, b=NA_real_))
+  test(1467.01 + bool*0.03, copy(DT)[a==3, b:=notExist+1], error="notExist", context=sprintf("bool=%s [I]", bool))
+  test(1467.02 + bool*0.03, copy(DT)[a==3, b:=a+5L], data.table(a=1:2, b=NA_integer_), context=sprintf("bool=%s [II]", bool))
+  test(1467.03 + bool*0.03, copy(DT)[a==3, b:=a+5], data.table(a=1:2, b=NA_real_), context=sprintf("bool=%s [III]", bool))
 }
 test(1467.07, getOption("datatable.auto.index"))  # ensure to leave TRUE
 
@@ -11365,9 +11366,12 @@ test(1750.07, # 0 length `by`, must also use `sets=list()`, so 0L rows result
 # for any single value from dataset there should be always be the same aggregate result on any level of grouping
 # changed from all(sapply()) to for() to save ram, #5517
 for (i in seq_len(nrow(dt))) {
-  test(1750.08+i/10000, uniqueN(
-    groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
-    by=c("amount","value")) == 1L)
+  test(1750.08 + i/10000,
+       uniqueN(
+         groupingsets(dt[i], j = lapply(.SD, sum), by = c("color", "year", "status"), sets=list(c("color", "year", "status"), "year", "status", character())),
+         by=c("amount", "value")),
+       1L,
+       context = sprintf("dt[%d]", i))
 }
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
