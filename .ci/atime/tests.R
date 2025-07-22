@@ -298,8 +298,8 @@ test.list <- atime::atime_test_list(
       data.table::tables(env = test_env, silent = TRUE, index = TRUE);
       NULL
     },
-    before = "2b191aec3df51675a7ab5e6701384a8b89470af6",  # The merge-base parent commit for PR #2606
-    after =  "66024e6ea5304ae059b18c71de9973715ddb77ce"), # The final commit of PR #2606
+    before = "7c59daaed1836db57747d92494b1ce96612bbf80",  # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/7c59daaed1836db57747d92494b1ce96612bbf80)
+    after =  "6fee38c89200e10dcc10a6f2057ab784f9a011e7"), # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7141/commits)
 
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
