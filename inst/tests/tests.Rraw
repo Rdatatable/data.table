@@ -7131,6 +7131,11 @@ dt3 <- merge(dt1, dt2, by="x")
 test(1483.81, key(dt3), "x")
 test(1483.82, nrow(dt3[x %in% "c", ]), 2L)
 
+# avoid regression of roll='nearest' join of int->double, #7146
+DT1 <- data.table(a=1L, key='a')
+DT2 <- data.table(a=2.0, key='a')
+test(1483.83, DT1[DT2, roll='nearest'], data.table(a=2L, key='a'))
+
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
 # Then PR#3471 moved logic from data.table() into as.data.table.list() and now removes NULL items up front, so longer need for the branch
