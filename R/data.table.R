@@ -2047,8 +2047,9 @@ replace_dot_alias = function(e) {
   if (!.Call(CisOrderedSubset, irows, nrow(x)))
     return(NULL)
 
-  # see #1010. don't set key when i has no key, but irows is ordered and !roll
-  if (roll && length(irows) != 1L)
+  # see #1010. don't set key when i has no key, but irows is ordered and isFALSE(roll)
+  #   NB: roll could still be a string like 'nearest', #7146
+  if (!is.character(roll) && roll && length(irows) != 1L)
     return(NULL)
 
   new_key <- head(x_key, key_length)
@@ -2491,7 +2492,7 @@ Ops.data.table = function(e1, e2 = NULL)
 }
 
 split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TRUE, flatten = TRUE, ..., verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(x)) stopf("x argument must be a data.table")
+  if (!is.data.table(x)) internal_error("x argument to split.data.table must be a data.table") # nocov
   stopifnot(is.logical(drop), is.logical(sorted), is.logical(keep.by),  is.logical(flatten))
   # split data.frame way, using `f` and not `by` argument
   if (!missing(f)) {
@@ -2566,8 +2567,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
-    for (x in ll) .Call(C_unlock, x)
-    lapply(ll, setDT)
+    for (xi in ll) .Call(C_unlock, xi)
+    out = lapply(ll, setDT)
+    # TODO(#2000): just let setDT handle this
+    if (!identical(old_class <- class(x), c("data.table", "data.frame"))) for (xi in out) setattr(xi, "class", old_class)
+    out
     # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
   } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
