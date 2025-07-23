@@ -2153,9 +2153,8 @@ int freadMain(freadMainArgs _args)
       DTPRINT(_("  Initial alloc = %"PRId64" rows (%"PRId64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
               allocnrow, estnrow, (int)(100.0 * allocnrow / estnrow - 100.0));
       DTPRINT("  =====\n"); // # notranslate
-    } else {
-      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRId64") > allocnrow(%"PRId64")", sampleLines, allocnrow); // # nocov
     }
+    if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRId64") > allocnrow(%"PRId64")", sampleLines, allocnrow); // # nocov
   }
   if (nrowLimit < allocnrow) {
     if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRId64" passed in.\n"), nrowLimit);
