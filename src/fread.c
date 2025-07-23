@@ -200,7 +200,7 @@ static inline   int iminInt(     int a,      int b) { return a < b ? a : b; }
 /** Return value of `x` clamped to the range [upper, lower] */
 static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper)
 {
-  return x < lower ? lower : x > upper? upper : x;
+  return x < lower ? lower : x > upper ? upper : x;
 }
 
 
@@ -2363,10 +2363,8 @@ int freadMain(freadMainArgs _args)
         .threadn = me,
         .quoteRule = quoteRule,
         .stopTeam = &stopTeam,
-        #ifndef DTPY
         .nStringCols = nStringCols,
         .nNonStringCols = nNonStringCols
-        #endif
       };
       if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
         stopTeam = true;
