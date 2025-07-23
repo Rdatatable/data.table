@@ -87,7 +87,7 @@
 
 8. A data.table with a column of class `vctrs_list_of` (from package {vctrs}) prints as expected, [#5948](https://github.com/Rdatatable/data.table/issues/5948). Before, they could be printed messily, e.g. printing every entry in a nested data.frame. Thanks @jesse-smith for the report, @DavisVaughan and @r2evans for contributing, and @MichaelChirico for the PR.
 
-9.  Fixed incorrect sorting of merges where the first column of a key is a factor with non-`sort()`-ed levels (e.g. `factor(1:2, 2:1)` and it is joined to a character column, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
+9. Fixed incorrect sorting of merges where the first column of a key is a factor with non-`sort()`-ed levels (e.g. `factor(1:2, 2:1)` and it is joined to a character column, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report, Benjamin Schwendinger for the fix, and @MichaelChirico for a follow-up fix caught by revdep testing.
 
 10. Spurious warnings from internal code in `cube()`, `rollup()`, and `groupingsets()` are no longer surfaced to the caller, [#6964](https://github.com/Rdatatable/data.table/issues/6964). Thanks @ferenci-tamas for the report and @venom1204 for the fix.
  
@@ -121,6 +121,8 @@
 4. The default `format_list_item()` method (and hence `print.data.table()`) annotates truncated list items with their length, [#605](https://github.com/Rdatatable/data.table/issues/605). Thanks Matt Dowle for the original report (2012!) and @MichaelChirico for the fix.
 
 5. A GitHub Actions workflow is now in place to warn the entire maintainer team, as well as any contributor following the GitHub repository, when the package is at risk of archival on CRAN [#7008](https://github.com/Rdatatable/data.table/issues/7008). Thanks @tdhock for the original report and @Bisaloo and @TysonStanley for the fix.
+
+6. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 

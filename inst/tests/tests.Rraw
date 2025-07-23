@@ -1621,9 +1621,9 @@ test(514, x %chin% y, x %in% y)
 
 # Test new function set() in v1.8.0
 DT = data.table(a=1:3,b=4:6)
-test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6), warning=c("Coerced i from numeric to integer","Coerced j from numeric to integer"))
+test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6))
 test(516, set(DT,"2",1,3), error="i is type 'character'")
-test(517, set(DT,2L,1,3), DT, warning="Coerced j")
+test(517, options=c(datatable.verbose=TRUE), set(DT,2,1,3), DT, output="Coerced i.*Coerced j")
 # FR #2551 implemented - removed warning from 518
 # test(518, set(DT,2L,1L,3), DT, warning="Coerced 'double' RHS to 'integer'")
 test(518, set(DT,2L,1L,3), DT)
@@ -7130,6 +7130,11 @@ dt2 <- data.table(x = factor(some_more_letters, levels=some_letters), z=1:6, key
 dt3 <- merge(dt1, dt2, by="x")
 test(1483.81, key(dt3), "x")
 test(1483.82, nrow(dt3[x %in% "c", ]), 2L)
+
+# avoid regression of roll='nearest' join of int->double, #7146
+DT1 <- data.table(a=1L, key='a')
+DT2 <- data.table(a=2.0, key='a')
+test(1483.83, DT1[DT2, roll='nearest'], data.table(a=2L, key='a'))
 
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
