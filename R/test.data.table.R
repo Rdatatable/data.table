@@ -205,14 +205,14 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   # nocov end
 
-  warnings = list()
+  env$warnings = list()
   err = try(
     withCallingHandlers(
       sys.source(fn, envir=env),
       warning=function(w) {
         # nocov start
         if (!silent && showProgress) print(w)
-        warnings <<- c(warnings, list(list(env$prevtest, toString(w))))
+        env$warnings = c(env$warnings, list(list(env$prevtest, toString(w))))
         invokeRestart("muffleWarning")
         # nocov end
       }
@@ -275,9 +275,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
   }
-  if (length(warnings)) {
+  if (length(env$warnings)) {
     # nocov start
-    warnings = rbindlist(warnings)
+    warnings = rbindlist(env$warnings)
     setnames(warnings, c("after test", "warning"))
     catf(
       ngettext(length(warnings),
