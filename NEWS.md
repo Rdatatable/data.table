@@ -101,6 +101,8 @@
 
 15. `split.data.table()` output list elements retain the S3 class of the generating data.table, e.g. in `l=split(x, ...)` if `x` has class `my_class`, so will `l[[1]]` and so on, [#7105](https://github.com/Rdatatable/data.table/issues/7105). Thanks @m-muecke for the bug report and @MichaelChirico for the fix.
 
+16. `between()` is now more robust with `integer64` arguments. Combining small integer `x` with certain large `integer64` bounds no longer misinterprets the bounds as `double`; if a `double` bound cannot be losslessly converted into `integer64` for comparison with `integer64` `x`, an error is signalled instead of returning a wrong answer with a warning; [#7164](https://github.com/Rdatatable/data.table/issues/7164). Thanks @aitap for the bug report and the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
