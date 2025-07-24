@@ -284,7 +284,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
         "Caught %d warning outside the test() calls:\n",
         "Caught %d warnings outside the test() calls:\n"
       ),
-      length(warnings)
+      nrow(warnings)
     )
     print(warnings)
     stopf("Tests succeeded, but non-test code caused warnings. Search %s for tests shown above.", names(fn))
