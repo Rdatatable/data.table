@@ -78,12 +78,12 @@ const char typeName[NUMTYPE][10] = { "drop", "bool8", "bool8", "bool8", "bool8",
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
-// So we assign them through below init function.
+// So we assign them through below init_const_literals function.
 static double NAND;
 static double INFD;
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-static void init(void)
+static void init_const_literals(void)
 {
   NAND = (double)NAN;
   INFD = (double)INFINITY;
@@ -829,7 +829,7 @@ static void parse_double_regular(FieldParseContext *ctx)
  */
 static void parse_double_extended(FieldParseContext *ctx)
 {
-  init();
+  init_const_literals();
 
   double* target = ctx->targets[sizeof(double)];
   const char *ch = *ctx->ch;
@@ -916,7 +916,7 @@ static void parse_double_extended(FieldParseContext *ctx)
  */
 static void parse_double_hexadecimal(FieldParseContext *ctx)
 {
-  init();
+  init_const_literals();
 
   const char *ch = *ctx->ch;
   double *target = ctx->targets[sizeof(double)];
