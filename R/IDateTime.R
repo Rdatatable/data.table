@@ -91,6 +91,8 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
           years = ISOdate(year(x), 1L, 1L)))
 }
 
+chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
+
 #Adapted from `+.Date`
 `+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
@@ -115,7 +117,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (storage.mode(e1) != "integer")
     internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stopf("unary - is not defined for \"IDate\" objects")
+    stopf('unary - is not defined for "IDate" objects')
   if (inherits(e2, "difftime"))
     internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
