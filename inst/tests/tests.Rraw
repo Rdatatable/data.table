@@ -10342,7 +10342,7 @@ test(1673.1, TT + 4L, as.IDate("2016-04-29"))
 test(1673.2, TT + 4, as.IDate("2016-04-29"))
 test(1673.3, TT - 3, as.IDate("2016-04-22"))
 test(1673.4, TT - 3L, as.IDate("2016-04-22"))
-test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
+test(1673.5, all.equal(as.IDate("2016-04-28") - as.IDate("2016-04-20"), as.difftime(8, units='days')))
 
 
 # test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
