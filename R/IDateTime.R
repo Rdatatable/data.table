@@ -129,7 +129,8 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
     # ii) .Date was newly exposed in R some time after 3.4.4
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
+  setattr(ans, "class", "difftime")
+  setattr(ans, "units", "days")
   ans
 }
 
