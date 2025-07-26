@@ -290,7 +290,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     warnings = rbindlist(env$warnings)
     setnames(warnings, c("after test", "warning", "calls"))
     catf(
-      ngettext(length(warnings),
+      ngettext(nrow(warnings),
         "Caught %d warning outside the test() calls:\n",
         "Caught %d warnings outside the test() calls:\n"
       ),
