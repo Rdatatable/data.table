@@ -18615,12 +18615,17 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters # 5096
-local({
+local(if (l10n_info()$`UTF-8` || {
   lc_ctype = Sys.getlocale('LC_CTYPE')
+  lc_wantctype = 'en_US.UTF-8'
   # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
   # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
-  if (!l10n_info()$`UTF-8`) Sys.setlocale('LC_CTYPE', "en_US.UTF-8")
-  on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+  lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
+  if (identical(lc_newctype, lc_wantctype)) {
+    on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+    TRUE
+  } else FALSE
+}) {
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -18670,6 +18675,8 @@ local({
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
   # test for data.table with NA, #6441
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
+} else {
+  cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 })
 
 # allow 1-D matrix in j for consistency, #783
