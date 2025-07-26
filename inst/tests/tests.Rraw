@@ -21554,10 +21554,18 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 # regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
-f = tempfile()
-writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
-test(2334, names(fread(f)), "a")
-unlink(f)
+local({
+	f = tempfile()
+	on.exit(unlink(f))
+	# the line is likely invalid in current encoding, so disable any translation, #7209
+	# test.data.table() sets options(encoding="UTF-8"), so go the long way around.
+	ff = file(f, encoding = "")
+	tryCatch(
+		writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
+		finally = close(ff)
+	)
+	test(2334, names(fread(f)), "a")
+})
 
 # Tests for new isoyear() helper (complement to isoweek) #7154
 test(2335.1, isoyear(as.IDate("2019-12-30")), 2020L)  # End of year edge case
