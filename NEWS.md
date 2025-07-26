@@ -103,6 +103,8 @@
 
 16. `between()` is now more robust with `integer64` arguments. Combining small integer `x` with certain large `integer64` bounds no longer misinterprets the bounds as `double`; if a `double` bound cannot be losslessly converted into `integer64` for comparison with `integer64` `x`, an error is signalled instead of returning a wrong answer with a warning; [#7164](https://github.com/Rdatatable/data.table/issues/7164). Thanks @aitap for the bug report and the fix.
 
+17. `t1 - t2`, where one is an `IDate` and the other is a `Date`, are now consistent with the case where both are `IDate` or both are `Date`, [#4749](https://github.com/Rdatatable/data.table/issues/4749). Thanks @George9000 for the report and @MichaelChirico for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
