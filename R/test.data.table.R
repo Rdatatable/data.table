@@ -212,7 +212,17 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
       warning=function(w) {
         # nocov start
         if (!silent && showProgress) print(w)
-        env$warnings = c(env$warnings, list(list(env$prevtest, toString(w))))
+        env$warnings = c(env$warnings, list(list(
+          env$prevtest, toString(w),
+          paste(
+            vapply_1c(sys.calls(), function(call) {
+              if (length(call) && is.name(call[[1]])) {
+                as.character(call[[1]])
+              } else "..."
+            }),
+            collapse=" -> "
+          )
+        )))
         invokeRestart("muffleWarning")
         # nocov end
       }
@@ -278,7 +288,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (length(env$warnings)) {
     # nocov start
     warnings = rbindlist(env$warnings)
-    setnames(warnings, c("after test", "warning"))
+    setnames(warnings, c("after test", "warning", "calls"))
     catf(
       ngettext(length(warnings),
         "Caught %d warning outside the test() calls:\n",
