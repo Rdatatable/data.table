@@ -16996,7 +16996,8 @@ if (.Platform$OS.type=="windows") local({
     LC_TIME = "Chinese (Simplified)_China.936"
   )
   x_old = Map(Sys.getlocale, names(x))
-  invisible(Map(Sys.setlocale, names(x), x))
+  # setlocale() warns for non-UTF-8 locales in modern versions of R, #7210
+  suppressWarnings(invisible(Map(Sys.setlocale, names(x), x)))
   on.exit(Map(Sys.setlocale, names(x_old), x_old))
   # triggered segfault here in #4402, Windows-only under translation.
   # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
@@ -18620,6 +18621,7 @@ local(if (l10n_info()$`UTF-8` || {
   lc_wantctype = 'en_US.UTF-8'
   # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
   # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
+  # Avoid the warning upon possible failure, #7210.
   lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
   if (identical(lc_newctype, lc_wantctype)) {
     on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
