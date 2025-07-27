@@ -1,9 +1,9 @@
 ---
-title: "Fast read and fast write"
+title: "Fast Read and Fast Write"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette # <--- Changed
 vignette: >
-  %\VignetteIndexEntry{fread() and fwrite()}
+  %\VignetteIndexEntry{Fast Read and Fast Write}
   %\VignetteEngine{knitr::rmarkdown} # <--- Changed
   %\VignetteEncoding{UTF-8} # <--- Ensure this is present
 ---
