@@ -45,7 +45,12 @@ HEADER: Yet more
 "example_data.txt")
 
 library(data.table)
-fread("grep -v HEADER example_data.txt")
+
+all_lines <- readLines("example_data.txt")
+data_lines <- grep("HEADER", all_lines, value = TRUE, invert = TRUE)
+fread(text = data_lines)
+
+file.remove("example_data.txt")
 ```
 
 The `-v` option makes `grep` return all lines except those containing the string 'HEADER'. Given the number of high quality engineers that have looked at the command tool grep over the years, it is most likely that it is as fast as you can get, as well as being correct, convenient, well documented online, easy to learn and search for solutions for specific tasks. If you need to perform more complex string filtering (e.g., matching strings at the beginning or end of lines), the `grep` syntax is very powerful. Learning its syntax is a transferable skill for other languages and environments.
@@ -177,11 +182,14 @@ c(
 ),
 "insert_script.sql"
 )
+sql_lines <- readLines("insert_script.sql")
 
-# 2. Process with awk and read into R
-dt_sql <- fread(cmd = "awk -F' *[(),]+ *' -v OFS=, '{for (i=2; i<=NF-1; i++) printf \"%s%s\", ($i), (i<NF-1?OFS:ORS)}' insert_script.sql",
-                  na.strings = "NULL") # "NULL" string from SQL becomes R's NA
+values_only <- gsub("INSERT INTO tbl VALUES \\((.*)\\);", "\\1", sql_lines)
+
+dt_sql <- fread(text = values_only, na.strings = "NULL")
 print(dt_sql)
+
+file.remove("insert_script.sql")
 ```
 
 - The `awk` command transforms each INSERT line into a comma-separated list of its values.
