@@ -1,11 +1,12 @@
 ---
 title: "Fast Read and Fast Write"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette # <--- Changed
+output: 
+  markdown::html_format
 vignette: >
-  %\VignetteIndexEntry{Fast Read and Fast Write}
-  %\VignetteEngine{knitr::rmarkdown} # <--- Changed
-  %\VignetteEncoding{UTF-8} # <--- Ensure this is present
+  %\VignetteIndexEntry{Importing data.table}
+  %\VignetteEngine{knitr::knitr}
+  \usepackage[utf8]{inputenc}
 ---
 
 ```{r echo=FALSE, file='_translation_links.R'}
@@ -27,7 +28,7 @@ The `fread()` and `fwrite()` functions in the `data.table` R package are not onl
 
 ***
 
-## 1. **fread()**
+## 1. fread()
 
 ### **1.1 Using command line tools directly**
 The `fread()` function from `data.table` can read data piped from shell commands, letting you filter or preprocess data before it even enters R.
@@ -45,21 +46,16 @@ HEADER: Yet more
 "example_data.txt")
 
 library(data.table)
-
-all_lines = readLines("example_data.txt")
-data_lines = grep("HEADER", all_lines, value = TRUE, invert = TRUE)
-fread(text = data_lines)
-
-file.remove("example_data.txt")
+fread("grep -v HEADER example_data.txt")
 ```
 
 The `-v` option makes `grep` return all lines except those containing the string 'HEADER'. Given the number of high quality engineers that have looked at the command tool grep over the years, it is most likely that it is as fast as you can get, as well as being correct, convenient, well documented online, easy to learn and search for solutions for specific tasks. If you need to perform more complex string filtering (e.g., matching strings at the beginning or end of lines), the `grep` syntax is very powerful. Learning its syntax is a transferable skill for other languages and environments.
-
+  
 Look at this [example](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) for more detail.
 
-On Windows we recommend [Cygwin](https://www.cygwin.com/) (run one .exe to install) which includes the command line tools such as grep. In March 2016, Microsoft [announced](https://www.hanselman.com/blog/developers-can-run-bash-shell-and-usermode-ubuntu-linux-binaries-on-windows-10) they will include these tools in Windows 10 natively. On Linux and macOS, these tools have always been included in the operating system. You can find many examples and tutorials about command line tools online.
+On Windows we recommend [Cygwin](https://www.cygwin.com/) (run one .exe to install) which includes the command line tools such as grep. In March 2016, Microsoft [announced](https://www.hanselman.com/blog/developers-can-run-bash-shell-and-usermode-ubuntu-linux-binaries-on-windows-10) they will include these tools in Windows 10 natively. On Linux and macOS, these tools have always been included in the operating system. You can find many examples and tutorials about command line tools online. We recommend [Data Science at the Command Line](https://www.oreilly.com/library/view/data-science-at/9781491947845/).
 
-#### 1.1.1  **Reading directly from a text string**
+#### 1.1.1  Reading directly from a text string
 
 `fread()` can read data directly from a character string in R using the text argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `(
 )`.
@@ -70,7 +66,7 @@ dt_from_text = fread(text = my_data_string)
 print(dt_from_text)
 ```
 
-#### 1.1.2 **Reading from URLs**
+#### 1.1.2 Reading from URLs
 
 `fread()` can read data directly from web URLs by passing the URL as a character string to its `file` argument. This allows you to download and read data from the internet in one step.
 
@@ -79,7 +75,7 @@ print(dt_from_text)
   # print(dt)
   ```
 
-#### 1.1.3 **Automatic decompression of compressed files**
+#### 1.1.3 Automatic decompression of compressed files
 
 In many cases, `fread()` can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
 
@@ -88,7 +84,7 @@ In many cases, `fread()` can automatically detect and decompress files with comm
 - `.xz` (xz): Supported and works out of the box.
 - `.zip` (ZIP archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
 
-### 1.2 **Automatic separator and skip detection**
+### 1.2 Automatic separator and skip detection
 
 `fread` automates delimiter and header detection, eliminating the need for manual specification in most cases. You simply provide the filename—`fread` intelligently detects the structure:
 
@@ -110,11 +106,11 @@ You can explicitly tell fread whether a header exists using `header = TRUE` or `
 
 By default (`skip="auto"`), `fread` will automatically skip blank lines and comment lines (e.g., starting with `#`) before the data header. To manually skip a specific number of lines, use `skip=n`.
 
-### 1.3 **High-Quality Automatic Column Type Detection**
+### 1.3 High-Quality Automatic Column Type Detection
 
 Many real-world datasets contain columns that are initially blank, zero-filled, or appear numeric but later contain characters. To handle such inconsistencies, `fread()` in `data.table` employs a robust column type detection strategy.
 
-Since v1.10.5, `fread()` samples 10,000 rows by reading 100 contiguous rows from 100 equally spaced points across the file, including the start, middle, and end. This wide sampling helps detect type changes that occur later in the data (e.g., `001` to `0A0` or blanks becoming populated).
+Since v1.10.5, `fread()` samples rows by reading blocks of contiguous rows from multiple equally spaced points across the file, including the start, middle, and end. The total number of rows sampled is chosen dynamically based on the file size and structure, and is typically around 10,000, but can be smaller or slightly larger. This wide sampling helps detect type changes that occur later in the data (e.g., `001` to `0A0` or blanks becoming populated).
 
 **Efficient File Access with mmap**
 
@@ -140,19 +136,18 @@ If a type change occurs outside the sampled rows, `fread()` automatically detect
 
 All detection logic and any rereads are detailed when `verbose=TRUE` is enabled.
 
-### 1.4 **Early Error Detection at End-of-File**
+### 1.4 Early Error Detection at End-of-File
 
 Because the large sample explicitly includes the very end of the file, critical issues—such as an inconsistent number of columns, a malformed footer, or an opening quote without a matching closing quote—can be detected and reported almost instantly. This early error detection avoids the unnecessary overhead of processing the entire file or allocating excessive memory, only to encounter a failure at the final step. It ensures faster feedback and more efficient resource usage, especially when working with large datasets.
 
-### 1.5 **Reading SQL Insert Scripts**
+### 1.5 Reading SQL Insert Scripts
 
 `fread()` doesn't directly support SQL `INSERT` scripts, but they can be processed via command-line tools. For example, given `insert_script.sql`:
 
-```{r, eval=FALSE}
-# Example SQL insert statements:
-# INSERT INTO tbl VALUES (1, 'asd', 923123123, 'zx');
-# INSERT INTO tbl VALUES (1, NULL, 923123123, 'zxz');
-# INSERT INTO tbl VALUES (3, 'asd3', 923123123, NULL);
+```
+INSERT INTO tbl VALUES (1, 'asd', 923123123, 'zx');
+INSERT INTO tbl VALUES (1, NULL, 923123123, 'zxz');
+INSERT INTO tbl VALUES (3, 'asd3', 923123123, NULL);
 ```
 
 Use this command in R [link](https://stackoverflow.com/questions/32026398/transform-sql-insert-script-into-csv-format):
@@ -177,15 +172,15 @@ print(dt_sql)
 file.remove("insert_script.sql")
 ```
 
-- The `awk` command transforms each INSERT line into a comma-separated list of its values.
+- The `gsub()` function in R transforms each INSERT line into a comma-separated list of its values.
 
 - `na.strings = "NULL"` in fread is crucial: it tells fread to interpret the literal string `"NULL"` (output by awk for SQL NULLs) as R's NA value.
 
-- Quoted strings (e.g., 'asd') are preserved by awk and read as character by `fread`.
+- Quoted strings (e.g., 'asd') are preserved and read as character by `fread`.
 
-### 1.6 **`integer64` Support**
+### 1.6 `integer64` Support
 
-By default, `fread` detects integers larger than 2³¹ and reads them as `bit64::integer64` to preserve full precision. This behavior can be overridden in three ways:
+By default, `fread` detects integers larger than 2<sup>31</sup> and reads them as `bit64::integer64` to preserve full precision. This behavior can be overridden in three ways:
 
 - Per-column: Use the `colClasses` argument to specify the type for individual columns.
 
@@ -209,7 +204,7 @@ options(datatable.integer64 = "double")   # Example: set globally to "double"
 getOption("datatable.integer64") 
 ```
 
-### 1.7 **Drop or Select Columns by Name or Position**
+### 1.7 Drop or Select Columns by Name or Position
 
 To save memory and improve performance, use `fread()`'s `select` or `drop` arguments to read only the columns you need.
 
@@ -224,11 +219,11 @@ Key points:
 
 For details, see the manual page by running `?fread` in R.
 
-### 1.8 **Skip to a Sub-Table’s Header Row Using a Column Name Substring**
+### 1.8 Skip to a Sub-Table’s Header Row Using a Column Name Substring
 
 Use `skip="string"` in `fread` to search for a line containing a substring (typically from the column names, e.g., `skip="Date"`). Reading begins at the first matching line. This is useful for skipping metadata or selecting sub-tables in multi-table files. This feature is inspired by the `read.xls` function in the gdata package.
 
-### 1.9 **Automatic Quote Escape Detection (Including No-Escape)**
+### 1.9 Automatic Quote Escape Detection (Including No-Escape)
 
 `fread` automatically detects how quotes are escaped—including doubled ("") or backslash-escaped (\") quotes—without requiring user input. This is determined using a large sample of the data (see point 3), and validated against the entire file.
 
@@ -251,7 +246,7 @@ From v1.10.6, `fread` resolves ambiguities more reliably across the entire file 
 
 `fwrite()` is the fast file writer companion to `fread()`. It’s designed for speed, sensible defaults, and ease of use, mirroring many of the conveniences found in fread`.
 
-### 2.1 **Intelligent and Minimalist Quoting (quote="auto")**
+### 2.1 Intelligent and Minimalist Quoting (quote="auto")
 
 When data is written as strings (either inherently, like character columns, or by choice, like `dateTimeAs="ISO"`), `quote="auto"` (default) intelligently quotes fields:
 
@@ -272,7 +267,7 @@ fwrite(dt_quoting_scenario, temp_quote_adv)
 cat(readLines(temp_quote_adv), sep = "\n")
 ```
 
-### 2.2 **Fine-Grained Date/Time Serialization (dateTimeAs)**
+### 2.2 Fine-Grained Date/Time Serialization (dateTimeAs)
 
 Offers precise control for POSIXct/Date types:
 
@@ -291,7 +286,7 @@ cat(readLines(temp_dt_iso), sep = "\n")
 unlink(temp_dt_iso)
 ```
 
-### 2.3 **Handling of bit64::integer64**
+### 2.3 Handling of bit64::integer64
 
 **Full Precision for Large Integers**: `fwrite` writes `bit64::integer64` columns by converting them to strings with full precision. This prevents data loss or silent conversion to double that might occur with less specialized writers. This is crucial for IDs or measurements requiring more than R's standard `32-bit` integer range or `53-bit` double precision.
 
@@ -308,7 +303,7 @@ if (requireNamespace("bit64", quietly = TRUE)) {
 }
 ```
 
-### 2.4 **Column Order and Subset Control**
+### 2.4 Column Order and Subset Control
 
 To control the order and subset of columns written to file, subset the data.table before calling `fwrite()`. The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
 
