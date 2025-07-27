@@ -1,5 +1,5 @@
 ---
-title: "fread() and fwrite()"
+title: "Fast read and fast write"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette # <--- Changed
 vignette: >
@@ -46,8 +46,8 @@ HEADER: Yet more
 
 library(data.table)
 
-all_lines <- readLines("example_data.txt")
-data_lines <- grep("HEADER", all_lines, value = TRUE, invert = TRUE)
+all_lines = readLines("example_data.txt")
+data_lines = grep("HEADER", all_lines, value = TRUE, invert = TRUE)
 fread(text = data_lines)
 
 file.remove("example_data.txt")
@@ -65,44 +65,28 @@ On Windows we recommend [Cygwin](https://www.cygwin.com/) (run one .exe to insta
 )`.
 
 ```{r}
-my_data_string <- "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
-dt_from_text <- fread(text = my_data_string)
+my_data_string = "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
+dt_from_text = fread(text = my_data_string)
 print(dt_from_text)
 ```
 
-#### 1.1.2 **Reading from R connections and URLs**
+#### 1.1.2 **Reading from URLs**
 
-`fread()` is highly versatile and can accept R connection objects as input to its file (or input) argument. This allows you to read from various sources, including:
+`fread()` can read data directly from web URLs by passing the URL as a character string to its `file` argument. This allows you to download and read data from the internet in one step.
 
-- Web URLs: Directly download and read data from the internet.
-
-- Compressed files: Using connections like gzfile(), bzfile(), xzfile().
-
-- Other connection types: Any R connection that supports text reading.
+  ```{r}
+  # dt = fread("https://people.sc.fsu.edu/~jburkardt/data/csv/airtravel.csv")
+  # print(dt)
+  ```
 
 #### 1.1.3 **Automatic decompression of compressed files**
 
-In many cases, `fread()` can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object like gzfile() or using shell commands. This works by checking the file extension.
-Supported extensions typically include:
-`.gz` (gzip)
-`.bz2` (bzip2)
-`.xz` (xz)
-`.zip` (ZIP archives - `fread` will attempt to read the first file within the `.zip` archive if no specific file inside the archive is specified using the file#entry syntax, or if the `.zip` contains only one file. For more control over which file to read from a multi-file zip, see `?fread` examples for file#entry or use unzip first).
-This functionality may rely on the `R.utils` package or system tools being available for some formats.
+In many cases, `fread()` can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
 
-```{r}
-# 1. Create a sample data.table and write it to a gzipped CSV
-set.seed(123)
-original_dt <- data.table(A = 1:5, B = runif(5))
-fwrite(original_dt, "my_data_auto.csv.gz") # fwrite can also write directly to compressed files
-
-# 2. fread automatically decompresses and reads it
-dt_auto_decompressed <- fread("my_data_auto.csv.gz")
-print(dt_auto_decompressed)
-
-# Clean up
-file.remove("my_data_auto.csv.gz")
-```
+**Supported extensions typically include:**
+- `.gz` (gzip): Supported and works out of the box.
+- `.xz` (xz): Supported and works out of the box.
+- `.zip` (ZIP archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
 
 ### 1.2 **Automatic separator and skip detection**
 
@@ -182,11 +166,11 @@ c(
 ),
 "insert_script.sql"
 )
-sql_lines <- readLines("insert_script.sql")
+sql_lines = readLines("insert_script.sql")
 
-values_only <- gsub("INSERT INTO tbl VALUES \\((.*)\\);", "\\1", sql_lines)
+values_only = gsub("INSERT INTO tbl VALUES \\((.*)\\);", "\\1", sql_lines)
 
-dt_sql <- fread(text = values_only, na.strings = "NULL")
+dt_sql = fread(text = values_only, na.strings = "NULL")
 print(dt_sql)
 
 file.remove("insert_script.sql")
@@ -275,12 +259,12 @@ When data is written as strings (either inherently, like character columns, or b
 **Bypassed for Direct Numeric Output**: If specific columns are written as their underlying numeric types (e.g., via `dateTimeAs="epoch"` for POSIXct, or if a user pre-converts Date to integer), then quoting logic is naturally bypassed for those numeric fields, contributing to efficiency.
 
 ```{r}
-dt_quoting_scenario <- data.table(
+dt_quoting_scenario = data.table(
   text_field = c("Contains,a,comma", "Contains \"a quote\"", "Contains\na newline", "Clean_text"),
   epoch_time = as.numeric(as.POSIXct("2023-10-26 14:35:00", tz = "GMT") + 1:4), # Already numeric
   numeric_field = 1:4
 )
-temp_quote_adv <- tempfile(fileext = ".csv")
+temp_quote_adv = tempfile(fileext = ".csv")
 
 # Quoting applies to text_field, but not to epoch_time or numeric_field
 fwrite(dt_quoting_scenario, temp_quote_adv)
@@ -296,11 +280,11 @@ Offers precise control for POSIXct/Date types:
 - `dateTimeAs="epoch"`: POSIXct as seconds since epoch (numeric).
 
 ```{r}
-dt_timestamps <- data.table(
+dt_timestamps = data.table(
   ts = as.POSIXct("2023-10-26 14:35:45.123456", tz = "GMT"),
   dt = as.Date("2023-11-15")
 )
-temp_dt_iso <- tempfile(fileext = ".csv")
+temp_dt_iso = tempfile(fileext = ".csv")
 fwrite(dt_timestamps, temp_dt_iso, dateTimeAs = "ISO")
 cat(readLines(temp_dt_iso), sep = "\n")
 unlink(temp_dt_iso)
@@ -314,8 +298,8 @@ unlink(temp_dt_iso)
 
 ```{r}
 if (requireNamespace("bit64", quietly = TRUE)) {
-  dt_i64 <- data.table(uid = bit64::as.integer64("1234567890123456789"), val = 100)
-  temp_i64_out <- tempfile(fileext = ".csv")
+  dt_i64 = data.table(uid = bit64::as.integer64("1234567890123456789"), val = 100)
+  temp_i64_out = tempfile(fileext = ".csv")
   fwrite(dt_i64, temp_i64_out)
   cat(readLines(temp_i64_out), sep = "\n")
 
@@ -328,7 +312,7 @@ if (requireNamespace("bit64", quietly = TRUE)) {
 To control the order and subset of columns written to file, subset the data.table before calling `fwrite()`. The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
 
 ```{r}
-dt <- data.table(A = 1:3, B = 4:6, C = 7:9)
+dt = data.table(A = 1:3, B = 4:6, C = 7:9)
 
 # Write only columns C and A, in that order
 fwrite(dt[, .(C, A)], "out.csv")
