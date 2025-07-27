@@ -213,10 +213,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
         # nocov start
         if (!silent && showProgress) print(w)
         env$warnings = c(env$warnings, list(list(
-          env$prevtest, toString(w),
-          paste(
+          "after test"=env$prevtest, warning=conditionMessage(w),
+          calls=paste(
             vapply_1c(sys.calls(), function(call) {
-              if (length(call) && is.name(call[[1]])) {
+              if (is.name(call[[1]])) {
                 as.character(call[[1]])
               } else "..."
             }),
@@ -288,15 +288,15 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (length(env$warnings)) {
     # nocov start
     warnings = rbindlist(env$warnings)
-    setnames(warnings, c("after test", "warning", "calls"))
     catf(
       ngettext(nrow(warnings),
         "Caught %d warning outside the test() calls:\n",
         "Caught %d warnings outside the test() calls:\n"
       ),
-      nrow(warnings)
+      nrow(warnings),
+      domain=NA
     )
-    print(warnings)
+    print(warnings, nrows = nrow(warnings))
     stopf("Tests succeeded, but non-test code caused warnings. Search %s for tests shown above.", names(fn))
     # nocov end
   }
