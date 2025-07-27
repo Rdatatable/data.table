@@ -117,6 +117,7 @@ typedef struct fwriteMainArgs
   bool bom;
   const char *yaml;
   bool verbose;
+  bool forceDecimal;      // force writing decimal points for numeric columns
 } fwriteMainArgs;
 
 void fwriteMain(fwriteMainArgs args);
