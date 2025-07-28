@@ -52,7 +52,7 @@ enum quoteRule
     // For example: <<...,"hello "world"",...>>
     QUOTE_RULE_HYBRID,
 
-    // Fields are not quoted at all.Any quote characters appearing anywhere
+    // Fields are not quoted at all. Any quote characters appearing anywhere
     // inside the field will be treated as any other regular characters.
     // Example: <<...,hello "world",...>>
     QUOTE_RULE_IGNORE_QUOTES,
