@@ -26,29 +26,34 @@
 
   Merging is performed sequentially from "left to right", so that for \code{l} of 3 tables, it will do something like \code{merge(merge(l[[1L]], l[[2L]]), l[[3L]])}. \emph{Non-equi joins} are not supported. Column names to merge on must be common in both tables on each merge.
 
-  Arguments \code{on}, \code{how}, \code{mult}, \code{join.many} could be lists as well, each of length \code{length(l)-1L}, to provide argument to be used for each single tables pair to merge, see examples.
+  Arguments \code{on}, \code{how}, \code{mult}, \code{join.many} may also be lists, each of length \code{length(l)-1L}, providing the argument to be used at each successive merge; see examples.
 
-  The terms \emph{join-to} and \emph{join-from} indicate which in a pair of tables is the "baseline" or "authoritative" source -- this governs the ordering of rows and columns. 
+  Heuristically speaking, the \emph{join-from} table searches the \emph{join-to} table. More precisely:
+  \itemize{
+    \item{ \code{mult} determines the policy when a row of \emph{join-from} finds multiple matches in \emph{join-to}. }
+    \item{ When \code{on} is missing, the join column(s) are determined by the key of \emph{join-to}. }
+  }
   Whether each refers to the "left" or "right" table of a pair depends on the \code{how} argument:
   \enumerate{
-    \item{ \code{how \%in\% c("left", "semi", "anti")}: \emph{join-to} is \emph{RHS}, \emph{join-from} is \emph{LHS}. }
-    \item{ \code{how \%in\% c("inner", "full", "cross")}: \emph{LHS} and \emph{RHS} tables are treated equally, so that the terms are interchangeable. }
-    \item{ \code{how == "right"}: \emph{join-to} is \emph{LHS}, \emph{join-from} is \emph{RHS}. }
+    \item{ \code{how \%in\% c("left", "semi", "anti")}: \emph{join-from} is \emph{LHS}, \emph{join-to} is \emph{RHS}. }
+    \item{ \code{how == "right"}: \emph{join-from} is \emph{RHS}, \emph{join-to} is \emph{LHS}. }
+    \item{ \code{how \%in\% c("inner", "full")}: \emph{LHS} and \emph{RHS} are treated symmetrically, so that each is both \emph{join-from} and \emph{join-to}; see below. }
+    \item{ \code{how == "cross"}: \code{mult} must be \code{"all"} and \code{on} is not used, so the terms are not relevant. }
   }
 
-  Using \code{mult="error"} will throw an error when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. It should not be used just to detect duplicates, which might not have matching row, and thus would silently be missed.
+  In Case 3, the symmetry is as follows:
+  \itemize{
+    \item{ When \code{mult \%in\% c("first", "last", "error")}, then (respectively) the first, last, or only matching row on each side binds with the same on the other. \code{mult} is satisfied mutually and the merge is one-to-one. }
+    \item{ If only one table has a key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to the shorter key. }
+  }
+
+  Using \code{mult="error"} will throw an error when a row in the \emph{join-from} table finds multiple matching rows in the \emph{join-to} table. It should not be used just to detect duplicates in \emph{join-to}, as these might not have a matching row in \emph{join-from}, and thus silently be missed.
 
   When not specified, \code{mult} takes its default depending on the \code{how} argument:
   \enumerate{
     \item{ When \code{how \%in\% c("left", "inner", "full", "right")}, \code{mult="error"}. }
     \item{ When \code{how \%in\% c("semi", "anti")}, \code{mult="last"}, although this is equivalent to \code{mult="first"}. }
     \item{ When \code{how == "cross"}, \code{mult="all"}. }
-  }
-
-  When the \code{on} argument is missing, it will be determined based \code{how} argument:
-  \enumerate{
-    \item{ When \code{how \%in\% c("left", right", "semi", "anti")}, \code{on} becomes the key column(s) of the \emph{join-to} table. }
-    \item{ When \code{how \%in\% c("inner", full")}, if only one table has a key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
   }
 
   When joining tables that are not directly linked to a single table, e.g. a snowflake schema (see References), a \emph{right} outer join can be used to optimize the sequence of merges, see Examples.
