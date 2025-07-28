@@ -34,28 +34,29 @@ static char quote, dec;
 static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
-// Quote rule:
-//   0 = Fields may be quoted, any quote inside the field is doubled. This is
-//       the CSV standard. For example: <<...,"hello ""world""",...>>
-//   1 = Fields may be quoted, any quotes inside are escaped with a backslash.
-//       For example: <<...,"hello \"world\"",...>>
-//   2 = Fields may be quoted, but any quotes inside will appear verbatim and
-//       not escaped in any way. It is not always possible to parse the file
-//       unambiguously, but we give it a try anyways. A quote will be presumed
-//       to mark the end of the field iff it is followed by the field separator.
-//       Under this rule eol characters cannot appear inside the field.
-//       For example: <<...,"hello "world"",...>>
-//   3 = Fields are not quoted at all. Any quote characters appearing anywhere
-//       inside the field will be treated as any other regular characters.
-//       Example: <<...,hello "world",...>>
-//
-
 enum quoteRule
 {
+    // Fields may be quoted, any quote inside the field is doubled.This is
+    // the CSV standard. For example: <<...,"hello ""world""",...>>
     QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED,
+
+    // Fields may be quoted, any quotes inside are escaped with a backslash.
+    // For example: <<...,"hello \"world\"",...>>
     QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED,
+
+    // Fields may be quoted, but any quotes inside will appear verbatim and
+    // not escaped in any way. It is not always possible to parse the file
+    // unambiguously, but we give it a try anyways. A quote will be presumed
+    // to mark the end of the field iff it is followed by the field separator.
+    // Under this rule eol characters cannot appear inside the field.
+    // For example: <<...,"hello "world"",...>>
     QUOTE_RULE_HYBRID,
+
+    // Fields are not quoted at all.Any quote characters appearing anywhere
+    // inside the field will be treated as any other regular characters.
+    // Example: <<...,hello "world",...>>
     QUOTE_RULE_IGNORE_QUOTES,
+
     QUOTE_RULE_COUNT
 };
 
@@ -589,7 +590,7 @@ static void Field(FieldParseContext *ctx)
     *ctx->ch = ch;
   } else {
     *ctx->ch = ch;
-    if (ch == eof && quoteRule != QUOTE_RULE_HYBRID) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    if (ch == eof && quoteRule != QUOTE_RULE_HYBRID) { target->off--; target->len++; } // test 1324 where final field has open quote but not ending quote; include the open quote like QUOTE_RULE_HYBRID
     while(target->len > 0 && ((ch[-1] == ' ' && stripWhite) || ch[-1] == '\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
   // Does end-of-field correspond to end-of-possible-NA?
@@ -1840,7 +1841,7 @@ int freadMain(freadMainArgs _args)
         ASSERT(topSep == 127, "Single column input has topSep=%d", topSep);
         sep = topSep;
         // no self healing quote rules, as we don't have >1 field to disambiguate
-        // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
+        // choose QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED or QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED based on for which 100 rows gets furthest into file
         for (quoteRule = QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED; quoteRule <= QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED; quoteRule++) { // #loop_counter_not_local_scope_ok
           int thisRow = 0, thisncol = 0;
           ch = pos;
