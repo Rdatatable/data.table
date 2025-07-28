@@ -24,13 +24,13 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-Cette vignette suppose que le lecteur est familier avec la syntaxe `[i, j, by]` de data.table, et sur la façon d’effectuer des sous-ensembles basés sur des clés rapides. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes *"Introduction à data.table"*, *"Sémantique de référence"* et *"Sous-ensembles basés sur les clés et la recherche binaire rapide"*.
+Cette vignette suppose que le lecteur est familier avec la syntaxe `[i, j, by]` de data.table, et sur la façon d’effectuer des sous-ensembles basés sur des clés rapides. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes [`vignette("Introduction à data.table", package="data.table")`](datatable-intro.html), [`vignette("Sémantique de référence", package="data.table")`](datatable-reference-semantics.html), and [`vignette("Sous-ensembles basés sur les clés et la recherche binaire rapide", package="data.table")`](datatable-keys-fast-subset.html) vignettes first.
 
 ***
 
 ## Données {#data}
 
-Nous utiliserons les mêmes données `flights` que dans la vignette *"Introduction à data.table"*.
+Nous utiliserons les mêmes données `flights` que dans la vignette [`vignette("Introduction à data.table", package="data.table")`](datatable-intro.html).
 
 ```{r echo = FALSE}
 options(width = 100L)
