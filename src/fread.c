@@ -94,7 +94,7 @@ static double NAND;
 static double INFD;
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-static void init(void)
+static void init_const_literals(void)
 {
   NAND = (double)NAN;
   INFD = (double)INFINITY;
@@ -840,7 +840,7 @@ static void parse_double_regular(FieldParseContext *ctx)
  */
 static void parse_double_extended(FieldParseContext *ctx)
 {
-  init();
+  init_const_literals();
 
   double* target = ctx->targets[sizeof(double)];
   const char *ch = *ctx->ch;
@@ -927,7 +927,7 @@ static void parse_double_extended(FieldParseContext *ctx)
  */
 static void parse_double_hexadecimal(FieldParseContext *ctx)
 {
-  init();
+  init_const_literals();
 
   const char *ch = *ctx->ch;
   double *target = ctx->targets[sizeof(double)];
@@ -2166,9 +2166,8 @@ int freadMain(freadMainArgs _args)
       DTPRINT(_("  Initial alloc = %"PRId64" rows (%"PRId64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
               allocnrow, estnrow, (int)(100.0 * allocnrow / estnrow - 100.0));
       DTPRINT("  =====\n"); // # notranslate
-    } else {
-      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRId64") > allocnrow(%"PRId64")", sampleLines, allocnrow); // # nocov
     }
+    if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRId64") > allocnrow(%"PRId64")", sampleLines, allocnrow); // # nocov
   }
   if (nrowLimit < allocnrow) {
     if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRId64" passed in.\n"), nrowLimit);
@@ -2376,8 +2375,10 @@ int freadMain(freadMainArgs _args)
         .threadn = me,
         .quoteRule = quoteRule,
         .stopTeam = &stopTeam,
+        #ifndef DTPY
         .nStringCols = nStringCols,
         .nNonStringCols = nNonStringCols
+        #endif
       };
       if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
         stopTeam = true;
