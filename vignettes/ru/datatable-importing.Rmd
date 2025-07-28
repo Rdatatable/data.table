@@ -9,6 +9,11 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
+
 <style>
 h2 {
     font-size: 20px;
@@ -472,3 +477,7 @@ result <- merge(dt, other_dt, by = "x")
 - **Упрощение обслуживания**: Это упрощает задачи обслуживания по мере
   развития API Ваших зависимостей. Слишком сильная зависимость от `Depends`
   может со временем привести к конфликтам и проблемам совместимости.
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```
