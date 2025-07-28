@@ -205,7 +205,30 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   # nocov end
 
-  err = try(sys.source(fn, envir=env), silent=silent)
+  env$warnings = list()
+  err = try(
+    withCallingHandlers(
+      sys.source(fn, envir=env),
+      warning=function(w) {
+        # nocov start
+        if (!silent && showProgress) print(w)
+        env$warnings = c(env$warnings, list(list(
+          "after test"=env$prevtest, warning=conditionMessage(w),
+          calls=paste(
+            vapply_1c(sys.calls(), function(call) {
+              if (is.name(call[[1]])) {
+                as.character(call[[1]])
+              } else "..."
+            }),
+            collapse=" -> "
+          )
+        )))
+        invokeRestart("muffleWarning")
+        # nocov end
+      }
+    ),
+    silent=silent
+  )
 
   options(oldOptions)
   for (i in oldEnv) {
@@ -260,6 +283,21 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
       nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at), domain=NA
     )
     # important to stopf() here, so that 'R CMD check' fails
+    # nocov end
+  }
+  if (length(env$warnings)) {
+    # nocov start
+    warnings = rbindlist(env$warnings)
+    catf(
+      ngettext(nrow(warnings),
+        "Caught %d warning outside the test() calls:\n",
+        "Caught %d warnings outside the test() calls:\n"
+      ),
+      nrow(warnings),
+      domain=NA
+    )
+    print(warnings, nrows = nrow(warnings))
+    stopf("Tests succeeded, but non-test code caused warnings. Search %s for tests shown above.", names(fn))
     # nocov end
   }
 
