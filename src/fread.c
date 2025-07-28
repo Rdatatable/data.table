@@ -34,7 +34,7 @@ static char quote, dec;
 static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
-enum quoteRule
+enum quote_rule_t
 {
     // Fields may be quoted, any quote inside the field is doubled.This is
     // the CSV standard. For example: <<...,"hello ""world""",...>>
@@ -50,7 +50,7 @@ enum quoteRule
     // to mark the end of the field iff it is followed by the field separator.
     // Under this rule eol characters cannot appear inside the field.
     // For example: <<...,"hello "world"",...>>
-    QUOTE_RULE_HYBRID,
+    QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED,
 
     // Fields are not quoted at all.Any quote characters appearing anywhere
     // inside the field will be treated as any other regular characters.
@@ -60,7 +60,7 @@ enum quoteRule
     QUOTE_RULE_COUNT
 };
 
-static enum quoteRule quoteRule;
+static enum quote_rule_t quoteRule;
 static const char* const* NAstrings;
 static bool any_number_like_NAstrings = false;
 static bool blank_is_a_NAstring = false;
@@ -89,7 +89,7 @@ const char typeName[NUMTYPE][10] = { "drop", "bool8", "bool8", "bool8", "bool8",
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8,         8        };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
-// So we assign them through below init function.
+// So we assign them through below init_const_literals function.
 static double NAND;
 static double INFD;
 
@@ -530,9 +530,9 @@ static void Field(FieldParseContext *ctx)
     return;
   }
   // else *ch==quote (we don't mind that quoted fields are a little slower e.g. no desire to save switch)
-  //    the field is quoted and quotes are correctly escaped (quoteRule 0 and 1)
-  // or the field is quoted but quotes are not escaped (quoteRule 2)
-  // or the field is not quoted but the data contains a quote at the start (quoteRule 2 too)
+  //    the field is quoted and quotes are correctly escaped (QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED and QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED)
+  // or the field is quoted but quotes are not escaped (QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED)
+  // or the field is not quoted but the data contains a quote at the start (QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED too)
   // What if this string signifies an NA? Will find out after we're done parsing quotes
   const char *field_after_NA = end_NA_string(fieldStart);
   fieldStart++;  // step over opening quote
@@ -551,7 +551,7 @@ static void Field(FieldParseContext *ctx)
       if (*ch == quote) break;
     }
     break;
-  case QUOTE_RULE_HYBRID:
+  case QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED:
     // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
     // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
     // (ii) not-quoted but there is a quote at the beginning so it should have been; look for , at the end
@@ -590,7 +590,7 @@ static void Field(FieldParseContext *ctx)
     *ctx->ch = ch;
   } else {
     *ctx->ch = ch;
-    if (ch == eof && quoteRule != QUOTE_RULE_HYBRID) { target->off--; target->len++; } // test 1324 where final field has open quote but not ending quote; include the open quote like QUOTE_RULE_HYBRID
+    if (ch == eof && quoteRule != QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED) { target->off--; target->len++; } // test 1324 where final field has open quote but not ending quote; include the open quote like QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED
     while(target->len > 0 && ((ch[-1] == ' ' && stripWhite) || ch[-1] == '\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
   // Does end-of-field correspond to end-of-possible-NA?
@@ -1745,7 +1745,7 @@ int freadMain(freadMainArgs _args)
       }
       int topNumLines = 0;                // the most number of lines with the same number of fields, so far
       int topNumFields = 1;               // how many fields that was, to resolve ties
-      enum quoteRule topQuoteRule = -1;   // which quote rule that was
+      enum quote_rule_t topQuoteRule = -1;   // which quote rule that was
       int topSkip = 0;                    // how many rows to auto-skip
       const char *topStart = NULL;
     
@@ -1814,7 +1814,7 @@ int freadMain(freadMainArgs _args)
             if ((thisBlockLines > topNumLines && lastncol > 1) ||  // more lines wins even with fewer fields, so long as number of fields >= 2
                 (thisBlockLines == topNumLines &&
                  lastncol > topNumFields &&                      // when number of lines is tied, choose the sep which separates it into more columns
-                 (quoteRule < QUOTE_RULE_HYBRID || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
+                 (quoteRule < QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
                  (topNumFields <= 1 || sep != ' '))) {
               topNumLines = thisBlockLines;
               topNumFields = lastncol;
