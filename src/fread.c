@@ -1291,7 +1291,7 @@ static int detect_types(const char **pch, int ncol, bool *bumped)
           dec = '\0';
         }
       }
-      while (++tmpType[field] < CT_STRING && disabled_parsers[tmpType[field]]);
+      while (++tmpType[field] < CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
     }
     if (autoDec && dec != '\0') { // double was attempted
@@ -1582,7 +1582,7 @@ int freadMain(freadMainArgs _args)
     }
     if (ch >= sof) {
       const char *lastNewLine = ch;  // the start of the final newline sequence.
-      while (++ch < eof && isspace(*ch));
+      while (++ch < eof && isspace(*ch)) {};
       if (ch == eof) {
         // yes, just whitespace after last newline. Use last newline to put final \0
         eof = lastNewLine;
@@ -1845,7 +1845,7 @@ int freadMain(freadMainArgs _args)
         for (quoteRule = QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED; quoteRule <= QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED; quoteRule++) { // #loop_counter_not_local_scope_ok
           int thisRow = 0, thisncol = 0;
           ch = pos;
-          while (ch < eof && ++thisRow < jumpLines && (thisncol = countfields(&ch)) >= 0);
+          while (ch < eof && ++thisRow < jumpLines && (thisncol = countfields(&ch)) >= 0) {};
           if (thisncol < 0) continue;  // invalid file; e.g. unescaped quote inside quoted field
           if (!firstJumpEnd || ch > firstJumpEnd) {
             firstJumpEnd = ch;
@@ -2546,7 +2546,7 @@ int freadMain(freadMainArgs _args)
               // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
               // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
               // sure a single re-read will definitely work.
-              while (++absType < CT_STRING && disabled_parsers[absType]);
+              while (++absType < CT_STRING && disabled_parsers[absType]) {};
 
               if(args.readInt64As != CT_INT64 && absType == CT_INT64)
                 thisType = TOGGLE_BUMP(args.readInt64As);
