@@ -277,5 +277,14 @@ test.list <- atime::atime_test_list(
     Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
     Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that removes inefficiency
 
+  "isoweek improved in #7144" = atime::atime_test(
+    setup = {
+      set.seed(349)
+      x = sample(Sys.Date() - 0:5000, N, replace=TRUE)
+    },
+    expr = data.table::isoweek(x),
+    Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
+    Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
+
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

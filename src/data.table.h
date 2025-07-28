@@ -251,7 +251,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
 
 // coalesce.c
-SEXP coalesce(SEXP x, SEXP inplace);
+SEXP coalesce(SEXP x, SEXP inplace, SEXP nan_is_na_arg);
 
 // utils.c
 bool within_int32_repres(double x);
@@ -278,6 +278,7 @@ bool isDataTable(SEXP x);
 bool isRectangularList(SEXP x);
 bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
+SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c

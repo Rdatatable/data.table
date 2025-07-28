@@ -584,8 +584,7 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # Many thanks!
 # Best, Tyson
 # ------------------------------------------------------------
-# DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
-# DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
+
 # Leave milestone open with a 'release checks' issue open. Keep updating status there.
 # ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 # If it's evening, SLEEP.
@@ -593,17 +592,21 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
 # When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
 
-###### Bump dev for NON-PATCH RELEASE
-# 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
-# 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
-# 2. Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
-# 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
-# 4. Bump minor version in dllVersion() in init.c
-# 5. Bump 3 minor version numbers in Makefile
-# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.16.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
-# 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-# 8. Push to master with this consistent commit message: "1.17.0 on CRAN. Bump to 1.17.99"
-# 9. Take sha from the previous step and run `git tag 1.17.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+###### After submission for NON-PATCH RELEASE
+# 0. Start a new branch `cran-x.y.0` with the code as submitted to CRAN
+#    - Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
+#    - The branch should have one commit with precisely these 4 files being edited
+# 1. Follow up with a commit with this consistent commit message like: "1.17.0 on CRAN. Bump to 1.17.99" to this branch bumping to the next dev version
+#    - Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+#    - Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
+#    - Bump minor version in dllVersion() in init.c
+#    - Bump 3 minor version numbers in Makefile
+#    - Search and replace this .dev/CRAN_Release.cmd to update 1.16.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
+#    - Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 2. Ideally, no PRs are reviewed while a CRAN submission is pending. Any reviews that do happen MUST target this branch, NOT master!
+# 3. Once the submission lands on CRAN, merge this branch WITHOUT SQUASHING!
+# 4. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+# 5. Take SHA from the "...on CRAN. Bump to ..." commit and run `git tag 1.17.0 96c..sha..d77` then `git push origin 1.17.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
 
 ###### Branching policy for PATCH RELEASE
