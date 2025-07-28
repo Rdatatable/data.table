@@ -2,10 +2,10 @@
 title: "Jointures avec data.table"
 date: "`r Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Jointures avec data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::litedown}
   \usepackage[utf8]{inputenc}
 editor_options: 
   chunk_output_type: console
@@ -13,13 +13,7 @@ editor_options:
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+litedown::reactor(comment = "# ")
 ```
 
 ```{r, echo=FALSE, file='../_translation_links.R'}
