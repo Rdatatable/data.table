@@ -419,7 +419,7 @@ N = 2e7L
 DT = data.table(x = sample(letters, N, TRUE),
                 y = sample(1000L, N, TRUE),
                 val = runif(N))
-print(object.size(DT), units = "Mib")
+print(object.size(DT), units = "MiB")
 ```
 
 `DT` est de ~380Mio. Ce n'est pas vraiment énorme, mais suffisant pour illustrer le propos.
