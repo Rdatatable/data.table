@@ -168,7 +168,7 @@ Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
-- Inclure les colonnes associées dans l'alias `.` de `data.table` `list`.
+- Inclure les colonnes associées dans l'alias `.` de `list`.
 
 ```{r, eval=FALSE}
 Products[ProductReceived,
