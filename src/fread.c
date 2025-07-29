@@ -2302,6 +2302,7 @@ int freadMain(freadMainArgs _args)
   //*********************************************************************************************
   bool stopTeam = false, firstTime = true, restartTeam = false;  // bool for MT-safey (cannot ever read half written bool value badly)
   int nTypeBump = 0, nTypeBumpCols = 0;
+  double thRead = 0, thPush = 0;  // reductions of timings within the parallel region
   int max_col = 0;
   char *typeBumpMsg = NULL; size_t typeBumpMsgSize = 0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
@@ -2397,9 +2398,7 @@ int freadMain(freadMainArgs _args)
       }
       prepareThreadContext(&ctx);
       
-      double th_read_openmp = timestamps.th_read;//pragma workaround
-      double th_push_openmp = timestamps.th_push;
-      #pragma omp for ordered schedule(dynamic) reduction(+:th_read_openmp,th_push_openmp) reduction(max:max_col)
+      #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
       for (int jump = jump0; jump < nJumps; jump++) {
         if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
         double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
@@ -2420,7 +2419,7 @@ int freadMain(freadMainArgs _args)
           myNrow = 0;
           if (verbose || myShowProgress) {
             double now = wallclock();
-            timestamps.th_push += now - tLast;
+            thPush += now - tLast;
             tLast = now;
             if (myShowProgress && /*wait for all threads to process 2 jumps*/jump >= nth * 2) {
               // Important for thread safety inside progress() that this is called not just from critical but that
@@ -2623,7 +2622,7 @@ int freadMain(freadMainArgs _args)
           if (tch != eof) tch++;
           myNrow++;
         }
-        if (verbose) { double now = wallclock(); timestamps.th_read += now - tLast; tLast = now; }
+        if (verbose) { double now = wallclock(); thRead += now - tLast; tLast = now; }
         ctx.anchor = thisJumpStart;
         ctx.nRows = myNrow;
         postprocessBuffer(&ctx);
@@ -2687,9 +2686,6 @@ int freadMain(freadMainArgs _args)
         // Ordered has to be last in some OpenMP implementations currently. Logically though, pushBuffer happens now.
       }
       
-      timestamps.th_read = th_read_openmp;//pragma workaround
-      timestamps.th_push = th_push_openmp;
-
       // End for loop over all jump points
     
       // Push out all buffers one last time (only needed because of gomp ordered workaround above with push first in the loop)
@@ -2697,7 +2693,7 @@ int freadMain(freadMainArgs _args)
       if (myNrow) {
         double now = verbose ? wallclock() : 0;
         pushBuffer(&ctx);
-        if (verbose) timestamps.th_push += wallclock() - now;
+        if (verbose) thPush += wallclock() - now;
       }
       // Each thread to free their own buffer.
       free(ctx.buff8); ctx.buff8 = NULL;
@@ -2857,12 +2853,12 @@ int freadMain(freadMainArgs _args)
             timestamps.coltype - timestamps.layout, 100.0 * (timestamps.coltype - timestamps.layout) / timestamps.tot, sampleLines);
     DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGiB) of which %"PRId64" (%3.0f%%) rows used\n"),
             timestamps.alloc - timestamps.coltype, 100.0 * (timestamps.alloc - timestamps.coltype) / timestamps.tot, allocnrow, ncol, DTbytes / (1024.0 * 1024 * 1024), DTi, 100.0 * DTi / allocnrow);
-    timestamps.th_read /= nth; timestamps.th_push /= nth;
-    double thWaiting = timestamps.reread - timestamps.alloc - timestamps.th_read - timestamps.th_push;
+    thRead /= nth; thPush /= nth;
+    double thWaiting = timestamps.reread - timestamps.alloc - thRead - thPush;
     DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMiB (each chunk %"PRId64" rows) using %d threads\n"),
         timestamps.reread - timestamps.alloc, 100.0 * (timestamps.reread - timestamps.alloc) / timestamps.tot, nJumps, nSwept, (double)chunkBytes / (1024 * 1024), DTi / nJumps, nth);
-    DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), timestamps.th_read, 100.0 * timestamps.th_read / timestamps.tot, buffGrown);
-    DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), timestamps.th_push, 100.0 * timestamps.th_push / timestamps.tot);
+    DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), thRead, 100.0 * thRead / timestamps.tot, buffGrown);
+    DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), thPush, 100.0 * thPush / timestamps.tot);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Waiting\n"), thWaiting, 100.0 * thWaiting / timestamps.tot);
     DTPRINT(_("%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n"),
         timestamps.reread - timestamps.read, 100.0 * (timestamps.reread - timestamps.read) / timestamps.tot, nTypeBumpCols);
