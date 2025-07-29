@@ -145,8 +145,8 @@ Products[ProductReceived,
 Comme beaucoup de choses ont changé, nous allons expliquer les nouvelles caractéristiques dans les groupes suivants :
 
 - **Niveau colonne**
-   - Le *premier groupe* de colonnes dans le nouveau `data.table` vient de la table `x` .
-   - Le *second groupe* de colonnes de la nouvelle `data.table` vient de la table `i`.
+   - Le *premier groupe* de colonnes du nouveau `data.table` vient de la table `x` .
+   - Le *second groupe* de colonnes du nouveau `data.table` vient de la table `i`.
    - Si l'opération de jointure fait apparaître un **conflit de nom** (quand les deux tables ont un même nom de colonne) le ***prefixe*** `i.` est ajouté aux noms des colonnes de la **table de droite** (table en position `i`).
 
 - **Niveau ligne**
