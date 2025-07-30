@@ -138,7 +138,7 @@ This ensures:
 
 **Out-of-Sample Type Exceptions**
 
-If a type change occurs outside the sampled rows, `fread()` automatically detects it and rereads only the affected columns from the beginning. This ensures correct type assignment without requiring user intervention. For example, a column sampled as integer might later contain `00A` — triggering an automatic reread as character.
+If a type change occurs outside the sampled rows, `fread()` automatically detects it and rereads the file to ensure correct type assignment, without requiring user intervention. For example, a column sampled as integer might later contain `00A` — triggering an automatic reread as character.
 
 All detection logic and any rereads are detailed when `verbose=TRUE` is enabled.
 
@@ -198,7 +198,7 @@ The integer64 argument (and corresponding option) accepts the following values:
 
 - `"integer64"` (default): Reads large integers as `bit64::integer64` with full precision.
 
-- `"double"` or `"numeric"`: Reads large integers as double-precision numbers, potentially losing precision silently (similar to base R).
+- `"double"` or `"numeric"`: Reads large integers as double-precision numbers, potentially losing precision silently (similar to `utils::read.csv` in base R).
 
 - `"character"`: Reads large integers as character strings.
 
