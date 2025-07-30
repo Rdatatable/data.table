@@ -10342,7 +10342,7 @@ test(1673.1, TT + 4L, as.IDate("2016-04-29"))
 test(1673.2, TT + 4, as.IDate("2016-04-29"))
 test(1673.3, TT - 3, as.IDate("2016-04-22"))
 test(1673.4, TT - 3L, as.IDate("2016-04-22"))
-test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
+test(1673.5, all.equal(as.IDate("2016-04-28") - as.IDate("2016-04-20"), as.difftime(8, units='days')))
 
 
 # test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
@@ -16996,7 +16996,8 @@ if (.Platform$OS.type=="windows") local({
     LC_TIME = "Chinese (Simplified)_China.936"
   )
   x_old = Map(Sys.getlocale, names(x))
-  invisible(Map(Sys.setlocale, names(x), x))
+  # setlocale() warns for non-UTF-8 locales in modern versions of R, #7210
+  suppressWarnings(invisible(Map(Sys.setlocale, names(x), x)))
   on.exit(Map(Sys.setlocale, names(x_old), x_old))
   # triggered segfault here in #4402, Windows-only under translation.
   # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
@@ -18615,12 +18616,18 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters # 5096
-local({
+local(if (l10n_info()$`UTF-8` || {
   lc_ctype = Sys.getlocale('LC_CTYPE')
+  lc_wantctype = 'en_US.UTF-8'
   # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
   # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
-  if (!l10n_info()$`UTF-8`) Sys.setlocale('LC_CTYPE', "en_US.UTF-8")
-  on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+  # Avoid the warning upon possible failure, #7210.
+  lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
+  if (identical(lc_newctype, lc_wantctype)) {
+    on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+    TRUE
+  } else FALSE
+}) {
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -18670,6 +18677,8 @@ local({
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
   # test for data.table with NA, #6441
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
+} else {
+  cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 })
 
 # allow 1-D matrix in j for consistency, #783
@@ -21574,3 +21583,13 @@ test(2335.3, isoyear(as.IDate("2023-08-15")), 2023L)  # Normal mid-year case
 test(2335.4, isoyear(as.IDate(c("2019-12-30", "2016-01-01", "2023-08-15"))),c(2020L, 2015L, 2023L))
 test(2335.5, isoyear("2019-12-30"), 2020L)
 test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
+
+# t1-t2 for Date/IDate should be consistent, modulo storage mode #4979
+t1 = as.IDate("2025-07-01")
+t2 = as.IDate("2025-06-01")
+test(2336.1, all.equal(as.Date(t1) - as.Date(t2), t1 - t2))
+test(2336.2, all.equal(as.Date(t2) - as.Date(t1), t2 - t1))
+test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
+test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
+test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
+test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
