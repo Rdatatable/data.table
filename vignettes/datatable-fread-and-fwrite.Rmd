@@ -49,16 +49,19 @@ library(data.table)
 fread("grep -v HEADER example_data.txt")
 ```
 
-The `-v` option makes `grep` return all lines except those containing the string 'HEADER'. Given the number of high quality engineers that have looked at the command tool grep over the years, it is most likely that it is as fast as you can get, as well as being correct, convenient, well documented online, easy to learn and search for solutions for specific tasks. If you need to perform more complex string filtering (e.g., matching strings at the beginning or end of lines), the `grep` syntax is very powerful. Learning its syntax is a transferable skill for other languages and environments.
-  
+The `-v` option makes `grep` return all lines except those containing the string 'HEADER'.
+
+> "Given the number of high quality engineers that have looked at the command tool grep over the years, it is most likely that it is as fast as you can get, as well as being correct, convenient, well documented online, easy to learn and search for solutions for specific tasks. If you need to perform more complex string filtering (e.g., matching strings at the beginning or end of lines), the grep syntax is very powerful. Learning its syntax is a transferable skill for other languages and environments."
+>
+> — Matt Dowle  
+
 Look at this [example](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) for more detail.
 
 On Windows we recommend [Cygwin](https://www.cygwin.com/) (run one .exe to install) which includes the command line tools such as grep. In March 2016, Microsoft [announced](https://www.hanselman.com/blog/developers-can-run-bash-shell-and-usermode-ubuntu-linux-binaries-on-windows-10) they will include these tools in Windows 10 natively. On Linux and macOS, these tools have always been included in the operating system. You can find many examples and tutorials about command line tools online. We recommend [Data Science at the Command Line](https://www.oreilly.com/library/view/data-science-at/9781491947845/).
 
 #### 1.1.1  Reading directly from a text string
 
-`fread()` can read data directly from a character string in R using the text argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `(
-)`.
+`fread()` can read data directly from a character string in R using the text argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `\n`.
 
 ```{r}
 my_data_string = "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
@@ -83,6 +86,9 @@ In many cases, `fread()` can automatically detect and decompress files with comm
 - `.gz` (gzip): Supported and works out of the box.
 - `.xz` (xz): Supported and works out of the box.
 - `.zip` (ZIP archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
+- `.tar` (tar archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
+
+> Note: If there are multiple files in the archive, `fread()` will fail with an error.
 
 ### 1.2 Automatic separator and skip detection
 
