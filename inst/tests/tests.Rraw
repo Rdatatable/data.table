@@ -21576,5 +21576,8 @@ test(2336.3, capture.output(fwrite(di, forceDecimal=TRUE)), c("x", "1", "2", "3"
 test(2336.4, capture.output(fwrite(data.table(x=c(0.)), forceDecimal=TRUE)), c("x", "0."))
 test(2336.5, capture.output(fwrite(data.table(x=c(-0.)), forceDecimal=TRUE)), c("x", "0."))
 # round trip
-test(2336.6, fread(text=paste0(capture.output(fwrite(dd, forceDecimal=TRUE)), collapse = "\n")), dd)
-test(2336.7, fread(text=paste0(capture.output(fwrite(dd, forceDecimal=FALSE)), collapse = "\n")), di)
+local({
+  f <- tempfile(); on.exit(unlink(f))
+  test(2336.6, {fwrite(dd, f, forceDecimal=TRUE); fread(f)}, dd)
+  test(2336.7, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
+})
