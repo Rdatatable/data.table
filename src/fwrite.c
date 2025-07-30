@@ -264,9 +264,8 @@ void writeFloat64(const void *col, int64_t row, char **pch)
         if (sf > dr) width = sf + 1;                     // 1.234 and 123.4
         else { dl0 = 1; width = dr + 1 + dl0; }            // 0.1234, 0.0001234
       }
-      bool isWholeNumber = (dr == 0 && dl0 >= 0);
-      if (forceDecimal && isWholeNumber) {
-        dr = 0; 
+      const bool isWholeNumber = (dr == 0 && dl0 >= 0);
+      if (forceDecimal && isWholeNumber) { 
         width += 1; 
       }
       // So:  3.1416 => l=31416, sf=5, exp=0     dr=4; dl0=0; width=6
