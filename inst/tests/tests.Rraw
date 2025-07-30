@@ -21568,4 +21568,13 @@ test(2335.5, isoyear("2019-12-30"), 2020L)
 test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
 
 # 2864 force decimal points for whole numbers in numeric columns
-test(2336.1, capture.output(fwrite(data.table(x=c(1, 2, 3)), forceDecimal=TRUE)), c("x", "1.", "2.", "3."))
+dd = data.table(x=c(1, 2, 3))
+di = data.table(x=c(1L, 2L, 3L))
+test(2336.1, capture.output(fwrite(dd, forceDecimal=TRUE)), c("x", "1.", "2.", "3."))
+test(2336.2, capture.output(fwrite(dd, forceDecimal=FALSE)), c("x", "1", "2", "3"))
+test(2336.3, capture.output(fwrite(di, forceDecimal=TRUE)), c("x", "1", "2", "3"))
+test(2336.4, capture.output(fwrite(data.table(x=c(0.)), forceDecimal=TRUE)), c("x", "0."))
+test(2336.5, capture.output(fwrite(data.table(x=c(-0.)), forceDecimal=TRUE)), c("x", "0."))
+# round trip
+test(2336.6, fread(text=paste0(capture.output(fwrite(dd, forceDecimal=TRUE)), collapse = "\n")), dd)
+test(2336.7, fread(text=paste0(capture.output(fwrite(dd, forceDecimal=FALSE)), collapse = "\n")), di)
