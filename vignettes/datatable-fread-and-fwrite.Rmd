@@ -146,45 +146,7 @@ All detection logic and any rereads are detailed when `verbose=TRUE` is enabled.
 
 Because the large sample explicitly includes the very end of the file, critical issues—such as an inconsistent number of columns, a malformed footer, or an opening quote without a matching closing quote—can be detected and reported almost instantly. This early error detection avoids the unnecessary overhead of processing the entire file or allocating excessive memory, only to encounter a failure at the final step. It ensures faster feedback and more efficient resource usage, especially when working with large datasets.
 
-### 1.5 Reading SQL Insert Scripts
-
-`fread()` doesn't directly support SQL `INSERT` scripts, but they can be processed via command-line tools. For example, given `insert_script.sql`:
-
-```
-INSERT INTO tbl VALUES (1, 'asd', 923123123, 'zx');
-INSERT INTO tbl VALUES (1, NULL, 923123123, 'zxz');
-INSERT INTO tbl VALUES (3, 'asd3', 923123123, NULL);
-```
-
-Use this command in R [link](https://stackoverflow.com/questions/32026398/transform-sql-insert-script-into-csv-format):
-
-```{r}
-# 1. Create the SQL file programmatically
-writeLines(
-c(
-"INSERT INTO tbl VALUES (1, 'asd', 923123123, 'zx');",
-"INSERT INTO tbl VALUES (1, NULL, 923123123, 'zxz');",
-"INSERT INTO tbl VALUES (3, 'asd3', 923123123, NULL);"
-),
-"insert_script.sql"
-)
-sql_lines = readLines("insert_script.sql")
-
-values_only = gsub("INSERT INTO tbl VALUES \\((.*)\\);", "\\1", sql_lines)
-
-dt_sql = fread(text = values_only, na.strings = "NULL")
-print(dt_sql)
-
-file.remove("insert_script.sql")
-```
-
-- The `gsub()` function in R transforms each INSERT line into a comma-separated list of its values.
-
-- `na.strings = "NULL"` in fread is crucial: it tells fread to interpret the literal string `"NULL"` (output by awk for SQL NULLs) as R's NA value.
-
-- Quoted strings (e.g., 'asd') are preserved and read as character by `fread`.
-
-### 1.6 `integer64` Support
+### 1.5 `integer64` Support
 
 By default, `fread` detects integers larger than 2<sup>31</sup> and reads them as `bit64::integer64` to preserve full precision. This behavior can be overridden in three ways:
 
@@ -210,7 +172,7 @@ options(datatable.integer64 = "double")   # Example: set globally to "double"
 getOption("datatable.integer64") 
 ```
 
-### 1.7 Drop or Select Columns by Name or Position
+### 1.6 Drop or Select Columns by Name or Position
 
 To save memory and improve performance, use `fread()`'s `select` or `drop` arguments to read only the columns you need.
 
@@ -225,11 +187,11 @@ Key points:
 
 For details, see the manual page by running `?fread` in R.
 
-### 1.8 Skip to a Sub-Table’s Header Row Using a Column Name Substring
+### 1.7 Skip to a Sub-Table’s Header Row Using a Column Name Substring
 
 Use `skip="string"` in `fread` to search for a line containing a substring (typically from the column names, e.g., `skip="Date"`). Reading begins at the first matching line. This is useful for skipping metadata or selecting sub-tables in multi-table files. This feature is inspired by the `read.xls` function in the gdata package.
 
-### 1.9 Automatic Quote Escape Detection (Including No-Escape)
+### 1.8 Automatic Quote Escape Detection (Including No-Escape)
 
 `fread` automatically detects how quotes are escaped—including doubled ("") or backslash-escaped (\") quotes—without requiring user input. This is determined using a large sample of the data (see point 3), and validated against the entire file.
 
