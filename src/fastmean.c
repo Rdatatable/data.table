@@ -61,7 +61,7 @@ SEXP fastmean(SEXP args)
       break;
     case REALSXP:
       for (int i=0; i<l; ++i) {
-        if(ISNAN(REAL(x)[i])) continue;  // TO DO: could drop this line and let NA propagate?
+        if(ISNAN(REAL(x)[i])) continue;  // todo: could drop this line and let NA propagate?
         s += REAL(x)[i];
         n++;
       }

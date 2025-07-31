@@ -3,9 +3,9 @@
 #include <time.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 
-// TODO: rewrite/simplify logic -- took me ages to understand what I wrote!!
-// TODO: benchmark and parallelise slow regions
-// TODO: implement 'lookup' for 'gaps' and 'overlaps' arguments
+// todo: rewrite/simplify logic -- took me ages to understand what I wrote!!
+// todo: benchmark and parallelise slow regions
+// todo: implement 'lookup' for 'gaps' and 'overlaps' arguments
 SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP multArg, SEXP typeArg, SEXP verbose) {
 
   SEXP vv, tt, lookup, type_lookup;
@@ -49,7 +49,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       if (type != WITHIN) {
-        for (int i=0; i<uxrows; ++i)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+        for (int i=0; i<uxrows; ++i)                      // todo: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
           if (count[i]) type_count[i] = 1;
       }
       break;
@@ -80,7 +80,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       if (type != WITHIN) {
-        for (int i=0; i<uxrows; ++i)              // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+        for (int i=0; i<uxrows; ++i)              // todo: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
           if (count[i]) type_count[i] = 1;
       }
       break;
