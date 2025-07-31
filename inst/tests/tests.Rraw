@@ -21593,3 +21593,19 @@ test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
 test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
 test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
 test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
+
+# 2864 force decimal points for whole numbers in numeric columns
+dd = data.table(x=c(1, 2, 3))
+di = data.table(x=c(1L, 2L, 3L))
+test(2337.1, capture.output(fwrite(dd, forceDecimal=TRUE)), c("x", "1.", "2.", "3."))
+test(2337.2, capture.output(fwrite(dd, forceDecimal=TRUE, dec=",", sep="\t")), c("x", "1,", "2,", "3,"))
+test(2337.3, capture.output(fwrite(dd, forceDecimal=FALSE)), c("x", "1", "2", "3"))
+test(2337.4, capture.output(fwrite(di, forceDecimal=TRUE)), c("x", "1", "2", "3"))
+test(2337.5, capture.output(fwrite(data.table(x=c(0.)), forceDecimal=TRUE)), c("x", "0."))
+test(2337.6, capture.output(fwrite(data.table(x=c(-0.)), forceDecimal=TRUE)), c("x", "0."))
+# round trip
+local({
+  f <- tempfile(); on.exit(unlink(f))
+  test(2337.7, {fwrite(dd, f, forceDecimal=TRUE); fread(f)}, dd)
+  test(2337.8, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
+})
