@@ -10977,9 +10977,9 @@ test(1732.7, fwrite(DT, quote='auto'), output='A,B\n,5\nNA,7\n"",0\nmonty,')
 test(1732.8, fwrite(DT, quote='auto', na="NA"), output='A,B\nNA,5\n"NA",7\n"",0\n"monty",NA')
 
 # dec=","
-test(1733.1, fwrite(data.table(pi),dec=","), error=base_messages$stopifnot("dec != sep"))
+# Test 1733.1 removed, see #7227
 test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
-           output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
+             output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
 
 # fwrite implied and actual row.names
 DT = data.table(foo=1:3,bar=c(1.2,9.8,-6.0))
@@ -21593,3 +21593,12 @@ test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
 test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
 test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
 test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
+
+# fwrite: allow dec=',' with single column, #7227
+test(2337.1, fwrite(data.table(1), dec=","), NULL)
+if (getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
+  test(2337.2, fwrite(data.table(0.1, 0.2), dec=",", sep=","), error = "dec and sep must be distinct")
+}
+test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
+test(2337.4, is.null(fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=",")))
+test(2337.5, is.null(fwrite(data.table(a=numeric()), dec=",", sep=",")))
