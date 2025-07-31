@@ -31,24 +31,24 @@
   The terms \emph{join-to} and \emph{join-from} indicate which in a pair of tables is the "baseline" or "authoritative" source -- this governs the ordering of rows and columns. 
   Whether each refers to the "left" or "right" table of a pair depends on the \code{how} argument:
   \enumerate{
-    \item{ \code{how \%in\% c("left", "semi", "anti")}: \emph{join-to} is \emph{RHS}, \emph{join-from} is \emph{LHS}. }
-    \item{ \code{how \%in\% c("inner", "full", "cross")}: \emph{LHS} and \emph{RHS} tables are treated equally, so that the terms are interchangeable. }
-    \item{ \code{how == "right"}: \emph{join-to} is \emph{LHS}, \emph{join-from} is \emph{RHS}. }
+    \item \code{how \%in\% c("left", "semi", "anti")}: \emph{join-to} is \emph{RHS}, \emph{join-from} is \emph{LHS}.
+    \item \code{how \%in\% c("inner", "full", "cross")}: \emph{LHS} and \emph{RHS} tables are treated equally, so that the terms are interchangeable.
+    \item \code{how == "right"}: \emph{join-to} is \emph{LHS}, \emph{join-from} is \emph{RHS}.
   }
 
   Using \code{mult="error"} will throw an error when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. It should not be used just to detect duplicates, which might not have matching row, and thus would silently be missed.
 
   When not specified, \code{mult} takes its default depending on the \code{how} argument:
   \enumerate{
-    \item{ When \code{how \%in\% c("left", "inner", "full", "right")}, \code{mult="error"}. }
-    \item{ When \code{how \%in\% c("semi", "anti")}, \code{mult="last"}, although this is equivalent to \code{mult="first"}. }
-    \item{ When \code{how == "cross"}, \code{mult="all"}. }
+    \item When \code{how \%in\% c("left", "inner", "full", "right")}, \code{mult="error"}.
+    \item When \code{how \%in\% c("semi", "anti")}, \code{mult="last"}, although this is equivalent to \code{mult="first"}.
+    \item When \code{how == "cross"}, \code{mult="all"}.
   }
 
   When the \code{on} argument is missing, it will be determined based \code{how} argument:
   \enumerate{
-    \item{ When \code{how \%in\% c("left", right", "semi", "anti")}, \code{on} becomes the key column(s) of the \emph{join-to} table. }
-    \item{ When \code{how \%in\% c("inner", full")}, if only one table has a key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
+    \item When \code{how \%in\% c("left", right", "semi", "anti")}, \code{on} becomes the key column(s) of the \emph{join-to} table.
+    \item When \code{how \%in\% c("inner", full")}, if only one table has a key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to shorter key.
   }
 
   When joining tables that are not directly linked to a single table, e.g. a snowflake schema (see References), a \emph{right} outer join can be used to optimize the sequence of merges, see Examples.
