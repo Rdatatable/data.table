@@ -155,6 +155,7 @@ if (getRversion() >= "3.6.0") {
 export(as.IDate,as.ITime,IDateTime)
 export(second,minute,hour,yday,wday,mday,week,isoweek,isoyear,month,quarter,year,yearmon,yearqtr)
 
+if (getRversion() >= "4.3.0") S3method(chooseOpsMethod, IDate)
 S3method("[", ITime)
 S3method("+", IDate)
 S3method("-", IDate)

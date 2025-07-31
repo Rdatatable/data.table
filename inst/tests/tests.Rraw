@@ -10342,7 +10342,7 @@ test(1673.1, TT + 4L, as.IDate("2016-04-29"))
 test(1673.2, TT + 4, as.IDate("2016-04-29"))
 test(1673.3, TT - 3, as.IDate("2016-04-22"))
 test(1673.4, TT - 3L, as.IDate("2016-04-22"))
-test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
+test(1673.5, all.equal(as.IDate("2016-04-28") - as.IDate("2016-04-20"), as.difftime(8, units='days')))
 
 
 # test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
@@ -10977,9 +10977,9 @@ test(1732.7, fwrite(DT, quote='auto'), output='A,B\n,5\nNA,7\n"",0\nmonty,')
 test(1732.8, fwrite(DT, quote='auto', na="NA"), output='A,B\nNA,5\n"NA",7\n"",0\n"monty",NA')
 
 # dec=","
-test(1733.1, fwrite(data.table(pi),dec=","), error=base_messages$stopifnot("dec != sep"))
+# Test 1733.1 removed, see #7227
 test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
-           output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
+             output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
 
 # fwrite implied and actual row.names
 DT = data.table(foo=1:3,bar=c(1.2,9.8,-6.0))
@@ -16996,7 +16996,8 @@ if (.Platform$OS.type=="windows") local({
     LC_TIME = "Chinese (Simplified)_China.936"
   )
   x_old = Map(Sys.getlocale, names(x))
-  invisible(Map(Sys.setlocale, names(x), x))
+  # setlocale() warns for non-UTF-8 locales in modern versions of R, #7210
+  suppressWarnings(invisible(Map(Sys.setlocale, names(x), x)))
   on.exit(Map(Sys.setlocale, names(x_old), x_old))
   # triggered segfault here in #4402, Windows-only under translation.
   # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
@@ -18615,12 +18616,18 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters # 5096
-local({
+local(if (l10n_info()$`UTF-8` || {
   lc_ctype = Sys.getlocale('LC_CTYPE')
+  lc_wantctype = 'en_US.UTF-8'
   # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
   # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
-  if (!l10n_info()$`UTF-8`) Sys.setlocale('LC_CTYPE', "en_US.UTF-8")
-  on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+  # Avoid the warning upon possible failure, #7210.
+  lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
+  if (identical(lc_newctype, lc_wantctype)) {
+    on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+    TRUE
+  } else FALSE
+}) {
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -18670,6 +18677,8 @@ local({
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
   # test for data.table with NA, #6441
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
+} else {
+  cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 })
 
 # allow 1-D matrix in j for consistency, #783
@@ -21554,10 +21563,18 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 # regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
-f = tempfile()
-writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
-test(2334, names(fread(f)), "a")
-unlink(f)
+local({
+	f = tempfile()
+	on.exit(unlink(f))
+	# the line is likely invalid in current encoding, so disable any translation, #7209
+	# test.data.table() sets options(encoding="UTF-8"), so go the long way around.
+	ff = file(f, encoding = "")
+	tryCatch(
+		writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
+		finally = close(ff)
+	)
+	test(2334, names(fread(f)), "a")
+})
 
 # Tests for new isoyear() helper (complement to isoweek) #7154
 test(2335.1, isoyear(as.IDate("2019-12-30")), 2020L)  # End of year edge case
@@ -21566,3 +21583,22 @@ test(2335.3, isoyear(as.IDate("2023-08-15")), 2023L)  # Normal mid-year case
 test(2335.4, isoyear(as.IDate(c("2019-12-30", "2016-01-01", "2023-08-15"))),c(2020L, 2015L, 2023L))
 test(2335.5, isoyear("2019-12-30"), 2020L)
 test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
+
+# t1-t2 for Date/IDate should be consistent, modulo storage mode #4979
+t1 = as.IDate("2025-07-01")
+t2 = as.IDate("2025-06-01")
+test(2336.1, all.equal(as.Date(t1) - as.Date(t2), t1 - t2))
+test(2336.2, all.equal(as.Date(t2) - as.Date(t1), t2 - t1))
+test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
+test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
+test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
+test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
+
+# fwrite: allow dec=',' with single column, #7227
+test(2337.1, fwrite(data.table(1), dec=","), NULL)
+if (getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
+  test(2337.2, fwrite(data.table(0.1, 0.2), dec=",", sep=","), error = "dec and sep must be distinct")
+}
+test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
+test(2337.4, is.null(fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=",")))
+test(2337.5, is.null(fwrite(data.table(a=numeric()), dec=",", sep=",")))
