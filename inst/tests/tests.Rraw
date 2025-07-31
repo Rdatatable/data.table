@@ -21597,5 +21597,7 @@ test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
 # fwrite: allow dec=',' with single column, #7227
 test(2337.1, fwrite(data.table(1), dec = ",", file = nullfile()), NULL)
 if (getRversion() >= "4.0.0") {
-test(2337.2, fwrite(data.table(1, 2), dec = ",", sep = ","), error = "dec and sep must be distinct for multi-column tables")}
+test(2337.2, fwrite(data.table(1, 2), dec = ",", sep = ","), error = "dec and sep must be distinct for multi-column tables with >0 rows")}
 test(2337.3, fwrite(data.table(c(0.1, 0.2)), dec = ",", sep = "\t", file = nullfile()), NULL)
+test(2337.4, fwrite(data.table(a = numeric(), b = numeric()), dec = ",", sep = ","), NULL)
+test(2337.5, fwrite(data.table(a = numeric()), dec = ",", sep = ","), NULL)
