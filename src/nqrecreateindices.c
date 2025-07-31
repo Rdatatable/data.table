@@ -1,4 +1,5 @@
 #include "data.table.h"
+#include <string.h>
 
 // TODO: Add oxygen style comments and cleanup var names.
 // See other TODOs inside the function.
@@ -17,7 +18,7 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
   const int inomatch = isNull(nomatch) ? 0 : INTEGER(nomatch)[0];
   int *inewstarts = INTEGER(newstarts);
 
-  for (int i = 0; i < n; i++) inewlen[i] = 0;
+  memset(inewlen, 0, n);
 
   // simplifying logic ... also fixes #2275
   for (int i = 0; i < length(indices); i++) {
