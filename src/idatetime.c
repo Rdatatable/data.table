@@ -141,7 +141,7 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(ctype_str, "year")) ctype = YEAR;
     else if (!strcmp(ctype_str, "yearmon")) { ctype = YEARMON; ansint = false; }
     else if (!strcmp(ctype_str, "yearqtr")) { ctype = YEARQTR; ansint = false; }
-    else internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
+    else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
     
     if (ansint) {
         SEXP ans = PROTECT(allocVector(INTSXP, n));
