@@ -131,7 +131,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       x
     })
   }
-  .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
+  .Call(CfwriteR, if (missing(select)) x else shallow_x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)
   invisible()
