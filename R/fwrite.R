@@ -13,7 +13,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
-           encoding = "") {
+           encoding = "",
+           select) {
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
@@ -26,6 +27,16 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
   compressLevel = as.integer(compressLevel)
+
+  # Handle select argument using .shallow() 
+  if (!missing(select)) {
+    if (is.data.table(x)) {
+      cols = colnamesInt(x, select)
+      shallow_x = .shallow(x, cols)
+    } else {
+      shallow_x = x[select]
+    }
+  }
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
