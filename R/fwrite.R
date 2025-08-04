@@ -28,7 +28,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   nThread = as.integer(nThread)
   compressLevel = as.integer(compressLevel)
 
-  # Handle select argument using .shallow() 
+  # Handle select argument using .shallow()
   if (!missing(select)) {
     if (is.data.table(x)) {
       cols = colnamesInt(x, select)

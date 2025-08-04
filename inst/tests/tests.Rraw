@@ -21549,3 +21549,10 @@ f = tempfile()
 writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
 test(2334, names(fread(f)), "a")
 unlink(f)
+
+# test for select parameter #4177
+DT = data.table(a=1:2, b=3:4)
+f = tempfile()
+fwrite(DT, f, select = "a") 
+test(2335.1, names(result = fread(f)), "a")
+unlink(f)
