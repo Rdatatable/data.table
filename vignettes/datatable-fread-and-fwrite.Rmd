@@ -84,8 +84,7 @@ In many cases, `fread()` can automatically detect and decompress files with comm
 
 **Supported extensions typically include:**
 - `.gz` / `.bz2` (gzip / bzip2): Supported and works out of the box.
-- `.zip` (ZIP archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
-- `.tar` (tar archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
+- `.zip` / `.tar`  (ZIP / tar archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
 
 > Note: If there are multiple files in the archive, `fread()` will fail with an error.
 
