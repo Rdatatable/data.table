@@ -83,8 +83,7 @@ print(dt_from_text)
 In many cases, `fread()` can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
 
 **Supported extensions typically include:**
-- `.gz` (gzip): Supported and works out of the box.
-- `.xz` (xz): Supported and works out of the box.
+- `.gz` / `.bz2` (gzip / bzip2): Supported and works out of the box.
 - `.zip` (ZIP archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
 - `.tar` (tar archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
 
