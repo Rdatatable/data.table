@@ -103,12 +103,14 @@ static const char *concat(SEXP vec, SEXP idx) {
 // with missing inputs, and -1 in the positions with column names not
 // found. Column names not found will eventually cause error via
 // uniq_diff().
-SEXP chmatch_na(SEXP x, SEXP table){
-  SEXP ans;
-  PROTECT(ans = chmatch(x, table, -1));
-  for(int i=0; i<length(ans); i++){
-    if(STRING_ELT(x, i) == NA_STRING){
-      INTEGER(ans)[i] = NA_INTEGER;
+SEXP chmatch_na(SEXP x, SEXP table)
+{
+  SEXP ans = chmatch(x, table, -1);
+  PROTECT(ans);
+  int *restrict target = INTEGER(ans);
+  for (int i = 0; i < length(ans); i++) {
+    if (STRING_ELT(x, i) == NA_STRING) {
+      target[i] = NA_INTEGER;
     }
   }
   UNPROTECT(1);
