@@ -32,9 +32,9 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (!missing(select)) {
     if (is.data.table(x)) {
       cols = colnamesInt(x, select)
-      shallow_x = .shallow(x, cols)
+      x = .shallow(x, cols)
     } else {
-      shallow_x = x[select]
+      x = x[select]
     }
   }
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
@@ -131,7 +131,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       x
     })
   }
-  .Call(CfwriteR, if (missing(select)) x else shallow_x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
+  .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)
   invisible()
