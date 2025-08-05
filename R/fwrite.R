@@ -27,16 +27,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
   compressLevel = as.integer(compressLevel)
-
-  # Handle select argument using .shallow()
-  if (!null(select)) {
-    if (is.data.table(x)) {
-      cols = colnamesInt(x, select)
-      x = .shallow(x, cols)
-    } else {
-      x = x[select]
-    }
-  }
+           
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
@@ -49,6 +40,16 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       x = as.data.table(x)
     }
   }
+  # Handle select argument using .shallow()
+  if (!null(select)) {
+    cols = colnamesInt(x, select)         
+    if (is.data.table(x)) {
+      x = .shallow(x, cols)
+    } else {
+      x = x[select]
+    }
+  }
+           
   stopifnot(
     is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
