@@ -1,23 +1,24 @@
 #include "data.table.h"
+#include <string.h>
 
 // TODO: Add oxygen style comments and cleanup var names.
 // See other TODOs inside the function.
 SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
 {
-  R_len_t n = INTEGER(nArg)[0], xn = length(xo);
+  const R_len_t n = INTEGER_RO(nArg)[0], xn = length(xo);
   SEXP ans, newstarts, newlen;
   ans = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, (newstarts = allocVector(INTSXP, n)));
   SET_VECTOR_ELT(ans, 1, (newlen = allocVector(INTSXP, n)));
 
   int *inewlen = INTEGER(newlen);
-  const int *iindices = INTEGER(indices);
-  const int *ilen = INTEGER(len);
-  const int *ixo = INTEGER(xo);
-  const int inomatch = isNull(nomatch) ? 0 : INTEGER(nomatch)[0];
+  const int *iindices = INTEGER_RO(indices);
+  const int *ilen = INTEGER_RO(len);
+  const int *ixo = INTEGER_RO(xo);
+  const int inomatch = isNull(nomatch) ? 0 : INTEGER_RO(nomatch)[0];
   int *inewstarts = INTEGER(newstarts);
 
-  for (int i = 0; i < n; i++) inewlen[i] = 0;
+  memset(inewlen, 0, n * sizeof(int));
 
   // simplifying logic ... also fixes #2275
   for (int i = 0; i < length(indices); i++) {
