@@ -241,11 +241,13 @@ void writeFloat64(const void *col, int64_t row, char **pch)
     if (l % 10 >= 5) l += 10; // use the last digit to round
     l /= 10;
     if (l == 0) {
+      # nocov start. Very likely not needed as such numbers (e.g. 2^-1075) likely not representable in R.
       if (*(ch - 1) == '-') ch--;
       *ch++ = '0';
       if (forceDecimal) {
         *ch++ = dec;
       }
+      # nocov end
     } else {
       // Count trailing zeros and therefore s.f. present in l
       int trailZero = 0;
