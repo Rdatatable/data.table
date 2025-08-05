@@ -42,7 +42,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   # Handle select argument using .shallow()
   if (!is.null(select)) {
-    cols = colnamesInt(x, select) 
+    cols = colnamesInt(x, select)
     if (is.data.table(x)) {
       x = .shallow(x, cols)
     } else {
