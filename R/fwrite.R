@@ -14,7 +14,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
            encoding = "",
-           select) {
+           select = NULL) {
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
@@ -29,7 +29,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   compressLevel = as.integer(compressLevel)
 
   # Handle select argument using .shallow()
-  if (!missing(select)) {
+  if (!null(select)) {
     if (is.data.table(x)) {
       cols = colnamesInt(x, select)
       x = .shallow(x, cols)
