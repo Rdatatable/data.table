@@ -57,7 +57,7 @@ The `-v` option makes `grep` return all lines except those containing the string
 
 Look at this [example](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) for more detail.
 
-On Windows we recommend [Cygwin](https://www.cygwin.com/) (run one .exe to install) which includes the command line tools such as grep. In March 2016, Microsoft [announced](https://www.hanselman.com/blog/developers-can-run-bash-shell-and-usermode-ubuntu-linux-binaries-on-windows-10) they will include these tools in Windows 10 natively. On Linux and macOS, these tools have always been included in the operating system. You can find many examples and tutorials about command line tools online. We recommend [Data Science at the Command Line](https://www.oreilly.com/library/view/data-science-at/9781491947845/).
+On Windows, command line tools like `grep` are available through various environments, such as Rtools, Cygwin, or the Windows Subsystem for Linux (WSL). On Linux and macOS, these tools are typically included with the operating system.
 
 #### 1.1.1  Reading directly from a text string
 
@@ -225,7 +225,7 @@ dt_quoting_scenario = data.table(
   text_field = c("Contains,a,comma", "Contains \"a quote\"", "Clean_text", "", NA),
   numeric_field = 1:5
 )
-temp_quote_adv <- tempfile(fileext = ".csv")
+temp_quote_adv = tempfile(fileext = ".csv")
 
 fwrite(dt_quoting_scenario, temp_quote_adv)
 # Note the output: the empty string is quoted (""), but the NA is not.
