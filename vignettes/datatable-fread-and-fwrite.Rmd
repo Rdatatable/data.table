@@ -216,20 +216,19 @@ From v1.10.6, `fread` resolves ambiguities more reliably across the entire file 
 
 When data is written as strings (either inherently, like character columns, or by choice, like `dateTimeAs="ISO"`), `quote="auto"` (default) intelligently quotes fields:
 
-**Contextual Quoting**: Only quotes fields if they contain the delimiter (`sep`), a double quote, or a newline. This ensures clean, RFC 4180-compliant CSVs.
+**Contextual Quoting**:Fields are quoted only when necessary. This happens if they contain the delimiter `(sep)`, a double quote `(")`, a newline `(\n)`, a carriage return `(\r)`, or if the field is an empty string `("")`. Quoting the empty string is done to distinguish it from an NA value when the file is read.
 
-**Bypassed for Direct Numeric Output**: If specific columns are written as their underlying numeric types (e.g., via `dateTimeAs="epoch"` for POSIXct, or if a user pre-converts Date to integer), then quoting logic is naturally bypassed for those numeric fields, contributing to efficiency.
+**Bypassed for Direct Numeric Output**: If specific columns are written as their underlying numeric types (e.g., via `dateTimeAs="epoch"` for `POSIXct`, or if a user pre-converts Date to integer), then quoting logic is naturally bypassed for those numeric fields, contributing to efficiency.
 
 ```{r}
 dt_quoting_scenario = data.table(
-  text_field = c("Contains,a,comma", "Contains \"a quote\"", "Contains\na newline", "Clean_text"),
-  epoch_time = as.numeric(as.POSIXct("2023-10-26 14:35:00", tz = "GMT") + 1:4), # Already numeric
-  numeric_field = 1:4
+  text_field = c("Contains,a,comma", "Contains \"a quote\"", "Clean_text", "", NA),
+  numeric_field = 1:5
 )
-temp_quote_adv = tempfile(fileext = ".csv")
+temp_quote_adv <- tempfile(fileext = ".csv")
 
-# Quoting applies to text_field, but not to epoch_time or numeric_field
 fwrite(dt_quoting_scenario, temp_quote_adv)
+# Note the output: the empty string is quoted (""), but the NA is not.
 cat(readLines(temp_quote_adv), sep = "\n")
 ```
 
