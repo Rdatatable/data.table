@@ -6,7 +6,7 @@
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
-    Note that when using \code{:=} inside a \code{{...}} block in \code{j}, the \code{:=} call must be the only statement. For assigning to multiple columns, use the functional form: \code{DT[, `:=`(col1=val1, col2=val2)]}. 
+    Note that when using \samp{:=} inside a \code{{...}} block in \code{j}, the \samp{:=} call must be the only statement. For assigning to multiple columns, use the functional form: \code{DT[, `:=`(col1=val1, col2=val2)]}. 
 
     \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
