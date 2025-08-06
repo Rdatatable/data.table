@@ -99,7 +99,7 @@
     datatable.use.index=TRUE,           # global switch to address #1422
     datatable.prettyprint.char=NULL,    # FR #1091
     datatable.old.matrix.autoname=FALSE # #7145: how data.table(x=1, matrix(1)) is auto-named set to change
-    datatable.old.diff.date=TRUE        # whether <IDate>-<IDate> gets difftime class set to change
+    datatable.old.diff.idate=TRUE       # whether <IDate>-<IDate> gets difftime class set to change
   )
   opts = opts[!names(opts) %chin% names(options())]
   options(opts)

@@ -114,7 +114,7 @@
       expressions like \code{data.table(x=1, cbind(1))} will be named. When \code{TRUE}, it will be named
       \code{V1}, otherwise it will be named \code{V2}.
     }
-    \item{\code{datatable.old.diff.date}}{Logical, default \code{TRUE}. Governs whether \code{t1 - t2},
+    \item{\code{datatable.old.diff.idate}}{Logical, default \code{TRUE}. Governs whether \code{t1 - t2},
       where \code{t1} and \code{t2} are both class \code{IDate}, gains the S3 class \code{difftime}.
       When \code{TRUE}, this class is assigned (with \code{units="days"}).
     }
