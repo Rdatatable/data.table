@@ -14,7 +14,7 @@
 
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES  
 
-1. `t1 - t2`, where both `t1` and `t2` are `IDate`, will eventually have class `difftime`, consistent with the case where `t1` and `t2` are both `Date`. See point 17 under Bug Fixes in 1.18.0 for more context.
+1. `t1 - t2`, where both `t1` and `t2` are `IDate`, will eventually have class `difftime`, consistent with the case where `t1` and `t2` are both `Date`. You can activate the new behavior by setting `options(datatable.old.diff.time = FALSE)`. See point 17 under Bug Fixes for more context.
 
 ### NEW FEATURES
 
