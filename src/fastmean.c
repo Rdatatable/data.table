@@ -70,7 +70,7 @@ SEXP fastmean(SEXP args)
         break;
       }
       s /= n;
-      if(R_FINITE((double)s)) {
+      if(isfinite((double)s)) {
         for (int i=0; i<l; ++i) {
           if(ISNAN(REAL(x)[i])) continue;
           t += (REAL(x)[i] - s);
@@ -98,7 +98,7 @@ SEXP fastmean(SEXP args)
         s += REAL(x)[i];
       }
       s /= l;
-      if(R_FINITE((double)s)) {
+      if(isfinite((double)s)) {
         for (int i=0; i<l; ++i) {
           // no NA if got this far
           t += (REAL(x)[i] - s);
@@ -123,7 +123,7 @@ SEXP fastmean(SEXP args)
       si += COMPLEX(x)[i].i;
       }
       s /= n; si /= n;
-      if( R_FINITE((double)s) && R_FINITE((double)si) ) {
+      if( isfinite((double)s) && isfinite((double)si) ) {
       for (int i=0; i<n; ++i) {
         t += COMPLEX(x)[i].r - s;
         ti += COMPLEX(x)[i].i - si;

@@ -214,10 +214,10 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   uint64_t min=0, max=0;
   int na_count=0, infnan_count=0;
   int i=0;
-  while(i<n && !R_FINITE(x[i])) { ISNA(x[i++]) ? na_count++ : infnan_count++; }
+  while(i<n && !isfinite(x[i])) { ISNA(x[i++]) ? na_count++ : infnan_count++; }
   if (i<n) { max = min = dtwiddle(x[i++]); }
   for(; i<n; i++) {
-    if (!R_FINITE(x[i])) { ISNA(x[i]) ? na_count++ : infnan_count++; continue; }
+    if (!isfinite(x[i])) { ISNA(x[i]) ? na_count++ : infnan_count++; continue; }
     uint64_t tmp = dtwiddle(x[i]);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
@@ -426,7 +426,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
     uint64_t u64;
   } u;  // local for thread safety
   u.d = x; //((double *)p)[i];
-  if (R_FINITE(u.d)) {
+  if (isfinite(u.d)) {
     if (u.d==0) u.d=0; // changes -0.0 to 0.0,  issue #743
     u.u64 ^= (u.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000; // always flip sign bit and if negative (sign bit was set) flip other bits too
     u.u64 += (u.u64 & dmask) << 1/*is this shift really correct. No need to shift*/  ;   // when dround==1|2, if 8th|16th bit is set, round up before chopping last 1|2 bytes
@@ -750,7 +750,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
         #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
-          if (!R_FINITE(xd[i])) {
+          if (!isfinite(xd[i])) {
             if (isinf(xd[i])) elem = signbit(xd[i]) ? min-1 : max+1;
             else {
               if (nalast==-1) anso[i]=0;  // for both NA and NaN
@@ -758,7 +758,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
             }
           } else {
             elem = dtwiddle(xd[i]);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
-                                     //       also R_FINITE is repeated within dtwiddle() currently, wastefully given the if() above
+                                     //       also isfinite is repeated within dtwiddle() currently, wastefully given the if() above
           }
           WRITE_KEY
         }

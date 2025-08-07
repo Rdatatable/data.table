@@ -21,6 +21,7 @@
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
+#include <math.h> // isfinite
 #include "types.h"
 #include "po.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402

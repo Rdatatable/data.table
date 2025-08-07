@@ -4,11 +4,11 @@ bool within_int32_repres(double x) {
   // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
   // standard states that behaviour is undefined only if the integral part of a
   // finite value of standard floating type cannot be represented.
-  return R_FINITE(x) && x < 2147483648 && x > -2147483648;
+  return isfinite(x) && x < 2147483648 && x > -2147483648;
 }
 
 bool within_int64_repres(double x) {
-  return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
+  return isfinite(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
 // used to error if not passed type double but this needed extra is.double() calls in calling R code

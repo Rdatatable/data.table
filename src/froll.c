@@ -65,13 +65,13 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
     }
     w += x[i];                                                  // i==k-1
     ans->dbl_v[i] = (double) (w / k);                           // first full sliding window, non-fill rollfun answer
-    if (R_FINITE((double) w)) {                                 // proceed only if no NAs detected in first k obs, otherwise early stopping
+    if (isfinite((double) w)) {                                 // proceed only if no NAs detected in first k obs, otherwise early stopping
       for (uint64_t i=k; i<nx; i++) {                           // loop over obs, complete window, all remaining after partial window
         w -= x[i-k];                                            // remove leaving row from sliding window
         w += x[i];                                              // add current row to sliding window
         ans->dbl_v[i] = (double) (w / k);                       // rollfun to answer vector
       }
-      if (!R_FINITE((double) w)) {                              // mark to re-run with NA care
+      if (!isfinite((double) w)) {                              // mark to re-run with NA care
         if (hasna==-1) {                                        // raise warning
           ans->status = 2;
           snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
@@ -96,14 +96,14 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
     int nc = 0;                                                 // NA counter within sliding window
     int i;                                                      // iterator declared here because it is being used after for loop
     for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
-      if (R_FINITE(x[i])) {
+      if (isfinite(x[i])) {
         w += x[i];                                              // add only finite values to window aggregate
       } else {
         nc++;                                                   // increment NA count in current window
       }
       ans->dbl_v[i] = fill;                                     // partial window fill all
     }
-    if (R_FINITE(x[i])) {
+    if (isfinite(x[i])) {
       w += x[i];                                                // i==k-1
     } else {
       nc++;
@@ -116,12 +116,12 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       ans->dbl_v[i] = narm ? (double) (w / (k - nc)) : NA_REAL; // some values in window are NA
     }
     for (uint64_t i=k; i<nx; i++) {                             // loop over obs, complete window, all remaining after partial window
-      if (R_FINITE(x[i])) {
+      if (isfinite(x[i])) {
         w += x[i];                                              // add only finite to window aggregate
       } else {
         nc++;                                                   // increment NA count in current window
       }
-      if (R_FINITE(x[i-k])) {
+      if (isfinite(x[i-k])) {
         w -= x[i-k];                                            // remove only finite from window aggregate
       } else {
         nc--;                                                   // decrement NA count in current window
@@ -158,7 +158,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
       for (int j=-k+1; j<=0; j++) {                             // sub-loop on window width
         w += x[i+j];                                            // sum of window for particular observation
       }
-      if (R_FINITE((double) w)) {                               // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
+      if (isfinite((double) w)) {                               // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
         long double res = w / k;                                // keep results as long double for intermediate processing
         long double err = 0.0;                                  // roundoff corrector
         for (int j=-k+1; j<=0; j++) {                           // nested loop on window width
@@ -268,13 +268,13 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
     }
     w += x[i];
     ans->dbl_v[i] = (double) w;
-    if (R_FINITE((double) w)) {
+    if (isfinite((double) w)) {
       for (uint64_t i=k; i<nx; i++) {
         w -= x[i-k];
         w += x[i];
         ans->dbl_v[i] = (double) w;
       }
-      if (!R_FINITE((double) w)) {
+      if (!isfinite((double) w)) {
         if (hasna==-1) {
           ans->status = 2;
           snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
@@ -299,14 +299,14 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
     int nc = 0;
     int i;
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
-      if (R_FINITE(x[i])) {
+      if (isfinite(x[i])) {
         w += x[i];
       } else {
         nc++;
       }
       ans->dbl_v[i] = fill;
     }
-    if (R_FINITE(x[i])) {
+    if (isfinite(x[i])) {
       w += x[i];
     } else {
       nc++;
@@ -319,12 +319,12 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       ans->dbl_v[i] = narm ? (double) w : NA_REAL;
     }
     for (uint64_t i=k; i<nx; i++) {
-      if (R_FINITE(x[i])) {
+      if (isfinite(x[i])) {
         w += x[i];
       } else {
         nc++;
       }
-      if (R_FINITE(x[i-k])) {
+      if (isfinite(x[i-k])) {
         w -= x[i-k];
       } else {
         nc--;
@@ -356,7 +356,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       for (int j=-k+1; j<=0; j++) {
         w += x[i+j];
       }
-      if (R_FINITE((double) w)) {
+      if (isfinite((double) w)) {
         ans->dbl_v[i] = (double) w;
       } else {
         if (!narm) {

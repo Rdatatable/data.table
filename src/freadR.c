@@ -127,7 +127,7 @@ SEXP freadR(
   args.nrowLimit = INT64_MAX;
   if (!isReal(nrowLimitArg) || length(nrowLimitArg) != 1)
     internal_error(__func__, "nrows not a single real. R level catches this.");  // # nocov
-  if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0] >= 0.0)
+  if (isfinite(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0] >= 0.0)
     args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
   args.logical01 = LOGICAL(logical01Arg)[0];
