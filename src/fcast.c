@@ -20,7 +20,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     const SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
     const SEXPTYPE thistype = TYPEOF(thiscol);
-    int nprotect = NULL;
+    int nprotect = 0;
     if (some_fill) {
       if (isNull(fill)) {
         if (LOGICAL(is_agg)[0]) {
