@@ -6,6 +6,8 @@
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
+    Note that when using \samp{:=} inside a \code{{...}} block in \code{j}, the \samp{:=} call must be the only statement. For assigning to multiple columns, use the functional form: \code{DT[, `:=`(col1=val1, col2=val2)]}. 
+
     \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
     \code{let} is an alias for the functional form and behaves exactly like \code{`:=`}.
@@ -66,7 +68,8 @@ All of the following result in a friendly error (by design) :
     x := 1L
     DT[i, col] := val
     DT[i]$col := val
-    DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
+    DT[, {col1 := 1L; col2 := 2L}]                # Using `{}` in `j` is reserved for single `:=` expressions.
+                                                  # For multiple updates, use the functional form `:=`() instead.
 }
 
 For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{https://stackoverflow.com/questions/tagged/data.table/}{data.table tag}.

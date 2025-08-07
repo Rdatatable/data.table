@@ -108,7 +108,7 @@ Please also make a note in the change log under [`# Governance history`](#govern
 
 # Finances and Funding
 
-data.table is a [NumFOCUS](https://numfocus.org/) project.  Donations to the data.table can be made at [https://numfocus.org/project/data-table]([https://numfocus.org/donate-to-data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK))
+data.table is a [NumFOCUS](https://numfocus.org/) project. Donations to data.table can be made at [https://numfocus.org/project/data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK).
 
 *NumFOCUS is a 501(c)(3) non-profit charity in the United States; as such, donations to NumFOCUS are tax-deductible as allowed by law. As with any donation, you should consult with your personal tax adviser or the IRS about your particular tax situation.*
 
