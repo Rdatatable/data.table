@@ -20,7 +20,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     const SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
     const SEXPTYPE thistype = TYPEOF(thiscol);
-    int nprotect = 0;
+    int nprotect = NULL;
     if (some_fill) {
       if (isNull(fill)) {
         if (LOGICAL(is_agg)[0]) {
@@ -38,7 +38,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     case INTSXP:
     case LGLSXP: {
       const int *ithiscol = INTEGER(thiscol);
-      const int *ithisfill = 0;
+      const int *ithisfill = NULL;
       if (some_fill) ithisfill = INTEGER(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
@@ -52,7 +52,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     } break;
     case REALSXP: {
       const double *dthiscol = REAL(thiscol);
-      const double *dthisfill = 0;
+      const double *dthisfill = NULL;
       if (some_fill) dthisfill = REAL(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
@@ -66,7 +66,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     } break;
     case CPLXSXP: {
       const Rcomplex *zthiscol = COMPLEX(thiscol);
-      const Rcomplex *zthisfill = 0;
+      const Rcomplex *zthisfill = NULL;
       if (some_fill) zthisfill = COMPLEX(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
