@@ -41,7 +41,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       w += x[i];                                                // cumulate in long double
       cs[i] = (double) w;
     }
-    if (R_FINITE((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasna==1
+    if (isfinite((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasna==1
       #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {                           // loop over observations to calculate final answer
         if (i+1 == k[i]) {
@@ -74,7 +74,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       return;
     }                                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
-      if (R_FINITE(x[i])) {
+      if (isfinite(x[i])) {
         w += x[i];                                              // add observation to running sum
       } else {
         nc++;                                                   // increment non-finite counter
@@ -126,7 +126,7 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
         for (int j=-k[i]+1; j<=0; j++) {                        // sub-loop on window width
           w += x[i+j];                                          // sum of window for particular observation
         }
-        if (R_FINITE((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
+        if (isfinite((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
           long double res = w / k[i];                           // keep results as long double for intermediate processing
           long double err = 0.0;                                // roundoff corrector
           for (int j=-k[i]+1; j<=0; j++) {                      // sub-loop on window width
@@ -230,7 +230,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       w += x[i];
       cs[i] = (double) w;
     }
-    if (R_FINITE((double) w)) {
+    if (isfinite((double) w)) {
       #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {
         if (i+1 == k[i]) {
@@ -263,7 +263,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       return;
     }                                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {
-      if (R_FINITE(x[i])) {
+      if (isfinite(x[i])) {
         w += x[i];
       } else {
         nc++;
@@ -310,7 +310,7 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
         for (int j=-k[i]+1; j<=0; j++) {
           w += x[i+j];
         }
-        if (R_FINITE((double) w)) {
+        if (isfinite((double) w)) {
           ans->dbl_v[i] = (double) w;
         } else {
           if (!narm) {
