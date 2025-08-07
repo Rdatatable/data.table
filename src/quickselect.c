@@ -2,9 +2,9 @@
 
 // from good ol' Numerical Recipes in C
 
-static inline void iswap(int *a, int *b)           {int     tmp=*a; *a=*b; *b=tmp;}
-static inline void dswap(double *a, double *b)     {double  tmp=*a; *a=*b; *b=tmp;}
-static inline void i64swap(int64_t *a, int64_t *b) {int64_t tmp=*a; *a=*b; *b=tmp;}
+static inline void iswap(int *a, int *b)           { int     tmp = *a; *a = *b; *b = tmp; }
+static inline void dswap(double *a, double *b)     { double  tmp = *a; *a = *b; *b = tmp; }
+static inline void i64swap(int64_t *a, int64_t *b) { int64_t tmp = *a; *a = *b; *b = tmp; }
 
 #undef BODY
 #define BODY(SWAP)                          \
@@ -30,7 +30,7 @@ static inline void i64swap(int64_t *a, int64_t *b) {int64_t tmp=*a; *a=*b; *b=tm
         SWAP(x + l, x + l + 1);             \
       }                                     \
       unsigned long i = l + 1, j = ir;      \
-      a=x[l + 1];                           \
+      a = x[l + 1];                         \
       for (;;) {                            \
         do i++; while (x[i] < a);           \
         do j--; while (x[j] > a);           \
@@ -44,7 +44,7 @@ static inline void i64swap(int64_t *a, int64_t *b) {int64_t tmp=*a; *a=*b; *b=tm
     }                                       \
   }                                         \
   a = x[med];                               \
-  if (n%2 == 1) {                           \
+  if (n % 2 == 1) {                         \
     return (double)a;                       \
   } else {                                  \
     b = x[med + 1];                         \
