@@ -1,4 +1,4 @@
-Governance for the R data.table project
+# Governance for the R data.table project
 
 # Purpose and scope
 
@@ -121,7 +121,7 @@ Funds acquired by the data.table project will be disbursed at the discretion of 
 
 # Code of conduct
 
-The full Code of Conduct can be found [here](CODE_OF_CONDUCT.md), including details for reporting violations.
+The full Code of Conduct can be found [here](.github/CODE_OF_CONDUCT.md), including details for reporting violations.
 
 ## Reporting Responsibility
 
