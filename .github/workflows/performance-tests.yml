@@ -1,7 +1,7 @@
 name: atime performance tests
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
@@ -10,14 +10,15 @@ on:
       - 'R/**'
       - 'src/**'
       - '.ci/atime/**'
+  workflow_dispatch:
 
 jobs:
   comment:
-    if: github.repository == 'Rdatatable/data.table'
     runs-on: ubuntu-latest
-    container: ghcr.io/iterative/cml:0-dvc2-base1
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      repo_token: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      pull-requests: write
     steps:
-      - uses: Anirban166/Autocomment-atime-results@v1.4.3
+      - name: Run atime performance analysis
+        uses: Anirban166/Autocomment-atime-results@v1.5.0
+        with:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
