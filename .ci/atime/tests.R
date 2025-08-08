@@ -293,8 +293,10 @@ test.list <- atime::atime_test_list(
       set.seed(1)
       DT = data.table(a = rnorm(N), b = rnorm(N), c = rnorm(N), d = rnorm(N), e = rnorm(N))
       temp_file = tempfile()
+      has_select = "select" %chin% names(formals(data.table::fwrite))
     },
-    expr = data.table::fwrite(DT, temp_file, select = c("a", "b", "c")),
+    expr = if (has_select)
+      data.table::fwrite(DT, temp_file, select=c("a","b","c")),
     Slow = "66cb6d2393cef30083b444346a7600a079207806",    # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/66cb6d2393cef30083b444346a7600a079207806)
     Fast = "1887699fe965b5aa1fb8cb16b5507b7a5cbf5c85"),   # Commit in the PR (https://github.com/Rdatatable/data.table/pull/4177/commits) that adds select parameter
 
