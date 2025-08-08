@@ -21,7 +21,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   yaml = FALSE,
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
-  encoding = "")
+  encoding = "",
+  forceDecimal = FALSE)
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
@@ -62,6 +63,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
   \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writing raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
+  \item{forceDecimal}{ Should decimal points be forced for whole numbers in numeric columns? When \code{FALSE}, the default, whole numbers like \code{c(1.0, 2.0, 3.0)} will be written as \samp{1, 2, 3} i.e., dropping \code{dec}. }
   \item{select}{Vector of column names or column numbers specifying which columns to include. When \code{NULL} (default), all columns are selected. This avoids creating temporary subsets for memory efficiency.}
 }
 \details{

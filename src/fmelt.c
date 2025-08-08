@@ -282,23 +282,23 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
 }
 
 struct processData {
-  SEXP RCHK;      // a 2 item list holding vars (result of checkVars) and not_NA_indices. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
-  SEXP idcols,    // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
-    variable_table, // NULL or data for variable column(s).
-    valuecols,    // list with one element per output/value column, each element is an integer vector.
-    not_NA_indices;
-  int *isfactor,
-    *leach,       // length of each element of the valuecols(measure.vars) list.
-    *isidentical; // are all inputs for this value column the same type?
-  int lids,       // number of id columns.
-    lvars,        // number of variable columns.
-    lvalues,      // number of value columns.
-    lmax,         // max length of valuecols elements / number of times to repeat ids.
-    totlen,       // of output/long DT result of melt operation.
-    nrow;         // of input/wide DT to be melted.
+  SEXP RCHK;           // a 2 item list holding vars (result of checkVars) and not_NA_indices. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
+  SEXP idcols;         // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
+  SEXP variable_table; // NULL or data for variable column(s).
+  SEXP valuecols;      // list with one element per output/value column, each element is an integer vector.
+  SEXP not_NA_indices;
+  int *isfactor;
+  int *leach;          // length of each element of the valuecols(measure.vars) list.
+  int *isidentical;    // are all inputs for this value column the same type?
+  int lids;            // number of id columns.
+  int lvars;           // number of variable columns.
+  int lvalues;         // number of value columns.
+  int lmax;            // max length of valuecols elements / number of times to repeat ids.
+  int totlen;          // of output/long DT result of melt operation.
+  int nrow;            // of input/wide DT to be melted.
   SEXPTYPE *maxtype;
-  bool measure_is_list,
-    narm;  // remove missing values?
+  bool measure_is_list;
+  bool narm;           // remove missing values?
 };
 
 static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {

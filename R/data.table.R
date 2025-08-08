@@ -312,7 +312,7 @@ replace_dot_alias = function(e) {
         root = root_name(jsub)
       } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
         #2142 -- j can be {} and have length 1
-        stopf("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]")
+        stopf("Invalid use of `:=` inside `{}`. `:=` must be the only expression inside `{}` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]")
       }
     }
     if (root=="eval" && !any(all.vars(jsub[[2L]]) %chin% names_x)) {
@@ -2884,7 +2884,7 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. Note that namespace-qualification like data.table::`:=`(...) is not supported. See help(":=").', class="dt_invalid_let_error")
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, `:=` is defined for use in j, once only and in particular ways. See help(":=", "data.table"). A common reason for this error is allocating a new column in `j` and using `<-` instead of `:=`; e.g., `DT[, new_col <- 1]` should be `DT[, new_col := 1]`. Another is using `:=` in a multi-statement `{...}` block; please use `:=` as the only statement in `j`.', class="dt_invalid_let_error")
 }
 
 # TODO(#6197): Export these.
