@@ -49,6 +49,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       x = x[select]
     }
   }
+
   stopifnot(
     is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
