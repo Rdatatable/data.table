@@ -118,6 +118,15 @@ Currently, the \code{yaml} setting is somewhat inflexible with respect to incorp
 
 When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
 
+\bold{Automatic Decompression:}
+
+In many cases, \code{fread} can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
+
+  \itemize{
+    \item \code{.gz} and \code{.bz2} are supported out of the box.
+    \item \code{.zip} is also supported. If the archive contains a single data file, \code{fread} will read it. If the archive contains multiple files, \code{fread} will produce an error.
+  }
+
 \bold{Shell commands:}
 
 \code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{\link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
