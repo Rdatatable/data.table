@@ -116,7 +116,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           // fix for #469, when key is set, duplicated calls uniqlist, where encoding
           // needs to be taken care of.
           b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
-          // TODO: surely faster way than this two deep STRING_ELT()
+          // todo: surely faster way than this two deep STRING_ELT()
         case REALSXP :
           ulv = (unsigned long long *)REAL(v);
           b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
@@ -147,7 +147,7 @@ SEXP uniqlist(SEXP l, SEXP order)
 }
 
 SEXP uniqlengths(SEXP x, SEXP n) {
-  // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
+  // seems very similar to rbindlist.c:uniq_lengths. todo: centralize into common function
   if (TYPEOF(x) != INTSXP) error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
   if (TYPEOF(n) != INTSXP || length(n) != 1) error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
   R_len_t len = length(x);
@@ -193,7 +193,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           break;
         case STRSXP :
           same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
-          // TODO: do we want to check encodings here now that forder seems to?
+          // todo: do we want to check encodings here now that forder seems to?
           // Old comment : forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both.
           //               So == pointers is ok given that check
           break;
@@ -323,7 +323,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
       }
       if (b) break;
     }
-    // TODO: move this as the outer for-loop and parallelise..
+    // todo: move this as the outer for-loop and parallelise..
     // but preferably wait to see if problems with that big non-equi
     // group sizes do occur that commonly before to invest time here.
     int tmp=0;

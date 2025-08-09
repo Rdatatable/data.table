@@ -92,11 +92,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
 
   defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
-  SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
+  SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // todo: do we really need bynames, can we assign names afterwards in one step?
   for (int i=0; i<ngrpcols; ++i) {
     int j = INTEGER(grpcols)[i]-1;
     SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
-      nrowgroups ? 1 : 0)); // TODO: might be able to be 1 always but 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
+      nrowgroups ? 1 : 0)); // todo: might be able to be 1 always but 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
     // Fix for #36, by cols with attributes when also used in `j` lost the attribute.
     copyMostAttrib(VECTOR_ELT(groups, j), VECTOR_ELT(BY,i));  // not names, otherwise test 778 would fail
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
@@ -109,7 +109,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   R_LockBinding(sym_BY, env);
   if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols)))
     error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]", length(bynames), length(groups), length(grpcols)); // # notranslate
-  // TO DO: check this check above.
+  // todo: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
   SET_TRUELENGTH(N, -1);  // marker for anySpecialStatic(); see its comments
@@ -183,7 +183,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // Previously had replaced (i>0 || !isNull(lhs)) with i>0 to fix #49
     // The above is now to fix #1993, see test 1746.
     // In cases were no i rows match, '|| estn>-1' ensures that the last empty group creates an empty result.
-    // TODO: revisit and tidy
+    // todo: revisit and tidy
 
     if (!isNull(lhs) &&
         (istarts[i] == NA_INTEGER ||
@@ -227,7 +227,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         // Or in the words, this entire section, and this entire dogroups.c file, is now write-barrier compliant from v1.12.10
         // and we hope that reference counting on by default from R 4.0 will avoid costly gc()s.
       }
-      grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
+      grpn = 1;  // it may not be 1 e.g. test 722. todo: revisit.
       SETLENGTH(I, grpn);
       INTEGER(I)[0] = 0;
       for (int j=0; j<length(xSD); ++j) {
@@ -361,7 +361,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           estn = 0;
           for (int j=0; j<LENGTH(lens); ++j) estn+=ilens[j];
           // Common case 2 : j returns as many rows as there are in the group (maybe a join)
-          // TO DO: this might over allocate if first group has 1 row and j is actually a single row aggregate
+          // todo: this might over allocate if first group has 1 row and j is actually a single row aggregate
           //        in cases when we're not sure could wait for the first few groups before deciding.
         } else  // maxn < grpn
           estn = maxn * LENGTH(starts);
@@ -463,7 +463,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (firstalloc) {
       nprotect++;          //  remember the first jval. If we UNPROTECTed now, we'd unprotect
       firstalloc = FALSE;  //  ans. The first jval is needed to create the right size and type of ans.
-      // TO DO: could avoid this last 'if' by adding a dummy PROTECT after first alloc for this UNPROTECT(1) to do.
+      // todo: could avoid this last 'if' by adding a dummy PROTECT after first alloc for this UNPROTECT(1) to do.
     }
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
@@ -479,7 +479,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
       for (int j=0; j<length(ans); j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), ansloc));
       // shrinks (misuse of word 'grow') back to the rows written, otherwise leak until ...
-      // ... TO DO: set truelength to LENGTH(VECTOR_ELT(ans,0)), length to ansloc and enhance finalizer to handle over-allocated rows.
+      // ... todo: set truelength to LENGTH(VECTOR_ELT(ans,0)), length to ansloc and enhance finalizer to handle over-allocated rows.
     }
   } else ans = R_NilValue;
   // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
@@ -533,7 +533,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   SEXP newx;
   R_len_t len = length(x);
   if (isNull(x)) error(_("growVector passed NULL"));
-  PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
+  PROTECT(newx = allocVector(TYPEOF(x), newlen));   // todo: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   if (!len) { // cannot memcpy invalid pointer, #6819
     keepattr(newx, x);
