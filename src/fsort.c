@@ -44,8 +44,8 @@ static void dradix_r(  // single-threaded recursive worker
   }
 
   for (uint64_t i = 0, cumSum = 0; cumSum < n; i++) { // cumSum<n better than i<width as may return early
-    uint64_t tmp;
-    if (tmp = counts[i]) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
+    uint64_t tmp = counts[i];
+    if (tmp) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
       counts[i] = cumSum;
       cumSum += tmp;
     }
