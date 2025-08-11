@@ -2,8 +2,8 @@
 # Very small (e.g. one line) R functions that just call C.
 # One file wrappers.R to avoid creating lots of small .R files.
 
-fcoalesce   = function(...) .Call(Ccoalesce, list(...), FALSE)
-setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
+fcoalesce   = function(..., nan=NA) .Call(Ccoalesce, list(...), FALSE, nan_is_na(nan))
+setcoalesce = function(..., nan=NA) .Call(Ccoalesce, list(...), TRUE, nan_is_na(nan))
 
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
 fcase   = function(..., default=NA) {
@@ -21,3 +21,6 @@ fitsInInt32 = function(x) .Call(CfitsInInt32R, x)
 fitsInInt64 = function(x) .Call(CfitsInInt64R, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
+
+frev   = function(x) .Call(Cfrev, x, TRUE)
+setfrev = function(x) invisible(.Call(Cfrev, x, FALSE))

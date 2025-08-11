@@ -21,7 +21,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   yaml = FALSE,
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
-  encoding = "")
+  encoding = "",
+  forceDecimal = FALSE)
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
@@ -53,7 +54,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   This option applies to vectors of date/time in list column cells, too. \cr \cr
   A fully flexible format string (such as \code{"\%m/\%d/\%Y"}) is not supported. This is to encourage use of ISO standards and because that flexibility is not known how to make fast at C level. We may be able to support one or two more specific options if required.
   }
-  \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
+  \item{buffMB}{The buffer size (MiB) per thread in the range 1 to 1024, default 8MiB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
@@ -62,6 +63,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
   \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writing raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
+  \item{forceDecimal}{ Should decimal points be forced for whole numbers in numeric columns? When \code{FALSE}, the default, whole numbers like \code{c(1.0, 2.0, 3.0)} will be written as \samp{1, 2, 3} i.e., dropping \code{dec}. }
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://h2o.ai/blog/2016/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
@@ -115,7 +117,7 @@ fwrite(DT, sep="|", sep2=c("{",",","}"))
 
 set.seed(1)
 DT = as.data.table( lapply(1:10, sample,
-         x=as.numeric(1:5e7), size=5e6))                            #     382MB
+         x=as.numeric(1:5e7), size=5e6))                            #    382MiB
 system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                        #      0.8s
 system.time(write.csv(DT, "/dev/shm/tmp2.csv",                      #     60.6s
                       quote=FALSE, row.names=FALSE))
@@ -135,7 +137,7 @@ DT = data.table(
   str6=sample(c("M","F"),N,TRUE),
   int1=sample(ceiling(rexp(1e6)), N, replace=TRUE),
   int2=sample(N,N,replace=TRUE)-N/2
-)                                                                   #     774MB
+)                                                                   #    775MiB
 system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
 system.time(write.csv(DT,"/dev/shm/tmp2.csv",                       #     63.2s
                       row.names=FALSE, quote=FALSE))

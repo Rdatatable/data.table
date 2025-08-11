@@ -1,6 +1,6 @@
 # data.table continuous integration and deployment
 
-On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our more thorough main CI pipeline runs nightly on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch every night. It tests more environments and different configurations. It publishes a variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html), including windows binaries for the dev version.
+On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our more thorough main CI pipeline runs nightly on GitLab CI. In addition to branches pushed directly, the GitLab repository automatically mirrors our GitHub repository and runs pipeline on the `master` branch every night. It tests more environments and different configurations. It publishes a variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html), including windows binaries for the dev version.
 
 ## Environments
 
@@ -49,6 +49,23 @@ Base R implemented helper script, [originally proposed to base R](https://svn.r-
 ### [`publish.R`](./publish.R)
 
 Base R implemented helper script to orchestrate generation of most artifacts and to arrange them nicely. It is being used only in [_integration_ stage in GitLab CI pipeline](./../.gitlab-ci.yml).
+
+### [`lint.R`](./lint.R)
+
+Base R runner for the manual (non-`lintr`) lint checks to be run from GitHub Actions during the code quality check. The command line arguments are as follows:
+1. Path to the directory containing files defining the linters. A linter is a function that accepts one argument (typically the path to the file) and signals an error if it fails the lint check.
+2. Path to the directory containing files to check.
+3. A regular expression matching the files to check.
+
+One of the files in the linter directory may define the `.preprocess` function, which must accept one file path and return a value that other linter functions will understand. The function may also return `NULL` to indicate that the file must be skipped.
+
+Example command lines:
+
+```sh
+Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
+Rscript .ci/lint.R .ci/linters/po po '[.]po$'
+Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
+```
 
 ## GitLab Open Source Program
 
