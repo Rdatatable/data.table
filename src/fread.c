@@ -1212,7 +1212,7 @@ static void parse_bool_yn(FieldParseContext *ctx)
  *  (5) Extend typeSxp, typeRName, typeEnum in freadR.c as appropriate
  */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
-static reader_fun_t fun[NUMTYPE] = {
+static const reader_fun_t fun[NUMTYPE] = {
   &Field,        // CT_DROP
   &parse_empty,  // CT_EMPTY
   &parse_bool_10,
