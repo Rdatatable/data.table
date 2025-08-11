@@ -281,4 +281,15 @@ cat(readLines("out.csv"), sep = "\n")
 file.remove("out.csv")
 ```
 
+## 3. A Note on Performance
+
+While this vignette focuses on features and usability, the primary motivation for `fread` and `fwrite` is speed. The performance of `data.table`'s I/O is a topic of continuous benchmarking.
+
+For users interested in detailed, up-to-date performance comparisons, we recommend these external blog posts which use the `atime` package for rigorous analysis:
+
+- **[data.table asymptotic timings](https://tdhock.github.io/blog/2023/dt-atime-figures/)**: Compares `fread` and `fwrite` performance against other popular R packages like `readr` and `arrow`.
+- **[Benchmarking data.table with polars, duckdb, and pandas](https://tdhock.github.io/blog/2024/pandas-dt/)**: Compares `data.table` I/O and grouping performance against leading Python libraries.
+
+These benchmarks consistently show that `fread` and `fwrite` are highly competitive and often state-of-the-art for performance in the R ecosystem.
+
 ***
