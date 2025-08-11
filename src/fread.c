@@ -635,12 +635,12 @@ static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)
   }
 }
 
-static void StrtoI32(FieldParseContext *ctx)
+static void parse_i32(FieldParseContext *ctx)
 {
   str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)], false);
 }
 
-static void StrtoI64(FieldParseContext *ctx)
+static void parse_i64(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
   int64_t *target = ctx->targets[sizeof(int64_t)];
@@ -1123,7 +1123,7 @@ static void parse_empty(FieldParseContext *ctx)
 }
 
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
-static void parse_bool_numeric(FieldParseContext *ctx)
+static void parse_bool_10(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
   int8_t *target = ctx->targets[sizeof(int8_t)];
@@ -1189,7 +1189,7 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
 }
 
 /* Parse Y | y | N | n as boolean */
-static void parse_bool_yesno(FieldParseContext *ctx)
+static void parse_bool_yn(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
   int8_t *target = ctx->targets[sizeof(int8_t)];
@@ -1215,13 +1215,13 @@ typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
   &Field,        // CT_DROP
   &parse_empty,  // CT_EMPTY
-  &parse_bool_numeric,
+  &parse_bool_10,
   &parse_bool_uppercase,
   &parse_bool_titlecase,
   &parse_bool_lowercase,
-  &parse_bool_yesno,
-  &StrtoI32,
-  &StrtoI64,
+  &parse_bool_yn,
+  &parse_i32,
+  &parse_i64,
   &parse_double_regular,
   &parse_double_extended,
   &parse_double_hexadecimal,
