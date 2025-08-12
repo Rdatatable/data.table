@@ -1,6 +1,3 @@
-# This function assumes 'stopf' is available, as it is inside the data.table package.
-# If running standalone, replace `stopf(...)` with `stop(sprintf(...))`.
-
 rowwiseDT = function(...) {
   x = substitute(list(...))[-1L]
   if (is.null(nms <- names(x)))
