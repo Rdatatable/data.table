@@ -19,6 +19,7 @@
 ^\.github$
 ^\.vscode$
 ^\.zed$
+^\.lintr$
 
 ^\.gitlab-ci\.yml$
 
