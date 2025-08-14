@@ -22,7 +22,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
   encoding = "",
-  forceDecimal = FALSE)
+  forceDecimal = FALSE,
+  select = NULL)
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
