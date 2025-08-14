@@ -61,7 +61,7 @@ On Windows, command line tools like `grep` are available through various environ
 
 #### 1.1.1  Reading directly from a text string
 
-`fread()` can read data directly from a character string in R using the text argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `\n`.
+`fread()` can read data directly from a character string in R using the `text` argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `\n`.
 
 ```{r}
 my_data_string = "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
