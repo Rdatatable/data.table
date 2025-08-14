@@ -1,5 +1,5 @@
 ---
-title: "Fast Read and Fast Write"
+title: "Lecture et écriture rapides"
 date: "`r Sys.Date()`"
 output: 
   markdown::html_format
@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -24,23 +24,23 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-The `fread()` and `fwrite()` functions in the `data.table` R package are not only optimized for speed on large files, but also offer powerful and convenient features for working with small datasets. This vignette highlights their usability, flexibility, and performance for efficient data import and export.
+Les fonctions `fread()` et `fwrite()` du paquet R `data.table` ne sont pas uniquement optimisées pour améliorer les performances avec de gros fichiers, mais elles offrent également des fonctionnalités puissantes et pratiques si voius utilisez de petits ensembles de données. Cette vignette montre leur utilisation, leur adaptabilité, et les performances pour importer et exporter des données.
 
 ***
 
 ## 1. fread()
 
-### **1.1 Using command line tools directly**
-The `fread()` function from `data.table` can read data piped from shell commands, letting you filter or preprocess data before it even enters R.
+### **1.1 Utilisation directe des outils en mode ligne de commande**
+La fonction `fread()` de `data.table` peut lire des données redirigées à partir des commandes du shell, ce qui vous donne la possibilité de filtrer ou de pré-traiter les données avant même qu'elles soient soumises à R.
 
 ```{r}
-# Create a sample file with some unwanted lines
+# Créer un simple fichier avec quelques lignes non souhaitées
 writeLines(
-'HEADER: Some metadata
-HEADER: More metadata
+'HEADER: quelques méta-données
+HEADER: méta-données supplémentaires 
 1 2.0 3.0
 2 4.5 6.7
-HEADER: Yet more
+HEADER: encore d'autres
 3 8.9 0.1
 4 1.2 3.4',
 "example_data.txt")
@@ -49,17 +49,17 @@ library(data.table)
 fread("grep -v HEADER example_data.txt")
 ```
 
-The `-v` option makes `grep` return all lines except those containing the string 'HEADER'.
+L'option `-v` fait que la commande `grep` va renvoyer toutes les lignes sauf celles qui contiennent la chaîne 'HEADER'.
 
-> "Given the number of high quality engineers that have looked at the command tool grep over the years, it is most likely that it is as fast as you can get, as well as being correct, convenient, well documented online, easy to learn and search for solutions for specific tasks. If you need to perform more complex string filtering (e.g., matching strings at the beginning or end of lines), the grep syntax is very powerful. Learning its syntax is a transferable skill for other languages and environments."
+> "Etant donné le nombre d'ingénieurs hautement qualifiés qui se sont penché sur l'outil de commande grep durant ces années, il edst très probable qu'elle soit aussi rapide que possible, tout en étant correcte, pratique, bien documentée en ligne, facile à apprendre et à rechercher des solutions pour les tâches spécifiques. Si vous devez faire un filtrage sur des chaînes plus complexes (comme par exemple trouver des chaînes en début ou en fin de ligne), la syntaxe de grep est très puissante. En l'apprenant, vous pourrez réutiliser vos connaissances avec d'autres langages et environnements."
 >
 > — Matt Dowle  
 
-Look at this [example](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) for more detail.
+Voir cet [exemple](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) pour d'autres détails.
 
-On Windows, command line tools like `grep` are available through various environments, such as Rtools, Cygwin, or the Windows Subsystem for Linux (WSL). On Linux and macOS, these tools are typically included with the operating system.
+Sous Wndows, les outils en mode ligne de commande tels que `grep` sont disponibles dans divers environnements, tels que Rtools, Cygwin, ou Windows Subsystem for Linux (WSL). Sous Linux et macOS, ces outils sont typiquement inclus dans le système opératoire.
 
-#### 1.1.1  Reading directly from a text string
+#### 1.1.1  Lecture directe à partir d'une chaîne textuelle
 
 `fread()` can read data directly from a character string in R using the text argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `\n`.
 
