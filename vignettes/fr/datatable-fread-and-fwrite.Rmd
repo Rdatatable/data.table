@@ -61,7 +61,7 @@ Sous Wndows, les outils en mode ligne de commande tels que `grep` sont disponibl
 
 #### 1.1.1  Lecture directe à partir d'une chaîne textuelle
 
-`fread()` can read data directly from a character string in R using the text argument. This is particularly handy for creating reproducible examples, testing code snippets, or working with data generated programmatically within your R session. Each line in the string should be separated by a newline character `\n`.
+`fread()` peut lire les données directement à partir d'une chaîne de caractères dans R en utilisant l'argument `text`. Ceci est particulièrement pratique pour créer des exemples reproductibles, pour tester quelques lignes de code, ou pour travailler avec des données générées par un programme à l'intérieur d'une session R. Chaque ligne de la chaîne doit être séparée avec le caractère de passage à la ligne `\n`.
 
 ```{r}
 my_data_string = "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
@@ -69,48 +69,49 @@ dt_from_text = fread(text = my_data_string)
 print(dt_from_text)
 ```
 
-#### 1.1.2 Reading from URLs
+#### 1.1.2 Lecture à partir d'URLs
 
-`fread()` can read data directly from web URLs by passing the URL as a character string to its `file` argument. This allows you to download and read data from the internet in one step.
+`fread()` peut lire les données directement à partir d'URLs web en passant l'URL en tant que chaîne de caractères dans l'argument `file`. Cela vous permet de télécharger et de lire les données à partir d'internet en une seule passe.
 
   ```{r}
   # dt = fread("https://people.sc.fsu.edu/~jburkardt/data/csv/airtravel.csv")
   # print(dt)
   ```
 
-#### 1.1.3 Automatic decompression of compressed files
+#### 1.1.3 Décompression automatique des fichiers compressés
 
-In many cases, `fread()` can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
 
-**Supported extensions typically include:**
-- `.gz` / `.bz2` (gzip / bzip2): Supported and works out of the box.
-- `.zip` / `.tar`  (ZIP / tar archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
+Dans beaucoup de cas, `fread()` peut automatiquement détecter et décompresser les fichiers directement en utilisant les extensions de compression communes et sans avoir besoin d'un objet de connexion explicite ou de commandes du shell. Il se base sur l'extension du fichier.
 
-> Note: If there are multiple files in the archive, `fread()` will fail with an error.
+**Les extensions reconnues incluent typiquement :**
+- `.gz` / `.bz2` (gzip / bzip2) : acceptés et fonctionnent de manière indépendante.
+- `.zip` / `.tar`  (archives ZIP ou tar, fichier unique) : acceptées — `fread()` lira le premier fichier de l'archive si elle n'encontient qu'un seul.
 
-### 1.2 Automatic separator and skip detection
+> Note : si l'archive contient plusieurs fichiers, `fread()` échouera avec une erreur.
 
-`fread` automates delimiter and header detection, eliminating the need for manual specification in most cases. You simply provide the filename—`fread` intelligently detects the structure:
+### 1.2 Séparateur automatique et détection des sauts
 
-**Separator Detection**
+`fread` automatise la détection du délimiteur et de l'entête, en élminant le besoin  de le spécifier manuellement dans la plupart des cas. Il suffit de fournir le nom de fichier — `fread` détectera intelligemment la structure :
 
-`fread` tests common separators (`,`,`\t`, `|`, space, `:`, `;`) and selects the one that results in the most consistent number of fields across sampled rows. For non-standard delimiters, you can override this using the `sep=` parameter.
+**Détection des séparateurs**
 
-**Header Detection**
+`fread` teste les séparateurs usuels (`,`,`\t`, `|`, espace, `:`, `;`) et sélectionne celui qui fournit le nombre le plus cohérent de champs tout au long les lignes analysées. Dans le cas des délimiteurs non standard, vous pouvez rédéfinir ceci en utilisant le paramètre `sep=` .
 
-After applying any `skip` or `nrows` settings (if specified), the first row with a consistent number of fields is examined:
+**Détection de l'entête**
 
-If all fields in this line are interpretable as character and the values do not strongly resemble a data row (e.g., a row of purely numeric-looking strings might still be considered data), it is typically used as the header (column names).
+Après avoir appliqué les éventuelles valeurs de `skip` ou de `nrows` (si spécifiées), la première ligne qui comporte un nombre cohérent de champs cohérent est analysée :
 
-Otherwise (e.g., if the line contains detected numeric types, or character strings that strongly resemble numbers and could be data), it is treated as a data row, and default column names (`V1`, `V2`, …) are assigned.
+Si on peut interpréter tous les champs de cette ligne comme des caractères et que les valeurs ne ressemblent pas trop à une ligne de données (par exemple une ligne de valeurs purement numériques pourrait encore être considérée comme des données), alors il s'agit typiquement d'une ligne d'entête (le nom des colonnes).
 
-You can explicitly tell fread whether a header exists using `header = TRUE` or `header = FALSE`.
+Sinon (c'est à dire si la ligne contient des types numériques reconnus, ou des chaînes de caractères qui ressemblent fortement à des nombres et qui pourraient être des données), elle est traitée comme une ligne de données et reçoit les noms de colonnnes par défaut (`V1`, `V2`, …).
 
-**Skip Detection**
+Vous pouvez dire explicitement à fread si une entête existe en utilisant `header = TRUE` ou `header = FALSE`.
 
-By default (`skip="auto"`), `fread` will automatically skip blank lines and comment lines (e.g., starting with `#`) before the data header. To manually skip a specific number of lines, use `skip=n`.
+**Détection des sauts**
 
-### 1.3 High-Quality Automatic Column Type Detection
+Par défaut (`skip="auto"`), `fread` va automatiquement sauter les lignes vides ainsi que les lignes de commentaires (celles qui commencent par `#`) avant l'entête des données. Pour forcer manuellement un nombre donné de lignes, utilisez use `skip=n`.
+
+### 1.3 Détection avancée et automatique du type de colonne
 
 Many real-world datasets contain columns that are initially blank, zero-filled, or appear numeric but later contain characters. To handle such inconsistencies, `fread()` in `data.table` employs a robust column type detection strategy.
 
