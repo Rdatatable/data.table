@@ -9,7 +9,7 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r echo=FALSE, file='../_translation_links.R'}
 ```
 `r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
@@ -57,7 +57,7 @@ L'option `-v` fait que la commande `grep` va renvoyer toutes les lignes sauf cel
 
 Voir cet [exemple](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) pour d'autres détails.
 
-Sous Wndows, les outils en mode ligne de commande tels que `grep` sont disponibles dans divers environnements, tels que Rtools, Cygwin, ou Windows Subsystem for Linux (WSL). Sous Linux et macOS, ces outils sont typiquement inclus dans le système opératoire.
+Sous Wndows, les outils en mode ligne de commande tels que `grep` sont disponibles dans divers environnements, tels que Rtools, Cygwin, ou Windows Subsystem for Linux (WSL). Sous Linux et macOS, ces outils sont typiquement inclus dans le système d'exploitation.
 
 #### 1.1.1  Lecture directe à partir d'une chaîne textuelle
 
@@ -89,7 +89,7 @@ Dans beaucoup de cas, `fread()` peut automatiquement détecter et décompresser 
 
 > Note : si l'archive contient plusieurs fichiers, `fread()` échouera avec une erreur.
 
-### 1.2 Séparateur automatique et détection des sauts
+### 1.2 Séparateur automatique et détection des sauts de lignes
 
 `fread` automatise la détection du délimiteur et de l'entête, en élminant le besoin  de le spécifier manuellement dans la plupart des cas. Il suffit de fournir le nom de fichier — `fread` détectera intelligemment la structure :
 
@@ -99,7 +99,7 @@ Dans beaucoup de cas, `fread()` peut automatiquement détecter et décompresser 
 
 **Détection de l'entête**
 
-Après avoir appliqué les éventuelles valeurs de `skip` ou de `nrows` (si spécifiées), la première ligne qui comporte un nombre cohérent de champs cohérent est analysée :
+Après avoir appliqué les éventuelles valeurs de `skip` ou de `nrows` (si spécifiées), la première ligne qui comporte un nombre cohérent de champs est analysée :
 
 Si on peut interpréter tous les champs de cette ligne comme des caractères et que les valeurs ne ressemblent pas trop à une ligne de données (par exemple une ligne de valeurs purement numériques pourrait encore être considérée comme des données), alors il s'agit typiquement d'une ligne d'entête (le nom des colonnes).
 
@@ -107,71 +107,71 @@ Sinon (c'est à dire si la ligne contient des types numériques reconnus, ou des
 
 Vous pouvez dire explicitement à fread si une entête existe en utilisant `header = TRUE` ou `header = FALSE`.
 
-**Détection des sauts**
+**Détection des sauts de lignes**
 
 Par défaut (`skip="auto"`), `fread` va automatiquement sauter les lignes vides ainsi que les lignes de commentaires (celles qui commencent par `#`) avant l'entête des données. Pour forcer manuellement un nombre donné de lignes, utilisez use `skip=n`.
 
 ### 1.3 Détection avancée et automatique du type de colonne
 
-Many real-world datasets contain columns that are initially blank, zero-filled, or appear numeric but later contain characters. To handle such inconsistencies, `fread()` in `data.table` employs a robust column type detection strategy.
+Dans le monde réel, beaucoup d'ensembles de données contiennent des colonnes qui sont vides au départ, remplies par des zéros, ou qui apparaissent numériques mais qui contiendront des caractères ultérieurement. Pour gérer de telles incohérences, `fread()` de `data.table` utilise une stratégie robuste de détection du type de colonne.
 
-Since v1.10.5, `fread()` samples rows by reading blocks of contiguous rows from multiple equally spaced points across the file, including the start, middle, and end. The total number of rows sampled is chosen dynamically based on the file size and structure, and is typically around 10,000, but can be smaller or slightly larger. This wide sampling helps detect type changes that occur later in the data (e.g., `001` to `0A0` or blanks becoming populated).
+Depuis la v1.10.5, `fread()` échantillonne les lignes en lisant des blocs de lignes contigües à partir de plusieurs points espacés régulièrement dans l'ensemble du fichier, y compris le début, le milieu et la fin. Le nombre de lignes échantillonnées est choisi dynamiquement en fonction de la taille et de la structure du fichier et vaut typiquement aux environs de 10 000, mais il peut être plus petit ou légèrement supérieur. Ce grand échantillonnage aide à détecter les changements de type qui se produisent ultérieurement dans les données (par exemple `001` qui devient `0A0` ou des blancs qui deviennent des valeurs).
 
-**Efficient File Access with mmap**
+**Accès aux fichier performant avec mmap**
 
-To implement this sampling efficiently, `fread()` uses the operating system's memory-mapped file access (`mmap`), allowing it to jump to arbitrary positions in the file without sequential scanning. This lazy, on-demand strategy makes sampling nearly instantaneous, even for very large files.
+Pour implémenter efficacement cet échantillonnage, `fread()` utilise le mappage en mémoire de l'accès aux fichiers du système d'exploitation (`mmap`), ce qui permet de sauter à des positions arbitraires dans le fichier sans le parcourir séquentiellement. Cette stratégie paresseuse à la demande rend l'échantillonnnage presque instantané même avec des fichiers très gros.
 
-If a jump lands within a quoted field that includes newlines, `fread()` tests subsequent lines until it finds 5 consecutive rows with the expected number of fields, ensuring correct parsing even in complex files.
+Si la destination du saut se trouve dans un champ entre guillemets comprenant des passages à la ligne, `fread()` teste les lignes qui suivent jusqu'à trouver 5 lignes consécutives avec le nombre attendu de champs, pour permettre une analyse correcte même avec des fichiers complexes.
 
-**Accurate and Optimized Type Detection**
+**Détection précise et optimisée du type**
 
-The type for each column is inferred based on the lowest required type from the following ordered list:
+Le type de chaque colonne est déduit en se basant sur le type le plus bas nécessaire de la liste ordonnée suivante :
 
-`logical` < `integer` < `integer64` < `double` < `character`
+`booléen` < `entier` < `entier 64` < `double` < `caractère`
 
-This ensures:
+Ce qui permet :
 
-- Single up-front allocation of memory using the correct type
-- Avoidance of rereading the file or manually setting colClasses
-- Improved speed and memory efficiency
+- d'allouer la mémoire de manière unique à l'avance en utilisant le type correct
+- d'éviter la relecture du fichier ou de définir les colClasses manuellement 
+- d'améliorer la vitesse et efficacité de la mémoire
 
-**Out-of-Sample Type Exceptions**
+**Exceptions sur le type dans les valeurs non échantillonnées**
 
-If a type change occurs outside the sampled rows, `fread()` automatically detects it and rereads the file to ensure correct type assignment, without requiring user intervention. For example, a column sampled as integer might later contain `00A` — triggering an automatic reread as character.
+Si le type est modifié dans les lignes qui ne sont pas échantillonnées, `fread()` détecte cela automatiquement et relit le fichier pour rétablir l'assignation correcte du type, sans nécessiter l'intervention de l'utilisateur. Par exemple une colonne échantillonnée comme entier pourrait ultérieurement contenir `00A` — ce qui déclenchera une relecture automatique en tant que caractère.
 
-All detection logic and any rereads are detailed when `verbose=TRUE` is enabled.
+En activant `verbose=TRUE` vous pourrez voir toute la logique de détection ainsi que les relectures.
 
-### 1.4 Early Error Detection at End-of-File
+### 1.4 Détection des erreurs au plus tôt à la fin du fichier
 
-Because the large sample explicitly includes the very end of the file, critical issues—such as an inconsistent number of columns, a malformed footer, or an opening quote without a matching closing quote—can be detected and reported almost instantly. This early error detection avoids the unnecessary overhead of processing the entire file or allocating excessive memory, only to encounter a failure at the final step. It ensures faster feedback and more efficient resource usage, especially when working with large datasets.
+Parce qu'un grand nombre d'échantillons signifie que l'on se rapproche de la fin du fichier, les problèmes critiques tels qu'un nombre incohérent de colonnes, un bas de page mal formaté, ou des guillemets ouvrants qui ne sont pas fermés — peuvent être détectés et rapportés presque instantanément. Cette détection d'erreurs au plus tôt évite la surcharge d'un nouveau traitement du fichier complet ou l'allocation excessive de la mémoire, simplement pour trouver une erreur à la fin. Cela permet une réaction plus rapide et une utilisation plus efficace des ressources, particulièrement lorsque vous travaillez avec de gros ensembles de données.
 
-### 1.5 `integer64` Support
+### 1.5 Prise en charge de `integer64`
 
-By default, `fread` detects integers larger than 2<sup>31</sup> and reads them as `bit64::integer64` to preserve full precision. This behavior can be overridden in three ways:
+Par défaut, `fread` détecte les entiers plus grands que 2<sup>31</sup> et les lit en tant que `bit64::integer64` pour préserver la précision complète. Ce comportement peut être redéfini de trois manières :
 
-- Per-column: Use the `colClasses` argument to specify the type for individual columns.
+- par colonne : utiliser l'argument `colClasses` pour spécifier le type des colonnes individuelles.
 
-- Per-call: Use the `integer64` argument in `fread()` to set how all detected `integer64` columns are read.
+- par appel : utiliser l'argument `integer64` dans `fread()` pour définir la manière dont toutes les colonnes `integer64` détectées seront lues.
 
-- Globally: Set the option `datatable.integer64` in your R session or `.Rprofile` file to change the default behavior for all fread calls.
+- globalement : définir l'option `datatable.integer64` de votre session R ou du fichier `.Rprofile` pour modifier le comportement par défaut pour tous les appels de fread.
 
-The integer64 argument (and corresponding option) accepts the following values:
+L'argument integer64 et l'option correspondante acceptent les valeurs suivantes :
 
-- `"integer64"` (default): Reads large integers as `bit64::integer64` with full precision.
+- `"integer64"` (par défaut) : lit les entiers longs en tant que `bit64::integer64` avec la précision complète.
 
-- `"double"` or `"numeric"`: Reads large integers as double-precision numbers, potentially losing precision silently (similar to `utils::read.csv` in base R).
+- `"double"` ou `"numeric"`: lit les entiers longs en tant que nombres à double précision, éventuellement en perdant discrètement la précision (similaire à `utils::read.csv` en base R).
 
-- `"character"`: Reads large integers as character strings.
+- `"character"` : lit les entiers longs en tant que chaînes de caractères.
 
-To check or set the global default, use:
+Pour vérifier ou définit le comportement global par default, utilisez :
 
 ```{r}
-# fread's default behavior is to treat large integers as "integer64"; however, this global setting can be changed:
-options(datatable.integer64 = "double")   # Example: set globally to "double"
+# le comportement par défaut de fread est de traiter les entiers longs comme "integer64"; mais ce paramètre global peut être modifié :
+options(datatable.integer64 = "double")   # Exemple : définir globalement à "double"
 getOption("datatable.integer64") 
 ```
 
-### 1.6 Drop or Select Columns by Name or Position
+### 1.6 Ignorer ou sélectionner les colonnes par nom ou par position
 
 To save memory and improve performance, use `fread()`'s `select` or `drop` arguments to read only the columns you need.
 
