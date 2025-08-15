@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-#define INSERT_THRESH 200  // TODO: expose via api and test
+static const int INSERT_THRESH = 200;  // TODO: expose via api and test
 
 static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, double => ull
   if (n<2) return;
@@ -43,17 +43,16 @@ static void dradix_r(  // single-threaded recursive worker
     return;
   }
 
-  uint64_t cumSum=0;
-  for (uint64_t i=0; cumSum<n; ++i) { // cumSum<n better than i<width as may return early
-    uint64_t tmp;
-    if ((tmp=counts[i])) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
+  for (uint64_t i = 0, cumSum = 0; cumSum < n; i++) { // cumSum<n better than i<width as may return early
+    uint64_t tmp = counts[i];
+    if (tmp) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
       counts[i] = cumSum;
       cumSum += tmp;
     }
   } // leaves cumSum==n && 0<i && i<=width
 
   tmp=in;
-  for (uint64_t i=0; i<n; ++i) {  // go forwards not backwards to give cpu pipeline better chance
+  for (uint64_t i = 0; i<n; ++i) {  // go forwards not backwards to give cpu pipeline better chance
     int thisx = (*(uint64_t *)tmp - minULL) >> fromBit & mask;
     working[ counts[thisx]++ ] = *tmp;
     tmp++;
@@ -71,8 +70,7 @@ static void dradix_r(  // single-threaded recursive worker
     return;
   }
 
-  cumSum=0;
-  for (int i=0; cumSum<n; ++i) {   // again, cumSum<n better than i<width as it can return early
+  for (uint64_t i = 0, cumSum = 0; cumSum < n; i++) {   // again, cumSum<n better than i<width as it can return early
     if (counts[i] == 0) continue;
     uint64_t thisN = counts[i] - cumSum;  // undo cummulate; i.e. diff
     if (thisN <= INSERT_THRESH) {
