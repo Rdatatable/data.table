@@ -131,7 +131,7 @@ The type for each column is inferred based on the lowest required type from the 
 This ensures:
 
 - Single up-front allocation of memory using the correct type
-- Avoidance of rereading the file or manually setting colClasses
+- Avoidance of rereading the file or manually setting `colClasses`
 - Improved speed and memory efficiency
 
 **Out-of-Sample Type Exceptions**
