@@ -71,7 +71,8 @@ print(dt_from_text)
 
 #### 1.1.2 Lecture à partir d'URLs
 
-`fread()` peut lire les données directement à partir d'URLs web en passant l'URL en tant que chaîne de caractères dans l'argument `file`. Cela vous permet de télécharger et de lire les données à partir d'internet en une seule passe.
+`fread()` peut lire les données directement à partir d'URLs web en passant l'URL en tant que chaîne de caractères dans l'argument `file`. 
+Cela vous permet de télécharger et de lire les données à partir d'internet en une seule ligne.
 
   ```{r}
   # dt = fread("https://people.sc.fsu.edu/~jburkardt/data/csv/airtravel.csv")
@@ -86,7 +87,7 @@ Dans beaucoup de cas, `fread()` peut automatiquement détecter et décompresser 
 - `.gz` / `.bz2` (gzip / bzip2) : acceptés et fonctionnent de manière indépendante.
 - `.zip` / `.tar`  (archives ZIP ou tar, fichier unique) : acceptées — `fread()` lira le premier fichier de l'archive si elle n'encontient qu'un seul.
 
-> Note : si l'archive contient plusieurs fichiers, `fread()` échouera avec une erreur.
+**Note** : si l'archive contient plusieurs fichiers, `fread()` échouera avec une erreur.
 
 ### 1.2 Séparateur automatique et détection des sauts de lignes
 
@@ -112,7 +113,7 @@ Par défaut (`skip="auto"`), `fread` va automatiquement sauter les lignes vides 
 
 ### 1.3 Détection avancée et automatique du type de colonne
 
-Dans le monde réel, beaucoup d'ensembles de données contiennent des colonnes qui sont vides au départ, remplies avec des zéros, ou qui apparaissent numériques mais qui contiendront des caractères ultérieurement. Pour gérer de telles incohérences, `fread()` de `data.table` utilise une stratégie robuste de détection du type de colonne.
+Dans la pratique, beaucoup d'ensembles de données contiennent des colonnes qui sont vides au départ, remplies avec des zéros, ou qui apparaissent numériques mais qui contiendront des caractères ultérieurement. Pour gérer de telles incohérences, `fread()` utilise une stratégie robuste de détection du type de colonne.
 
 Depuis la v1.10.5, `fread()` échantillonne les lignes en lisant des blocs de lignes contigües à partir de plusieurs points espacés régulièrement dans l'ensemble du fichier, y compris le début, le milieu et la fin. Le nombre de lignes échantillonnées est choisi dynamiquement en fonction de la taille et de la structure du fichier et vaut typiquement aux environs de 10 000, mais il peut être plus petit ou légèrement supérieur. Ce grand échantillonnage aide à détecter les changements de type qui se produisent ultérieurement dans les données (par exemple `001` qui devient `0A0`, ou des blancs qui deviennent des valeurs).
 
@@ -131,18 +132,20 @@ Le type de chaque colonne est déduit en se basant sur le type le plus bas néce
 Ce qui permet :
 
 - d'allouer la mémoire de manière unique à l'avance en utilisant le type correct
-- d'éviter la relecture du fichier ou de définir les colClasses manuellement 
+- d'éviter la relecture du fichier ou de définir les `colClasses` manuellement 
 - d'améliorer la vitesse et l'efficacité de la mémoire
 
-**Exceptions sur le type dans les valeurs non échantillonnées**
+**Différents types dans les valeurs non échantillonnées**
 
 Si le type est modifié dans les lignes qui ne sont pas échantillonnées, `fread()` détecte cela automatiquement et relit le fichier pour rétablir l'assignation correcte du type, sans nécessiter l'intervention de l'utilisateur. Par exemple une colonne échantillonnée comme entier pourrait ultérieurement contenir `00A` — ce qui déclenchera une relecture automatique en tant que caractères.
 
 En activant `verbose=TRUE` vous pourrez voir toute la logique de détection ainsi que les relectures.
 
-### 1.4 Détection des erreurs au plus tôt à la fin du fichier
+### 1.4 Détection des erreurs à la fin du fichier au plus tôt
 
-Parce qu'un grand nombre d'échantillons signifie que l'on se rapproche de la fin du fichier, les problèmes critiques tels qu'un nombre incohérent de colonnes, un bas de page mal formaté, ou des guillemets ouvrants qui ne sont pas fermés — peuvent être détectés et rapportés presque instantanément. Cette détection d'erreurs au plus tôt évite la surcharge d'un nouveau traitement du fichier complet ou l'allocation excessive de la mémoire, simplement pour trouver une erreur à la fin. Cela permet une réaction plus rapide et une utilisation plus efficace des ressources, particulièrement lorsque vous travaillez avec de gros ensembles de données.
+Parce que l'échantillon contient la fin du fichier, les problèmes critiques tels qu'un nombre incohérent de colonnes, un bas de page mal formaté, ou des guillemets ouvrants qui ne sont pas fermés — peuvent être détectés et rapportés presque instantanément.
+Cette détection d'erreurs au plus tôt évite la surcharge d'un nouveau traitement du fichier complet ou l'allocation excessive de la mémoire, simplement pour trouver une erreur à la fin. 
+Cela permet une réaction plus rapide et une utilisation plus efficace des ressources, particulièrement lorsque vous travaillez avec de gros ensembles de données.
 
 ### 1.5 Prise en charge de `integer64`
 
@@ -158,7 +161,7 @@ L'argument integer64 et l'option correspondante acceptent les valeurs suivantes 
 
 - `"integer64"` (par défaut) : lit les entiers longs en tant que `bit64::integer64` avec la précision complète.
 
-- `"double"` ou `"numeric"`: lit les entiers longs en tant que nombres à double précision, éventuellement en perdant discrètement la précision (similaire à `utils::read.csv` en base R).
+- `"double"` ou `"numeric"`: lit les entiers longs en tant que nombres à double précision, éventuellement en perdant sans avertir l'utilisateur la précision (similaire à `utils::read.csv` en base R).
 
 - `"character"` : lit les entiers longs en tant que chaînes de caractères.
 
@@ -177,7 +180,7 @@ Pour économiser de la mémoire et pour améliorer les performances, utilisez le
 - Si vous avez besoin uniquement de quelques colonnes, utilisez `select`.
 - Si vous voulez exclure uniquement quelques colonnes, utilisez `drop` — ceci évite de lister tout ce que vous voulez garder.
 
-Points clé:
+Points clé :
 - `select` : vecteur des noms des colonnes ou des positions à garder (les autres seront ignorés).
 - `drop`: vecteur des noms des colonnes ou des positions à ignorer (les autres sont gardés).
 - N'utilisez pas `select` et `drop` simultanément — ils sont mutuellement exclusifs.
@@ -193,12 +196,20 @@ Utilisez `skip="chaîne"` dans `fread` pour chercher une ligne contenant une sou
 
 `fread` détecte automatiquement la manière dont les guillemets sont échappés — qu'ils soient simples ('') ou doubles ("") ou échappés avec la barre oblique inverse (respectivement \' et \") — sans nécessiter l'intervention de l'utilisateur. Ceci est déterminé en utilisant un grand échantillon de données (voir le point 3), et vérifié sur le fichier complet.
 
-Scénari pris en charge :
+Exemples pris en charge :
 - Guillemets non échappés dans les champs entre guillemets
-par exemple, `"This "quote" is invalid"` — est reconnu tant que le nombre de colonnes reste cohérent.
+par exemple, `"Ces "guillemets" ne sont pas valides, mais fread marche quand même"` — est reconnu tant que le nombre de colonnes reste cohérent :
+
+```{r}
+data.table::fread(text='x,y\n"Ces "guillemets" ne sont pas valides, mais fread marche quand même",1')
+```
 
 - Champs qui ne sont pas entre guillemets mais qui commencent par des guillemets
-par exemple, `Invalid"Field,10,20` — est reconnu correctement comme n'étant pas un champ entre guillemets.
+par exemple, `pas"valide,1` — est reconnu correctement comme n'étant pas un champ entre guillemets.
+
+```{r}
+data.table::fread(text='x,y\npas"valide,1')
+```
 
 Contraintes et limitations :
 - les règles de l'échappement et du nombre des colonnes doivent être cohérentes tout au long du fichier.
@@ -210,7 +221,8 @@ A partir de la v1.10.6, `fread` résoud les ambiguïtés de manière plus fiable
 
 ## 2. fwrite()
 
-`fwrite()` est le pendant de `fread()` pour l'enregistrement rapide. Il est conçu pour être rapide, sensible aux defaults, et facile à utiliser, tout en reprenant la plupart des facilités de `fread`.
+Pour l'écriture rapide d'un fichier CSV, `fwrite()` est le partenaire de `fread()`.
+Il est conçu pour être rapide, sensible aux defaults, et facile à utiliser, tout en reprenant la plupart des facilités de `fread`.
 
 ### 2.1 Guillements intelligents et minimaux (quote="auto")
 
@@ -232,7 +244,7 @@ fwrite(dt_quoting_scenario, temp_quote_adv)
 cat(readLines(temp_quote_adv), sep = "\n")
 ```
 
-### 2.2 Sérialisation à granularité fine pour la datet et l'heure (dateTimeAs)
+### 2.2 Sérialisation à granularité fine pour la date et l'heure (argument `dateTimeAs`)
 
 Permet le contrôle précis pour POSIXct et les types de Date :
 
@@ -251,11 +263,11 @@ cat(readLines(temp_dt_iso), sep = "\n")
 unlink(temp_dt_iso)
 ```
 
-### 2.3 Gestion de bit64::integer64
+### 2.3 Gestion de `bit64::integer64`
 
 **Précision complète pour les grands entiers** : `fwrite` écrit les colonnes `bit64::integer64` en les convertissant en chaînes de caractères avec la précision complète. Ce qui évite la perte de données ou la conversion silencieuse en double qui pourrait se produire avec des écrivains moins spécialisés. Ceci est crucial pour les IDs ou les mesures qui demandent plus que l'intervalle des entiers `32-bit` du standard R ou de la double précision `53-bit`.
 
-**Gestion directeg** : ce traitement direct et soigné des nombres spéciaux assure l'intégrité des données et l'efficacité des entrées / sorties, en évitant les conversions intermédiaires inutiles vers des types moins précis.
+**Gestion directe** : ce traitement direct et soigné des nombres spéciaux assure l'intégrité des données et l'efficacité des entrées / sorties, en évitant les conversions intermédiaires inutiles vers des types moins précis.
 
 ```{r}
 if (requireNamespace("bit64", quietly = TRUE)) {
@@ -263,14 +275,13 @@ if (requireNamespace("bit64", quietly = TRUE)) {
   temp_i64_out = tempfile(fileext = ".csv")
   fwrite(dt_i64, temp_i64_out)
   cat(readLines(temp_i64_out), sep = "\n")
-
   unlink(temp_i64_out)
 }
 ```
 
 ### 2.4 Ordre des colonnes et contrôle des sous-ensembles
 
-Pour contrôler l'ordre et le sous-ensemble des colonnes écrites dans le fichier, réduisez le data.table avant d'appeler `fwrite()`. L'argument `col.names` de `fwrite()` est un booléen (TRUE/FALSE) qui contrôle si la ligne d'entête est écrite, et non quelles colonnes sont écrites.
+Pour contrôler l'ordre et le sous-ensemble des colonnes écrites dans le fichier, copiez le `data.table` avant d'appeler `fwrite()`. L'argument `col.names` de `fwrite()` est un booléen (TRUE/FALSE) qui contrôle si la ligne d'entête est écrite, et non quelles colonnes sont écrites.
 
 ```{r}
 dt = data.table(A = 1:3, B = 4:6, C = 7:9)
@@ -283,13 +294,13 @@ file.remove("out.csv")
 
 ## 3. Note sur les performances
 
-Bien que cette vignette se concentre sur les fonctionnalités et sur l'utilisation, le but de `fread` et `fwrite` est la vitesse. Les performances des E/S de `data.table` sont un sujet pour le banc d'essais continu.
+Bien que cette vignette se concentre sur les fonctionnalités et sur l'utilisation, le but de `fread` et `fwrite` est la vitesse.
 
-Pour les utilisateurs intéressés par les détails, et les performances comparées mises à jour, nous recommandons ces billets de blog externes, utilisant le paquet `atime` pour une analyse rigoureuse :
+Pour les utilisateurs intéressés de voir la performance par rapport aux autres systèmes comparables, nous recommandons ces billets de blog externes, utilisant le paquet `atime` pour une analyse rigoureuse :
 
 - **[data.table asymptotic timings](https://tdhock.github.io/blog/2023/dt-atime-figures/)** : compare les performances de `fread` et `fwrite` par rapport à d'autres paquets populaires de R tels que `readr` et `arrow`.
-- **[Benchmarking data.table with polars, duckdb, and pandas](https://tdhock.github.io/blog/2024/pandas-dt/)** : compare les E/S de `data.table` et regroupe les performances face aux bibliothèques principales Python.
+- **[Benchmarking data.table with polars, duckdb, and pandas](https://tdhock.github.io/blog/2024/pandas-dt/)** : comparaison avec les bibliothèques principales Python.
 
-Ces bancs d'essais montrent d'une manière cohérente que `fread` et `fwrite` sont hautement compétitifs et occupent souvent les premières places quant aux performances dans l'écosystème R.
+Ces comparaisons démontrent que `fread` et `fwrite` sont hautement compétitifs et occupent souvent les premières places quant aux performances dans l'écosystème R.
 
 ***
