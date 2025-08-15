@@ -43,11 +43,17 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   # Handle select argument using .shallow()
   if (!is.null(select)) {
-    cols = colnamesInt(x, select)
-    if (is.data.table(x)) {
-      x = .shallow(x, cols)
+    if (is.integer(select) || is.numeric(select)) {  # numeric/integer avoids O(#cols) name-match overhead
+        cols = as.integer(select)
     } else {
-      x = x[select]
+        cols = colnamesInt(x, select)
+    }
+    if (is.data.table(x)) {
+        if (length(cols) < NCOL(x) || !identical(cols, seq_len(NCOL(x)))) { # only build a shallow view when columns are reduced or reordered
+           x = .shallow(x, cols)
+        }
+    } else {
+      x = x[cols]
     }
   }
 
