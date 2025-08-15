@@ -210,7 +210,7 @@ From v1.10.6, `fread` resolves ambiguities more reliably across the entire file 
 
 ## 2. fwrite()
 
-`fwrite()` is the fast file writer companion to `fread()`. It’s designed for speed, sensible defaults, and ease of use, mirroring many of the conveniences found in fread`.
+`fwrite()` is the fast file writer companion to `fread()`. It’s designed for speed, sensible defaults, and ease of use, mirroring many of the conveniences found in `fread`.
 
 ### 2.1 Intelligent and Minimalist Quoting (quote="auto")
 
