@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -134,26 +134,25 @@ dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.va
 
 Voir `?dcast` pour d'autres arguments utiles et des exemples supplémentaires.
 
-## 2. Limitations des approches actuelles `melt/dcast`
+## 2. Limitations des approches précédentes `melt/dcast`
 
 Jusqu'à présent, nous avons vu des fonctionnalités de `melt` et `dcast` qui sont implémentées efficacement pour les objets `data.table`, en utilisant la machinerie interne de `data.table` (*tri par base rapide*, *recherche binaire* etc...).
 
 Cependant, il existe des situations où l'opération souhaitée ne s'exprime pas de manière simple. Par exemple, considérons l'objet `data.table` présenté ci-dessous :
 
 ```{r}
-s2 <- "family_id age_mother dob_child1 dob_child2 dob_child3 gender_child1 gender_child2 gender_child3
-1         30 1998-11-26 2000-01-29         NA             1             2            NA
-2         27 1996-06-22         NA         NA             2            NA            NA
-3         26 2002-07-11 2004-04-05 2007-09-02             2             2             1
-4         32 2004-10-10 2009-08-27 2012-07-21             1             1             1
-5         29 2000-12-05 2005-02-28         NA             2             1            NA"
+s2 <- "family_id age_mother name_child1 name_child2 name_child3 gender_child1 gender_child2 gender_child3
+1         30         Ben        Anna          NA             1             2            NA
+2         27         Tom          NA          NA             2            NA            NA
+3         26         Lia         Sam         Amy             2             2             1
+4         32         Max         Zoe         Joe             1             1             1
+5         29         Dan         Eva          NA             2             1            NA"
 DT <- fread(s2)
 DT
-
 ## 1 = femme, 2 = homme
 ```
 
-Et vous aimeriez combiner (avec `melt`) toutes les colonnes `dob` ensemble, ainsi que toutes les colonnes `gender` ensemble. Avec la fonctionnalité actuelle, nous pouvons faire quelque chose comme ceci :
+Et vous aimeriez combiner (avec `melt`) toutes les colonnes `name` ensemble, ainsi que toutes les colonnes `gender` ensemble. Avec les anciennes fonctionnalités, nous pouvions faire quelque chose comme ceci :
 
 ```{r}
 DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
@@ -166,11 +165,11 @@ str(DT.c1) ## la colonne 'gender' est un type de caractère maintenant !
 
 #### Problèmes
 
-1. Ce que nous voulions faire était de combiner toutes les colonnes de type `dob` ensemble, et toutes les colonnes de type `gender` ensemble. Au lieu de cela, nous combinons tout, puis nous les scindons à nouveau. On voit aisément que c'est une approche détournée (et inefficace).
+1. Ce que nous voulions faire était de combiner toutes les colonnes de type `name` ensemble, et toutes les colonnes de type `gender` ensemble. Au lieu de cela, nous combinons tout, puis nous les scindons à nouveau. On voit aisément que c'est une approche détournée (et inefficace).
 
     Comme analogie, imaginez un placard avec quatre étagères de vêtements, et vous souhaitez rassembler les vêtements des étagères 1 et 2 (dans l'étagère 1), et ceux des étagères 3 et 4 (dans l'étagère 3). Ce que nous faisons, en quelque sorte, c'est de mélanger tous les vêtements ensemble, puis de les séparer à nouveau sur les étagères 1 et 3 !
 
-2. Les colonnes à transformer (`melt`) peuvent être de types différents, comme c'est le cas ici (types `character` et `integer`). En les transformant toutes ensemble avec `melt`, les colonnes seront forcées d'être du même type, comme l'explique le message d'avertissement ci-dessus, et on le voit dans la sortie de str(DT.c1), où la colonne `gender` a été convertie en type `character`.
+2. Les colonnes à transformer (`melt`) peuvent être de types différents. En les transformant toutes ensemble avec `melt`, elles seront forcées d'être du même type.
 
 3. Nous générons une colonne supplémentaire en scindant la colonne variable en deux colonnes, dont l'utilité est plutôt obscure. Nous faisons cela parce que nous en avons besoin pour la transformation (`cast`) dans l'étape suivante.
 
@@ -189,9 +188,9 @@ Puisque nous aimerions que `data.table` effectue cette opération de façon simp
 L'idée est assez simple. Nous passons une liste de colonnes à `measure.vars`, où chaque élément de la liste contient les colonnes qui doivent être combinées ensemble.
 
 ```{r}
-colA = paste0("dob_child", 1:3)
+colA = paste0("name_child", 1:3)
 colB = paste0("gender_child", 1:3)
-DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("name", "gender"))
 DT.m2
 
 str(DT.m2) ## le type de col est préservé
@@ -206,7 +205,7 @@ str(DT.m2) ## le type de col est préservé
 En général, dans ce type de problème, les colonnes que l'on souhaite transformer avec `melt` peuvent être distinguées par un motif commun. Nous pouvons utiliser la fonction `patterns()`, implémentée pour faciliter cette tâche, pour fournir des expressions régulières correspondant aux colonnes à combiner ensemble. L'opération ci-dessus peut alors être réécrite comme suit :
 
 ```{r}
-DT.m2 = melt(DT, measure.vars = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = patterns("^name", "^gender"), value.name = c("name", "gender"))
 DT.m2
 ```
 
@@ -278,7 +277,7 @@ Nous pouvons désormais fournir **plusieurs colonnes `value.var`** à `dcast` po
 
 ```{r}
 ## nouvelle fonctionnalité 'cast' - plusieurs value.vars
-DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("dob", "gender"))
+DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("name", "gender"))
 DT.c2
 ```
 

@@ -12,9 +12,18 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+<style>
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
+</style>
+
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -114,7 +123,7 @@ head(unique(Teams[[fkt[1L]]]))
 
 Note :
 
-1. Le `:=` est un opérateur d'affectation qui permet de mettre à jour `data.table` sans faire de copie. Voir [reference semantics](https://cran.r-project.org/package=data.table/vignettes/datatable-reference-semantics.html) pour plus d'informations. 
+1. Le `:=` est un opérateur d'affectation qui permet de mettre à jour `data.table` sans faire de copie. Voir la  [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) pour plus d'informations. 
 2. Le membre de gauche, `names(.SD)`, indique quelles colonnes nous mettons à jour - dans ce cas, nous mettons à jour l'intégralité de `.SD`.
 3. Le membre de droite, `lapply()`, parcourt chaque colonne du `.SD` et convertit la colonne en un facteur.
 4. Nous utilisons `.SDcols` pour sélectionner uniquement les colonnes qui ont le motif `teamID`.

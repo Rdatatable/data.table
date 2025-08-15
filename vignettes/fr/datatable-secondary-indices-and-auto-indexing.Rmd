@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -24,13 +24,17 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-Cette vignette suppose que le lecteur est familier avec la syntaxe `[i, j, by]` de data.table, et sur la façon d’effectuer des sous-ensembles basés sur des clés rapides. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes *"Introduction à data.table"*, *"Sémantique de référence"* et *"Sous-ensembles basés sur les clés et la recherche binaire rapide"*.
+Cette vignette suppose que le lecteur est familier avec la syntaxe `[i, j, by]` de data.table, et sur la façon d’effectuer des sous-ensembles basés sur des clés rapides. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes suivantes :
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html).
 
 ***
 
 ## Données {#data}
 
-Nous utiliserons les mêmes données `flights` que dans la vignette *"Introduction à data.table"*.
+Nous utiliserons les mêmes données `flights` que dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
 ```{r echo = FALSE}
 options(width = 100L)
@@ -61,6 +65,26 @@ Les indices secondaires sont similaires aux `clés` dans *data.table*, à l'exce
 * Il ne réorganise pas physiquement l'ensemble de la table de données en RAM. Au lieu de cela, il calcule uniquement l'ordre pour l'ensemble des colonnes fournies et stocke ce *vecteur d'ordre* dans un attribut supplémentaire appelé `index`.
 
 * Il peut y avoir plus d'un index secondaire pour une table de données (comme nous le verrons plus loin).
+
+#### Clés et sous-ensembles rapides
+
+Bien que **clés** et **indices** permettent à deux, les sous ensembles de la recherche binaire rapide, ils sont différents par leur utilisation :
+
+**Indices par clé** (correspondance par colonne implicite)
+
+```{r keyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setkey(DT, a)                # définit la clé, réorganise DT
+DT[.(TRUE)]                  # 'on' est facultatif; si omis, la clé est utilisée
+```
+
+**Sous ensembles indexés** (spécification explicite de colonne)
+
+```{r unkeyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setindex(DT, a)              # définir l'index seulement (sans réorganiser)
+DT[.(TRUE), on = "a"]        # 'on' est nécessaire
+```
 
 ### b) Définir et obtenir des indices secondaires
 
@@ -191,9 +215,17 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 
 * Comme le temps de calcul de l'index secondaire est assez faible, nous n'avons pas besoin d'utiliser `setindex()`, sauf si, une fois de plus, la tâche implique un sous-ensemble répété sur la même colonne.
 
+* Pour la lisibilité et la compréhension, on peut nommer les entrées inputs dans `i`, par exemple :
+
+```{r}
+flights[.(origin = "JFK", dest = "LAX"), on = c("origin", "dest")]
+```
+
+On voit clairement quelles entrées de `j` correspondent à quel élément de `on`.
+
 ### b) Sélection dans `j`
 
-Toutes les opérations que nous allons discuter ci-dessous ne sont pas différentes de celles que nous avons déjà vues dans la vignette *Clé et recherche binaire rapide basée sur un sous-ensemble*. Sauf que nous utiliserons l'argument `on` au lieu de définir des clés.
+Toutes les opérations que nous allons discuter ci-dessous ne sont pas différentes de celles que nous avons déjà vues dans la [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html). Sauf que nous utiliserons l'argument `on` au lieu de définir des clés.
 
 #### -- Retourner la colonne `arr_delay` seule en tant que data.table correspondant à `origin = "LGA"` et `dest = "TPA"`
 
@@ -219,7 +251,7 @@ flights[.("LGA", "TPA"), max(arr_delay), on = c("origin", "dest")]
 
 ### e) *sous-assignation* par référence en utilisant `:=` dans `j`
 
-Nous avons déjà vu cet exemple dans les vignettes *Sémantique des références* et *Clé et sous-ensemble basé sur la recherche binaire rapide*. Regardons toutes les `heures` disponibles dans le *data.table* `flights` :
+Nous avons déjà vu cet exemple dans la [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) et la [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html). Regardons toutes les `heures` disponibles dans le *data.table* `flights` :
 
 ```{r}
 # récupère toutes les 'hours' de flights
@@ -253,7 +285,7 @@ head(ans)
 
 ### g) L'argument *mult*
 
-Les autres arguments, y compris `mult`, fonctionnent exactement de la même manière que nous l'avons vu dans la vignette *Keys and fast binary search based subset*. La valeur par défaut de `mult` est "all". Nous pouvons choisir de ne renvoyer que les "premières" ou "dernières" lignes correspondantes.
+Les autres arguments, y compris `mult`, fonctionnent exactement de la même manière que nous l'avons vu dans la  [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html). La valeur par défaut de `mult` est "all". Nous pouvons choisir de ne renvoyer que les "premières" ou "dernières" lignes correspondantes.
 
 #### -- Sous-ensemble contenant uniquement la première ligne correspondante où `dest` correspond à *"BOS"* et *"DAY"*
 
@@ -327,7 +359,7 @@ system.time(dt[x %in% 1989:2012])
 
 Dans la version récente, nous avons étendu l'indexation automatique aux expressions impliquant plus d'une colonne (combinées avec l'opérateur `&`). Dans le futur, nous prévoyons d'étendre la recherche binaire à d'autres opérateurs binaires comme `<`, `<=`, `>` et `>=`.
 
-Nous aborderons les *sous-ensembles* rapides utilisant des clés et des indices secondaires pour les *joints* dans la prochaine vignette, *"Joints et jointures roulantes"*.
+Nous aborderons les *sous-ensembles* rapides utilisant des clés et des indices secondaires pour les *joints* dans la [prochaine (`vignette("datatable-joins", package="data.table")`)](datatable-joins.html).
 
 ***
 
