@@ -289,16 +289,37 @@ test.list <- atime::atime_test_list(
     # Test case adapted from https://github.com/Rdatatable/data.table/issues/4177 which is where the issue was reported.
     # Fixed in  https://github.com/Rdatatable/data.table/pull/7236
     "fwrite select parameter improved in #4177" = atime::atime_test(
+    # N row, 5 column
     setup = {
-      set.seed(1)
-      DT = data.table(a = rnorm(N), b = rnorm(N), c = rnorm(N), d = rnorm(N), e = rnorm(N))
+      set.seed(1L)
+      DT = data.table(a=rnorm(N), b=rnorm(N), c=rnorm(N), d=rnorm(N), e=rnorm(N))
       temp_file = tempfile()
-      has_select = "select" %chin% names(formals(data.table::fwrite))
     },
-    expr = if (has_select)
-      data.table::fwrite(DT, temp_file, select=c("a","b","c")),
-    Slow = "66cb6d2393cef30083b444346a7600a079207806",    # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/66cb6d2393cef30083b444346a7600a079207806)
-    Fast = "1887699fe965b5aa1fb8cb16b5507b7a5cbf5c85"),   # Commit in the PR (https://github.com/Rdatatable/data.table/pull/4177/commits) that adds select parameter
+    expr = {
+      has_select = "select" %chin% names(formals(data.table::fwrite))
+      if (has_select) {
+        data.table::fwrite(DT, temp_file, select = c("a","b","c"))
+      } else {
+        data.table::fwrite(DT[, c("a","b","c"), with = FALSE], temp_file)
+      }
+    },
+    Slow = "66cb6d2393cef30083b444346a7600a079207806",      # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/66cb6d2393cef30083b444346a7600a079207806)
+    Fast = "1887699fe965b5aa1fb8cb16b5507b7a5cbf5c85"       # Commit in the PR (https://github.com/Rdatatable/data.table/pull/4177/commits) that adds select parameter
+    # 1 row, N columns
+    setup = {
+      DT = data.table(t(1:N))
+      temp_file = tempfile()
+    },
+    expr = {
+      has_select = "select" %chin% names(formals(data.table::fwrite))
+      if (has_select) {
+        data.table::fwrite(DT, temp_file, select = 1L)
+      } else {
+        data.table::fwrite(DT[, 1L, with = FALSE], temp_file)
+      }
+    },
+    Slow = "66cb6d2393cef30083b444346a7600a079207806",     # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/66cb6d2393cef30083b444346a7600a079207806)
+    Fast = "1887699fe965b5aa1fb8cb16b5507b7a5cbf5c85"      # Commit in the PR (https://github.com/Rdatatable/data.table/pull/4177/commits) that adds select parameter
 
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
