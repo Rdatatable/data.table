@@ -270,13 +270,22 @@ if (requireNamespace("bit64", quietly = TRUE)) {
 
 ### 2.4 Column Order and Subset Control
 
-To control the order and subset of columns written to file, subset the data.table before calling `fwrite()`. The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
+To control the order and subset of columns written to file, you can use `[.data.table` to make a new table before calling `fwrite()`, but it is more efficient to use the `select` argument, which avoids making a copy.
 
 ```{r}
 dt = data.table(A = 1:3, B = 4:6, C = 7:9)
-
 # Write only columns C and A, in that order
 fwrite(dt[, .(C, A)], "out.csv")
+cat(readLines("out.csv"), sep = "\n")
+fwrite(dt, "out.csv", select=c("C","A"))
+cat(readLines("out.csv"), sep = "\n")
+file.remove("out.csv")
+```
+
+The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
+
+```{r}
+fwrite(dt, "out.csv", col.names=FALSE)
 cat(readLines("out.csv"), sep = "\n")
 file.remove("out.csv")
 ```
