@@ -290,7 +290,7 @@ file.remove("out.csv")
 
 ## 3. A Note on Performance
 
-While this vignette focuses on features and usability, the primary motivation for `fread` and `fwrite` is speed. The performance of `data.table`'s I/O is a topic of continuous benchmarking.
+While this vignette focuses on features and usability, the primary motivation for `fread` and `fwrite` is speed.
 
 For users interested in detailed, up-to-date performance comparisons, we recommend these external blog posts which use the `atime` package for rigorous analysis:
 
