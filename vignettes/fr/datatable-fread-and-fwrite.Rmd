@@ -80,7 +80,6 @@ print(dt_from_text)
 
 #### 1.1.3 Décompression automatique des fichiers compressés
 
-
 Dans beaucoup de cas, `fread()` peut automatiquement détecter et décompresser les fichiers directement en utilisant les extensions de compression communes et sans avoir besoin d'un objet de connexion explicite ou de commandes du shell. Il se base sur l'extension du fichier.
 
 **Les extensions reconnues incluent typiquement :**
@@ -173,73 +172,73 @@ getOption("datatable.integer64")
 
 ### 1.6 Ignorer ou sélectionner les colonnes par nom ou par position
 
-To save memory and improve performance, use `fread()`'s `select` or `drop` arguments to read only the columns you need.
+Pour économiser de la mémoire et pour améliorer les performances, utilisez les arguments `select` ou `drop` de `fread()` pour lire uniquement les colonnes dont vous avez besoin.
 
-- If you need only a few columns, use `select`.
-- If you want to exclude just a few, use `drop`—this avoids listing everything you want to keep.
+- Si vous avez besoin uniquement de quelques colonnes, utilisez `select`.
+- Si vous voulez exclure uniquement quelques colonnes, utilisez `drop` — ceci évite de lister tout ce que vous voulez garder.
 
-Key points:
-- `select`: Vector of column names/positions to keep (discards others).
-- `drop`: Vector of column names/positions to discard (keeps others).
-- Do not use `select` and `drop` together—they are mutually exclusive.
-- `fread()` will warn you if any specified column is missing in the file.
+Points clé:
+- `select` : vecteur de noms de colonnes ou de positions à garder (les autres seront ignorés).
+- `drop`: vecteur de noms de colonnes ou de positions à ignorer (leas autres sont gardés).
+- N'utilisez pas `select` et `drop` simultanément — ils sont mutuellement exclusifs.
+- `fread()` vous avertira si une colonne que vous avez spécifiée n'existe pas dans le fichier.
 
-For details, see the manual page by running `?fread` in R.
+Pour les détails, voir la page du manuel en exécutant `?fread` dans R.
 
-### 1.7 Skip to a Sub-Table’s Header Row Using a Column Name Substring
+### 1.7 Sauter à une ligne de l'entête d'une sous-table en utilisant une sous-chaîne d'un nom de colonne
 
-Use `skip="string"` in `fread` to search for a line containing a substring (typically from the column names, e.g., `skip="Date"`). Reading begins at the first matching line. This is useful for skipping metadata or selecting sub-tables in multi-table files. This feature is inspired by the `read.xls` function in the gdata package.
+Utilisez `skip="chaîne"` dans `fread` pour chercher une ligne contenant une sous-chaîne (typiquement issue des noms de colonne, par exemple `skip="Date"`). La lecture commence à la première ligne où la correspondance est trouvée. Ceci est utile pour sauter les métadonnées ou pour sélectionner des sous-tables dans les fichiers contenant des tables multiples. Cette fonctionnalité est inspirée de la fonction `read.xls` du paquet gdata .
 
 ### 1.8 Automatic Quote Escape Detection (Including No-Escape)
 
-`fread` automatically detects how quotes are escaped—including doubled ("") or backslash-escaped (\") quotes—without requiring user input. This is determined using a large sample of the data (see point 3), and validated against the entire file.
+`fread` détecte automatiquement la manière dont les guillemets sont échappés — qu'ils soient simples ('') ou doubles ("") ou échappés avec une barre oblique (respectivement \' et \") — sans nécessiter l'intervention de l'utilisateur. Ceci est déterminé en utilisant un grand échantillon de données (voir le point 3), et vérifié sur le fichier complet.
 
-Supported Scenarios:
-- Unescaped quotes inside quoted fields
-e.g., `"This "quote" is invalid"` — supported as long as column count remains consistent.
+Scénari pris en charge :
+- Guillemets non échappés dans les champs entre guillemets
+par exemple, `"This "quote" is invalid"` — est reconnu tant que le nombre de colonnes reste cohérent.
 
-- Unquoted fields that begin with quotes
-e.g., `Invalid"Field,10,20` — recognized correctly as not a quoted field.
+- Champs qui ne sont pas entre guillemets mais qui commencent par des guillemets
+par exemple, `Invalid"Field,10,20` — est reconnu correctement comme n'étant pas un champ entre guillemets.
 
-Requirements & Limitations:
-- Escaping rules and column counts must be consistent throughout the file.
+Contraintes et limitations :
+- les règles de l'échappement et du nombre des colonnes doivent être cohérentes tout au long du fichier.
 
-- Not supported when `fill=TRUE` — in that case, the file must follow RFC4180-compliant quoting/escaping.
+- non reconnu lorsque `fill=TRUE` — dans ce cas le fichier doit suivre la RFC4180 concernant les guillemets et l'échappement.
 
-Version-Specific Robustness:
-From v1.10.6, `fread` resolves ambiguities more reliably across the entire file using full-column-count consistency (default is `fill=FALSE`). Warnings are issued if parsing fails due to ambiguity.
+Robustesse selon la version :
+A partir de la v1.10.6, `fread` résoud les ambiguïtés de manière plus fiable au travers du fichier entier en utililisant la cohérence du nombre entier de colonnes (valeur par défaut `fill=FALSE`). Les avertissements sont émis si l'analyse échoue par ambiguité.
 
 ## 2. fwrite()
 
-`fwrite()` is the fast file writer companion to `fread()`. It’s designed for speed, sensible defaults, and ease of use, mirroring many of the conveniences found in fread`.
+`fwrite()` est le pendant de `fread()` pour l'enregistrement rapide. Il est conçu pour être rapide, sensible aux defaults, et facile à utiliser, tout en reprenant la plupart des facilités de `fread`.
 
-### 2.1 Intelligent and Minimalist Quoting (quote="auto")
+### 2.1 Guillements intelligents et minimaux (quote="auto")
 
-When data is written as strings (either inherently, like character columns, or by choice, like `dateTimeAs="ISO"`), `quote="auto"` (default) intelligently quotes fields:
+Si les données sont écrites comme des chaînes (soit de manière inhérente comme des colonnes de caractères, ou par choix comme `dateTimeAs="ISO"`), `quote="auto"` (valeur par défault) des champs de guillemets intelligents :
 
-**Contextual Quoting**:Fields are quoted only when necessary. This happens if they contain the delimiter `(sep)`, a double quote `(")`, a newline `(\n)`, a carriage return `(\r)`, or if the field is an empty string `("")`. Quoting the empty string is done to distinguish it from an NA value when the file is read.
+**Guillemets contextuels** : les champs sont entre guillemets uniquement lorsque cela est nécessaire. Cela se produit s'ils contiennent le délimiteur `(sep)`, un guillemet double `(")`, un passage à la ligne `(\n)`, un retour charriot `(\r)`, ou si le champ est une chaîne vide `("")`. On place une chaîne vide entre guillemets pour la distinguer de la valeur NA quand le fichier est lu.
 
-**Bypassed for Direct Numeric Output**: If specific columns are written as their underlying numeric types (e.g., via `dateTimeAs="epoch"` for `POSIXct`, or if a user pre-converts Date to integer), then quoting logic is naturally bypassed for those numeric fields, contributing to efficiency.
+**Ignoré pour la sortie numérique directe** : si les colonnes spécifiques sont écrites comme leur types numériques sous-jascents (par exemple via `dateTimeAs="epoch"` pour `POSIXct`, ou si un utilisateur pré-convertit Date en integer), alors la logique des guillemets est naturellement sautée pour ces champs numériques, ce qui contribue à l'efficacité.
 
 ```{r}
 dt_quoting_scenario = data.table(
-  text_field = c("Contains,a,comma", "Contains \"a quote\"", "Clean_text", "", NA),
+  text_field = c("Contient,une,virgule", "Contient \"des guillemets\"", "Texte neutre", "", NA),
   numeric_field = 1:5
 )
 temp_quote_adv = tempfile(fileext = ".csv")
 
 fwrite(dt_quoting_scenario, temp_quote_adv)
-# Note the output: the empty string is quoted (""), but the NA is not.
+# Notez la sortie : la chaîne vide est entre guillemets (""), mais la valeur NA ne l'est pas.
 cat(readLines(temp_quote_adv), sep = "\n")
 ```
 
-### 2.2 Fine-Grained Date/Time Serialization (dateTimeAs)
+### 2.2 Sérialisation à granularité fine de Date/Time (dateTimeAs)
 
-Offers precise control for POSIXct/Date types:
+Permet le contrôle précis pour POSIXct et les types de Date :
 
-- `dateTimeAs="ISO"` (Default for POSIXct): ISO 8601 format (e.g., YYYY-MM-DDTHH:MM:SS.ffffffZ), preserving sub-second precision for unambiguous interchange.
+- `dateTimeAs="ISO"` (valeur par défaut pour POSIXct) : format ISO 8601 (c'est à dire AAAA-MM-JJTHH:MM:SS.ffffffZ), ce qui préserve la précision après la virgule pour le portage non ambigu.
 
-- `dateTimeAs="epoch"`: POSIXct as seconds since epoch (numeric).
+- `dateTimeAs="epoch"` : POSIXct en secondes depuis epoch (numérique).
 
 ```{r}
 dt_timestamps = data.table(
@@ -252,11 +251,11 @@ cat(readLines(temp_dt_iso), sep = "\n")
 unlink(temp_dt_iso)
 ```
 
-### 2.3 Handling of bit64::integer64
+### 2.3 Gestion de bit64::integer64
 
-**Full Precision for Large Integers**: `fwrite` writes `bit64::integer64` columns by converting them to strings with full precision. This prevents data loss or silent conversion to double that might occur with less specialized writers. This is crucial for IDs or measurements requiring more than R's standard `32-bit` integer range or `53-bit` double precision.
+**Précision complète pour les grans entiers** : `fwrite` écrit les colonnes `bit64::integer64` en les convertissant en chaînes de caractères avec la précision complète. Ce qui évite la perte de données ou la conversion silencieuse en double qui  pourrait se produire avec des écrivains moins spécialisés. Ceci est crucial pour les IDs ou les mesures qui demandent plus que l'intervalle des entiers `32-bit` du standard R ou de la double précision `53-bit`.
 
-**Direct Handling**: This direct and careful handling of specialized numerics ensures data integrity and efficient I/O, without unnecessary intermediate conversions to less precise types.
+**Gestion directeg** : ce traitement direct et soigné des nombres spéciaux assure l'intégrité des données et l'efficacité des entrées / sorties, en évitant les conversions intermédiaires inutiles vers des types moins précis.
 
 ```{r}
 if (requireNamespace("bit64", quietly = TRUE)) {
@@ -269,28 +268,28 @@ if (requireNamespace("bit64", quietly = TRUE)) {
 }
 ```
 
-### 2.4 Column Order and Subset Control
+### 2.4 Ordre des colonnes et contrôle des sous-ensembles
 
-To control the order and subset of columns written to file, subset the data.table before calling `fwrite()`. The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
+Pour contrôler l'ordre et le sous-ensemble des colonnes écrites dans le fichier, réduisez le data.table avant d'appeler `fwrite()`. L'argument `col.names` de `fwrite()` est un booléen (TRUE/FALSE) qui contrôle si la ligne d'entête est écrite, et non quelles colonnes sont écrites.
 
 ```{r}
 dt = data.table(A = 1:3, B = 4:6, C = 7:9)
 
-# Write only columns C and A, in that order
+# écrire uniquement les colonnes C et A, dans cet ordre
 fwrite(dt[, .(C, A)], "out.csv")
 cat(readLines("out.csv"), sep = "\n")
 file.remove("out.csv")
 ```
 
-## 3. A Note on Performance
+## 3. Note sur les performances
 
-While this vignette focuses on features and usability, the primary motivation for `fread` and `fwrite` is speed. The performance of `data.table`'s I/O is a topic of continuous benchmarking.
+Bien que cette vignette se concentre sur les fonctionnalités et sur l'utilisation, le but de `fread` et `fwrite` est la vitesse. Les performances des E/S de `data.table` sont un sujet pour le banc d'essais continu.
 
-For users interested in detailed, up-to-date performance comparisons, we recommend these external blog posts which use the `atime` package for rigorous analysis:
+Pour les utilisateurs intéressés par les détails, et les performances comparées mises à jour, nous recommandons ces billets de blog externes, utilisant le paquet `atime` pour une analyse rigoureuse :
 
-- **[data.table asymptotic timings](https://tdhock.github.io/blog/2023/dt-atime-figures/)**: Compares `fread` and `fwrite` performance against other popular R packages like `readr` and `arrow`.
-- **[Benchmarking data.table with polars, duckdb, and pandas](https://tdhock.github.io/blog/2024/pandas-dt/)**: Compares `data.table` I/O and grouping performance against leading Python libraries.
+- **[data.table asymptotic timings](https://tdhock.github.io/blog/2023/dt-atime-figures/)** : compare les performances de `fread` et `fwrite` par rapport à d'autres paquets populaires de R tels que `readr` et `arrow`.
+- **[Benchmarking data.table with polars, duckdb, and pandas](https://tdhock.github.io/blog/2024/pandas-dt/)** : compare les E/S de `data.table` et regroupe les performances face aux bibliothèques principales Python.
 
-These benchmarks consistently show that `fread` and `fwrite` are highly competitive and often state-of-the-art for performance in the R ecosystem.
+Ces bancs d'essais montrent d'une manière cohérente que `fread` et `fwrite` sont hautement compétitifs et souvent aux premières places quant aux performances dans l'écosystème R.
 
 ***
