@@ -43,10 +43,10 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   # Handle select argument using .shallow()
   if (!is.null(select)) {
-    if (is.integer(select) || is.numeric(select)) {  # numeric/integer avoids O(#cols) name-match overhead
-        cols = as.integer(select)
+    cols = if (is.integer(select) || is.numeric(select)) {  # numeric/integer avoids O(#cols) name-match overhead
+        as.integer(select)
     } else {
-        cols = colnamesInt(x, select)
+        colnamesInt(x, select)
     }
     if (is.data.table(x)) {
         if (length(cols) < NCOL(x) || !identical(cols, seq_len(NCOL(x)))) { # only build a shallow view when columns are reduced or reordered
