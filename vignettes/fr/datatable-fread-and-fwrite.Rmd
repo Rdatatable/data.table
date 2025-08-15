@@ -4,7 +4,7 @@ date: "`r Sys.Date()`"
 output: 
   markdown::html_format
 vignette: >
-  %\VignetteIndexEntry{Importing data.table}
+  %\VignetteIndexEntry{Fast Read and Fast Write}
   %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
