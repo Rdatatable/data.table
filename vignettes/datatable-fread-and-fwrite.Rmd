@@ -71,7 +71,8 @@ print(dt_from_text)
 
 #### 1.1.2 Reading from URLs
 
-`fread()` can read data directly from web URLs by passing the URL as a character string to its `file` argument. This allows you to download and read data from the internet in one step.
+`fread()` can read data directly from web URLs by passing the URL as a character string to its `file` argument. 
+This allows you to download and read data from the internet in one step.
 
   ```{r}
   # dt = fread("https://people.sc.fsu.edu/~jburkardt/data/csv/airtravel.csv")
@@ -86,7 +87,7 @@ In many cases, `fread()` can automatically detect and decompress files with comm
 - `.gz` / `.bz2` (gzip / bzip2): Supported and works out of the box.
 - `.zip` / `.tar`  (ZIP / tar archives, single file): Supported—`fread()` will read the first file in the archive if only one file is present.
 
-> Note: If there are multiple files in the archive, `fread()` will fail with an error.
+**Note**: If there are multiple files in the archive, `fread()` will fail with an error.
 
 ### 1.2 Automatic separator and skip detection
 
@@ -112,7 +113,7 @@ By default (`skip="auto"`), `fread` will automatically skip blank lines and comm
 
 ### 1.3 High-Quality Automatic Column Type Detection
 
-Many real-world datasets contain columns that are initially blank, zero-filled, or appear numeric but later contain characters. To handle such inconsistencies, `fread()` in `data.table` employs a robust column type detection strategy.
+Many real-world datasets contain columns that are initially blank, zero-filled, or appear numeric but later contain characters. To handle such inconsistencies, `fread()` employs a robust column type detection strategy.
 
 Since v1.10.5, `fread()` samples rows by reading blocks of contiguous rows from multiple equally spaced points across the file, including the start, middle, and end. The total number of rows sampled is chosen dynamically based on the file size and structure, and is typically around 10,000, but can be smaller or slightly larger. This wide sampling helps detect type changes that occur later in the data (e.g., `001` to `0A0` or blanks becoming populated).
 
@@ -142,7 +143,9 @@ All detection logic and any rereads are detailed when `verbose=TRUE` is enabled.
 
 ### 1.4 Early Error Detection at End-of-File
 
-Because the large sample explicitly includes the very end of the file, critical issues—such as an inconsistent number of columns, a malformed footer, or an opening quote without a matching closing quote—can be detected and reported almost instantly. This early error detection avoids the unnecessary overhead of processing the entire file or allocating excessive memory, only to encounter a failure at the final step. It ensures faster feedback and more efficient resource usage, especially when working with large datasets.
+Because the large sample explicitly includes the very end of the file, critical issues—such as an inconsistent number of columns, a malformed footer, or an opening quote without a matching closing quote—can be detected and reported almost instantly.
+This early error detection avoids the unnecessary overhead of processing the entire file or allocating excessive memory, only to encounter a failure at the final step.
+It ensures faster feedback and more efficient resource usage, especially when working with large datasets.
 
 ### 1.5 `integer64` Support
 
@@ -195,7 +198,7 @@ Use `skip="string"` in `fread` to search for a line containing a substring (typi
 
 Supported Scenarios:
 - Unescaped quotes inside quoted fields
-e.g., `"This "quote" is invalid, but fread works anyway"` — supported as long as column count remains consistent.
+e.g., `"This "quote" is invalid, but fread works anyway"` — supported as long as column count remains consistent :
 
 ```{r}
 data.table::fread(text='x,y\n"This "quote" is invalid, but fread works anyway",1')
@@ -218,7 +221,8 @@ From v1.10.6, `fread` resolves ambiguities more reliably across the entire file 
 
 ## 2. fwrite()
 
-`fwrite()` is the fast file writer companion to `fread()`. It’s designed for speed, sensible defaults, and ease of use, mirroring many of the conveniences found in `fread`.
+`fwrite()` is the fast file writer companion to `fread()`. 
+It’s designed for speed, sensible defaults, and ease of use, mirroring many of the conveniences found in `fread`.
 
 ### 2.1 Intelligent and Minimalist Quoting (quote="auto")
 
