@@ -259,7 +259,7 @@ cat(readLines(temp_dt_iso), sep = "\n")
 unlink(temp_dt_iso)
 ```
 
-### 2.3 Handling of bit64::integer64
+### 2.3 Handling of `bit64::integer64`
 
 **Full Precision for Large Integers**: `fwrite` writes `bit64::integer64` columns by converting them to strings with full precision. This prevents data loss or silent conversion to double that might occur with less specialized writers. This is crucial for IDs or measurements requiring more than R's standard `32-bit` integer range or `53-bit` double precision.
 
@@ -271,14 +271,13 @@ if (requireNamespace("bit64", quietly = TRUE)) {
   temp_i64_out = tempfile(fileext = ".csv")
   fwrite(dt_i64, temp_i64_out)
   cat(readLines(temp_i64_out), sep = "\n")
-
   unlink(temp_i64_out)
 }
 ```
 
 ### 2.4 Column Order and Subset Control
 
-To control the order and subset of columns written to file, subset the data.table before calling `fwrite()`. The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
+To control the order and subset of columns written to file, subset the `data.table` before calling `fwrite()`. The `col.names` argument in `fwrite()` is a logical (TRUE/FALSE) that controls whether the header row is written, not which columns are written.
 
 ```{r}
 dt = data.table(A = 1:3, B = 4:6, C = 7:9)
