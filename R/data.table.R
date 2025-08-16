@@ -741,8 +741,9 @@ replace_dot_alias = function(e) {
       if (is.character(j)) {
         if (!missingby) {
         warning(
-            "`by` or `keyby` is ignored when `j` is a character vector used for column selection. ",
-            "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]"
+          "`by` or `keyby` is ignored when `j` is a character vector used for column selection. ",
+          "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]",
+          call. = FALSE
         )
         }
         if (notj) {
@@ -770,8 +771,8 @@ replace_dot_alias = function(e) {
       } else if (is.numeric(j)) {
         if (!missingby) {
         warning(
-            "`by` or `keyby` is ignored when `j` is a numeric vector used for column selection. ",
-            "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]"
+          "`by` or `keyby` is ignored when `j` is a numeric vector used for column selection. ", "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]",
+          call. = FALSE
         )
         }
         j = as.integer(j)
