@@ -768,7 +768,7 @@ replace_dot_alias = function(e) {
         # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
         #   in both cases leave to the R-level subsetting of i and x together further below
       } else if (is.numeric(j)) {
-        if (!missingby) {
+        if (!missingby && (missing(with) || isTRUE(with))) {
             warning(
                 "`by` or `keyby` is ignored when `j` is a numeric vector used for column selection. ", "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]")
         }
