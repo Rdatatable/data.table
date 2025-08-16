@@ -3,7 +3,7 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-// TO DO: margins
+// todo: margins
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP some_fillArg) {
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
   int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
@@ -127,7 +127,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
 //   if (TYPEOF(env) != ENVSXP) error(_("Argument 'env' to (data.table internals) 'cast_order' must be an environment"));
 //   if (TYPEOF(v) == VECSXP) len = length(VECTOR_ELT(v, 0));
 //   else len = length(v);
-//   PROTECT(call = lang2(install("forder"), v)); // TODO: save the 'eval' by calling directly the C-function.
+//   PROTECT(call = lang2(install("forder"), v)); // todo: save the 'eval' by calling directly the C-function.
 //   ans = PROTECT(eval(call, env));
 //   if (length(ans) == 0) { // forder returns integer(0) if already sorted
 //     UNPROTECT(1); // ans
