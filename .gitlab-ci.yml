@@ -114,6 +114,7 @@ test-lin-rel:
   variables:
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
+    _R_CHECK_RD_CHECKRD_MINLEVEL_: "-Inf"
   script:
     - *install-deps
     - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
