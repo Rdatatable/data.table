@@ -21633,14 +21633,14 @@ local({
     "lst_named$inner", "lst_unnamed[[1]]", "nested$l1$l2",
     "mixed[[1]]", "mixed$y",
     "mixed_nested$A[[1]]", "mixed_nested$A$q")
-  test(2335.1, out, sort(expected))
+  test(2339.1, out, sort(expected))
 })
 local({
   dt <- data.table(val=42)
   e <- new.env()
   e$dt <- dt
   e$self <- e # possible infinite loop if we're not careful
-  test(2335.2, tables(recursive=TRUE, env=e)$NAME, "dt")
+  test(2339.2, tables(recursive=TRUE, env=e)$NAME, "dt")
 })
 local({
   test_obj <- local({
@@ -21650,7 +21650,7 @@ local({
     outer_list
   })
   out <- tables(recursive=TRUE)$NAME
-  test(2335.3, length(out), 2L)
-  test(2335.4, "test_obj$unique" %in% out)
-  test(2335.5, sum(grepl("\\$dt_inner$", out)), 1L)
+  test(2339.3, length(out), 2L)
+  test(2339.4, "test_obj$unique" %in% out)
+  test(2339.5, sum(grepl("\\$dt_inner$", out)), 1L)
 })
