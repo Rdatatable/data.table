@@ -1,9 +1,9 @@
 #include "data.table.h"
 
-#define YEARS400 146097
-#define YEARS100 36524
-#define YEARS4 1461
-#define YEARS1 365
+static const int YEARS400 = 146097;
+static const int YEARS100 = 36524;
+static const int YEARS4 = 1461;
+static const int YEARS1 = 365;
 
 typedef enum { YDAY, WDAY, MDAY, WEEK, MONTH, QUARTER, YEAR, YEARMON, YEARQTR} datetype;
 
@@ -124,37 +124,40 @@ void convertSingleDate(int x, datetype type, void *out)
 SEXP convertDate(SEXP x, SEXP type)
 {
     if (!isInteger(x)) error(_("x must be an integer vector"));
-    const int *ix = INTEGER(x);
+    const int *ix = INTEGER_RO(x);
     const int n = length(x);
     if (!isString(type) || length(type) != 1)
         internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
-    datetype ctype=0;
+    datetype ctype = 0;
     bool ansint = true;
-    if (!strcmp(CHAR(STRING_ELT(type, 0)), "yday")) ctype = YDAY;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "wday")) ctype = WDAY;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "mday")) ctype = MDAY;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "week")) ctype = WEEK;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "month")) ctype = MONTH;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "quarter")) ctype = QUARTER;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "year")) ctype = YEAR;
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearmon")) { ctype = YEARMON; ansint = false; }
-    else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearqtr")) { ctype = YEARQTR; ansint = false; }
-    else internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
 
-    SEXP ans;
+    const char* ctype_str = CHAR(STRING_ELT(type, 0));
+    if (!strcmp(ctype_str, "yday")) ctype = YDAY;
+    else if (!strcmp(ctype_str, "wday")) ctype = WDAY;
+    else if (!strcmp(ctype_str, "mday")) ctype = MDAY;
+    else if (!strcmp(ctype_str, "week")) ctype = WEEK;
+    else if (!strcmp(ctype_str, "month")) ctype = MONTH;
+    else if (!strcmp(ctype_str, "quarter")) ctype = QUARTER;
+    else if (!strcmp(ctype_str, "year")) ctype = YEAR;
+    else if (!strcmp(ctype_str, "yearmon")) { ctype = YEARMON; ansint = false; }
+    else if (!strcmp(ctype_str, "yearqtr")) { ctype = YEARQTR; ansint = false; }
+    else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
+    
     if (ansint) {
-        ans = PROTECT(allocVector(INTSXP, n));
+        SEXP ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
-        for (int i=0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             convertSingleDate(ix[i], ctype, &ansp[i]);
         }
+        UNPROTECT(1);
+        return ans;
     } else {
-        ans = PROTECT(allocVector(REALSXP, n));
+        SEXP ans = PROTECT(allocVector(REALSXP, n));
         double *ansp = REAL(ans);
-        for (int i=0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             convertSingleDate(ix[i], ctype, &ansp[i]);
         }
+        UNPROTECT(1);
+        return ans;
     }
-    UNPROTECT(1);
-    return ans;
 }

@@ -20,7 +20,7 @@ test(num, x, y = TRUE,
 \item{output}{ If you are testing the printing/console output behaviour; e.g. with \code{verbose=TRUE} or \code{options(datatable.verbose=TRUE)}. Again, regex-compatible and case sensitive. }
 \item{notOutput}{ Or if you are testing that a feature does \emph{not} print particular console output. Case insensitive (unlike output) so that the test does not incorrectly pass just because the string is not found due to case. }
 \item{ignore.warning}{ A single character string. Any warnings emitted by \code{x} that contain this string are dropped. Remaining warnings are compared to the expected \code{warning} as normal. }
-\item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to `test()` (usually, `x`, or maybe `y`) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
+\item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to \code{test()} (usually, \code{x}, or maybe \code{y}) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
 \item{env}{ A named list of environment variables to set for the duration of the test, much like \code{options}. A list entry set to \code{NULL} will unset (i.e., \code{\link{Sys.unsetenv}}) the corresponding variable. }
 }
 \note{

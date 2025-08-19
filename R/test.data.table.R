@@ -197,7 +197,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     tryCatch(error = function(c) warningf("Attempt to subset to %d tests matching '%s' failed, running full suite.", length(keep_test_ids), testPattern), {
       new_script = file_lines[c(header_lines, keep_lines)]
       parse(text = new_script) # as noted above the static approach is not fool-proof (yet?), so force the script to at least parse before continuing.
-      fn = tempfile()
+      fn = setNames(tempfile(), names(fn))
       on.exit(unlink(fn), add=TRUE)
       catf("Running %d of %d tests matching '%s'\n", length(keep_test_ids), nrow(test_calls), testPattern)
       writeLines(new_script, fn)
@@ -205,7 +205,30 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   # nocov end
 
-  err = try(sys.source(fn, envir=env), silent=silent)
+  env$warnings = list()
+  err = try(
+    withCallingHandlers(
+      sys.source(fn, envir=env),
+      warning=function(w) {
+        # nocov start
+        if (!silent && showProgress) print(w)
+        env$warnings = c(env$warnings, list(list(
+          "after test"=env$prevtest, warning=conditionMessage(w),
+          calls=paste(
+            vapply_1c(sys.calls(), function(call) {
+              if (is.name(call[[1]])) {
+                as.character(call[[1]])
+              } else "..."
+            }),
+            collapse=" -> "
+          )
+        )))
+        invokeRestart("muffleWarning")
+        # nocov end
+      }
+    ),
+    silent=silent
+  )
 
   options(oldOptions)
   for (i in oldEnv) {
@@ -229,8 +252,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # notranslate start
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
-    ", sizeof(long double)==", .Machine$sizeof.longdouble,
-    ", longdouble.digits==", .Machine$longdouble.digits, # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
+    ", sizeof(long double)==", format(.Machine$sizeof.longdouble),
+    ", capabilities('long.double')==", capabilities('long.double'), # almost certainly overkill, but that's OK; see #6154
+    ", longdouble.digits==", format(.Machine$longdouble.digits), # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
     ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
@@ -261,6 +285,21 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
   }
+  if (length(env$warnings)) {
+    # nocov start
+    warnings = rbindlist(env$warnings)
+    catf(
+      ngettext(nrow(warnings),
+        "Caught %d warning outside the test() calls:\n",
+        "Caught %d warnings outside the test() calls:\n"
+      ),
+      nrow(warnings),
+      domain=NA
+    )
+    print(warnings, nrows = nrow(warnings))
+    stopf("Tests succeeded, but non-test code caused warnings. Search %s for tests shown above.", names(fn))
+    # nocov end
+  }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
   time = nTest = RSS = NULL  # to avoid 'no visible binding' note
@@ -276,13 +315,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     y = head(order(-diff(timings$RSS)), 10L)
     ans = timings[, diff := c(NA_real_, round(diff(RSS), 1L))][y + 1L]
     ans[, time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
-    catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
+    catf("10 largest RAM increases (MiB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
     get("dev.new")(width=14.0, height=7.0)
     get("par")(mfrow=1:2)
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0.0, max(timings$RSS)))
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MiB)", ylim=c(0.0, max(timings$RSS)))
     get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4L, at=lastRSS, las=1L, font=2L)
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MiB)")
     get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
@@ -315,7 +354,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 gc_mem = function() {
   # nocov start
-  # gc reports memory in MB
+  # gc reports memory in MiB
   m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m

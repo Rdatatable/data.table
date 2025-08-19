@@ -49,7 +49,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
 
 # Test for #2013 unique() memory efficiency improvement in v1.10.5
 # set.seed(1)
-# Create unique 7.6GB DT on 16GB laptop
+# Create unique 7.6GiB DT on 16GiB laptop
 # DT = data.table(
 #  A = sample(1e8, 2e8, TRUE),
 #  B = sample(1e8, 2e8, TRUE),

@@ -416,10 +416,10 @@ N = 2e7L
 DT = data.table(x = sample(letters, N, TRUE),
                 y = sample(1000L, N, TRUE),
                 val = runif(N))
-print(object.size(DT), units = "Mb")
+print(object.size(DT), units = "MiB")
 ```
 
-`DT` is ~380MB. It is not really huge, but this will do to illustrate the point.
+`DT` is ~380MiB. It is not really huge, but this will do to illustrate the point.
 
 From what we have seen in the Introduction to data.table section, we can subset those rows where columns `x = "g"` and `y = 877` as follows:
 

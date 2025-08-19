@@ -3,22 +3,26 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-SEXP dt_na(SEXP x, SEXP cols) {
-  int n=0, elem;
-
+SEXP dt_na(SEXP x, SEXP cols)
+{
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
   if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
-  for (int i=0; i<LENGTH(cols); ++i) {
-    elem = INTEGER(cols)[i];
-    if (elem<1 || elem>LENGTH(x))
-      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
-    if (!n) n = length(VECTOR_ELT(x, elem-1));
+
+  int n = 0;
+  const int numCols = LENGTH(cols);
+  const int* col_ints = INTEGER_RO(cols);
+  for (int i = 0; i < numCols; i++) {
+    const int elem = col_ints[i];
+    if (elem < 1 || elem > LENGTH(x))
+      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i + 1, elem, LENGTH(x));
+    if (!n) n = length(VECTOR_ELT(x, elem - 1));
   }
   SEXP ans = PROTECT(allocVector(LGLSXP, n));
   int *ians = LOGICAL(ans);
-  for (int i=0; i<n; ++i) ians[i]=0;
-  for (int i=0; i<LENGTH(cols); ++i) {
-    SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+  memset(ians, 0, n * sizeof(int));
+
+  for (int i = 0; i < numCols; i++) {
+    SEXP v = VECTOR_ELT(x, col_ints[i]-1);
     if (!length(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip pairlist columns
     if (n != length(v))
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);

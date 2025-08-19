@@ -58,7 +58,7 @@ local({
 
 # child class of data.table doesn't induce unintended print, #3029
 dt = data.table(x = 1)
-class(dt) = c("foo", "data.table", "data.frame")
+setattr(dt, "class", c("foo", "data.table", "data.frame"))
 print.foo = function(x, ...) {
   NextMethod("print")
 }

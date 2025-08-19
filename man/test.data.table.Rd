@@ -1,6 +1,6 @@
 \name{test.data.table}
 \alias{test.data.table}
-\title{ Runs a set of tests. }
+\title{ Runs a set of tests }
 \description{
   Runs a set of tests to check data.table is working correctly.
 }
