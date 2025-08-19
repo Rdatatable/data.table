@@ -3997,9 +3997,9 @@ test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
 DT2 <- copy(DT)[, a := 1L]
 test(1134.1, DT[, {a := 1L}], DT2)
-test(1134.2, DT[, {a := 1L; NULL}], error="You have wrapped.*which is ok.*Consider")
+test(1134.2, DT[, {a := 1L; NULL}], error="Invalid use of `:=` inside `{}`")
 test(1134.3, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x])
-test(1134.4, DT[, {b := 2L; sum(val)}, by=x], error="You have wrapped.*which is ok.*Consider")
+test(1134.4, DT[, {b := 2L; sum(val)}, by=x], error="Invalid use of `:=` inside `{}`")
 
 # FR #2693 and Gabor's suggestions on datatable-help "Problem with FAQ 2.8"
 d1 <- data.table(id1 = c(1L, 2L, 2L, 3L), val = 1:4, key = "id1")
@@ -21602,3 +21602,21 @@ if (getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct mes
 test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
 test(2337.4, is.null(fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=",")))
 test(2337.5, is.null(fwrite(data.table(a=numeric()), dec=",", sep=",")))
+
+# 2864 force decimal points for whole numbers in numeric columns
+dd = data.table(x=c(1, 2, 3))
+di = data.table(x=c(1L, 2L, 3L))
+test(2338.1, capture.output(fwrite(dd, forceDecimal=TRUE)), c("x", "1.", "2.", "3."))
+test(2338.2, capture.output(fwrite(dd, forceDecimal=TRUE, dec=",", sep="\t")), c("x", "1,", "2,", "3,"))
+test(2338.3, capture.output(fwrite(dd, forceDecimal=FALSE)), c("x", "1", "2", "3"))
+test(2338.4, capture.output(fwrite(di, forceDecimal=TRUE)), c("x", "1", "2", "3"))
+test(2338.5, capture.output(fwrite(data.table(x=c(0.)), forceDecimal=TRUE)), c("x", "0."))
+test(2338.6, capture.output(fwrite(data.table(x=c(-0.)), forceDecimal=TRUE)), c("x", "0."))
+test(2338.7, capture.output(fwrite(data.table(x=c(0.00)), forceDecimal=TRUE)), c("x", "0."))
+# round trip
+local({
+  f <- tempfile(); on.exit(unlink(f))
+  test(2338.8, {fwrite(dd, f, forceDecimal=TRUE); fread(f)}, dd)
+  test(2338.9, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
+})
+
