@@ -265,15 +265,13 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp = allocVector(STRSXP, ncol));
   for (int i = 0; i < ncol; i++) {
-    SEXP elem;
     if (colNames == NULL || colNames[i].len <= 0) {
       char buff[12];
       snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
-      elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
+      SET_STRING_ELT(colNamesSxp, i, mkChar(buff));  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
-      elem = mkCharLenCE(anchor + colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
+      SET_STRING_ELT(colNamesSxp, i, mkCharLenCE(anchor + colNames[i].off, colNames[i].len, ienc));  // no PROTECT as passed immediately to SET_STRING_ELT
     }
-    SET_STRING_ELT(colNamesSxp, i, elem);
   }
   // "use either select= or drop= but not both" was checked earlier in freadR
   applyDrop(dropSxp, type, ncol, /*dropSource=*/-1);
