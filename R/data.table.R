@@ -735,17 +735,22 @@ replace_dot_alias = function(e) {
         names(..syms) = ..syms
         j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=parent.frame()), parent.frame())
       }
-      if (is.logical(j)) j = which(j)
       if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #358
+      if (is.character(j) || (is.numeric(j) && !is.logical(j))) {
+          if (!missingby) {
+              j_type = if (is.character(j)) "a character" else "a numeric"
+              warning(
+                  "`by` or `keyby` is ignored when `j` is ", j_type, " vector used for column selection. ",
+                  "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]",
+                  call. = FALSE
+              )
+          }
+      }
+
+      if (is.logical(j)) j = which(j)
+
       if (is.character(j)) {
-        if (!missingby) {
-        warning(
-          "`by` or `keyby` is ignored when `j` is a character vector used for column selection. ",
-          "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]",
-          call. = FALSE
-        )
-        }
         if (notj) {
           if (anyNA(idx <- chmatch(j, names_x)))
             warningf(ngettext(sum(is.na(idx)), "column not removed because not found: %s", "columns not removed because not found: %s"),
@@ -769,12 +774,6 @@ replace_dot_alias = function(e) {
         # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
         #   in both cases leave to the R-level subsetting of i and x together further below
       } else if (is.numeric(j)) {
-        if (!missingby) {
-        warning(
-          "`by` or `keyby` is ignored when `j` is a numeric vector used for column selection. ", "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]",
-          call. = FALSE
-        )
-        }
         j = as.integer(j)
         if (any(w <- (j>ncol(x)))) stopf("Item %d of j is %d which is outside the column number range [1,ncol=%d]", idx <- which.first(w), j[idx], ncol(x))
         j = j[j!=0L]
