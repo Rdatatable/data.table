@@ -741,7 +741,7 @@ replace_dot_alias = function(e) {
           if (!missingby) {
               j_type = if (is.character(j)) "a character" else "a numeric"
               fmt = "`by` or `keyby` is ignored when `j` is %s vector used for column selection. Perhaps you intended to use `.SD`? For example: DT[, .SD[, %s], by = ...]"
-              warning(sprintf(fmt, j_type, gsub("%", "%%", deparse(jsub))), call. = FALSE)
+              warningf(sprintf(fmt, j_type, gsub("%", "%%", deparse(jsub))), call. = FALSE)
           }
       }
 
