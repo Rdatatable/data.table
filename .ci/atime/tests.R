@@ -306,7 +306,7 @@ test.list <- atime::atime_test_list(
     Fast = "1887699fe965b5aa1fb8cb16b5507b7a5cbf5c85"),   # Commit in the PR (https://github.com/Rdatatable/data.table/pull/4177/commits) that adds select parameter
 
   # Wide case: 1 row, N columns; select a single column
-  "fwrite select parameter improved in #4177 (N columns and 1 row, select 1)" = atime::atime_test(
+  "fwrite(select) #4177 1xN" = atime::atime_test(
     setup = {
       DT = data.table(t(1:N))
       temp_file = tempfile()
