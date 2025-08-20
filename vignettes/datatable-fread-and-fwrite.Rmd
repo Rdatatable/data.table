@@ -109,7 +109,11 @@ You can explicitly tell fread whether a header exists using `header = TRUE` or `
 
 **Skip Detection**
 
-By default (`skip="auto"`), `fread` will automatically skip blank lines and comment lines (e.g., starting with `#`) before the data header. To manually skip a specific number of lines, use `skip=n`.
+By default (`skip="auto"`), `fread` will automatically skip blank lines and comment lines (e.g., starting with `#`) before the data header.
+To manually specify a different number of lines to skip, use
+
+* `skip=n` to skip the first `n` lines.
+* `skip="string"` to search for a line containing a substring (typically from the column names, like `skip="Date"`). Reading begins at the first matching line. This is useful for skipping metadata, or selecting sub-tables in multi-table files. This feature is inspired by the `read.xls` function in the `gdata` package.
 
 ### 1.3 High-Quality Automatic Column Type Detection
 
@@ -188,11 +192,7 @@ Key points:
 
 For details, see the manual page by running `?fread` in R.
 
-### 1.7 Skip to a Sub-Table’s Header Row Using a Column Name Substring
-
-Use `skip="string"` in `fread` to search for a line containing a substring (typically from the column names, e.g., `skip="Date"`). Reading begins at the first matching line. This is useful for skipping metadata or selecting sub-tables in multi-table files. This feature is inspired by the `read.xls` function in the gdata package.
-
-### 1.8 Automatic Quote Escape Detection (Including No-Escape)
+### 1.7 Automatic Quote Escape Detection (Including No-Escape)
 
 `fread` automatically detects how quotes are escaped—including doubled ("") or backslash-escaped (\") quotes—without requiring user input. This is determined using a large sample of the data (see point 3), and validated against the entire file.
 
