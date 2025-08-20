@@ -288,7 +288,7 @@ test.list <- atime::atime_test_list(
   
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/4177 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/7236
-  "fwrite select parameter improved in #4177 (N rows and 5 columns, select a,b,c)" = atime::atime_test(
+  "fwrite(select) #4177 Nx5" = atime::atime_test(
     setup = {
       set.seed(1L)
       DT = data.table(a=rnorm(N), b=rnorm(N), c=rnorm(N), d=rnorm(N), e=rnorm(N))
