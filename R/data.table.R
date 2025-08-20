@@ -740,11 +740,8 @@ replace_dot_alias = function(e) {
       if (is.character(j) || (is.numeric(j) && !is.logical(j))) {
           if (!missingby) {
               j_type = if (is.character(j)) "a character" else "a numeric"
-              warning(
-                  "`by` or `keyby` is ignored when `j` is ", j_type, " vector used for column selection. ",
-                  "Perhaps you intended to use `.SD`? For example: DT[, .SD[, ", deparse(jsub), "], by = ...]",
-                  call. = FALSE
-              )
+              fmt = "`by` or `keyby` is ignored when `j` is %s vector used for column selection. Perhaps you intended to use `.SD`? For example: DT[, .SD[, %s], by = ...]"
+              warning(sprintf(fmt, j_type, gsub("%", "%%", deparse(jsub))), call. = FALSE)
           }
       }
 
