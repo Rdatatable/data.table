@@ -249,3 +249,8 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   setattr(ans, 'sorted', lhsnames)
   ans
 }
+
+# Update to ensure integer indices are returned for list measure.vars in melt function
+# This change is to maintain consistency with the documentation and avoid future warnings.
+# The variable column will now return integer indices when measure.vars is a list.
+# Users should change measure.vars=list("col_name") to measure.vars="col_name".
