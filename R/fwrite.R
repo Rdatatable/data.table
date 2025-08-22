@@ -43,7 +43,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   # Handle select argument using .shallow()
   if (!is.null(select)) {
-    cols = if (is.numeric(x)) {  # numeric/integer avoids O(#cols) name-match overhead
+    cols = if (is.numeric(select)) {  # numeric/integer avoids O(#cols) name-match overhead
         as.integer(select)
     } else {
         colnamesInt(x, select)
