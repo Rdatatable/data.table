@@ -610,20 +610,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       } else {
         // same behavior for vector measure.vars: variable is column names
         SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-        if (data->lvalues == 1) {
-          const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
-          for (int j=0, ansloc=0; j<data->lmax; ++j) {
-            const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
-            SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
-            for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
-          }
-        } else {//multiple value columns to output.
-          for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
-            const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
-            char buff[20];
-            snprintf(buff, sizeof(buff), "%d", level++); // # notranslate
-            for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
-          }
+        const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+        for (int j=0, ansloc=0; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
+          SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
+          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
         }
       }
     } else {// varfactor==TRUE
