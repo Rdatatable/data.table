@@ -21620,3 +21620,18 @@ local({
   test(2338.9, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
 })
 
+# test for select parameter #4177
+DT = data.table(a=1:2, b=3:4)
+f = tempfile()
+fwrite(DT, f, select = "a") 
+test(2339.1, names(fread(f)), "a")
+df = as.data.frame(DT)
+fwrite(df, f, select = "a")
+test(2339.2, names(fread(f)), "a")
+l = as.list(DT)
+fwrite(l, f, select = "a")
+test(2339.3, names(fread(f)), "a")
+m = as.matrix(DT)
+fwrite(m, f, select = "a")
+test(2339.4, names(fread(f)), "a")
+unlink(f)
