@@ -520,11 +520,11 @@ static void Field(FieldParseContext *ctx)
     while(!end_of_field(ch)) ch++;  // sep, \r, \n or eof will end
     *ctx->ch = ch;
     int fieldLen = (int)(ch - fieldStart);
-    //if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
+    //if (stripWhite) {   // todo:  do this if and the next one together once in bulk afterwards before push
       while(fieldLen > 0 && ((ch[-1] == ' ' && stripWhite) || ch[-1] == '\0')) { fieldLen--; ch--; }
       // this space can't be sep otherwise it would have stopped the field earlier inside end_of_field()
     //}
-    if ((fieldLen == 0 && blank_is_a_NAstring) || (fieldLen && end_NA_string(fieldStart) == ch)) fieldLen = INT32_MIN;  // TODO - speed up by avoiding end_NA_string when there are none
+    if ((fieldLen == 0 && blank_is_a_NAstring) || (fieldLen && end_NA_string(fieldStart) == ch)) fieldLen = INT32_MIN;  // todo: speed up by avoiding end_NA_string when there are none
     target->off = (int32_t)(fieldStart - ctx->anchor);
     target->len = fieldLen;
     return;
@@ -663,7 +663,7 @@ static void StrtoI64(FieldParseContext *ctx)
   ch += sf;
   // INT64 range is NA==-9223372036854775808(INT64_MIN) then symmetric [-9223372036854775807,+9223372036854775807].
   // A 20+ digit number is caught as too large via the field width check <=19, since leading zeros trigger character type not numeric
-  // TODO Check tests exist that +9223372036854775808 and +9999999999999999999 are caught as too large. They are stll 19 wide
+  // todo: Check tests exist that +9223372036854775808 and +9999999999999999999 are caught as too large. They are stll 19 wide
   //   and, fortunately, uint64 can hold 9999999999999999999 (19 9's) so that doesn't overflow uint64.
   //if ((acc && *start!='0' && acc<=INT64_MAX && (ch-start)<=19) ||
   //     (acc==0 && ch-start==1)) {
@@ -676,7 +676,7 @@ static void StrtoI64(FieldParseContext *ctx)
 }
 
 // generate freadLookups.h
-// TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
+// todo: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
 /*
 f = "~/data.table/src/freadLookups.h"
 cat("const long double pow10lookup[301] = {\n", file=f, append=FALSE)
@@ -684,7 +684,7 @@ for (i in 0:299) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
 cat("1.0E300L\n};\n", file=f, append=TRUE)
 */
 
-// TODO  Add faster StrtoD_quick for small precision positive numerics such as prices without a sign or
+// todo: Add faster StrtoD_quick for small precision positive numerics such as prices without a sign or
 //       an E (e.g. $.cents) which don't need I64, long double, or Inf/NAN. Could have more than two levels.
 
 /**
@@ -1470,7 +1470,7 @@ int freadMain(freadMainArgs _args)
 
       // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
-      // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MiB (>>2KiB, so promising)
+      // todo: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
       mmp = mmap(NULL, fileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
       #ifdef __EMSCRIPTEN__
@@ -1596,7 +1596,7 @@ int freadMain(freadMainArgs _args)
         // We could do this routinely (i.e. when there is a final newline too) but we desire to run all tests through the harder
         // branch above that replaces the final newline with \0 to test that logic (e.g. test 893 which causes a type bump in the last
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
-        // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
+        // todo: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
         const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file'");
         if (verbose)
@@ -1762,7 +1762,7 @@ int freadMain(freadMainArgs _args)
             if (quoteRule > QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED && quote) continue;  // turn off self-healing quote rule when filling
             int firstRowNcol = countfields(&ch);
             int thisncol = 0, maxncol = firstRowNcol, thisRow = 0;
-            while (ch < eof && ++thisRow < jumpLines) {   // TODO: rename 'jumpLines' to 'jumpRows'
+            while (ch < eof && ++thisRow < jumpLines) {   // todo: rename 'jumpLines' to 'jumpRows'
               thisncol = countfields(&ch);
               if (thisncol < 0) break;  // invalid line; e.g. improper quote
               if (thisncol > maxncol) maxncol = thisncol;
@@ -1858,7 +1858,7 @@ int freadMain(freadMainArgs _args)
       quoteRule = topQuoteRule;
       if (quoteRule > QUOTE_RULE_EMBEDDED_QUOTES_ESCAPED && quote) {
         DTWARN(_("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), jumpLines);
-        // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
+        // todo: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
       }
       sep = topSep;
       whiteChar = (sep == ' ' ? '\t' : (sep == '\t' ? ' ' : 0));
@@ -1867,7 +1867,7 @@ int freadMain(freadMainArgs _args)
         // leave pos on the first populated line; that is start of data
         ch = pos;
       } else {
-        // TODO: warning here if topSkip>0 that header is being auto-removed.
+        // todo: warning here if topSkip>0 that header is being auto-removed.
         ch = pos = topStart;
         row1line += topSkip;
       }
@@ -2244,7 +2244,7 @@ int freadMain(freadMainArgs _args)
     rowSize1 = 0;
     rowSize4 = 0;
     rowSize8 = 0;
-    size = malloc(sizeof(*size) * ncol);  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
+    size = malloc(sizeof(*size) * ncol);  // todo: remove size[] when we implement Pasha's idea to += size inside processor
     if (!size)
       STOP(_("Failed to allocate %zu bytes for '%s': %s"), sizeof(*size) * ncol, "size", strerror(errno)); // # nocov
     nStringCols = 0;
@@ -2258,7 +2258,7 @@ int freadMain(freadMainArgs _args)
                  typeName[tmpType[j]], typeName[type[j]]);
         }
         type[j] = tmpType[j];
-        // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
+        // todo: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
         // no loss of accuracy but must be read as double for now in case "4.3" occurs out of sample to know if warning about accuracy is needed afterwards.
       }
       nUserBumped += type[j] > tmpType[j];
@@ -2453,7 +2453,7 @@ int freadMain(freadMainArgs _args)
           int j = 0;
     
           //*** START HOT ***//
-          if (sep != ' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
+          if (sep != ' ' && !any_number_like_NAstrings) {  // todo:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
             // Try most common and fastest branch first: no whitespace, no quoted numeric, ",," means NA
             while (j < ncol) {
               // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
@@ -2494,7 +2494,7 @@ int freadMain(freadMainArgs _args)
           // (End-of-file) is also dealt with now, as could be the highly unusual line ending /n/r
           // This way (each line has new opportunity of the fast path) if only a little bit of the file is quoted (e.g. just when commas are present as fwrite does)
           // then a penalty isn't paid everywhere.
-          // TODO: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
+          // todo: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
     
           if (sep == ' ') {
             while (*tch == ' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
@@ -2850,7 +2850,7 @@ int freadMain(freadMainArgs _args)
     DTPRINT(_("%8.3fs        Total\n"), tTot);
     if (typeBumpMsg) {
       // if type bumps happened, it's useful to see them at the end after the timing 2 lines up showing the reread time
-      // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time if they are
+      // todo: construct and output the copy and pastable colClasses argument so user can avoid the reread time if they are
       //        reading this file or files formatted like it many times (say in a production environment).
       DTPRINT("%s", typeBumpMsg); // # notranslate
       free(typeBumpMsg);  // local scope and only populated in verbose mode

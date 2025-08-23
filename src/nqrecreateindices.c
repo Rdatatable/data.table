@@ -1,7 +1,7 @@
 #include "data.table.h"
 #include <string.h>
 
-// TODO: Add oxygen style comments and cleanup var names.
+// todo: Add oxygen style comments and cleanup var names.
 // See other TODOs inside the function.
 SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
 {
@@ -25,7 +25,8 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
     inewlen[iindices[i] - 1] += ilen[i];
   }
   // fix for #2360, rewriting the for-loop from before
-  // TODO: revisit to see if this be simplified further when I've some time.
+
+  // todo: revisit to see if this be simplified further when I've some time.
   R_len_t j = 0, tmp = 0;
   for (int i = 0; i < n; i++) {
     if (j >= xn || ixo[j] <= 0) {

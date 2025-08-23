@@ -65,7 +65,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   const bool verbose = GetVerbose();
   int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];
 
-  // TODO below chunk into allocansList helper, not for 1.12.4
+  // todo: below chunk into allocansList helper, not for 1.12.4
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(*vans));
   if (verbose)

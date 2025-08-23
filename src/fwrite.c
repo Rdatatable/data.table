@@ -73,7 +73,7 @@ void writeBool32(const void *col, int64_t row, char **pch)
 {
   int32_t x = ((const int32_t*)col)[row];
   char *ch = *pch;
-  if (x == INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
+  if (x == INT32_MIN) {  // todo: when na=='\0' as recommended, use a branchless writer
     write_chars(na, &ch);
   } else {
     *ch++ = '0' + x;
@@ -1100,7 +1100,7 @@ void fwriteMain(fwriteMainArgs args)
                   "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
                   "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
                   (100.0 * end) / args.nrow, args.nrow, (int)(now - startTime), nth, maxBuffUsedPC, ETA); // # nocov
-          // TODO: use progress() as in fread
+          // todo: use progress() as in fread
           nextTime = now + 1;
           hasPrinted = true;
           // # nocov end
