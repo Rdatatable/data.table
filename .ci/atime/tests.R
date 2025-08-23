@@ -317,7 +317,7 @@ test.list <- atime::atime_test_list(
       if (has_select) {
         data.table::fwrite(DT, temp_file, select = select_idx)
       } else {
-        data.table::fwrite(DT[, select_idx, with = FALSE], temp_file)
+        data.table::fwrite(data.table:::`[.data.table`(DT, , select_idx, with = FALSE), temp_file)
       }
     },
     Slow = "66cb6d2393cef30083b444346a7600a079207806",     # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/66cb6d2393cef30083b444346a7600a079207806)
