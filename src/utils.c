@@ -14,7 +14,7 @@ bool within_int64_repres(double x) {
 // used to error if not passed type double but this needed extra is.double() calls in calling R code
 // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
 bool fitsInInt32(SEXP x) {
-  if (!isReal(x))
+  if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
@@ -31,7 +31,7 @@ SEXP fitsInInt32R(SEXP x) {
 }
 
 bool fitsInInt64(SEXP x) {
-  if (!isReal(x))
+  if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
@@ -533,10 +533,8 @@ bool isRectangularList(SEXP x) {
   return isRectangular(x);
 }
 
-// TODO: use isDataFrame (when included in any R release).
-// isDataTable(x) || isFrame(x) || isRectangularList(x)
 bool perhapsDataTable(SEXP x) {
-  return isDataTable(x) || isFrame(x) || isRectangularList(x);
+  return isDataTable(x) || isDataFrame(x) || isRectangularList(x);
 }
 SEXP perhapsDataTableR(SEXP x) {
   return ScalarLogical(perhapsDataTable(x));

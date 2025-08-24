@@ -74,7 +74,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
-  split.data.table = data.table:::split.data.table
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -1622,9 +1621,9 @@ test(514, x %chin% y, x %in% y)
 
 # Test new function set() in v1.8.0
 DT = data.table(a=1:3,b=4:6)
-test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6), warning=c("Coerced i from numeric to integer","Coerced j from numeric to integer"))
+test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6))
 test(516, set(DT,"2",1,3), error="i is type 'character'")
-test(517, set(DT,2L,1,3), DT, warning="Coerced j")
+test(517, options=c(datatable.verbose=TRUE), set(DT,2,1,3), DT, output="Coerced i.*Coerced j")
 # FR #2551 implemented - removed warning from 518
 # test(518, set(DT,2L,1L,3), DT, warning="Coerced 'double' RHS to 'integer'")
 test(518, set(DT,2L,1L,3), DT)
@@ -3998,9 +3997,9 @@ test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
 DT2 <- copy(DT)[, a := 1L]
 test(1134.1, DT[, {a := 1L}], DT2)
-test(1134.2, DT[, {a := 1L; NULL}], error="You have wrapped.*which is ok.*Consider")
+test(1134.2, DT[, {a := 1L; NULL}], error="Invalid use of `:=` inside `{}`")
 test(1134.3, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x])
-test(1134.4, DT[, {b := 2L; sum(val)}, by=x], error="You have wrapped.*which is ok.*Consider")
+test(1134.4, DT[, {b := 2L; sum(val)}, by=x], error="Invalid use of `:=` inside `{}`")
 
 # FR #2693 and Gabor's suggestions on datatable-help "Problem with FAQ 2.8"
 d1 <- data.table(id1 = c(1L, 2L, 2L, 3L), val = 1:4, key = "id1")
@@ -6852,11 +6851,12 @@ test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
 test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # shift incompatible types (e.g. Date and POSIXct)
-d = .Date(0:4)
+# TODO(R>=3.5): use .Date() instead of setting class by hand
+d = structure(0:4, class="Date")
 p = .POSIXct(1:5)
 test(1463.81, shift(d, fill=p[1L]), error="Filling Date with POSIXct .* unsupported.*")
 test(1463.82, shift(p, fill=d[1L]), error="Filling POSIXct with Date .* unsupported.*")
-test(1463.83, shift(d, fill=as.IDate(2000L)), .Date(c(2000L, 0:3)))
+test(1463.83, shift(d, fill=as.IDate(2000L)), structure(c(2000L, 0:3), class="Date"))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -7130,6 +7130,11 @@ dt2 <- data.table(x = factor(some_more_letters, levels=some_letters), z=1:6, key
 dt3 <- merge(dt1, dt2, by="x")
 test(1483.81, key(dt3), "x")
 test(1483.82, nrow(dt3[x %in% "c", ]), 2L)
+
+# avoid regression of roll='nearest' join of int->double, #7146
+DT1 <- data.table(a=1L, key='a')
+DT2 <- data.table(a=2.0, key='a')
+test(1483.83, DT1[DT2, roll='nearest'], data.table(a=2L, key='a'))
 
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
@@ -9763,6 +9768,14 @@ test(1639.141, all(sapply(dtL, truelength) > 1000))
 dt <- data.table(x = factor("a"), y = 1)
 test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
 test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
+
+# retain a custom class after splitting, #7105
+DT = data.table(x=letters[1:10], y=1:10, z=rnorm(10))
+setattr(DT, "class", c("my_class", class(DT)))
+test(1639.144, "my_class" %in% unlist(lapply(split(DT, by="x"), class)))
+test(1639.145, "my_class" %in% unlist(lapply(split(DT, ~x), class)))
+test(1639.146, "my_class" %in% unlist(lapply(split(DT, by=c("x", "y")), class)))
+test(1639.147, "my_class" %in% unlist(lapply(split(DT, ~x+y), class)))
 rm_all()
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
@@ -10329,7 +10342,7 @@ test(1673.1, TT + 4L, as.IDate("2016-04-29"))
 test(1673.2, TT + 4, as.IDate("2016-04-29"))
 test(1673.3, TT - 3, as.IDate("2016-04-22"))
 test(1673.4, TT - 3L, as.IDate("2016-04-22"))
-test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
+test(1673.5, all.equal(as.IDate("2016-04-28") - as.IDate("2016-04-20"), as.difftime(8, units='days')))
 
 
 # test for radix integer order when MAXINT is present AND decreasing=TRUE AND na.last=FALSE
@@ -10964,9 +10977,9 @@ test(1732.7, fwrite(DT, quote='auto'), output='A,B\n,5\nNA,7\n"",0\nmonty,')
 test(1732.8, fwrite(DT, quote='auto', na="NA"), output='A,B\nNA,5\n"NA",7\n"",0\n"monty",NA')
 
 # dec=","
-test(1733.1, fwrite(data.table(pi),dec=","), error=base_messages$stopifnot("dec != sep"))
+# Test 1733.1 removed, see #7227
 test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
-           output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
+             output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
 
 # fwrite implied and actual row.names
 DT = data.table(foo=1:3,bar=c(1.2,9.8,-6.0))
@@ -14276,7 +14289,7 @@ test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2,
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
 test(1984.27, identical(shallow(DF), DF))  # shallow (which is not exported) works on DF from v1.14.2. identical() to force checking the selfref attribute for #5286.
-test(1984.28, split.data.table(DF), error='argument must be a data.table')
+# 1984.28 was a coverage test converted to 'nocov' of an internal_error instead
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
 setnames(DT, '.ll.tech.split')
@@ -15060,7 +15073,7 @@ if (test_bit64) {
   as.i64 = bit64::as.integer64
   test(2039.01, between(1:10, as.i64(3), as.i64(6)),  error="x is not integer64 but.*Please align classes")
   test(2039.02, between(1:10, 3, as.i64(6)),          error="x is not integer64 but.*Please align classes")
-  test(2039.03, between(as.i64(1:3), "2", as.i64(4)), error="x is integer64 but lower and/or upper are not")
+  test(2039.03, between(as.i64(1:3), "2", as.i64(4)), error="x is integer64 but lower is not.*Please align classes")
   old = options("datatable.verbose"=TRUE)
   x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
@@ -15087,6 +15100,10 @@ if (test_bit64) {
   test(2039.19, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   test(2039.20, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
   test(2039.21, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  # must not blindly read integer64 values as doubles when the latter fit into int32, #7164
+  test(2039.22, between(42L, structure(41., class="integer64"), structure(43., class="integer64")), error="x is not integer64 but.*Please align classes")
+  # must not blindly convert numeric bounds to integer64, #7164
+  test(2039.23, between(as.i64(42), 41, -2^98), error="x is integer64 but upper is not.*Please align classes")
   options(old)
 }
 
@@ -15578,6 +15595,11 @@ test(2060.154, fcoalesce(list(x)), x)
 test(2060.155, setcoalesce(list(x)), x)
 test(2060.156, setcoalesce(list(x,y,z)), ans)
 test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
+# nan parameter, #4567
+test(2060.158, fcoalesce(c(NA_real_, NaN), 0, nan=NA), c(0, 0))
+test(2060.159, fcoalesce(c(NA_real_, NaN), 0, nan=NaN), c(0, NaN))
+test(2060.160, fcoalesce(c(NA_real_, NaN), c(1, 2), nan=NA), c(1, 2))
+test(2060.161, fcoalesce(c(NA_real_, NaN), c(1, 2), nan=NaN), c(1, NaN))
 # factor of different levels
 x = factor(c('a','b',NA,NA,'b'))
 y = factor(c('b','b','a',NA,'b'))
@@ -16974,7 +16996,8 @@ if (.Platform$OS.type=="windows") local({
     LC_TIME = "Chinese (Simplified)_China.936"
   )
   x_old = Map(Sys.getlocale, names(x))
-  invisible(Map(Sys.setlocale, names(x), x))
+  # setlocale() warns for non-UTF-8 locales in modern versions of R, #7210
+  suppressWarnings(invisible(Map(Sys.setlocale, names(x), x)))
   on.exit(Map(Sys.setlocale, names(x_old), x_old))
   # triggered segfault here in #4402, Windows-only under translation.
   # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
@@ -18593,12 +18616,18 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters # 5096
-local({
+local(if (l10n_info()$`UTF-8` || {
   lc_ctype = Sys.getlocale('LC_CTYPE')
+  lc_wantctype = 'en_US.UTF-8'
   # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
   # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
-  if (!l10n_info()$`UTF-8`) Sys.setlocale('LC_CTYPE', "en_US.UTF-8")
-  on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+  # Avoid the warning upon possible failure, #7210.
+  lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
+  if (identical(lc_newctype, lc_wantctype)) {
+    on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+    TRUE
+  } else FALSE
+}) {
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -18648,6 +18677,8 @@ local({
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
   # test for data.table with NA, #6441
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
+} else {
+  cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 })
 
 # allow 1-D matrix in j for consistency, #783
@@ -21532,7 +21563,60 @@ test(2332.81, {M1[]=frev(M1); M1}, {M2[]=rev(M2); M2})
 test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 # regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
-f = tempfile()
-writeLines(c('a', rep('0x1.ffffp0', 10000L), '0x1.ff\x9fp0', rep('0x1.ffffp0', 20000L)), f)
-test(2334, names(fread(f)), "a")
-unlink(f)
+local({
+	f = tempfile()
+	on.exit(unlink(f))
+	# the line is likely invalid in current encoding, so disable any translation, #7209
+	# test.data.table() sets options(encoding="UTF-8"), so go the long way around.
+	ff = file(f, encoding = "")
+	tryCatch(
+		writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
+		finally = close(ff)
+	)
+	test(2334, names(fread(f)), "a")
+})
+
+# Tests for new isoyear() helper (complement to isoweek) #7154
+test(2335.1, isoyear(as.IDate("2019-12-30")), 2020L)  # End of year edge case
+test(2335.2, isoyear(as.IDate("2016-01-01")), 2015L)  # Start of year edge case
+test(2335.3, isoyear(as.IDate("2023-08-15")), 2023L)  # Normal mid-year case
+test(2335.4, isoyear(as.IDate(c("2019-12-30", "2016-01-01", "2023-08-15"))),c(2020L, 2015L, 2023L))
+test(2335.5, isoyear("2019-12-30"), 2020L)
+test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
+
+# t1-t2 for Date/IDate should be consistent, modulo storage mode #4979
+t1 = as.IDate("2025-07-01")
+t2 = as.IDate("2025-06-01")
+test(2336.1, all.equal(as.Date(t1) - as.Date(t2), t1 - t2))
+test(2336.2, all.equal(as.Date(t2) - as.Date(t1), t2 - t1))
+test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
+test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
+test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
+test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
+
+# fwrite: allow dec=',' with single column, #7227
+test(2337.1, fwrite(data.table(1), dec=","), NULL)
+if (getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
+  test(2337.2, fwrite(data.table(0.1, 0.2), dec=",", sep=","), error = "dec and sep must be distinct")
+}
+test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
+test(2337.4, is.null(fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=",")))
+test(2337.5, is.null(fwrite(data.table(a=numeric()), dec=",", sep=",")))
+
+# 2864 force decimal points for whole numbers in numeric columns
+dd = data.table(x=c(1, 2, 3))
+di = data.table(x=c(1L, 2L, 3L))
+test(2338.1, capture.output(fwrite(dd, forceDecimal=TRUE)), c("x", "1.", "2.", "3."))
+test(2338.2, capture.output(fwrite(dd, forceDecimal=TRUE, dec=",", sep="\t")), c("x", "1,", "2,", "3,"))
+test(2338.3, capture.output(fwrite(dd, forceDecimal=FALSE)), c("x", "1", "2", "3"))
+test(2338.4, capture.output(fwrite(di, forceDecimal=TRUE)), c("x", "1", "2", "3"))
+test(2338.5, capture.output(fwrite(data.table(x=c(0.)), forceDecimal=TRUE)), c("x", "0."))
+test(2338.6, capture.output(fwrite(data.table(x=c(-0.)), forceDecimal=TRUE)), c("x", "0."))
+test(2338.7, capture.output(fwrite(data.table(x=c(0.00)), forceDecimal=TRUE)), c("x", "0."))
+# round trip
+local({
+  f <- tempfile(); on.exit(unlink(f))
+  test(2338.8, {fwrite(dd, f, forceDecimal=TRUE); fread(f)}, dd)
+  test(2338.9, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
+})
+
