@@ -109,7 +109,11 @@ Vous pouvez dire explicitement à fread si une entête existe en utilisant `head
 
 **Détection des sauts de lignes**
 
-Par défaut (`skip="auto"`), `fread` va automatiquement sauter les lignes vides ainsi que les lignes de commentaires (celles qui commencent par `#`) avant l'entête des données. Pour forcer manuellement un nombre donné de lignes, utilisez use `skip=n`.
+Par défaut (`skip="auto"`), `fread` va automatiquement sauter les lignes vides ainsi que les lignes de commentaires (celles qui commencent par `#`) avant l'entête des données. 
+Pour forcer manuellement un nombre donné de lignes différent, utiliser :
+
+* `skip=n` pour sauter les `n` premières lines.
+* `skip="string"` pour chercher une ligne qui contient une sous-chaîne (typiquement issue des noms de colonnes, comme `skip="Date"`). La lecture commence à la première ligne où la correspondance est trouvée. Ceci est utile pour sauter les métadonnées, ou pour sélectionner des sous-tables dans les fichiers qui en contiennent plusieurs. Cette fonctionnalité est inspirée de la fonction `read.xls` du paquet `gdata`.
 
 ### 1.3 Détection avancée et automatique du type de colonne
 
