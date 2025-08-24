@@ -188,11 +188,7 @@ Points clé :
 
 Pour les détails, voir la page du manuel en exécutant `?fread` dans R.
 
-### 1.7 Sauter à une ligne de l'entête d'une sous-table en utilisant une sous-chaîne d'un nom de colonne
-
-Utilisez `skip="chaîne"` dans `fread` pour chercher une ligne contenant une sous-chaîne (typiquement issue des noms de colonne, par exemple `skip="Date"`). La lecture commence à la première ligne où la correspondance est trouvée. Ceci est utile pour sauter les métadonnées ou pour sélectionner des sous-tables dans les fichiers contenant des tables multiples. Cette fonctionnalité est inspirée de la fonction `read.xls` du paquet gdata .
-
-### 1.8 Détection automatique des guillemets (échappés ou pas)
+### 1.7 Détection automatique des guillemets (échappés ou pas)
 
 `fread` détecte automatiquement la manière dont les guillemets sont échappés — qu'ils soient simples ('') ou doubles ("") ou échappés avec la barre oblique inverse (respectivement \' et \") — sans nécessiter l'intervention de l'utilisateur. Ceci est déterminé en utilisant un grand échantillon de données (voir le point 3), et vérifié sur le fichier complet.
 
