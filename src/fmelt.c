@@ -600,6 +600,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   if (isNull(data->variable_table)) {
     if (!varfactor) {
       if (data->measure_is_list) {
+        // Return integer indices for list measure.vars (consistency with docs)
         SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
         int *td = INTEGER(target);
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
@@ -607,22 +608,13 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           for (int k=0; k<thislen; ++k) td[ansloc++] = j+1;
         }
       } else {
+        // same behavior for vector measure.vars: variable is column names
         SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-        if (data->lvalues == 1) {//one value column to output. 
-          const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
-          for (int j=0, ansloc=0; j<data->lmax; ++j) {
-            const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
-            SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
-            for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
-          }
-        } else {
-          for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
-            const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
-            char buff[20];
-            snprintf(buff, sizeof(buff), "%d", level++); // # notranslate
-            SEXP s = mkChar(buff);
-            for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, s);
-          }
+        const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+        for (int j=0, ansloc=0; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
+          SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
+          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
         }
       }
     } else {// varfactor==TRUE
@@ -630,8 +622,9 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       SEXP levels;
       int *td = INTEGER(target);
       if (data->measure_is_list) {
-        levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
-        for (int j=0; j<data->lmax; ++j) {
+        int nlevel = data->lmax;
+        levels = PROTECT(allocVector(STRSXP, nlevel)); protecti++;
+        for (int j=0; j<nlevel; ++j) {
           char buff[20];
           snprintf(buff, sizeof(buff), "%d", j+1); // # notranslate
           SET_STRING_ELT(levels, j, mkChar(buff));
@@ -640,8 +633,8 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           for (int k=0; k<thislen; ++k) td[ansloc++] = j+1;
         }
-      } else {
-        if (data->lvalues == 1) { // one value column to output
+      } else { // non-list measure.vars keeps legacy name-based levels
+        if (data->lvalues == 1) {
           SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
           int len = length(thisvaluecols);
           levels = PROTECT(allocVector(STRSXP, len)); protecti++;
@@ -651,7 +644,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           int numRemove = 0;  // remove dups and any for which narm and all-NA
           int *md = INTEGER(m);
           for (int j=0; j<len; ++j) {
-            if (md[j]!=j+1 || (data->narm && length(VECTOR_ELT(data->not_NA_indices, j))==0)) { numRemove++; md[j]=0; }
+            if (md[j]!=j+1 /*dup*/ || (data->narm && length(VECTOR_ELT(data->not_NA_indices, j))==0)) { numRemove++; md[j]=0; }
           }
           if (numRemove) {
             SEXP newlevels = PROTECT(allocVector(STRSXP, len-numRemove)); protecti++;
@@ -664,7 +657,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
             const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
             for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
           }
-        } else { // multiple output columns
+        } else {//multiple output columns.
           int nlevel=0;
           levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
           for (int j=0, ansloc=0; j<data->lmax; ++j) {
