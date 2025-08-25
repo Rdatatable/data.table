@@ -13,10 +13,9 @@ rowwiseDT = function(...) {
   nrows = length(body) %/% ncols
   if (length(body) != nrows * ncols)
     stopf("There are %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body))
-  is_problematic = vapply(
+  is_problematic = vapply_1b(
     body,
-    function(v) !is.atomic(v) && !is.null(v) && typeof(v) != "list",
-    FUN.VALUE = logical(1L)
+    function(v) !(is.atomic(v) || is.null(v) || typeof(v) == "list")
   )
   if (any(is_problematic)) {
     first_problem_idx = which(is_problematic)[1L]
