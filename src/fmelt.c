@@ -634,39 +634,27 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           for (int k=0; k<thislen; ++k) td[ansloc++] = j+1;
         }
       } else { // non-list measure.vars keeps legacy name-based levels
-        if (data->lvalues == 1) {
-          SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
-          int len = length(thisvaluecols);
-          levels = PROTECT(allocVector(STRSXP, len)); protecti++;
-          const int *vd = INTEGER(thisvaluecols);
-          for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
-          SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
-          int numRemove = 0;  // remove dups and any for which narm and all-NA
-          int *md = INTEGER(m);
-          for (int j=0; j<len; ++j) {
-            if (md[j]!=j+1 /*dup*/ || (data->narm && length(VECTOR_ELT(data->not_NA_indices, j))==0)) { numRemove++; md[j]=0; }
-          }
-          if (numRemove) {
-            SEXP newlevels = PROTECT(allocVector(STRSXP, len-numRemove)); protecti++;
-            for (int i=0, loc=0; i<len; ++i) if (md[i]!=0) { SET_STRING_ELT(newlevels, loc++, STRING_ELT(levels, i)); }
-            m = PROTECT(chmatch(levels, newlevels, 0)); protecti++;  // budge up the gaps
-            md = INTEGER(m);
-            levels = newlevels;
-          }
-          for (int j=0, ansloc=0; j<data->lmax; ++j) {
-            const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
-            for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
-          }
-        } else {//multiple output columns.
-          int nlevel=0;
-          levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
-          for (int j=0, ansloc=0; j<data->lmax; ++j) {
-            const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
-            char buff[20];
-            snprintf(buff, sizeof(buff), "%d", nlevel + 1); // # notranslate
-            SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
-            for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
-          }
+        SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
+        int len = length(thisvaluecols);
+        levels = PROTECT(allocVector(STRSXP, len)); protecti++;
+        const int *vd = INTEGER(thisvaluecols);
+        for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
+        SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
+        int numRemove = 0;  // remove dups and any for which narm and all-NA
+        int *md = INTEGER(m);
+        for (int j=0; j<len; ++j) {
+          if (md[j]!=j+1 /*dup*/ || (data->narm && length(VECTOR_ELT(data->not_NA_indices, j))==0)) { numRemove++; md[j]=0; }
+        }
+        if (numRemove) {
+          SEXP newlevels = PROTECT(allocVector(STRSXP, len-numRemove)); protecti++;
+          for (int i=0, loc=0; i<len; ++i) if (md[i]!=0) { SET_STRING_ELT(newlevels, loc++, STRING_ELT(levels, i)); }
+          m = PROTECT(chmatch(levels, newlevels, 0)); protecti++;  // budge up the gaps
+          md = INTEGER(m);
+          levels = newlevels;
+        }
+        for (int j=0, ansloc=0; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
+          for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
         }
       }
       setAttrib(target, R_LevelsSymbol, levels);
