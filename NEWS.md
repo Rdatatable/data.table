@@ -10,7 +10,7 @@
 
 ### BREAKING CHANGE
 
-1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill` ([#6629](https://github.com/Rdatatable/data.table/issues/6629),[#6032](https://github.com/Rdatatable/data.table/issues/6032)). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
+1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill`, [#6629](https://github.com/Rdatatable/data.table/issues/6629). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
 
 ### NEW FEATURES
 
