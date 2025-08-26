@@ -286,5 +286,19 @@ test.list <- atime::atime_test_list(
     Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
     Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
 
+  "tables() default performance unchanged in #7141" = atime::atime_test(
+    N = as.integer(10^seq(1, 4)),
+    setup = {
+      test_env <- new.env()
+      for (i in seq_len(N)) {
+        assign(paste0("dt_", i), data.table::data.table(a = 1), envir = test_env)
+        assign(paste0("vec_", i), 1:10, envir = test_env)
+      }
+    },
+    expr = data.table::tables(env = test_env, silent = TRUE),
+
+    Slow = "7c59daaed1836db57747d92494b1ce96612bbf80",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/7c59daaed1836db57747d92494b1ce96612bbf80)
+    Fast = "6fee38c89200e10dcc10a6f2057ab784f9a011e7"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7141/commits)
+
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

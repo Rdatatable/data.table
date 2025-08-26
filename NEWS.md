@@ -73,6 +73,8 @@
 
 15. New function `isoyear()` has been implemented as a complement to `isoweek()`, returning the ISO 8601 year corresponding to a given date, [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
+16. `tables()` now supports a `recursive=TRUE` argument to detect `data.table` objects nested within plain lists, such as those produced by `split()` or manual list construction, [#2606](https://github.com/Rdatatable/data.table/issues/2606). The recursive search skips data.frame and data.table objects to avoid descending into list-columns. Nested data.tables are reported with intuitive R-like names using $ and [[ ]] notation. Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
