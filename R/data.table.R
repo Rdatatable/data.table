@@ -735,9 +735,20 @@ replace_dot_alias = function(e) {
         names(..syms) = ..syms
         j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=parent.frame()), parent.frame())
       }
-      if (is.logical(j)) j = which(j)
       if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #358
+      if (is.character(j) || (is.numeric(j) && !is.logical(j))) {
+          if (!missingby) {
+              j_type = if (is.character(j)) "a character" else "a numeric"
+              warningf(
+                  "`by` or `keyby` is ignored when `j` is %s vector used for column selection. Perhaps you intended to use `.SD`? For example: DT[, .SD[, %s], by = ...]",j_type,
+                  gsub("%", "%%", deparse(jsub))
+              )
+          }
+      }
+
+      if (is.logical(j)) j = which(j)
+
       if (is.character(j)) {
         if (notj) {
           if (anyNA(idx <- chmatch(j, names_x)))

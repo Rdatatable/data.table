@@ -111,6 +111,21 @@
 
 18. `fwrite` now allows `dec` to be the same as `sep` for edge cases where only one will be written, e.g. 0-row or 1-column tables. [#7227](https://github.com/Rdatatable/data.table/issues/7227). Thanks @MichaelChirico for the report and @venom1204 for the fix.
 
+19. Using `by=` or `keyby=` with a simple numeric or character vector in `j` (e.g. `DT[, 1:2, by=grp]`) used to silently ignore the grouping argument. This now issues a warning to alert the user that grouping is not applied in this syntax and guides them to use the `.SD` idiom instead. [#5397](https://github.com/Rdatatable/data.table/issues/5397). Thanks to @mcol for the report and @venom1204 for the fix.
+
+    ```r
+    DT = data.table(a=1:4, grp=c(1,1,2,2))
+    DT[, 1, by = grp]
+    #      a
+    #  <int>
+    # 1:     1
+    # 2:     2
+    # 3:     3
+    # 4:     4
+    # Warning message:
+    # `by` or `keyby` is ignored when `j` is a numeric vector...
+    ```
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
