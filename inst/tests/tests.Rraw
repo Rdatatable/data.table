@@ -13701,6 +13701,10 @@ test(1962.054, forder(DT, ), 3:1)
 
 test(1962.055, fsort(as.double(DT$a), internal = TRUE),
      error = 'Internal code should not be being called on type double')
+# coverage for fsort #7239
+set.seed(1)
+x = as.double(sample(0:(2^20), size = 1e6, replace = TRUE))
+test(1962.055, sort(x), fsort(x))
 
 l = as.list(DT)
 test(1962.056, setorder(l, a), error = 'x must be a data.frame or data.table')
