@@ -28,7 +28,7 @@ roll.7264.list <- atime::atime_grid(
   "frollmax created"={
     tryCatch({
       data.table::frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)
-    }, error=function(e){
+    }, error=function(e){# if frollmax does not exist in the old version of data.table.
       data.table::frollapply(value, len_window, max, adaptive=TRUE, align="left")
     })
   },
