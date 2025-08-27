@@ -21568,16 +21568,16 @@ test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 # regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
 local({
-	f = tempfile()
-	on.exit(unlink(f))
-	# the line is likely invalid in current encoding, so disable any translation, #7209
-	# test.data.table() sets options(encoding="UTF-8"), so go the long way around.
-	ff = file(f, encoding = "")
-	tryCatch(
-		writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
-		finally = close(ff)
-	)
-	test(2334, names(fread(f)), "a")
+  f = tempfile()
+  on.exit(unlink(f))
+  # the line is likely invalid in current encoding, so disable any translation, #7209
+  # test.data.table() sets options(encoding="UTF-8"), so go the long way around.
+  ff = file(f, encoding = "")
+  tryCatch(
+    writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
+    finally = close(ff)
+  )
+  test(2334, names(fread(f)), "a")
 })
 
 # Tests for new isoyear() helper (complement to isoweek) #7154
@@ -21624,3 +21624,34 @@ local({
   test(2338.9, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
 })
 
+# '..1' is ...elt(1), not a variable named '1', when doing "up-a-level" search (#5460)
+DT = data.table(a=1.0)
+sqrt_dot_sym = function(...) sqrt(..1)
+test(2339.01, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
+test(2339.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
+test(2339.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
+test(2339.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
+sqrt_elt_sym = function(...) sqrt(...elt(1))
+# TODO(R>=3.5.0): run this unconditionally
+if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
+  test(2339.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
+  test(2339.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+  test(2339.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+  test(2339.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
+}
+# edge case of weird, though technically valid, names:
+#  _not_ '..N' style and distinct from '...'
+#  `123`='a'; DT[, ..123] doesn't work, but that's fine & easy to work around
+DT = data.table(a = 4L)
+local({
+  `.123` = 'a'
+  test(2339.09, DT[, ...123], DT)
+})
+local({
+  ..123 = 'a'
+  test(2339.10, DT[, ....123], DT)
+})
+local({
+  ...123 = 'a'
+  test(2339.11, DT[, .....123], DT)
+})
