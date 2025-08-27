@@ -8,9 +8,22 @@
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
 
+### BREAKING CHANGE
+
+1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill`, [#6629](https://github.com/Rdatatable/data.table/issues/6629). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
+
 ### NEW FEATURES
 
-1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also match `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
+1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also matches `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
+
+    ```r
+    DT = data.table(a=c(1L, 2L, 1L), b=c(3L, 1L, 2L))
+    sort_by(DT, ~a + b)
+    #    a b
+    # 1: 1 2
+    # 2: 1 3
+    # 3: 2 1
+    ```
 
 2. `melt()` now supports using `patterns()` with `id.vars`, [#6867](https://github.com/Rdatatable/data.table/issues/6867). Thanks to Toby Dylan Hocking for the suggestion and PR.
 
@@ -56,6 +69,10 @@
 
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
+14. `fcoalesce()` and `setcoalesce()` gain `nan` argument to control whether `NaN` values should be treated as missing (`nan=NA`, the default) or non-missing (`nan=NaN`), [#4567](https://github.com/Rdatatable/data.table/issues/4567). This provides full compatibility with `nafill()` behavior. Thanks to @ethanbsmith for the feature request and @Mukulyadav2004 for the implementation.
+
+15. New function `isoyear()` has been implemented as a complement to `isoweek()`, returning the ISO 8601 year corresponding to a given date, [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
@@ -74,7 +91,7 @@
 
 8. A data.table with a column of class `vctrs_list_of` (from package {vctrs}) prints as expected, [#5948](https://github.com/Rdatatable/data.table/issues/5948). Before, they could be printed messily, e.g. printing every entry in a nested data.frame. Thanks @jesse-smith for the report, @DavisVaughan and @r2evans for contributing, and @MichaelChirico for the PR.
 
-9.  Fixed incorrect sorting of merges where the first column of a key is a factor with non-`sort()`-ed levels (e.g. `factor(1:2, 2:1)` and it is joined to a character column, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
+9. Fixed incorrect sorting of merges where the first column of a key is a factor with non-`sort()`-ed levels (e.g. `factor(1:2, 2:1)` and it is joined to a character column, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report, Benjamin Schwendinger for the fix, and @MichaelChirico for a follow-up fix caught by revdep testing.
 
 10. Spurious warnings from internal code in `cube()`, `rollup()`, and `groupingsets()` are no longer surfaced to the caller, [#6964](https://github.com/Rdatatable/data.table/issues/6964). Thanks @ferenci-tamas for the report and @venom1204 for the fix.
  
@@ -86,7 +103,15 @@
 
 14. Filling columns of class Date with POSIXct (and vice versa) using `shift()` now yields a clear, informative error message specifying the class mismatch, [#5218](https://github.com/Rdatatable/data.table/issues/5218). Thanks @ashbaldry for the report and @ben-schwen for the fix.
 
-15. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
+15. `split.data.table()` output list elements retain the S3 class of the generating data.table, e.g. in `l=split(x, ...)` if `x` has class `my_class`, so will `l[[1]]` and so on, [#7105](https://github.com/Rdatatable/data.table/issues/7105). Thanks @m-muecke for the bug report and @MichaelChirico for the fix.
+
+16. `between()` is now more robust with `integer64` arguments. Combining small integer `x` with certain large `integer64` bounds no longer misinterprets the bounds as `double`; if a `double` bound cannot be losslessly converted into `integer64` for comparison with `integer64` `x`, an error is signalled instead of returning a wrong answer with a warning; [#7164](https://github.com/Rdatatable/data.table/issues/7164). Thanks @aitap for the bug report and the fix.
+
+17. `t1 - t2`, where one is an `IDate` and the other is a `Date`, are now consistent with the case where both are `IDate` or both are `Date`, [#4749](https://github.com/Rdatatable/data.table/issues/4749). Thanks @George9000 for the report and @MichaelChirico for the fix.
+
+18. `fwrite` now allows `dec` to be the same as `sep` for edge cases where only one will be written, e.g. 0-row or 1-column tables. [#7227](https://github.com/Rdatatable/data.table/issues/7227). Thanks @MichaelChirico for the report and @venom1204 for the fix.
+
+19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
 ### NOTES
 
@@ -109,21 +134,23 @@
 
 5. A GitHub Actions workflow is now in place to warn the entire maintainer team, as well as any contributor following the GitHub repository, when the package is at risk of archival on CRAN [#7008](https://github.com/Rdatatable/data.table/issues/7008). Thanks @tdhock for the original report and @Bisaloo and @TysonStanley for the fix.
 
-# data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
+6. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
+
+## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
 
-# data.table [v1.17.6](https://github.com/Rdatatable/data.table/milestone/40) (15 June 2025)
+## data.table [v1.17.6](https://github.com/Rdatatable/data.table/milestone/40) (15 June 2025)
 
 1. On a heavily loaded machine, a `forder` thread could try to perform a zero-length copy from a null pointer, which was de-facto harmless but is against the C standard and was caught by additional CRAN checks, [#7051](https://github.com/Rdatatable/data.table/issues/7051). Thanks to @helske for the report and @aitap for the PR.
 
-# data.table [v1.17.4](https://github.com/Rdatatable/data.table/milestone/39) (25 May 2025)
+## data.table [v1.17.4](https://github.com/Rdatatable/data.table/milestone/39) (25 May 2025)
 
 1. The C code now avoids passing invalid data pointers from 0-length vectors to `memcpy()`, which previously caused undefined behaviour. Thanks to Prof. Brian D. Ripley for the report and Michael Chirico for the fix, [#6911](https://github.com/Rdatatable/data.table/pull/6911).
 
-# data.table [v1.17.2](https://github.com/Rdatatable/data.table/milestone/38) (7 May 2025)
+## data.table [v1.17.2](https://github.com/Rdatatable/data.table/milestone/38) (7 May 2025)
 
-## BUG FIXES
+### BUG FIXES
 
 1. `fwrite(compress="gzip")` once again produces a gzip header when the column names are missing or disabled, [@6852](https://github.com/Rdatatable/data.table/issues/6852). Thanks @maxscheiber for the report and @aitap for the fix.
 
@@ -139,7 +166,7 @@
 
 7. `as.data.table()` now properly handles keys: specifying keys sets them, omitting keys preserves existing ones, and setting `key=NULL` clears them, [#6859](https://github.com/Rdatatable/data.table/issues/6859). Thanks @brookslogan for the report and @Mukulyadav2004 for the fix.
 
-## NOTES
+### NOTES
 
 1. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
 

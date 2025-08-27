@@ -313,7 +313,7 @@ replace_dot_alias = function(e) {
         root = root_name(jsub)
       } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
         #2142 -- j can be {} and have length 1
-        stopf("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]")
+        stopf("Invalid use of `:=` inside `{}`. `:=` must be the only expression inside `{}` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]")
       }
     }
     if (root=="eval" && !any(all.vars(jsub[[2L]]) %chin% names_x)) {
@@ -2048,8 +2048,9 @@ replace_dot_alias = function(e) {
   if (!.Call(CisOrderedSubset, irows, nrow(x)))
     return(NULL)
 
-  # see #1010. don't set key when i has no key, but irows is ordered and !roll
-  if (roll && length(irows) != 1L)
+  # see #1010. don't set key when i has no key, but irows is ordered and isFALSE(roll)
+  #   NB: roll could still be a string like 'nearest', #7146
+  if (!is.character(roll) && roll && length(irows) != 1L)
     return(NULL)
 
   new_key <- head(x_key, key_length)
@@ -2492,7 +2493,7 @@ Ops.data.table = function(e1, e2 = NULL)
 }
 
 split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TRUE, flatten = TRUE, ..., verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(x)) stopf("x argument must be a data.table")
+  if (!is.data.table(x)) internal_error("x argument to split.data.table must be a data.table") # nocov
   stopifnot(is.logical(drop), is.logical(sorted), is.logical(keep.by),  is.logical(flatten))
   # split data.frame way, using `f` and not `by` argument
   if (!missing(f)) {
@@ -2567,8 +2568,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
-    for (x in ll) .Call(C_unlock, x)
-    lapply(ll, setDT)
+    for (xi in ll) .Call(C_unlock, xi)
+    out = lapply(ll, setDT)
+    # TODO(#2000): just let setDT handle this
+    if (!identical(old_class <- class(x), c("data.table", "data.frame"))) for (xi in out) setattr(xi, "class", old_class)
+    out
     # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
   } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
@@ -2881,7 +2885,7 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. Note that namespace-qualification like data.table::`:=`(...) is not supported. See help(":=").', class="dt_invalid_let_error")
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, `:=` is defined for use in j, once only and in particular ways. See help(":=", "data.table"). A common reason for this error is allocating a new column in `j` and using `<-` instead of `:=`; e.g., `DT[, new_col <- 1]` should be `DT[, new_col := 1]`. Another is using `:=` in a multi-statement `{...}` block; please use `:=` as the only statement in `j`.', class="dt_invalid_let_error")
 }
 
 # TODO(#6197): Export these.

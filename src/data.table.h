@@ -251,7 +251,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
 
 // coalesce.c
-SEXP coalesce(SEXP x, SEXP inplace);
+SEXP coalesce(SEXP x, SEXP inplace, SEXP nan_is_na_arg);
 
 // utils.c
 bool within_int32_repres(double x);
@@ -319,7 +319,7 @@ SEXP chmatch_R(SEXP, SEXP, SEXP);
 SEXP chmatchdup_R(SEXP, SEXP, SEXP);
 SEXP chin_R(SEXP, SEXP);
 SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP rbindlist(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setlistelt(SEXP, SEXP, SEXP);
 SEXP setS4elt(SEXP, SEXP, SEXP);
