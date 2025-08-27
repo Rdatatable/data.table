@@ -1032,6 +1032,7 @@ test(6006.903, frollmean(1:4, 2L, align="center", partial=TRUE), error="'partial
 test(6006.904, frollmean(list(1:4, 2:4), n, partial=TRUE), error="'partial' does not support variable length of columns in 'x'")
 test(6006.905, frollmean(x, TRUE, partial=TRUE), error="n must be an integer vector or a list of integer vectors")
 test(6006.906, frollmean(x, list(TRUE), partial=TRUE), error="n must be an integer, list is accepted for adaptive TRUE")
+test(6006.907, frollsum(1:4, integer(), partial = TRUE), error = "n must be non 0 length")
 
 ## partial adaptive
 test(6006.930, frollmean(1:4, rep(2L,4L), adaptive=TRUE, partial=TRUE), c(1,1.5,2.5,3.5))
@@ -1048,6 +1049,8 @@ test(6006.9331, frollsum(1:4, c(2,4,5,6), adaptive=TRUE, partial=TRUE), c(1,3,6,
 test(6006.9332, frollsum(1:4, c(2,4,5,6), align="left", adaptive=TRUE, partial=TRUE), c(3,9,7,4))
 test(6006.9333, frollsum(1:4, c(1,1,3,2), adaptive=TRUE, partial=TRUE), c(1,2,6,7)) ## trailing two bigger than rev index
 test(6006.9334, frollsum(1:4, c(1,1,3,2), align="left", adaptive=TRUE, partial=TRUE), c(1,2,7,4))
+test(6006.9335, frollsum(1:4, list(c(1,1,3,2), c("a","b","c","d")), adaptive=TRUE, partial=TRUE), error = "n must be an integer vector or a list of integer vectors")
+test(6006.9336, frollsum(1:4, c(1,2,3), adaptive=TRUE, partial=TRUE), error = "length of 'n' argument must be equal to number of observations provided in 'x'")
 
 ## give.names
 test(6006.951, frollsum(1:3, 2, give.names=TRUE), c(NA,3,5))

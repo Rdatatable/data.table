@@ -33,7 +33,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx,
     }
     frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
-  default:
+  default: // #nocov
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
   if (verbose)
@@ -592,7 +592,7 @@ void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, doub
   if (teval0 == REALSXP) {
     for (; i<nx; i++) {
       if (i+1 < k[i]) {
-        ans->dbl_v[i] = fill;
+        ans->dbl_v[i] = fill; // #nocov // this is never reached because smaller i are handled above, leaving it here because this function will be removed in next PR, and adapting it here will only make git conflicts resolution more difficult
       } else {
         SETLENGTH(pw, k[i]);
         memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));

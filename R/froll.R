@@ -53,7 +53,7 @@ partial2adaptive = function(x, n, align, adaptive) {
     if (length(unique(lengths(n))) != 1L)
       stopf("adaptive window provided in 'n' must not to have different lengths")
     if (is.numeric(n) && length(n) != len)
-      stopf("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
+      stopf("length of 'n' argument must be equal to number of observations provided in 'x'")
     if (is.list(n) && length(n[[1L]]) != len)
       stopf("length of vectors in 'x' must match to length of adaptive window in 'n'")
     if (verbose)

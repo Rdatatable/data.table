@@ -77,7 +77,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
       frollmaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
-  default:
+  default: // #nocov
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
   if (align < 1 && ans->status < 3) {
