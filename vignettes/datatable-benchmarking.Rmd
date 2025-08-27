@@ -35,7 +35,7 @@ There are multiple dimensions that you should consider when examining how your p
 - cardinality of data  
 - skewness of data - for most cases this should have the least importance  
 - increase numbers of columns on input - this will be mostly valid when your input is a matrix, for data frames variable number of columns should be avoided as it leads to undefined schema. We suggests to model your data into predefined schema so the extra columns are modeled (using *melt*/*unpivot*) as new groups of rows.
-- presence of NAs in input  
+- prevalence of NAs in input  
 - sortedness of input  
 
 To measure *scaling factor* for input size you have to measure timings of at least three different sizes, lets say number of rows, 1 million, 10 millions and 100 millions. Those three different measurements will allow you to conclude how your process scales. Why three and not two? From two sizes you cannot yet conclude if process scales linearly or exponentially. In theory based on that you can estimate how many rows you would need to receive on input so that your process would take for example a minute or an hour to finish.
