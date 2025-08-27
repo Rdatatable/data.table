@@ -22,6 +22,38 @@ for (extra.arg in extra.args.6107){
   extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
 }
 
+## Test cases adapted from https://github.com/Rdatatable/data.table/pull/7264#issuecomment-3228438559 which was adapted from R code added to NEWS.md file in that PR.
+roll.7264.list <- atime::atime_grid(
+  "frollapply improved"=data.table::frollapply(value, len_window, max, adaptive=TRUE, align="left"),
+  "frollmax created"={
+    tryCatch({
+      data.table::frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)
+    }, error=function(e){
+      data.table::frollapply(value, len_window, max, adaptive=TRUE, align="left")
+    })
+  },
+  "frollmean improved"=data.table::frollmean(value, len_window, adaptive=TRUE, align="right"))
+for (prefix in names(roll.7264.list)){
+  this.test <- atime::atime_test(
+    setup={
+      set.seed(108)
+      setDTthreads(1)
+      x = data.table(
+        value = cumsum(rnorm(N, 0.1)),
+        end_window = 1:N + sample(50:500, N, TRUE),
+        row = 1:N
+      )[
+      , "end_window" := pmin(end_window, .N)
+      ][
+      , "len_window" := end_window-row+1L
+      ]
+    },
+    Slow="a850eed4a469b1217ed920e703d876596a237188",#Parent of the first commit (https://github.com/Rdatatable/data.table/commit/1f7a773af5c97f817c0350016c38bda0733f4ef1) of the PR (https://github.com/Rdatatable/data.table/pull/7264/commits) that introduces these features.
+    Fast="0bf97fce3f4d72a1c32118feb355e37766f134b1")# A commit in the PR (https://github.com/Rdatatable/data.table/pull/7264/commits) that introduces these features.
+  this.test$expr <- substitute(data.table:::`[.data.table`(x, , FCALL), list(FCALL=roll.7264.list[[prefix]]))
+  extra.test.list[[paste(prefix, "in #7264")]] <- this.test
+}
+
 # Test case adapted from https://github.com/Rdatatable/data.table/pull/4386#issue-602528139 which is where the performance was improved.
 for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   "forderv(retGrp=%s) improved in #4386", retGrp_chr
