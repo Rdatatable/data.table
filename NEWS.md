@@ -12,6 +12,8 @@
 
 1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill`, [#6629](https://github.com/Rdatatable/data.table/issues/6629). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
 
+2. `melt` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name).
+
 ### NEW FEATURES
 
 1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also matches `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
