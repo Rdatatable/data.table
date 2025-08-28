@@ -86,45 +86,44 @@
 15. New function `isoyear()` has been implemented as a complement to `isoweek()`, returning the ISO 8601 year corresponding to a given date, [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
 16. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been added:
-- new function `frollmax`, applies `max` over a rolling window.
-- support for `align="left"` for adaptive rolling function.
-- support for `adaptive=TRUE` in `frollapply`.
-- `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
-- `give.names` argument that can be used to automatically give the names based on the names of `x` and `n`.
-- `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
-- `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
+    - new function `frollmax`, applies `max` over a rolling window.
+    - support for `align="left"` for adaptive rolling function.
+    - support for `adaptive=TRUE` in `frollapply`.
+    - `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+    - `give.names` argument that can be used to automatically give the names based on the names of `x` and `n`.
+    - `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
+    - `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
 
-Thanks to @jangorecki for implementation and @MichaelChirico and others for work on splitting into smaller PRs and reviews.
-For a comprehensive description about all available features see `?froll` manual.
+    Thanks to @jangorecki for implementation and @MichaelChirico and others for work on splitting into smaller PRs and reviews.
+    For a comprehensive description about all available features see `?froll` manual.
 
-Adaptive `frollmax` has observed to be around 80 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
-```r
-set.seed(108)
-setDTthreads(16)
-x = data.table(
-  value = cumsum(rnorm(1e6, 0.1)),
-  end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
-  row = 1:1e6
-)[, "end_window" := pmin(end_window, .N)
-  ][, "len_window" := end_window-row+1L]
+    Adaptive `frollmax` has observed to be around 80 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
+    ```r
+    set.seed(108)
+    setDTthreads(16)
+    x = data.table(
+      value = cumsum(rnorm(1e6, 0.1)),
+      end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
+      row = 1:1e6
+    )[, "end_window" := pmin(end_window, .N)
+      ][, "len_window" := end_window-row+1L]
+    baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
+    sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
+    frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)]
+    frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
+    microbenchmark::microbenchmark(
+      baser(x), sj(x), frmax(x), frapply(x),
+      times=10, check="identical"
+    )
+    #Unit: milliseconds
+    #       expr        min         lq       mean     median         uq        max neval
+    #   baser(x) 3094.88357 3097.84966 3186.74832 3163.58050 3251.66753 3370.33785    10
+    #      sj(x) 2221.55456 2255.12083 2306.61382 2303.47883 2346.70293 2412.62975    10
+    #   frmax(x)   17.45124   24.16809   28.10062   28.58153   32.79802   34.83941    10
+    # frapply(x)  272.07830  316.47060  366.94771  396.23566  416.06699  421.38701    10
+    ```
 
-baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
-sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
-frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)]
-frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
-microbenchmark::microbenchmark(
-  baser(x), sj(x), frmax(x), frapply(x),
-  times=10, check="identical"
-)
-#Unit: milliseconds
-#       expr        min         lq       mean     median         uq        max neval
-#   baser(x) 3094.88357 3097.84966 3186.74832 3163.58050 3251.66753 3370.33785    10
-#      sj(x) 2221.55456 2255.12083 2306.61382 2303.47883 2346.70293 2412.62975    10
-#   frmax(x)   17.45124   24.16809   28.10062   28.58153   32.79802   34.83941    10
-# frapply(x)  272.07830  316.47060  366.94771  396.23566  416.06699  421.38701    10
-```
-
-As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
+    As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
 
 ### BUG FIXES
 
