@@ -6,7 +6,7 @@
 
 ### BREAKING CHANGE
 
-1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`. It has been changed now and infinite values are not treated as `NA` anymore. If your input into those functions has `Inf` or `-Inf` then you will be affected by this change.
+1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`. It has been changed now and infinite values are not treated as `NA` anymore. If your input into those functions has `Inf` or `-Inf` then you will be affected by this change. As a result, argument that controls behavior of `NA`s has been renamed from `hasNA` to `has.nf` (_has non-finite_), as of 1.18.0 both will work, former with a warning.
 ```r
 ## before
 frollsum(c(1,2,3,Inf,5,6), 2)
@@ -95,6 +95,7 @@ frollsum(c(1,2,3,Inf,5,6), 2)
 - `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
 - `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
 
+Thanks to @jangorecki for implementation and @MichaelChirico and others for work on splitting into smaller PRs and reviews.
 For a comprehensive description about all available features see `?froll` manual.
 
 Adaptive `frollmax` has observed to be around 80 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
