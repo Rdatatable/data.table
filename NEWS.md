@@ -124,7 +124,7 @@ microbenchmark::microbenchmark(
 # frapply(x)  272.07830  316.47060  366.94771  396.23566  416.06699  421.38701    10
 ```
 
-As of now, adaptive rolling max has no _on-line_ implemention (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
+As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
 
 ### BUG FIXES
 
