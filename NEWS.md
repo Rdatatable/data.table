@@ -4,9 +4,27 @@
 
 ## data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
 
+### BREAKING CHANGE
+
+1. Rolling functions `frollmean` and `frollsum` distinguish `Inf`/`-Inf` from `NA` to match the same rules as base R when `algo="fast"` (previously they were considered the same). If your input into those functions has `Inf` or `-Inf` then you will be affected by this change. As a result, the argument that controls the handling of `NA`s has been renamed from `hasNA` to `has.nf` (_has non-finite_). `hasNA` continues to work with a warning, for now.
+    ```r
+    ## before
+    frollsum(c(1,2,3,Inf,5,6), 2)
+    #[1] NA  3  5 NA NA 11
+
+    ## now
+    frollsum(c(1,2,3,Inf,5,6), 2)
+    #[1]  NA   3   5 Inf Inf  11
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
+
+### BREAKING CHANGE
+
+1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill`, [#6629](https://github.com/Rdatatable/data.table/issues/6629). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
+
+2. `melt()` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name). This change has been planned since 1.16.0 (25 Aug 2024).
 
 ### NEW FEATURES
 
@@ -69,6 +87,46 @@
 
 15. New function `isoyear()` has been implemented as a complement to `isoweek()`, returning the ISO 8601 year corresponding to a given date, [#7154](https://github.com/Rdatatable/data.table/issues/7154). Thanks to @ben-schwen and @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
+16. Multiple improvements have been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, the following features have been added:
+    - new function `frollmax`, applies `max` over a rolling window.
+    - support for `align="left"` for adaptive rolling function.
+    - support for `adaptive=TRUE` in `frollapply`.
+    - `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+    - `give.names` argument that can be used to automatically give the names based on the names of `x` and `n`.
+    - `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
+    - `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
+
+    Thanks to @jangorecki for implementation and @MichaelChirico and others for work on splitting into smaller PRs and reviews.
+    For a comprehensive description about all available features see `?froll` manual.
+
+    Adaptive `frollmax` has observed to be around 80 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
+    ```r
+    set.seed(108)
+    setDTthreads(16)
+    x = data.table(
+      value = cumsum(rnorm(1e6, 0.1)),
+      end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
+      row = 1:1e6
+    )[, "end_window" := pmin(end_window, .N)
+      ][, "len_window" := end_window-row+1L]
+    baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
+    sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
+    frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)]
+    frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
+    microbenchmark::microbenchmark(
+      baser(x), sj(x), frmax(x), frapply(x),
+      times=10, check="identical"
+    )
+    #Unit: milliseconds
+    #       expr        min         lq       mean     median         uq        max neval
+    #   baser(x) 3094.88357 3097.84966 3186.74832 3163.58050 3251.66753 3370.33785    10
+    #      sj(x) 2221.55456 2255.12083 2306.61382 2303.47883 2346.70293 2412.62975    10
+    #   frmax(x)   17.45124   24.16809   28.10062   28.58153   32.79802   34.83941    10
+    # frapply(x)  272.07830  316.47060  366.94771  396.23566  416.06699  421.38701    10
+    ```
+
+    As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
@@ -106,6 +164,8 @@
 17. `t1 - t2`, where one is an `IDate` and the other is a `Date`, are now consistent with the case where both are `IDate` or both are `Date`, [#4749](https://github.com/Rdatatable/data.table/issues/4749). Thanks @George9000 for the report and @MichaelChirico for the fix.
 
 18. `fwrite` now allows `dec` to be the same as `sep` for edge cases where only one will be written, e.g. 0-row or 1-column tables. [#7227](https://github.com/Rdatatable/data.table/issues/7227). Thanks @MichaelChirico for the report and @venom1204 for the fix.
+
+19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
 ### NOTES
 
