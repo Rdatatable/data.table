@@ -264,7 +264,8 @@ replace_dot_alias = function(e) {
   if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
-    av = all.vars(jsub)
+    # exclude '..1' etc. for #5460
+    av = grepv("^[.][.](?:[.]|[0-9]+)$", all.vars(jsub), invert=TRUE)
     all..names = FALSE
     if ((.is_withFALSE_range(jsub, x, root, av)) ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
@@ -1297,8 +1298,8 @@ replace_dot_alias = function(e) {
   SDenv = new.env(parent=parent.frame())
 
   syms = all.vars(jsub)
-  syms = syms[ startsWith(syms, "..") ]
-  syms = syms[ substr(syms, 3L, 3L) != "." ]  # exclude ellipsis
+  syms = syms[startsWith(syms, "..")]
+  syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
   for (sym in syms) {
     if (sym %chin% names_x) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
