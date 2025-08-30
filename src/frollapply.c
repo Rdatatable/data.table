@@ -39,6 +39,7 @@ SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   MEMCPY
   return dest;
 }
+// # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that the is being called from R when running froll.Rraw
 SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t o = INTEGER(offset)[0] - INTEGER(size)[0];
   int ncol = LENGTH(dest), nrow = LENGTH(VECTOR_ELT(dest, 0));
@@ -50,6 +51,7 @@ SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   }
   return dest;
 }
+// # nocov end
 
 SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t oi = INTEGER(offset)[0];
@@ -60,6 +62,7 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   MEMCPY
   return dest;
 }
+// # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that the is being called from R when running froll.Rraw
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t oi = INTEGER(offset)[0];
   int nrow = INTEGER(size)[oi-1];
@@ -74,6 +77,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   }
   return dest;
 }
+// # nocov end
 
 // needed in adaptive=TRUE
 SEXP setgrowable(SEXP x) {

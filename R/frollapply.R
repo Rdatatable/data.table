@@ -171,7 +171,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       nn = length(N)
       nnam = names(N)
     } else
-      stopf("'N' must be integer vector or list of integer vectors")
+      stopf("n must be an integer vector or list of an integer vectors")
   }
   ## partial
   if (partial) {
@@ -290,12 +290,14 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         jobs = vector("integer", ths)
         for (th in seq_len(ths)) {
           jobs[th] = parallel::mcparallel({
+            # nocov start ## fork processes seem not to be tracked by codecov
             setDTthreads(1L)       ## disable nested parallelism
             lapply(ii[[th]],       ## loops over indexes for that thread
                    FUN = tight,    ## handles adaptive and by.column
                    dest = cpy(w),  ## allocate own window for each thread
                    src = thisx,    ## full input
                    n = thisn)      ## scalar or in adaptive case a vector
+            # nocov end
           })[["pid"]]
         }
       } else { ## windows || getDTthreads()==1L
