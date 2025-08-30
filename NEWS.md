@@ -107,6 +107,8 @@
 
 18. `fwrite` now allows `dec` to be the same as `sep` for edge cases where only one will be written, e.g. 0-row or 1-column tables. [#7227](https://github.com/Rdatatable/data.table/issues/7227). Thanks @MichaelChirico for the report and @venom1204 for the fix.
 
+19. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`. [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
