@@ -1296,7 +1296,7 @@ test(6010.565, frollapply(1:2, list(c("a","a")), length, adaptive=TRUE), error="
 test(6010.566, frollapply(1:2, 2, length, by.column=FALSE), error="frollapply by.column=FALSE requires 'X' argument to be")
 test(6010.567, frollapply(list(1:2, list(c("a","b"))), 2, length, by.column=FALSE), error="frollapply by.column=FALSE got list in 'X' but it is not valid one")
 test(6010.568, frollapply(list(data.frame(x=1:2), data.frame(x=I(list(1:2)))), 2, length, by.column=FALSE), error="not all columns of data.frames/data.tables are atomic")
-test(6010.569, frollapply(list(1:2, NULL), 2, length), error="argument to be atomic or a list of those")
+test(6010.569, frollapply(list(1:2, sum), 2, length), error="argument to be atomic or a list of those")
 
 ## by.column
 x = data.table(v1=1:5, v2=2:6/2)
