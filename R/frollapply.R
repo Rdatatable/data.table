@@ -101,8 +101,9 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       nx = length(X)
       len = lengths(X)
       xnam = names(X)
-    } else
+    } else {
       stopf("frollapply by.column=TRUE requires 'X' argument to be atomic or a list of those")
+    }
   } else {
     list.df = FALSE
     if (is.data.frame(X)) {
