@@ -21,7 +21,7 @@ rowwiseDT = function(...) {
     first_problem_idx = which(is_problematic)[1L]
     col_idx = (first_problem_idx - 1L) %% ncols + 1L
     col_name = header[col_idx]
-    obj_type = class(body[[first_problem_idx]])[1L]
+    obj_type = class1(body[[first_problem_idx]])
     stopf(
       "In column '%s', received an object of type '%s'.\nComplex objects (like functions, formulas, or calls) must be wrapped in list() to be stored in a data.table column.\nPlease use `list(...)` for this value.",
       col_name,
