@@ -39,7 +39,7 @@ SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   MEMCPY
   return dest;
 }
-// # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that the is being called from R when running froll.Rraw
+// # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
 SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t o = INTEGER(offset)[0] - INTEGER(size)[0];
   int ncol = LENGTH(dest), nrow = LENGTH(VECTOR_ELT(dest, 0));
@@ -62,7 +62,7 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   MEMCPY
   return dest;
 }
-// # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that the is being called from R when running froll.Rraw
+// # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t oi = INTEGER(offset)[0];
   int nrow = INTEGER(size)[oi-1];
@@ -85,11 +85,13 @@ SEXP setgrowable(SEXP x) {
     SET_GROWABLE_BIT(x);
     SET_TRUELENGTH(x, LENGTH(x)); // we just reset length, doesn't seems to be necessary but for future compatibility to R it is more safe to set it up
   } else {
+    // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
     for (int i=0; i<LENGTH(x); ++i) {
       SEXP col = VECTOR_ELT(x, i);
       SET_GROWABLE_BIT(col);
       SET_TRUELENGTH(col, LENGTH(col));
     }
+    // # nocov end
   }
   return x;
 }
