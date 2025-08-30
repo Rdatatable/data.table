@@ -226,8 +226,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   } else {
     #has.growable = base::getRversion() >= "3.4.0"
     ## this is now always TRUE
-    ## we keep this branch, it may be useful when getting rid of SET_GROWABLE_BIT and SETLENGTH
-    has.growable = getOption("datatable.debug.frollapply.nogrowable", TRUE)
+    ## we keep this branch, it may be useful when getting rid of SET_GROWABLE_BIT and SETLENGTH #6180
+    has.growable = TRUE
     cpy = if (has.growable) function(x) .Call(Csetgrowable, copy(x)) else copy
     ansMask = function(len, n) {
       mask = seq_len(len) >= n
@@ -239,7 +239,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       if (has.growable) {
         tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...)
       } else {
-        tight = function(i, dest, src, n) FUN(src[(i-n[i]+1L):i], ...)
+        tight = function(i, dest, src, n) FUN(src[(i-n[i]+1L):i], ...) # nocov
       }
     } else {
       if (!list.df) {
@@ -250,10 +250,10 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       if (has.growable) {
         tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...)
       } else {
-        if (!list.df) {
-          tight = function(i, dest, src, n) FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...)
+        if (!list.df) { # nocov
+          tight = function(i, dest, src, n) FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...) # nocov
         } else {
-          tight = function(i, dest, src, n) FUN(lapply(src, `[`, (i-n[i]+1L):i), ...)
+          tight = function(i, dest, src, n) FUN(lapply(src, `[`, (i-n[i]+1L):i), ...) # nocov
         }
       }
     }
@@ -299,13 +299,13 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
           })[["pid"]]
         }
       } else { ## windows || getDTthreads()==1L
-        h = list(err=NULL, warn=NULL) ## pretty printing errors/warnings
+        h = list2env(list(warning=NULL, error=NULL)) ## pretty printing errors/warnings
         oldDTthreads = setDTthreads(1L) ## for consistency, anyway window size is unlikely to be big enough to benefit any parallelism
         withCallingHandlers(
           tryCatch(
             thisans <- lapply(ansi, FUN = tight, dest = cpy(w), src = thisx, n = thisn),
-            error = function(e) h$err <<- conditionMessage(e)
-          ), warning = function(w) {h$warn <<- c(h$warn, conditionMessage(w)); invokeRestart("muffleWarning")}
+            error = function(e) h$err = conditionMessage(e)
+          ), warning = function(w) {h$warn = c(h$warn, conditionMessage(w)); invokeRestart("muffleWarning")}
         )
         setDTthreads(oldDTthreads)
         if (!is.null(h$warn))
