@@ -93,7 +93,7 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
     if (length(n.nm)) { ## !adaptive || is.list(n)
       n.nm
     } else { ## adaptive && is.numeric(n)
-      NULL
+      NULL # nocov ## call to make.roll.names is excluded by is.list(ans) condition before calling it, it will be relevant for !by.column in next PR
     }
   }
   if (!is.null(ans) && length(ans) != x.len*n.len)
