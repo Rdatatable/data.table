@@ -73,13 +73,13 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
   if (is.null(n.nm)) {
     if (!adaptive) {
       if (!is.numeric(n))
-        stopf("internal error: misuse of make.names, n must be numeric for !adaptive") ## nocov
+        stopf("internal error: misuse of make.roll.names, n must be numeric for !adaptive") ## nocov
       n.nm = paste0("roll", fun, as.character(as.integer(n)))
     } else {
       n.nm = paste0("aroll", fun, seq_len(n.len))
     }
   } else if (!length(n.nm) && !adaptive)
-    stopf("internal error: misuse of make.names, non-null length 0 n is not possible for !adaptive") ## nocov
+    stopf("internal error: misuse of make.roll.names, non-null length 0 n is not possible for !adaptive") ## nocov
   if (is.null(x.nm)) {
     x.nm = paste0("V", seq_len(x.len))
   }
@@ -97,7 +97,7 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
     }
   }
   if (!is.null(ans) && length(ans) != x.len*n.len)
-    stopf("internal error: make.names generated names of wrong length") ## nocov
+    stopf("internal error: make.roll.names generated names of wrong length") ## nocov
   ans
 }
 
