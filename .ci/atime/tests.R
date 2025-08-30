@@ -131,6 +131,25 @@ test.list <- atime::atime_test_list(
       paste0('useDynLib(', new.Package_))
   },
 
+  # New sort_by.data.table method implemented https://github.com/Rdatatable/data.table/pull/6679
+  # Test case adapted from https://github.com/Rdatatable/data.table/issues/6662#issue-2737165196
+  "sort_by.data.table created in #6679" = atime::atime_test(
+    seconds.limit=0.1,
+    Fast="ee44ef45814115003d1499284227af6f5e487ad3",# Last commit in the PR (https://github.com/Rdatatable/data.table/pull/6679/commits) that implemented the new feature.
+    Slow="4a2474b59637aad9e032b1eaee6e9bdcfc4df949",# Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60828522cb1dbf696ce32a7323464d9d8870b9f6) in the PR (https://github.com/Rdatatable/data.table/pull/6679/commits) that implemented the new feature.
+    expr={
+      sort_by_lang <- str2lang("data.table:::sort_by.data.table")
+      tryCatch(eval(sort_by_lang), error=function(e){
+        sort_by_lang <<- str2lang("sort_by.data.frame")
+      })
+      my_call <- substitute(FUN(DT, ~ x + y), list(FUN=sort_by_lang))
+      eval(my_call)
+    },
+    setup={
+      set.seed(1234)
+      DT <- data.table(x=runif(N),y=runif(N))
+    }),
+
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
   "fread disk overhead improved in #6925" = atime::atime_test(
