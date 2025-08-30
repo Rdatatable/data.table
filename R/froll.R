@@ -68,10 +68,52 @@ partial2adaptive = function(x, n, align, adaptive) {
   }
 }
 
+# internal helper for handling give.names=TRUE
+make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
+  if (is.null(n.nm)) {
+    if (!adaptive) {
+      if (!is.numeric(n))
+        stopf("internal error: misuse of make.roll.names, n must be numeric for !adaptive") ## nocov
+      n.nm = paste0("roll", fun, as.character(as.integer(n)))
+    } else {
+      n.nm = paste0("aroll", fun, seq_len(n.len))
+    }
+  } else if (!length(n.nm) && !adaptive)
+    stopf("internal error: misuse of make.roll.names, non-null length 0 n is not possible for !adaptive") ## nocov
+  if (is.null(x.nm)) {
+    x.nm = paste0("V", seq_len(x.len))
+  }
+  ans = if (length(x.nm)) { ## is.list(x) && !is.data.frame(x)
+    if (length(n.nm)) { ## !adaptive || is.list(n)
+      paste(rep(x.nm, each=length(n.nm)), n.nm, sep="_")
+    } else { ## adaptive && is.numeric(n)
+      x.nm
+    }
+  } else { ## (by.column && is.atomic(x)) || (!by.column && is.data.frame(x))
+    if (length(n.nm)) { ## !adaptive || is.list(n)
+      n.nm
+    } else { ## adaptive && is.numeric(n)
+      NULL # nocov ## call to make.roll.names is excluded by is.list(ans) condition before calling it, it will be relevant for !by.column in next PR
+    }
+  }
+  if (!is.null(ans) && length(ans) != x.len*n.len)
+    stopf("internal error: make.roll.names generated names of wrong length") ## nocov
+  ans
+}
+
 froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, FUN, rho, give.names=FALSE) {
   align = match.arg(align)
-  if (isTRUE(give.names))
-    orig = list(n=n, adaptive=adaptive)
+  if (isTRUE(give.names)) {
+     orig = list(n=n, adaptive=adaptive)
+     xnam = if (is.list(x)) names(x) else character()
+     nnam = if (isTRUE(adaptive)) {
+       if (is.list(n)) names(n) else character()
+     } else names(n)
+     nx = if (is.list(x)) length(x) else 1L
+     nn = if (isTRUE(adaptive)) {
+       if (is.list(n)) length(n) else 1L
+     } else length(n)
+   }
   if (isTRUE(partial)) {
     n = partial2adaptive(x, n, align, adaptive)
     adaptive = TRUE
@@ -96,13 +138,8 @@ froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.
     ans = rev2(ans)
   }
   if (isTRUE(give.names) && is.list(ans)) {
-    n = orig$n
-    adaptive = orig$adaptive
-    nx = names(x)
-    nn = names(n)
-    if (is.null(nx)) nx = paste0("V", if (is.atomic(x)) 1L else seq_along(x))
-    if (is.null(nn)) nn = if (adaptive) paste0("N", if (is.atomic(n)) 1L else seq_along(n)) else paste("roll", as.character(n), sep="_")
-    setattr(ans, "names",  paste(rep(nx, each=length(nn)), nn, sep="_"))
+    nms = make.roll.names(x.len=nx, n.len=nn, n=orig$n, x.nm=xnam, n.nm=nnam, fun=fun, adaptive=orig$adaptive)
+    setattr(ans, "names", nms)
   }
   ans
 }
