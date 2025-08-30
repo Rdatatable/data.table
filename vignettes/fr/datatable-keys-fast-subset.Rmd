@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -24,13 +24,16 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-Cette vignette s'adresse à ceux qui sont déjà familiers avec la syntaxe de *data.table*, sa forme générale, comment extraire des sous-ensembles de lignes dans `i`, sélectionner et faire des opérations sur des colonnes, ajouter/modifier/supprimer des colonnes *par référence* dans `j` et grouper en utilisant `by`. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes *"Introduction à data.table"* et *"Sémantique de référence"*.
+Cette vignette s'adresse à ceux qui sont déjà familiers avec la syntaxe de *data.table*, sa forme générale, comment extraire des sous-ensembles de lignes dans `i`, sélectionner et faire des opérations sur des colonnes, ajouter/modifier/supprimer des colonnes *par référence* dans `j` et grouper en utilisant `by`. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes suivantes :
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
 
 ***
 
 ## Données {#data}
 
-Nous utiliserons les mêmes données `flights` que dans la vignette *"Introduction à data.table"*.
+Nous utiliserons les mêmes données `flights` que dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
 ```{r echo = FALSE}
 options(with = 100L)
@@ -58,7 +61,7 @@ Dans cette vignette, nous allons
 
 ### a) Qu'est-ce qu'une *clé* ?
 
-Dans la vignette *"Introduction à data.table"*, nous avons vu comment sous-diviser des lignes dans `i` en utilisant des expressions logiques, des numéros de lignes et en utilisant `order()`. Dans cette section, nous allons voir une autre façon d'extraire des sous-ensembles de façon incroyablement rapide - en utilisant les *clés*.
+Dans la vignette [`vignette("datatable-intro", package="data.table")`](datatable-intro.html), nous avons vu comment sous-diviser des lignes dans `i` en utilisant des expressions logiques, des numéros de lignes et en utilisant `order()`. Dans cette section, nous allons voir une autre façon d'extraire des sous-ensembles de façon incroyablement rapide - en utilisant les *clés*.
 
 Mais tout d'abord, commençons par examiner les *data.frames*. Tous les *data.frames* ont un attribut de noms de lignes (row names). Considérons le *data.frame* `DF` ci-dessous.
 
@@ -144,7 +147,7 @@ head(flights)
 
 * Alternativement, vous pouvez passer un vecteur de caractères contenant les noms de colonnes à la fonction `setkeyv()`. Cela est particulièrement utile lors de la conception de fonctions pour passer des colonnes à définir comme clé via des arguments de fonction.
 
-* Notez que nous n'avons pas eu besoin d'assigner le résultat à une variable. C'est parce que, comme la fonction `:=` que nous avons vue dans la vignette *"Sémantique de référence"*, `setkey()` et `setkeyv()` modifient l'entrée *data.table* *par référence*. Elles renvoient le résultat de manière invisible.
+* Notez que nous n'avons pas eu besoin d'assigner le résultat à une variable. C'est parce que, comme la fonction `:=` que nous avons vue dans la [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html), `setkey()` et `setkeyv()` modifient l'entrée *data.table* *par référence*. Elles renvoient le résultat de manière invisible.
 
 * La *data.table* est maintenant réordonnée (ou triée) par la colonne que nous avons fournie - `origin`. Comme nous réorganisons par référence, nous n'avons besoin que de la mémoire supplémentaire d'une colonne dont la longueur est égale au nombre de lignes de la *data.table*, ce qui est donc très efficace en termes de mémoire.
 
@@ -252,7 +255,7 @@ flights[.(unique(origin), "MIA")]
 
 Tout ce que nous avons vu jusqu'à présent repose sur le même concept -- obtenir les *indices de lignes* dans `i`, mais en utilisant une méthode différente -- en utilisant des `clés`. Il n'est donc pas surprenant que nous puissions faire exactement les mêmes opérations pour `j` et `by`, comme vu dans les vignettes précédentes. Nous allons illustrer cela avec quelques exemples.
 
-### b) Sélection dans `j`
+### a) Sélection dans `j`
 
 #### -- Renvoie la colonne `arr_delay` sous forme de *data.table* correspondant à `origin = "LGA"` et `dest = "TPA"`.
 
@@ -263,7 +266,7 @@ flights[.("LGA", "TPA"), .(arr_delay)]
 
 * Les *indices de ligne* correspondant à `origin == "LGA"` et `dest == "TPA"` sont obtenus à l'aide d'un *sous-ensemble basé sur une clé*.
 
-* Une fois que nous avons les indices des lignes, nous examinons `j` qui ne nécessite que la colonne `arr_delay`. Nous sélectionnons donc simplement la colonne `arr_delay` pour ces *indices de lignes* de la même manière que nous l'avons vu dans la vignette *Introduction à data.table*.
+* Une fois que nous avons les indices des lignes, nous examinons `j` qui ne nécessite que la colonne `arr_delay`. Nous sélectionnons donc simplement la colonne `arr_delay` pour ces *indices de lignes* de la même manière que nous l'avons vu dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
 * Nous aurions également pu renvoyer le résultat en utilisant `with = FALSE`.
 
@@ -291,7 +294,7 @@ flights[.("LGA", "TPA"), max(arr_delay)]
 
 ### d) *sous-affectation* par référence en utilisant `:=` dans `j`
 
-Nous avons déjà vu cet exemple dans la vignette *Sémantique de référence*. Jetons un coup d'œil à toutes les heures (`hour`) disponibles dans la *data.table* `flights` :
+Nous avons déjà vu cet exemple dans la [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html). Jetons un coup d'œil à toutes les heures (`hour`) disponibles dans la *data.table* `flights` :
 
 ```{r}
 # récupère toutes les 'hours' de flights
@@ -416,10 +419,10 @@ N = 2e7L
 DT = data.table(x = sample(letters, N, TRUE),
                 y = sample(1000L, N, TRUE),
                 val = runif(N))
-print(object.size(DT), units = "Mb")
+print(object.size(DT), units = "MiB")
 ```
 
-`DT` est de ~380Mo. Ce n'est pas vraiment énorme, mais suffisant pour illustrer le propos.
+`DT` est de ~380Mio. Ce n'est pas vraiment énorme, mais suffisant pour illustrer le propos.
 
 D'après ce que nous avons vu dans la section Introduction à data.table, nous pouvons faire un sous-ensemble des lignes où les colonnes `x = "g"` et `y = 877` comme suit :
 
@@ -498,7 +501,7 @@ Dans cette vignette, nous avons appris une autre méthode pour subdiviser les li
 
 * combiner les sous-ensembles basés sur les clés avec `j` et `by`. Notez que les opérations `j` et `by` sont exactement les mêmes que précédemment.
 
-La création de sous-ensembles basés sur les clés est **incroyablement rapide** et particulièrement utile lorsque la tâche implique de créer des *sous-ensembles de manière répété*. Cependant, il peut ne pas toujours être souhaitable de définir une clé et de réorganiser physiquement la *data.table*. Dans la prochaine vignette, nous aborderons ce problème en utilisant une *nouvelle* fonctionnalité -- les *indices secondaires*.
+La création de sous-ensembles basés sur les clés est **incroyablement rapide** et particulièrement utile lorsque la tâche implique de créer des *sous-ensembles de manière répété*. Cependant, il peut ne pas toujours être souhaitable de définir une clé et de réorganiser physiquement la *data.table*. Dans la [prochaine (`vignette("datatable-secondary-indices-and-auto-indexing", package="data.table")`)](datatable-secondary-indices-and-auto-indexing.html), nous aborderons ce problème en utilisant une *nouvelle* fonctionnalité -- les *indices secondaires*.
 
 ```{r, echo=FALSE}
 setDTthreads(.old.th)
