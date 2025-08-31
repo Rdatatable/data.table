@@ -64,7 +64,7 @@ void convertSingleDate(int x, datetype type, void *out)
             yday -= YEARS1 + leap;
         *(int *)out = ++yday;
         if (type == WEEK)
-            *(int *)out = (*(int *)out / 7) + 1;
+            *(int *)out = ((*(int *)out - 1) / 7) + 1;
         return;
     }
 
