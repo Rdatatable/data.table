@@ -93,7 +93,7 @@
 
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
-```r
+    ```r
     l = list(
       data.table(id = c(1L, 2L, 3L), x = c("a", "b", "c")),
       data.table(id = c(1L, 2L, 4L), y = c("d", "e", "f")),
