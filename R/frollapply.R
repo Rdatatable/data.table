@@ -290,6 +290,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         jobs = vector("integer", ths)
         for (th in seq_len(ths)) {
           jobs[th] = parallel::mcparallel({
+            #catf("%d\n", 4, "")
             # nocov start ## fork processes seem not to be tracked by codecov
             setDTthreads(1L)       ## disable nested parallelism
             lapply(ii[[th]],       ## loops over indexes for that thread
