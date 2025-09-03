@@ -1,6 +1,7 @@
 on:
   schedule:
    - cron: '17 13 23 * *' # 23rd of month at 13:17 UTC
+  workflow_dispatch:
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
