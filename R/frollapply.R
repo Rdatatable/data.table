@@ -301,6 +301,35 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             # nocov end
           })[["pid"]]
         }
+        if (length(ansi)) {
+          fork.res = withCallingHandlers( ## collect results early to minimize time when user could raise SIGINT
+            tryCatch(
+              parallel::mccollect(jobs),
+              error = function(e) stopf(msg.collect, "an error", e[["message"]]),
+              warning = function(w) warningf(msg.collect, "a warning", w[["message"]])
+            ),
+            interrupt = function(e) {
+              # nocov start
+              suspendInterrupts({
+                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
+                parallel::mccollect(jobs, wait = FALSE)
+              })
+              invokeRestart("abort") ## raise SIGINT
+              # nocov end
+            }
+          )
+          ## check for any errors in FUN, warnings are silently ignored
+          fork.err = vapply_1b(fork.res, inherits, "try-error", use.names = FALSE)
+          if (any(fork.err)) {
+            stopf(
+              "frollapply received an error(s) when evaluating FUN:\n%s",
+              paste(unique(vapply_1c(fork.res[fork.err], function(err) attr(err, "condition", TRUE)[["message"]], use.names = FALSE)), collapse = "\n")
+            )
+          }
+          thisans = unlist(fork.res, recursive = FALSE, use.names = FALSE)
+          ## fix selfref after serializing data.table from forked process
+          thisans = fixselfref(thisans)
+        }
       } else { ## windows || getDTthreads()==1L
         h = list2env(list(warning=NULL, error=NULL)) ## pretty printing errors/warnings
         oldDTthreads = setDTthreads(1L) ## for consistency, anyway window size is unlikely to be big enough to benefit any parallelism
@@ -329,32 +358,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       ans[[thisansi]] = vector("list", thislen)
       filli = which(!ansmask)
       ans[[thisansi]][filli] = rep_len(list(fill), length(filli))
-      ## collect results
       if (length(ansi)) {
-        if (use.fork) {
-          fork.res = withCallingHandlers(
-              tryCatch(
-                parallel::mccollect(jobs),
-                error = function(e) stopf(msg.collect, "an error", e[["message"]]),
-                warning = function(w) warningf(msg.collect, "a warning", w[["message"]])
-              ),
-              interrupt = function(e) {
-                suspendInterrupts({
-                  lapply(jobs, function(pid) try(tools::pskill(pid), silent=TRUE))
-                  parallel::mccollect(jobs, wait=FALSE)
-                })
-                invokeRestart("abort") ## raise SIGINT
-              }
-          )
-          ## check for any errors in FUN, warnings are silently ignored
-          fork.err = vapply_1b(fork.res, inherits, "try-error", use.names=FALSE)
-          if (any(fork.err))
-            stopf("frollapply received an error(s) when evaluating FUN:\n%s",
-                  paste(unique(vapply_1c(fork.res[fork.err], function(err) attr(err,"condition",TRUE)[["message"]], use.names=FALSE)), collapse="\n"))
-          thisans = unlist(fork.res, recursive=FALSE, use.names=FALSE)
-          ## fix selfref after serializing data.table from forked process
-          thisans = fixselfref(thisans)
-        } ## thisans is already created from !use.fork, don't need error check, unlist or fixselfref
         if (leftadaptive)
           thisans = rev(thisans)
         ans[[thisansi]][ansi] = thisans
