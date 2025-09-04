@@ -259,11 +259,15 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     }
   }
   ## prepare templates for errors and warnings
-  msg.collect = "frollapply calling parallel::mccollect to collect results from forked processes raised %s.\n%s"
-  msg.simplify = if (is.function(simplify))
-    "frollapply completed successfully but raised %s when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s"
-  else if (isTRUE(simplify))
-    "frollapply completed successfully but raised %s when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s"
+  err.collect = "frollapply calling parallel::mccollect to collect results from forked processes raised an error.\n%s"
+  warn.collect = "frollapply calling parallel::mccollect to collect results from forked processes raised a warning.\n%s"
+  if (is.function(simplify)) {
+    err.simplify = "frollapply completed successfully but raised an error when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s"
+    warn.simplify = "frollapply completed successfully but raised a warning when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s"
+  } else if (isTRUE(simplify)) {
+    err.simplify = "frollapply completed successfully but raised an error when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s"
+    warn.simplify = "frollapply completed successfully but raised a warning when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s"
+  }
 
   DTths = getDTthreads(FALSE)
   use.fork = .Platform$OS.type!="windows" && DTths > 1L
@@ -291,7 +295,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         for (th in seq_len(ths)) {
           jobs[th] = parallel::mcparallel({
             #catf("%d\n", 4, "")
-            # nocov start ## fork processes seem not to be tracked by codecov
+            # nocov start ## fork processes seem not to be tracked by codecov, at least when parallel not in suggests
             setDTthreads(1L)       ## disable nested parallelism
             lapply(ii[[th]],       ## loops over indexes for that thread
                    FUN = tight,    ## handles adaptive and by.column
@@ -305,8 +309,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
           fork.res = withCallingHandlers( ## collect results early to minimize time when user could raise SIGINT
             tryCatch(
               parallel::mccollect(jobs),
-              error = function(e) stopf(msg.collect, "an error", e[["message"]]),
-              warning = function(w) warningf(msg.collect, "a warning", w[["message"]])
+              error = function(e) stopf(err.collect, e[["message"]]),
+              warning = function(w) warningf(warn.collect, w[["message"]])
             ),
             interrupt = function(e) {
               # nocov start
@@ -367,14 +371,14 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       if (is.function(simplify)) {
         ans[[thisansi]] = tryCatch(
           simplify(ans[[thisansi]]),
-          error = function(e) stopf(msg.simplify, "an error", e[["message"]]),
-          warning = function(w) warningf(msg.simplify, "a warning", w[["message"]])
+          error = function(e) stopf(err.simplify, e[["message"]]),
+          warning = function(w) warningf(warn.simplify, w[["message"]])
         )
       } else if (isTRUE(simplify)) {
         ans[[thisansi]] = tryCatch(
           simplifylist(ans[[thisansi]], fill, ansmask),
-          error = function(e) stopf(msg.simplify, "an error", e[["message"]]),
-          warning = function(w) warningf(msg.simplify, "a warning", w[["message"]])
+          error = function(e) stopf(err.simplify, e[["message"]]),
+          warning = function(w) warningf(warn.simplify, w[["message"]])
         )
       }
     }
