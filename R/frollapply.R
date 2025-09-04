@@ -295,7 +295,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             setDTthreads(1L)       ## disable nested parallelism
             lapply(ii[[th]],       ## loops over indexes for that thread
                    FUN = tight,    ## handles adaptive and by.column
-                   dest = cpy(w),  ## allocate own window for each thread
+                   dest = cpy(w),  ## allocate own window for each thread, if we would not copy here, then copy would be handled later on by fork's copy-on-write
                    src = thisx,    ## full input
                    n = thisn)      ## scalar or in adaptive case a vector
             # nocov end

@@ -85,7 +85,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 SEXP setgrowable(SEXP x) {
   if (!isNewList(x)) {
     SET_GROWABLE_BIT(x);
-    SET_TRUELENGTH(x, LENGTH(x)); // we just reset length, doesn't seems to be necessary but for future compatibility to R it is more safe to set it up
+    SET_TRUELENGTH(x, LENGTH(x)); // important because gc() uses TRUELENGTH to keep counts
   } else {
     // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
     for (int i=0; i<LENGTH(x); ++i) {
