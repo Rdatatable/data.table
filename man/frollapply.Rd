@@ -48,25 +48,25 @@
     \item An optimization used to avoid repeated allocation of window subsets (explained more deeply in \emph{Implementation} section below) may, in special cases, return rather surprising results:
 \preformatted{
 setDTthreads(1)
-frollapply(c(1, 9), n=1L, FUN=identity) ## unexpected
+frollapply(c(1, 9), N=1L, FUN=identity) ## unexpected
 #[1] 9 9
-frollapply(c(1, 9), n=1L, FUN=list) ## unexpected
+frollapply(c(1, 9), N=1L, FUN=list) ## unexpected
 #      V1
 #   <num>
 #1:     9
 #2:     9
 setDTthreads(2)
-frollapply(c(1, 9), n=1L, FUN=identity) ## good only because threads >= input
+frollapply(c(1, 9), N=1L, FUN=identity) ## good only because threads >= input
 #[1] 1 9
-frollapply(c(1, 5, 9), n=1L, FUN=identity) ## unexpected again
+frollapply(c(1, 5, 9), N=1L, FUN=identity) ## unexpected again
 #[1] 5 5 9
 }
     Problem occurs, in rather unlikely scenarios for rolling computations, when objects returned from a function can be its input (i.e. \code{identity}), or a reference to it (i.e. \code{list}), then one has to add extra \code{copy} call:
 \preformatted{
 setDTthreads(1)
-frollapply(c(1, 9), n=1L, FUN=function(x) copy(identity(x))) ## only 'copy' would be equivalent here
+frollapply(c(1, 9), N=1L, FUN=function(x) copy(identity(x))) ## only 'copy' would be equivalent here
 #[1] 1 9
-frollapply(c(1, 9), n=1L, FUN=function(x) copy(list(x)))
+frollapply(c(1, 9), N=1L, FUN=function(x) copy(list(x)))
 #      V1
 #   <num>
 #1:     1
