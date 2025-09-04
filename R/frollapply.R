@@ -332,10 +332,19 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       ## collect results
       if (length(ansi)) {
         if (use.fork) {
-          fork.res = tryCatch(
-            parallel::mccollect(jobs),
-            error = function(e) stopf(msg.collect, "an error", e[["message"]]),
-            warning = function(w) warningf(msg.collect, "a warning", w[["message"]])
+          fork.res = withCallingHandlers(
+              tryCatch(
+                parallel::mccollect(jobs),
+                error = function(e) stopf(msg.collect, "an error", e[["message"]]),
+                warning = function(w) warningf(msg.collect, "a warning", w[["message"]])
+              ),
+              interrupt = function(e) {
+                suspendInterrupts({
+                  lapply(jobs, function(pid) try(tools::pskill(pid), silent=TRUE))
+                  parallel::mccollect(jobs, wait=FALSE)
+                })
+                invokeRestart("abort") ## raise SIGINT
+              }
           )
           ## check for any errors in FUN, warnings are silently ignored
           fork.err = vapply_1b(fork.res, inherits, "try-error", use.names=FALSE)
