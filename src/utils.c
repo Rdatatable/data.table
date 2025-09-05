@@ -4,6 +4,7 @@ bool within_int32_repres(double x) {
   // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
   // standard states that behaviour is undefined only if the integral part of a
   // finite value of standard floating type cannot be represented.
+  // Also, note that these are not the same values you would get from INT32_MAX and INT32_MIN
   return R_FINITE(x) && x < 2147483648 && x > -2147483648;
 }
 
