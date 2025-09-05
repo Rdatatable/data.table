@@ -259,14 +259,14 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     }
   }
   ## prepare templates for errors and warnings
-  err.collect = "frollapply calling parallel::mccollect to collect results from forked processes raised an error.\n%s"
-  warn.collect = "frollapply calling parallel::mccollect to collect results from forked processes raised a warning.\n%s"
+  err.collect = gettext("frollapply calling parallel::mccollect to collect results from forked processes raised an error.\n%s")
+  warn.collect = gettext("frollapply calling parallel::mccollect to collect results from forked processes raised a warning.\n%s")
   if (is.function(simplify)) {
-    err.simplify = "frollapply completed successfully but raised an error when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s"
-    warn.simplify = "frollapply completed successfully but raised a warning when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s"
+    err.simplify = gettext("frollapply completed successfully but raised an error when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s")
+    warn.simplify = gettext("frollapply completed successfully but raised a warning when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s")
   } else if (isTRUE(simplify)) {
-    err.simplify = "frollapply completed successfully but raised an error when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s"
-    warn.simplify = "frollapply completed successfully but raised a warning when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s"
+    err.simplify = gettext("frollapply completed successfully but raised an error when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s")
+    warn.simplify = gettext("frollapply completed successfully but raised a warning when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s")
   }
 
   DTths = getDTthreads(FALSE)
