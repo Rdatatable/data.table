@@ -143,6 +143,20 @@ test.list <- atime::atime_test_list(
     Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
   ),
 
+  # Performance test based on system.time() code from https://github.com/Rdatatable/data.table/pull/7272#issue-3368806267
+  "frollapply improved in #7272" = atime::atime_test(
+    N=as.integer(10^seq(2, 7, by=0.2)),
+    setup={
+      set.seed(108)
+      setDTthreads(4)
+      x = rnorm(N)
+    },
+    seconds.limit=0.1,
+    expr=data.table::frollapply(x, as.integer(N/10), median),
+    Slow="8647d44646426d9045696890378c64f5dd239b07", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/996bce96c3c0e2920ae89af70e7258caf77340f6) in the PR (https://github.com/Rdatatable/data.table/pull/7272/commits)
+    Fast="73b00b3ceefd4d1bd683ab197ec7e09a4e2a2039" # Most recent commit in the PR when performance test was created on 2025-09-05.
+  ),
+
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
   "shallow regression fixed in #4440" = atime::atime_test(
