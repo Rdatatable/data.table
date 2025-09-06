@@ -369,7 +369,7 @@ test(6000.084, frollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), n
 test(6000.085, frollmean(1:3, integer()), error="n must be non 0 length")
 test(6000.086, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
 #### n==0 (k==0, k[i]==0)
-##moved to 6001.
+## 6000.87 6000.88 moved to 6001.
 #### n<0
 test(6000.089, frollmean(1:3, -2), error="n must be non-negative integer values")
 #### n[[1L]]>0 && n[[2L]]<0
@@ -1593,8 +1593,10 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   f = match.fun(FUN)
   if (nf.rm) x[is.infinite(x)] = NA_real_
   for (i in seq_along(x)) {
-    ans[i] = if (i >= n)
-      f(x[(i-n+1):i], na.rm=na.rm)
+    ans[i] = if (n==0)
+      f(x[integer()], na.rm=na.rm)
+    else if (i >= n)
+      f(x[(i-n+1L):i], na.rm=na.rm)
     else if (partial)
       f(x[max((i-n+1), 1L):i], na.rm=na.rm)
     else
@@ -1646,6 +1648,8 @@ base_compare(x, n)
 x = makeNA(rnorm(1e3), nf=TRUE); n = 51
 base_compare(x, n)
 x = makeNA(rnorm(1e3+1), nf=TRUE); n = 51
+base_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = 0
 base_compare(x, n)
 
 #### against zoo
@@ -1730,14 +1734,18 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   f = match.fun(FUN)
   if (align=="right") {
     for (i in seq_along(x)) {
-      if (i >= n[i])
+      if (n[i] == 0)
+        ans[i] = f(x[integer()], na.rm=na.rm)
+      else if (i >= n[i])
         ans[i] = f(x[(i-n[i]+1L):i], na.rm=na.rm)
       else if (partial)
         ans[i] = f(x[1L:i], na.rm=na.rm)
     }
   } else {
     for (i in seq_along(x)) {
-      if (i <= nx-n[i]+1)
+      if (n[i] == 0)
+        ans[i] = f(x[integer()], na.rm=na.rm)
+      else if (i <= nx-n[i]+1)
         ans[i] = f(x[i:(i+n[i]-1L)], na.rm=na.rm)
       else if (partial)
         ans[i] = f(x[i:length(x)], na.rm=na.rm)
@@ -1797,6 +1805,8 @@ x = rnorm(1e3); n = sample(51, length(x), TRUE) # x even, n odd
 afun_compare(x, n)
 x = rnorm(1e3+1); n = sample(51, length(x), TRUE) # x odd, n odd
 afun_compare(x, n)
+x = rnorm(1e3); n = sample(0:49, length(x), TRUE) # x even, n even
+afun_compare(x, n)
 #### leading and trailing NAs
 x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(50, length(x), TRUE)
 afun_compare(x, n)
@@ -1805,6 +1815,8 @@ afun_compare(x, n)
 x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(0:49, length(x), TRUE)
 afun_compare(x, n)
 #### random NA
 x = makeNA(rnorm(1e3)); n = sample(50, length(x), TRUE)
@@ -1815,6 +1827,8 @@ x = makeNA(rnorm(1e3)); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 x = makeNA(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
+x = makeNA(rnorm(1e3)); n = sample(0:49, length(x), TRUE)
+afun_compare(x, n)
 #### random NA non-finites
 x = makeNA(rnorm(1e3), nf=TRUE); n = sample(50, length(x), TRUE)
 afun_compare(x, n)
@@ -1823,5 +1837,7 @@ afun_compare(x, n)
 x = makeNA(rnorm(1e3), nf=TRUE); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = sample(0:49, length(x), TRUE)
 afun_compare(x, n)
 rm(num)

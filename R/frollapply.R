@@ -209,7 +209,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     cpy = copy
     ansMask = function(len, n) {
       mask = rep(TRUE, len)
-      if (n) mask[seq_len(n - 1L)] = FALSE ## handle n==0
+      if (n) ## handle n==0
+        mask[seq_len(n-1L)] = FALSE
       mask
     }
     tight0 = function(i, dest, src, n) FUN(dest, ...) ## skip memcpy when n==0
@@ -240,7 +241,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       if (has.growable) {
         tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...) # CmemcpyVectoradaptive handles k[i]==0
       } else {
-        tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, if enabled it requires to implement support for n==0"); FUN(src[(i-n[i]+1L):i], ...)} # nocov
+        tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(src[(i-n[i]+1L):i], ...)} # nocov
       }
     } else {
       if (!list.df) {
@@ -252,9 +253,9 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...) # CmemcpyDTadaptive handles k[i]==0
       } else {
         if (!list.df) { # nocov
-          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, if enabled it requires to implement support for n==0"); FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...)} # nocov
+          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...)} # nocov
         } else {
-          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, if enabled it requires to implement support for n==0"); FUN(lapply(src, `[`, (i-n[i]+1L):i), ...)} # nocov
+          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(lapply(src, `[`, (i-n[i]+1L):i), ...)} # nocov
         }
       }
     }
@@ -289,7 +290,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       w = allocWindow(thisx, thisn) ## prepare window, handles adaptive
       ansmask = ansMask(thislen, thisn)
       ansi = which(ansmask)
-      tightFUN = if (adaptive || thisn) tight else tight0 ## handle n==0 for !adaptive, for !adaptive thisn should be scalar
+      tightFUN = if (adaptive || thisn) { ## handle n==0 for !adaptive, for !adaptive thisn should be scalar
+        tight
+      }  else {
+        tight0
+      }
       if (use.fork) { ## !windows && getDTthreads()>1L
         ths = min(DTths, length(ansi))
         ii = split(ansi, sort(rep_len(seq_len(ths), length(ansi)))) ## assign row indexes to threads
