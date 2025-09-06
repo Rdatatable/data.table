@@ -66,7 +66,7 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i]/k[i];                           // current obs window width exactly same as obs position in a vector
         } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i];              // window width smaller than position so use cumsum to calculate diff
+          ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i];              // window width smaller than position so use cumsum to calculate diff, for k[i]==0 it turns into 0/0, as expected
         } else {
           ans->dbl_v[i] = fill;                                 // position in a vector smaller than obs window width - partial window
         }
@@ -144,7 +144,7 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       } else if (wninf > 0) {                                      \
         ans->dbl_v[i] = R_NegInf;                                  \
       } else {                                                     \
-        ans->dbl_v[i] = ws/k[i];                                   \
+        ans->dbl_v[i] = ws/k[i]; /* for k[i]==0 it turns into 0/0, as expected */ \
       }                                                            \
     }
 
@@ -200,7 +200,7 @@ void frolladaptivemeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
           for (int j=-k[i]+1; j<=0; j++) {                      // sub-loop on window width
             err += x[i+j] - res;                                // measure difference of obs in sub-loop to calculated fun for obs
           }
-          ans->dbl_v[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction
+          ans->dbl_v[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction, for k[i]==0 it turns into NaN + 0/0, as expected
         } else if (ISNAN((double) w)) {
           if (!narm) {
             ans->dbl_v[i] = (double) w;
@@ -245,7 +245,7 @@ void frolladaptivemeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
             for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
               err += x[i+j] - res;                              // measure roundoff for each obs in window
             }
-            ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correction
+            ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correctionfor k[i]==0 it turns into NaN + 0/0, as expected
           } else if (nc < k[i]) {
             res = w / (k[i]-nc);
             for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
@@ -289,7 +289,7 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i];
         } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = cs[i]-cs[i-k[i]];
+          ans->dbl_v[i] = cs[i]-cs[i-k[i]]; // for k[i]==0 it turns into 0, as expected
         } else {
           ans->dbl_v[i] = fill;
         }
@@ -367,7 +367,7 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       } else if (wninf > 0) {                                      \
         ans->dbl_v[i] = R_NegInf;                                  \
       } else {                                                     \
-        ans->dbl_v[i] = ws;                                        \
+        ans->dbl_v[i] = ws; /* for k[i]==0 it turns into 0, as expected */ \
       }                                                            \
     }
 
@@ -416,7 +416,7 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           w += x[i+j];
         }
         if (R_FINITE((double) w)) {
-          ans->dbl_v[i] = (double) w;
+          ans->dbl_v[i] = (double) w; // also k[i]==0 then w=0
         } else if (ISNAN((double) w)) {
           if (!narm) {
             ans->dbl_v[i] = (double) w;
@@ -461,7 +461,7 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           if (nc < k[i]) {
             ans->dbl_v[i] = (double) w;
           } else {
-            ans->dbl_v[i] = 0.0;
+            ans->dbl_v[i] = 0.0; // also k[i]==0
           }
         }
       }
@@ -486,7 +486,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           if (x[i+j] > w)
             w = x[i+j];
         }
-        ans->dbl_v[i] = w;
+        ans->dbl_v[i] = w; // also k[i]==0 then -Inf
       }
     }
   } else {
@@ -511,7 +511,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
             if (x[i+j] > w)
               w = x[i+j];
           }
-          ans->dbl_v[i] = w;
+          ans->dbl_v[i] = w; // also k[i]==0 then -Inf
         }
       }
     } else { // there are some NAs
@@ -521,7 +521,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           ans->dbl_v[i] = fill;
         } else {
           double w = R_NegInf;
-          if (isnan[i] && ISNA(x[i])) {
+          if (k[i] && isnan[i] && ISNA(x[i])) { // consider branch only when NOT k[i]==0
             w = NA_REAL;
           } else {
             for (int j=-k[i]+1; j<=0; j++) {

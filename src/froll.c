@@ -101,6 +101,14 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
 void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all NaN vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NaN;
+    }
+    return;
+  }
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasnf = hasnf>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasnf) {
@@ -191,6 +199,14 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all NaN vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NaN;
+    }
+    return;
+  }
   for (int i=0; i<k-1; i++) {                                   // fill partial window only
     ans->dbl_v[i] = fill;
   }
@@ -275,6 +291,14 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all 0 vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = 0.0;
+    }
+    return;
+  }
   long double w = 0.0;
   bool truehasnf = hasnf>0;
   if (!truehasnf) {
@@ -363,6 +387,14 @@ if (nc == 0) {                                                 \
 void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all 0 vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = 0.0;
+    }
+    return;
+  }
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }
@@ -471,6 +503,14 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all -Inf vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NegInf;
+    }
+    return;
+  }
   double w = R_NegInf; // window max
   uint64_t cmax = 0; // counter of nested loops for verbose
   uint64_t iw = 0; // index of window max
@@ -559,6 +599,14 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all -Inf vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NegInf;
+    }
+    return;
+  }
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }

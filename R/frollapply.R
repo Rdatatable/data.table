@@ -209,9 +209,10 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     cpy = copy
     ansMask = function(len, n) {
       mask = rep(TRUE, len)
-      mask[seq_len(n-1L)] = FALSE
+      if (n) mask[seq_len(n - 1L)] = FALSE ## handle n==0
       mask
     }
+    tight0 = function(i, dest, src, n) FUN(dest, ...) ## skip memcpy when n==0
     if (by.column) {
       allocWindow = function(x, n) x[seq_len(n)]
       tight = function(i, dest, src, n) FUN(.Call(CmemcpyVector, dest, src, i, n), ...)
@@ -237,9 +238,9 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     if (by.column) {
       allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE))]
       if (has.growable) {
-        tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...)
+        tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...) # CmemcpyVectoradaptive handles k[i]==0
       } else {
-        tight = function(i, dest, src, n) FUN(src[(i-n[i]+1L):i], ...) # nocov
+        tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, if enabled it requires to implement support for n==0"); FUN(src[(i-n[i]+1L):i], ...)} # nocov
       }
     } else {
       if (!list.df) {
@@ -248,12 +249,12 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         allocWindow = function(x, n) lapply(x, `[`, seq_len(max(n)))
       }
       if (has.growable) {
-        tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...)
+        tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...) # CmemcpyDTadaptive handles k[i]==0
       } else {
         if (!list.df) { # nocov
-          tight = function(i, dest, src, n) FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...) # nocov
+          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, if enabled it requires to implement support for n==0"); FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...)} # nocov
         } else {
-          tight = function(i, dest, src, n) FUN(lapply(src, `[`, (i-n[i]+1L):i), ...) # nocov
+          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, if enabled it requires to implement support for n==0"); FUN(lapply(src, `[`, (i-n[i]+1L):i), ...)} # nocov
         }
       }
     }
@@ -288,6 +289,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       w = allocWindow(thisx, thisn) ## prepare window, handles adaptive
       ansmask = ansMask(thislen, thisn)
       ansi = which(ansmask)
+      tightFUN = if (adaptive || thisn) tight else tight0 ## handle n==0 for !adaptive, for !adaptive thisn should be scalar
       if (use.fork) { ## !windows && getDTthreads()>1L
         ths = min(DTths, length(ansi))
         ii = split(ansi, sort(rep_len(seq_len(ths), length(ansi)))) ## assign row indexes to threads
@@ -298,7 +300,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             # nocov start ## fork processes seem not to be tracked by codecov, at least when parallel not in suggests
             setDTthreads(1L)       ## disable nested parallelism
             lapply(ii[[th]],       ## loops over indexes for that thread
-                   FUN = tight,    ## handles adaptive and by.column
+                   FUN = tightFUN, ## handles adaptive and by.column
                    dest = cpy(w),  ## allocate own window for each thread, if we would not copy here, then copy would be handled later on by fork's copy-on-write
                    src = thisx,    ## full input
                    n = thisn)      ## scalar or in adaptive case a vector
@@ -339,7 +341,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         oldDTthreads = setDTthreads(1L) ## for consistency, anyway window size is unlikely to be big enough to benefit any parallelism
         withCallingHandlers(
           tryCatch(
-            thisans <- lapply(ansi, FUN = tight, dest = cpy(w), src = thisx, n = thisn),
+            thisans <- lapply(ansi, FUN = tightFUN, dest = cpy(w), src = thisx, n = thisn),
             error = function(e) h$err = conditionMessage(e)
           ), warning = function(w) {h$warn = c(h$warn, conditionMessage(w)); invokeRestart("muffleWarning")}
         )

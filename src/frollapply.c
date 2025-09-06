@@ -60,7 +60,9 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
   SEXP d = dest, s = src;
   SETLENGTH(d, nrow); // must be before MEMCPY because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
-  MEMCPY
+  if(nrow) { // support k[i]==0
+    MEMCPY
+  }
   return dest;
 }
 // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
@@ -75,7 +77,9 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
     d = VECTOR_ELT(dest, j);
     s = VECTOR_ELT(src, j);
     SETLENGTH(d, nrow);
-    MEMCPY
+    if (nrow) { // support k[i]==0
+      MEMCPY
+    }
   }
   return dest;
 }
