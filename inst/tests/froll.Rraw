@@ -372,6 +372,7 @@ test(6000.086, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 leng
 ## 6000.87 6000.88 moved to 6001.
 #### n<0
 test(6000.089, frollmean(1:3, -2), error="n must be non-negative integer values")
+test(6000.0891, frollmean(1:3, c(-2,2), adaptive=TRUE), error="n must be non-negative integer values")
 #### n[[1L]]>0 && n[[2L]]<0
 test(6000.090, frollmean(1:3, c(2, -2)), error="n must be non-negative integer values")
 #### n[[1L]]==n[[2L]]
