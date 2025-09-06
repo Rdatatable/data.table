@@ -60,7 +60,7 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
   SEXP d = dest, s = src;
   SETLENGTH(d, nrow); // must be before MEMCPY because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
-  if(nrow) { // support k[i]==0
+  if (nrow) { // support k[i]==0
     MEMCPY
   }
   return dest;
