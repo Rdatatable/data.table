@@ -234,7 +234,7 @@ system.time(for (i in 1:1e4) x[["v1"]])
     \item No repeated allocation of a rolling window subset.\cr
     Object (type of \code{X} and size of \code{N}) is allocated once (for each CPU thread), and then for each iteration this object is being re-used by copying expected subset of data into it. This means we still have to subset data on each iteration, but we only copy data into pre-allocated window object, instead of allocating in each iteration. Allocation is carrying much bigger overhead than copy. The faster the \code{FUN} evaluates the more relative speedup we are getting, because allocation of a subset does not depend on how fast or slow \code{FUN} evaluates. See \emph{caveats} section for possible edge cases caused by this optimization.
     \item Parallel evaluation of \code{FUN} calls.\cr
-    Until now (October 2022) all the multithreaded code in data.table was using \emph{OpenMP}. It can be used only in C language and it has very low overhead. Unfortunately it could not be applied in \code{frollapply} because to evaluate UDF from C code one has to call R's C api that is not thread safe (can be run only from single threaded C code). Therefore \code{frollapply} uses \code{\link[parallel]{parallel-package}} to provide parallelism on R language level. It uses \emph{fork} parallelism, which has low overhead as well, unless results of computation are big in size. \emph{Fork} is not available on Windows OS. See \emph{caveats} section for limitations caused by using this optimization.
+    Until now (September 2025) all the multithreaded code in data.table was using \emph{OpenMP}. It can be used only in C language and it has very low overhead. Unfortunately it could not be applied in \code{frollapply} because to evaluate UDF from C code one has to call R's C api that is not thread safe (can be run only from single threaded C code). Therefore \code{frollapply} uses \code{\link[parallel]{parallel-package}} to provide parallelism on R language level. It uses \emph{fork} parallelism, which has low overhead as well (unless results of computation are big in size which is not an issue for rolling statistics). \emph{Fork} is not available on Windows OS. See \emph{caveats} section for limitations caused by using this optimization.
   }
 }
 \examples{
@@ -257,10 +257,8 @@ flow = function(x) {
   v2 = x[[2L]]
   (v1[2L] - v1[1L] * (1+v2[2L])) / v1[1L]
 }
-x[,
-  "flow" := frollapply(.(Sepal.Length, Sepal.Width), 2L, flow, by.column=FALSE),
-  by = Species
-  ][]
+x[, "flow" := frollapply(.(Sepal.Length, Sepal.Width), 2L, flow, by.column=FALSE),
+  by = Species][]
 
 ## rolling regression: by.column=FALSE
 f = function(x) coef(lm(v2 ~ v1, data=x))
