@@ -190,7 +190,7 @@
     #119: -0.28964772  0.6116575
     #120: -0.40598313  0.6112854
     ```
-    - uses multiple CPU threads; evaluation of UDF is inherently slow so this can be a great help.
+    - uses multiple CPU threads (on a decent OS); evaluation of UDF is inherently slow so this can be a great help.
     ```r
     x = rnorm(1e5)
     n = 500
