@@ -50,7 +50,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
       } else if (isReal(obj)) {
         SET_VECTOR_ELT(ans, 0, coerceVector(obj, INTSXP));
       } else {
-        error(_("n must be integer vector or list of integer vectors"));
+        error(_("n must be an integer vector or list of an integer vectors"));
       }
     } else {
       int nk = length(obj);
@@ -61,7 +61,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
         } else if (isReal(VECTOR_ELT(obj, i))) {
           SET_VECTOR_ELT(ans, i, coerceVector(VECTOR_ELT(obj, i), INTSXP));
         } else {
-          error(_("n must be integer vector or list of integer vectors"));
+          error(_("n must be an integer vector or list of an integer vectors"));
         }
       }
     }
@@ -201,124 +201,6 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   }
 
   ansGetMsgs(dans, nx*nk, verbose, __func__);                    // raise errors and warnings, as of now messages are not being produced
-
-  if (verbose)
-    Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);
-
-  UNPROTECT(protecti);
-  return isVectorAtomic(xobj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
-}
-
-// helper to find biggest window width for adaptive frollapply
-int maxk(int *k, uint64_t len) {
-  int mk = k[0];
-  for (uint64_t i=1; i<len; i++)
-    if (k[i] > mk)
-      mk = k[i];
-  return mk;
-}
-SEXP frollapplyR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP align, SEXP adaptive, SEXP rho) {
-  int protecti = 0;
-  const bool verbose = GetVerbose();
-
-  if (!isFunction(fun))
-    internal_error(__func__, "'fun' must be a function"); // # nocov
-  if (!isEnvironment(rho))
-    internal_error(__func__, "'rho' should be an environment"); // # nocov
-
-  if (!xlength(xobj))
-    return(xobj);
-  double tic = 0;
-  if (verbose)
-    tic = omp_get_wtime();
-  SEXP x = PROTECT(coerceX(xobj)); protecti++;
-  R_len_t nx = length(x);
-
-  if (xlength(kobj) == 0)
-    error(_("n must be non 0 length"));
-
-  if (!IS_TRUE_OR_FALSE(adaptive))
-    error(_("%s must be TRUE or FALSE"), "adaptive");
-  bool badaptive = LOGICAL(adaptive)[0];
-
-  SEXP k = PROTECT(coerceK(kobj, badaptive)); protecti++;
-  int nk = length(k);
-  int *ik = NULL; int **lk = NULL;
-  if (!badaptive) {
-    ik = INTEGER(k);
-  } else {
-    lk = (int**)R_alloc(nk, sizeof(int*));
-    for (int j=0; j<nk; j++)
-      lk[j] = INTEGER(VECTOR_ELT(k, j));
-  }
-
-  int ialign=-2;
-  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) {
-    ialign = 1;
-  } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) {
-    ialign = 0;
-  } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
-    ialign = -1;
-  } else {
-    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "align", "rolling"); // # nocov
-  }
-
-  if (badaptive && ialign==0)
-    error(_("using adaptive TRUE and align 'center' is not implemented"));
-
-  if (length(fill) != 1)
-    error(_("fill must be a vector of length 1"));
-  if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
-    error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
-  UNPROTECT(1); // as= input to coerceAs()
-
-  SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
-  if (verbose)
-    Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
-  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(*dans));
-  double** dx = (double**)R_alloc(nx, sizeof(*dx));
-  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(*inx));
-  for (R_len_t i=0; i<nx; i++) {
-    inx[i] = xlength(VECTOR_ELT(x, i));
-    for (R_len_t j=0; j<nk; j++) {
-      if (badaptive) {
-        if (i > 0 && (inx[i]!=inx[i-1]))
-          error(_("adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame; If you want to call rolling function on list having variable length of elements call it for each field separately"));
-        if (xlength(VECTOR_ELT(k, j))!=inx[0])
-          error(_("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'"));
-      }
-      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));
-      dans[i*nk+j] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i*nk+j)), .status=0, .message={"\0","\0","\0","\0"} });
-    }
-    dx[i] = REAL(VECTOR_ELT(x, i));
-  }
-
-  SEXP pw, pc;
-
-  // in the outer loop we handle vectorized k argument
-  // for each k we need to allocate a width window object: pw
-  // we also need to construct distinct R call pointing to that window
-  if (!badaptive) {
-    for (R_len_t j=0; j<nk; j++) {
-      pw = PROTECT(allocVector(REALSXP, ik[j]));
-      pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
-      for (R_len_t i=0; i<nx; i++) {
-        frollapply(dx[i], inx[i], REAL(pw), ik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
-      }
-      UNPROTECT(2);
-    }
-  } else {
-    for (R_len_t j=0; j<nk; j++) {
-      pw = PROTECT(allocVector(REALSXP, maxk(lk[j], inx[0]))); // max window size, inx[0] because inx is constant for adaptive
-      SET_GROWABLE_BIT(pw); // so we can set length of window for each observation
-      pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
-      for (R_len_t i=0; i<nx; i++) {
-        frolladaptiveapply(dx[i], inx[i], pw, lk[j], &dans[i*nk+j], dfill, pc, rho, verbose);
-      }
-      UNPROTECT(2);
-    }
-  }
 
   if (verbose)
     Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);
