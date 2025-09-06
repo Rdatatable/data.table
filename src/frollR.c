@@ -41,7 +41,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
     int *iik = INTEGER(ans);
     while (i < nk && iik[i] >= 0) i++;
     if (i != nk)
-      error(_("n must be positive integer values (>= 0)"));
+      error(_("n must be non-negative integer values (>= 0)"));
   } else {
     if (isVectorAtomic(obj)) {
       ans = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -71,7 +71,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
       R_len_t ii = 0;
       while (ii < nx && iik[ii] >= 0) ii++;
       if (ii != nx)
-        error(_("n must be positive integer values (>= 0)"));
+        error(_("n must be non-negative integer values (>= 0)"));
     }
   }
   UNPROTECT(protecti);
