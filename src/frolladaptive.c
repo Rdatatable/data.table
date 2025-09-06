@@ -66,7 +66,7 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i]/k[i];                           // current obs window width exactly same as obs position in a vector
         } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i];              // window width smaller than position so use cumsum to calculate diff
+          ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i];              // window width smaller than position so use cumsum to calculate diff, for k[i]==0 it turns into 0/0, as expected
         } else {
           ans->dbl_v[i] = fill;                                 // position in a vector smaller than obs window width - partial window
         }
@@ -144,7 +144,7 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       } else if (wninf > 0) {                                      \
         ans->dbl_v[i] = R_NegInf;                                  \
       } else {                                                     \
-        ans->dbl_v[i] = ws/k[i];                                   \
+        ans->dbl_v[i] = ws/k[i]; /* for k[i]==0 it turns into 0/0, as expected */ \
       }                                                            \
     }
 
@@ -200,7 +200,7 @@ void frolladaptivemeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
           for (int j=-k[i]+1; j<=0; j++) {                      // sub-loop on window width
             err += x[i+j] - res;                                // measure difference of obs in sub-loop to calculated fun for obs
           }
-          ans->dbl_v[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction
+          ans->dbl_v[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction, for k[i]==0 it turns into NaN + 0/0, as expected
         } else if (ISNAN((double) w)) {
           if (!narm) {
             ans->dbl_v[i] = (double) w;
@@ -245,7 +245,7 @@ void frolladaptivemeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
             for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
               err += x[i+j] - res;                              // measure roundoff for each obs in window
             }
-            ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correction
+            ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correctionfor k[i]==0 it turns into NaN + 0/0, as expected
           } else if (nc < k[i]) {
             res = w / (k[i]-nc);
             for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
@@ -289,7 +289,7 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i];
         } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = cs[i]-cs[i-k[i]];
+          ans->dbl_v[i] = cs[i]-cs[i-k[i]]; // for k[i]==0 it turns into 0, as expected
         } else {
           ans->dbl_v[i] = fill;
         }
@@ -367,7 +367,7 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       } else if (wninf > 0) {                                      \
         ans->dbl_v[i] = R_NegInf;                                  \
       } else {                                                     \
-        ans->dbl_v[i] = ws;                                        \
+        ans->dbl_v[i] = ws; /* for k[i]==0 it turns into 0, as expected */ \
       }                                                            \
     }
 
@@ -416,7 +416,7 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           w += x[i+j];
         }
         if (R_FINITE((double) w)) {
-          ans->dbl_v[i] = (double) w;
+          ans->dbl_v[i] = (double) w; // also k[i]==0 then w=0
         } else if (ISNAN((double) w)) {
           if (!narm) {
             ans->dbl_v[i] = (double) w;
@@ -461,7 +461,7 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           if (nc < k[i]) {
             ans->dbl_v[i] = (double) w;
           } else {
-            ans->dbl_v[i] = 0.0;
+            ans->dbl_v[i] = 0.0; // also k[i]==0
           }
         }
       }
@@ -486,7 +486,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           if (x[i+j] > w)
             w = x[i+j];
         }
-        ans->dbl_v[i] = w;
+        ans->dbl_v[i] = w; // also k[i]==0 then -Inf
       }
     }
   } else {
@@ -511,7 +511,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
             if (x[i+j] > w)
               w = x[i+j];
           }
-          ans->dbl_v[i] = w;
+          ans->dbl_v[i] = w; // also k[i]==0 then -Inf
         }
       }
     } else { // there are some NAs
@@ -521,7 +521,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           ans->dbl_v[i] = fill;
         } else {
           double w = R_NegInf;
-          if (isnan[i] && ISNA(x[i])) {
+          if (k[i] && isnan[i] && ISNA(x[i])) { // consider branch only when NOT k[i]==0
             w = NA_REAL;
           } else {
             for (int j=-k[i]+1; j<=0; j++) {
@@ -541,77 +541,4 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       }
     }
   }
-}
-
-/* fast rolling adaptive any R function
- * not plain C, not thread safe
- * R eval() allocates
- * takes SEXP because it has SETLENGTH for each window
- */
-void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, double fill, SEXP call, SEXP rho, bool verbose) {
-  double tic = 0;
-  if (verbose)
-    tic = omp_get_wtime();
-
-  double *w = REAL(pw);
-  // this is i=k[0]-1 iteration - first full window - taken out from the loop
-  // we use it to add extra check that results of a FUN are length 1 numeric
-  SEXPTYPE teval0;
-  uint64_t i; // #loop_counter_not_local_scope_ok
-  for (i=0; i<nx; i++) { // this won't go to nx as there is break
-    if (i+1 < k[i]) {
-      ans->dbl_v[i] = fill;
-    } else {
-      SETLENGTH(pw, k[i]);
-      memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));
-      SEXP eval0 = PROTECT(eval(call, rho));
-      if (xlength(eval0) != 1)
-        error(_("%s: results from provided FUN are not length 1"), __func__);
-      teval0 = TYPEOF(eval0);
-      if (teval0 == REALSXP) {
-        ans->dbl_v[i] = REAL(eval0)[0];
-      } else {
-        if (teval0==INTSXP || teval0==LGLSXP) {
-          if (verbose)
-            Rprintf(_("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n"), __func__);
-          ans->dbl_v[i] = REAL(coerceVector(eval0, REALSXP))[0];
-        } else {
-          error(_("%s: results from provided FUN are not of type double"), __func__);
-        }
-      }
-      UNPROTECT(1); // eval0
-      break;
-    }
-  }
-  if (i==nx) { // none of the windows in k was small enough to cover length of x
-    return;
-  }
-  // for each row it sets length of current window because it is adaptive version
-  // then copies expected window data into w
-  // evaluate call which has been prepared to point into w
-  if (teval0 == REALSXP) {
-    for (; i<nx; i++) {
-      if (i+1 < k[i]) {
-        ans->dbl_v[i] = fill; // #nocov // this is never reached because smaller i are handled above, leaving it here because this function will be removed in next PR, and adapting it here will only make git conflicts resolution more difficult
-      } else {
-        SETLENGTH(pw, k[i]);
-        memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));
-        ans->dbl_v[i] = REAL(eval(call, rho))[0]; // this may fail with for a not type-stable fun
-      }
-    }
-  } else {
-    for (; i<nx; i++) {
-      if (i+1 < k[i]) {
-        ans->dbl_v[i] = fill;
-      } else {
-        SETLENGTH(pw, k[i]);
-        memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));
-        SEXP evali = PROTECT(eval(call, rho));
-        ans->dbl_v[i] = REAL(coerceVector(evali, REALSXP))[0];
-        UNPROTECT(1); // evali
-      }
-    }
-  }
-  if (verbose)
-    Rprintf(_("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }

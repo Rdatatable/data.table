@@ -101,6 +101,14 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
 void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all NaN vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NaN;
+    }
+    return;
+  }
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasnf = hasnf>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasnf) {
@@ -191,6 +199,14 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all NaN vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NaN;
+    }
+    return;
+  }
   for (int i=0; i<k-1; i++) {                                   // fill partial window only
     ans->dbl_v[i] = fill;
   }
@@ -275,6 +291,14 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all 0 vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = 0.0;
+    }
+    return;
+  }
   long double w = 0.0;
   bool truehasnf = hasnf>0;
   if (!truehasnf) {
@@ -363,6 +387,14 @@ if (nc == 0) {                                                 \
 void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all 0 vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = 0.0;
+    }
+    return;
+  }
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }
@@ -471,6 +503,14 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all -Inf vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NegInf;
+    }
+    return;
+  }
   double w = R_NegInf; // window max
   uint64_t cmax = 0; // counter of nested loops for verbose
   uint64_t iw = 0; // index of window max
@@ -559,6 +599,14 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all -Inf vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_NegInf;
+    }
+    return;
+  }
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }
@@ -620,72 +668,4 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       }
     }
   }
-}
-
-/* fast rolling any R function
- * not plain C, not thread safe
- * R eval() allocates
- */
-void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose) {
-  // early stopping for window bigger than input
-  if (nx < k) {
-    if (verbose)
-      Rprintf(_("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-    for (int i=0; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-    return;
-  }
-  double tic = 0;
-  if (verbose)
-    tic = omp_get_wtime();
-  for (int i=0; i<k-1; i++) {
-    ans->dbl_v[i] = fill;
-  }
-  // this is i=k-1 iteration - first full window - taken out from the loop
-  // we use it to add extra check that results of a FUN are length 1 numeric
-  memcpy(w, x, k*sizeof(double));
-  SEXP eval0 = PROTECT(eval(call, rho));
-  if (xlength(eval0) != 1)
-    error(_("%s: results from provided FUN are not length 1"), __func__);
-  SEXPTYPE teval0 = TYPEOF(eval0);
-  if (teval0 == REALSXP) {
-    ans->dbl_v[k-1] = REAL(eval0)[0];
-  } else {
-    if (teval0==INTSXP || teval0==LGLSXP) {
-      if (verbose)
-        Rprintf(_("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n"), __func__);
-      ans->dbl_v[k-1] = REAL(coerceVector(eval0, REALSXP))[0];
-    } else {
-      error(_("%s: results from provided FUN are not of type double"), __func__);
-    }
-  }
-  UNPROTECT(1); // eval0
-  // for each row it copies expected window data into w
-  // evaluate call which has been prepared to point into w
-  if (teval0 == REALSXP) {
-    for (int64_t i=k; i<nx; i++) {
-      memcpy(w, x+(i-k+1), k*sizeof(double));
-      ans->dbl_v[i] = REAL(eval(call, rho))[0]; // this may fail with for a not type-stable fun
-    }
-  } else {
-    for (int64_t i=k; i<nx; i++) {
-      memcpy(w, x+(i-k+1), k*sizeof(double));
-      SEXP evali = PROTECT(eval(call, rho));
-      ans->dbl_v[i] = REAL(coerceVector(evali, REALSXP))[0];
-      UNPROTECT(1); // evali
-    }
-  }
-  // align
-  if (ans->status < 3 && align < 1) {
-    int k_ = align==-1 ? k-1 : floor(k/2);
-    if (verbose)
-      Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
-    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
-    for (int64_t i=nx-k_; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-  }
-  if (verbose)
-    Rprintf(_("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
