@@ -74,7 +74,7 @@ frollapply(c(1, 9), N=1L, FUN=function(x) copy(list(x)))
 }
     \item \code{FUN} calls are internally passed to \code{parallel::mcparallel} to evaluate them in parallel. We inherit few limitations from \code{parallel} package explained below. This optimization can be disabled completely by calling \code{setDTthreads(1)}, then limitations listed below do not apply because all iterations of \code{FUN} evaluation will be made sequentially without use of \code{parallel} package. Note that on Windows platform this optimization is always disabled due to lack of \emph{fork} used by \code{parallel} package. One can use \code{options(datatable.verbose=TRUE)} to get extra information if \code{frollapply} is running multithreaded or not.
       \itemize{
-        \item Warnings produced inside the function are silently ignored.
+        \item Warnings produced inside the function are silently ignored; for consistency we ignore warnings also when running single threaded path.
         \item \code{FUN} should not use any on-screen devices, GUI elements, tcltk, multithreaded libraries. Note that \code{setDTthreads(1L)} is passed to forked processes, therefore any data.table code inside \code{FUN} will be forced to be single threaded. It is advised to not call \code{setDTthreads} inside \code{FUN}. \code{frollapply} is already parallelized and nested parallelism is rarely a good idea.
         \item Any operation that could misbehave when run in parallel has to be handled. For example writing to the same file from multiple CPU threads.
 \preformatted{
