@@ -247,6 +247,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive);
+SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial);
 
 // frollapply.c
 SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size);
