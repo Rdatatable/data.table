@@ -111,6 +111,47 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
   ans
 }
 
+# irregularly spaced time series, helper for creating adaptive window size
+frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
+  x = unclass(x)
+  if (!is.numeric(x))
+    stopf("'x' must be of a numeric type")
+  if (!is.integer(x))
+    x = as.integer(x)
+  if (!is.numeric(n)) {
+    stopf("'n' must be an integer")
+  } else {
+    nms = names(n) ## only for give.names
+    if (!is.integer(n)) {
+      if (!fitsInInt32(n))
+        stopf("'n' must be an integer")
+      n = as.integer(n)
+    }
+  }
+  if (!length(n))
+    stopf("'n' must be non 0 length")
+  if (anyNA(n))
+    stopf("'n' must not have NAs")
+  if (!identical(align, "right"))
+    stopf("'align' other than 'right' has not yet been implemented")
+  if (!isTRUEorFALSE(partial))
+    stopf("'partial' must be TRUE or FALSE")
+  if (!isTRUEorFALSE(give.names))
+    stopf("'give.names' must be TRUE or FALSE")
+
+  if (length(n) == 1L) {
+    ans = .Call(Cfrolladapt, x, n, partial)
+  } else {
+    ans = lapply(n, function(.n) .Call(Cfrolladapt, x, .n, partial))
+    if (give.names) {
+      if (is.null(nms))
+        nms = paste0("n", as.character(n))
+      setattr(ans, "names", nms)
+    }
+  }
+  ans
+}
+
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
   if (!missing(hasNA)) {

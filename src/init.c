@@ -158,6 +158,7 @@ R_CallMethodDef callMethods[] = {
 {"CmemcpyVectoradaptive", (DL_FUNC)&memcpyVectoradaptive, -1},
 {"CmemcpyDTadaptive", (DL_FUNC)&memcpyDTadaptive, -1},
 {"Csetgrowable", (DL_FUNC)&setgrowable, -1},
+{"Cfrolladapt", (DL_FUNC)&frolladapt, -1},
 {NULL, NULL, 0}
 };
 
