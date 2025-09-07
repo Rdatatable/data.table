@@ -1165,12 +1165,17 @@ if (use.fork) {
 }
 old = setDTthreads(1L)
 options(datatable.verbose=TRUE)
-test(6010.025, frollapply(1:2, 1, identity), c(2L,2L), output="running on single CPU thread")
+test(6010.025, frollapply(1:2, 1, copy), c(1L,2L), output="running on single CPU thread")
 options(datatable.verbose=FALSE)
-test(6010.026, frollapply(1:2, 1, function(x) {warning("warn"); x}), c(2L,2L), warning="warn")
-test(6010.027, frollapply(1:2, 1, function(x) {warning("warn:", tail(x,1)); x}), c(2L,2L), warning="warn:1\nwarn:2")
-test(6010.028, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); x}), error="err:1") ## only first
+test(6010.026, frollapply(1:2, 1, function(x) {warning("warn"); copy(x)}), c(1L,2L))
+test(6010.027, frollapply(1:2, 1, function(x) {warning("warn:", tail(x,1)); copy(x)}), c(1L,2L))
+test(6010.028, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); copy(x)}), error="err:1") ## only first
 setDTthreads(old)
+if (getDTthreads()>1L) { ## check for consistency
+  test(6010.036, frollapply(1:2, 1, function(x) {warning("warn"); copy(x)}), c(1L,2L))
+  test(6010.037, frollapply(1:2, 1, function(x) {warning("warn:", tail(x,1)); copy(x)}), c(1L,2L))
+  test(6010.038, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); copy(x)}), error="err:1") ## only first
+}
 
 #### corner cases from examples - handled properly after frollapply rewrite to R
 test(6010.101, frollapply(1:5, 3, function(x) head(x, 2)), list(NA, NA, 1:2, 2:3, 3:4))

@@ -260,7 +260,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   }
   ## prepare templates for errors and warnings
   err.collect = gettext("frollapply calling parallel::mccollect to collect results from forked processes raised an error.\n%s")
-  warn.collect = gettext("frollapply calling parallel::mccollect to collect results from forked processes raised a warning.\n%s")
+  warn.collect = gettext("frollapply internal call to parallel::mccollect raised a warning, FUN warnings should have been suppressed by parallel.\n%s")
   if (is.function(simplify)) {
     err.simplify = gettext("frollapply completed successfully but raised an error when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s")
     warn.simplify = gettext("frollapply completed successfully but raised a warning when attempting to simplify results using user specified function in 'simplify' argument. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead.\n%s")
@@ -310,7 +310,9 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             tryCatch(
               parallel::mccollect(jobs),
               error = function(e) stopf(err.collect, e[["message"]]),
-              warning = function(w) warningf(warn.collect, w[["message"]])
+              warning = function(w) {
+                warningf(warn.collect, w[["message"]]) # nocov
+              }
             ),
             interrupt = function(e) {
               # nocov start
@@ -341,11 +343,14 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
           tryCatch(
             thisans <- lapply(ansi, FUN = tight, dest = cpy(w), src = thisx, n = thisn),
             error = function(e) h$err = conditionMessage(e)
-          ), warning = function(w) {h$warn = c(h$warn, conditionMessage(w)); invokeRestart("muffleWarning")}
+          ), warning = function(w) {
+            #h$warn = c(h$warn, conditionMessage(w)) ## warnings are suppressed for consistency to parallel processing code
+            invokeRestart("muffleWarning")
+          }
         )
         setDTthreads(oldDTthreads)
-        if (!is.null(h$warn))
-          warningf("frollapply received a warning(s) when evaluating FUN:\n%s", paste(unique(h$warn), collapse="\n"))
+        #if (!is.null(h$warn)) ## warnings are suppressed for consistency to parallel processing code
+        #  warningf("frollapply received a warning(s) when evaluating FUN:\n%s", paste(unique(h$warn), collapse="\n"))
         if (!is.null(h$err))
           stopf("frollapply received an error(s) when evaluating FUN:\n%s", h$err)
       }
