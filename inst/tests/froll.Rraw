@@ -1597,7 +1597,7 @@ test(6010.9991, frollapply(list(integer()), 0, function(x) 1), list(NULL))
 test(6010.9992, frollapply(list(integer()), list(integer()), str, adaptive=TRUE), list(NULL))
 
 ## frolladapt
-test(6015.001, frolladapt(1:3, 2, align="center"), error="'align' other than 'right' has not yet been implemented")
+test(6015.000, frolladapt(1:3, 2, align="center"), error="'align' other than 'right' has not yet been implemented")
 test(6015.001, frolladapt(integer(), -1L), error="'n' must be positive integer values")
 test(6015.002, frolladapt(integer(), 0L), error="'n' must be positive integer values")
 test(6015.003, frolladapt(integer(), 1L), integer())
