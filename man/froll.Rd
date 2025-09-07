@@ -25,7 +25,7 @@
 }
 \arguments{
   \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
-  \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Adaptive rolling functions also accept a list of integer vectors when applying multiple window sizes. }
+  \item{n}{ Integer, non-negative, vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Adaptive rolling functions also accept a list of integer vectors when applying multiple window sizes. }
   \item{fill}{ Numeric; value to pad by. Defaults to \code{NA}. }
   \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It
     suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values.
