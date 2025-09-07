@@ -2,7 +2,7 @@
 \alias{frolladapt}
 \title{Adapt rolling window to irregularly spaced time series}
 \description{
-  Helper function to generate adaptive window size based on the irregularly spaced time series index. Generated adaptive window can be then used in rolling functions. See \code{\link{froll}} and \code{\link{frollapply}} for details.
+  Helper function to generate adaptive window size based on the irregularly spaced time series index. Experimental. Generated adaptive window can be then used in rolling functions. See \code{\link{froll}} and \code{\link{frollapply}} for details.
 }
 \usage{
   frolladapt(x, n, align="right", partial=FALSE, give.names=FALSE)
