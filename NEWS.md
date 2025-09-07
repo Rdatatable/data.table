@@ -20,6 +20,18 @@
     frollsum(c(1,2,3,Inf,5,6), 2)
     #[1]  NA   3   5 Inf Inf  11
 
+4. `frollapply` result is not coerced to numeric anymore. Users' code could possibly break if it depends on forced coercion of input/output to numeric type.
+    ```r
+    ## before
+    frollapply(c(F,T,F,F,F,T), 2, any)
+    #[1] NA  1  1  0  0  1
+
+    ## now
+    frollapply(c(F,T,F,F,F,T), 2, any)
+    #[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
+    ```
+    Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
@@ -156,6 +168,47 @@
     ```
 
     As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
+
+17. Function `frollapply` has been completely rewritten. Thanks to @jangorecki for implementation. Be sure to read `frollapply` manual before using the function. There are following changes:
+    - all basic types are now supported on input/output, not only double. Users' code could possibly break if it depends on forced coercion of input/output to double type.
+    - new argument `by.column` allowing to pass a multi-column subset of a data.table into a rolling function, closes [#4887](https://github.com/Rdatatable/data.table/issues/4887).
+    ```r
+    x = data.table(v1=rnorm(120), v2=rnorm(120))
+    f = function(x) coef(lm(v2 ~ v1, data=x))
+    coef.fill = c("(Intercept)"=NA_real_, "v1"=NA_real_)
+    frollapply(x, 4, f, by.column=FALSE, fill=coef.fill)
+    #     (Intercept)         v1
+    #  1:          NA         NA
+    #  2:          NA         NA
+    #  3:          NA         NA
+    #  4:  0.65456931  0.3138012
+    #  5: -1.07977441 -2.0588094
+    #---
+    #116:  0.15828417  0.3570216
+    #117: -0.09083424  1.5494507
+    #118: -0.18345878  0.6424837
+    #119: -0.28964772  0.6116575
+    #120: -0.40598313  0.6112854
+    ```
+    - uses multiple CPU threads (on a decent OS); evaluation of UDF is inherently slow so this can be a great help.
+    ```r
+    x = rnorm(1e5)
+    n = 500
+    setDTthreads(1)
+    system.time(
+      th1 <- frollapply(x, n, median, simplify=unlist)
+    )
+    #   user  system elapsed
+    #  3.078   0.005   3.084
+    setDTthreads(4)
+    system.time(
+      th4 <- frollapply(x, n, median, simplify=unlist)
+    )
+    #   user  system elapsed
+    #  2.453   0.135   0.897
+    all.equal(th1, th4)
+    #[1] TRUE
+    ```
 
 ### BUG FIXES
 
