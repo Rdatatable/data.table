@@ -15,7 +15,7 @@ SEXP coerceX(SEXP obj) {
   for (R_len_t i=0; i<nobj; i++) {
     SEXP this_obj = VECTOR_ELT(obj, i);
     if (!(isReal(this_obj) || isInteger(this_obj) || isLogical(this_obj)))
-      error(_("x must be of type numeric or logical, or a list, data.frame or data.table of such"));
+      error(_("'x' must be of type numeric or logical, or a list, data.frame or data.table of such"));
     SET_VECTOR_ELT(x, i, coerceAs(this_obj, PROTECT(ScalarReal(NA_REAL)), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
     UNPROTECT(1); // as= input to coerceAs()
   }
@@ -28,20 +28,20 @@ SEXP coerceK(SEXP obj, bool adaptive) {
   SEXP ans = R_NilValue;
   if (!adaptive) {
     if (isNewList(obj))
-      error(_("n must be integer, list is accepted for adaptive TRUE"));
+      error(_("'n' must be an integer, list is accepted for adaptive TRUE"));
     if (isInteger(obj)) {
       ans = obj;
     } else if (isReal(obj)) {
       ans = PROTECT(coerceVector(obj, INTSXP)); protecti++;
     } else {
-      error(_("n must be integer"));
+      error(_("'n' must be an integer"));
     }
     int nk = length(obj);
     R_len_t i = 0;
     int *iik = INTEGER(ans);
     while (i < nk && iik[i] >= 0) i++;
     if (i != nk)
-      error(_("n must be non-negative integer values (>= 0)"));
+      error(_("'n' must be non-negative integer values (>= 0)"));
   } else {
     if (isVectorAtomic(obj)) {
       ans = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -50,7 +50,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
       } else if (isReal(obj)) {
         SET_VECTOR_ELT(ans, 0, coerceVector(obj, INTSXP));
       } else {
-        error(_("n must be an integer vector or list of an integer vectors"));
+        error(_("'n' must be an integer vector or list of integer vectors"));
       }
     } else {
       int nk = length(obj);
@@ -61,7 +61,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
         } else if (isReal(VECTOR_ELT(obj, i))) {
           SET_VECTOR_ELT(ans, i, coerceVector(VECTOR_ELT(obj, i), INTSXP));
         } else {
-          error(_("n must be an integer vector or list of an integer vectors"));
+          error(_("'n' must be an integer vector or list of integer vectors"));
         }
       }
     }
@@ -71,7 +71,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
       R_len_t ii = 0;
       while (ii < nx && iik[ii] >= 0) ii++;
       if (ii != nx)
-        error(_("n must be non-negative integer values (>= 0)"));
+        error(_("'n' must be non-negative integer values (>= 0)"));
     }
   }
   UNPROTECT(protecti);

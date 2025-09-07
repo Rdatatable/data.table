@@ -141,9 +141,9 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     stopf("'N' must be non 0 length")
   if (!adaptive) {
     if (is.list(N))
-      stopf("'N' must be integer, list is accepted for adaptive TRUE")
+      stopf("'N' must be an integer, list is accepted for adaptive TRUE")
     else if (!is.numeric(N))
-      stopf("'N' must be integer vector")
+      stopf("'N' must be an integer")
     nnam = names(N) ## used for give.names
     if (!is.integer(N))
       N = as.integer(N)
@@ -165,13 +165,13 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       if (!equal.lengths(N))
         stopf("adaptive windows provided in 'N' must not to have different lengths")
       if (!all(vapply_1b(N, is.numeric, use.names=FALSE)))
-        stopf("n must be an integer vector or list of an integer vectors")
+        stopf("'N' must be an integer vector or list of integer vectors")
       if (!all(vapply_1b(N, is.integer, use.names=FALSE)))
         N = lapply(N, as.integer)
       nn = length(N)
       nnam = names(N)
     } else
-      stopf("n must be an integer vector or list of an integer vectors")
+      stopf("'N' must be an integer vector or list of integer vectors")
   }
   ## partial
   if (partial) {
