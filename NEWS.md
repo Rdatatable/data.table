@@ -223,7 +223,7 @@
     #[1] TRUE
     ```
 
-18. New `frolladapt` helper function has been added to aid in preparation of adaptive length of rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing.
+18. New `frolladapt` helper function has been added to aid in preparation of adaptive length of rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
 ```r
 idx = as.Date("2022-10-23") + c(0,1,4,5,6,7,9,10,14)
 dt = data.table(index=idx, value=seq_along(idx))
