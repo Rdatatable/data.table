@@ -234,7 +234,6 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
-void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose);
 
 // frolladaptive.c
 void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
