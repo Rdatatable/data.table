@@ -135,9 +135,9 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
   if (!identical(align, "right"))
     stopf("'align' other than 'right' has not yet been implemented")
   if (!isTRUEorFALSE(partial))
-    stopf("'partial' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "partial")
   if (!isTRUEorFALSE(give.names))
-    stopf("'give.names' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "give.names")
 
   if (length(n) == 1L) {
     ans = .Call(Cfrolladapt, x, n, partial)
