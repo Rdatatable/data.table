@@ -225,20 +225,20 @@
 
 18. New `frolladapt` helper function has been added to aid in preparation of adaptive length of rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
 ```r
-idx = as.Date("2022-10-23") + c(0,1,4,5,6,7,9,10,14)
+idx = as.Date("2025-09-08") + c(0,1,4,5,6,7,9,10,14)
 dt = data.table(index=idx, value=seq_along(idx))
 dt
 #        index value
 #       <Date> <int>
-#1: 2022-10-23     1
-#2: 2022-10-24     2
-#3: 2022-10-27     3
-#4: 2022-10-28     4
-#5: 2022-10-29     5
-#6: 2022-10-30     6
-#7: 2022-11-01     7
-#8: 2022-11-02     8
-#9: 2022-11-06     9
+#1: 2025-09-08     1
+#2: 2025-09-09     2
+#3: 2025-09-12     3
+#4: 2025-09-13     4
+#5: 2025-09-14     5
+#6: 2025-09-15     6
+#7: 2025-09-17     7
+#8: 2025-09-18     8
+#9: 2025-09-22     9
 dt[, c("rollmean3","rollmean3days") := list(
   frollmean(value, 3),
   frollmean(value, frolladapt(index, 3), adaptive=TRUE)
@@ -246,15 +246,15 @@ dt[, c("rollmean3","rollmean3days") := list(
 dt
 #        index value rollmean3 rollmean3days
 #       <Date> <int>     <num>         <num>
-#1: 2022-10-23     1        NA            NA
-#2: 2022-10-24     2        NA            NA
-#3: 2022-10-27     3         2           3.0
-#4: 2022-10-28     4         3           3.5
-#5: 2022-10-29     5         4           4.0
-#6: 2022-10-30     6         5           5.0
-#7: 2022-11-01     7         6           6.5
-#8: 2022-11-02     8         7           7.5
-#9: 2022-11-06     9         8           9.0
+#1: 2025-09-08     1        NA            NA
+#2: 2025-09-09     2        NA            NA
+#3: 2025-09-12     3         2           3.0
+#4: 2025-09-13     4         3           3.5
+#5: 2025-09-14     5         4           4.0
+#6: 2025-09-15     6         5           5.0
+#7: 2025-09-17     7         6           6.5
+#8: 2025-09-18     8         7           7.5
+#9: 2025-09-22     9         8           9.0
 ```
 
 ### BUG FIXES
