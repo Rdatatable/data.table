@@ -216,7 +216,7 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
   int n = INTEGER(kobj)[0];
   if (n < 1L)
     error(_("'n' must be positive integer values (>= 1)"));
-  int *x = INTEGER_RO(xobj);
+  const int *x = INTEGER_RO(xobj);
   int64_t len = XLENGTH(xobj); // can be 0
 
   if (len && x[0] == NA_INTEGER)
