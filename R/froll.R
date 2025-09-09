@@ -130,8 +130,6 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
   }
   if (!length(n))
     stopf("'n' must be non 0 length")
-  if (anyNA(n))
-    stopf("'n' must not have NAs")
   if (!identical(align, "right"))
     stopf("'align' other than 'right' has not yet been implemented")
   if (!isTRUEorFALSE(partial))
