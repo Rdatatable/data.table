@@ -24,7 +24,11 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html), [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html), and [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignettes first.
+This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the following vignettes first:
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) 
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
 
 ***
 
