@@ -208,3 +208,60 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   UNPROTECT(protecti);
   return isVectorAtomic(xobj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
+
+// helper called from R to generate adaptive window for irregularly spaced time series
+SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
+
+  bool p = LOGICAL(partial)[0];
+  int n = INTEGER(kobj)[0];
+  if (n < 1L)
+    error(_("'n' must be positive integer values (>= 1)"));
+  const int *x = INTEGER_RO(xobj);
+  int64_t len = XLENGTH(xobj); // can be 0
+
+  if (len && x[0] == NA_INTEGER)
+    error(_("index provided to 'x' must: be sorted, have no duplicates, have no NAs")); // error text for consistency to the one below
+  for (int64_t i=1; i<len; i++) {
+    if (x[i] <= x[i-1L])
+      error(_("index provided to 'x' must: be sorted, have no duplicates, have no NAs"));
+  }
+
+  SEXP ans = PROTECT(allocVector(INTSXP, len));
+  int *ians = INTEGER(ans);
+
+  int64_t i = 0, j = 0;
+  int first;
+  if (len)
+    first = x[0]+n-1;
+  while (i < len) {
+    int lhs = x[i], rhs = x[j];
+    int an = i-j+1;                 // window we are currently looking at in this iteration
+    if (an > n) {
+      error(_("internal error: an > n, should not increment i in the first place")); // # nocov
+    } else if (an == n) {           // an is same size as n, so we either have no gaps or will need to shrink an by j++
+      if (lhs == rhs+n-1) {         // no gaps - or a n gaps and a n dups?
+        ians[i] = n;                // could skip if pre-fill
+        i++;
+        j++;
+      } else if (lhs > rhs+n-1) {   // need to shrink an
+        j++;
+      } else {
+        error(_("internal error: not sorted, should be been detected by now")); // # nocov
+      }
+    } else if (an < n) {            // there are some gaps
+      if (lhs == rhs+n-1) {         // gap and rhs matches the bound, so increment i and j
+        ians[i] = an;
+        i++;
+        j++;
+      } else if (lhs > rhs+n-1L) {  // need to shrink an
+        ians[i] = an;               // likely to be overwritten by smaller an if shrinking continues because i is not incremented in this iteration
+        j++;
+      } else if (lhs < rhs+n-1L) {
+        ians[i] = !p && lhs<first ? n : an; // for i==j ans=1L, unless !partial, then ans=n
+        i++;
+      }
+    }
+  }
+  UNPROTECT(1);
+  return ans;
+}

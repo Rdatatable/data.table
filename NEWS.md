@@ -32,6 +32,8 @@
     ```
     Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
 
+5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
@@ -208,6 +210,40 @@
     #  2.453   0.135   0.897
     all.equal(th1, th4)
     #[1] TRUE
+    ```
+
+18. New helper `frolladapt` to facilitate applying rolling functions over windows of fixed calendar-time width in irregularly-spaced data sets, thereby bypassing the need to "augment" such data with placeholder rows, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
+    ```r
+    idx = as.Date("2025-09-05") + c(0,4,7,8,9,10,12,13,17)
+    dt = data.table(index=idx, value=seq_along(idx))
+    dt
+    #        index value
+    #       <Date> <int>
+    #1: 2025-09-05     1
+    #2: 2025-09-09     2
+    #3: 2025-09-12     3
+    #4: 2025-09-13     4
+    #5: 2025-09-14     5
+    #6: 2025-09-15     6
+    #7: 2025-09-17     7
+    #8: 2025-09-18     8
+    #9: 2025-09-22     9
+    dt[, c("rollmean3","rollmean3days") := list(
+      frollmean(value, 3),
+      frollmean(value, frolladapt(index, 3), adaptive=TRUE)
+      )]
+    dt
+    #        index value rollmean3 rollmean3days
+    #       <Date> <int>     <num>         <num>
+    #1: 2025-09-05     1        NA            NA
+    #2: 2025-09-09     2        NA           2.0
+    #3: 2025-09-12     3         2           3.0
+    #4: 2025-09-13     4         3           3.5
+    #5: 2025-09-14     5         4           4.0
+    #6: 2025-09-15     6         5           5.0
+    #7: 2025-09-17     7         6           6.5
+    #8: 2025-09-18     8         7           7.5
+    #9: 2025-09-22     9         8           9.0
     ```
 
 ### BUG FIXES

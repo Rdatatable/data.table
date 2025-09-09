@@ -147,6 +147,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     nnam = names(N) ## used for give.names
     if (!is.integer(N))
       N = as.integer(N)
+    if (anyNA(N))
+      stopf("'N' must be non-negative integer values (>= 0)")
     nn = length(N) ## top level loop for vectorized n
   } else {
     if (length(unique(len)) > 1L) ## vectorized x requires same nrow for adaptive
@@ -156,6 +158,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         stopf("length of integer vector(s) provided as list to 'N' argument must be equal to number of observations provided in 'X'")
       if (!is.integer(N))
         N = as.integer(N)
+      if (anyNA(N))
+        stopf("'N' must be non-negative integer values (>= 0)")
       nn = 1L
       N = list(N)
       nnam = character()
@@ -168,6 +172,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         stopf("'N' must be an integer vector or list of integer vectors")
       if (!all(vapply_1b(N, is.integer, use.names=FALSE)))
         N = lapply(N, as.integer)
+      if (any(vapply_1b(N, anyNA, use.names=FALSE)))
+        stopf("'N' must be non-negative integer values (>= 0)")
       nn = length(N)
       nnam = names(N)
     } else
