@@ -1022,6 +1022,207 @@ test(6000.562, frollapply(FUN=mean, 1:3, -1), error="'N' must be non-negative in
 test(6000.563, frollapply(FUN=mean, 1:3, c(0,-1,1), adaptive=TRUE), error="'N' must be non-negative integer values (>= 0)")
 test(6000.564, frollapply(FUN=mean, 1:3, list(c(0,-1,1)), adaptive=TRUE), error="'N' must be non-negative integer values (>= 0)")
 
+## frollmin adaptive
+options(datatable.verbose=TRUE) ## adaptive frollmin no fast algo
+test(6000.6, frollmin(1:4, c(2,2,2,2), adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6000.6001, frollmin(1:4, c(2,2,2,2), algo="fast", adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6000.6002, frollmin(1:4, c(2,2,2,2), algo="exact", adaptive=TRUE), notOutput="frolladaptivefun: algo 0 not implemented, fall back to 1")
+options(datatable.verbose=FALSE)
+n = c(3,2,2,4,2,1,4,8)
+x = c(7,2,3,6,3,2,6,6) # no NA
+test(6000.6111, frollmin(x, n, adaptive=TRUE), c(NA,2,2,2,3,2,2,2)) # has.nf=NA # narm=F
+test(6000.6112, frollmin(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,2,2,2,3,2,2,2)) # narm=T
+test(6000.6121, frollmin(x, n, has.nf=FALSE, adaptive=TRUE), c(NA,2,2,2,3,2,2,2)) # has.nf=F
+test(6000.6122, frollmin(x, n, has.nf=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.6131, frollmin(x, n, has.nf=TRUE, adaptive=TRUE), c(NA,2,2,2,3,2,2,2)) # has.nf=T
+test(6000.6132, frollmin(x, n, has.nf=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,2,2,2,3,2,2,2))
+x = c(7,2,NA,6,3,NA,6,6) # NA
+test(6000.6211, frollmin(x, n, adaptive=TRUE), c(NA,2,NA,NA,3,NA,NA,NA))
+test(6000.6212, frollmin(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,2,2,2,3,Inf,3,2))
+test(6000.6221, frollmin(x, n, has.nf=FALSE, adaptive=TRUE), c(NA,2,2,2,3,Inf,3,2))
+test(6000.6222, frollmin(x, n, has.nf=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.6231, frollmin(x, n, has.nf=TRUE, adaptive=TRUE), c(NA,2,NA,NA,3,NA,NA,NA))
+test(6000.6232, frollmin(x, n, has.nf=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,2,2,2,3,Inf,3,2))
+x = rep(NA_real_, 8) # all NA
+test(6000.6241, frollmin(x, n, adaptive=TRUE), rep(NA_real_, 8))
+test(6000.6242, frollmin(x, n, na.rm=TRUE, adaptive=TRUE), c(NA, rep(Inf, 7)))
+test(6000.6251, frollmin(x, n, has.nf=FALSE, adaptive=TRUE), c(NA, rep(Inf, 7)))
+test(6000.6252, frollmin(x, n, has.nf=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.6261, frollmin(x, n, has.nf=TRUE, adaptive=TRUE), rep(NA_real_, 8))
+test(6000.6262, frollmin(x, n, has.nf=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA, rep(Inf, 7)))
+x = c(NA,NaN,NA,NaN,NaN,NaN,NA,NA) # all NaN/NA
+test(6000.6271, frollmin(x, n, adaptive=TRUE), c(NA,NA,NA,NA,NaN,NaN,NA,NA))
+test(6000.6272, frollmin(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,Inf,Inf,Inf,Inf,Inf,Inf,Inf))
+test(6000.6281, frollmin(x, n, has.nf=FALSE, adaptive=TRUE), c(NA,Inf,Inf,Inf,Inf,Inf,Inf,Inf))
+test(6000.6282, frollmin(x, n, has.nf=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.6291, frollmin(x, n, has.nf=TRUE, adaptive=TRUE), c(NA,NA,NA,NA,NaN,NaN,NA,NA))
+test(6000.6292, frollmin(x, n, has.nf=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,Inf,Inf,Inf,Inf,Inf,Inf,Inf))
+x = c(7,2,NA,6,3,Inf,6,6) # Inf
+test(6000.6311, frollmin(x, n, adaptive=TRUE), c(NA,2,NA,NA,3,Inf,3,NA))
+test(6000.6312, frollmin(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,2,2,2,3,Inf,3,2))
+test(6000.6321, frollmin(x, n, has.nf=FALSE, adaptive=TRUE), c(NA,2,2,2,3,Inf,3,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.6322, frollmin(x, n, has.nf=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.6331, frollmin(x, n, has.nf=TRUE, adaptive=TRUE), c(NA,2,NA,NA,3,Inf,3,NA))
+test(6000.6332, frollmin(x, n, has.nf=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,2,2,2,3,Inf,3,2))
+x = c(7,2,-Inf,6,3,NA,6,6) # -Inf
+test(6000.6341, frollmin(x, n, adaptive=TRUE), c(NA,2,-Inf,-Inf,3,NA,NA,NA))
+test(6000.6342, frollmin(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,2,-Inf,-Inf,3,Inf,3,-Inf))
+test(6000.6351, frollmin(x, n, has.nf=FALSE, adaptive=TRUE), c(NA,2,-Inf,-Inf,3,Inf,3,-Inf)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.6352, frollmin(x, n, has.nf=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.6361, frollmin(x, n, has.nf=TRUE, adaptive=TRUE), c(NA,2,-Inf,-Inf,3,NA,NA,NA))
+test(6000.6362, frollmin(x, n, has.nf=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,2,-Inf,-Inf,3,Inf,3,-Inf))
+
+## frollmin non-adaptive
+options(datatable.verbose=TRUE)
+test(6000.7001, frollmin(1:3, 2), c(NA, 1, 2), output="frollminFast: running for input length")
+test(6000.7002, frollmin(1:10, 5), c(NA,NA,NA,NA,1,2,3,4,5,6), output="frollminFast: nested window min calculation called 5 times") ## max: 0
+test(6000.7003, frollmin(10:1, 5), c(NA,NA,NA,NA,6,5,4,3,2,1), output="frollminFast: nested window min calculation called 0 times") ## max: 5
+test(6000.7004, frollmin(1:3, 2, algo="exact"), c(NA, 1, 2), output="frollminExact: running in parallel for input length")
+test(6000.7005, frollmin(c(1,2,3,NA,5), 2), c(NA, 1, 2, NA, NA), output="continue with extra care for NFs")
+options(datatable.verbose=FALSE)
+n = 3
+x = c(7,2,3,6,3,2,4,5) # no NA
+ans = c(NA,NA,2,2,3,2,2,2)
+test(6000.7111, frollmin(x, n), ans) # has.nf=NA # narm=F
+test(6000.7112, frollmin(x, n, na.rm=TRUE), ans) # narm=T
+test(6000.7113, frollmin(x, n, algo="exact"), ans) # has.nf=NA # narm=F
+test(6000.7114, frollmin(x, n, algo="exact", na.rm=TRUE), ans) # narm=T
+test(6000.7121, frollmin(x, n, has.nf=FALSE), ans) # has.nf=F
+test(6000.7122, frollmin(x, n, has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7123, frollmin(x, n, algo="exact", has.nf=FALSE), ans) # has.nf=F
+test(6000.7124, frollmin(x, n, algo="exact", has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7131, frollmin(x, n, has.nf=TRUE), ans) # has.nf=T
+test(6000.7132, frollmin(x, n, has.nf=TRUE, na.rm=TRUE), ans)
+test(6000.7133, frollmin(x, n, algo="exact", has.nf=TRUE), ans) # has.nf=T
+test(6000.7134, frollmin(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), ans)
+x = c(7,2,3,NA,3,2,4,NA) # NA
+test(6000.7211, frollmin(x, n), c(NA,NA,2,NA,NA,NA,2,NA))
+test(6000.7212, frollmin(x, n, na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+test(6000.7213, frollmin(x, n, algo="exact"), c(NA,NA,2,NA,NA,NA,2,NA))
+test(6000.7214, frollmin(x, n, algo="exact", na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+test(6000.7221, frollmin(x, n, has.nf=FALSE), c(NA,NA,2,2,3,2,2,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7222, frollmin(x, n, has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7223, frollmin(x, n, algo="exact", has.nf=FALSE), c(NA,NA,2,2,3,2,2,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7224, frollmin(x, n, algo="exact", has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7231, frollmin(x, n, has.nf=TRUE), c(NA,NA,2,NA,NA,NA,2,NA))
+test(6000.7232, frollmin(x, n, has.nf=TRUE, na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+test(6000.7233, frollmin(x, n, algo="exact", has.nf=TRUE), c(NA,NA,2,NA,NA,NA,2,NA))
+test(6000.7234, frollmin(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+x = rep(NA_real_, 8) # all NA
+test(6000.7241, frollmin(x, n), rep(NA_real_, 8))
+test(6000.7242, frollmin(x, n, na.rm=TRUE), c(NA,NA, rep(Inf, 6)))
+test(6000.7243, frollmin(x, n, algo="exact"), rep(NA_real_, 8))
+test(6000.7244, frollmin(x, n, algo="exact", na.rm=TRUE), c(NA,NA, rep(Inf, 6)))
+test(6000.7251, frollmin(x, n, has.nf=FALSE), c(NA,NA, rep(Inf, 6)))
+test(6000.7252, frollmin(x, n, has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7253, frollmin(x, n, algo="exact", has.nf=FALSE), c(NA,NA, rep(Inf, 6)))
+test(6000.7254, frollmin(x, n, algo="exact", has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7261, frollmin(x, n, has.nf=TRUE), rep(NA_real_, 8))
+test(6000.7262, frollmin(x, n, has.nf=TRUE, na.rm=TRUE), c(NA,NA, rep(Inf, 6)))
+test(6000.7263, frollmin(x, n, algo="exact", has.nf=TRUE), rep(NA_real_, 8))
+test(6000.7264, frollmin(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), c(NA,NA, rep(Inf, 6)))
+x = c(NA,NaN,NA,NaN,NaN,NaN,NA,NA) # all NaN/NA
+test(6000.7271, frollmin(x, n), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.7272, frollmin(x, n, na.rm=TRUE), c(NA,NA,Inf,Inf,Inf,Inf,Inf,Inf))
+test(6000.7273, frollmin(x, n, algo="exact"), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.7274, frollmin(x, n, algo="exact", na.rm=TRUE), c(NA,NA,Inf,Inf,Inf,Inf,Inf,Inf))
+test(6000.7281, frollmin(x, n, has.nf=FALSE), c(NA,NA,Inf,Inf,Inf,Inf,Inf,Inf)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7282, frollmin(x, n, has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7283, frollmin(x, n, algo="exact", has.nf=FALSE), c(NA,NA,Inf,Inf,Inf,Inf,Inf,Inf)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7284, frollmin(x, n, algo="exact", has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7291, frollmin(x, n, has.nf=TRUE), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.7292, frollmin(x, n, has.nf=TRUE, na.rm=TRUE), c(NA,NA,Inf,Inf,Inf,Inf,Inf,Inf))
+test(6000.7293, frollmin(x, n, algo="exact", has.nf=TRUE), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.7294, frollmin(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), c(NA,NA,Inf,Inf,Inf,Inf,Inf,Inf))
+x = c(NA,2,6,3,Inf,2,4,5) # Inf
+test(6000.7311, frollmin(x, n), c(NA,NA,NA,2,3,2,2,2))
+test(6000.7312, frollmin(x, n, na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+test(6000.7313, frollmin(x, n, algo="exact"), c(NA,NA,NA,2,3,2,2,2))
+test(6000.7314, frollmin(x, n, algo="exact", na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+test(6000.7321, frollmin(x, n, has.nf=FALSE), c(NA,NA,2,2,3,2,2,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7322, frollmin(x, n, has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7323, frollmin(x, n, algo="exact", has.nf=FALSE), c(NA,NA,2,2,3,2,2,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7324, frollmin(x, n, algo="exact", has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7331, frollmin(x, n, has.nf=TRUE), c(NA,NA,NA,2,3,2,2,2))
+test(6000.7332, frollmin(x, n, has.nf=TRUE, na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+test(6000.7333, frollmin(x, n, algo="exact", has.nf=TRUE), c(NA,NA,NA,2,3,2,2,2))
+test(6000.7334, frollmin(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), c(NA,NA,2,2,3,2,2,2))
+x = c(NA,2,-Inf,3,Inf,2,4,5) # -Inf
+test(6000.7341, frollmin(x, n), c(NA,NA,NA,-Inf,-Inf,2,2,2))
+test(6000.7342, frollmin(x, n, na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,2,2,2))
+test(6000.7343, frollmin(x, n, algo="exact"), c(NA,NA,NA,-Inf,-Inf,2,2,2))
+test(6000.7344, frollmin(x, n, algo="exact", na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,2,2,2))
+test(6000.7351, frollmin(x, n, has.nf=FALSE), c(NA,NA,-Inf,-Inf,-Inf,2,2,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7352, frollmin(x, n, has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7353, frollmin(x, n, algo="exact", has.nf=FALSE), c(NA,NA,-Inf,-Inf,-Inf,2,2,2)) ## expected incorrect results, see manual has.nf section for details, added in #5441
+test(6000.7354, frollmin(x, n, algo="exact", has.nf=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.7361, frollmin(x, n, has.nf=TRUE), c(NA,NA,NA,-Inf,-Inf,2,2,2))
+test(6000.7362, frollmin(x, n, has.nf=TRUE, na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,2,2,2))
+test(6000.7363, frollmin(x, n, algo="exact", has.nf=TRUE), c(NA,NA,NA,-Inf,-Inf,2,2,2))
+test(6000.7364, frollmin(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,2,2,2))
+# edge cases
+test(6000.801, frollmin(c(5,NA,1), 1L), c(5,NA,1)) ## na.rm=FALSE window recalc and NA happens to be the first element in a nested loop ## didn't help for codecov, adding internal error to wmin till we have a data that can reach there
+test(6000.802, frollmin(c(5,NaN,1), 1L), c(5,NaN,1))
+test(6000.803, frollmin(c(1,5,5,NaN,5,5,5), 2L), c(NA,1,5,NaN,NaN,5,5))
+test(6000.804, frollmin(c(1,5,NA,NaN,5,5,5), 2L), c(NA,1,NA,NA,NaN,5,5))
+
+# frollprod
+test(6000.901, frollprod(c(1,1,1), 1), c(1,1,1))
+test(6000.902, frollprod(c(1,1,1), 2), c(NA,1,1))
+test(6000.903, frollprod(c(1,1,1), 2, partial=TRUE), c(1,1,1))
+test(6000.904, frollprod(c(1,1,1), 2, align="left"), c(1,1,NA))
+test(6000.905, frollprod(c(1,1,1), 2, align="left", partial=TRUE), c(1,1,1))
+test(6000.906, frollprod(c(1,1,1), 2, align="center"), c(1,1,NA))
+test(6000.907, frollprod(c(1,1,1,1), 2, align="center"), c(1,1,1,NA))
+test(6000.908, frollprod(1:5, 2, partial=TRUE), c(1,2,6,12,20))
+test(6000.909, frollprod(5:1, 2, partial=TRUE), c(5,20,12,6,2))
+test(6000.910, frollprod(c(Inf,Inf,-Inf), 3), c(NA,NA,-Inf))
+test(6000.911, frollprod(c(Inf,-Inf,-Inf), 3), c(NA,NA,Inf))
+test(6000.912, frollprod(c(-Inf,-Inf), 2), c(NA,Inf))
+test(6000.913, frollprod(c(-Inf,-Inf, -1), 3), c(NA,NA,-Inf))
+test(6000.914, frollprod(1:5, rep(2,5), adaptive=TRUE), c(NA,2,6,12,20))
+test(6000.915, frollprod(1:6/2, 3), c(rep(NA_real_,2), c(0.75, 3, 7.5, 15)))
+test(6000.916, frollprod(1:6/2, c(2L, 2L, 3L, 4L, 2L, 3L), adaptive=TRUE), c(NA, 0.5, 0.75, 1.5, 5, 15))
+options(datatable.verbose=TRUE)
+test(6000.921, frollprod(1:5, 6), rep(NA_real_, 5L), output="window width longer than input vector")
+options(datatable.verbose=FALSE)
+test(6000.922, frollprod(c(1:2,NA,4:10), 4, has.nf=FALSE), c(rep(NA_real_, 6), 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+test(6000.923, frollprod(c(1:2,NA,4:10), 2, has.nf=FALSE), c(NA, 2, NA, NA, 20, 30, 42, 56, 72, 90), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+test(6000.924, frollprod(c(1:2,NA,4:10), 4, has.nf=FALSE, algo="exact"), c(rep(NA_real_, 6), 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+options(datatable.verbose=TRUE)
+test(6000.925, frollprod(c(1:2,NA,4:10), 4, algo="exact", na.rm=TRUE), c(NA, NA, NA, 8, 40, 120, 840, 1680, 3024, 5040), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.926, frollprod(c(1:2,NA,4:10), 4, algo="exact"), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), output="non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run")
+options(datatable.verbose=FALSE)
+test(6000.927, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+test(6000.928, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+options(datatable.verbose=TRUE)
+test(6000.929, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", na.rm=TRUE), c(NA, NA, NA, 8, 40, 120, 840, 1680, 3024, 5040), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.930, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact"), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), output="non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run")
+test(6000.931, frollprod(1:3, 2), c(NA, 2, 6), output="frollprodFast: running for input length")
+test(6000.932, frollprod(1:3, 2, align="left"), c(2, 6, NA), output="frollfun: align")
+test(6000.933, frollprod(c(1,2,NA), 2), c(NA, 2, NA), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.934, frollprod(c(NA,2,3), 2), c(NA, NA, 6), output="non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway")
+test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="frolladaptiveprodFast: running for input length")
+test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, re-running with extra care for NFs")
+options(datatable.verbose=FALSE)
+# floating point overflow
+test(6000.941, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 5), c(NA,NA,NA,NA,Inf))
+test(6000.942, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 4), c(NA,NA,NA,Inf,Inf))
+test(6000.943, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 5), c(NA,NA,NA,NA,-Inf))
+test(6000.944, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 4), c(NA,NA,NA,Inf,-Inf))
+test(6000.945, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 5, algo="exact"), c(NA,NA,NA,NA,Inf))
+test(6000.946, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 4, algo="exact"), c(NA,NA,NA,Inf,Inf))
+test(6000.947, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 5, algo="exact"), c(NA,NA,NA,NA,-Inf))
+test(6000.948, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 4, algo="exact"), c(NA,NA,NA,Inf,-Inf))
+test(6000.949, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(5, 5), adaptive=TRUE), c(NA,NA,NA,NA,Inf))
+test(6000.950, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(4, 5), adaptive=TRUE), c(NA,NA,NA,Inf,Inf))
+test(6000.951, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(5, 5), adaptive=TRUE), c(NA,NA,NA,NA,-Inf))
+test(6000.952, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), adaptive=TRUE), c(NA,NA,NA,Inf,-Inf))
+test(6000.953, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(5, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,NA,Inf))
+test(6000.954, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,Inf))
+test(6000.955, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(5, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,NA,-Inf))
+test(6000.956, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,-Inf))
+
 # n==0, k==0, k[i]==0
 test(6001.111, frollmean(1:3, 0), c(NaN,NaN,NaN), options=c("datatable.verbose"=TRUE), output="window width of size 0")
 test(6001.112, frollmean(1:3, 0, fill=99), c(NaN,NaN,NaN))
@@ -1112,6 +1313,66 @@ test(6001.392, frollapply(FUN=max, adaptive=TRUE, as.numeric(1:3), c(2,0,2), fil
 test(6001.393, frollapply(FUN=max, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2)), c(NA,-Inf,NA))
 test(6001.394, frollapply(FUN=max, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE), c(NA,-Inf,2))
 test(6001.395, frollapply(FUN=max, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,-Inf,2))
+
+test(6001.411, frollmin(1:3, 0), c(Inf,Inf,Inf), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.412, frollmin(1:3, 0, fill=99), c(Inf,Inf,Inf))
+test(6001.413, frollmin(c(1:2,NA), 0), c(Inf,Inf,Inf))
+test(6001.414, frollmin(c(1:2,NA), 0, na.rm=TRUE), c(Inf,Inf,Inf))
+test(6001.415, frollmin(1:3, 0, algo="exact"), c(Inf,Inf,Inf), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.416, frollmin(c(1:2,NA), 0, algo="exact"), c(Inf,Inf,Inf))
+test(6001.417, frollmin(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(Inf,Inf,Inf))
+test(6001.421, frollmin(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,Inf,2))
+test(6001.422, frollmin(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,Inf,2))
+test(6001.423, frollmin(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,Inf,NA))
+test(6001.424, frollmin(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,Inf,2))
+test(6001.425, frollmin(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,Inf,2))
+test(6001.426, frollmin(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,Inf,2))
+test(6001.427, frollmin(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA,Inf,NA))
+test(6001.428, frollmin(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA,Inf,2))
+test(6001.429, frollmin(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(1,Inf,2))
+test(6001.430, frollmin(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,Inf,2))
+test(6001.481, frollapply(FUN=min, 1:3, 0), c(Inf,Inf,Inf))
+test(6001.482, frollapply(FUN=min, 1:3, 0, fill=99), c(Inf,Inf,Inf))
+test(6001.483, frollapply(FUN=min, c(1:2,NA_real_), 0), c(Inf,Inf,Inf))
+test(6001.484, frollapply(FUN=min, c(1:2,NA_real_), 0, na.rm=TRUE), c(Inf,Inf,Inf))
+test(6001.4910, frollapply(FUN=min, adaptive=TRUE, as.numeric(1:3), c(2,0,2)), c(NA,Inf,2))
+test(6001.4911, frollapply(FUN=min, adaptive=TRUE, list(as.numeric(1:3), as.numeric(2:4)), c(2,0,2)), list(c(NA,Inf,2), c(NA,Inf,3)))
+test(6001.4912, frollapply(FUN=min, adaptive=TRUE, as.numeric(1:3), list(c(2,0,2), c(0,2,0))), list(c(NA,Inf,2), c(Inf,1,Inf)))
+test(6001.4913, frollapply(FUN=min, adaptive=TRUE, list(as.numeric(1:3), as.numeric(2:4)), list(c(2,0,2), c(0,2,0))), list(c(NA,Inf,2), c(Inf,1,Inf), c(NA,Inf,3), c(Inf,2,Inf)))
+test(6001.492, frollapply(FUN=min, adaptive=TRUE, as.numeric(1:3), c(2,0,2), fill=99), c(99,Inf,2))
+test(6001.493, frollapply(FUN=min, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2)), c(NA,Inf,NA))
+test(6001.494, frollapply(FUN=min, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE), c(NA,Inf,2))
+test(6001.495, frollapply(FUN=min, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,Inf,2))
+
+test(6001.511, frollprod(1:3, 0), c(1,1,1), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.512, frollprod(1:3, 0, fill=99), c(1,1,1))
+test(6001.513, frollprod(c(1:2,NA), 0), c(1,1,1))
+test(6001.514, frollprod(c(1:2,NA), 0, na.rm=TRUE), c(1,1,1))
+test(6001.515, frollprod(1:3, 0, algo="exact"), c(1,1,1), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.516, frollprod(c(1:2,NA), 0, algo="exact"), c(1,1,1))
+test(6001.517, frollprod(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(1,1,1))
+test(6001.521, frollprod(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,1,6))
+test(6001.522, frollprod(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,1,6))
+test(6001.523, frollprod(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,1,NA))
+test(6001.524, frollprod(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,1,2))
+test(6001.525, frollprod(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,1,6))
+test(6001.526, frollprod(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,1,6))
+test(6001.527, frollprod(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA,1,NA))
+test(6001.528, frollprod(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA,1,2))
+test(6001.529, frollprod(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(1,1,2))
+test(6001.530, frollprod(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,1,2))
+test(6001.581, frollapply(FUN=prod, 1:3, 0), c(1,1,1))
+test(6001.582, frollapply(FUN=prod, 1:3, 0, fill=99), c(1,1,1))
+test(6001.583, frollapply(FUN=prod, c(1:2,NA), 0), c(1,1,1))
+test(6001.584, frollapply(FUN=prod, c(1:2,NA), 0, na.rm=TRUE), c(1,1,1))
+test(6001.5910, frollapply(FUN=prod, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,1,6))
+test(6001.5911, frollapply(FUN=prod, adaptive=TRUE, list(1:3,2:4), c(2,0,2)), list(c(NA,1,6), c(NA,1,12)))
+test(6001.5912, frollapply(FUN=prod, adaptive=TRUE, 1:3, list(c(2,0,2), c(0,2,0))), list(c(NA,1,6), c(1,2,1)))
+test(6001.5913, frollapply(FUN=prod, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,1,6), c(1,2,1), c(NA,1,12), c(1,6,1)))
+test(6001.592, frollapply(FUN=prod, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,1,6))
+test(6001.593, frollapply(FUN=prod, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,1,NA))
+test(6001.594, frollapply(FUN=prod, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,1,2))
+test(6001.595, frollapply(FUN=prod, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,1,2))
 
 ## partial
 x = 1:6/2
@@ -1761,7 +2022,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   }
   ans
 }
-base_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
   num.step = 0.001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -1812,7 +2073,7 @@ base_compare(x, n)
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
     num.step = 0.0001
     #### fun, align, na.rm, fill, algo, partial
     for (fun in funs) {
@@ -1827,7 +2088,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
                   if (na.rm)
                     next ## errors "not make sense"
                   if (any(!is.finite(x)))
-                    next ## do not test warnings (mean, sum) or incorrect expect results (max)
+                    next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
                 }
                 for (algo in algos) {
                   num <<- num + num.step
@@ -1910,7 +2171,7 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, align, na.rm, fill, algo
   for (fun in funs) {
@@ -1925,7 +2186,7 @@ afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
                 } ## errors "not make sense"
                 if (any(!is.finite(x))) {
                   next
-                } ## do not test warnings (mean, sum) or incorrect expect results (max)
+                } ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
               }
               for (algo in algos) {
                 num <<- num + num.step
