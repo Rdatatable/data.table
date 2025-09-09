@@ -32,19 +32,7 @@
     ```
     Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
 
-5. Adaptive rolling functions no longer tolerate `NA`s and negative values passed to `n` argument.
-    ```r
-    n = c(2,NA,2)
-    frollsum(1:3, n, adaptive=TRUE)
-    #Error in froll(fun = "sum", x = x, n = n, fill = fill, algo = algo, align = align,  :
-    #  'n' must be non-negative integer values (>= 0)
-    ```
-    If for some reason previous `NA`s behavior is needed, it can be achieved by replacing `NA`s with a value big enough
-    ```r
-    n = nafill(c(2,NA,2), fill=.Machine$integer.max)
-    frollsum(1:3, n, adaptive=TRUE)
-    ```
-
+5. Negative and missing values of `n=` in adaptive rolling functions trigger an error.
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
@@ -223,7 +211,7 @@
     #[1] TRUE
     ```
 
-18. New `frolladapt` helper function has been added to aid in preparation of adaptive length of rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
+18. New helper `frolladapt` to facilitate applying rolling functions over windows of fixed calendar-time width in irregularly-spaced data sets, thereby bypassing the need to "augment" such data with placeholder rows, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
     ```r
     idx = as.Date("2025-09-08") + c(0,1,4,5,6,7,9,10,14)
     dt = data.table(index=idx, value=seq_along(idx))
