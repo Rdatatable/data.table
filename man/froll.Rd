@@ -13,7 +13,7 @@
 \alias{rollmax}
 \title{Rolling functions}
 \description{
-  Fast rolling functions to calculate aggregates on sliding windows. For a user-defined rolling function see \code{\link{frollapply}}.
+  Fast rolling functions to calculate aggregates on a sliding window. For a user-defined rolling function see \code{\link{frollapply}}. For "time-aware" (irregularly spaced time series) rolling function see \code{\link{frolladapt}}.
 }
 \usage{
   frollmean(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
@@ -24,12 +24,10 @@
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
 }
 \arguments{
-  \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
-  \item{n}{ Integer, non-negative, vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Adaptive rolling functions also accept a list of integer vectors when applying multiple window sizes. }
+  \item{x}{ Integer, numeric or logical vector, coerced to numeric, on which sliding window calculates an aggregate function. It supports vectorized input, then it needs to be a \code{data.table}, \code{data.frame} or a \code{list}, in which case a rolling function is applied to each column/vector. }
+  \item{n}{ Integer, non-negative, rolling window size. This is the \emph{total} number of included values in aggregate function. In case of an adaptive rolling function window size has to be provided as vector for each indivdual value of \code{x}. It supports vectorized input, then needs to be a vector, or in case of an adaptive rolling a \code{list} of vectors. }
   \item{fill}{ Numeric; value to pad by. Defaults to \code{NA}. }
-  \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It
-    suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values.
-    It will use multiple cores where available. See Details for more information. }
+  \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values. It will use multiple cores where available. See Details for more information. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
   \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when calculating window? }
   \item{has.nf}{ Logical. If it is known whether \code{x} contains non-finite values (\code{NA}, \code{NaN}, \code{Inf}, \code{-Inf}), then setting this to \code{TRUE} or \code{FALSE} may speed up computation. Defaults to \code{NA}. See \emph{has.nf argument} section below for details. }
@@ -57,17 +55,6 @@
   When multiple columns or multiple windows width are provided, then they
   are run in parallel. The exception is for \code{algo="exact"}, which runs in
   parallel already.
-
-  \code{frollapply} computes rolling aggregate on arbitrary R functions.
-  The input \code{x} (first argument) to the function \code{FUN}
-  is coerced to \emph{numeric} beforehand and \code{FUN}
-  has to return a scalar \emph{numeric} value. Checks for that are made only
-  during the first iteration when \code{FUN} is evaluated. Edge cases can be
-  found in examples below. Any R function is supported, but it is not optimized
-  using our own C implementation -- hence, for example, using \code{frollapply}
-  to compute a rolling average is inefficient. It is also always single-threaded
-  because there is no thread-safe API to R's C \code{eval}. Nevertheless we've
-  seen the computation speed up vis-a-vis versions implemented in base R.
 
   Setting \code{options(datatable.verbose=TRUE)} will display various
   information about how rolling function processed. It will not print

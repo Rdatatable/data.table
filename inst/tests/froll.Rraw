@@ -1468,7 +1468,7 @@ test(6010.653, y = ans, x = lapply(
 ))
 rm(X, ans, n)
 
-## simplify simplifyList
+## simplify simplifylist
 test(6010.701, frollapply(1:5, 2, sum), c(NA,3L,5L,7L,9L))
 test(6010.702, frollapply(1:5, 2, sum, simplify=unlist), c(NA,3L,5L,7L,9L))
 test(6010.703, frollapply(1:5, 2, sum, simplify=FALSE), list(NA,3L,5L,7L,9L))
