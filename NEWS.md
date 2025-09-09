@@ -246,7 +246,7 @@
     #9: 2025-09-22     9         8           9.0
     ```
 
-19. New rolling functions, `frollmin` and `frollprod`, has been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
+19. New rolling functions, `frollmin` and `frollprod`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
 
 ### BUG FIXES
 
