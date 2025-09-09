@@ -3,7 +3,7 @@
 \alias{rollapply}
 \title{Rolling user-defined function}
 \description{
-  Fast rolling user-defined function (\emph{UDF}) to calculate on sliding window. Experimental. Please read, at least, \emph{caveats} section below.
+  Fast rolling user-defined function (\emph{UDF}) to calculate on a sliding window. Experimental. Please read, at least, \emph{caveats} section below. For "time-aware" (irregularly spaced time series) rolling function see \code{\link{frolladapt}}.
 }
 \usage{
   frollapply(X, N, FUN, \dots, by.column=TRUE, fill=NA,
@@ -11,9 +11,9 @@
     give.names=FALSE, simplify=TRUE, x, n)
 }
 \arguments{
-  \item{X}{ Atomic vector, \code{data.frame}, \code{data.table} or \code{list}. When \code{by.column=TRUE} (default) then a non-atomic \code{X} is processed as \emph{vectorized} input, so rolling function is calculated for each column/vector (non-atomic columns/vectors are not supported). When \code{by.column=FALSE} then \code{X} expects to be a data.frame, data.table or a list of equal length vectors (non-atomic columns/vectors are not supported), so rolling function is calculated for \code{X} as data.frame/data.table/list rather than atomic vector. It supports \emph{vectorized} input as well, passing list of data.frames/data.tables, but not list of lists. }
-  \item{N}{ Integer, non-negative, vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Adaptive rolling functions also accept a list of integer vectors when applying multiple window sizes, see \code{adaptive} argument description for details. In both \code{adaptive} cases \code{N} may also be a list, supporting \emph{vectorized} input, then rolling function is calculated for each element of the list. }
-  \item{FUN}{ The function to be applied on a subsets of \code{X}. }
+  \item{X}{ Atomic vector, \code{data.frame}, \code{data.table} or a \code{list} on which sliding window calculates \code{FUN} function. How the \code{X} is handled depends on the \code{by.column} argument. It supports vectorized input, for \code{by.column=TRUE} it needs to be a \code{data.table}, \code{data.frame} or a \code{list}, and for \code{by.column=FALSE} list of data.frames/data.tables, but not list of lists. }
+  \item{N}{ Integer, non-negative, rolling window size. This is the \emph{total} number of included values in aggregate function. In case of an adaptive rolling function window size has to be provided as a vector for each indivdual value of \code{X}. It supports vectorized input, then it needs to be a vector, or in case of an adaptive rolling a \code{list} of vectors. }
+  \item{FUN}{ The function to be applied on subsets of \code{X}. }
   \item{\dots}{ Extra arguments passed to \code{FUN}. Note that arguments passed to \dots cannot have same names as arguments of \code{frollapply}. }
   \item{by.column}{ Logical. When \code{TRUE} (default) then \code{X} of types list/data.frame/data.table is treated as vectorized input rather an object to apply rolling window on. Setting to \code{FALSE} allows rolling window to be applied on multiple variables, using data.frame, data.table or a list, as a whole. For details see \emph{\code{by.column} argument} section below. }
   \item{fill}{ An object; value to pad by. Defaults to \code{NA}. When \code{partial=TRUE} this argument is ignored. }
