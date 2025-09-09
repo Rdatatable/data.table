@@ -61,6 +61,7 @@ all_data.frame = function(x) all(vapply_1b(x, is.data.frame, use.names=FALSE))
 all_list = function(x) all(vapply_1b(x, is.list, use.names=FALSE))
 equal.lengths = function(x) length(unique(lengths(x))) <= 1L
 equal.nrows = function(x) length(unique(vapply(x, nrow, 0L))) <= 1L
+anyNAneg = function(x) anyNA(x) || any(x < 0L)
 
 frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE, give.names=FALSE, simplify=TRUE, x, n) {
   if (!missing(x)) {
@@ -147,7 +148,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     nnam = names(N) ## used for give.names
     if (!is.integer(N))
       N = as.integer(N)
-    if (anyNA(N))
+    if (anyNAneg(N))
       stopf("'N' must be non-negative integer values (>= 0)")
     nn = length(N) ## top level loop for vectorized n
   } else {
@@ -158,7 +159,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         stopf("length of integer vector(s) provided as list to 'N' argument must be equal to number of observations provided in 'X'")
       if (!is.integer(N))
         N = as.integer(N)
-      if (anyNA(N))
+      if (anyNAneg(N))
         stopf("'N' must be non-negative integer values (>= 0)")
       nn = 1L
       N = list(N)
@@ -172,7 +173,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         stopf("'N' must be an integer vector or list of integer vectors")
       if (!all(vapply_1b(N, is.integer, use.names=FALSE)))
         N = lapply(N, as.integer)
-      if (any(vapply_1b(N, anyNA, use.names=FALSE)))
+      if (any(vapply_1b(N, anyNAneg, use.names=FALSE)))
         stopf("'N' must be non-negative integer values (>= 0)")
       nn = length(N)
       nnam = names(N)
