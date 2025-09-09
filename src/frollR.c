@@ -216,7 +216,7 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
   int n = INTEGER(kobj)[0];
   if (n < 1L)
     error(_("'n' must be positive integer values (>= 1)"));
-  int *x = INTEGER_RO(xobj);
+  const int *x = INTEGER_RO(xobj);
   int64_t len = XLENGTH(xobj); // can be 0
 
   if (len && x[0] == NA_INTEGER)
@@ -239,7 +239,7 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
     if (an > n) {
       error(_("internal error: an > n, should not increment i in the first place")); // # nocov
     } else if (an == n) {           // an is same size as n, so we either have no gaps or will need to shrink an by j++
-      if (lhs == rhs+n-1) {         // no gaps - or a k gaps and a k dups?
+      if (lhs == rhs+n-1) {         // no gaps - or a n gaps and a n dups?
         ians[i] = n;                // could skip if pre-fill
         i++;
         j++;

@@ -169,7 +169,7 @@ Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
-- Wrapping the related columns in the `data.table` `list` alias `.`.
+- Wrapping the related columns in the `list` alias `.`.
 
 ```{r, eval=FALSE}
 Products[ProductReceived,
