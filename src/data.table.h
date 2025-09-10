@@ -376,6 +376,7 @@ SEXP gshift(SEXP, SEXP, SEXP, SEXP);
 SEXP nestedid(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setDTthreads(SEXP, SEXP, SEXP, SEXP);
 SEXP getDTthreads_R(SEXP);
+SEXP getDTthreads_C(SEXP, SEXP);
 SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);

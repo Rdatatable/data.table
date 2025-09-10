@@ -1261,13 +1261,32 @@ test(6010.016, frollapply(c(1, 9), 1L, FUN=function(x) copy(list(x)), simplify=F
 setDTthreads(old)
 
 #### test disabling parallelism
-use.fork = .Platform$OS.type!="windows" && getDTthreads()>1L
+ths = getDTthreads()
+use.fork = .Platform$OS.type!="windows" && ths > 1L
 if (use.fork) {
-  options(datatable.verbose=TRUE)
-  test(6010.021, frollapply(1:2, 1, identity), 1:2, output="running on multiple CPU threads using parallel::mcparallel")
-  options(datatable.verbose=FALSE)
-  test(6010.022, frollapply(1:2, 1, function(x) {warning("warn"); x}), 1:2) ## warning ignored
-  test(6010.023, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); x}), error="err:1\nerr:2")
+  ## throttle test start
+  test(6010.0201, frollapply(1:2, 1, copy), 1:2, output=sprintf("frollapply run on %d CPU threads throttled to 1 threads, input length 2", ths), options=c(datatable.verbose=TRUE))
+  test(6010.0202, frollapply(1:1024, 1, copy), 1:1024, output=sprintf("frollapply run on %d CPU threads throttled to 1 threads, input length 1024", ths), options=c(datatable.verbose=TRUE))
+  if (ths > 2L) { ## setDTthreads(8); ths = getDTthreads()
+    test(6010.0203, frollapply(1:1025, 1, copy), 1:1025, output=sprintf("frollapply run on %d CPU threads throttled to 2 threads, input length 1025", ths), options=c(datatable.verbose=TRUE))
+    test(6010.0204, frollapply(1:2048, 1, copy), 1:2048, output=sprintf("frollapply run on %d CPU threads throttled to 2 threads, input length 2048", ths), options=c(datatable.verbose=TRUE))
+  } else { ## CRAN: setDTthreads(2); ths = 2
+    test(6010.0205, frollapply(1:1025, 1, copy), 1:1025, output="frollapply running on 2 CPU threads", options=c(datatable.verbose=TRUE))
+    test(6010.0206, frollapply(1:2048, 1, copy), 1:2048, output="frollapply running on 2 CPU threads", options=c(datatable.verbose=TRUE))
+  }
+  if (ths > 3L) { ## setDTthreads(8); ths = getDTthreads()
+    test(6010.0207, frollapply(1:2049, 1, copy), 1:2049, output=sprintf("frollapply run on %d CPU threads throttled to 3 threads, input length 2049", ths), options=c(datatable.verbose=TRUE))
+    test(6010.0208, frollapply(1:3072, 1, copy), 1:3072, output=sprintf("frollapply run on %d CPU threads throttled to 3 threads, input length 3072", ths), options=c(datatable.verbose=TRUE))
+  } else if (ths > 2L) { ## setDTthreads(3); ths = 3
+    test(6010.0209, frollapply(1:2049, 1, copy), 1:2049, output="frollapply running on 3 CPU threads", options=c(datatable.verbose=TRUE))
+    test(6010.0210, frollapply(1:3072, 1, copy), 1:3072, output="frollapply running on 3 CPU threads", options=c(datatable.verbose=TRUE))
+  } else { ## CRAN: setDTthreads(2); ths = 2
+    test(6010.0211, frollapply(1:2049, 1, copy), 1:2049, output="frollapply running on 2 CPU threads", options=c(datatable.verbose=TRUE))
+    test(6010.0212, frollapply(1:3072, 1, copy), 1:3072, output="frollapply running on 2 CPU threads", options=c(datatable.verbose=TRUE))
+  }
+  ## throttle test end
+  test(6010.022, frollapply(1:2, 1, function(x) {warning("warn"); copy(x)}), 1:2) ## warning ignored
+  test(6010.023, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); copy(x)}), error="err:1") ## second error not printed for consistency to single threaded
   test(6010.024, frollapply(1:2, 1, function(x) stop("err")), error="err") ## unique error
 }
 old = setDTthreads(1L)
@@ -1279,9 +1298,9 @@ test(6010.027, frollapply(1:2, 1, function(x) {warning("warn:", tail(x,1)); copy
 test(6010.028, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); copy(x)}), error="err:1") ## only first
 setDTthreads(old)
 if (getDTthreads()>1L) { ## check for consistency
-  test(6010.036, frollapply(1:2, 1, function(x) {warning("warn"); copy(x)}), c(1L,2L))
-  test(6010.037, frollapply(1:2, 1, function(x) {warning("warn:", tail(x,1)); copy(x)}), c(1L,2L))
-  test(6010.038, frollapply(1:2, 1, function(x) {stop("err:", tail(x,1)); copy(x)}), error="err:1") ## only first
+  test(6010.036, frollapply(1:1025, 1, function(x) {warning("warn"); copy(x)}), 1:1025)
+  test(6010.037, frollapply(1:1025, 1, function(x) {warning("warn:", tail(x,1)); copy(x)}), 1:1025)
+  test(6010.038, frollapply(1:1025, 1, function(x) {stop("err:", tail(x,1)); copy(x)}), error="err:1") ## only first
 }
 
 #### corner cases from examples - handled properly after frollapply rewrite to R
@@ -1494,9 +1513,16 @@ test(6010.711, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(NA_in
 test(6010.712, as.null(frollapply(1:3, 1, function(x) if (x==1L) sum else if (x==2L) mean else `[`, simplify=TRUE)), NULL) ## as.null as we are only interested in codecov here
 test(6010.713, as.null(frollapply(1:3, 1, function(x) `[`, simplify = TRUE)), NULL) ## as.null as we are only interested in codecov here
 
-#### fixing .internal.selfref
+#### mutlithreading throttle caveats from manual: copy, fixing .internal.selfref
 use.fork = .Platform$OS.type!="windows" && getDTthreads()>1L
 if (use.fork) {
+  setDTthreads(throttle=1) ## disable throttle
+  old = setDTthreads(1)
+  test(6010.761, frollapply(c(1, 9), N=1L, FUN=identity), c(9,9)) ## unexpected
+  test(6010.762, frollapply(c(1, 9), N=1L, FUN=list), data.table(V1=c(9,9))) ## unexpected
+  setDTthreads(2)
+  test(6010.763, frollapply(c(1, 9), N=1L, FUN=identity), c(1,9)) ## good only because threads >= input
+  test(6010.764, frollapply(c(1, 5, 9), N=1L, FUN=identity), c(5,5,9)) ## unexpected again
   is.ok = function(x) {stopifnot(is.data.table(x)); capture.output(print(attr(x, ".internal.selfref", TRUE)))!="<pointer: (nil)>"}
   ans = frollapply(1:2, 2, data.table) ## default: fill=NA
   test(6010.770, is.ok(ans[[2L]])) ## mismatch of 'fill' type so simplify=TRUE did not run rbindlist but frollapply detected DT and fixed
@@ -1516,6 +1542,7 @@ if (use.fork) {
   test(6010.776, !is.ok(ans[[3L]]))
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=function(x) lapply(x, function(y) if (is.data.table(y)) setDT(y) else y))
   test(6010.777, is.ok(ans[[3L]])) ## fix inside frollapply via simplify
+  setDTthreads(throttle=1024) ## re-enable throttle
 }
 
 ## partial adaptive
