@@ -418,6 +418,7 @@ double wallclock(void)
  *     2.206MiB (2313045 bytes)
  *     38.69KiB (39615 bytes)
  *     214 bytes
+ *     1 byte
  *     0 bytes
  * The function returns a pointer to a static string buffer, so the caller
  * should not attempt to deallocate the buffer, or call this function from
