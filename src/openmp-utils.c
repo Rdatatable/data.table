@@ -80,9 +80,9 @@ static const char *mygetenv(const char *name, const char *unset)
 SEXP getDTthreads_C(SEXP n, SEXP throttle)
 {
   if(!isInteger(n) || INTEGER(n)[0] < 0)
-    error(_("%s must be non-negative integer"), "n");
+    internal_error(__func__, "n must be non-negative integer");  // # nocov
   if(!IS_TRUE_OR_FALSE(throttle))
-    error(_("%s must be TRUE or FALSE"), "throttle");
+    internal_error(__func__, "throttle must be TRUE or FALSE");  // # nocov
   return ScalarInteger(getDTthreads(INTEGER(n)[0], LOGICAL(throttle)[0]));
 }
 
