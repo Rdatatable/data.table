@@ -1,84 +1,74 @@
 #include "data.table.h"
 
-#define MEMCPY                                                                                                                                    \
-switch (TYPEOF(d)) {                                                                                                                              \
-case INTSXP: {                                                                                                                                    \
-  memcpy(INTEGER(d), INTEGER(s)+o, nrow*sizeof(int));                                                                                             \
-} break;                                                                                                                                          \
-case LGLSXP: {                                                                                                                                    \
-  memcpy(LOGICAL(d), LOGICAL(s)+o, nrow*sizeof(int));                                                                                             \
-} break;                                                                                                                                          \
-case REALSXP: {                                                                                                                                   \
-  memcpy(REAL(d), REAL(s)+o, nrow*sizeof(double));                                                                                                \
-} break;                                                                                                                                          \
-case STRSXP: {                                                                                                                                    \
-  for (int i=0; i<nrow; ++i)                                                                                                                      \
-    SET_STRING_ELT(d, i, STRING_ELT(s, o + i));                                                                                                   \
-} break;                                                                                                                                          \
-case VECSXP: {                                                                                                                                    \
-  for (int i=0; i<nrow; ++i)                                                                                                                      \
-    SET_VECTOR_ELT(d, i, VECTOR_ELT(s, o + i));                                                                                                   \
-} break;                                                                                                                                          \
-case CPLXSXP:  {                                                                                                                                  \
-  memcpy(COMPLEX(d), COMPLEX(s)+o, nrow*sizeof(Rcomplex));                                                                                        \
-} break;                                                                                                                                          \
-case RAWSXP : {                                                                                                                                   \
-  memcpy(RAW(d), RAW(s)+o, nrow*sizeof(Rbyte));                                                                                                   \
-} break;                                                                                                                                          \
-default: internal_error(__func__, "column type not supported in memcpyVector or memcpyDT function. All known types are supported so please report as bug."); \
-}                                                                                                                                                 \
+void MEMCPY_SEXP(SEXP dest, size_t offset, SEXP src, int count)
+{
+  switch (TYPEOF(dest)) {
+  case INTSXP: {
+    memcpy(INTEGER(dest), INTEGER_RO(src) + offset, count * sizeof(int));
+  } break;
+  case REALSXP: {
+    memcpy(REAL(dest), REAL_RO(src) + offset, count * sizeof(double));
+  } break;
+  case STRSXP: {
+    for (int i = 0; i < count; i++)
+      SET_STRING_ELT(dest, i, STRING_ELT(src, offset + i));
+  } break;
+  case VECSXP: {
+    for (int i = 0; i < count; i++)
+      SET_VECTOR_ELT(dest, i, VECTOR_ELT(src, offset + i));
+  } break;
+  case CPLXSXP: {
+    memcpy(COMPLEX(dest), COMPLEX_RO(src) + offset, count * sizeof(Rcomplex));
+  } break;
+  case RAWSXP: {
+    memcpy(RAW(dest), RAW_RO(src) + offset, count * sizeof(Rbyte));
+  } break;
+  default: internal_error(__func__, "column type not supported in memcpyVector or memcpyDT function. All known types are supported so please report as bug."); // # nocov
+  }
+}
 
 /*
  * memcpy src data into preallocated window
  * we don't call memcpyVector from memcpyDT because they are called in tight loop and we don't want to have extra branches inside
  */
 SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size) {
-  size_t o = INTEGER(offset)[0] - INTEGER(size)[0];
-  int nrow = LENGTH(dest);
-  SEXP d = dest, s = src;
-  MEMCPY
+  MEMCPY_SEXP(dest, INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], src, LENGTH(dest));
   return dest;
 }
 // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
 SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   //Rprintf("%d",1); // manual code coverage to confirm it is reached when marking nocov
-  size_t o = INTEGER(offset)[0] - INTEGER(size)[0];
-  int ncol = LENGTH(dest), nrow = LENGTH(VECTOR_ELT(dest, 0));
-  SEXP d, s;
-  for (int j=0; j<ncol; ++j) {
-    d = VECTOR_ELT(dest, j);
-    s = VECTOR_ELT(src, j);
-    MEMCPY
+  const int ncol = LENGTH(dest);
+  const int nrow = LENGTH(VECTOR_ELT(dest, 0));
+  for (int i = 0; i < ncol; i++) {
+    MEMCPY_SEXP(VECTOR_ELT(dest, i), INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], VECTOR_ELT(src, i), nrow);
   }
   return dest;
 }
 // # nocov end
 
 SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
-  size_t oi = INTEGER(offset)[0];
-  int nrow = INTEGER(size)[oi-1];
-  size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
-  SEXP d = dest, s = src;
-  SETLENGTH(d, nrow); // must be before MEMCPY because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
+  const size_t oi = INTEGER_RO(offset)[0];
+  const int nrow = INTEGER_RO(size)[oi - 1];
+  const size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
+  SETLENGTH(dest, nrow); // must be before MEMCPY_SEXP because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
   if (nrow) { // support k[i]==0
-    MEMCPY
+    MEMCPY_SEXP(dest, o, src, nrow);
   }
   return dest;
 }
 // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   //Rprintf("%d",2); // manual code coverage to confirm it is reached when marking nocov
-  size_t oi = INTEGER(offset)[0];
-  int nrow = INTEGER(size)[oi-1];
-  size_t o = oi - nrow;
-  int ncol = LENGTH(dest);
-  SEXP d, s;
-  for (int j=0; j<ncol; ++j) {
-    d = VECTOR_ELT(dest, j);
-    s = VECTOR_ELT(src, j);
+  size_t oi = INTEGER_RO(offset)[0];
+  const int nrow = INTEGER_RO(size)[oi - 1];
+  const size_t o = oi - nrow;
+  const int ncol = LENGTH(dest);
+  for (int i = 0; i < ncol; i++) {
+    SEXP d = VECTOR_ELT(dest, i);
     SETLENGTH(d, nrow);
     if (nrow) { // support k[i]==0
-      MEMCPY
+      MEMCPY_SEXP(d, o, VECTOR_ELT(src, i), nrow);
     }
   }
   return dest;
@@ -92,7 +82,7 @@ SEXP setgrowable(SEXP x) {
     SET_TRUELENGTH(x, LENGTH(x)); // important because gc() uses TRUELENGTH to keep counts
   } else {
     // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
-    for (int i=0; i<LENGTH(x); ++i) {
+    for (int i = 0; i < LENGTH(x); i++) {
       //Rprintf("%d",3); // manual code coverage to confirm it is reached when marking nocov
       SEXP col = VECTOR_ELT(x, i);
       SET_GROWABLE_BIT(col);
