@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-void MEMCPY_SEXP(SEXP dest, size_t offset, SEXP src, int count)
+static inline void MEMCPY_SEXP(SEXP dest, size_t offset, SEXP src, int count)
 {
   switch (TYPEOF(dest)) {
   case INTSXP: {
