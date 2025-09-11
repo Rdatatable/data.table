@@ -103,7 +103,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   if (!badaptive) {
     ik = INTEGER_RO(k);
   } else {
-    lk = (const int **)R_alloc(nk, sizeof(**lk));
+    lk = (const int **)R_alloc(nk, sizeof(*lk));
     for (int j=0; j<nk; j++)
       lk[j] = INTEGER_RO(VECTOR_ELT(k, j));
   }
@@ -133,7 +133,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(*dans));         // answer columns as array of ans_t struct
-  const double** dx = (const double**)R_alloc(nx, sizeof(**dx));  // pointers to source columns
+  const double** dx = (const double**)R_alloc(nx, sizeof(*dx));  // pointers to source columns
   uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(*inx));         // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
