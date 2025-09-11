@@ -157,6 +157,10 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     rfun = SUM;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "max")) {
     rfun = MAX;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "min")) {
+    rfun = MIN;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "prod")) {
+    rfun = PROD;
   } else {
     internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "fun", "rolling"); // # nocov
   }
