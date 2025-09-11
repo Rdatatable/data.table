@@ -77,6 +77,15 @@ static const char *mygetenv(const char *name, const char *unset)
   return (ans == NULL || ans[0] == '\0') ? unset : ans;
 }
 
+SEXP getDTthreads_C(SEXP n, SEXP throttle)
+{
+  if(!isInteger(n) || INTEGER(n)[0] < 0)
+    internal_error(__func__, "n must be non-negative integer");  // # nocov
+  if(!IS_TRUE_OR_FALSE(throttle))
+    internal_error(__func__, "throttle must be TRUE or FALSE");  // # nocov
+  return ScalarInteger(getDTthreads(INTEGER(n)[0], LOGICAL(throttle)[0]));
+}
+
 SEXP getDTthreads_R(SEXP verbose)
 {
   if(!IS_TRUE_OR_FALSE(verbose))

@@ -278,12 +278,10 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     warn.simplify = gettext("frollapply completed successfully but raised a warning when attempting to simplify results using our internal 'simplifylist' function. Be sure to provide 'fill' argument matching the type and shape of results returned by the your function. Use simplify=FALSE to obtain a list instead. If you believe your results could be automatically simplified please submit your use case as new issue in our issue tracker.\n%s")
   }
 
-  DTths = getDTthreads(FALSE)
-  use.fork = .Platform$OS.type!="windows" && DTths > 1L
-  if (verbose) {
-    if (use.fork) cat("frollapply running on multiple CPU threads using parallel::mcparallel\n")
-    else cat("frollapply running on single CPU thread\n")
-  }
+  DTths0 = getDTthreads(FALSE)
+  use.fork0 = .Platform$OS.type!="windows" && DTths0 > 1L
+  if (verbose && !use.fork0)
+    cat("frollapply running on single CPU thread\n")
   ans = vector("list", nx*nn)
   ## vectorized x
   for (i in seq_len(nx)) {
@@ -291,6 +289,19 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     thislen = len[i]
     if (!thislen)
       next
+    if (!use.fork0) {
+      use.fork = use.fork0
+    } else {
+      # throttle
+      DTths = getDTthreadsC(thislen, TRUE)
+      use.fork = DTths > 1L
+      if (verbose) {
+        if (DTths < DTths0)
+          catf("frollapply run on %d CPU threads throttled to %d threads, input length %d\n", DTths0, DTths, thislen)
+        else
+          catf("frollapply running on %d CPU threads\n", DTths)
+      }
+    }
     ## vectorized n
     for (j in seq_len(nn)) {
       thisn = N[[j]]
@@ -302,7 +313,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       }  else {
         tight0
       }
-      if (use.fork) { ## !windows && getDTthreads()>1L
+      if (use.fork) { ## !windows && getDTthreads()>1L, and then throttle using getDTthreadsC(thislen, TRUE)
         ths = min(DTths, length(ansi))
         ii = split(ansi, sort(rep_len(seq_len(ths), length(ansi)))) ## assign row indexes to threads
         jobs = vector("integer", ths)
@@ -343,7 +354,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
           if (any(fork.err)) {
             stopf(
               "frollapply received an error(s) when evaluating FUN:\n%s",
-              paste(unique(vapply_1c(fork.res[fork.err], function(err) attr(err, "condition", TRUE)[["message"]], use.names = FALSE)), collapse = "\n")
+              attr(fork.res[fork.err][[1L]], "condition", TRUE)[["message"]] ## print only first error for consistency to single threaded code
             )
           }
           thisans = unlist(fork.res, recursive = FALSE, use.names = FALSE)
