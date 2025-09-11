@@ -280,6 +280,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
 
   DTths0 = getDTthreads(FALSE)
   use.fork0 = .Platform$OS.type!="windows" && DTths0 > 1L
+  if (verbose && !use.fork0)
+    cat("frollapply running on single CPU thread\n")
   ans = vector("list", nx*nn)
   ## vectorized x
   for (i in seq_len(nx)) {
@@ -289,8 +291,6 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       next
     if (!use.fork0) {
       use.fork = use.fork0
-      if (verbose)
-        cat("frollapply running on single CPU thread\n")
     } else {
       # throttle
       DTths = getDTthreadsC(thislen, TRUE)
