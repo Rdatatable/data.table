@@ -92,3 +92,18 @@ SEXP setgrowable(SEXP x) {
   }
   return x;
 }
+
+SEXP funRetainsReference(SEXP fun, SEXP x) {
+  // NOTE: on R < 4.0, this is prone to false negatives due to NAMED not being true reference counts
+  SEXP container = PROTECT(allocVector(VECSXP, 1));
+  SEXP xdup = duplicate(x);
+  SET_VECTOR_ELT(container, 0, xdup);
+  // Precondition: xdup has a reference count of 1, so won't be modified by accident if fun() performs sub-assignment.
+  // If x is a list, its every element also has a reference count of 1.
+  SEXP call = PROTECT(lang2(fun, xdup));
+  // Environment shouldn't matter because the function and its argument are values, not symbols.
+  SEXP ret = PRORECT(eval(call, R_GlobalEnv));
+  // Does the condition still hold?
+  bool ret = false;
+  if (MAYBE_SHARED(xdup)) ret = true;
+}
