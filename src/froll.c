@@ -42,7 +42,7 @@ if (R_FINITE(x[i-k])) {                                        \
  * algo = 1: exact
  *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
-void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose) {
+void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -112,7 +112,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
  * rollmean implemented as single pass sliding window for align="right"
  * if non-finite detected re-run rollmean implemented as single pass sliding window with NA support
  */
-void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -210,7 +210,7 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
  * rollmean implemented as mean of k obs for each observation for align="right"
  * if non-finite detected and na.rm=TRUE then re-run NF aware rollmean
  */
-void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -302,7 +302,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 /* fast rolling sum - fast
  * same as mean fast
  */
-void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -398,7 +398,7 @@ if (nc == 0) {                                                 \
 /* fast rolling sum - exact
  * same as mean exact
  */
-void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -489,10 +489,10 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
       uint64_t ii = o+i-k+1;
       if (ISNAN(x[ii])) {
         if (ISNA(x[ii])) {
-          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
+          internal_error(__func__, "frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker"); // # nocov
           //iww = ii; ww = NA_REAL;
         } else if (ISNA(ww)) {
-          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
+          internal_error(__func__, "frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker"); // # nocov
           // do nothing because w > x[i]: NA > NaN
         } else { // no NA in window so NaN >= than any non-NA
           iww = ii; ww = R_NaN;
@@ -514,7 +514,7 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
  * new max is used to continue outer single pass as long as new max index is not leaving the running window
  * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
  */
-void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmaxFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -610,7 +610,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
  * otherwise we scan for NaN/NA and run either of two loops
  * has.nf=FALSE can give incorrect results if NAs provided, documented to be used with care
  */
-void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmaxExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -635,7 +635,7 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       ans->dbl_v[i] = w;
     }
   } else {
-    bool *isnan = malloc(nx*sizeof(*isnan));                        // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    bool *isnan = malloc(sizeof(*isnan) * nx);                      // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                   // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
       return;
@@ -700,10 +700,10 @@ static inline void wmin(const double * restrict x, uint64_t o, int k, double * r
       uint64_t ii = o+i-k+1;
       if (ISNAN(x[ii])) {
         if (ISNA(x[ii])) {
-          error("internal error: frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker\n"); // # nocov
+          internal_error(__func__, "frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker"); // # nocov
           //iww = ii; ww = NA_REAL;
         } else if (ISNA(ww)) {
-          error("internal error: frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker\n"); // # nocov
+          internal_error(__func__, "frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker"); // # nocov
           // do nothing because w > x[i]: NA > NaN
         } else { // no NA in window so NaN >= than any non-NA
           iww = ii; ww = R_NaN;
@@ -721,7 +721,7 @@ static inline void wmin(const double * restrict x, uint64_t o, int k, double * r
 /* fast rolling min - fast
  * see rolling max fast details
  */
-void frollminFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollminFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -814,7 +814,7 @@ void frollminFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 /* fast rolling min - exact
  * see rolling max exact details
  */
-void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -839,7 +839,7 @@ void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       ans->dbl_v[i] = w;
     }
   } else {
-    bool *isnan = malloc(nx*sizeof(bool));                          // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    bool *isnan = malloc(sizeof(*isnan) * nx);                       // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                   // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
       return;
@@ -892,7 +892,7 @@ void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 /* fast rolling prod - fast
  * same as mean fast
  */
-void frollprodFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -998,7 +998,7 @@ void frollprodFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 /* fast rolling prod - exact
  * same as mean exact
  */
-void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
