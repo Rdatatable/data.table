@@ -30,13 +30,7 @@ simplifylist = function(x, fill, ansmask) {
         all.ut = ans.ut
       } else if (typeof(fill) != ans.ut && all(c(typeof(fill), ans.ut) %in% c("double","integer","logical"))) { ## fill=-2, ans=1L
         filli = which(!ansmask)
-        if (ans.ut == "double") {
-          cast = as.numeric
-        } else if (ans.ut == "integer") {
-          cast = as.integer
-        } else if (ans.ut == "logical") {
-          cast = as.logical
-        }
+        cast = switch(ans.ut, double = as.numeric, integer = as.integer, logical = as.logical)
         x[filli] = rep_len(list(cast(fill)), length(filli))
         all.ut = ans.ut
       }
