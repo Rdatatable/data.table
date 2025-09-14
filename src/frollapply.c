@@ -1,7 +1,6 @@
 #include "data.table.h"
 
-static inline void MEMCPY_SEXP(SEXP dest, size_t offset, SEXP src, int count)
-{
+static inline void memcpy_sexp(SEXP dest, size_t offset, SEXP src, int count) {
   switch (TYPEOF(dest)) {
   case INTSXP: {
     memcpy(INTEGER(dest), INTEGER_RO(src) + offset, count * sizeof(int));
@@ -32,7 +31,7 @@ static inline void MEMCPY_SEXP(SEXP dest, size_t offset, SEXP src, int count)
  * we don't call memcpyVector from memcpyDT because they are called in tight loop and we don't want to have extra branches inside
  */
 SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size) {
-  MEMCPY_SEXP(dest, INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], src, LENGTH(dest));
+  memcpy_sexp(dest, INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], src, LENGTH(dest));
   return dest;
 }
 // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
@@ -41,7 +40,7 @@ SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   const int ncol = LENGTH(dest);
   const int nrow = LENGTH(VECTOR_ELT(dest, 0));
   for (int i = 0; i < ncol; i++) {
-    MEMCPY_SEXP(VECTOR_ELT(dest, i), INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], VECTOR_ELT(src, i), nrow);
+    memcpy_sexp(VECTOR_ELT(dest, i), INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], VECTOR_ELT(src, i), nrow);
   }
   return dest;
 }
@@ -51,9 +50,9 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   const size_t oi = INTEGER_RO(offset)[0];
   const int nrow = INTEGER_RO(size)[oi - 1];
   const size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
-  SETLENGTH(dest, nrow); // must be before MEMCPY_SEXP because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
+  SETLENGTH(dest, nrow); // must be before memcpy_sexp because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
   if (nrow) { // support k[i]==0
-    MEMCPY_SEXP(dest, o, src, nrow);
+    memcpy_sexp(dest, o, src, nrow);
   }
   return dest;
 }
@@ -68,7 +67,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
     SEXP d = VECTOR_ELT(dest, i);
     SETLENGTH(d, nrow);
     if (nrow) { // support k[i]==0
-      MEMCPY_SEXP(d, o, VECTOR_ELT(src, i), nrow);
+      memcpy_sexp(d, o, VECTOR_ELT(src, i), nrow);
     }
   }
   return dest;

@@ -55,7 +55,7 @@ frollapply(c(1, 9), N=1L, FUN=list) ## unexpected
 #   <num>
 #1:     9
 #2:     9
-setDTthreads(2)
+setDTthreads(2, throttle=1) ## disable throttle
 frollapply(c(1, 9), N=1L, FUN=identity) ## good only because threads >= input
 #[1] 1 9
 frollapply(c(1, 5, 9), N=1L, FUN=identity) ## unexpected again
@@ -86,6 +86,7 @@ setDTthreads(old)
 \preformatted{
 is.ok = function(x) {stopifnot(is.data.table(x)); format(attr(x, ".internal.selfref", TRUE))!="<pointer: (nil)>"}
 
+setDTthreads(2, throttle=1) ## disable throttle
 ## frollapply will fix DT in most cases
 ans = frollapply(1:2, 2, data.table, fill=data.table(NA))
 is.ok(ans)
@@ -134,27 +135,27 @@ is.ok(ans[[3L]])
   \itemize{
     \item When using \code{by.column=FALSE} one can subset dataset before passing it to \code{X} to keep only columns relevant for the computation:
 \preformatted{
-x = setDT(lapply(1:100, function(x) as.double(rep.int(x,1e4L))))
-f = function(x) sum(x$V1*x$V2)
+x = setDT(lapply(1:1000, function(x) as.double(rep.int(x,1e4L))))
+f = function(x) sum(x$V1 * x$V2)
 system.time(frollapply(x, 100, f, by.column=FALSE))
 #   user  system elapsed
-#  0.157   0.067   0.081
+#  0.689   0.180   0.164
 system.time(frollapply(x[, c("V1","V2"), with=FALSE], 100, f, by.column=FALSE))
 #   user  system elapsed
-#  0.096   0.054   0.054
+#  0.057   0.142   0.070
 }
-    \item Avoid partial, see \emph{\code{partial} argument} section of \code{\link{froll}} manual.
+    \item Avoid \code{partial} argument, see \emph{\code{partial} argument} section of \code{\link{froll}} manual.
     \item Avoid \code{simplify=TRUE} and provide a function instead:
 \preformatted{
 x = rnorm(1e5)
 system.time(frollapply(x, 2, function(x) 1L, simplify=TRUE))
 #   user  system elapsed
-#  0.308   0.076   0.196
+#  0.212   0.188   0.156
 system.time(frollapply(x, 2, function(x) 1L, simplify=unlist))
 #   user  system elapsed
-#  0.214   0.080   0.088
+#  0.105   0.167   0.056
 }
-    \item CPU threads utilization in \code{frollapply} can be controlled by \code{\link{setDTthreads}}, which by default uses half of available CPU threads.
+    \item CPU threads utilization in \code{frollapply} can be controlled by \code{\link{setDTthreads}}, which by default uses half of available CPU threads. Usage of multiple CPU threads will be throttled for small input, as described in \code{\link{setDTthreads}} manual.
     \item Optimization that avoids repeated allocation of a window subset (see \emph{Implementation} section for details), in case of adaptive rolling function, depends on R's \emph{growable bit}. This feature has been added in R 3.4.0. Adaptive \code{frollapply} will still work on older versions of R but, due to repeated allocation of window subset, it will be much slower.
     \item Parallel computation of \code{FUN} is handled by \code{parallel} package (part of R core since 2.14.0) and its \emph{fork} mechanism. \emph{Fork} is not available on Windows OS therefore it will be always single threaded on that platform.
   }
@@ -170,61 +171,61 @@ fill1 = data.table(min=NA_integer_, max=NA_integer_)
 fill2 = list(min=NA_integer_, max=NA_integer_)
 system.time(a<-frollapply(1:1e4, 100, fun1, fill=fill1))
 #   user  system elapsed
-#  2.047   0.337   0.788
+#  1.064   0.765   0.421
 system.time(b<-frollapply(1:1e4, 100, fun2, fill=fill2))
 #   user  system elapsed
-#  0.205   0.125   0.138
-all.equal(a,  b)
+#  0.082   0.221   0.112
+all.equal(a, b)
 #[1] TRUE
 }
-    \item Code that is not dependent on rolling window should be taken out as pre or post computation:
+    \item Code that is not dependent on a rolling window should be taken out as pre or post computation:
 \preformatted{
 x = c(1L,3L)
 system.time(for (i in 1:1e6) sum(x+1L))
 #   user  system elapsed
-#  0.308   0.004   0.312
+#  0.218   0.002   0.221
 system.time({y = x+1L; for (i in 1:1e6) sum(y)})
 #   user  system elapsed
-#  0.203   0.000   0.202
+#  0.160   0.001   0.161
 }
     \item Being strict about data types removes the need for R to handle them automatically:
 \preformatted{
 x = vector("integer", 1e6)
 system.time(for (i in 1:1e6) x[i] = NA)
 #   user  system elapsed
-#  0.160   0.000   0.161
+#  0.114   0.000   0.114
 system.time(for (i in 1:1e6) x[i] = NA_integer_)
 #   user  system elapsed
-#   0.05    0.00    0.05
+#  0.029   0.000   0.030
 }
     \item If a function calls another function under the hood, it is usually better to call the latter one directly:
 \preformatted{
 x = matrix(c(1L,2L,3L,4L), c(2L,2L))
 system.time(for (i in 1:1e4) colSums(x))
 #   user  system elapsed
-#  0.051   0.000   0.051
+#  0.033   0.000   0.033
 system.time(for (i in 1:1e4) .colSums(x, 2L, 2L))
 #   user  system elapsed
-#  0.015   0.000   0.015
+#  0.010   0.002   0.012
 }
-    \item There are many functions that may be optimized for scaling up for bigger input, yet for a small input they may carry bigger overhead comparing to their simpler counterparts. One may need to experiment on own data, but low overhead functions are likely be faster when evaluating in many iterations:
+    \item There are many functions that may be optimized for scaling up for bigger input, yet for a small input they may carry bigger overhead comparing to their simpler counterparts. One may need to experiment on own data, but low overhead functions are likely to be faster when evaluating in many iterations:
 \preformatted{
 ## uniqueN
 x = c(1L,3L,5L)
 system.time(for (i in 1:1e4) uniqueN(x))
 #   user  system elapsed
-#  0.156   0.004   0.160
+#  0.078   0.001   0.080
 system.time(for (i in 1:1e4) length(unique(x)))
 #   user  system elapsed
-#  0.040   0.004   0.043
+#  0.018   0.000   0.018
 ## column subset
 x = data.table(v1 = c(1L,3L,5L))
 system.time(for (i in 1:1e4) x[, v1])
 #   user  system elapsed
-#  3.197   0.004   3.201
+#  1.952   0.011   1.964
 system.time(for (i in 1:1e4) x[["v1"]])
 #   user  system elapsed
-#  0.063   0.000   0.063
+#  0.036   0.000   0.035
 }
   }
 }
