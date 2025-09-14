@@ -173,11 +173,6 @@ frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
 frollmax(c(1,2,NA,4,5), 2)
 frollmax(c(1,2,NA,4,5), 2, has.nf=FALSE)
 
-# frollapply
-frollapply(d, 3:4, sum)
-f = function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...)
-frollapply(d, 3:4, f, na.rm=TRUE)
-
 # performance vs exactness
 set.seed(108)
 x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
