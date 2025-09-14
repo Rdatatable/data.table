@@ -54,6 +54,39 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
 }
 
+#undef MEAN_WINDOW_STEP_VALUE
+#define MEAN_WINDOW_STEP_VALUE                                   \
+  if (wn>0) {                                                    \
+    if (narm) {                                                  \
+      if (wpinf > 0) {                                           \
+        if (wninf > 0) {                                         \
+          ans->dbl_v[i] = R_NaN;                                 \
+        } else {                                                 \
+          ans->dbl_v[i] = R_PosInf;                              \
+        }                                                        \
+      } else if (wninf > 0) {                                    \
+        ans->dbl_v[i] = R_NegInf;                                \
+      } else {                                                   \
+        int thisk = k[i] - ((int) wn);                           \
+        ans->dbl_v[i] = thisk==0 ? R_NaN : ws/thisk;             \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  } else {                                                       \
+    if (wpinf > 0) {                                             \
+      if (wninf > 0) {                                           \
+        ans->dbl_v[i] = R_NaN;                                   \
+      } else {                                                   \
+        ans->dbl_v[i] = R_PosInf;                                \
+      }                                                          \
+    } else if (wninf > 0) {                                      \
+      ans->dbl_v[i] = R_NegInf;                                  \
+    } else {                                                     \
+      ans->dbl_v[i] = ws/k[i]; /* for k[i]==0 it turns into 0/0, as expected */ \
+    }                                                            \
+  }
+
 /* fast rolling adaptive mean - fast
  * when no info on NF (has.nf argument) then assume no NFs run faster version
  * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`
@@ -128,40 +161,6 @@ void frolladaptivemeanFast(const double *x, uint64_t nx, ans_t *ans, const int *
       cpinf[i] = pinf;
       cninf[i] = ninf;
     }
-
-#undef MEAN_WINDOW_STEP_VALUE
-#define MEAN_WINDOW_STEP_VALUE                                     \
-    if (wn>0) {                                                    \
-      if (narm) {                                                  \
-        if (wpinf > 0) {                                           \
-          if (wninf > 0) {                                         \
-            ans->dbl_v[i] = R_NaN;                                 \
-          } else {                                                 \
-            ans->dbl_v[i] = R_PosInf;                              \
-          }                                                        \
-        } else if (wninf > 0) {                                    \
-          ans->dbl_v[i] = R_NegInf;                                \
-        } else {                                                   \
-          int thisk = k[i] - ((int) wn);                           \
-          ans->dbl_v[i] = thisk==0 ? R_NaN : ws/thisk;             \
-        }                                                          \
-      } else {                                                     \
-        ans->dbl_v[i] = NA_REAL;                                   \
-      }                                                            \
-    } else {                                                       \
-      if (wpinf > 0) {                                             \
-        if (wninf > 0) {                                           \
-          ans->dbl_v[i] = R_NaN;                                   \
-        } else {                                                   \
-          ans->dbl_v[i] = R_PosInf;                                \
-        }                                                          \
-      } else if (wninf > 0) {                                      \
-        ans->dbl_v[i] = R_NegInf;                                  \
-      } else {                                                     \
-        ans->dbl_v[i] = ws/k[i]; /* for k[i]==0 it turns into 0/0, as expected */ \
-      }                                                            \
-    }
-
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate final answer
       uint64_t wn, wpinf, wninf;
@@ -279,6 +278,39 @@ void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int 
   } // end of truehasnf
 }
 
+#undef SUM_WINDOW_STEP_VALUE
+#define SUM_WINDOW_STEP_VALUE                                    \
+  if (wn>0) {                                                    \
+    if (narm) {                                                  \
+      if (wpinf > 0) {                                           \
+        if (wninf > 0) {                                         \
+          ans->dbl_v[i] = R_NaN;                                 \
+        } else {                                                 \
+          ans->dbl_v[i] = R_PosInf;                              \
+        }                                                        \
+      } else if (wninf > 0) {                                    \
+        ans->dbl_v[i] = R_NegInf;                                \
+      } else {                                                   \
+        int thisk = k[i] - ((int) wn);                           \
+        ans->dbl_v[i] = thisk==0 ? 0.0 : ws;                     \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  } else {                                                       \
+    if (wpinf > 0) {                                             \
+      if (wninf > 0) {                                           \
+        ans->dbl_v[i] = R_NaN;                                   \
+      } else {                                                   \
+        ans->dbl_v[i] = R_PosInf;                                \
+      }                                                          \
+    } else if (wninf > 0) {                                      \
+      ans->dbl_v[i] = R_NegInf;                                  \
+    } else {                                                     \
+      ans->dbl_v[i] = ws; /* for k[i]==0 it turns into 0, as expected */ \
+    }                                                            \
+  }
+
 /* fast rolling adaptive sum - fast
  * same as adaptive mean fast
  */
@@ -351,40 +383,6 @@ void frolladaptivesumFast(const double *x, uint64_t nx, ans_t *ans, const int *k
       cpinf[i] = pinf;
       cninf[i] = ninf;
     }
-
-#undef SUM_WINDOW_STEP_VALUE
-#define SUM_WINDOW_STEP_VALUE                                      \
-    if (wn>0) {                                                    \
-      if (narm) {                                                  \
-        if (wpinf > 0) {                                           \
-          if (wninf > 0) {                                         \
-            ans->dbl_v[i] = R_NaN;                                 \
-          } else {                                                 \
-            ans->dbl_v[i] = R_PosInf;                              \
-          }                                                        \
-        } else if (wninf > 0) {                                    \
-          ans->dbl_v[i] = R_NegInf;                                \
-        } else {                                                   \
-          int thisk = k[i] - ((int) wn);                           \
-          ans->dbl_v[i] = thisk==0 ? 0.0 : ws;                     \
-        }                                                          \
-      } else {                                                     \
-        ans->dbl_v[i] = NA_REAL;                                   \
-      }                                                            \
-    } else {                                                       \
-      if (wpinf > 0) {                                             \
-        if (wninf > 0) {                                           \
-          ans->dbl_v[i] = R_NaN;                                   \
-        } else {                                                   \
-          ans->dbl_v[i] = R_PosInf;                                \
-        }                                                          \
-      } else if (wninf > 0) {                                      \
-        ans->dbl_v[i] = R_NegInf;                                  \
-      } else {                                                     \
-        ans->dbl_v[i] = ws; /* for k[i]==0 it turns into 0, as expected */ \
-      }                                                            \
-    }
-
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       uint64_t wn, wpinf, wninf;
@@ -637,6 +635,27 @@ void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *
   }
 }
 
+#undef PROD_WINDOW_STEP_VALUE
+#define PROD_WINDOW_STEP_VALUE                                   \
+  if (wn>0) {                                                    \
+    if (narm) {                                                  \
+      if (wpinf == 0 && wninf == 0) {                            \
+        int thisk = k[i] - ((int) wn);                           \
+        ans->dbl_v[i] = thisk==0 ? 1.0 : (double) ws;            \
+      } else {                                                   \
+        ans->dbl_v[i] = (wninf+(ws<0))%2 ? R_NegInf : R_PosInf;  \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  } else {                                                       \
+    if (wpinf == 0 && wninf == 0) {                              \
+      ans->dbl_v[i] = (double) ws; /* k[i]==0 produces 1.0 */    \
+    } else {                                                     \
+      ans->dbl_v[i] = (wninf+(ws<0))%2 ? R_NegInf : R_PosInf;    \
+    }                                                            \
+  }
+
 /* fast rolling adaptive prod - fast
  * same as adaptive mean fast
  */
@@ -709,28 +728,6 @@ void frolladaptiveprodFast(const double *x, uint64_t nx, ans_t *ans, const int *
       cpinf[i] = pinf;
       cninf[i] = ninf;
     }
-
-#undef PROD_WINDOW_STEP_VALUE
-#define PROD_WINDOW_STEP_VALUE                                      \
-    if (wn>0) {                                                    \
-      if (narm) {                                                  \
-        if (wpinf == 0 && wninf == 0) {                            \
-          int thisk = k[i] - ((int) wn);                           \
-          ans->dbl_v[i] = thisk==0 ? 1.0 : (double) ws;            \
-        } else {                                                   \
-          ans->dbl_v[i] = (wninf+(ws<0))%2 ? R_NegInf : R_PosInf;  \
-        }                                                          \
-      } else {                                                     \
-        ans->dbl_v[i] = NA_REAL;                                   \
-      }                                                            \
-    } else {                                                       \
-      if (wpinf == 0 && wninf == 0) {                              \
-        ans->dbl_v[i] = (double) ws; /* k[i]==0 produces 1.0 */    \
-      } else {                                                     \
-        ans->dbl_v[i] = (wninf+(ws<0))%2 ? R_NegInf : R_PosInf;    \
-      }                                                            \
-    }
-
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       uint64_t wn, wpinf, wninf;
