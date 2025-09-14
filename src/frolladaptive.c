@@ -948,8 +948,8 @@ void frolladaptivemedianExact(const double *x, uint64_t nx, ans_t *ans, const in
       }
     }
   } else {
-    int *rollnc = malloc(sizeof(*rollnc) * nx); // for frolladaptiveNAExact we need calloc, for frolladaptiveNAFast malloc is ok
     //int *rollnc = calloc(nx, sizeof(*rollnc)); // use when frolladaptiveFast will be implemented
+    int *rollnc = malloc(sizeof(*rollnc) * nx); // for frolladaptiveNAExact we need calloc, for frolladaptiveNAFast malloc is ok
     if (!rollnc) { // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for rollnc", __func__); // raise error
       free(xx);
@@ -961,8 +961,8 @@ void frolladaptivemedianExact(const double *x, uint64_t nx, ans_t *ans, const in
       free(rollnc); free(xx);
       return;
     } // # nocov end
-    int nc = frolladaptiveNAFast(x, nx, k, rollnc, isna);
     //int nc = frolladaptiveNAExact(x, nx, k, rollnc, isna); // use when frolladaptiveFast will be implemented
+    int nc = frolladaptiveNAFast(x, nx, k, rollnc, isna);
     if (!nc) { // total NA for x
       if (verbose)
         snprintf(end(ans->message[0]), 500, _("%s: no NAs detected, redirecting to itself using has.nf=FALSE\n"), "frolladaptivemedianExact");
