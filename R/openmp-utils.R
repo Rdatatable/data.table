@@ -13,3 +13,8 @@ setDTthreads = function(threads=NULL, restore_after_fork=NULL, percent=NULL, thr
 getDTthreads = function(verbose=getOption("datatable.verbose")) {
   .Call(CgetDTthreads, verbose)
 }
+
+# internal, same as C's getDTthreads so can be used for parallel package from R
+getDTthreadsC = function(n, throttle) {
+  .Call(CgetDTthreadsC, n, throttle)
+}

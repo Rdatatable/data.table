@@ -120,6 +120,7 @@ R_CallMethodDef callMethods[] = {
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
+{"CgetDTthreadsC", (DL_FUNC) &getDTthreads_C, -1},
 {"CnqRecreateIndices", (DL_FUNC) &nqRecreateIndices, -1},
 {"Cfsort", (DL_FUNC) &fsort, -1},
 {"Cinrange", (DL_FUNC) &inrange, -1},
