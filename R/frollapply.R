@@ -432,12 +432,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
           warning = function(w) warningf(warn.simplify, w[["message"]])
         )
       } else if (isTRUE(simplify)) {
-        ans[[thisansi]] = simplifylist(ans[[thisansi]], fill, ansmask)
-        #ans[[thisansi]] = tryCatch(
-        #  simplifylist(ans[[thisansi]], fill, ansmask),
-        #  error = function(e) stopf(err.simplify, e[["message"]]),
-        #  warning = function(w) warningf(warn.simplify, w[["message"]])
-        #)
+        ans[[thisansi]] = tryCatch(
+          simplifylist(ans[[thisansi]], fill, ansmask),
+          error = function(e) stopf(err.simplify, e[["message"]]),
+          warning = function(w) warningf(warn.simplify, w[["message"]])
+        )
       }
     }
   }
