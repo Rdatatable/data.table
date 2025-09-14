@@ -36,12 +36,9 @@ simplifylist = function(x, fill, ansmask) {
       }
     }
   }
-  all.t = vapply_1c(x, typeof, use.names=FALSE)
-  all.ut = unique(all.t)
-  l = lengths(x)
-  ul = unique(l)
+  all.ut = unique(vapply_1c(x, typeof, use.names=FALSE))
   if ((length(all.ut) == 1L) && all(all.ut %in% c("integer","logical","double","complex","character","raw"))) {
-    if (identical(ul, 1L)) { ## length 1
+    if (identical(unique(lengths(x)), 1L)) { ## length 1
       return(unlist(x, recursive=FALSE, use.names=FALSE))
     } else if (equal.lengths(x)) { ## length 2+ and equal
       return(rbindlist(lapply(x, as.list)))
