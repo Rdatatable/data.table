@@ -120,6 +120,7 @@ R_CallMethodDef callMethods[] = {
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
+{"CgetDTthreadsC", (DL_FUNC) &getDTthreads_C, -1},
 {"CnqRecreateIndices", (DL_FUNC) &nqRecreateIndices, -1},
 {"Cfsort", (DL_FUNC) &fsort, -1},
 {"Cinrange", (DL_FUNC) &inrange, -1},
@@ -138,7 +139,6 @@ R_CallMethodDef callMethods[] = {
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},
-{"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"CcoerceAs", (DL_FUNC) &coerceAs, -1},
@@ -154,6 +154,12 @@ R_CallMethodDef callMethods[] = {
 {"CcopyCols", (DL_FUNC) &copyCols, -1},
 {"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
 {"Cfrev", (DL_FUNC) &frev, -1},
+{"CmemcpyVector", (DL_FUNC)&memcpyVector, -1},
+{"CmemcpyDT", (DL_FUNC)&memcpyDT, -1},
+{"CmemcpyVectoradaptive", (DL_FUNC)&memcpyVectoradaptive, -1},
+{"CmemcpyDTadaptive", (DL_FUNC)&memcpyDTadaptive, -1},
+{"Csetgrowable", (DL_FUNC)&setgrowable, -1},
+{"Cfrolladapt", (DL_FUNC)&frolladapt, -1},
 {NULL, NULL, 0}
 };
 

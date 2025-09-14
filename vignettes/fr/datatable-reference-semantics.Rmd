@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -24,13 +24,13 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-Cette vignette traite de la sémantique de référence de *data.table* qui permet d'ajouter, de mettre à jour ou de supprimer des colonnes d'un *data.table par référence*, ainsi que de les combiner avec `i` et `by`. Elle s'adresse à ceux qui sont déjà familiers avec la syntaxe de *data.table*, avec sa forme générale, avec la façon de filtrer des lignes avec `i`, de sélectionner et calculer sur des colonnes, et d'effectuer des agrégations par groupe. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire la vignette *"Introduction à data.table "*.
+Cette vignette traite de la sémantique de référence de *data.table* qui permet d'ajouter, de mettre à jour ou de supprimer des colonnes d'un *data.table par référence*, ainsi que de les combiner avec `i` et `by`. Elle s'adresse à ceux qui sont déjà familiers avec la syntaxe de *data.table*, avec sa forme générale, avec la façon de filtrer des lignes avec `i`, de sélectionner et calculer sur des colonnes, et d'effectuer des agrégations par groupe. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
 ***
 
 ## Données {#data}
 
-Nous utiliserons les mêmes données `flights` que dans la vignette *"Introduction à data.table"*.
+Nous utiliserons les mêmes données `flights` que dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
 ```{r echo = FALSE}
 options(with = 100L)
@@ -171,7 +171,7 @@ Nous constatons qu'il y a au total `25` valeurs uniques dans les données. Les h
 flights[hour == 24L, hour := 0L]
 ```
 
-* Nous pouvons utiliser `i` avec `:=` dans `j` de la même manière que nous l'avons déjà vu dans la vignette *"Introduction à data.table "*.
+* Nous pouvons utiliser `i` avec `:=` dans `j` de la même manière que nous l'avons déjà vu dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
 * La colonne `hour` est remplacée par `0` uniquement sur les *indices de ligne* où la condition `hour == 24L` spécifiée dans `i` est évaluée à `TRUE`.
 
@@ -237,7 +237,7 @@ head(flights)
 
 * Nous fournissons les colonnes pour le regroupement de la même manière qu’indiqué dans la vignette *Introduction à data.table*. Pour chaque groupe, `max(speed)` est calculé, ce qui renvoie une seule valeur. Cette valeur est recyclée pour s'adapter à la longueur du groupe. Encore une fois, aucune copie n'est faite. La *data.table* `flights` est modifié directement « sur place ».
 
-* Nous aurions également pu fournir à `by` un *vecteur de caractères* comme nous l'avons vu dans la vignette *Introduction à data.table*, par exemple en utilisant `by = c("origin", "dest")`.
+* Nous aurions également pu fournir à `by` un *vecteur de caractères* comme nous l'avons vu dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html), par exemple en utilisant `by = c("origin", "dest")`.
 
 # 
 
@@ -256,7 +256,7 @@ head(flights)
 
 * Notez que puisque nous autorisons l'assignation par référence sans mettre les noms de colonnes entre guillemets lorsqu'il n'y a qu'une seule colonne comme expliqué dans la [Section 2c](#delete-convenience), nous ne pouvons pas faire `out_cols := lapply(.SD, max)`. Cela rajouterait une nouvelle colonne nommée `out_col`. À la place, nous devrions utiliser soit `c(out_cols)`, soit simplement `(out_cols)`. Envelopper le nom de la variable dans des parenthèses `(` est suffisant pour différencier les deux cas.
 
-* La forme `LHS := RHS` nous permet d'opérer sur plusieurs colonnes. Dans le membre de droite (RHS), pour calculer le `max` sur les colonnes spécifiées dans `.SDcols`, nous utilisons la fonction de base `lapply()` avec `.SD` de la même manière que nous l'avons vu précédemment dans la vignette *"Introduction to data.table "*. Ceci renvoie une liste de deux éléments, contenant la valeur maximale correspondant à `dep_delay` et `arr_delay` pour chaque groupe.
+* La forme `LHS := RHS` nous permet d'opérer sur plusieurs colonnes. Dans le membre de droite (RHS), pour calculer le `max` sur les colonnes spécifiées dans `.SDcols`, nous utilisons la fonction de base `lapply()` avec `.SD` de la même manière que nous l'avons vu précédemment dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html). Ceci renvoie une liste de deux éléments, contenant la valeur maximale correspondant à `dep_delay` et `arr_delay` pour chaque groupe.
 
 # 
 
@@ -375,7 +375,7 @@ Cependant, nous pourrions encore améliorer cette fonctionnalité en faisant une
 
 * Il est utilisé pour *ajouter/mettre à jour/supprimer* des colonnes par référence.
 
-* Nous avons aussi vu comment utiliser `:=` avec `i` et `by` de la même manière que nous l'avons vu dans la vignette *Introduction à data.table*. Nous pouvons de la même manière utiliser `keyby`, enchaîner des opérations, et passer des expressions à `by` de la même manière. La syntaxe est *consistante*.
+* Nous avons aussi vu comment utiliser `:=` avec `i` et `by` de la même manière que nous l'avons vu dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html). Nous pouvons de la même manière utiliser `keyby`, enchaîner des opérations, et passer des expressions à `by` de la même manière. La syntaxe est *consistante*.
 
 * Nous pouvons utiliser `:=` pour ses effets secondaires ou utiliser `copy()` pour ne pas modifier l'objet original tout en mettant à jour par référence.
 
@@ -385,6 +385,6 @@ setDTthreads(.old.th)
 
 # 
 
-Jusqu'à présent, nous avons vu beaucoup d’opérations en `j`, et comment les combiner avec `by`, mais peu de choses concernant `i`. Tournons notre attention vers `i` dans la prochaine vignette *"Clés et sous-ensembles basés sur une recherche binaire rapide"* pour réaliser des *sous-ensembles ultra-rapides* en *utilisant des clés dans data.tables*.
+Jusqu'à présent, nous avons vu beaucoup d’opérations en `j`, et comment les combiner avec `by`, mais peu de choses concernant `i`. Tournons notre attention vers `i` dans la [prochaine vignette (`vignette("datatable-keys-fast-subset", package="data.table")`)](datatable-keys-fast-subset.html) pour réaliser des *sous-ensembles ultra-rapides* en *utilisant des clés dans data.tables*.
 
 ***

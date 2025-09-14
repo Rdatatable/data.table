@@ -13701,6 +13701,10 @@ test(1962.054, forder(DT, ), 3:1)
 
 test(1962.055, fsort(as.double(DT$a), internal = TRUE),
      error = 'Internal code should not be being called on type double')
+# coverage for fsort #7239
+set.seed(1)
+x = as.double(sample(0:(2^20), size = 1e6, replace = TRUE))
+test(1962.0551, sort(x), fsort(x))
 
 l = as.list(DT)
 test(1962.056, setorder(l, a), error = 'x must be a data.frame or data.table')
@@ -17417,13 +17421,13 @@ exid = data.table(id=1, expected)
 test(2182.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid)
 test(2182.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
 test(2182.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE), data.table(variable=factor(2), a=2, b=2))
-test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, variable=factor(c("b1","b2")), b=c(1,2)), warning="measure.vars is a list with length=1") # measure.vars named list length=1, #5065
+test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, variable=factor(c("1","2")), b=c(1,2))) # measure.vars named list length=1, #5065
 # consistency between measure.vars=list with length=1 and length>1, #5209
-test(2182.71, melt(DT.wide, measure.vars=list("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor("a2"), value=2), warning="measure.vars is a list with length=1")
+test(2182.71, melt(DT.wide, measure.vars=list("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor(1), value=2))
 test(2182.72, melt(DT.wide, measure.vars=c("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor("a2"), value=2))
-test(2182.73, melt(DT.wide, measure.vars=list("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="a2", value=2), warning="measure.vars is a list with length=1")
+test(2182.73, melt(DT.wide, measure.vars=list("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="1", value=2))
 test(2182.74, melt(DT.wide, measure.vars=c("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="a2", value=2))
-test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.factor=FALSE), data.table(b=20, variable="a", n=10), warning="measure.vars is a list with length=1")#thanks @mnazarov
+test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.factor=FALSE), data.table(b=20, variable="1", n=10))#thanks @mnazarov
 
 ### First block testing measurev
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
@@ -21564,16 +21568,16 @@ test(2333, as.expression(data.table(a = 1))[["a"]], 1)
 
 # regression test for hexdigits subscript overrun (uint8_t wraps over 255, unsigned overflow is well defined in c)
 local({
-	f = tempfile()
-	on.exit(unlink(f))
-	# the line is likely invalid in current encoding, so disable any translation, #7209
-	# test.data.table() sets options(encoding="UTF-8"), so go the long way around.
-	ff = file(f, encoding = "")
-	tryCatch(
-		writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
-		finally = close(ff)
-	)
-	test(2334, names(fread(f)), "a")
+  f = tempfile()
+  on.exit(unlink(f))
+  # the line is likely invalid in current encoding, so disable any translation, #7209
+  # test.data.table() sets options(encoding="UTF-8"), so go the long way around.
+  ff = file(f, encoding = "")
+  tryCatch(
+    writeLines(c('a', rep('0x1.ffffp0', 10000L), `Encoding<-`('0x1.ff\x9fp0', 'bytes'), rep('0x1.ffffp0', 20000L)), ff),
+    finally = close(ff)
+  )
+  test(2334, names(fread(f)), "a")
 })
 
 # Tests for new isoyear() helper (complement to isoweek) #7154
@@ -21620,3 +21624,34 @@ local({
   test(2338.9, {fwrite(dd, f, forceDecimal=FALSE); fread(f)}, di)
 })
 
+# '..1' is ...elt(1), not a variable named '1', when doing "up-a-level" search (#5460)
+DT = data.table(a=1.0)
+sqrt_dot_sym = function(...) sqrt(..1)
+test(2339.01, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
+test(2339.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
+test(2339.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
+test(2339.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
+sqrt_elt_sym = function(...) sqrt(...elt(1))
+# TODO(R>=3.5.0): run this unconditionally
+if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
+  test(2339.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
+  test(2339.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+  test(2339.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+  test(2339.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
+}
+# edge case of weird, though technically valid, names:
+#  _not_ '..N' style and distinct from '...'
+#  `123`='a'; DT[, ..123] doesn't work, but that's fine & easy to work around
+DT = data.table(a = 4L)
+local({
+  `.123` = 'a'
+  test(2339.09, DT[, ...123], DT)
+})
+local({
+  ..123 = 'a'
+  test(2339.10, DT[, ....123], DT)
+})
+local({
+  ...123 = 'a'
+  test(2339.11, DT[, .....123], DT)
+})
