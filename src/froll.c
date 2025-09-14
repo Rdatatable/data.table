@@ -1154,23 +1154,23 @@ static void advance(int *next, int* m, int *s) {
 // same helper functions supporting any k
 #define PEEK2(j) peek(&x[(j)*k], n[(j)], tail)
 static double med2(const double *xa, const double *xb, int ma, int na, int mb, int nb, int tail) {
-  double xam = ma==tail ? R_PosInf : xa[ma];
-  double xan = na==tail ? R_PosInf : xa[na];
-  double xbm = mb==tail ? R_PosInf : xb[mb];
-  double xbn = nb==tail ? R_PosInf : xb[nb];
-  if (xam==xbm) {
+  double xam = ma == tail ? R_PosInf : xa[ma];
+  double xan = na == tail ? R_PosInf : xa[na];
+  double xbm = mb == tail ? R_PosInf : xb[mb];
+  double xbn = nb == tail ? R_PosInf : xb[nb];
+  if (xam == xbm) {
     return xam;
-  } else if (xam<xbm) { // so xam<xbn
-    if (xan<=xbm) { // so xan<=xbn
-      return (xam+xan)/2;
+  } else if (xam < xbm) { // so xam < xbn
+    if (xan <= xbm) { // so xan <= xbn
+      return (xam + xan) / 2;
     } else {
-      return (xam+xbm)/2;
+      return (xam + xbm) / 2;
     }
-  } else { // xbm<xam
-    if (xbn<=xam) {
-      return (xbm+xbn)/2;
+  } else { // xbm < xam
+    if (xbn <= xam) {
+      return (xbm + xbn) / 2;
     } else {
-      return (xbm+xam)/2;
+      return (xbm + xam) / 2;
     }
   }
 }
