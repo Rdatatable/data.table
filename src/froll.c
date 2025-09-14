@@ -10,29 +10,6 @@
     sequentially in memory to compute the rolling statistic.
 */
 
-#undef SUM_WINDOW_STEP_FRONT
-#define SUM_WINDOW_STEP_FRONT                                  \
-if (R_FINITE(x[i])) {                                          \
-  w += x[i];                                                   \
-} else if (ISNAN(x[i])) {                                      \
-  nc++;                                                        \
-} else if (x[i]==R_PosInf) {                                   \
-  pinf++;                                                      \
-} else if (x[i]==R_NegInf) {                                   \
-  ninf++;                                                      \
-}
-#undef SUM_WINDOW_STEP_BACK
-#define SUM_WINDOW_STEP_BACK                                   \
-if (R_FINITE(x[i-k])) {                                        \
-  w -= x[i-k];                                                 \
-} else if (ISNAN(x[i-k])) {                                    \
-  nc--;                                                        \
-} else if (x[i-k]==R_PosInf) {                                 \
-  pinf--;                                                      \
-} else if (x[i-k]==R_NegInf) {                                 \
-  ninf--;                                                      \
-}
-
 /* rolling fun - router for fun and algo
  * early stopping for window bigger than input
  * handles 'align' in single place for center or left
@@ -107,6 +84,62 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
 }
 
+#undef SUM_WINDOW_STEP_FRONT
+#define SUM_WINDOW_STEP_FRONT                                  \
+  if (R_FINITE(x[i])) {                                        \
+    w += x[i];                                                 \
+  } else if (ISNAN(x[i])) {                                    \
+    nc++;                                                      \
+  } else if (x[i]==R_PosInf) {                                 \
+    pinf++;                                                    \
+  } else if (x[i]==R_NegInf) {                                 \
+    ninf++;                                                    \
+  }
+#undef SUM_WINDOW_STEP_BACK
+#define SUM_WINDOW_STEP_BACK                                   \
+  if (R_FINITE(x[i-k])) {                                      \
+    w -= x[i-k];                                               \
+  } else if (ISNAN(x[i-k])) {                                  \
+    nc--;                                                      \
+  } else if (x[i-k]==R_PosInf) {                               \
+    pinf--;                                                    \
+  } else if (x[i-k]==R_NegInf) {                               \
+    ninf--;                                                    \
+  }
+#undef MEAN_WINDOW_STEP_VALUE
+#define MEAN_WINDOW_STEP_VALUE                                 \
+  if (nc == 0) {                                               \
+    if (pinf == 0) {                                           \
+      if (ninf == 0) {                                         \
+        ans->dbl_v[i] = (double) (w / k);                      \
+      } else {                                                 \
+        ans->dbl_v[i] = R_NegInf;                              \
+      }                                                        \
+    } else if (ninf == 0) {                                    \
+      ans->dbl_v[i] = R_PosInf;                                \
+    } else {                                                   \
+      ans->dbl_v[i] = R_NaN;                                   \
+    }                                                          \
+  } else if (nc == k) {                                        \
+    ans->dbl_v[i] = narm ? R_NaN : NA_REAL;                    \
+  } else {                                                     \
+    if (narm) {                                                \
+      if (pinf == 0) {                                         \
+        if (ninf == 0) {                                       \
+          ans->dbl_v[i] = (double) (w / (k - nc));             \
+        } else {                                               \
+          ans->dbl_v[i] = R_NegInf;                            \
+        }                                                      \
+      } else if (ninf == 0) {                                  \
+        ans->dbl_v[i] = R_PosInf;                              \
+      } else {                                                 \
+        ans->dbl_v[i] = R_NaN;                                 \
+      }                                                        \
+    } else {                                                   \
+      ans->dbl_v[i] = NA_REAL;                                 \
+    }                                                          \
+  }
+
 /* fast rolling mean - fast
  * when no info on NF (has.nf argument) then assume no NFs run faster version
  * rollmean implemented as single pass sliding window for align="right"
@@ -157,41 +190,6 @@ void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   if (truehasnf) {
     int nc = 0, pinf = 0, ninf = 0;                             // NA counter within sliding window
     int i;                                                      // iterator declared here because it is being used after for loop
-
-#undef MEAN_WINDOW_STEP_VALUE
-#define MEAN_WINDOW_STEP_VALUE                                 \
-  if (nc == 0) {                                               \
-    if (pinf == 0) {                                           \
-      if (ninf == 0) {                                         \
-        ans->dbl_v[i] = (double) (w / k);                      \
-      } else {                                                 \
-        ans->dbl_v[i] = R_NegInf;                              \
-      }                                                        \
-    } else if (ninf == 0) {                                    \
-      ans->dbl_v[i] = R_PosInf;                                \
-    } else {                                                   \
-      ans->dbl_v[i] = R_NaN;                                   \
-    }                                                          \
-  } else if (nc == k) {                                        \
-    ans->dbl_v[i] = narm ? R_NaN : NA_REAL;                    \
-  } else {                                                     \
-    if (narm) {                                                \
-      if (pinf == 0) {                                         \
-        if (ninf == 0) {                                       \
-          ans->dbl_v[i] = (double) (w / (k - nc));             \
-        } else {                                               \
-          ans->dbl_v[i] = R_NegInf;                            \
-        }                                                      \
-      } else if (ninf == 0) {                                  \
-        ans->dbl_v[i] = R_PosInf;                              \
-      } else {                                                 \
-        ans->dbl_v[i] = R_NaN;                                 \
-      }                                                        \
-    } else {                                                   \
-      ans->dbl_v[i] = NA_REAL;                                 \
-    }                                                          \
-  }
-
     for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
       SUM_WINDOW_STEP_FRONT
       ans->dbl_v[i] = fill;                                     // partial window fill all
@@ -299,6 +297,40 @@ void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   }
 }
 
+#undef SUM_WINDOW_STEP_VALUE
+#define SUM_WINDOW_STEP_VALUE                                    \
+  if (nc == 0) {                                                 \
+    if (pinf == 0) {                                             \
+      if (ninf == 0) {                                           \
+        ans->dbl_v[i] = (double) w;                              \
+      } else {                                                   \
+        ans->dbl_v[i] = R_NegInf;                                \
+      }                                                          \
+    } else if (ninf == 0) {                                      \
+      ans->dbl_v[i] = R_PosInf;                                  \
+    } else {                                                     \
+      ans->dbl_v[i] = R_NaN;                                     \
+    }                                                            \
+  } else if (nc == k) {                                          \
+    ans->dbl_v[i] = narm ? 0.0 : NA_REAL;                        \
+  } else {                                                       \
+    if (narm) {                                                  \
+      if (pinf == 0) {                                           \
+        if (ninf == 0) {                                         \
+          ans->dbl_v[i] = (double) w;                            \
+        } else {                                                 \
+          ans->dbl_v[i] = R_NegInf;                              \
+        }                                                        \
+      } else if (ninf == 0) {                                    \
+        ans->dbl_v[i] = R_PosInf;                                \
+      } else {                                                   \
+        ans->dbl_v[i] = R_NaN;                                   \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  }
+
 /* fast rolling sum - fast
  * same as mean fast
  */
@@ -347,41 +379,6 @@ void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
   if (truehasnf) {
     int nc = 0, pinf = 0, ninf = 0;                             // NA counter within sliding window
     int i;                                                      // iterator declared here because it is being used after for loop
-
-#undef SUM_WINDOW_STEP_VALUE
-#define SUM_WINDOW_STEP_VALUE                                  \
-if (nc == 0) {                                                 \
-  if (pinf == 0) {                                             \
-    if (ninf == 0) {                                           \
-      ans->dbl_v[i] = (double) w;                              \
-    } else {                                                   \
-      ans->dbl_v[i] = R_NegInf;                                \
-    }                                                          \
-  } else if (ninf == 0) {                                      \
-    ans->dbl_v[i] = R_PosInf;                                  \
-  } else {                                                     \
-    ans->dbl_v[i] = R_NaN;                                     \
-  }                                                            \
-} else if (nc == k) {                                          \
-  ans->dbl_v[i] = narm ? 0.0 : NA_REAL;                        \
-} else {                                                       \
-  if (narm) {                                                  \
-    if (pinf == 0) {                                           \
-      if (ninf == 0) {                                         \
-        ans->dbl_v[i] = (double) w;                            \
-      } else {                                                 \
-        ans->dbl_v[i] = R_NegInf;                              \
-      }                                                        \
-    } else if (ninf == 0) {                                    \
-      ans->dbl_v[i] = R_PosInf;                                \
-    } else {                                                   \
-      ans->dbl_v[i] = R_NaN;                                   \
-    }                                                          \
-  } else {                                                     \
-    ans->dbl_v[i] = NA_REAL;                                   \
-  }                                                            \
-}
-
     for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
       SUM_WINDOW_STEP_FRONT
       ans->dbl_v[i] = fill;                                     // partial window fill all
@@ -471,7 +468,6 @@ void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
     }
   }
 }
-
 
 static inline void wmax(const double * restrict x, uint64_t o, int k, double * restrict w, uint64_t *iw, bool narm) {
   if (narm) {
@@ -889,6 +885,50 @@ void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
 }
 
+#undef PROD_WINDOW_STEP_FRONT
+#define PROD_WINDOW_STEP_FRONT                                   \
+  if (R_FINITE(x[i])) {                                          \
+    w *= x[i];                                                   \
+  } else if (ISNAN(x[i])) {                                      \
+    nc++;                                                        \
+  } else if (x[i]==R_PosInf) {                                   \
+    pinf++;                                                      \
+  } else if (x[i]==R_NegInf) {                                   \
+    ninf++;                                                      \
+  }
+#undef PROD_WINDOW_STEP_BACK
+#define PROD_WINDOW_STEP_BACK                                    \
+  if (R_FINITE(x[i-k])) {                                        \
+    w /= x[i-k];                                                 \
+  } else if (ISNAN(x[i-k])) {                                    \
+    nc--;                                                        \
+  } else if (x[i-k]==R_PosInf) {                                 \
+    pinf--;                                                      \
+  } else if (x[i-k]==R_NegInf) {                                 \
+    ninf--;                                                      \
+  }
+#undef PROD_WINDOW_STEP_VALUE
+#define PROD_WINDOW_STEP_VALUE                                   \
+  if (nc == 0) {                                                 \
+    if (pinf == 0 && ninf == 0) {                                \
+      ans->dbl_v[i] = (double) w;                                \
+    } else {                                                     \
+      ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;      \
+    }                                                            \
+  } else if (nc == k) {                                          \
+    ans->dbl_v[i] = narm ? 1.0 : NA_REAL;                        \
+  } else {                                                       \
+    if (narm) {                                                  \
+      if (pinf == 0 && ninf == 0) {                              \
+        ans->dbl_v[i] = (double) w;                              \
+      } else {                                                   \
+        ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  }
+
 /* fast rolling prod - fast
  * same as mean fast
  */
@@ -937,51 +977,6 @@ void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   if (truehasnf) {
     int nc = 0, pinf = 0, ninf = 0;                             // NA counter within sliding window
     int i;                                                      // iterator declared here because it is being used after for loop
-
-#undef PROD_WINDOW_STEP_FRONT
-#define PROD_WINDOW_STEP_FRONT                                      \
-    if (R_FINITE(x[i])) {                                          \
-      w *= x[i];                                                   \
-    } else if (ISNAN(x[i])) {                                      \
-      nc++;                                                        \
-    } else if (x[i]==R_PosInf) {                                   \
-      pinf++;                                                      \
-    } else if (x[i]==R_NegInf) {                                   \
-      ninf++;                                                      \
-    }
-#undef PROD_WINDOW_STEP_BACK
-#define PROD_WINDOW_STEP_BACK                                     \
-  if (R_FINITE(x[i-k])) {                                        \
-    w /= x[i-k];                                                 \
-  } else if (ISNAN(x[i-k])) {                                    \
-    nc--;                                                        \
-  } else if (x[i-k]==R_PosInf) {                                 \
-    pinf--;                                                      \
-  } else if (x[i-k]==R_NegInf) {                                 \
-    ninf--;                                                      \
-  }
-#undef PROD_WINDOW_STEP_VALUE
-#define PROD_WINDOW_STEP_VALUE                                   \
-    if (nc == 0) {                                               \
-      if (pinf == 0 && ninf == 0) {                              \
-        ans->dbl_v[i] = (double) w;                              \
-      } else {                                                   \
-        ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
-      }                                                          \
-    } else if (nc == k) {                                          \
-      ans->dbl_v[i] = narm ? 1.0 : NA_REAL;                        \
-    } else {                                                       \
-      if (narm) {                                                  \
-        if (pinf == 0 && ninf == 0) {                              \
-          ans->dbl_v[i] = (double) w;                              \
-        } else {                                                   \
-          ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
-        }                                                          \
-      } else {                                                     \
-        ans->dbl_v[i] = NA_REAL;                                   \
-      }                                                            \
-    }
-
     for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
       PROD_WINDOW_STEP_FRONT
       ans->dbl_v[i] = fill;                                     // partial window fill all
