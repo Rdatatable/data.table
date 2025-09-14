@@ -15,7 +15,7 @@ simplifylist = function(x, fill, ansmask) {
         ans.ut = "double"
       } else if ("integer" %in% ans.ut) {
         if ("logical" %in% ans.ut)
-          x[ansmask & all.t=="logical"] = lapply(x[ansmask & all.t=="logical"], as.logical) ## coerce logical to integer
+          x[ansmask & all.t=="logical"] = lapply(x[ansmask & all.t=="logical"], as.integer) ## coerce logical to integer
         else
           internal_error("simplifylist aligning return types, at that place there should have been some logical types in the answer") # nocov
         ans.ut = "integer"
@@ -50,8 +50,6 @@ simplifylist = function(x, fill, ansmask) {
     if (all_data.frame(x)) ## list(data.table(...), data.table(...))
       return(rbindlist(x))
     if (equal.lengths(x)) ## same length lists: list(list(1:2, 1:2), list(2:3, 2:3))
-      return(rbindlist(x))
-    if (all(vapply_1i(unique(lengths(x)), function(x) length(unique(x)), use.names=FALSE) == 1L)) ## within each x column lengths the same, each could be DF: list(list(1, 2), list(1:2, 2:3))
       return(rbindlist(x))
   }
   ## not simplified, return as is
