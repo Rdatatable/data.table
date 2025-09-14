@@ -31,7 +31,7 @@ if (R_FINITE(x[i-k])) {                                        \
   pinf--;                                                      \
 } else if (x[i-k]==R_NegInf) {                                 \
   ninf--;                                                      \
-}                                                              \
+}
 
 /* rolling fun - router for fun and algo
  * early stopping for window bigger than input
@@ -42,7 +42,7 @@ if (R_FINITE(x[i-k])) {                                        \
  * algo = 1: exact
  *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
-void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose) {
+void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -77,6 +77,20 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
       frollmaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
+  case MIN :
+    if (algo==0) {
+      frollminFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+  case PROD :
+    if (algo==0) {
+      frollprodFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollprodExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
   default: // #nocov
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
@@ -98,7 +112,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
  * rollmean implemented as single pass sliding window for align="right"
  * if non-finite detected re-run rollmean implemented as single pass sliding window with NA support
  */
-void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -196,7 +210,7 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
  * rollmean implemented as mean of k obs for each observation for align="right"
  * if non-finite detected and na.rm=TRUE then re-run NF aware rollmean
  */
-void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -288,7 +302,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 /* fast rolling sum - fast
  * same as mean fast
  */
-void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -384,7 +398,7 @@ if (nc == 0) {                                                 \
 /* fast rolling sum - exact
  * same as mean exact
  */
-void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -475,10 +489,10 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
       uint64_t ii = o+i-k+1;
       if (ISNAN(x[ii])) {
         if (ISNA(x[ii])) {
-          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
+          internal_error(__func__, "frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker"); // # nocov
           //iww = ii; ww = NA_REAL;
         } else if (ISNA(ww)) {
-          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
+          internal_error(__func__, "frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker"); // # nocov
           // do nothing because w > x[i]: NA > NaN
         } else { // no NA in window so NaN >= than any non-NA
           iww = ii; ww = R_NaN;
@@ -500,7 +514,7 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
  * new max is used to continue outer single pass as long as new max index is not leaving the running window
  * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
  */
-void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmaxFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -596,7 +610,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
  * otherwise we scan for NaN/NA and run either of two loops
  * has.nf=FALSE can give incorrect results if NAs provided, documented to be used with care
  */
-void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmaxExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -621,7 +635,7 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       ans->dbl_v[i] = w;
     }
   } else {
-    bool *isnan = malloc(nx*sizeof(*isnan));                        // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    bool *isnan = malloc(sizeof(*isnan) * nx);                      // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                   // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
       return;
@@ -665,6 +679,393 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
           }
         }
         ans->dbl_v[i] = w;
+      }
+    }
+  }
+}
+
+static inline void wmin(const double * restrict x, uint64_t o, int k, double * restrict w, uint64_t *iw, bool narm) {
+  if (narm) {
+    for (int i=0; i<k; i++) {
+      if (x[o+i-k+1] <= w[0]) { // this never true if all x NAs and narm=TRUE
+        iw[0] = o+i-k+1;
+        w[0] = x[iw[0]];
+      }
+    }
+  } else {
+    double ww = R_PosInf;
+    uint64_t iww = 0;
+    for (int i=0; i<k; i++) {
+      uint64_t ii = o+i-k+1;
+      if (ISNAN(x[ii])) {
+        if (ISNA(x[ii])) {
+          internal_error(__func__, "frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker"); // # nocov
+          //iww = ii; ww = NA_REAL;
+        } else if (ISNA(ww)) {
+          internal_error(__func__, "frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker"); // # nocov
+          // do nothing because w > x[i]: NA > NaN
+        } else { // no NA in window so NaN >= than any non-NA
+          iww = ii; ww = R_NaN;
+        }
+      } else if (ISNAN(ww)) {
+        // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore to nothing
+      } else if (x[ii] <= ww) {
+        iww = ii; ww = x[iww];
+      }
+    }
+    iw[0] = iww;
+    w[0] = ww;
+  }
+}
+/* fast rolling min - fast
+ * see rolling max fast details
+ */
+void frollminFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all +Inf vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_PosInf;
+    }
+    return;
+  }
+  double w = R_PosInf; // window min
+  uint64_t cmin = 0; // counter of nested loops for verbose
+  uint64_t iw = 0; // index of window min
+  uint64_t i;
+  if (narm || hasnf==-1) {
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      if (x[i] <= w) { // <= rather than < because we track most recent minimum using iw
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = fill;
+    }
+    for (i=k-1; i<nx; i++) {
+      if (iw+k <= i) { // min left current window // note that it is still <= same as in max
+        iw = i-k; w = R_PosInf;
+        wmin(x, i, k, &w, &iw, true); cmin++;
+      } else if (x[i] <= w) {
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = w;
+    }
+  } else {
+    bool truehasnf = hasnf>0;
+    for (i=0; i<k-1; i++) { // up to first full window only #loop_counter_not_local_scope_ok
+      if (ISNAN(x[i])) {
+        truehasnf = true;
+        if (ISNA(x[i])) {
+          iw = i; w = NA_REAL;
+        } else if (ISNA(w)) {
+          // do nothing because w > x[i]: NA > NaN
+        } else {
+          iw = i; w = R_NaN;
+        }
+      } else if (x[i] <= w) {
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = fill;
+    }
+    if (!truehasnf) { // maybe no NAs
+      for (; i<nx; i++) {
+        if (ISNAN(x[i])) { // Inf properly propagates
+          if (verbose)
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, continue with extra care for NFs\n", __func__);
+          truehasnf = true;
+          break; // does not increment, w stays as from previous iteration
+        }
+        if (iw+k <= i) { // min left current window // note that it is still <= same as in max
+          iw = i-k; w = R_PosInf;
+          wmin(x, i, k, &w, &iw, true); cmin++;
+        } else if (x[i] <= w) {
+          iw = i; w = x[iw];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+    if (truehasnf) {
+      for (; i<nx; i++) { // this loop continues from where "maybe no NAs" loop left
+        if (ISNAN(x[i])) {
+          if (ISNA(x[i])) {
+            iw = i; w = NA_REAL;
+          } else if (ISNA(w)) {
+            // do nothing because w > x[i]: NA > NaN
+          } else { // no NA in window so NaN >= than any non-NA
+            iw = i; w = R_NaN;
+          }
+        } else if (iw+k <= i) { // min left current window // note that it is still <= same as in max
+          iw = i-k; w = R_PosInf;
+          wmin(x, i, k, &w, &iw, false); cmin++;
+        } else if (ISNAN(w)) {
+          // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore do nothing
+        } else if (x[i] <= w) {
+          iw = i; w = x[iw];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: nested window min calculation called %"PRIu64" times\n"), __func__, cmin);
+}
+/* fast rolling min - exact
+ * see rolling max exact details
+ */
+void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all +Inf vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = R_PosInf;
+    }
+    return;
+  }
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  if (narm || hasnf==-1) {                                          // ignore NAs as > does not propagate
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      double w = R_PosInf;
+      for (int j=-k+1; j<=0; j++) {
+        if (x[i+j] < w)
+          w = x[i+j];
+      }
+      ans->dbl_v[i] = w;
+    }
+  } else {
+    bool *isnan = malloc(sizeof(*isnan) * nx);                       // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                   // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
+      free(isnan);
+      return;
+    }                                                               // # nocov end
+    bool truehasnf = hasnf>0;
+    for (uint64_t i=0; i<nx; i++) {                                 // no openmp as this should be very fast
+      if (ISNAN(x[i])) {
+        truehasnf = true;
+        isnan[i] = true;
+      } else {
+        isnan[i] = false;
+      }
+    }
+    if (!truehasnf) {                                               // not found any NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=k-1; i<nx; i++) {
+        double w = R_PosInf;
+        for (int j=-k+1; j<=0; j++) {
+          if (x[i+j] < w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w;
+      }
+    } else {                                                        // there are some NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=k-1; i<nx; i++) {
+        double w = R_PosInf;
+        if (isnan[i] && ISNA(x[i])) {
+          w = NA_REAL;
+        } else {
+          for (int j=-k+1; j<=0; j++) {
+            if (isnan[i+j]) {
+              if (ISNA(x[i+j])) {
+                w = NA_REAL;
+                break;                                              // break because NA > NaN
+              } else {
+                w = R_NaN;                                          // continue nested loop in case there is NA there
+              }
+            } else if (x[i+j] < w)
+              w = x[i+j];
+          }
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  }
+}
+
+/* fast rolling prod - fast
+ * same as mean fast
+ */
+void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all 1 vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = 1.0;
+    }
+    return;
+  }
+  long double w = 1.0;
+  bool truehasnf = hasnf>0;
+  if (!truehasnf) {
+    int i;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      w *= x[i];
+      ans->dbl_v[i] = fill;
+    }
+    w *= x[i];
+    ans->dbl_v[i] = (double) w;
+    if (R_FINITE((double) w)) {
+      for (uint64_t i=k; i<nx; i++) {
+        w /= x[i-k];
+        w *= x[i];
+        ans->dbl_v[i] = (double) w;
+      }
+      if (!R_FINITE((double) w)) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+        if (verbose)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        w = 1.0; truehasnf = true;
+      }
+    } else {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
+      w = 1.0; truehasnf = true;
+    }
+  }
+  if (truehasnf) {
+    int nc = 0, pinf = 0, ninf = 0;                             // NA counter within sliding window
+    int i;                                                      // iterator declared here because it is being used after for loop
+
+#undef PROD_WINDOW_STEP_FRONT
+#define PROD_WINDOW_STEP_FRONT                                      \
+    if (R_FINITE(x[i])) {                                          \
+      w *= x[i];                                                   \
+    } else if (ISNAN(x[i])) {                                      \
+      nc++;                                                        \
+    } else if (x[i]==R_PosInf) {                                   \
+      pinf++;                                                      \
+    } else if (x[i]==R_NegInf) {                                   \
+      ninf++;                                                      \
+    }
+#undef PROD_WINDOW_STEP_BACK
+#define PROD_WINDOW_STEP_BACK                                     \
+  if (R_FINITE(x[i-k])) {                                        \
+    w /= x[i-k];                                                 \
+  } else if (ISNAN(x[i-k])) {                                    \
+    nc--;                                                        \
+  } else if (x[i-k]==R_PosInf) {                                 \
+    pinf--;                                                      \
+  } else if (x[i-k]==R_NegInf) {                                 \
+    ninf--;                                                      \
+  }
+#undef PROD_WINDOW_STEP_VALUE
+#define PROD_WINDOW_STEP_VALUE                                   \
+    if (nc == 0) {                                               \
+      if (pinf == 0 && ninf == 0) {                              \
+        ans->dbl_v[i] = (double) w;                              \
+      } else {                                                   \
+        ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
+      }                                                          \
+    } else if (nc == k) {                                          \
+      ans->dbl_v[i] = narm ? 1.0 : NA_REAL;                        \
+    } else {                                                       \
+      if (narm) {                                                  \
+        if (pinf == 0 && ninf == 0) {                              \
+          ans->dbl_v[i] = (double) w;                              \
+        } else {                                                   \
+          ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
+        }                                                          \
+      } else {                                                     \
+        ans->dbl_v[i] = NA_REAL;                                   \
+      }                                                            \
+    }
+
+    for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
+      PROD_WINDOW_STEP_FRONT
+      ans->dbl_v[i] = fill;                                     // partial window fill all
+    }
+    PROD_WINDOW_STEP_FRONT                                       // i==k-1
+    PROD_WINDOW_STEP_VALUE
+    for (uint64_t i=k; i<nx; i++) {                             // loop over obs, complete window, all remaining after partial window
+      PROD_WINDOW_STEP_BACK
+      PROD_WINDOW_STEP_FRONT
+      PROD_WINDOW_STEP_VALUE
+    }
+  }
+}
+/* fast rolling prod - exact
+ * same as mean exact
+ */
+void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size 0, returning all 1 vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = 1.0;
+    }
+    return;
+  }
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      long double w = 1.0;
+      for (int j=-k+1; j<=0; j++) {
+        w *= x[i+j];
+      }
+      if (R_FINITE((double) w)) {
+        ans->dbl_v[i] = (double) w;
+      } else if (ISNAN((double) w)) {
+        if (!narm) {
+          ans->dbl_v[i] = (double) w;
+        }
+        truehasnf = true;
+      } else {
+        ans->dbl_v[i] = (double) w;
+      }
+    }
+    if (truehasnf) {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      long double w = 1.0;
+      int nc = 0;
+      for (int j=-k+1; j<=0; j++) {
+        if (ISNAN(x[i+j])) {
+          nc++;
+        } else {
+          w *= x[i+j];
+        }
+      }
+      if (w > DBL_MAX) { // in contrast to mean, here we can overflow long double more than DBL_MAX
+        ans->dbl_v[i] = R_PosInf;
+      } else if (w < -DBL_MAX) {
+        ans->dbl_v[i] = R_NegInf;
+      } else {
+        if (nc < k) {
+          ans->dbl_v[i] = (double) w;
+        } else {
+          ans->dbl_v[i] = 1.0;
+        }
       }
     }
   }
