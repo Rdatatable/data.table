@@ -1,7 +1,6 @@
 #include "data.table.h"
 
-static inline void memcpy_sexp(SEXP dest, size_t offset, SEXP src, int count)
-{
+static inline void memcpy_sexp(SEXP dest, size_t offset, SEXP src, int count) {
   switch (TYPEOF(dest)) {
   case INTSXP: {
     memcpy(INTEGER(dest), INTEGER_RO(src) + offset, count * sizeof(int));
