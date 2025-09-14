@@ -648,7 +648,6 @@ void frolladaptiveprodFast(const double *x, uint64_t nx, ans_t *ans, const int *
   double *cs = malloc(sizeof(*cs) * nx);
   if (!cs) {                                                    // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumprod", __func__); // raise error
-    free(cs);
     return;
   }                                                             // # nocov end
   if (!truehasnf) {
@@ -680,19 +679,19 @@ void frolladaptiveprodFast(const double *x, uint64_t nx, ans_t *ans, const int *
     uint64_t *cn = malloc(sizeof(*cn) * nx);                 // cumulative NA counter, used the same way as cumprod, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
-      free(cs); free(cn);
+      free(cs);
       return;
     }                                                           // # nocov end
     uint64_t *cpinf = malloc(sizeof(*cpinf) * nx);
     if (!cpinf) {                                               // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
-      free(cs); free(cn); free(cpinf);
+      free(cs); free(cn);
       return;
     }                                                           // # nocov end
     uint64_t *cninf = malloc(sizeof(*cninf) * nx);
     if (!cninf) {                                               // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
-      free(cs); free(cn); free(cpinf); free(cninf);
+      free(cs); free(cn); free(cpinf);
       return;
     }                                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumprod and cum NA counter
