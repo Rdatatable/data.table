@@ -948,7 +948,7 @@ void frolladaptivemedianExact(const double *x, uint64_t nx, ans_t *ans, const in
       }
     }
   } else {
-    //int *rollnc = calloc(nx, sizeof(*rollnc)); // use when frolladaptiveFast will be implemented
+    //int *rollnc = cal_NOLINT_loc(nx, sizeof(*rollnc)); // use when frolladaptiveFast will be implemented - remove _NOLINT_ then
     int *rollnc = malloc(sizeof(*rollnc) * nx); // for frolladaptiveNAExact we need calloc, for frolladaptiveNAFast malloc is ok
     if (!rollnc) { // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for rollnc", __func__); // raise error
