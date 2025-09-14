@@ -1,49 +1,69 @@
 ## ansmask is to handle leading values from fill to match type of the ans
 simplifylist = function(x, fill, ansmask) {
+  all.t = vapply_1c(x, typeof, use.names=FALSE)
+  all.ut = unique(all.t)
+  if (length(all.ut) > 1L) {
+    ans.t = vapply_1c(x[ansmask], typeof, use.names=FALSE)
+    ans.ut = unique(ans.t)
+    ## ans postprocessing to match types
+    if ((length(ans.ut) == 2L) && all(ans.ut %in% c("double","integer","logical"))) { ## align numeric and integer when function is not type stable: median #7313
+      if ("double" %in% ans.ut) {
+        if ("integer" %in% ans.ut)
+          x[ansmask & all.t=="integer"] = lapply(x[ansmask & all.t=="integer"], as.numeric) ## coerce integer to double
+        if ("logical" %in% ans.ut)
+          x[ansmask & all.t=="logical"] = lapply(x[ansmask & all.t=="logical"], as.numeric) ## coerce logical to double
+        ans.ut = "double"
+      } else if ("integer" %in% ans.ut) {
+        if ("logical" %in% ans.ut)
+          x[ansmask & all.t=="logical"] = lapply(x[ansmask & all.t=="logical"], as.logical) ## coerce logical to integer
+        else
+          internal_error("simplifylist aligning return types, at that place there should have been some logical types in the answer") # nocov
+        ans.ut = "integer"
+      }
+    }
+    ## file postprocessing to match types
+    if (length(ans.ut) == 1L && equal.lengths(x[ansmask])) {
+      if (identical(fill, NA)) { ## different typeof of ans and default fill=NA and lengths of ans equal
+        filli = which(!ansmask)
+        ans1 = x[[which.first(ansmask)]] ## first ans from full window
+        x[filli] = rep_len(list(ans1[NA]), length(filli)) ## this will make NA of matching type to ans1 and recycle for all filli
+        all.ut = ans.ut
+      } else if (typeof(fill) != ans.ut && all(c(typeof(fill), ans.ut) %in% c("double","integer","logical"))) { ## fill=-2, ans=1L
+        filli = which(!ansmask)
+        if (ans.ut == "double") {
+          cast = as.numeric
+        } else if (ans.ut == "integer") {
+          cast = as.integer
+        } else if (ans.ut == "logical") {
+          cast = as.logical
+        }
+        x[filli] = rep_len(list(cast(fill)), length(filli))
+        all.ut = ans.ut
+      }
+    }
+  }
+  all.t = vapply_1c(x, typeof, use.names=FALSE)
+  all.ut = unique(all.t)
   l = lengths(x)
   ul = unique(l)
-  if (length(ul)!=1L) ## different lenghts
-    return(x)
-  t = vapply_1c(x, typeof, use.names=FALSE)
-  ut = unique(t)
-  if (length(ut)==2L) {
-    all.ut = ut
-    t = vapply_1c(x[ansmask], typeof, use.names=FALSE)
-    ut = unique(t)
-    if (length(ut)!=1L)
-      return(x) ## different typeof even excluding fill, a FUN was not type stable
-    if (!(ut=="integer"||ut=="logical"||ut=="double"||ut=="complex"||ut=="character"||ut=="raw"))
-      return(x) ## ans is not atomic
-    if (identical(fill, NA)) { ## different typeof, try to handle fill=NA logical type
-      filli = which(!ansmask)
-      ans1 = x[[which.first(ansmask)]]
-      x[filli] = rep_len(list(ans1[NA]), length(filli)) ## this will recycle to length of ans1
-    } else if (all(c("integer","double") %in% all.ut)) { ## typeof numeric and int, fill is coerced to the type FUN
-      filli = which(!ansmask)
-      cast = if (ut=="double") as.numeric else as.integer
-      x[filli] = rep_len(list(cast(fill)), length(filli))
-    } else { ## length == 2L but no easy way to match type
-      return(x)
-    }
-  } else if (length(ut)>2L) { ## unique typeof length > 2L
-    return(x)
-  }
-  if (ut=="integer"||ut=="logical"||ut=="double"||ut=="complex"||ut=="character"||ut=="raw") {
-    if (ul==1L) ## length 1
+  if ((length(all.ut) == 1L) && all(all.ut %in% c("integer","logical","double","complex","character","raw"))) {
+    if (identical(ul, 1L)) { ## length 1
       return(unlist(x, recursive=FALSE, use.names=FALSE))
-    else ## length 2+
+    } else if (equal.lengths(x)) { ## length 2+ and equal
       return(rbindlist(lapply(x, as.list)))
-  } else if (ut=="list") {
-    if (all(vapply_1b(x, is.data.frame, use.names=FALSE))) ## list(data.table(...), data.table(...))
+    }
+  } else if (identical(all.ut, "list")) {
+    if (all_data.frame(x)) ## list(data.table(...), data.table(...))
       return(rbindlist(x))
-    ll = lapply(x, lengths) ## length of each column of each x
-    ull = unique(ll)
-    if (length(ull)==1L) ## list(list(1:2, 1:2), list(2:3, 2:3))
+    if (equal.lengths(x)) ## same length lists: list(list(1:2, 1:2), list(2:3, 2:3))
       return(rbindlist(x))
-    lu = function(x) length(unique(x))
-    if (all(vapply_1i(ull, lu, use.names=FALSE)==1L)) ## within each x column lengths the same, each could be DF: list(list(1, 2), list(1:2, 2:3))
+    if (all(vapply_1i(unique(lengths(x)), function(x) length(unique(x)), use.names=FALSE) == 1L)) ## within each x column lengths the same, each could be DF: list(list(1, 2), list(1:2, 2:3))
       return(rbindlist(x))
-  } ## else NULL, closure, special, builtin, environment, S4, ...
+  }
+  ## not simplified, return as is
+  # not length stable
+  # not type stable
+  # NULL, closure, special, builtin, environment, S4, ...
   x
 }
 
@@ -86,6 +106,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   align = match.arg(align)
   FUN = match.fun(FUN)
   verbose = getOption("datatable.verbose")
+  if (!length(X))
+    return(vector(mode=typeof(X), length=0L))
   if (give.names)
     orig = list(N=N, adaptive=adaptive)
 
@@ -284,26 +306,31 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     cat("frollapply running on single CPU thread\n")
   ans = vector("list", nx*nn)
   ## vectorized x
+
   for (i in seq_len(nx)) {
     thisx = X[[i]]
     thislen = len[i]
-    if (!thislen)
-      next
-    if (!use.fork0) {
-      use.fork = use.fork0
-    } else {
-      # throttle
-      DTths = getDTthreadsC(thislen, TRUE)
-      use.fork = DTths > 1L
-      if (verbose) {
-        if (DTths < DTths0)
-          catf("frollapply run on %d CPU threads throttled to %d threads, input length %d\n", DTths0, DTths, thislen)
-        else
-          catf("frollapply running on %d CPU threads\n", DTths)
+    if (thislen) {
+      if (!use.fork0) {
+        use.fork = use.fork0
+      } else {
+        # throttle
+        DTths = getDTthreadsC(thislen, TRUE)
+        use.fork = DTths > 1L
+        if (verbose) {
+          if (DTths < DTths0)
+            catf("frollapply run on %d CPU threads throttled to %d threads, input length %d\n", DTths0, DTths, thislen)
+          else
+            catf("frollapply running on %d CPU threads\n", DTths)
+        }
       }
     }
     ## vectorized n
     for (j in seq_len(nn)) {
+      if (!thislen) {
+        ans[[(i-1L)*nn+j]] = vector(mode=typeof(thisx), length=0L)
+        next
+      }
       thisn = N[[j]]
       w = allocWindow(thisx, thisn) ## prepare window, handles adaptive
       ansmask = ansMask(thislen, thisn)
@@ -405,11 +432,12 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
           warning = function(w) warningf(warn.simplify, w[["message"]])
         )
       } else if (isTRUE(simplify)) {
-        ans[[thisansi]] = tryCatch(
-          simplifylist(ans[[thisansi]], fill, ansmask),
-          error = function(e) stopf(err.simplify, e[["message"]]),
-          warning = function(w) warningf(warn.simplify, w[["message"]])
-        )
+        ans[[thisansi]] = simplifylist(ans[[thisansi]], fill, ansmask)
+        #ans[[thisansi]] = tryCatch(
+        #  simplifylist(ans[[thisansi]], fill, ansmask),
+        #  error = function(e) stopf(err.simplify, e[["message"]]),
+        #  warning = function(w) warningf(warn.simplify, w[["message"]])
+        #)
       }
     }
   }
