@@ -6,7 +6,11 @@
 
 ### BREAKING CHANGE
 
-1. Rolling functions `frollmean` and `frollsum` distinguish `Inf`/`-Inf` from `NA` to match the same rules as base R when `algo="fast"` (previously they were considered the same). If your input into those functions has `Inf` or `-Inf` then you will be affected by this change. As a result, the argument that controls the handling of `NA`s has been renamed from `hasNA` to `has.nf` (_has non-finite_). `hasNA` continues to work with a warning, for now.
+1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill`, [#6629](https://github.com/Rdatatable/data.table/issues/6629). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
+
+2. `melt()` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name). This change has been planned since 1.16.0 (25 Aug 2024).
+
+3. Rolling functions `frollmean` and `frollsum` distinguish `Inf`/`-Inf` from `NA` to match the same rules as base R when `algo="fast"` (previously they were considered the same). If your input into those functions has `Inf` or `-Inf` then you will be affected by this change. As a result, the argument that controls the handling of `NA`s has been renamed from `hasNA` to `has.nf` (_has non-finite_). `hasNA` continues to work with a warning, for now.
     ```r
     ## before
     frollsum(c(1,2,3,Inf,5,6), 2)
@@ -16,15 +20,23 @@
     frollsum(c(1,2,3,Inf,5,6), 2)
     #[1]  NA   3   5 Inf Inf  11
 
+4. `frollapply` result is not coerced to numeric anymore. Users' code could possibly break if it depends on forced coercion of input/output to numeric type.
+    ```r
+    ## before
+    frollapply(c(F,T,F,F,F,T), 2, any)
+    #[1] NA  1  1  0  0  1
+
+    ## now
+    frollapply(c(F,T,F,F,F,T), 2, any)
+    #[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
+    ```
+    Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
+
+5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
-
-### BREAKING CHANGE
-
-1. `dcast()` now errors when `fun.aggregate` returns length != 1 (consistent with documentation), regardless of `fill`, [#6629](https://github.com/Rdatatable/data.table/issues/6629). Previously, when `fill` was not `NULL`, `dcast` warned and returned an undefined result. This change has been planned since 1.16.0 (25 Aug 2024).
-
-2. `melt()` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name). This change has been planned since 1.16.0 (25 Aug 2024).
 
 ### NEW FEATURES
 
@@ -81,7 +93,39 @@
 
 12. New `cbindlist()` and `setcbindlist()` for concatenating a `list` of data.tables column-wise, evocative of the analogous `do.call(rbind, l)` <-> `rbindlist(l)`, [#2576](https://github.com/Rdatatable/data.table/issues/2576). `setcbindlist()` does so without making any copies. Thanks @MichaelChirico for the FR, @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
+    ```r
+    l = list(
+      data.table(id = 1:3, a = letters[1:3]),
+      data.table(b = 4:6, c = 7:9)
+    )
+    cbindlist(l)
+    #    id a b c
+    # 1:  1 a 4 7
+    # 2:  2 b 5 8
+    # 3:  3 c 6 9
+    ```
+
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
+
+    ```r
+    l = list(
+      data.table(id = c(1L, 2L, 3L), x = c("a", "b", "c")),
+      data.table(id = c(1L, 2L, 4L), y = c("d", "e", "f")),
+      data.table(id = c(1L, 3L, 4L), z = c("g", "h", "i"))
+    )
+
+    # Recursive inner join
+    mergelist(l, on = "id", how = "inner")
+    #    id x y z
+    # 1:  1 a d g
+
+    # Recursive left join (the default 'how')
+    mergelist(l, on = "id", how = "left")
+    #    id x    y    z
+    # 1:  1 a    d    g
+    # 2:  2 b    e <NA>
+    # 3:  3 c <NA>    h
+    ```
 
 14. `fcoalesce()` and `setcoalesce()` gain `nan` argument to control whether `NaN` values should be treated as missing (`nan=NA`, the default) or non-missing (`nan=NaN`), [#4567](https://github.com/Rdatatable/data.table/issues/4567). This provides full compatibility with `nafill()` behavior. Thanks to @ethanbsmith for the feature request and @Mukulyadav2004 for the implementation.
 
@@ -126,6 +170,83 @@
     ```
 
     As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
+
+17. Function `frollapply` has been completely rewritten. Thanks to @jangorecki for implementation. Be sure to read `frollapply` manual before using the function. There are following changes:
+    - all basic types are now supported on input/output, not only double. Users' code could possibly break if it depends on forced coercion of input/output to double type.
+    - new argument `by.column` allowing to pass a multi-column subset of a data.table into a rolling function, closes [#4887](https://github.com/Rdatatable/data.table/issues/4887).
+    ```r
+    x = data.table(v1=rnorm(120), v2=rnorm(120))
+    f = function(x) coef(lm(v2 ~ v1, data=x))
+    coef.fill = c("(Intercept)"=NA_real_, "v1"=NA_real_)
+    frollapply(x, 4, f, by.column=FALSE, fill=coef.fill)
+    #     (Intercept)         v1
+    #  1:          NA         NA
+    #  2:          NA         NA
+    #  3:          NA         NA
+    #  4:  0.65456931  0.3138012
+    #  5: -1.07977441 -2.0588094
+    #---
+    #116:  0.15828417  0.3570216
+    #117: -0.09083424  1.5494507
+    #118: -0.18345878  0.6424837
+    #119: -0.28964772  0.6116575
+    #120: -0.40598313  0.6112854
+    ```
+    - uses multiple CPU threads (on a decent OS); evaluation of UDF is inherently slow so this can be a great help.
+    ```r
+    x = rnorm(1e5)
+    n = 500
+    setDTthreads(1)
+    system.time(
+      th1 <- frollapply(x, n, median, simplify=unlist)
+    )
+    #   user  system elapsed
+    #  3.078   0.005   3.084
+    setDTthreads(4)
+    system.time(
+      th4 <- frollapply(x, n, median, simplify=unlist)
+    )
+    #   user  system elapsed
+    #  2.453   0.135   0.897
+    all.equal(th1, th4)
+    #[1] TRUE
+    ```
+
+18. New helper `frolladapt` to facilitate applying rolling functions over windows of fixed calendar-time width in irregularly-spaced data sets, thereby bypassing the need to "augment" such data with placeholder rows, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
+    ```r
+    idx = as.Date("2025-09-05") + c(0,4,7,8,9,10,12,13,17)
+    dt = data.table(index=idx, value=seq_along(idx))
+    dt
+    #        index value
+    #       <Date> <int>
+    #1: 2025-09-05     1
+    #2: 2025-09-09     2
+    #3: 2025-09-12     3
+    #4: 2025-09-13     4
+    #5: 2025-09-14     5
+    #6: 2025-09-15     6
+    #7: 2025-09-17     7
+    #8: 2025-09-18     8
+    #9: 2025-09-22     9
+    dt[, c("rollmean3","rollmean3days") := list(
+      frollmean(value, 3),
+      frollmean(value, frolladapt(index, 3), adaptive=TRUE)
+      )]
+    dt
+    #        index value rollmean3 rollmean3days
+    #       <Date> <int>     <num>         <num>
+    #1: 2025-09-05     1        NA            NA
+    #2: 2025-09-09     2        NA           2.0
+    #3: 2025-09-12     3         2           3.0
+    #4: 2025-09-13     4         3           3.5
+    #5: 2025-09-14     5         4           4.0
+    #6: 2025-09-15     6         5           5.0
+    #7: 2025-09-17     7         6           6.5
+    #8: 2025-09-18     8         7           7.5
+    #9: 2025-09-22     9         8           9.0
+    ```
+
+19. New rolling functions, `frollmin` and `frollprod`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
 
 ### BUG FIXES
 
