@@ -20,7 +20,7 @@ simplifylist = function(x, fill, ansmask) {
   if (length(all.ut) > 1L) {
     ans.ut = unique(all_types(x[ansmask]))
     ## coerce int to double when varies within answer results: median #7313
-    if ( 
+    if (
       length(ans.ut) == 2L &&                   ## simplifylist(list(NA, 1, 1L, TRUE), NA, ansmask=c(F,T,T,T))
       all(c("double","integer") %in% ans.ut) && ## simplifylist(list(NA, 1, TRUE), NA, ansmask=c(F,T,T))
       equal.lengths(x[ansmask])                 ## simplifylist(list(NA, 1, 1:2), NA, ansmask=c(F,T,T))
