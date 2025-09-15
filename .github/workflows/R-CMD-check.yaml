@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - mac-clang17
   pull_request:
 
 name: R-CMD-check
