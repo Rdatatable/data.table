@@ -69,6 +69,12 @@ jobs:
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "22.04"))')
 
+      - name: Install R Package Build Dependencies on MacOS, from https://github.com/stan-dev/cmdstanr/pull/1072/files
+        if: runner.os == 'macOS'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
