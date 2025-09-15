@@ -1,6 +1,6 @@
 ---
 title: "Быстрое изменение формы данных с помощью data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
@@ -11,18 +11,13 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
+`{r} .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 В этом руководстве рассматривается стандартное использование функций
 изменения формы данных `melt` (из широкой в длинную) и `dcast` (из длинной в
@@ -31,7 +26,7 @@ knitr::opts_chunk$set(
 
 ***
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(width = 100L)
 ```
 
