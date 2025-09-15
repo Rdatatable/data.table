@@ -4,6 +4,7 @@ bool within_int32_repres(double x) {
   // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
   // standard states that behaviour is undefined only if the integral part of a
   // finite value of standard floating type cannot be represented.
+  // Also, note that these are not the same values you would get from INT32_MAX and INT32_MIN
   return R_FINITE(x) && x < 2147483648 && x > -2147483648;
 }
 
@@ -14,7 +15,7 @@ bool within_int64_repres(double x) {
 // used to error if not passed type double but this needed extra is.double() calls in calling R code
 // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
 bool fitsInInt32(SEXP x) {
-  if (!isReal(x))
+  if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
@@ -31,7 +32,7 @@ SEXP fitsInInt32R(SEXP x) {
 }
 
 bool fitsInInt64(SEXP x) {
-  if (!isReal(x))
+  if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
@@ -533,13 +534,119 @@ bool isRectangularList(SEXP x) {
   return isRectangular(x);
 }
 
-// TODO: use isDataFrame (when included in any R release).
-// isDataTable(x) || isFrame(x) || isRectangularList(x)
 bool perhapsDataTable(SEXP x) {
-  return isDataTable(x) || isFrame(x) || isRectangularList(x);
+  return isDataTable(x) || isDataFrame(x) || isRectangularList(x);
 }
 SEXP perhapsDataTableR(SEXP x) {
   return ScalarLogical(perhapsDataTable(x));
+}
+
+SEXP frev(SEXP x, SEXP copyArg) {
+  if (INHERITS(x, char_dataframe))
+    error(_("'x' should not be data.frame or data.table."));
+  if (!IS_TRUE_OR_FALSE(copyArg))
+    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
+  bool copy = LOGICAL(copyArg)[0];
+  R_xlen_t n = xlength(x);
+  int nprotect = 0;
+  if (copy) {
+    x = PROTECT(duplicate(x));
+    nprotect++;
+  }
+  if (n==0) {
+    UNPROTECT(nprotect);
+    return x;
+  }
+  switch (TYPEOF(x)) {
+    case LGLSXP: case INTSXP: {
+      int *restrict xd = INTEGER(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case REALSXP: if (INHERITS(x, char_integer64)) {
+      int64_t *xd = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int64_t tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } else {
+      double *xd = REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const double tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case STRSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = xd[i];
+        SET_STRING_ELT(x, i, xd[k]);
+        SET_STRING_ELT(x, k, tmp);
+      }
+    } break;
+    case VECSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = xd[i];
+        SET_VECTOR_ELT(x, i, xd[k]);
+        SET_VECTOR_ELT(x, k, tmp);
+      }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *xd = COMPLEX(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rcomplex tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case RAWSXP: {
+      Rbyte *xd = RAW(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rbyte tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+  default:
+    error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
+  }
+
+  SEXP names = PROTECT(getAttrib(x, R_NamesSymbol));
+  nprotect++;
+
+  if (copy) {
+    SEXP klass = PROTECT(getAttrib(x, R_ClassSymbol));
+    SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
+    nprotect += 2;
+    // swipe attributes from x
+    SET_ATTRIB(x, R_NilValue);
+    setAttrib(x, R_NamesSymbol, names);
+    setAttrib(x, R_ClassSymbol, klass);
+    setAttrib(x, R_LevelsSymbol, levels);
+  }
+  if (!isNull(names)) {
+    frev(names, ScalarLogical(FALSE));
+  }
+  UNPROTECT(nprotect);
+  return x;
 }
 
 void internal_error(const char *call_name, const char *format, ...) {

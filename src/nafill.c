@@ -90,7 +90,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
 /*
   OpenMP is being used here to parallelize the loop that fills missing values
     over columns of the input data. This includes handling different data types
-    and applying the designated filling method to each column in parallel. 
+    and applying the designated filling method to each column in parallel.
 */
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
@@ -180,8 +180,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     isInt64[i] = INHERITS(VECTOR_ELT(x, i), char_integer64);
   const void **fillp = (const void **)R_alloc(nx, sizeof(*fillp)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   if (hasFill) {
-    if (nx!=length(fill) && length(fill)!=1)
-      error(_("fill must be a vector of length 1 or a list of length of x"));
+    if (nx!=length(fill) && length(fill)!=1) {
+      if (itype == 0) {
+        error(_("fill must be a vector of length 1 or a list of length of x. Consider fcoalesce() to specify element-wise replacements."));
+      } else {
+        error(_("fill must be a vector of length 1 or a list of length of x."));
+      }
+    }
     if (!isNewList(fill)) {
       SEXP fill1 = fill;
       fill = PROTECT(allocVector(VECSXP, nx)); protecti++;
@@ -225,7 +230,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  ansMsg(vans, nx, verbose, __func__);
+  ansGetMsgs(vans, nx, verbose, __func__);
 
   if (verbose)
     Rprintf(Pl_(nx,

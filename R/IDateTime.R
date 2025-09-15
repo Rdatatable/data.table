@@ -91,6 +91,8 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
           years = ISOdate(year(x), 1L, 1L)))
 }
 
+chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
+
 #Adapted from `+.Date`
 `+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
@@ -115,7 +117,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (storage.mode(e1) != "integer")
     internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stopf("unary - is not defined for \"IDate\" objects")
+    stopf('unary - is not defined for "IDate" objects')
   if (inherits(e2, "difftime"))
     internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
@@ -127,7 +129,12 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
     # ii) .Date was newly exposed in R some time after 3.4.4
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
+  if (inherits(e2, "Date")) {
+    setattr(ans, "class", "difftime")
+    setattr(ans, "units", "days")
+  } else {
+    setattr(ans, "class", c("IDate", "Date"))
+  }
   ans
 }
 
@@ -342,7 +349,8 @@ yday    = function(x) convertDate(as.IDate(x), "yday")
 wday    = function(x) convertDate(as.IDate(x), "wday")
 mday    = function(x) convertDate(as.IDate(x), "mday")
 week    = function(x) convertDate(as.IDate(x), "week")
-isoweek = function(x) {
+# TODO(#3279): Investigate if improved as.IDate() makes our below implementation faster than this
+isoweek = function(x) as.integer(format(as.IDate(x), "%V"))
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
   # Approach:
@@ -350,11 +358,11 @@ isoweek = function(x) {
   # * Find the number of weeks having passed between
   #   January 1st of the year of the nearest Thursdays and x
 
-  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
-  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
-  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
-  1L + (nearest_thurs - year_start) %/% 7L
-}
+#  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
+#  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
+#  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
+#  1L + (nearest_thurs - year_start) %/% 7L
+isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
 
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")
