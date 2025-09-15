@@ -10,7 +10,7 @@ name: R-CMD-check
 
 concurrency:
   group: ${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   R-CMD-check:
@@ -29,6 +29,8 @@ jobs:
           # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
           # TODO(remotes>2.5.0): Use 24.04[noble?]
           - {os: ubuntu-22.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"}
+          - {os: macos-14, r: 'release'}
+          - {os: macos-15, r: 'release'}
           # - {os: ubuntu-22.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", http-user-agent: "R/4.1.0 (ubuntu-22.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
           #   GLCI covers R-devel; no need to delay contributors in dev due to changes in R-devel in recent days
 
@@ -60,13 +62,30 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
           restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
 
-      - name: Install system dependencies
+      - name: Install GNU/Linux dependencies
         if: runner.os == 'Linux'
         run: |
           while read -r cmd
           do
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "22.04"))')
+
+      - name: Install R Package Build Dependencies on MacOS
+        if: runner.os == 'macOS'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
+      - name: Intall and configure OpenMP runtime
+        if: runner.os == 'macOS'
+        run: |
+          if clang --version | grep 'clang version 17'; then
+            curl -O https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
+            sudo tar fvvxz openmp-19.1.0-darwin20-Release.tar.gz -C /
+            echo 'PKG_CFLAGS=-Xclang -fopenmp' >> $GITHUB_ENV
+            # Not the R-bundled -lomp, but our custom file installed just now
+            echo 'PKG_LIBS=/usr/local/lib/libomp.dylib' >> $GITHUB_ENV
+          fi # otherwise R-bundled runtime is fine
 
       - name: Install dependencies
         run: |
@@ -79,6 +98,7 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: |
           options(crayon.enabled = TRUE)
+          pkgbuild::check_build_tools(debug = TRUE)
           rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
         shell: Rscript {0}
 
