@@ -314,6 +314,8 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - curl -LO https://github.com/XQuartz/XQuartz/releases/download/XQuartz-2.8.5/XQuartz-2.8.5.pkg
+    - sudo installer -pkg "$(ls -1t XQuartz-*.pkg | head -n 1)" -target /
     - curl -O $R_BIN
     - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
     - sudo Rscript -e "source('https://mac.R-project.org/bin/install.R'); install.libs('gettext')"
