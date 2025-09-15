@@ -61,6 +61,7 @@ simplifylist = function(x, fill, ansmask) {
       ## name fill if all ans have same names
       if (
         ans.ut != "list" &&
+        length(fill) == length(ans1) &&
         is.null(names(fill)) &&
         !is.null(names(ans1)) &&                                             ## simplifylist(list(NA, c(1,2), c(1,2)), NA, ansmask=c(F,T,T))
         len_unq(vapply_1b(x[ansmask], any_NA_names, use.names=FALSE)) <= 1L && ## simplifylist(list(NA, c(a=1,b=2), setNames(c(1, 2), c(NA,"b"))), NA, ansmask=c(F,T,T))
