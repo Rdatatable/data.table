@@ -1,0 +1,12 @@
+on:
+  push:
+    branches:
+      - mac-clang17
+name: what-was-that-about-clang-17
+
+jobs:
+  compiler-version:
+    runs-on: macos-15
+    steps:
+      - name: clang --version
+        run: cc --version
