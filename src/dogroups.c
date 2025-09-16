@@ -87,9 +87,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
   SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
   
-  const bool showProgress = LOGICAL(showProgressArg)[0]==1 && ngrp > 1; // showProgress only if more than 1 group
+  int updateTime = INTEGER(showProgressArg)[0];
+  const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
-  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
+  double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before printing progress
 
   defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
   SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
@@ -456,7 +457,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
         // # nocov end
       }
-      nextTime = now+1;
+      nextTime = now+updateTime;
       hasPrinted = true;
     }
     ansloc += maxn;
