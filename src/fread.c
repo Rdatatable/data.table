@@ -47,7 +47,7 @@ enum quote_rule_t
     // Fields may be quoted, but any quotes inside will appear verbatim and
     // not escaped in any way. It is not always possible to parse the file
     // unambiguously, but we give it a try anyways. A quote will be presumed
-    // to mark the end of the field if it is followed by the field separator.
+    // to mark the end of the field iff it is followed by the field separator.
     // Under this rule eol characters cannot appear inside the field.
     // For example: <<...,"hello "world"",...>>
     QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED,
@@ -292,7 +292,7 @@ static inline bool eol(const char **pch)
 }
 
 /**
- * Return True if `ch` is a valid field terminator character: either a field
+ * Return True iff `ch` is a valid field terminator character: either a field
  * separator or a newline.
  */
 static inline bool end_of_field(const char *ch)
