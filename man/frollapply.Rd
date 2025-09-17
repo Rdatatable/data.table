@@ -84,7 +84,11 @@ setDTthreads(old)
 }
         \item Objects returned from forked processes, \code{FUN}, are serialized. This may cause problems for objects that are meant not to be serialized, like data.table. We are handling that for data.table class internally in \code{frollapply} whenever \code{FUN} is returning data.table (which is checked on the results of the first \code{FUN} call so it assumes function is type stable). If data.table is nested in another object returned from \code{FUN} then the problem may still manifest, in such case one has to call \code{setDT} on objects returned from \code{FUN}. This can be also nicely handled via \code{simplify} argument when passing a function that calls \code{setDT} on nested data.table objects returned from \code{FUN}. Anyway, returning data.table from \code{FUN} should, in majority of cases, be avoided from the performance reasons, see \emph{UDF optimization} section for details.
 \preformatted{
-is.ok = function(x) {stopifnot(is.data.table(x)); format(attr(x, ".internal.selfref", TRUE))!="<pointer: (nil)>"}
+is.ok = function(x) {
+  stopifnot(is.data.table(x))
+  out = capture.output(print(attr(x, ".internal.selfref", TRUE)))
+  out!="<pointer: (nil)>" && out!="<pointer: 0x0>"
+}
 
 setDTthreads(2, throttle=1) ## disable throttle
 ## frollapply will fix DT in most cases
