@@ -1798,7 +1798,7 @@ if (use.fork) {
   setDTthreads(2)
   test(6010.763, frollapply(c(1, 9), N=1L, FUN=identity), c(1,9)) ## good only because threads >= input
   test(6010.764, frollapply(c(1, 5, 9), N=1L, FUN=identity), c(5,5,9)) ## unexpected again
-  is.ok = function(x) {stopifnot(is.data.table(x)); capture.output(print(attr(x, ".internal.selfref", TRUE)))!="<pointer: (nil)>"}
+  is.ok = function(x) {stopifnot(is.data.table(x)); out=capture.output(print(attr(x, ".internal.selfref", TRUE))); out!="<pointer: (nil)>" && out!="<pointer: 0x0>"}
   ans = frollapply(1:2, 2, data.table, simplify=FALSE) ## default: fill=NA
   test(6010.770, is.ok(ans[[2L]])) ## frollapply detected DT and fixed
   ans = frollapply(1:2, 2, data.table, fill=data.table(NA)) ## fill type match
