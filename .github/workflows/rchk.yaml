@@ -18,7 +18,14 @@
 on:
   push:
     branches: [master]
+    paths:
+      - '.github/workflows/rchk.yaml'
+      - 'src/**'
   pull_request:
+    paths:
+      - '.github/workflows/rchk.yaml'
+      - 'src/**'
+  workflow_dispatch:
 
 name: 'rchk'
 
