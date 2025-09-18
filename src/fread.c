@@ -453,15 +453,15 @@ static const char* filesize_to_str(const uint64_t fsize)
   return output;
 }
 
-double copyFile(size_t fileSize)  // only called in very very rare cases
+double copy_file(size_t file_size)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = malloc(fileSize + 1 /* extra \0 */);
+  mmp_copy = malloc(file_size + 1 /* extra \0 */);
   if (!mmp_copy)
     return -1.0; // # nocov
-  memcpy(mmp_copy, mmp, fileSize);
+  memcpy(mmp_copy, mmp, file_size);
   sof = mmp_copy;
-  eof = (char*)OFFSET_POINTER(mmp_copy, fileSize);
+  eof = (char*)OFFSET_POINTER(mmp_copy, file_size);
   return wallclock() - tt;
 }
 
@@ -1603,7 +1603,7 @@ int freadMain(freadMainArgs _args)
         if (verbose)
           DTPRINT(_("  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in RAM. %s.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
-        double time_taken = copyFile(fileSize);
+        double time_taken = copy_file(fileSize);
         if (time_taken == -1.0) {
           // # nocov start
           if (!verbose)
@@ -1892,7 +1892,7 @@ int freadMain(freadMainArgs _args)
         if (verbose)
           DTPRINT(_("  Copying file in RAM. %s\n"), msg);
         ASSERT(mmp_copy == NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
-        double time_taken = copyFile(fileSize);
+        double time_taken = copy_file(fileSize);
         if (time_taken == -1.0) {
           // # nocov start
           if (!verbose)
@@ -1929,7 +1929,7 @@ int freadMain(freadMainArgs _args)
   if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header != NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header ? "true" : "false");
 
-  type =    malloc(sizeof(*type) * ncol);
+  type = malloc(sizeof(*type) * ncol);
   tmpType = malloc(sizeof(*tmpType) * ncol);  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) {
     free(type); free(tmpType); // # nocov
