@@ -77,6 +77,26 @@ jobs:
         with:
           type: 'minimal'
 
+      - name: Does dynamic dispatch work in OpenMP?
+        if: runner.os == 'macOS'
+        run: |
+          cat > foo.c <<'EOF'
+          #ifdef _OPENMP
+           #include <omp.h>
+          #endif
+          void test_openmp(int * result) {
+           int sum = 0;
+          #ifdef _OPENMP
+           #pragma omp parallel for reduction(+:sum) num_threads(2) schedule(dynamic)
+           for (int i = 1; i <= 2; ++i) sum += i;
+          #endif
+           *result = sum;
+          }
+          EOF
+          PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD SHLIB foo.c
+          R -q -s -e 'dyn.load("foo.so"); .C("test_openmp", result = integer(1))' || true
+          rm -vf foo.o foo.so
+
       - name: Intall and configure OpenMP runtime
         if: runner.os == 'macOS'
         run: |
@@ -87,6 +107,13 @@ jobs:
             # Not the R-bundled -lomp, but our custom file installed just now
             echo 'PKG_LIBS=/usr/local/lib/libomp.dylib' >> $GITHUB_ENV
           fi # otherwise R-bundled runtime is fine
+
+      - name: How about now?
+        if: runner.os == 'macOS'
+        run: |
+          R CMD SHLIB foo.c
+          R -q -s -e 'dyn.load("foo.so"); .C("test_openmp", result = integer(1))' || true
+          rm -vf foo.o foo.so foo.c
 
       - name: Install dependencies
         run: |
