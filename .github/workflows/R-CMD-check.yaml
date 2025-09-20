@@ -15,6 +15,7 @@ jobs:
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
     strategy:
+      fail-fast: true
       matrix:
         config:
           # Rdatatable has full-strength GLCI which runs after merge. So we just need a few
