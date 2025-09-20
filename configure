@@ -73,11 +73,12 @@ fi
 # Specifically use schedule(dynamic) to distinguish incompatibilities in OpenMP runtime on macOS, #7318
 
 cat <<EOF > test-omp.c
-#include <omp.h>
 void test_openmp(int * result) {
  int sum = 0;
+#ifdef _OPENMP
  #pragma omp parallel for reduction(+:sum) num_threads(2) schedule(dynamic)
  for (int i = 1; i <= 2; ++i) sum += i;
+#endif
  *result = sum;
 }
 EOF
@@ -110,8 +111,8 @@ stopifnot(identical(ans, 3L))
 
 detect_openmp () {
   # OpenMP flags provided in environment variables or specified when configuring R? Does -fopenmp work?
-  test_openmp_variant '$(SHLIB_OPENMP_CFLAGS)' '$(SHLIB_OPENMP_CFLAGS)' \
-  || test_openmp_variant "" "" \
+  test_openmp_variant "" "" \
+  || test_openmp_variant '$(SHLIB_OPENMP_CFLAGS)' '$(SHLIB_OPENMP_CFLAGS)' \
   || test_openmp_variant -fopenmp -fopenmp \
   && return
 
