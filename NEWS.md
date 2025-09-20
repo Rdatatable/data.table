@@ -246,7 +246,51 @@
     #9: 2025-09-22     9         8           9.0
     ```
 
-19. New rolling functions, `frollmin` and `frollprod`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
+19. New rolling functions: `frollmin`, `frollprod` and `frollmedian`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation. Implementation of rolling median is based on a novel algorithm "sort-median" described by [@suomela](https://github.com/suomela) in his 2014 paper [Median Filtering is Equivalent to Sorting](https://arxiv.org/abs/1406.1717). "sort-median" scales very well, not only for size of input vector but also for size of rolling window.
+    ```r
+    rollmedian = function(x, n) {
+      ans = rep(NA_real_, nx<-length(x))
+      if (n<=nx) for (i in n:nx) ans[i] = median(x[(i-n+1L):(i)])
+      ans
+    }
+    library(data.table)
+    setDTthreads(8)
+    set.seed(108)
+    x = rnorm(1e5)
+
+    n = 100
+    system.time(rollmedian(x, n))
+    #   user  system elapsed
+    #  2.049   0.001   2.051
+    system.time(frollapply(x, n, median, simplify=unlist))
+    #   user  system elapsed
+    #  3.071   0.223   0.436
+    system.time(frollmedian(x, n))
+    #   user  system elapsed
+    #  0.013   0.000   0.004
+
+    n = 1000
+    system.time(rollmedian(x, n))
+    #   user  system elapsed
+    #  3.496   0.009   3.507
+    system.time(frollapply(x, n, median, simplify=unlist))
+    #   user  system elapsed
+    #  4.552   0.307   0.632
+    system.time(frollmedian(x, n))
+    #   user  system elapsed
+    #  0.015   0.000   0.004
+
+    n = 10000
+    system.time(rollmedian(x, n))
+    #   user  system elapsed
+    # 16.350   0.025  16.382
+    system.time(frollapply(x, n, median, simplify=unlist))
+    #   user  system elapsed
+    # 14.865   0.722   2.267
+    system.time(frollmedian(x, n))
+    #   user  system elapsed
+    #  0.028   0.000   0.005
+    ```
 
 ### BUG FIXES
 
