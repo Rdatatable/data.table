@@ -248,6 +248,8 @@
 
 19. New rolling functions, `frollmin` and `frollprod`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
 
+20. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
+
 ### BUG FIXES
 
 1. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
