@@ -8,6 +8,10 @@ on:
 
 name: R-CMD-check
 
+concurrency:
+  group: ${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
