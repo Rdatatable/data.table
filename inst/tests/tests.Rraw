@@ -21655,3 +21655,20 @@ local({
   ...123 = 'a'
   test(2339.11, DT[, .....123], DT)
 })
+
+# Add a function for validating data.tables that might need setDT #7329
+test(2340.00, selfref.ok(data.frame(V1=1L)), error="selfref.ok expects data.table class object")
+d1 = structure(list(V1=1L), class=c("data.table","data.frame"))
+test(2340.01, selfref.ok(d1), FALSE)
+setDT(d1)
+test(2340.02, selfref.ok(d1), TRUE)
+saveRDS(d1, f<-tempfile())
+d2 = readRDS(f)
+test(2340.03, selfref.ok(d2), FALSE)
+invisible(file.remove(f))
+setDT(d2)
+test(2340.04, selfref.ok(d2), TRUE)
+d3 = unserialize(serialize(d2, NULL))
+test(2340.05, selfref.ok(d3), FALSE)
+setDT(d3)
+test(2340.06, selfref.ok(d3), TRUE)
