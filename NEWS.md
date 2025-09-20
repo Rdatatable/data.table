@@ -311,6 +311,8 @@
 
 6. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
 
+7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `selfref.ok()` tests just that. See manual for examples.
+
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
