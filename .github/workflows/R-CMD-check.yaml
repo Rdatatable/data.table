@@ -83,9 +83,6 @@ jobs:
           if clang --version | grep 'clang version 17'; then
             curl -O https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
             sudo tar fvvxz openmp-19.1.0-darwin20-Release.tar.gz -C /
-            echo 'PKG_CFLAGS=-Xclang -fopenmp' >> $GITHUB_ENV
-            # Not the R-bundled -lomp, but our custom file installed just now
-            echo 'PKG_LIBS=/usr/local/lib/libomp.dylib' >> $GITHUB_ENV
           fi # otherwise R-bundled runtime is fine
 
       - name: Install dependencies
