@@ -9,6 +9,7 @@
 if (base::getRversion() < "3.5.0") {
   isTRUE  = function(x) is.logical(x) && length(x)==1L && !is.na(x) && x    # backport R's new implementation of isTRUE
   isFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x) && !x   # backport isFALSE that was added in R 3.5.0
+  suspendInterrupts = function(expr) expr
 }
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
@@ -217,17 +218,6 @@ rss = function() {  #5515 #5517
   if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
   round(ans / 1024.0, 1L)  # return MiB
   # nocov end
-}
-
-# convert char to factor retaining order #4837
-fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
-  if (!isTRUEorFALSE(sort))
-    stopf("argument 'sort' must be TRUE or FALSE")
-  if (!isTRUEorFALSE(rev))
-    stopf("argument 'rev' must be TRUE or FALSE")
-  if (sort) levels = sort(levels)
-  if (rev) levels = frev(levels)
-  factor(x, levels=levels, ...)
 }
 
 formula_vars = function(f, x) { # .formula2varlist is not API and seems to have appeared after R-4.2, #6841

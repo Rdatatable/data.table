@@ -119,6 +119,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
+      # not worth doing a behavior test here, so just use getRversion().
+      if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
+        stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
       FUN = if (w<=2L || gzsig) gzfile else bzfile
       decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
