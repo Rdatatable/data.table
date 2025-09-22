@@ -3,6 +3,8 @@
 \title{Tests self reference of a data.table}
 \description{
   In rare situations, as presented in examples below, a data.table object may lose its internal attribute that holds a self-reference. This function tests just that.
+
+  It is not expected that many end users will have need for this highly technical function about data.table internals.
 }
 \usage{
   .selfref.ok(x)
