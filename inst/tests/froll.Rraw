@@ -1816,25 +1816,25 @@ if (use.fork) {
   test(6010.764, frollapply(c(1, 5, 9), N=1L, FUN=identity), c(5,5,9)) ## unexpected again
   ans = frollapply(1:2, 2, data.table)
   is.ok = function(x) {stopifnot(is.data.table(x)); out=capture.output(print(attr(x, ".internal.selfref", TRUE))); out!="<pointer: (nil)>" && out!="<pointer: 0x0>"}
-  test(6010.769, is.ok(ans)) ## frollapply will fix DT in most cases
+  test(6010.769, .selfref.ok(ans)) ## frollapply will fix DT in most cases
   ans = frollapply(1:2, 2, data.table, simplify=FALSE) ## default: fill=NA
-  test(6010.770, is.ok(ans[[2L]])) ## frollapply detected DT and fixed
+  test(6010.770, .selfref.ok(ans[[2L]])) ## frollapply detected DT and fixed
   ans = frollapply(1:2, 2, data.table, fill=data.table(c(NA,NA))) ## fill size match
-  test(6010.771, is.ok(ans)) ## simplify=TRUE did run rbindlist, but frollapply fixed anyway
+  test(6010.771, .selfref.ok(ans)) ## simplify=TRUE did run rbindlist, but frollapply fixed anyway
   ans = frollapply(1:2, 2, data.table, fill=data.table(NA)) ## fill size not match, no rbindlist, but frollapply fixed anyway
-  test(6010.772, is.ok(ans[[2L]]))
+  test(6010.772, .selfref.ok(ans[[2L]]))
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
-  test(6010.773, !is.ok(ans[[2L]][[1L]]))
+  test(6010.773, !.selfref.ok(ans[[2L]][[1L]]))
   test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
   ans = lapply(ans, lapply, setDT)
-  test(6010.774, is.ok(ans[[2L]][[1L]])) ## fix after
+  test(6010.774, .selfref.ok(ans[[2L]][[1L]])) ## fix after
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=function(x) lapply(x, lapply, setDT))
-  test(6010.775, is.ok(ans[[2L]][[1L]])) ## fix inside frollapply via simplify
+  test(6010.775, .selfref.ok(ans[[2L]][[1L]])) ## fix inside frollapply via simplify
   f = function(x) (if (x[1L]==1L) data.frame else data.table)(x) ## automatic fix may not work for a non-type stable function
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=FALSE)
-  test(6010.776, !is.ok(ans[[3L]]))
+  test(6010.776, !.selfref.ok(ans[[3L]]))
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=function(x) lapply(x, function(y) if (is.data.table(y)) setDT(y) else y))
-  test(6010.777, is.ok(ans[[3L]])) ## fix inside frollapply via simplify
+  test(6010.777, .selfref.ok(ans[[3L]])) ## fix inside frollapply via simplify
   setDTthreads(old, throttle=1024) ## re-enable throttle
 }
 

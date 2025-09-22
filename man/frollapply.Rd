@@ -85,24 +85,18 @@ setDTthreads(old)
 }
         \item Objects returned from forked processes, \code{FUN}, are serialized. This may cause problems for objects that are meant not to be serialized, like data.table. We are handling that for data.table class internally in \code{frollapply} whenever \code{FUN} is returning data.table (which is checked on the results of the first \code{FUN} call so it assumes function is type stable). If data.table is nested in another object returned from \code{FUN} then the problem may still manifest, in such case one has to call \code{setDT} on objects returned from \code{FUN}. This can be also nicely handled via \code{simplify} argument when passing a function that calls \code{setDT} on nested data.table objects returned from \code{FUN}. Anyway, returning data.table from \code{FUN} should, in majority of cases, be avoided from the performance reasons, see \emph{UDF optimization} section for details.
 \preformatted{
-is.ok = function(x) {
-  stopifnot(is.data.table(x))
-  out = capture.output(print(attr(x, ".internal.selfref", TRUE)))
-  out!="<pointer: (nil)>" && out!="<pointer: 0x0>"
-}
-
 setDTthreads(2, throttle=1) ## disable throttle
 ## frollapply will fix DT in most cases
 ans = frollapply(1:2, 2, data.table)
-is.ok(ans)
+.selfref.ok(ans)
 #[1] TRUE
 ans = frollapply(1:2, 2, data.table, simplify=FALSE)
-is.ok(ans[[2L]])
+.selfref.ok(ans[[2L]])
 #[1] TRUE
 
 ## nested DT not fixed
 ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
-is.ok(ans[[2L]][[1L]])
+.selfref.ok(ans[[2L]][[1L]])
 #[1] FALSE
 #### now if we want to use it
 set(ans[[2L]][[1L]],, "newcol", 1L)
@@ -110,24 +104,24 @@ set(ans[[2L]][[1L]],, "newcol", 1L)
 #  This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it.
 #### fix as explained in error message
 ans = lapply(ans, lapply, setDT)
-is.ok(ans[[2L]][[1L]])
+.selfref.ok(ans[[2L]][[1L]])
 #[1] TRUE
 
 ## fix inside frollapply via simplify
 simplifix = function(x) lapply(x, lapply, setDT)
 ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=simplifix)
-is.ok(ans[[2L]][[1L]])
+.selfref.ok(ans[[2L]][[1L]])
 #[1] TRUE
 
 ## automatic fix may not work for a non-type stable function
 f = function(x) (if (x[1L]==1L) data.frame else data.table)(x)
 ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=FALSE)
-is.ok(ans[[3L]])
+.selfref.ok(ans[[3L]])
 #[1] FALSE
 #### fix inside frollapply via simplify
 simplifix = function(x) lapply(x, function(y) if (is.data.table(y)) setDT(y) else y)
 ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=simplifix)
-is.ok(ans[[3L]])
+.selfref.ok(ans[[3L]])
 #[1] TRUE
 
 setDTthreads(2, throttle=1024) ## enable throttle
