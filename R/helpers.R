@@ -10,3 +10,10 @@ fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
   if (rev) levels = frev(levels)
   factor(x, levels=levels, ...)
 }
+
+# add a function for validating data.tables that might need setDT #7329
+.selfref.ok = function(x) {
+  if (!is.data.table(x))
+    stopf(".selfref.ok expects data.table class object.")
+  selfrefok(x, verbose=FALSE) > 0L
+}
