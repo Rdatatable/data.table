@@ -1078,11 +1078,7 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
  * algo="fast" is a novel sort-median algorithm
  * names suffixed with "2" are corresponding versions that support even k window size, as opposed to the algorithm described in the original paper
  */
-
-// four branches have missing codecov, we use those flags to detect that users' code reached those lines
-// then we raise a warning asking for report and to use algo=exact for now
-int codecov_delete_else = 0, codecov_m0_i = 0, codecov_s0_0 = 0, codecov_xam = 0;
-
+ 
 #ifdef MIN
 #undef MIN
 #endif
@@ -1129,20 +1125,14 @@ static void delete(int i, const double *x, int *prev, int *next, int *m, int *s,
   prev[next[i]] = prev[i];
   if (SMALL(i)) {
     s[0]--;
-    //codecov_delete_else = 1;  // search for codecov above; this is only dev testing warning from the branch below, uncomment this and run frollmedian(1:9, 3)
   } else {
-    // # nocov start
-    codecov_delete_else = 1; // search for codecov above
     if (m[0] == i) {
-      codecov_m0_i = 1; // search for codecov above
       m[0] = next[m[0]];
     }
     if (s[0] > 0) {
-      codecov_s0_0 = 1; // search for codecov above
       m[0] = prev[m[0]];
       s[0]--;
     }
-    // # nocov end
   }
 }
 #define DELETE(j) delete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], tail)
@@ -1169,10 +1159,7 @@ static double med2(const double *xa, const double *xb, int ma, int na, int mb, i
   double xbm = mb == tail ? R_PosInf : xb[mb];
   double xbn = nb == tail ? R_PosInf : xb[nb];
   if (xam == xbm) {
-    // # nocov start
-    codecov_xam = 1; // search for codecov above
     return xam;
-    // # nocov end
   } else if (xam < xbm) { // so xam < xbn
     if (xan <= xbm) { // so xan <= xbn
       return (xam + xan) / 2;
@@ -1378,11 +1365,6 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
   for (int i=0; i<k-1; i++) {
     ansv[i] = fill;
   }
-  // missing codecov lines catching - search for codecov above
-  codecov_delete_else = 0;
-  codecov_m0_i = 0;
-  codecov_s0_0 = 0;
-  codecov_xam = 0;
   // main rolling loop - called post processing in the paper
   if (verbose)
     tic = omp_get_wtime();
@@ -1470,12 +1452,6 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
     }
   }
   free(next); free(prev); free(s); free(n); free(m); free(o);
-  if (codecov_delete_else || codecov_m0_i || codecov_s0_0 || codecov_xam) {
-    // # nocov start
-    ans->status = 2;
-    snprintf(end(ans->message[2]), 500, _("%s: algo='fast' algorithm has reached an untested lines of code: %d%d%d%d. Please report to data.table issue tracker including this error message and ideally a reproducible example. Please use algo='exact' for now.\n"), "frollmedianFast", codecov_delete_else, codecov_m0_i, codecov_s0_0, codecov_xam);
-    // # nocov end
-  }
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: rolling took %.3f\n"), "frollmedianFast", omp_get_wtime()-tic);
 }
