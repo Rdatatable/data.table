@@ -40,7 +40,8 @@
   Setting \code{by.column} to \code{FALSE} allows to apply function on multiple variables rather than a single vector. Then \code{X} expects to be data.table, data.table or a list of equal length vectors, and window size provided in \code{N} refers to number of rows (or length of a vectors in a list). See examples for use cases. Error \emph{"incorrect number of dimensions"} can be commonly observed when \code{by.column} was not set to \code{FALSE} when \code{FUN} expects its input to be a data.frame/data.table.
 }
 \section{\code{simplify} argument}{
-  One should avoid \code{simplify=TRUE} when writing robust code. One reason is performance, as explained in \emph{Performance consideration} section below. Another is backward compatibility. If results are not automatically simplified when \code{simplify=TRUE} then, for backward compatibility, one should use \code{simplify=FALSE} explicitly. In future version we may improve internal \code{simplifylist} function, then \code{simplify=TRUE} may return object of a different type, breaking downstream code. If results are already simplified with \code{simplify=TRUE}, then it can be considered backward compatible.
+  When set to \code{TRUE}, the default, results from rolling function which are normally stored in a list may be simplified either with \code{unlist} or \code{rbindlist}. It also attempts to match type, size and names of \code{fill} argument to the results of a function.
+  One should avoid \code{simplify=TRUE} when writing robust code. One reason is performance, as explained in \emph{Performance consideration} section below. Another is backward compatibility. For backward compatibility and performance one should always provide desired function to \code{simplify} explicitly. In future version we may change internal \code{simplifylist} function, then \code{simplify=TRUE} may return object of a different type, breaking downstream code.
 }
 \section{Caveats}{
   With great power comes great responsibility.
@@ -57,7 +58,7 @@ frollapply(c(1, 9), N=1L, FUN=list) ## unexpected
 #2:     9
 setDTthreads(2, throttle=1) ## disable throttle
 frollapply(c(1, 9), N=1L, FUN=identity) ## good only because threads >= input
-#[1] 1 9
+#[1] 1 9                                ## on Linux and Macos
 frollapply(c(1, 5, 9), N=1L, FUN=identity) ## unexpected again
 #[1] 5 5 9
 }
@@ -84,24 +85,18 @@ setDTthreads(old)
 }
         \item Objects returned from forked processes, \code{FUN}, are serialized. This may cause problems for objects that are meant not to be serialized, like data.table. We are handling that for data.table class internally in \code{frollapply} whenever \code{FUN} is returning data.table (which is checked on the results of the first \code{FUN} call so it assumes function is type stable). If data.table is nested in another object returned from \code{FUN} then the problem may still manifest, in such case one has to call \code{setDT} on objects returned from \code{FUN}. This can be also nicely handled via \code{simplify} argument when passing a function that calls \code{setDT} on nested data.table objects returned from \code{FUN}. Anyway, returning data.table from \code{FUN} should, in majority of cases, be avoided from the performance reasons, see \emph{UDF optimization} section for details.
 \preformatted{
-is.ok = function(x) {
-  stopifnot(is.data.table(x))
-  out = capture.output(print(attr(x, ".internal.selfref", TRUE)))
-  out!="<pointer: (nil)>" && out!="<pointer: 0x0>"
-}
-
 setDTthreads(2, throttle=1) ## disable throttle
 ## frollapply will fix DT in most cases
-ans = frollapply(1:2, 2, data.table, fill=data.table(NA))
-is.ok(ans)
+ans = frollapply(1:2, 2, data.table)
+.selfref.ok(ans)
 #[1] TRUE
-ans = frollapply(1:2, 2, data.table, fill=data.table(NA), simplify=FALSE)
-is.ok(ans[[2L]])
+ans = frollapply(1:2, 2, data.table, simplify=FALSE)
+.selfref.ok(ans[[2L]])
 #[1] TRUE
 
 ## nested DT not fixed
 ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
-is.ok(ans[[2L]][[1L]])
+.selfref.ok(ans[[2L]][[1L]])
 #[1] FALSE
 #### now if we want to use it
 set(ans[[2L]][[1L]],, "newcol", 1L)
@@ -109,25 +104,27 @@ set(ans[[2L]][[1L]],, "newcol", 1L)
 #  This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it.
 #### fix as explained in error message
 ans = lapply(ans, lapply, setDT)
-is.ok(ans[[2L]][[1L]])
+.selfref.ok(ans[[2L]][[1L]])
 #[1] TRUE
 
 ## fix inside frollapply via simplify
 simplifix = function(x) lapply(x, lapply, setDT)
 ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=simplifix)
-is.ok(ans[[2L]][[1L]])
+.selfref.ok(ans[[2L]][[1L]])
 #[1] TRUE
 
 ## automatic fix may not work for a non-type stable function
 f = function(x) (if (x[1L]==1L) data.frame else data.table)(x)
 ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=FALSE)
-is.ok(ans[[3L]])
+.selfref.ok(ans[[3L]])
 #[1] FALSE
 #### fix inside frollapply via simplify
 simplifix = function(x) lapply(x, function(y) if (is.data.table(y)) setDT(y) else y)
 ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=simplifix)
-is.ok(ans[[3L]])
+.selfref.ok(ans[[3L]])
 #[1] TRUE
+
+setDTthreads(2, throttle=1024) ## enable throttle
 }
     }
     \item Due to possible future improvements of handling simplification of results returned from rolling function, the default \code{simplify=TRUE} may not be backward compatible for functions that produce results that haven't been already automatically simplified. See \emph{\code{simplify} argument} section for details.
@@ -143,10 +140,10 @@ x = setDT(lapply(1:1000, function(x) as.double(rep.int(x,1e4L))))
 f = function(x) sum(x$V1 * x$V2)
 system.time(frollapply(x, 100, f, by.column=FALSE))
 #   user  system elapsed
-#  0.689   0.180   0.164
+#  0.376   0.073   0.233
 system.time(frollapply(x[, c("V1","V2"), with=FALSE], 100, f, by.column=FALSE))
 #   user  system elapsed
-#  0.057   0.142   0.070
+#  0.376   0.073   0.233
 }
     \item Avoid \code{partial} argument, see \emph{\code{partial} argument} section of \code{\link{froll}} manual.
     \item Avoid \code{simplify=TRUE} and provide a function instead:
@@ -154,10 +151,10 @@ system.time(frollapply(x[, c("V1","V2"), with=FALSE], 100, f, by.column=FALSE))
 x = rnorm(1e5)
 system.time(frollapply(x, 2, function(x) 1L, simplify=TRUE))
 #   user  system elapsed
-#  0.212   0.188   0.156
+#  0.227   0.095   0.236
 system.time(frollapply(x, 2, function(x) 1L, simplify=unlist))
 #   user  system elapsed
-#  0.105   0.167   0.056
+#  0.054   0.049   0.091
 }
     \item CPU threads utilization in \code{frollapply} can be controlled by \code{\link{setDTthreads}}, which by default uses half of available CPU threads. Usage of multiple CPU threads will be throttled for small input, as described in \code{\link{setDTthreads}} manual.
     \item Optimization that avoids repeated allocation of a window subset (see \emph{Implementation} section for details), in case of adaptive rolling function, depends on R's \emph{growable bit}. This feature has been added in R 3.4.0. Adaptive \code{frollapply} will still work on older versions of R but, due to repeated allocation of window subset, it will be much slower.
@@ -173,12 +170,12 @@ fun1 = function(x) {tmp=range(x); data.table(min=tmp[1L], max=tmp[2L])}
 fun2 = function(x) {tmp=range(x); list(min=tmp[1L], max=tmp[2L])}
 fill1 = data.table(min=NA_integer_, max=NA_integer_)
 fill2 = list(min=NA_integer_, max=NA_integer_)
-system.time(a<-frollapply(1:1e4, 100, fun1, fill=fill1))
+system.time(a<-frollapply(1:1e4, 100, fun1, fill=fill1, simplify=rbindlist))
 #   user  system elapsed
-#  1.064   0.765   0.421
-system.time(b<-frollapply(1:1e4, 100, fun2, fill=fill2))
+#  0.934   0.347   0.706
+system.time(b<-frollapply(1:1e4, 100, fun2, fill=fill2, simplify=rbindlist))
 #   user  system elapsed
-#  0.082   0.221   0.112
+#  0.010   0.033   0.094
 all.equal(a, b)
 #[1] TRUE
 }
@@ -268,8 +265,7 @@ x[, "flow" := frollapply(.(Sepal.Length, Sepal.Width), 2L, flow, by.column=FALSE
 ## rolling regression: by.column=FALSE
 f = function(x) coef(lm(v2 ~ v1, data=x))
 x = data.table(v1=rnorm(120), v2=rnorm(120))
-coef.fill = c("(Intercept)"=NA_real_, "v1"=NA_real_)
-frollapply(x, 4, f, by.column=FALSE, fill=coef.fill)
+frollapply(x, 4, f, by.column=FALSE)
 }
 \seealso{
   \code{\link{froll}}, \code{\link{frolladapt}}, \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
