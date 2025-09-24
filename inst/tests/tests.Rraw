@@ -147,6 +147,20 @@ if (!test_longdouble) {
 tt = Sys.getenv("TZ", unset=NA)
 TZnotUTC = !identical(tt,"") && !is_utc(tt)
 
+## nice utf8 testing code added in #7210 - to be called from inside local() !
+utf8_check_expr = quote(l10n_info()$`UTF-8` || {
+  lc_ctype = Sys.getlocale('LC_CTYPE')
+  lc_wantctype = 'en_US.UTF-8'
+  # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
+  # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
+  # Avoid the warning upon possible failure, #7210.
+  lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
+  if (identical(lc_newctype, lc_wantctype)) {
+    on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
+    TRUE
+  } else FALSE
+})
+
 # generate simple error messages from base that are checked against in our tests. this helps
 #   protect us against these messages evolving in base in the future, and against these messages
 #   potentially not being produced in English.
@@ -17638,7 +17652,11 @@ test(2194.5, endsWithAny(NA_character_, 'a'), FALSE)
 test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or lengths incorrect")
 # file used in encoding tests
 txt = readLines(testDir("issue_563_fread.txt"))
-test(2194.7, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
+local(if (eval(utf8_check_expr)) {
+  test(2194.7, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
+} else {
+  cat("Test 2194.7 skipped because it needs a UTF-8 locale.\n")
+})
 test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
 
 # uniqueN(x, by=character()) was internal error, #4594
@@ -18619,19 +18637,8 @@ test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.tabl
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
 
-# tests for trunc.char handling wide characters # 5096
-local(if (l10n_info()$`UTF-8` || {
-  lc_ctype = Sys.getlocale('LC_CTYPE')
-  lc_wantctype = 'en_US.UTF-8'
-  # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
-  # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
-  # Avoid the warning upon possible failure, #7210.
-  lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
-  if (identical(lc_newctype, lc_wantctype)) {
-    on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
-    TRUE
-  } else FALSE
-}) {
+# tests for trunc.char handling wide characters #5096
+local(if (eval(utf8_check_expr)) {
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -20820,17 +20827,21 @@ x = data.table(a=1, b=2L)
 y = data.table(c=1.5, d=1L)
 test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
 
-# rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
-x = data.table(a = 1, b = 2, c = 3)
-y = data.table(x = 4, y = 5, z = 6)
-# a-umlaut, o-umlaut, u-umlaut
-setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
-setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
-test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
-test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
-set(y, j="\u00e4", value=NULL)
-test(2298.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
-test(2298.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
+local(if (eval(utf8_check_expr)) {
+  # rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
+  x = data.table(a = 1, b = 2, c = 3)
+  y = data.table(x = 4, y = 5, z = 6)
+  # a-umlaut, o-umlaut, u-umlaut
+  setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
+  setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+  test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+  test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
+  set(y, j="\u00e4", value=NULL)
+  test(2298.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+  test(2298.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
+} else {
+  cat("Tests 2298.* skipped because they need a UTF-8 locale.\n")
+})
 
 # #6592: printing nested single-column frames
 test(2299.01, format_list_item(data.frame(a=1)),                      output="<data.frame[1x1]>")
@@ -21589,18 +21600,20 @@ test(2335.5, isoyear("2019-12-30"), 2020L)
 test(2335.6, isoyear(as.Date("2019-12-30")), 2020L)
 
 # t1-t2 for Date/IDate should be consistent, modulo storage mode #4979
-t1 = as.IDate("2025-07-01")
-t2 = as.IDate("2025-06-01")
-test(2336.1, all.equal(as.Date(t1) - as.Date(t2), t1 - t2))
-test(2336.2, all.equal(as.Date(t2) - as.Date(t1), t2 - t1))
-test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
-test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
-test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
-test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
+if (base::getRversion() >= "4.3.0") { ## follow up of #7213, see #7321
+  t1 = as.IDate("2025-07-01")
+  t2 = as.IDate("2025-06-01")
+  test(2336.1, all.equal(as.Date(t1) - as.Date(t2), t1 - t2))
+  test(2336.2, all.equal(as.Date(t2) - as.Date(t1), t2 - t1))
+  test(2336.3, all.equal(as.Date(t1) - t2, t1 - t2))
+  test(2336.4, all.equal(as.Date(t2) - t1, t2 - t1))
+  test(2336.5, all.equal(t1 - as.Date(t2), t1 - t2))
+  test(2336.6, all.equal(t2 - as.Date(t1), t2 - t1))
+}
 
 # fwrite: allow dec=',' with single column, #7227
 test(2337.1, fwrite(data.table(1), dec=","), NULL)
-if (getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
+if (base::getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
   test(2337.2, fwrite(data.table(0.1, 0.2), dec=",", sep=","), error = "dec and sep must be distinct")
 }
 test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
@@ -21655,3 +21668,20 @@ local({
   ...123 = 'a'
   test(2339.11, DT[, .....123], DT)
 })
+
+# Add a function for validating data.tables that might need setDT #7329
+test(2340.00, .selfref.ok(data.frame(V1=1L)), error=".selfref.ok expects data.table class object")
+d1 = structure(list(V1=1L), class=c("data.table","data.frame"))
+test(2340.01, .selfref.ok(d1), FALSE)
+setDT(d1)
+test(2340.02, .selfref.ok(d1), TRUE)
+saveRDS(d1, f<-tempfile())
+d2 = readRDS(f)
+test(2340.03, .selfref.ok(d2), FALSE)
+invisible(file.remove(f))
+setDT(d2)
+test(2340.04, .selfref.ok(d2), TRUE)
+d3 = unserialize(serialize(d2, NULL))
+test(2340.05, .selfref.ok(d3), FALSE)
+setDT(d3)
+test(2340.06, .selfref.ok(d3), TRUE)
