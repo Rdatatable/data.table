@@ -20,6 +20,7 @@
 #  define USE_GROWABLE_ALTREP
 #endif
 #include <Rinternals.h>
+#include <Rgrowable.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start

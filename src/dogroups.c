@@ -317,7 +317,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (growable_max_size(dt) < colj+1) internal_error(__func__, "Trying to add new column by reference but table is full; setalloccol should have run first at R level before getting to this point"); // # nocov
+          if (growable_capacity(dt) < colj+1) internal_error(__func__, "Trying to add new column by reference but table is full; setalloccol should have run first at R level before getting to this point"); // # nocov
           target = PROTECT(allocNAVectorLike(RHS, n));
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
