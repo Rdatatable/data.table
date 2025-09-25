@@ -22,5 +22,6 @@ fitsInInt64 = function(x) .Call(CfitsInInt64R, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
 
+setgrowable = function(x) .Call(Csetgrowable, x)
 frev   = function(x) .Call(Cfrev, x, TRUE)
 setfrev = function(x) invisible(.Call(Cfrev, x, FALSE))

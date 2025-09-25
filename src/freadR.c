@@ -263,9 +263,10 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (typeSize[CT_BOOL8_N] != 1) internal_error(__func__, "typeSize[CT_BOOL8_N] != 1"); // # nocov
   if (typeSize[CT_STRING] != 8) internal_error(__func__, "typeSize[CT_STRING] != 8"); // # nocov
   colNamesSxp = R_NilValue;
-  SET_VECTOR_ELT(RCHK, 1, colNamesSxp = allocVector(STRSXP, ncol));
-  for (int i = 0; i < ncol; i++) {
-    if (colNames == NULL || colNames[i].len <= 0) {
+  SET_VECTOR_ELT(RCHK, 1, colNamesSxp=growable_allocate(STRSXP, ncol, ncol));
+  for (int i=0; i<ncol; i++) {
+    SEXP elem;
+    if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
       snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
       SET_STRING_ELT(colNamesSxp, i, mkChar(buff));  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -449,8 +450,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    SET_VECTOR_ELT(RCHK, 0, DT = allocVector(VECSXP, ncol - ndrop));
-    if (ndrop == 0) {
+    SET_VECTOR_ELT(RCHK, 0, DT=growable_allocate(VECSXP, ncol-ndrop, ncol-ndrop));
+    if (ndrop==0) {
       setAttrib(DT, R_NamesSymbol, colNamesSxp);  // colNames mkChar'd in userOverride step
       if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
     } else {
@@ -509,10 +510,10 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     const bool typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
     const bool nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow) : growVector(col, allocNrow); // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
-      
-      SET_VECTOR_ELT(DT, resi, thiscol);
-      if (type[i] == CT_INT64) {
+      SEXP thiscol = typeChanged ? growable_allocate(typeSxp[type[i]], allocNrow, allocNrow)  // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
+                                 : growVector(col, allocNrow);
+      SET_VECTOR_ELT(DT,resi,thiscol);
+      if (type[i]==CT_INT64) {
         SEXP tt = PROTECT(ScalarString(char_integer64));
         setAttrib(thiscol, R_ClassSymbol, tt);
         UNPROTECT(1);
@@ -531,8 +532,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
-      SET_TRUELENGTH(thiscol, allocNrow);
-      DTbytes += RTYPE_SIZEOF(thiscol) * allocNrow;
+      DTbytes += RTYPE_SIZEOF(thiscol)*allocNrow;
     }
     resi++;
   }
@@ -546,11 +546,9 @@ void setFinalNrow(size_t nrow)
   if (length(DT)) {
     if (nrow == dtnrows)
       return;
-    const int ncol = LENGTH(DT);
-    for (int i = 0; i < ncol; i++) {
-      SETLENGTH(VECTOR_ELT(DT, i), nrow);
-      SET_TRUELENGTH(VECTOR_ELT(DT, i), dtnrows);
-      SET_GROWABLE_BIT(VECTOR_ELT(DT, i));  // #3292
+    const int ncol=LENGTH(DT);
+    for (int i=0; i<ncol; i++) {
+      growable_resize(VECTOR_ELT(DT,i), nrow);
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
@@ -564,8 +562,8 @@ void dropFilledCols(int* dropArg, int ndelete)
     SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
     SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
   }
-  SETLENGTH(DT, ndt - ndelete);
-  SETLENGTH(colNamesSxp, ndt - ndelete);
+  growable_resize(DT, ndt-ndelete);
+  growable_resize(colNamesSxp, ndt-ndelete);
 }
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)
