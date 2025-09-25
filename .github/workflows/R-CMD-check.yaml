@@ -75,7 +75,7 @@ jobs:
         with:
           type: 'minimal'
 
-      - name: Intall and configure OpenMP runtime
+      - name: Install and configure OpenMP runtime
         if: runner.os == 'macOS'
         run: |
           if clang --version | grep 'clang version 17'; then
