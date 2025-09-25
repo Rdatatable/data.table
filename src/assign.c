@@ -269,7 +269,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     // added (n>l) ? ... for #970, see test 1481.
   // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
 
-  tl = growable_max_size(dt);
+  tl = growable_capacity(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
@@ -319,11 +319,11 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   if (!selfrefok(dt, FALSE)) {
     int n = isNull(cols) ? length(dt) : length(cols);
     return(shallow(dt, cols, n));
-  } else return(shallow(dt, cols, growable_max_size(dt)));
+  } else return(shallow(dt, cols, growable_capacity(dt)));
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(is_growable(x) ? growable_max_size(x) : 0);
+  return ScalarInteger(is_growable(x) ? growable_capacity(x) : 0);
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -520,7 +520,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = is_growable(dt) ? growable_max_size(dt) : 0;   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    oldtncol = is_growable(dt) ? growable_capacity(dt) : 0;   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
@@ -533,9 +533,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
-    else if (growable_max_size(names) != oldtncol)
+    else if (growable_capacity(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
-      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)growable_max_size(names), oldtncol);  // # nocov
+      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)growable_capacity(names), oldtncol);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
     growable_resize(dt, oldncol+LENGTH(newcolnames));
