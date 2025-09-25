@@ -14,6 +14,10 @@
     # check when installed package is loaded but skip when developing the package with cc()
     dllV = if (is.loaded("CdllVersion",PACKAGE="data_table")) .Call(CdllVersion) else "before 1.12.0"
     RV = as.character(packageVersion("data.table"))
+    if (sum(.dots <- charToRaw(RV) == charToRaw(".")) > 2L) {
+      ## trim dev version suffix 1.17.99-1234567890, note that base:::package_version turns `-` into `.` #7339
+      RV = substring(RV, 1L, which(.dots)[3L]-1L)
+    }
     if (dllV != RV) {
       dll = if (.Platform$OS.type=="windows") "dll" else "so"
       # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
