@@ -10,7 +10,7 @@ concurrency:
 on:
   push:
     branches:
-      - 'master'
+      - 'dev-versioning'
 
 name: pkgup-deploy
 
