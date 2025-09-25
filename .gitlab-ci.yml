@@ -78,7 +78,7 @@ build:
   script:
     - sed -i '/^[[:space:]]*$/d' ./DESCRIPTION ## make last line end abruptly; i.e. without a final \n
     - |
-      sed -i "0,/^Version: [0-9.]\+$/s//&.$(TZ=UTC git log -1 --format=%cd --date=format-local:'%Y%m%d%H%M%S')/" ./DESCRIPTION
+      sed -i "0,/^Version: [0-9.]\+$/s//&-$(TZ=UTC git log -1 --format=%cd --date=format-local:'%Y%m%d%H%M%S')/" ./DESCRIPTION
     - echo "Revision:" $CI_COMMIT_SHA >> ./DESCRIPTION
     - R CMD build .
     - mkdir -p bus/$CI_JOB_NAME/
