@@ -272,10 +272,7 @@ void copySharedColumns(SEXP x) {
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (
-      hash_lookup(marks, thiscol, 0)<0
-      || ALTREP(thiscol)
-    ) {
+    if (ALTREP(thiscol) || hash_lookup(marks, thiscol, 0)<0) {
       shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
     } else {
