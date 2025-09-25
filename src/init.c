@@ -213,7 +213,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg);
   // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768
-  if (TRUELENGTH(tmp)!=0) error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%lld] is 0 %s"), (long long)TRUELENGTH(tmp), msg);
+  if (growable_capacity(tmp)!=0) error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%lld] is 0 %s"), (long long)growable_capacity(tmp), msg);
   UNPROTECT(1);
 
   // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
