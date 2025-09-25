@@ -76,18 +76,12 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 
 // needed in adaptive=TRUE
 SEXP setgrowable(SEXP x) {
-  if (!isNewList(x)) {
-    SET_GROWABLE_BIT(x);
-    SET_TRUELENGTH(x, LENGTH(x)); // important because gc() uses TRUELENGTH to keep counts
-  } else {
-    // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
-    for (int i = 0; i < LENGTH(x); i++) {
-      //Rprintf("%d",3); // manual code coverage to confirm it is reached when marking nocov
-      SEXP col = VECTOR_ELT(x, i);
-      SET_GROWABLE_BIT(col);
-      SET_TRUELENGTH(col, LENGTH(col));
-    }
-    // # nocov end
+  for (R_xlen_t i = 0; i < xlength(x); ++i) {
+    SEXP this = VECTOR_ELT(x, i);
+    if (
+      !is_growable(this)
+      && !ALTREP(this)
+    ) SET_VECTOR_ELT(x, i, make_growable(this));
   }
-  return x;
+  return R_NilValue;
 }
