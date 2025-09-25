@@ -21,9 +21,9 @@ vignette: >
 }
 </style>
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-sd-usage.html)
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)

@@ -1,16 +1,15 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-
-SEXP inrange(SEXP ansArg, SEXP xoArg, SEXP startsArg, SEXP lenArg) {
-
+SEXP inrange(SEXP ansArg, SEXP xoArg, SEXP startsArg, SEXP lenArg)
+{
   int *ans = INTEGER(ansArg);
   const int *xo = INTEGER(xoArg);
   const int *starts = INTEGER(startsArg), *len = INTEGER(lenArg);
   const int n = length(startsArg), nxo = length(xoArg);
-  for (int i=0; i<n; ++i) {
-    for (int j=starts[i]-1; j<starts[i]-1+len[i]; ++j) {
-      ans[nxo ? xo[j]-1 : j] = 1;
+  for (int i = 0; i < n; i++) {
+    for (int j = starts[i] - 1; j < starts[i] - 1 + len[i]; j++) {
+      ans[nxo ? xo[j] - 1 : j] = 1;
     }
   }
   // old complicated logic which is only really useful when matches
@@ -32,5 +31,5 @@ SEXP inrange(SEXP ansArg, SEXP xoArg, SEXP startsArg, SEXP lenArg) {
   //     // Rprintf(_("Moved to %d, start=%d, end=%d\n"), i, ss, ee);
   //     for (int j=ss; j<=ee; j++) ans[nxo ? xo[j]-1 : j] = 1;
   // }
-  return (R_NilValue);
+  return R_NilValue;
 }
