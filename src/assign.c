@@ -320,7 +320,7 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(is_growable(x) ? growable_capacity(x) : 0);
+  return ScalarInteger(isNull(x) ? 0 : growable_capacity(x));
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {

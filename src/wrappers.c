@@ -132,16 +132,3 @@ SEXP warn_matrix_column_r(SEXP i) {
   warn_matrix_column(INTEGER(i)[0]);
   return R_NilValue;
 }
-
-SEXP setgrowable(SEXP x) {
-  for (R_xlen_t i = 0; i < xlength(x); ++i) {
-    SEXP this = VECTOR_ELT(x, i);
-    if (
-      !is_growable(this)
-#ifndef USE_GROWABLE_ALREP
-      && !ALTREP(this)
-#endif
-    ) SET_VECTOR_ELT(x, i, make_growable(this));
-  }
-  return R_NilValue;
-}

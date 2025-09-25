@@ -265,7 +265,6 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp=growable_allocate(STRSXP, ncol, ncol));
   for (int i=0; i<ncol; i++) {
-    SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
       snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
