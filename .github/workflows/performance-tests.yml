@@ -20,4 +20,4 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: Anirban166/Autocomment-atime-results@v1.4.1
+      - uses: Anirban166/Autocomment-atime-results@v1.4.3

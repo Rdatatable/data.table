@@ -12,15 +12,10 @@ setindex = function(...) setkey(..., physical=FALSE)
 setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   if (is.list(cols)) {
     sapply(cols, setkeyv, x=x, verbose=verbose, physical=FALSE)
-    return(invisible(x))
+    invisible(x)
   } else {
     setkeyv(x, cols, verbose=verbose, physical=FALSE)
   }
-}
-
-# Has been warning since 2012, with stronger warning in Mar 2019 (note in news for 1.12.2); #3399
-"key<-" = function(x,value) {
-  stopf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012.")
 }
 
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
@@ -48,7 +43,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (!all(nzchar(cols))) stopf("cols contains some blanks.")
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]), class = "dt_missing_column_error")
 
   if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
     ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
@@ -59,7 +54,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (".xi" %chin% names(x)) stopf("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi), class="dt_unsortable_type_error")
   }
   if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
@@ -160,8 +155,10 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE,
   .Call(CforderReuseSorting, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE, method="radix")
 {
+  if (method != "radix") stopf("data.table has no support for sorting by method='%s'. Use base::order(), not order(), if you really need this.", method)
+  stopifnot(is.logical(decreasing), length(decreasing) > 0L, !is.na(decreasing))
   sub = substitute(list(...))
   tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
   if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
@@ -169,8 +166,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
   # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
   # 1) - on character vector works; ordinarily in R that fails with type error
-  # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
-  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
+  # 2) each column/expression can have its own +/- more easily than having to use a separate decreasing=TRUE/FALSE
+  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and negate every element first
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
@@ -193,8 +190,16 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   } else {
     data = eval(sub, parent.frame(), parent.frame())
   }
-  stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=if (decreasing) -asc else asc, na.last=na.last)
+  if (length(decreasing) > 1L) {
+    if (any(asc < 0L)) stopf("Mixing '-' with vector decreasing= is not supported.")
+    if (length(decreasing) != length(asc)) stopf("decreasing= has length %d applied to sorting %d columns.", length(decreasing), length(asc))
+    orderArg = fifelse(decreasing, -asc, asc)
+  } else if (decreasing) {
+    orderArg = -asc
+  } else {
+    orderArg = asc
+  }
+  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=orderArg, na.last=na.last)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
@@ -202,23 +207,21 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
 fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
 {
   containsNAs = FALSE
-  if (typeof(x)=="double" && !decreasing && !(containsNAs <- anyNA(x))) {
-      if (internal) stopf("Internal code should not be being called on type double")
-      return(.Call(Cfsort, x, verbose))
+  if (typeof(x) == "double" && !decreasing && !(containsNAs <- anyNA(x))) {
+    if (internal) stopf("Internal code should not be being called on type double")
+    return(.Call(Cfsort, x, verbose))
   }
-  else {
-    # fsort is now exported for testing. Trying to head off complaints "it's slow on integer"
-    # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
-    # TODO: implement integer and character in Cfsort and remove this branch and warning
-    if (!internal){
-      if (typeof(x)!="double") warningf("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
-      if (decreasing)  warningf("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
-      if (containsNAs) warningf("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
-    }
-    orderArg = if (decreasing) -1 else 1
-    o = forderv(x, order=orderArg, na.last=na.last)
-    return( if (length(o)) x[o] else x )
+  # fsort is now exported for testing. Trying to head off complaints "it's slow on integer"
+  # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
+  # TODO: implement integer and character in Cfsort and remove this branch and warning
+  if (!internal) {
+    if (typeof(x) != "double") warningf("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
+    if (decreasing)  warningf("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
+    if (containsNAs) warningf("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
   }
+  orderArg = if (decreasing) -1L else 1L
+  o = forderv(x, order=orderArg, na.last=na.last)
+  if (length(o)) x[o] else x
 }
 
 setorder = function(x, ..., na.last=FALSE)
@@ -263,11 +266,11 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   # remove backticks from cols
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]), class = "dt_missing_column_error")
   if (".xi" %chin% colnames(x)) stopf("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi), class="dt_unsortable_type_error")
   }
   if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
