@@ -87,12 +87,6 @@ SEXP address(SEXP x)
   return(mkString(buffer));
 }
 
-#ifdef USE_GROWABLE_ALTREP
-SEXP expandAltRep(SEXP x) {
-  (void)x;
-  return R_NilValue;
-}
-#else
 SEXP expandAltRep(SEXP x)
 {
   // used by setDT to ensure altrep vectors in columns are expanded. Such altrep objects typically come from tests or demos, since
@@ -111,7 +105,6 @@ SEXP expandAltRep(SEXP x)
   }
   return R_NilValue;
 }
-#endif
 
 SEXP dim(SEXP x)
 {
