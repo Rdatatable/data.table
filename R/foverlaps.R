@@ -1,4 +1,4 @@
-foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=NA, which=FALSE, verbose=getOption("datatable.verbose")) {
+foverlaps = function(x, y, by.x=key(x) %||% key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=NA, which=FALSE, verbose=getOption("datatable.verbose")) {
 
   if (!is.data.table(y) || !is.data.table(x)) stopf("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
   maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
@@ -78,7 +78,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     stopf("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
   }
   # #1143, mismatched timezone
-  getTZ = function(x) if (is.null(tz <- attr(x, "tzone", exact=TRUE))) "" else tz # "" == NULL AFAICT
+  getTZ = function(x) attr(x, "tzone", exact=TRUE) %||% "" # "" == NULL AFAICT
   tzone_chk = c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
   if (length(unique(tzone_chk)) > 1L) {
     warningf("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
@@ -90,7 +90,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     # next representative double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
     dt_eps = function() {
       bits = floor(log2(.Machine$double.eps))
-      2 ^ (bits + (getNumericRounding() * 8L))
+      2L ^ (bits + (getNumericRounding() * 8L))
     }
     isdouble = TRUE
     isposix = "POSIXct" %chin% yclass
@@ -181,23 +181,22 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   if (which) {
     if (mult %chin% c("first", "last"))
       return(olaps$yid)
-    else if (!is.na(nomatch))
-      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
-    else return(olaps)
-  } else {
     if (!is.na(nomatch))
-      olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
-    ycols = setdiff(names(origy), head(by.y, -2L))
-    idx = chmatch(ycols, names(origx), nomatch=0L)
-    ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
-    if (any(idx>0L))
-      setnames(ans, names(ans)[idx], paste0("i.", names(ans)[idx]))
-    xcols1 = head(by.x, -2L)
-    xcols2 = setdiff(names(ans), xcols1)
-    ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
-    setcolorder(ans, c(xcols1, ycols, xcols2))
-    return(ans[])
+      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
+    return(olaps)
   }
+  if (!is.na(nomatch))
+    olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
+  ycols = setdiff(names(origy), head(by.y, -2L))
+  idx = chmatch(ycols, names(origx), nomatch=0L)
+  ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
+  if (any(idx > 0L))
+    setnames(ans, names(ans)[idx], paste0("i.", names(ans)[idx]))
+  xcols1 = head(by.x, -2L)
+  xcols2 = setdiff(names(ans), xcols1)
+  ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
+  setcolorder(ans, c(xcols1, ycols, xcols2))
+  ans[]
 }
 
 # Notes: (If there's a better way than the solution I propose here, I'd be glad to apply it.)

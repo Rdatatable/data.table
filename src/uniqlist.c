@@ -45,7 +45,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           iidx[len++] = i+1;                                                     \
           if (len>=isize) {                                                      \
             isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = R_Realloc(iidx, isize, int);                                    \
+            iidx = R_Realloc(iidx, isize, int);                                  \
           }                                                                      \
         }                                                                        \
         prev = elem;                                                             \
@@ -100,7 +100,7 @@ SEXP uniqlist(SEXP l, SEXP order)
   } else {
     // ncol>1
     thisi = via_order ? INTEGER(order)[0]-1 : 0;
-    bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
+    bool *i64 = (bool *)R_alloc(ncol, sizeof(*i64));
     for (int i=0; i<ncol; i++) i64[i] = INHERITS(VECTOR_ELT(l,i), char_integer64);
     for (int i=1; i<nrow; i++) {
       previ = thisi;
@@ -150,12 +150,16 @@ SEXP uniqlengths(SEXP x, SEXP n) {
   // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
   if (TYPEOF(x) != INTSXP) error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
   if (TYPEOF(n) != INTSXP || length(n) != 1) error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
-  R_len_t len = length(x);
+  const R_len_t len = length(x);
   SEXP ans = PROTECT(allocVector(INTSXP, len));
+
+  const int *px = INTEGER_RO(x);
+  int *pans = INTEGER(ans);
+
   for (R_len_t i=1; i<len; i++) {
-    INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
+      pans[i-1] = px[i] - px[i-1];
   }
-  if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+  if (len>0) pans[len-1] = INTEGER(n)[0] - px[len-1] + 1;
   UNPROTECT(1);
   return(ans);
 }
@@ -261,7 +265,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
   R_len_t *ansgrp = R_Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be R_Calloc due to R_Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
-  bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
+  bool *i64 = (bool *)R_alloc(ncols, sizeof(*i64));
   if (ngrps==0) internal_error(__func__, "nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
   if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector with length >= 1"));
@@ -356,13 +360,13 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   const R_xlen_t n = xlength(x);
   if (n==0)
     return ScalarInteger(0);  // empty vector
-  Rboolean first = LOGICAL(x)[0];
+  int first = LOGICAL(x)[0];
   R_xlen_t i=0;
   const int *ix = LOGICAL(x);
   while (++i<n && ix[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
-  Rboolean second = ix[i];
+  int second = ix[i];
   // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
   // NA_LOGICAL == INT_MIN checked in init.c
   const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );
@@ -372,4 +376,3 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
     return ScalarInteger(3-narm);
   return ScalarInteger(2-(narm && third!=NA_LOGICAL));
 }
-

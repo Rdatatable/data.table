@@ -10,12 +10,11 @@
 #  define INTEGER_RO INTEGER
 #  define REAL_RO REAL
 #  define COMPLEX_RO COMPLEX
-#  define R_Calloc(x, y) Calloc(x, y)         // #6380
-#  define R_Realloc(x, y, z) Realloc(x, y, z)
-#  define R_Free(x) Free(x)
+#  define RAW_RO RAW
+#  define LOGICAL_RO LOGICAL
 #endif
-#if R_VERSION < R_Version(3, 4, 0)
-#  define SET_GROWABLE_BIT(x)  // #3292
+#if R_VERSION < R_Version(4, 5, 0)
+#  define isDataFrame(x) isFrame(x) // #6180
 #endif
 #if R_VERSION >= R_Version(4, 3, 0)
 #  define USE_GROWABLE_ALTREP
@@ -41,13 +40,17 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-#define IS_ASCII(x) (LEVELS(x) & 64) // API expected in R >= 4.5
+#if R_VERSION < R_Version(4, 5, 0)
+# define IS_ASCII(x) (LEVELS(x) & 64)
+#else
+# define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
+#endif
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) __sizes[TYPEOF(x)]
-#define TYPEORDER(x) __typeorder[x]
+#define RTYPE_SIZEOF(x) r_type_sizes[TYPEOF(x)]
+#define RTYPE_ORDER(x) r_type_order[x]
 
 #ifdef MIN
 #  undef MIN
@@ -77,6 +80,15 @@
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
+
+// R has been providing a widely portable definition, but since that's not documented, define our own too
+#ifndef NORET
+# if defined(__GNUC__) && __GNUC__ >= 3
+#  define NORET __attribute__((__noreturn__))
+# else
+#  define NORET
+# endif
+#endif
 
 // init.c
 extern SEXP char_integer64;
@@ -120,8 +132,8 @@ extern SEXP sym_as_posixct;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
+extern size_t r_type_sizes[100]; // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t r_type_order[100];
 
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -211,26 +223,49 @@ void initDTthreads(void);
 int getDTthreads(const int64_t n, const bool throttle);
 void avoid_openmp_hang_within_fork(void);
 
+typedef enum { // adding rolling functions here and in frollfunR in frollR.c
+  MEAN = 0,
+  SUM = 1,
+  MAX = 2,
+  MIN = 3,
+  PROD = 4
+} rollfun_t;
 // froll.c
-void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose);
+void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose);
+void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollmaxFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollmaxExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollminFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 
 // frolladaptive.c
-void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptivemeanFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptivesumFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+//void frolladaptivemaxFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose); // does not exists as of now
+void frolladaptivemaxExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+//void frolladaptiveminFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose); // does not exists as of now
+void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptiveprodFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
 
 // frollR.c
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive);
-SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho);
+SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive);
+SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial);
+
+// frollapply.c
+SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP setgrowable(SEXP x);
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
@@ -241,7 +276,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
 
 // coalesce.c
-SEXP coalesce(SEXP x, SEXP inplace);
+SEXP coalesce(SEXP x, SEXP inplace, SEXP nan_is_na_arg);
 
 // utils.c
 bool within_int32_repres(double x);
@@ -262,11 +297,19 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+int n_rows(SEXP x);
+int n_columns(SEXP x);
+bool isDataTable(SEXP x);
+bool isRectangularList(SEXP x);
+bool perhapsDataTable(SEXP x);
+SEXP perhapsDataTableR(SEXP x);
+SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
 char *end(char *start);
-void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
+void ansSetMsg(ans_t *ans, uint8_t status, const char *msg, const char *func);
+void ansGetMsgs(ans_t *ans, int n, bool verbose, const char *func);
 SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 
 //fifelse.c
@@ -286,13 +329,10 @@ SEXP notchin(SEXP x, SEXP table);
 typedef struct hash_tab hashtab;
 // Allocate, initialise, and return a pointer to the new hash table.
 // n is the maximal number of elements that will be inserted.
-// load_factor is a real in (0, 1) specifying the desired fraction of used table elements.
 // Lower load factors lead to fewer collisions and faster lookups, but waste memory.
 // May raise an R error if an allocation fails or a size is out of bounds.
 // The table is temporary (allocated via R_alloc()) and will be unprotected upon return from the .Call().
 // See vmaxget()/vmaxset() if you need to unprotect it manually.
-hashtab * hash_create_(size_t n, double load_factor);
-// Hard-coded "good enough" load_factor
 hashtab * hash_create(size_t n);
 // Inserts a new key-value pair into the hash, or overwrites an existing value.
 // Will raise an R error if inserting more than n elements.
@@ -315,6 +355,18 @@ SEXP make_growable(SEXP x);
 #if R_VERSION >= R_Version(4, 3, 0)
 void register_altrep_classes(DllInfo*);
 #endif
+// The dynamically-allocated hash table has a public field for the R protection wrapper.
+// Keep it PROTECTed while the table is in use.
+typedef struct dhash_tab {
+  SEXP prot;
+} dhashtab;
+dhashtab * dhash_create(size_t n);
+void dhash_set(dhashtab * h, SEXP key, R_xlen_t value);
+R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound);
+
+// mergelist.c
+SEXP cbindlist(SEXP x, SEXP copyArg);
+SEXP copyCols(SEXP x, SEXP cols);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
@@ -332,9 +384,10 @@ SEXP chmatch_R(SEXP, SEXP, SEXP);
 SEXP chmatchdup_R(SEXP, SEXP, SEXP);
 SEXP chin_R(SEXP, SEXP);
 SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP rbindlist(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setlistelt(SEXP, SEXP, SEXP);
+SEXP setS4elt(SEXP, SEXP, SEXP);
 SEXP address(SEXP);
 SEXP expandAltRep(SEXP);
 SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -374,11 +427,11 @@ SEXP gshift(SEXP, SEXP, SEXP, SEXP);
 SEXP nestedid(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setDTthreads(SEXP, SEXP, SEXP, SEXP);
 SEXP getDTthreads_R(SEXP);
+SEXP getDTthreads_C(SEXP, SEXP);
 SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);
 SEXP hasOpenMP(void);
-SEXP beforeR340(void);
 SEXP uniqueNlogical(SEXP, SEXP);
 SEXP dllVersion(void);
 SEXP initLastUpdated(SEXP);
