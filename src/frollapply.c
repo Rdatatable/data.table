@@ -50,7 +50,7 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   const size_t oi = INTEGER_RO(offset)[0];
   const int nrow = INTEGER_RO(size)[oi - 1];
   const size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
-  SETLENGTH(dest, nrow); // must be before memcpy_sexp because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
+  growable_resize(dest, nrow); // must be before memcpy_sexp because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
   if (nrow) { // support k[i]==0
     memcpy_sexp(dest, o, src, nrow);
   }
@@ -65,7 +65,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   const int ncol = LENGTH(dest);
   for (int i = 0; i < ncol; i++) {
     SEXP d = VECTOR_ELT(dest, i);
-    SETLENGTH(d, nrow);
+    growable_resize(d, nrow);
     if (nrow) { // support k[i]==0
       memcpy_sexp(d, o, VECTOR_ELT(src, i), nrow);
     }
@@ -76,12 +76,22 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 
 // needed in adaptive=TRUE
 SEXP setgrowable(SEXP x) {
-  for (R_xlen_t i = 0; i < xlength(x); ++i) {
-    SEXP this = VECTOR_ELT(x, i);
-    if (
-      !is_growable(this)
-      && !ALTREP(this)
-    ) SET_VECTOR_ELT(x, i, make_growable(this));
+  if (!isNewList(x)) {
+    if (!is_growable(x)) {
+      return make_growable(x);
+    }
+    return x;
+  } else {
+    // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
+    for (R_xlen_t i = 0; i < xlength(x); ++i) {
+      //Rprintf("%d",3); // manual code coverage to confirm it is reached when marking nocov
+      SEXP this = VECTOR_ELT(x, i);
+      if (
+        !is_growable(this)
+        && !ALTREP(this)
+      ) SET_VECTOR_ELT(x, i, make_growable(this));
+    }
+    // # nocov end
+    return x;
   }
-  return R_NilValue;
 }

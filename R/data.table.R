@@ -1595,7 +1595,7 @@ replace_dot_alias = function(e) {
     SDenv$.SDall = .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols)  # must be deep copy when largest group is a subset
     if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
-    setgrowable(SDenv$.SDall)
+    SDenv$.SDall = setgrowable(SDenv$.SDall)
     SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
   }
   if (nrow(SDenv$.SDall)==0L) {
