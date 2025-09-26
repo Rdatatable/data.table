@@ -1,0 +1,15 @@
+{
+  "name": "R-devel with Growable Vectors",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "../.."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "REditorSupport.r",
+        "ms-vscode.cpptools-extension-pack"
+      ]
+    }
+  }
+}
