@@ -20,6 +20,20 @@
     frollsum(c(1,2,3,Inf,5,6), 2)
     #[1]  NA   3   5 Inf Inf  11
 
+4. `frollapply` result is not coerced to numeric anymore. Users' code could possibly break if it depends on forced coercion of input/output to numeric type.
+    ```r
+    ## before
+    frollapply(c(F,T,F,F,F,T), 2, any)
+    #[1] NA  1  1  0  0  1
+
+    ## now
+    frollapply(c(F,T,F,F,F,T), 2, any)
+    #[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
+    ```
+    Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
+
+5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
@@ -93,7 +107,7 @@
 
 13. New `mergelist()` and `setmergelist()` similarly work _a la_ `Reduce()` to recursively merge a `list` of data.tables, [#599](https://github.com/Rdatatable/data.table/issues/599). Different join modes (_left_, _inner_, _full_, _right_, _semi_, _anti_, and _cross_) are supported through the `how` argument; duplicate handling goes through the `mult` argument. `setmergelist()` carefully avoids copies where one is not needed, e.g. in a 1:1 left join. Thanks Patrick Nicholson for the FR (in 2013!), @jangorecki for the PR, and @MichaelChirico for extensive reviews and fine-tuning.
 
-```r
+    ```r
     l = list(
       data.table(id = c(1L, 2L, 3L), x = c("a", "b", "c")),
       data.table(id = c(1L, 2L, 4L), y = c("d", "e", "f")),
@@ -156,6 +170,83 @@
     ```
 
     As of now, adaptive rolling max has no _on-line_ implementation (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
+
+17. Function `frollapply` has been completely rewritten. Thanks to @jangorecki for implementation. Be sure to read `frollapply` manual before using the function. There are following changes:
+    - all basic types are now supported on input/output, not only double. Users' code could possibly break if it depends on forced coercion of input/output to double type.
+    - new argument `by.column` allowing to pass a multi-column subset of a data.table into a rolling function, closes [#4887](https://github.com/Rdatatable/data.table/issues/4887).
+    ```r
+    x = data.table(v1=rnorm(120), v2=rnorm(120))
+    f = function(x) coef(lm(v2 ~ v1, data=x))
+    frollapply(x, 4, f, by.column=FALSE)
+    #     (Intercept)         v1
+    #           <num>      <num>
+    #  1:          NA         NA
+    #  2:          NA         NA
+    #  3:          NA         NA
+    #  4: -0.04648236 -0.6349687
+    #  5:  0.09208733 -0.4964023
+    #---
+    #116: -0.21169439  0.7421358
+    #117: -0.19729119  0.4926939
+    #118: -0.04217896  0.0452713
+    #119:  0.22472549 -0.5245874
+    #120:  0.54540359 -0.1638333
+    ```
+    - uses multiple CPU threads (on a decent OS); evaluation of UDF is inherently slow so this can be a great help.
+    ```r
+    x = rnorm(1e5)
+    n = 500
+    setDTthreads(1)
+    system.time(
+      th1 <- frollapply(x, n, median, simplify=unlist)
+    )
+    #   user  system elapsed
+    #  3.078   0.005   3.084
+    setDTthreads(4)
+    system.time(
+      th4 <- frollapply(x, n, median, simplify=unlist)
+    )
+    #   user  system elapsed
+    #  2.453   0.135   0.897
+    all.equal(th1, th4)
+    #[1] TRUE
+    ```
+
+18. New helper `frolladapt` to facilitate applying rolling functions over windows of fixed calendar-time width in irregularly-spaced data sets, thereby bypassing the need to "augment" such data with placeholder rows, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
+    ```r
+    idx = as.Date("2025-09-05") + c(0,4,7,8,9,10,12,13,17)
+    dt = data.table(index=idx, value=seq_along(idx))
+    dt
+    #        index value
+    #       <Date> <int>
+    #1: 2025-09-05     1
+    #2: 2025-09-09     2
+    #3: 2025-09-12     3
+    #4: 2025-09-13     4
+    #5: 2025-09-14     5
+    #6: 2025-09-15     6
+    #7: 2025-09-17     7
+    #8: 2025-09-18     8
+    #9: 2025-09-22     9
+    dt[, c("rollmean3","rollmean3days") := list(
+      frollmean(value, 3),
+      frollmean(value, frolladapt(index, 3), adaptive=TRUE)
+      )]
+    dt
+    #        index value rollmean3 rollmean3days
+    #       <Date> <int>     <num>         <num>
+    #1: 2025-09-05     1        NA            NA
+    #2: 2025-09-09     2        NA           2.0
+    #3: 2025-09-12     3         2           3.0
+    #4: 2025-09-13     4         3           3.5
+    #5: 2025-09-14     5         4           4.0
+    #6: 2025-09-15     6         5           5.0
+    #7: 2025-09-17     7         6           6.5
+    #8: 2025-09-18     8         7           7.5
+    #9: 2025-09-22     9         8           9.0
+    ```
+
+19. New rolling functions, `frollmin` and `frollprod`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
 
 ### BUG FIXES
 
@@ -221,6 +312,8 @@
 5. A GitHub Actions workflow is now in place to warn the entire maintainer team, as well as any contributor following the GitHub repository, when the package is at risk of archival on CRAN [#7008](https://github.com/Rdatatable/data.table/issues/7008). Thanks @tdhock for the original report and @Bisaloo and @TysonStanley for the fix.
 
 6. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
+
+7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 

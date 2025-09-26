@@ -4,6 +4,7 @@ bool within_int32_repres(double x) {
   // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
   // standard states that behaviour is undefined only if the integral part of a
   // finite value of standard floating type cannot be represented.
+  // Also, note that these are not the same values you would get from INT32_MAX and INT32_MIN
   return R_FINITE(x) && x < 2147483648 && x > -2147483648;
 }
 
@@ -541,7 +542,6 @@ SEXP perhapsDataTableR(SEXP x) {
 }
 
 SEXP frev(SEXP x, SEXP copyArg) {
-  SEXP names;
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!IS_TRUE_OR_FALSE(copyArg))
@@ -628,8 +628,10 @@ SEXP frev(SEXP x, SEXP copyArg) {
   default:
     error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
   }
-  names = PROTECT(getAttrib(x, R_NamesSymbol));
+
+  SEXP names = PROTECT(getAttrib(x, R_NamesSymbol));
   nprotect++;
+
   if (copy) {
     SEXP klass = PROTECT(getAttrib(x, R_ClassSymbol));
     SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));

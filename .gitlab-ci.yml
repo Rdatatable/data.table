@@ -77,6 +77,8 @@ build:
     - rm -r bus
   script:
     - sed -i '/^[[:space:]]*$/d' ./DESCRIPTION ## make last line end abruptly; i.e. without a final \n
+    - |
+      sed -i "0,/^Version: [0-9.]\+$/s//&-$(TZ=UTC git log -1 --format=%ct)/" ./DESCRIPTION
     - echo "Revision:" $CI_COMMIT_SHA >> ./DESCRIPTION
     - R CMD build .
     - mkdir -p bus/$CI_JOB_NAME/
@@ -314,6 +316,8 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - curl -LO https://github.com/XQuartz/XQuartz/releases/download/XQuartz-2.8.5/XQuartz-2.8.5.pkg
+    - sudo installer -pkg "$(ls -1t XQuartz-*.pkg | head -n 1)" -target /
     - curl -O $R_BIN
     - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
     - sudo Rscript -e "source('https://mac.R-project.org/bin/install.R'); install.libs('gettext')"
