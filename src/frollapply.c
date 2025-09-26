@@ -84,7 +84,7 @@ SEXP setgrowable(SEXP x) {
     return x;
   } else {
     // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
-    for (R_xlen_t i = 0; i < xlength(x); ++i) {
+    for (int i = 0; i < LENGTH(x); i++) {
       //Rprintf("%d",3); // manual code coverage to confirm it is reached when marking nocov
       SEXP this = VECTOR_ELT(x, i);
       if (ALTREP(this)) internal_error(__func__, "frollapply's adaptive=T setgrowable should have not been called with an ALTREP input"); // # nocov
