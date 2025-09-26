@@ -77,6 +77,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 // needed in adaptive=TRUE
 SEXP setgrowable(SEXP x) {
   if (!isNewList(x)) {
+    if (ALTREP(x)) internal_error(__func__, "frollapply's adaptive=T setgrowable should have not been called with an ALTREP input"); // # nocov
     if (!is_growable(x)) {
       return make_growable(x);
     }
@@ -86,10 +87,9 @@ SEXP setgrowable(SEXP x) {
     for (R_xlen_t i = 0; i < xlength(x); ++i) {
       //Rprintf("%d",3); // manual code coverage to confirm it is reached when marking nocov
       SEXP this = VECTOR_ELT(x, i);
-      if (
-        !is_growable(this)
-        && !ALTREP(this)
-      ) SET_VECTOR_ELT(x, i, make_growable(this));
+      if (ALTREP(this)) internal_error(__func__, "frollapply's adaptive=T setgrowable should have not been called with an ALTREP input"); // # nocov
+      if (!is_growable(this))
+        SET_VECTOR_ELT(x, i, make_growable(this));
     }
     // # nocov end
     return x;
