@@ -16,9 +16,6 @@
 #if R_VERSION < R_Version(4, 5, 0)
 #  define isDataFrame(x) isFrame(x) // #6180
 #endif
-#if R_VERSION >= R_Version(4, 3, 0)
-#  define USE_GROWABLE_ALTREP
-#endif
 #include <Rinternals.h>
 #include <Rgrowable.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
