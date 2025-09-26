@@ -1,6 +1,5 @@
 #include "data.table.h"
 
-#if R_VERSION < R_Version(3,4,0) // not needed with GROWABLE_BIT
 static void finalizer(SEXP p)
 {
   SEXP x;
@@ -23,7 +22,6 @@ static void finalizer(SEXP p)
   UNPROTECT(1);
   return;
 }
-#endif
 
 void setselfref(SEXP x) {
   if(!INHERITS(x, char_datatable))  return; // #5286
@@ -40,9 +38,6 @@ void setselfref(SEXP x) {
       R_NilValue
     ))
   ));
-#if R_VERSION < R_Version(3,4,0) // not needed with GROWABLE_BIT
-  R_RegisterCFinalizerEx(p, finalizer, FALSE);
-#endif
   UNPROTECT(2);
 
 /*
@@ -134,20 +129,9 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   // (1) we allocate the data.table and/or its names, so it has the GROWABLE_BIT set, so copies will have zero TRUELENGTH, or
   // (2) someone else creates them from scratch, so (only using the API) will have zero TRUELENGTH.
   // We then return false and either re-create the data.table from scratch or signal an error, so the current object having a zero TRUELENGTH is fine.
-  // R < 3.4 doesn't have the GROWABLE_BIT, so let's reset the TRUELENGTH just in case.
-#if R_VERSION < R_Version(3,4,0)
-  if (names!=tag && isString(names))
-    SET_TRUELENGTH(names, LENGTH(names));
-    // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
-    // because R copies the original vector's tl over despite allocating length.
-#endif
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-#if R_VERSION < R_Version(3,4,0)
-  if (x!=R_ExternalPtrAddr(prot))
-    SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
-#endif
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
