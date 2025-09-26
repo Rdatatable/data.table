@@ -17,6 +17,7 @@
 #  define isDataFrame(x) isFrame(x) // #6180
 #endif
 #include <Rinternals.h>
+#include <Rgrowable.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start
@@ -425,3 +426,5 @@ SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
+SEXP setgrowable(SEXP x);
+
