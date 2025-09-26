@@ -75,6 +75,20 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
       frollmedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
+  case VAR :
+    if (algo==0) {
+      frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+  case SD :
+    //if (algo==0) {
+    //  frollsdFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    //} else if (algo==1) {
+    //  frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    //}
+    break;
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in froll: %d", rfun); // # nocov
   }
@@ -1069,6 +1083,113 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
         } else {
           ans->dbl_v[i] = 1.0;
         }
+      }
+    }
+  }
+}
+
+/* fast rolling var - fast
+ */
+void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+}
+
+/* fast rolling var - exact
+ */
+void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0 || k == 1) { // var(scalar) is also NA
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size %d, returning all NA vector\n"), __func__, k);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = NA_REAL;
+    }
+    return;
+  }
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      long double wsum = 0.0;
+      for (int j=-k+1; j<=0; j++) {
+        wsum += x[i+j];
+      }
+      if (!R_FINITE((double) wsum)) {
+        if (ISNAN((double) wsum)) {
+          if (!narm) {
+            ans->dbl_v[i] = (double) wsum;
+          }
+          truehasnf = true;
+        } else {
+          ans->dbl_v[i] = R_NaN;
+        }
+      } else {
+        long double wmean = wsum / k;
+        long double xi = 0.0;
+        long double wsumxi = 0;
+        for (int j=-k+1; j<=0; j++) {
+          xi = x[i+j] - wmean;
+          wsumxi += (xi * xi);
+        }
+        ans->dbl_v[i] = (double) (wsumxi / (k - 1));
+      }
+    }
+    if (truehasnf) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+          if (narm)
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+          else
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      long double wsum = 0.0;
+      int nc = 0;
+      for (int j=-k+1; j<=0; j++) {
+        if (ISNAN(x[i+j])) {
+          nc++;
+        } else {
+          wsum += x[i+j];
+        }
+      }
+      if (R_FINITE((double) wsum)) {
+        if (nc == 0) {
+          long double wmean = wsum / k;
+          long double xi = 0.0;
+          long double wsumxi = 0;
+          for (int j=-k+1; j<=0; j++) {
+            xi = x[i+j] - wmean;
+            wsumxi += (xi * xi);
+          }
+          ans->dbl_v[i] = (double) (wsumxi / (k - 1));
+        } else if (nc < (k - 1)) { // var(scalar) is also NA thats why k-1 so at least 2 numbers must be there
+          long double wmean = wsum / (k - nc);
+          long double xi = 0.0;
+          long double wsumxi = 0;
+          for (int j=-k+1; j<=0; j++) {
+            if (!ISNAN(x[i+j])) {
+              xi = x[i+j] - wmean;
+              wsumxi += (xi * xi);
+            }
+          }
+          ans->dbl_v[i] = (double) (wsumxi / (k - nc - 1));
+        } else {
+          ans->dbl_v[i] = NA_REAL;
+        }
+      } else {
+        ans->dbl_v[i] = (double) R_NaN;
       }
     }
   }

@@ -163,6 +163,10 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     rfun = PROD;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "median")) {
     rfun = MEDIAN;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "var")) {
+    rfun = VAR;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sd")) {
+    rfun = SD;
   } else {
     internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "fun", "rolling"); // # nocov
   }
