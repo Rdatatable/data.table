@@ -92,6 +92,6 @@ SEXP setgrowable(SEXP x) {
         SET_VECTOR_ELT(x, i, make_growable(this));
     }
     // # nocov end
-    return x;
+  return x;
   }
 }
