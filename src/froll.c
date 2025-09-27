@@ -83,11 +83,11 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     }
     break;
   case SD :
-    //if (algo==0) {
-    //  frollsdFast(x, nx, ans, k, fill, narm, hasnf, verbose);
-    //} else if (algo==1) {
-    //  frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
-    //}
+    if (algo==0) {
+      frollsdFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
     break;
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in froll: %d", rfun); // # nocov
@@ -1192,6 +1192,24 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
         ans->dbl_v[i] = (double) R_NaN;
       }
     }
+  }
+}
+
+/* fast rolling sd - fast
+ */
+void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+}
+
+/* fast rolling sd - exact
+ */
+void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarExact(...))\n"), "frollsdExact");
+  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  #pragma omp parallel for num_threads(getDTthreads(nx, true))
+  for (uint64_t i=k-1; i<nx; i++) {
+    ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
 }
 

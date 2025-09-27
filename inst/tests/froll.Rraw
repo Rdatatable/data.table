@@ -2224,7 +2224,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   ans
 }
 #"mean","sum","max","min","prod","median",
-base_compare = function(x, n, funs=c("var"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("var","sd"), algos=c("fast","exact")) {
   num.step = 0.001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -2276,7 +2276,7 @@ base_compare(x, n)
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
   #"mean","sum","max","min","prod","median",
-  zoo_compare = function(x, n, funs=c("var"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("var","sd"), algos=c("fast","exact")) {
     num.step = 0.0001
     #### fun, align, na.rm, fill, algo, partial
     for (fun in funs) {
@@ -2375,7 +2375,7 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   ans
 }
 #"mean","sum","max","min","prod","median",
-afun_compare = function(x, n, funs=c("var"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("var","sd"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, align, na.rm, fill, algo
   for (fun in funs) {
