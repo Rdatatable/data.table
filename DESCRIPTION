@@ -1,0 +1,10 @@
+Package: data.table
+Type: Package
+Title: Just like a data.frame but without rownames, up to 10 times faster, up to 10 times less memory
+Version: 1.0
+Date: 2006-04-12
+Author: Matt Dowle
+Maintainer: Matt Dowle <mdowle@concordiafunds.com>
+Description: This package does very little. The only reason for its existence is that the white book specifies that data.frame must have rownames. This package defines a new class data.table which operates just like a data.frame, but uses up to 10 times less memory, and can be up to 10 times faster to create (and copy). It also takes the opportunity to allow subset() and with() like expressions inside the []. Most of the code is copied from base functions with the code manipulating row.names removed.
+License: GPL
+Packaged: Thu Apr 13 18:50:34 2006; matthew
