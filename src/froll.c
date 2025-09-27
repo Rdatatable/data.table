@@ -1198,7 +1198,12 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 /* fast rolling sd - fast
  */
 void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
-  frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarFast(...))\n"), "frollsdFast");
+  frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+  for (uint64_t i=k-1; i<nx; i++) {
+    ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
+  }
 }
 
 /* fast rolling sd - exact
@@ -1207,7 +1212,6 @@ void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarExact(...))\n"), "frollsdExact");
   frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
-  #pragma omp parallel for num_threads(getDTthreads(nx, true))
   for (uint64_t i=k-1; i<nx; i++) {
     ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
