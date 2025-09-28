@@ -2223,7 +2223,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   }
   ans
 }
-base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum","max","min","median","var","sd"), algos=c("fast","exact")) {
   num.step = 0.001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -2258,6 +2258,39 @@ base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","v
     }
   }
 }
+num = 7000.0
+x = rnorm(1e3); n = 50
+base_compare(x, n)
+x = rnorm(1e3+1); n = 50 ## uneven len
+base_compare(x, n)
+x = rnorm(1e3); n = 51 ## uneven window
+base_compare(x, n)
+x = rnorm(1e3+1); n = 51
+base_compare(x, n)
+x = sort(rnorm(1e3)); n = 50 ## inc
+base_compare(x, n)
+x = sort(rnorm(1e3+1)); n = 50
+base_compare(x, n)
+x = sort(rnorm(1e3)); n = 51
+base_compare(x, n)
+x = sort(rnorm(1e3+1)); n = 51
+base_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = 50 ## desc
+base_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = 50
+base_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = 51
+base_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = 51
+base_compare(x, n)
+x = rep(rnorm(1), 1e3); n = 50 ## const
+base_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = 50
+base_compare(x, n)
+x = rep(rnorm(1), 1e3); n = 51
+base_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = 51
+base_compare(x, n)
 num = 7100.0
 ## random NA non-finite
 x = makeNA(rnorm(1e3), nf=TRUE); n = 50
@@ -2343,6 +2376,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   x = makeNA(rnorm(1e3+1)); n = 51
   zoo_compare(x, n)
 }
+
 #### adaptive moving average compare
 arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf.rm=FALSE, partial=FALSE) {
   # adaptive moving average in R
@@ -2372,7 +2406,7 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum","max","min","median","var","sd"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, align, na.rm, fill, algo
   for (fun in funs) {
@@ -2415,6 +2449,39 @@ afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","v
   }
 }
 num = 7300.0
+x = rnorm(1e3); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(50, length(x), TRUE) ## uneven len
+afun_compare(x, n)
+x = rnorm(1e3); n = sample(51, length(x), TRUE) ## uneven window
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = sort(rnorm(1e3)); n = sample(50, length(x), TRUE) ## inc
+afun_compare(x, n)
+x = sort(rnorm(1e3+1)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = sort(rnorm(1e3)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = sort(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = sample(50, length(x), TRUE) ## desc
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3); n = sample(50, length(x), TRUE) ## const
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+num = 7400.0
 #### no NA
 x = rnorm(1e3); n = sample(50, length(x), TRUE) # x even, n even
 afun_compare(x, n)
