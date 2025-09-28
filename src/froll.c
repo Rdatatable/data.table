@@ -1090,6 +1090,9 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
 
 /* fast rolling var - fast
   Welford's online algorithm
+  numerically stable
+  no support for NFs, redirecting to exact
+  Welford wmean and m2 would have to be recalculated on each NF element
  */
 void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
@@ -1135,31 +1138,21 @@ void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
           ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
         if (verbose)
           ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
-        wmean = 0.0; m2 = 0.0; truehasnf = true;
+        /*wmean = 0.0; m2 = 0.0; */truehasnf = true;
       }
     } else {
       if (hasnf==-1)
         ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose)
         ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
-      wmean = 0.0; m2 = 0.0; truehasnf = true;
+      /*wmean = 0.0; m2 = 0.0; */truehasnf = true;
     }
   }
   if (truehasnf) {
-    frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
-    /*int nc = 0, pinf = 0, ninf = 0;
-    int i;
-    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
-      //PROD_WINDOW_STEP_FRONT
-      ans->dbl_v[i] = fill;
-    }
-    //PROD_WINDOW_STEP_FRONT
-    //PROD_WINDOW_STEP_VALUE
-    for (uint64_t i=k; i<nx; i++) {
-      //PROD_WINDOW_STEP_BACK
-      //PROD_WINDOW_STEP_FRONT
-      //PROD_WINDOW_STEP_VALUE
-    }*/
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: non-finite values are present in input, redirecting to frollvarExact using has.nf=TRUE\n"), __func__);
+    frollvarExact(x, nx, ans, k, fill, narm, /*hasnf=*/true, verbose);
+    return;
   }
 }
 
