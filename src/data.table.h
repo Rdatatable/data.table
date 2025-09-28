@@ -251,7 +251,7 @@ void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *
 void frolladaptivemaxExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
 //void frolladaptiveminFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose); // does not exists as of now
 void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
-void frolladaptiveprodFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
+//void frolladaptiveprodFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose); // does not exists as of now
 void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose);
 
 // frollR.c

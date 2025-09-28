@@ -1202,8 +1202,8 @@ test(6000.931, frollprod(1:3, 2), c(NA, 2, 6), output="frollprodFast: running fo
 test(6000.932, frollprod(1:3, 2, align="left"), c(2, 6, NA), output="frollfun: align")
 test(6000.933, frollprod(c(1,2,NA), 2), c(NA, 2, NA), output="non-finite values are present in input, re-running with extra care for NFs")
 test(6000.934, frollprod(c(NA,2,3), 2), c(NA, NA, 6), output="non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway")
-test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="frolladaptiveprodFast: running for input length")
-test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="algo 0 not implemented, fall back to 1")
+test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run")
 options(datatable.verbose=FALSE)
 # floating point overflow
 test(6000.941, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 5), c(NA,NA,NA,NA,Inf))
@@ -1222,6 +1222,13 @@ test(6000.953, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(5, 5), algo="
 test(6000.954, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,Inf))
 test(6000.955, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(5, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,NA,-Inf))
 test(6000.956, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,-Inf))
+# rolling product and numerical stability #7349
+test(6000.9601, frollprod(c(2,2,0,2,2), 2), c(NA,4,0,0,4))
+test(6000.9602, frollprod(c(2,2,0,-2,2), 2), c(NA,4,0,0,-4))
+test(6000.9603, frollprod(c(2,2,0,-2,-2), 2), c(NA,4,0,0,4))
+test(6000.9604, frollprod(c(2,2,0,Inf,2), 2), c(NA,4,0,NaN,Inf))
+test(6000.9605, frollprod(c(2,2,0,-Inf,2), 2), c(NA,4,0,NaN,-Inf))
+test(6000.9606, frollprod(c(2,2,0,-Inf,-2), 2), c(NA,4,0,NaN,Inf))
 
 # n==0, k==0, k[i]==0
 test(6001.111, frollmean(1:3, 0), c(NaN,NaN,NaN), options=c("datatable.verbose"=TRUE), output="window width of size 0")
