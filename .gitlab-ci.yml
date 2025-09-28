@@ -77,8 +77,6 @@ build:
     - rm -r bus
   script:
     - sed -i '/^[[:space:]]*$/d' ./DESCRIPTION ## make last line end abruptly; i.e. without a final \n
-    - |
-      sed -i "0,/^Version: [0-9.]\+$/s//&-$(date -d "$CI_COMMIT_TIMESTAMP" +%s)/" ./DESCRIPTION
     - echo "Revision:" $CI_COMMIT_SHA >> ./DESCRIPTION
     - R CMD build .
     - mkdir -p bus/$CI_JOB_NAME/
