@@ -1089,9 +1089,78 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
 }
 
 /* fast rolling var - fast
+  Welford's online algorithm
  */
 void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
-  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0 || k == 1) { // var(scalar) is also NA
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size %d, returning all NA vector\n"), __func__, k);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = NA_REAL;
+    }
+    return;
+  }
+  long double wmean = 0.0;
+  long double m2 = 0.0;
+  int k0 = k-1;
+  bool truehasnf = hasnf>0;
+  if (!truehasnf) {
+    int i;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      long double delta = x[i] - wmean;
+      wmean += delta / (i + 1);
+      m2 += delta * (x[i] - wmean);
+      ans->dbl_v[i] = fill;
+    }
+    long double delta = x[i] - wmean; // i==k-1
+    wmean += delta / (i + 1);
+    m2 += delta * (x[i] - wmean);
+    ans->dbl_v[i] = (double)(m2 / k0);
+    if (R_FINITE((double) m2)) {
+      for (uint64_t i=k; i<nx; i++) {
+          double x_out = x[i-k];
+          long double delta_out = x_out - wmean;
+          wmean = (wmean * k - x_out) / k0;
+          m2 -= delta_out * (x_out - wmean);
+          double x_in = x[i];
+          long double delta_in = x_in - wmean;
+          wmean += delta_in / k;
+          m2 += delta_in * (x_in - wmean);
+          ans->dbl_v[i] = (double)(m2 / k0);
+      }
+      if (!R_FINITE((double) m2)) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+        if (verbose)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        wmean = 0.0; m2 = 0.0; truehasnf = true;
+      }
+    } else {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
+      wmean = 0.0; m2 = 0.0; truehasnf = true;
+    }
+  }
+  if (truehasnf) {
+    frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    /*int nc = 0, pinf = 0, ninf = 0;
+    int i;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      //PROD_WINDOW_STEP_FRONT
+      ans->dbl_v[i] = fill;
+    }
+    //PROD_WINDOW_STEP_FRONT
+    //PROD_WINDOW_STEP_VALUE
+    for (uint64_t i=k; i<nx; i++) {
+      //PROD_WINDOW_STEP_BACK
+      //PROD_WINDOW_STEP_FRONT
+      //PROD_WINDOW_STEP_VALUE
+    }*/
+  }
 }
 
 /* fast rolling var - exact

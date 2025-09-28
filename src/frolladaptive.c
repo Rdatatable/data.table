@@ -55,18 +55,18 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case VAR :
-    if (algo==0) {
-      frolladaptivevarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
-    } else if (algo==1) {
-      frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    if (algo==0 && verbose) {
+      //frolladaptivevarFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivevarFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
     }
+    frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case SD :
-    if (algo==0) {
-     frolladaptivesdFast(x, nx, ans, k, fill, narm, hasnf, verbose);
-    } else if (algo==1) {
-     frolladaptivesdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    if (algo==0 && verbose) {
+      //frolladaptivesdFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivesdFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
     }
+    frolladaptivesdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
@@ -847,12 +847,6 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
   }
 }
 
-/* fast rolling adaptive var - fast
- */
-void frolladaptivevarFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
-  frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
-}
-
 /* fast rolling adaptive var - exact
  */
 void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
@@ -952,17 +946,6 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
         }
       }
     }
-  }
-}
-
-/* fast rolling adaptive sd - fast
- */
-void frolladaptivesdFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frolladaptivevarFast(...))\n"), "frolladaptivesdFast");
-  frolladaptivevarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
-  for (uint64_t i=0; i<nx; i++) {
-    ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
 }
 
