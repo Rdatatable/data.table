@@ -177,20 +177,20 @@
     ```r
     x = data.table(v1=rnorm(120), v2=rnorm(120))
     f = function(x) coef(lm(v2 ~ v1, data=x))
-    coef.fill = c("(Intercept)"=NA_real_, "v1"=NA_real_)
-    frollapply(x, 4, f, by.column=FALSE, fill=coef.fill)
+    frollapply(x, 4, f, by.column=FALSE)
     #     (Intercept)         v1
+    #           <num>      <num>
     #  1:          NA         NA
     #  2:          NA         NA
     #  3:          NA         NA
-    #  4:  0.65456931  0.3138012
-    #  5: -1.07977441 -2.0588094
+    #  4: -0.04648236 -0.6349687
+    #  5:  0.09208733 -0.4964023
     #---
-    #116:  0.15828417  0.3570216
-    #117: -0.09083424  1.5494507
-    #118: -0.18345878  0.6424837
-    #119: -0.28964772  0.6116575
-    #120: -0.40598313  0.6112854
+    #116: -0.21169439  0.7421358
+    #117: -0.19729119  0.4926939
+    #118: -0.04217896  0.0452713
+    #119:  0.22472549 -0.5245874
+    #120:  0.54540359 -0.1638333
     ```
     - uses multiple CPU threads (on a decent OS); evaluation of UDF is inherently slow so this can be a great help.
     ```r
@@ -310,6 +310,8 @@
 5. A GitHub Actions workflow is now in place to warn the entire maintainer team, as well as any contributor following the GitHub repository, when the package is at risk of archival on CRAN [#7008](https://github.com/Rdatatable/data.table/issues/7008). Thanks @tdhock for the original report and @Bisaloo and @TysonStanley for the fix.
 
 6. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
+
+7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 

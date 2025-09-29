@@ -1580,9 +1580,9 @@ test(6010.103, frollapply(c(1,2,1,1,1,2,3,2), 3, uniqueN), c(NA,NA,2L,2L,1L,2L,3
 test(6010.104, frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE))
 f = function(x) {
   n = length(x) # double type will be returned only for first iteration
-  if (n==x[n]) 1 else NA # NA logical coerced properly
+  if (n==x[n]) 1 else NA
 }
-test(6010.105, frollapply(1:5, 3, f), c(NA,NA,1,NA,NA))
+test(6010.105, frollapply(1:5, 3, f), list(NA,NA,1,NA,NA)) ## this demands user to write type aware NA inside FUN, which is mentioned as recommendation in ?frollapply
 
 ## partial
 x = 1:6/2
@@ -1737,8 +1737,15 @@ test(6010.621, as.data.table(iris)[, "flow" := frollapply(.(Sepal.Length, Sepal.
 test(6010.622, as.data.table(iris)[, "flow" := frollapply(data.frame(Sepal.Length, Sepal.Width), 2L, flow, by.column=FALSE), by = Species]$flow[idx], ans)
 test(6010.623, as.data.table(iris)[, "flow" := unlist(lapply(split(data.frame(Sepal.Length, Sepal.Width), Species), frollapply, 2L, flow, by.column=FALSE))]$flow[idx], ans)
 f = function(l) as.list(range(l[[1L]])-range(l[[2L]]))
-test(6010.624, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), data.table(V1=c(NA,-3L,-2L,0L,1L), V2=c(NA,-3L,-2L,0L,1L)))
-test(6010.625, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), data.table(V1=c(-3L,-1L,2L,NA,NA), V2=c(-3L,-1L,2L,NA,NA)))
+test(6010.624, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), list(list(NA, NA), list(-3L, -3L), list(-2L, -2L), list(0L, 0L), list(1L, 1L)))
+test(6010.6241, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE), data.table(V1=c(NA,-3L,-2L,0L,1L), V2=c(NA,-3L,-2L,0L,1L)))
+f = function(l) range(l[[1L]])-range(l[[2L]])
+test(6010.6242, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE), data.table(V1=c(NA,-3L,-2L,0L,1L), V2=c(NA,-3L,-2L,0L,1L)))
+f = function(l) as.list(range(l[[1L]])-range(l[[2L]]))
+test(6010.625, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), list(list(-3L, -3L), list(-1L, -1L), list(2L, 2L), list(NA, NA), list(NA, NA)))
+test(6010.6251, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE), data.table(V1 = c(-3L, -1L, 2L, NA, NA), V2 = c(-3L, -1L, 2L, NA, NA)))
+f = function(l) range(l[[1L]])-range(l[[2L]])
+test(6010.6252, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE), data.table(V1=c(-3L,-1L,2L,NA,NA), V2=c(-3L,-1L,2L,NA,NA)))
 #### list of df/lists
 x = list(data.table(x=1:2, y=2:3), data.table(z=3:5))
 test(6010.631, frollapply(x, 2, tail, 1, by.column=FALSE, fill=data.table(), simplify=function(x) rbindlist(x, fill=TRUE)), list(data.table(x=2L, y=3L), data.table(z=4:5)))
@@ -1773,7 +1780,14 @@ test(6010.705, frollapply(1:5, 2, range, simplify=FALSE), list(NA,1:2,2:3,3:4,4:
 test(6010.706, frollapply(1:5, 2, range, fill=c(NA_integer_,NA_integer_)), data.table(V1=c(NA,1:4), V2=c(NA,2:5)))
 test(6010.707, frollapply(1:5, 2, range, fill=c(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
 test(6010.708, frollapply(1:5, 2, range, fill=c(min=NA_integer_, max=NA_integer_), simplify=function(x) rbindlist(lapply(x, as.list))), data.table(min=c(NA,1:4), max=c(NA,2:5)))
-test(6010.709, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7091, frollapply(1:5, 2, function(x) as.list(range(x))), data.table(c(NA,1:4), c(NA,2:5)))
+test(6010.7092, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7093, frollapply(1:5, 2, function(x) as.list(setNames(range(x), c("min","max")))), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7094, frollapply(1:5, 2, function(x) as.list(setNames(range(x), c("v1","v2"))), fill=list(min=NA_integer_, max=NA_integer_)), list(list(min = NA_integer_, max = NA_integer_), list(v1 = 1L, v2 = 2L), list(v1 = 2L, v2 = 3L), list(v1 = 3L, v2 = 4L), list(v1 = 4L, v2 = 5L)))
+test(6010.7095, frollapply(1:5, 2, function(x) range(x)), data.table(c(NA,1:4), c(NA,2:5)))
+test(6010.7096, frollapply(1:5, 2, function(x) range(x), fill=c(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7097, frollapply(1:5, 2, function(x) setNames(range(x), c("min","max"))), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7098, frollapply(1:5, 2, function(x) setNames(range(x), c("v1","v2")), fill=c(min=NA_integer_, max=NA_integer_)), list(c(min = NA_integer_, max = NA_integer_), c(v1=1L, v2=2L), c(v1=2L, v2=3L), c(v1=3L, v2=4L), c(v1=4L, v2=5L)))
 test(6010.710, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(min=NA_integer_, max=NA_integer_), simplify=rbindlist), data.table(min=c(NA,1:4), max=c(NA,2:5)))
 test(6010.711, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(NA_integer_, NA_integer_), simplify=FALSE), list(list(NA_integer_, NA_integer_), as.list(1:2), as.list(2:3), as.list(3:4), as.list(4:5)))
 test(6010.712, as.null(frollapply(1:3, 1, function(x) if (x==1L) sum else if (x==2L) mean else `[`, simplify=TRUE)), NULL) ## as.null as we are only interested in codecov here
@@ -1783,41 +1797,45 @@ test(6010.751, frollapply(FUN=median, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2
 test(6010.752, frollapply(FUN=median, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA_real_,2.5))
 test(6010.753, frollapply(FUN=median, adaptive=TRUE, c(1L,2L,4L), c(2,0,2), fill=99L), c(99,NA_real_,3))
 test(6010.754, frollapply(FUN=median, adaptive=TRUE, c(1L,2L,3L), c(2,0,2), fill=99), c(99,NA_real_,2.5))
-test(6010.755, frollapply(1:2, 1, function(i) if (i==1L) 1L else FALSE), c(1L,0L))
-test(6010.756, frollapply(1:3, 2, fill=9, function(i) if (i[1L]==1L) 1L else FALSE), c(9L,1L,0L)) ## matches fun answer
-test(6010.757, frollapply(1:3, 2, fill=9L, function(i) if (i[1L]==1L) 1 else FALSE), c(9,1,0)) ## matches fun answer
-test(6010.758, frollapply(1:3, 2, fill=0, function(i) TRUE), c(FALSE,TRUE,TRUE)) ## matches fun answer
+test(6010.755, frollapply(1:2, 1, function(i) if (i==1L) 1L else NA), list(1L,NA))
+test(6010.756, frollapply(1:3, 2, fill=9, function(i) if (i[1L]==1L) 1L else NA), list(9,1L,NA))
+test(6010.757, frollapply(1:3, 2, fill=9, function(i) if (i[1L]==1L) 1L else 2L), c(9L,1L,2L)) ## matches fun answer
+test(6010.758, frollapply(1:3, 2, fill=9L, function(i) if (i[1L]==1L) 1 else FALSE), list(9L,1,FALSE))
+test(6010.759, frollapply(1:3, 2, fill=0, function(i) TRUE), list(0,TRUE,TRUE))
+test(6010.760, frollapply(1:3, 2, function(x) c(a=x), fill=0), list(0L, c(a1=1L,a2=2L), c(a1=2L,a2=3L)))
+test(6010.7601, frollapply(1:3, 2, function(x) c(a=x), fill=c(0,0)), data.table(a1=0:2, a2=c(0L,2:3)))
 
 #### mutlithreading throttle caveats from manual: copy, fixing .internal.selfref
 use.fork = .Platform$OS.type!="windows" && getDTthreads()>1L
 if (use.fork) {
-  setDTthreads(throttle=1) ## disable throttle
   old = setDTthreads(1)
   test(6010.761, frollapply(c(1, 9), N=1L, FUN=identity), c(9,9)) ## unexpected
   test(6010.762, frollapply(c(1, 9), N=1L, FUN=list), data.table(V1=c(9,9))) ## unexpected
-  setDTthreads(2)
+  setDTthreads(2, throttle=1) ## disable throttle
   test(6010.763, frollapply(c(1, 9), N=1L, FUN=identity), c(1,9)) ## good only because threads >= input
   test(6010.764, frollapply(c(1, 5, 9), N=1L, FUN=identity), c(5,5,9)) ## unexpected again
+  ans = frollapply(1:2, 2, data.table)
   is.ok = function(x) {stopifnot(is.data.table(x)); out=capture.output(print(attr(x, ".internal.selfref", TRUE))); out!="<pointer: (nil)>" && out!="<pointer: 0x0>"}
+  test(6010.769, .selfref.ok(ans)) ## frollapply will fix DT in most cases
   ans = frollapply(1:2, 2, data.table, simplify=FALSE) ## default: fill=NA
-  test(6010.770, is.ok(ans[[2L]])) ## frollapply detected DT and fixed
-  ans = frollapply(1:2, 2, data.table, fill=data.table(NA)) ## fill type match
-  test(6010.771, is.ok(ans)) ## simplify=TRUE did run rbindlist, but frollapply fixed anyway
-  ans = frollapply(1:2, 2, data.table, fill=data.table(NA), simplify=FALSE)
-  test(6010.772, is.ok(ans[[2L]]))
+  test(6010.770, .selfref.ok(ans[[2L]])) ## frollapply detected DT and fixed
+  ans = frollapply(1:2, 2, data.table, fill=data.table(c(NA,NA))) ## fill size match
+  test(6010.771, .selfref.ok(ans)) ## simplify=TRUE did run rbindlist, but frollapply fixed anyway
+  ans = frollapply(1:2, 2, data.table, fill=data.table(NA)) ## fill size not match, no rbindlist, but frollapply fixed anyway
+  test(6010.772, .selfref.ok(ans[[2L]]))
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
-  test(6010.773, !is.ok(ans[[2L]][[1L]]))
+  test(6010.773, !.selfref.ok(ans[[2L]][[1L]]))
   test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
   ans = lapply(ans, lapply, setDT)
-  test(6010.774, is.ok(ans[[2L]][[1L]])) ## fix after
+  test(6010.774, .selfref.ok(ans[[2L]][[1L]])) ## fix after
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=function(x) lapply(x, lapply, setDT))
-  test(6010.775, is.ok(ans[[2L]][[1L]])) ## fix inside frollapply via simplify
+  test(6010.775, .selfref.ok(ans[[2L]][[1L]])) ## fix inside frollapply via simplify
   f = function(x) (if (x[1L]==1L) data.frame else data.table)(x) ## automatic fix may not work for a non-type stable function
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=FALSE)
-  test(6010.776, !is.ok(ans[[3L]]))
+  test(6010.776, !.selfref.ok(ans[[3L]]))
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=function(x) lapply(x, function(y) if (is.data.table(y)) setDT(y) else y))
-  test(6010.777, is.ok(ans[[3L]])) ## fix inside frollapply via simplify
-  setDTthreads(throttle=1024) ## re-enable throttle
+  test(6010.777, .selfref.ok(ans[[3L]])) ## fix inside frollapply via simplify
+  setDTthreads(old, throttle=1024) ## re-enable throttle
 }
 
 ## partial adaptive

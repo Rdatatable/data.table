@@ -217,14 +217,14 @@ SEXP fcaseR(SEXP rho, SEXP args) {
   int nprotect=0, l;
   int64_t n_ans=0, n_this_arg=0, n_undecided=0;
   SEXP ans=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
-  SEXP ans_class, ans_levels;
+  SEXP ans_class, ans_levels = R_NilValue;
   PROTECT_INDEX Iwhens, Ithens;
   PROTECT_WITH_INDEX(whens, &Iwhens); nprotect++;
   PROTECT_WITH_INDEX(thens, &Ithens); nprotect++;
   SEXPTYPE ans_type=NILSXP;
   // naout means if the output is scalar logic na
   bool imask = true, naout = false, idefault = false;
-  bool ans_is_factor;
+  bool ans_is_factor = false;
   int *restrict p = NULL;
   const int n = narg/2;
   for (int i=0; i<n; ++i) {
