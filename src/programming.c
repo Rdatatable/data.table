@@ -7,7 +7,7 @@ static void substitute_call_arg_names(SEXP expr, SEXP env)
   SEXP arg_names = getAttrib(expr, R_NamesSymbol);
   if (!isNull(arg_names)) {
     SEXP env_names = getAttrib(env, R_NamesSymbol);
-    int *imatches = INTEGER(PROTECT(chmatch(arg_names, env_names, 0)));
+    const int *imatches = INTEGER_RO(PROTECT(chmatch(arg_names, env_names, 0)));
     const SEXP *env_sub = SEXPPTR_RO(env);
     SEXP tmp = expr;
     for (int i = 0; i < length(arg_names); i++, tmp = CDR(tmp)) { // substitute call arg names
