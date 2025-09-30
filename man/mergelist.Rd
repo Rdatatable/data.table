@@ -113,6 +113,7 @@ l = list(
 lapply(l[-1L], `[`, j = if (.N>1L) .SD, by = "id1") ## duplicated rows
 try(mergelist(l, on="id1"))
 
+\donttest{
 ## 'star schema' and 'snowflake schema' examples (realistic data sizes)
 
 ### populate fact: US population by state and date
@@ -198,5 +199,6 @@ ans = mergelist(list(
   setmergelist(time),
   setmergelist(rev(geog), how="right")
 ))
+}
 }
 \keyword{ data }
