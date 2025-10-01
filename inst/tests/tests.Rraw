@@ -21685,3 +21685,10 @@ d3 = unserialize(serialize(d2, NULL))
 test(2340.05, .selfref.ok(d3), FALSE)
 setDT(d3)
 test(2340.06, .selfref.ok(d3), TRUE)
+
+# Mixing use of data.frame and data.table in R 3.1+ #710
+DF1 = data.frame(x=1:5, y=6:10, z=11:15)
+DF2 = transform(DF1, z = 16:20)
+setorder(setDT(DF2), -z)
+test(2341.1, DF1, data.frame(x=1:5, y=6:10, z=11:15))
+test(2341.2, DF2, data.table(x=5:1, y=10:6, z=20:16))
