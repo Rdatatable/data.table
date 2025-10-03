@@ -4,8 +4,8 @@
 SEXP inrange(SEXP ansArg, SEXP xoArg, SEXP startsArg, SEXP lenArg)
 {
   int *ans = INTEGER(ansArg);
-  const int *xo = INTEGER(xoArg);
-  const int *starts = INTEGER(startsArg), *len = INTEGER(lenArg);
+  const int *xo = INTEGER_RO(xoArg);
+  const int *starts = INTEGER_RO(startsArg), *len = INTEGER_RO(lenArg);
   const int n = length(startsArg), nxo = length(xoArg);
   for (int i = 0; i < n; i++) {
     for (int j = starts[i] - 1; j < starts[i] - 1 + len[i]; j++) {

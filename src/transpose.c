@@ -61,22 +61,22 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case LGLSXP: {
-      const int *ili = LOGICAL(li);
-      const int ifill = LOGICAL(fill)[0];
+      const int *ili = LOGICAL_RO(li);
+      const int ifill = LOGICAL_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         LOGICAL(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
       }
     } break;
     case INTSXP: {
-      const int *ili = INTEGER(li);
-      const int ifill = INTEGER(fill)[0];
+      const int *ili = INTEGER_RO(li);
+      const int ifill = INTEGER_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         INTEGER(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
       }
     } break;
     case REALSXP: {
-      const double *dli = REAL(li);
-      const double dfill = REAL(fill)[0];
+      const double *dli = REAL_RO(li);
+      const double dfill = REAL_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         REAL(ansp[j + rn])[k] = j < len ? dli[j] : dfill;
       }
