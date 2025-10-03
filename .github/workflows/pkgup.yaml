@@ -39,7 +39,6 @@ jobs:
           Rscript -e 'stopifnot(file.copy("DESCRIPTION", file.path(tdir<-tempdir(), "PACKAGES"))); db<-available.packages(paste0("file://", tdir)); deps<-setdiff(tools::package_dependencies(read.dcf("DESCRIPTION", fields="Package")[[1L]], db, which="most")[[1L]], installed.packages(priority="high")[,"Package"]); if (length(deps)) { ap<-available.packages()[,"Version"]; ap<-ap[names(ap) %in% deps]; if (!all(deps%in%names(ap))) stop("dependencies are not avaiable in repository: ",paste(setdiff(deps, names(ap)), collapse=", ")); ip<-installed.packages()[,"Version"]; ip<-ip[names(ip) %in% deps]; pkgs<-ap[deps]>ip[deps]; install.packages(names(pkgs[pkgs|is.na(pkgs)]), INSTALL_opts="--html") }'
       - name: build
         run: |
-          sed -i "0,/^Version: [0-9.]\+$/s//&-$(TZ=UTC git log -1 --format=%ct)/" ./DESCRIPTION
           echo "Revision:" $GITHUB_SHA >> ./DESCRIPTION
           R CMD build .
       - name: check
