@@ -888,13 +888,7 @@ void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 #undef PROD_WINDOW_STEP_FRONT
 #define PROD_WINDOW_STEP_FRONT                                   \
   if (R_FINITE(x[i])) {                                          \
-    if (x[i] == 0.0) {                                           \
-      zerc++;                                                    \
-    } else {                                                     \
-      w += log(fabsl(x[i]));                                     \
-      if (x[i] < 0.0)                                            \
-        negc++;                                                  \
-    }                                                            \
+    w *= x[i];                                                   \
   } else if (ISNAN(x[i])) {                                      \
     nc++;                                                        \
   } else if (x[i]==R_PosInf) {                                   \
@@ -905,13 +899,7 @@ void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 #undef PROD_WINDOW_STEP_BACK
 #define PROD_WINDOW_STEP_BACK                                    \
   if (R_FINITE(x[i-k])) {                                        \
-    if (x[i-k] == 0.0) {                                         \
-      zerc--;                                                    \
-    } else {                                                     \
-      w -= log(fabsl(x[i-k]));                                   \
-      if (x[i-k] < 0.0)                                          \
-        negc--;                                                  \
-    }                                                            \
+    w /= x[i-k];                                                 \
   } else if (ISNAN(x[i-k])) {                                    \
     nc--;                                                        \
   } else if (x[i-k]==R_PosInf) {                                 \
@@ -923,48 +911,18 @@ void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 #define PROD_WINDOW_STEP_VALUE                                   \
   if (nc == 0) {                                                 \
     if (pinf == 0 && ninf == 0) {                                \
-      if (zerc) {                                                \
-        ans->dbl_v[i] = 0.0;                                     \
-      } else {                                                   \
-        long double res = expl(w);                               \
-        if (negc % 2)                                            \
-          res = -res;                                            \
-        ans->dbl_v[i] = (double) res;                            \
-      }                                                          \
+      ans->dbl_v[i] = (double) w;                                \
     } else {                                                     \
-      if (zerc) {                                                \
-        ans->dbl_v[i] = R_NaN;                                   \
-      } else {                                                   \
-        if ((ninf + (negc%2)) % 2) {                             \
-          ans->dbl_v[i] = R_NegInf;                              \
-        } else {                                                 \
-          ans->dbl_v[i] = R_PosInf;                              \
-        }                                                        \
-      }                                                          \
+      ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;      \
     }                                                            \
   } else if (nc == k) {                                          \
     ans->dbl_v[i] = narm ? 1.0 : NA_REAL;                        \
   } else {                                                       \
     if (narm) {                                                  \
       if (pinf == 0 && ninf == 0) {                              \
-        if (zerc) {                                              \
-          ans->dbl_v[i] = 0.0;                                   \
-        } else {                                                 \
-          long double res = expl(w);                             \
-          if (negc % 2)                                          \
-            res = -res;                                          \
-          ans->dbl_v[i] = (double) res;                          \
-        }                                                        \
+        ans->dbl_v[i] = (double) w;                              \
       } else {                                                   \
-        if (zerc) {                                              \
-          ans->dbl_v[i] = R_NaN;                                 \
-        } else {                                                 \
-          if ((ninf + (negc%2)) % 2) {                           \
-            ans->dbl_v[i] = R_NegInf;                            \
-          } else {                                               \
-            ans->dbl_v[i] = R_PosInf;                            \
-          }                                                      \
-        }                                                        \
+        ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
       }                                                          \
     } else {                                                     \
       ans->dbl_v[i] = NA_REAL;                                   \
@@ -972,8 +930,7 @@ void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
 
 /* fast rolling prod - fast
- * work in log space: sum rather than prod
- * track zero and negative
+ * same as mean fast
  */
 void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
@@ -986,75 +943,35 @@ void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
     }
     return;
   }
-  long double w = 0.0;
-  int zerc = 0;
-  int negc = 0;
+  long double w = 1.0;
   bool truehasnf = hasnf>0;
   if (!truehasnf) {
     int i;
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
-      if (x[i] == 0.0) {
-        zerc++;
-      } else {
-        w += log(fabsl(x[i]));
-        if (x[i] < 0.0)
-          negc++;
-      }
+      w *= x[i];
       ans->dbl_v[i] = fill;
     }
-    if (x[i] == 0.0) {
-      zerc++;
-    } else {
-      w += log(fabsl(x[i]));
-      if (x[i] < 0.0)
-        negc++;
-    }
-    if (zerc) {
-      ans->dbl_v[i] = 0.0;
-    } else {
-      long double res = expl(w);
-      if (negc % 2)
-        res = -res;
-      ans->dbl_v[i] = (double) res;
-    }
+    w *= x[i];
+    ans->dbl_v[i] = (double) w;
     if (R_FINITE((double) w)) {
       for (uint64_t i=k; i<nx; i++) {
-        if (x[i-k] == 0.0) {
-          zerc--;
-        } else {
-          w -= log(fabsl(x[i-k]));
-          if (x[i-k] < 0.0)
-            negc--;
-        }
-        if (x[i] == 0.0) {
-          zerc++;
-        } else {
-          w += log(fabsl(x[i]));
-          if (x[i] < 0.0)
-            negc++;
-        }
-        if (zerc) {
-          ans->dbl_v[i] = 0.0;
-        } else {
-          long double res = expl(w);
-          if (negc % 2)
-            res = -res;
-          ans->dbl_v[i] = (double) res;
-        }
+        w /= x[i-k];
+        w *= x[i];
+        ans->dbl_v[i] = (double) w;
       }
       if (!R_FINITE((double) w)) {
         if (hasnf==-1)
           ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
         if (verbose)
           ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
-        w = 0.0; zerc = 0; negc = 0; truehasnf = true;
+        w = 1.0; truehasnf = true;
       }
     } else {
       if (hasnf==-1)
         ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose)
         ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
-      w = 0.0; zerc = 0; negc = 0; truehasnf = true;
+      w = 1.0; truehasnf = true;
     }
   }
   if (truehasnf) {
