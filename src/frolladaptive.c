@@ -54,6 +54,20 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     }
     frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
+  case VAR :
+    if (algo==0 && verbose) {
+      //frolladaptivevarFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivevarFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  case SD :
+    if (algo==0 && verbose) {
+      //frolladaptivesdFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivesdFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivesdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
   }
@@ -719,6 +733,121 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
           }
         }
       }
+    }
+  }
+}
+
+/* fast rolling adaptive var - exact
+ */
+void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivevarExact", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      if (k[i] < 2) { // k[i]==0 as well as =1 which for var is NA
+        ans->dbl_v[i] = NA_REAL;
+      } else if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double wsum = 0.0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          wsum += x[i+j];
+        }
+        if (!R_FINITE((double) wsum)) {
+          if (ISNAN((double) wsum)) {
+            if (!narm) {
+              ans->dbl_v[i] = (double) wsum;
+            }
+            truehasnf = true;
+          } else {
+            ans->dbl_v[i] = R_NaN;
+          }
+        } else {
+          long double wmean = wsum / k[i];
+          long double xi = 0.0;
+          long double wsumxi = 0;
+          for (int j=-k[i]+1; j<=0; j++) {
+            xi = x[i+j] - wmean;
+            wsumxi += (xi * xi);
+          }
+          ans->dbl_v[i] = (double) (wsumxi / (k[i] - 1));
+        }
+      }
+    }
+    if (truehasnf) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+          if (narm)
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+          else
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (k[i] < 2) { // k[i]==0 as well as =1 which for var is NA
+        ans->dbl_v[i] = NA_REAL;
+      } else if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double wsum = 0.0;
+        int nc = 0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (ISNAN(x[i+j])) {
+            nc++;
+          } else {
+            wsum += x[i+j];
+          }
+        }
+        if (R_FINITE((double) wsum)) {
+          if (nc == 0) {
+            long double wmean = wsum / k[i];
+            long double xi = 0.0;
+            long double wsumxi = 0;
+            for (int j=-k[i]+1; j<=0; j++) {
+              xi = x[i+j] - wmean;
+              wsumxi += (xi * xi);
+            }
+            ans->dbl_v[i] = (double) (wsumxi / (k[i] - 1));
+          } else if (nc < (k[i] - 1)) { // var(scalar) is also NA thats why k-1 so at least 2 numbers must be there
+            long double wmean = wsum / (k[i] - nc);
+            long double xi = 0.0;
+            long double wsumxi = 0;
+            for (int j=-k[i]+1; j<=0; j++) {
+              if (!ISNAN(x[i+j])) {
+                xi = x[i+j] - wmean;
+                wsumxi += (xi * xi);
+              }
+            }
+            ans->dbl_v[i] = (double) (wsumxi / (k[i] - nc - 1));
+          } else {
+            ans->dbl_v[i] = NA_REAL;
+          }
+        } else {
+          ans->dbl_v[i] = (double) R_NaN;
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive sd - exact
+ */
+void frolladaptivesdExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frolladaptivevarExact(...))\n"), "frolladaptivesdExact");
+  frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  for (uint64_t i=0; i<nx; i++) {
+    if (i+1 >= k[i]) { // skip partial window: sqrt(fill)
+      ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
     }
   }
 }
