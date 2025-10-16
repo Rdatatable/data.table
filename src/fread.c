@@ -1827,7 +1827,7 @@ int freadMain(freadMainArgs _args)
             bool betterLines = thisBlockLines > topNumLines && (lastncol > 1 || (singleColumnCandidate && topNumFields <= 1));
             // first multi-column candidate after only single-column options so far
             bool promoteOverSingle = (topNumFields <= 1 && lastncol > topNumFields && thisBlockLines >= 2);
-            // same number of rows as current best but more fields (legacy tie-breaker)
+            // more lines wins even with fewer fields, so long as number of fields >= 2
             bool betterTie = (thisBlockLines == topNumLines &&
                               lastncol > topNumFields &&                      // when number of lines is tied, choose the sep which separates it into more columns
                               (quoteRule < QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
