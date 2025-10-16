@@ -1819,7 +1819,6 @@ int freadMain(freadMainArgs _args)
                   blockHasQuote = true;
                   break;
                 }
-                if (*scan == '\n' || *scan == '\r') continue;
               }
             }
             bool singleColumnCandidate = (lastncol == 1 && thisBlockLines >= 2 && blockHasQuote && quoteRule < QUOTE_RULE_IGNORE_QUOTES);
