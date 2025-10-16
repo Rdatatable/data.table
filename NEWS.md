@@ -332,6 +332,9 @@
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
+20. `fread()` auto-detects separators for single-column files consisting solely of quoted values (e.g. `"this_that"\n"2025-01-01 00:00:01"`), [#7366](https://github.com/Rdatatable/data.table/issues/7366). Thanks @arunsrinivasan
+for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:

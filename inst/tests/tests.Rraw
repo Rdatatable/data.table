@@ -21685,3 +21685,7 @@ d3 = unserialize(serialize(d2, NULL))
 test(2340.05, .selfref.ok(d3), FALSE)
 setDT(d3)
 test(2340.06, .selfref.ok(d3), TRUE)
+
+# fread with quotes and single column #7366
+str = '"this_that"\n"2025-01-01 00:00:01"'
+test(2341, fread(str), data.table(this_that = as.POSIXct("2025-01-01 00:00:01", tz="UTC")))
