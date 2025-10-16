@@ -100,13 +100,14 @@
   }
 }
 \section{Implementation}{
-  Each rolling function has 4 different implementations. First factor that decides which implementation is used is the \code{adaptive} argument (either \code{TRUE} or \code{FALSE}), see section below for details. Then for each of those two algorithms there are usually two implementations depending on the \code{algo} argument.
+  Most of the rolling functions have 4 different implementations. First factor that decides which implementation is used is the \code{adaptive} argument (either \code{TRUE} or \code{FALSE}), see section below for details. Then for each of those two algorithms there are usually two implementations depending on the \code{algo} argument.
   \itemize{
     \item \code{algo="fast"} uses \emph{"online"}, single pass, algorithm.
     \itemize{
       \item \emph{max} and \emph{min} rolling function will not do only a single pass but, on average, they will compute \code{length(x)/n} nested loops. The larger the window, the greater the advantage over the \emph{exact} algorithm, which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window sizes and many CPUs it may actually be faster than \emph{fast}. However, in such cases the elapsed timings will likely be far below a single second.
       \item \emph{median} will use a novel algorithm described by \emph{Jukka Suomela} in his paper \emph{Median Filtering is Equivalent to Sorting (2014)}. See references section for the link. Implementation here is extended to support arbitrary length of input and an even window size. Despite extensive validation of results this function should be considered experimental. When missing values are detected it will fall back to slower \code{algo="exact"} implementation.
-      \item Not all functions have \emph{fast} implementation available. As of now, adaptive \emph{max}, \emph{min}, \emph{median}, \emph{var} and \emph{sd} do not have \emph{fast} adaptive implementation, therefore it will automatically fall back to \emph{exact} adaptive implementation. \code{datatable.verbose} option can be used to check that.
+      \item \emph{var} and \emph{sd} will use numerically stable \emph{Welford}'s online algorithm.
+      \item Not all functions have \emph{fast} implementation available. As of now, adaptive \emph{max}, \emph{min}, \emph{median}, \emph{var} and \emph{sd} do not have \emph{fast} adaptive implementation, therefore it will automatically fall back to \emph{exact} adaptive implementation. Similarly, non-adaptive fast implementations of \emph{median}, \emph{var} and \emph{sd} will fall back to \emph{exact} implementations if they detect any non-finite values in the input. \code{datatable.verbose} option can be used to check that.
     }
     \item \code{algo="exact"} will make the rolling functions use a more computationally-intensive algorithm. For each observation in the input vector it will compute a function on a rolling window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
