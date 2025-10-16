@@ -1835,7 +1835,7 @@ int freadMain(freadMainArgs _args)
             if (betterLines || promoteOverSingle || betterTie) {
               topNumLines = thisBlockLines;
               topNumFields = lastncol;
-              topSep = (singleColumnCandidate && lastncol == 1) ? 127 : sep;  // treat consistent single-column quoted blocks as single-column input (#7366)
+              topSep = singleColumnCandidate ? 127 : sep;  // treat consistent single-column quoted blocks as single-column input (#7366)
               topQuoteRule = quoteRule;
               firstJumpEnd = ch;
               topStart = thisBlockStart;
