@@ -737,6 +737,8 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
   }
 }
 
+#define CLAMP0(x) (((x) < 0) ? 0 : (x))
+
 /* fast rolling adaptive var - exact
  */
 void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
@@ -761,7 +763,7 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
         if (!R_FINITE((double) wsum)) {
           if (ISNAN((double) wsum)) {
             if (!narm) {
-              ans->dbl_v[i] = (double) wsum;
+              ans->dbl_v[i] = (double) wsum; // propagate NAs
             }
             truehasnf = true;
           } else {
@@ -775,7 +777,8 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
             xi = x[i+j] - wmean;
             wsumxi += (xi * xi);
           }
-          ans->dbl_v[i] = (double) (wsumxi / (k[i] - 1));
+          double ans_i = (wsumxi / (k[i] - 1));
+          ans->dbl_v[i] = CLAMP0(ans_i);
         }
       }
     }
