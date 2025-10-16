@@ -88,12 +88,12 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     }
   } break;
   case CPLXSXP : {
-    Rcomplex *sp = COMPLEX(source);
+    const Rcomplex *sp = COMPLEX_RO(source);
     Rcomplex *ap = COMPLEX(ans);
     PARLOOP(NA_CPLX)
   } break;
   case RAWSXP : {
-    Rbyte *sp = RAW(source);
+    const Rbyte *sp = RAW_RO(source);
     Rbyte *ap = RAW(ans);
     PARLOOP(0)
   } break;

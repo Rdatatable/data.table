@@ -11,7 +11,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     return(copyAsPlain(l));
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0] == NA_LOGICAL)
     error(_("ignore.empty should be logical TRUE/FALSE."));
-  bool ignore = LOGICAL(ignoreArg)[0];
+  bool ignore = LOGICAL_RO(ignoreArg)[0];
   if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg) == 1)))
     error(_("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input"));
   bool rn = !isNull(keepNamesArg);
@@ -20,7 +20,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   R_len_t ln = LENGTH(l);
   if (!IS_TRUE_OR_FALSE(listColsArg))
     error(_("list.cols should be logical TRUE/FALSE."));
-  bool listCol = LOGICAL(listColsArg)[0];
+  bool listCol = LOGICAL_RO(listColsArg)[0];
 
   // preprocessing
   int maxlen = 0, zerolen = 0;
@@ -61,22 +61,22 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case LGLSXP: {
-      const int *ili = LOGICAL(li);
-      const int ifill = LOGICAL(fill)[0];
+      const int *ili = LOGICAL_RO(li);
+      const int ifill = LOGICAL_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         LOGICAL(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
       }
     } break;
     case INTSXP: {
-      const int *ili = INTEGER(li);
-      const int ifill = INTEGER(fill)[0];
+      const int *ili = INTEGER_RO(li);
+      const int ifill = INTEGER_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         INTEGER(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
       }
     } break;
     case REALSXP: {
-      const double *dli = REAL(li);
-      const double dfill = REAL(fill)[0];
+      const double *dli = REAL_RO(li);
+      const double dfill = REAL_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         REAL(ansp[j + rn])[k] = j < len ? dli[j] : dfill;
       }
