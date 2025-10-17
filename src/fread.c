@@ -31,6 +31,7 @@ static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
+static char commentChar;
 static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
@@ -188,7 +189,7 @@ bool freadCleanup(void)
   }
   free(mmp_copy); mmp_copy = NULL;
   fileSize = 0;
-  sep = whiteChar = quote = dec = '\0';
+  sep = whiteChar = quote = dec = commentChar = '\0';
   quoteRule = -1;
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
@@ -304,7 +305,8 @@ static inline bool end_of_field(const char *ch)
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
-  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch)));
+  // Comment characters terminate a field immediately and take precedence over separators.
+  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) || (commentChar && *ch == commentChar);
 }
 
 static inline const char *end_NA_string(const char *start)
@@ -336,8 +338,24 @@ static inline int countfields(const char **pch)
   static void *targets[9];
   targets[8] = (void*) &trash;
   const char *ch = *pch;
-  if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
-  skip_white(&ch);
+  for (;;) {
+    if (ch >= eof) { *pch = ch; return 0; }
+    if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
+    skip_white(&ch);
+    if (commentChar && *ch == commentChar) {
+      while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+      if (ch < eof) {
+        if (*ch == '\r' || *ch == '\n') {
+          eol(&ch);
+          if (ch < eof) ch++;
+        }
+        continue;  // rescan next line
+      }
+      *pch = ch;
+      return 0;
+    }
+    break;
+  }
   if (eol(&ch) || ch == eof) {
     *pch = ch + 1;
     return 0;
@@ -350,6 +368,17 @@ static inline int countfields(const char **pch)
   };
   while (ch < eof) {
     Field(&ctx);
+    if (commentChar && *ch == commentChar) {
+      while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+      if (ch < eof) {
+        if (*ch == '\r' || *ch == '\n') {
+          eol(&ch);
+          if (ch < eof) ch++;
+        }
+      }
+      *pch = ch;
+      return ncol;
+    }
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
     if (sep == ' ' && *ch == sep) {
       while (ch[1] == ' ') ch++;
@@ -1422,6 +1451,7 @@ int freadMain(freadMainArgs _args)
   fill = args.fill;
   dec = args.dec;
   quote = args.quote;
+  commentChar = args.comment;
   if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
   if (args.sep == dec && dec != '\0') STOP(_("sep == dec ('%c') is not allowed"), dec);
   if (quote == dec && dec != '\0') STOP(_("quote == dec ('%c') is not allowed"), dec);
@@ -2206,10 +2236,29 @@ int freadMain(freadMainArgs _args)
         ch++;
         Field(&fctx);  // stores the string length and offset as <uint,uint> in colNames[i]
         ((lenOff**) fctx.targets)[8]++;
+        if (commentChar) {
+          // skip leading whitespace to detect inline comment marker in header row
+          const char *commentPos = ch;
+          while (commentPos < eof && (*commentPos == ' ' || *commentPos == '\t' || *commentPos == '\0')) commentPos++;
+          if (commentPos < eof && *commentPos == commentChar) {
+            ch = commentPos;
+            while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+            break; // stop header parsing after comment
+          }
+        }
         if (*ch != sep) break;
         if (sep == ' ') {
           while (ch[1] == ' ') ch++;
           if (ch[1] == '\r' || ch[1] == '\n' || ch[1] == '\0') { ch++; break; }
+        }
+      }
+      if (commentChar) {
+        // fast-trim trailing comment text after the header names
+        const char *commentPos = ch;
+        while (commentPos < eof && (*commentPos == ' ' || *commentPos == '\t' || *commentPos == '\0')) commentPos++;
+        if (commentPos < eof && *commentPos == commentChar) {
+          ch = commentPos;
+          while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
         }
       }
       if (eol(&ch)) pos = ++ch;
@@ -2452,6 +2501,19 @@ int freadMain(freadMainArgs _args)
           tLineStart = tch;  // for error message
           const char *fieldStart = tch;
           int j = 0;
+
+          if (commentChar) {
+            // treat lines whose first non-space character is the comment marker as empty
+            const char *afterWhite = tLineStart;
+            while (afterWhite < eof && (*afterWhite == ' ' || *afterWhite == '\t' || *afterWhite == '\0')) afterWhite++;
+            if (afterWhite < eof && *afterWhite == commentChar) {
+              const char *skip = afterWhite;
+              while (skip < eof && *skip != '\n' && *skip != '\r') skip++;
+              if (skip < eof && eol(&skip)) skip++;
+              tch = skip;
+              continue;
+            }
+          }
     
           //*** START HOT ***//
           if (sep != ' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
@@ -2596,6 +2658,15 @@ int freadMain(freadMainArgs _args)
             int8_t thisSize = size[j];
             if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
             j++;
+            if (commentChar) {
+              const char *commentPtr = tch;
+              while (commentPtr < eof && (*commentPtr == ' ' || *commentPtr == '\t' || *commentPtr == '\0')) commentPtr++;
+              if (commentPtr < eof && *commentPtr == commentChar) {
+                tch = commentPtr;
+                while (tch < eof && *tch != '\n' && *tch != '\r') tch++;
+                break;
+              }
+            }
             if (*tch == sep) { tch++; continue; }
             if (fill && (*tch == '\n' || *tch == '\r' || tch == eof) && j < ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
             break;

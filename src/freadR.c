@@ -61,6 +61,7 @@ SEXP freadR(
   SEXP NAstringsArg,
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
+  SEXP commentCharArg,
   SEXP fillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
@@ -158,6 +159,13 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  if (!isString(commentCharArg) || LENGTH(commentCharArg) != 1)
+    error(_("comment.char must be a single character vector of length 1"));  // # notranslate
+  const char *commentStr = CHAR(STRING_ELT(commentCharArg, 0));
+  size_t commentLen = strlen(commentStr);
+  if (commentLen > 1)
+    error(_("comment.char must be a single character or \"\""));  // # notranslate
+  args.comment = commentLen == 0 ? '\0' : commentStr[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0] < 1)

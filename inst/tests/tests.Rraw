@@ -21685,3 +21685,10 @@ d3 = unserialize(serialize(d2, NULL))
 test(2340.05, .selfref.ok(d3), FALSE)
 setDT(d3)
 test(2340.06, .selfref.ok(d3), TRUE)
+
+# implement comment.char argument in fread, #856
+test(2341.1, fread('a,b\n#a comment\n1,2\n#another comment\n3,4', comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
+test(2341.2, fread('a,b #line-trailing comment\n1,2', comment.char='#'), data.table(a=c(1L), b=c(2L)))
+test(2341.3, fread('a,b#line-trailing comment and no whitespace\n1,2', comment.char='#'), data.table(a=c(1L), b=c(2L)))
+test(2341.4, fread('a,b\n1,2 #trailing after numeric', comment.char='#'), data.table(a=c(1L), b=c(2L)))
+test(2341.5, fread('a\n"#quotes#"\n', comment.char="#"), data.table(a=c("#quotes#")))
