@@ -21689,3 +21689,4 @@ test(2340.06, .selfref.ok(d3), TRUE)
 # fread select= and drop= with duplicated column names #6729
 test(2341.1, fread("x1,x1,y\n2,3,4", select="x1"), data.table(x1=2L, x1=3L))
 test(2342.2, fread("x1,x1,y\n2,3,4", drop="x1"), data.table(y=4L))
+test(2342.3, fread("x1,x1,y\n2,3,4", drop=NA_character_), data.table(x1=2L, x1=3L, y=4L), warning="drop.*=NA")

@@ -249,7 +249,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
       else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
       SEXP thisItem = STRING_ELT(items, j);
       if (thisItem == NA_STRING) {
-        DTWARN(_("%s is NA"), buff);
+        DTWARN(_("%s=NA"), buff);
         continue;
       }
       if (!found[j])
@@ -267,7 +267,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
       char buff[50];
       if (dropSource == -1) snprintf(buff, sizeof(buff), "drop[%d]", j + 1); // # notranslate
       else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
-      if (k == NA_INTEGER) DTWARN(_("%s is NA"), buff);
+      if (k == NA_INTEGER) DTWARN(_("%s=NA"), buff);
       else DTWARN(_("%s is %d which is out of range [1,ncol=%d]"), buff, k, ncol);
     } else {
       type[k - 1] = CT_DROP;
