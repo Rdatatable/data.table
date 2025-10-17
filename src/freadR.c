@@ -231,8 +231,35 @@ SEXP freadR(
 static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
 {
   if (!length(items)) return;
-  const SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP));
-  const int* const itemsD = INTEGER(itemsInt);
+  if (isString(items)) {
+    const int nItems = LENGTH(items);
+    SEXP matches = PROTECT(chmatch(colNamesSxp, items, NA_INTEGER));
+    const int *matchD = INTEGER(matches);
+    bool *found = (bool *)R_alloc((size_t)nItems, sizeof(*found)); // remembers which drop entries matched at least once
+    memset(found, 0, (size_t)nItems * sizeof(*found));
+    for (int col = 0; col < ncol; col++) {
+      const int idx = matchD[col];
+      if (idx == NA_INTEGER) continue;
+      type[col] = CT_DROP;
+      found[idx - 1] = true;
+    }
+    for (int j = 0; j < nItems; j++) {
+      char buff[50];
+      if (dropSource == -1) snprintf(buff, sizeof(buff), "drop[%d]", j + 1); // # notranslate
+      else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
+      SEXP thisItem = STRING_ELT(items, j);
+      if (thisItem == NA_STRING) {
+        DTWARN(_("%s is NA"), buff);
+        continue;
+      }
+      if (!found[j])
+        DTWARN(_("Column name '%s' (%s) not found"), CHAR(thisItem), buff);
+    }
+    UNPROTECT(1);
+    return;
+  }
+  SEXP itemsInt = PROTECT(coerceVector(items, INTSXP));
+  const int *itemsD = INTEGER(itemsInt);
   const int n = LENGTH(itemsInt);
   for (int j = 0; j < n; j++) {
     const int k = itemsD[j];
@@ -240,14 +267,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
       char buff[50];
       if (dropSource == -1) snprintf(buff, sizeof(buff), "drop[%d]", j + 1); // # notranslate
       else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
-      if (k == NA_INTEGER) {
-        if (isString(items))
-          DTWARN(_("Column name '%s' (%s) not found"), CHAR(STRING_ELT(items, j)), buff);
-        else
-          DTWARN(_("%s is NA"), buff);
-      } else {
-        DTWARN(_("%s is %d which is out of range [1,ncol=%d]"), buff, k, ncol);
-      }
+      if (k == NA_INTEGER) DTWARN(_("%s is NA"), buff);
+      else DTWARN(_("%s is %d which is out of range [1,ncol=%d]"), buff, k, ncol);
     } else {
       type[k - 1] = CT_DROP;
       // aside: dropping the same column several times is acceptable with no warning. This could arise via duplicates in the drop= vector,
@@ -300,6 +321,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     }
     SET_VECTOR_ELT(RCHK, 3, selectRank = allocVector(INTSXP, ncol));
     int *selectRankD = INTEGER(selectRank), rank = 1;
+    for (int i = 0; i < ncol; i++) selectRankD[i] = 0;
     for (int i = 0; i < n; i++) {
       const int k = selectInts[i];
       if (k == NA_INTEGER) continue; // missing column name warned above and skipped
@@ -309,6 +331,24 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       if (type[k - 1] < 0) STOP(_("Column number %d ('%s') has been selected twice by select="), k, CHAR(STRING_ELT(colNamesSxp, k - 1)));
       type[k - 1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
       selectRankD[k - 1] = rank++;  // rank not i to skip missing column names
+    }
+    if (isString(selectSxp)) {
+      for (int i = 0; i < n; i++) {
+        const int k = selectInts[i];
+        if (k == NA_INTEGER) continue; // skip NA matches
+        const SEXP targetS = STRING_ELT(selectSxp, i);
+        if (targetS == NA_STRING) continue; // skip empty names
+        const char *target = CHAR(targetS);
+        for (int col = 0; col < ncol; col++) {
+          if (selectRankD[col]) continue;  // already marked by first match (including duplicates handled earlier)
+          SEXP nameS = STRING_ELT(colNamesSxp, col);
+          if (nameS == NA_STRING) continue;
+          if (strcmp(CHAR(nameS), target) == 0) {
+            type[col] *= -1; // flip type to flag
+            selectRankD[col] = rank++;
+          }
+        }
+      }
     }
     for (int i = 0; i < ncol; i++) {
       if (type[i] < 0) type[i] *= -1;
