@@ -68,6 +68,33 @@ void benchmark_omp_flag(const int variant, int len, int halt, int th, int *cnt) 
         skip = true;
       }
     }
+  } else if (variant == 6) {
+    // reduction-based approach
+    bool skip = false;
+    #pragma omp parallel for num_threads(th) reduction(||:skip)
+    for (int i=0; i<len; i++) {
+      if (skip)
+        continue;
+      int tid = omp_get_thread_num(); 
+      cnt[tid]++;
+      if (i == halt) {
+        skip = true;
+      }
+    }
+  } else if (variant == 7) {
+    // cancellation with flag
+    bool skip = false;
+    #pragma omp parallel for num_threads(th) shared(skip)
+    for (int i=0; i<len; i++) {
+      #pragma omp cancellation point for
+      int tid = omp_get_thread_num(); 
+      cnt[tid]++;
+      if (i == halt) {
+        #pragma omp atomic write
+        skip = true;
+        #pragma omp cancel for
+      }
+    }
   }
 }
 
