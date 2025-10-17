@@ -227,3 +227,13 @@ formula_vars = function(f, x) { # .formula2varlist is not API and seems to have 
     attr(terms, "term.labels")
   )
 }
+
+omp_flags = function(variant, len, halt, th) {
+  th = as.integer(th)
+  halt = as.integer(halt)
+  len = as.integer(len)
+  variant = as.integer(variant)
+  stopifnot(is.integer(th))
+  stopifnot(th <= parallel::detectCores(), th > 0L)
+  .Call("Cbenchmark_omp_flagR", variant, len, halt, th)
+}
