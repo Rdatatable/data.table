@@ -231,7 +231,7 @@ void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   }
   bool truehasnf = hasnf>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {                           // loop on every observation with complete window, partial already filled in single threaded section
       if (narm && truehasnf) {
         continue;                                               // if NAs detected no point to continue
@@ -251,6 +251,7 @@ void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
         if (!narm) {
           ans->dbl_v[i] = (double) w;                           // NAs should be propagated
         }
+        #pragma omp atomic write
         truehasnf = true;                                       // NAs detected for this window, set flag so rest of windows will not be re-run
       } else {
         ans->dbl_v[i] = (double) w;                             // Inf and -Inf
@@ -418,7 +419,7 @@ void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -433,6 +434,7 @@ void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
         if (!narm) {
           ans->dbl_v[i] = (double) w;
         }
+        #pragma omp atomic write
         truehasnf = true;
       } else {
         ans->dbl_v[i] = (double) w;
@@ -1065,7 +1067,7 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   }
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -1080,6 +1082,7 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
         if (!narm) {
           ans->dbl_v[i] = (double) w;
         }
+        #pragma omp atomic write
         truehasnf = true;
       } else {
         ans->dbl_v[i] = (double) w;
