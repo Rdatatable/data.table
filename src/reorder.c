@@ -72,8 +72,8 @@ SEXP reorder(SEXP x, SEXP order)
     switch (size)
     {
     case 4: {
-      const int* restrict vd = DATAPTR_RO(v);
-      int* restrict tmp = TMP;
+      const int *restrict vd = DATAPTR_RO(v);
+      int *restrict tmp = TMP;
       #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 4 bytes; e.g. INTSXP and also SEXP pointers on 32bit (STRSXP and VECSXP)
