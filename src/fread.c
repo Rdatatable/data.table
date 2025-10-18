@@ -2287,26 +2287,27 @@ int freadMain(freadMainArgs _args)
           if (ch[1] == '\r' || ch[1] == '\n' || ch[1] == '\0') { ch++; break; }
         }
       }
+      const char *lineEnd = ch;
+      const char *nextLine = NULL;
       if (commentChar) {
         // fast-trim trailing comment text after the header names
-        const char *commentPos = skip_to_comment_or_nonwhite(ch);
+        const char *commentPos = skip_to_comment_or_nonwhite(lineEnd);
         if (commentPos < eof && *commentPos == commentChar) {
-          ch = skip_line(commentPos, eof);
+          lineEnd = commentPos;
+          nextLine = skip_line(commentPos, eof);
         }
       }
-      if (ch == eof || *ch == '\0') {
-        pos = ch;
-      } else if (*ch == '\n' || *ch == '\r') {
-        if (eol(&ch)) {
-          if (ch < eof) ch++;
-          pos = ch;
-        } else {
-          INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
-        }
-      } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) {
-        pos = ch;
+      if (nextLine) {
+        pos = nextLine;
+      } else if (lineEnd == eof || *lineEnd == '\0') {
+        pos = lineEnd;
       } else {
-        INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
+        const char *tmp = lineEnd;
+        if (eol(&tmp)) {
+          pos = (tmp < eof) ? tmp + 1 : tmp;
+        } else {
+          INTERNAL_STOP("reading colnames ending on '%c'", *lineEnd); // # nocov
+        }
       }
       // now on first data row (row after column names)
       // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
@@ -2550,10 +2551,7 @@ int freadMain(freadMainArgs _args)
             // treat lines whose first non-space character is the comment marker as empty
             const char *afterWhite = skip_to_comment_or_nonwhite(tLineStart);
             if (afterWhite < eof && *afterWhite == commentChar) {
-              const char *skip = afterWhite;
-              while (skip < eof && *skip != '\n' && *skip != '\r') skip++;
-              if (skip < eof && eol(&skip)) skip++;
-              tch = skip;
+              tch = skip_line(afterWhite, eof);
               continue;
             }
           }
@@ -2704,8 +2702,7 @@ int freadMain(freadMainArgs _args)
             if (commentChar) {
               const char *commentPtr = skip_to_comment_or_nonwhite(tch);
               if (commentPtr < eof && *commentPtr == commentChar) {
-                tch = commentPtr;
-                while (tch < eof && *tch != '\n' && *tch != '\r') tch++;
+                tch = skip_line(commentPtr, eof);
                 break;
               }
             }
