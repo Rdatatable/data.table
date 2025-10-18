@@ -267,6 +267,15 @@ static inline void skip_white(const char **pch)
   *pch = ch;
 }
 
+static inline const char *skip_to_comment_or_nonwhite(const char *ch)
+{
+  while (ch < eof && (*ch == ' ' || *ch == '\t' || *ch == '\0')) {
+    if (commentChar && *ch == commentChar) break;
+    ch++;
+  }
+  return ch;
+}
+
 /**
  * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
  * and returns true. Repeated \\r around \n are considered one. At most one \\n will be moved over, though.
@@ -2238,8 +2247,7 @@ int freadMain(freadMainArgs _args)
         ((lenOff**) fctx.targets)[8]++;
         if (commentChar) {
           // skip leading whitespace to detect inline comment marker in header row
-          const char *commentPos = ch;
-          while (commentPos < eof && (*commentPos == ' ' || *commentPos == '\t' || *commentPos == '\0')) commentPos++;
+          const char *commentPos = skip_to_comment_or_nonwhite(ch);
           if (commentPos < eof && *commentPos == commentChar) {
             ch = commentPos;
             while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
@@ -2254,8 +2262,7 @@ int freadMain(freadMainArgs _args)
       }
       if (commentChar) {
         // fast-trim trailing comment text after the header names
-        const char *commentPos = ch;
-        while (commentPos < eof && (*commentPos == ' ' || *commentPos == '\t' || *commentPos == '\0')) commentPos++;
+        const char *commentPos = skip_to_comment_or_nonwhite(ch);
         if (commentPos < eof && *commentPos == commentChar) {
           ch = commentPos;
           while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
@@ -2504,8 +2511,7 @@ int freadMain(freadMainArgs _args)
 
           if (commentChar) {
             // treat lines whose first non-space character is the comment marker as empty
-            const char *afterWhite = tLineStart;
-            while (afterWhite < eof && (*afterWhite == ' ' || *afterWhite == '\t' || *afterWhite == '\0')) afterWhite++;
+            const char *afterWhite = skip_to_comment_or_nonwhite(tLineStart);
             if (afterWhite < eof && *afterWhite == commentChar) {
               const char *skip = afterWhite;
               while (skip < eof && *skip != '\n' && *skip != '\r') skip++;
@@ -2659,8 +2665,7 @@ int freadMain(freadMainArgs _args)
             if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
             j++;
             if (commentChar) {
-              const char *commentPtr = tch;
-              while (commentPtr < eof && (*commentPtr == ' ' || *commentPtr == '\t' || *commentPtr == '\0')) commentPtr++;
+              const char *commentPtr = skip_to_comment_or_nonwhite(tch);
               if (commentPtr < eof && *commentPtr == commentChar) {
                 tch = commentPtr;
                 while (tch < eof && *tch != '\n' && *tch != '\r') tch++;
