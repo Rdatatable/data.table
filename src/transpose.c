@@ -11,16 +11,16 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     return(copyAsPlain(l));
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0] == NA_LOGICAL)
     error(_("ignore.empty should be logical TRUE/FALSE."));
-  bool ignore = LOGICAL_RO(ignoreArg)[0];
+  const bool ignore = LOGICAL_RO(ignoreArg)[0];
   if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg) == 1)))
     error(_("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input"));
-  bool rn = !isNull(keepNamesArg);
+  const bool rn = !isNull(keepNamesArg);
   if (length(fill) != 1)
     error(_("fill must be a length 1 vector, such as the default NA"));
-  R_len_t ln = LENGTH(l);
+  const R_len_t ln = LENGTH(l);
   if (!IS_TRUE_OR_FALSE(listColsArg))
     error(_("list.cols should be logical TRUE/FALSE."));
-  bool listCol = LOGICAL_RO(listColsArg)[0];
+  const bool listCol = LOGICAL_RO(listColsArg)[0];
 
   // preprocessing
   int maxlen = 0, zerolen = 0;
@@ -39,7 +39,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   if (listCol) maxtype = VECSXP; // need to keep preprocessing for zerolen
   fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
   SEXP ans = PROTECT(allocVector(VECSXP, maxlen + rn)); nprotect++;
-  int anslen = (ignore) ? (ln - zerolen) : ln;
+  const int anslen = (ignore) ? (ln - zerolen) : ln;
   if (rn) {
     SEXP tt;
     SET_VECTOR_ELT(ans, 0, tt = allocVector(STRSXP, anslen));

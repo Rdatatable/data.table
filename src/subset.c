@@ -49,17 +49,17 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 
   switch(TYPEOF(source)) {
   case INTSXP: case LGLSXP: {
-    int *sp = INTEGER(source);
+    const int *sp = INTEGER_RO(source);
     int *ap = INTEGER(ans);
     PARLOOP(NA_INTEGER)
   } break;
   case REALSXP : {
     if (INHERITS(source, char_integer64)) {
-      int64_t *sp = (int64_t *)REAL(source);
+      const int64_t *sp = (int64_t *)REAL_RO(source);
       int64_t *ap = (int64_t *)REAL(ans);
       PARLOOP(INT64_MIN)
     } else {
-      double *sp = REAL(source);
+      const double *sp = REAL_RO(source);
       double *ap = REAL(ans);
       PARLOOP(NA_REAL)
     }
