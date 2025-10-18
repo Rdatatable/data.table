@@ -306,14 +306,29 @@ static inline bool eol(const char **pch)
 }
 
 /**
- * Walk to the start of the next line (or `eof` if none) by skipping the
- * current line's contents and its newline sequence.
+ * Walk to the newline sequence terminating the current line and return the pointer to its final
+ * character (or `eof` if none exists).
  */
-static inline const char *skip_line(const char *ch, const char *eof) {
+static inline const char *skip_to_eol(const char *ch, const char *eof)
+{
   while (ch < eof && *ch != '\n' && *ch != '\r')
     ch++;
-  if (ch < eof && eol(&ch)) ch++;
+  if (ch < eof) {
+    const char *tmp = ch;
+    if (eol(&tmp)) ch = tmp;
+  }
   return ch;
+}
+
+/**
+ * Skip past the current line (including its newline sequence) and return the first character of the
+ * next line, or `eof` if none exists.
+ */
+static inline const char *skip_to_nextline(const char *ch, const char *eof)
+{
+  const char *lineEnd = skip_to_eol(ch, eof);
+  if (lineEnd < eof) lineEnd++;
+  return lineEnd;
 }
 
 /**
@@ -367,7 +382,7 @@ static inline int countfields(const char **pch)
     if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
     skip_white(&ch);
     if (commentChar && *ch == commentChar) {
-      const char *next = skip_line(ch, eof);
+      const char *next = skip_to_nextline(ch, eof);
       if (next < eof) {
         ch = next;
         continue;  // rescan next line
@@ -390,7 +405,7 @@ static inline int countfields(const char **pch)
   while (ch < eof) {
     Field(&ctx);
     if (commentChar && *ch == commentChar) {
-      ch = skip_line(ch, eof);
+      ch = skip_to_nextline(ch, eof);
       *pch = ch;
       return ncol;
     }
@@ -422,7 +437,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If this doesn't return the true line start, no matter. The previous thread will run-on and
   // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
-  ch = skip_line(ch, eof);
+  ch = skip_to_nextline(ch, eof);
   if (ch == eof) return eof;
   const char *simpleNext = ch;  // simply the first newline after the jump
   // if a better one can't be found, return this one (simpleNext). This will be the case when
@@ -431,7 +446,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   for (int attempts = 0; attempts < 5 && ch < eof; attempts++) {
     const char *ch2 = ch;
     if (countfields(&ch2) == ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
-    ch = skip_line(ch, eof);
+    ch = skip_to_nextline(ch, eof);
   }
   return simpleNext;
 }
@@ -2030,7 +2045,7 @@ int freadMain(freadMainArgs _args)
           const char *lineStart = ch;
           ch = skip_to_comment_or_nonwhite(ch);
           if (ch < eof && *ch == commentChar) {
-            ch = skip_line(ch, eof);
+            ch = skip_to_nextline(ch, eof);
             row1line++;
             continue;
           }
@@ -2248,7 +2263,7 @@ int freadMain(freadMainArgs _args)
       while (ch < eof) {
         ch = skip_to_comment_or_nonwhite(ch);
         if (ch < eof && *ch == commentChar) {
-          ch = skip_line(ch, eof);
+          ch = skip_to_nextline(ch, eof);
         } else break;
       }
       pos = ch; 
@@ -2277,7 +2292,7 @@ int freadMain(freadMainArgs _args)
           // skip leading whitespace to detect inline comment marker in header row
           const char *commentPos = skip_to_comment_or_nonwhite(ch);
           if (commentPos < eof && *commentPos == commentChar) {
-            ch = skip_line(commentPos, eof);
+            ch = skip_to_eol(commentPos, eof);
             break; // stop header parsing after comment
           }
         }
@@ -2291,7 +2306,7 @@ int freadMain(freadMainArgs _args)
         // fast-trim trailing comment text after the header names
         const char *commentPos = skip_to_comment_or_nonwhite(ch);
         if (commentPos < eof && *commentPos == commentChar) {
-          ch = skip_line(commentPos, eof);
+          ch = skip_to_eol(commentPos, eof);
         }
       }
       if (ch == eof || *ch == '\0') {
@@ -2550,10 +2565,7 @@ int freadMain(freadMainArgs _args)
             // treat lines whose first non-space character is the comment marker as empty
             const char *afterWhite = skip_to_comment_or_nonwhite(tLineStart);
             if (afterWhite < eof && *afterWhite == commentChar) {
-              const char *skip = afterWhite;
-              while (skip < eof && *skip != '\n' && *skip != '\r') skip++;
-              if (skip < eof && eol(&skip)) skip++;
-              tch = skip;
+              tch = skip_to_nextline(afterWhite, eof);
               continue;
             }
           }
@@ -2704,8 +2716,7 @@ int freadMain(freadMainArgs _args)
             if (commentChar) {
               const char *commentPtr = skip_to_comment_or_nonwhite(tch);
               if (commentPtr < eof && *commentPtr == commentChar) {
-                tch = commentPtr;
-                while (tch < eof && *tch != '\n' && *tch != '\r') tch++;
+                tch = skip_to_eol(commentPtr, eof);
                 break;
               }
             }
@@ -2919,7 +2930,7 @@ int freadMain(freadMainArgs _args)
     } else {
       const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
-      ch = skip_line(ch, eof);
+      ch = skip_to_nextline(ch, eof);
       while (ch < eof && isspace(*ch)) ch++;
       if (ch == eof) {
         DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[500]) {0}, 500));
