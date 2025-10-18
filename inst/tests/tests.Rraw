@@ -21765,3 +21765,8 @@ a,b
 test(2341.20, fread('a,b      # header comment with padding
 1,2
 3,4', comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
+test(2341.21, fread('# meta1
+# meta2
+a,b
+1,2', comment.char = '#'), data.table(a=1L, b=2L))
+test(2341.22, fread('a,b   # inline header comment\r\n1,2\r\n', comment.char = '#'), data.table(a=1L, b=2L))
