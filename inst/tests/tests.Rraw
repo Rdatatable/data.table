@@ -21758,3 +21758,10 @@ test(2341.17, fread('v
 test(2341.18, fread('a,b
 "p#q",2 # tail
 "r#s",3', comment.char='#'), data.table(a=c("p#q","r#s"), b=c(2L,3L)))
+test(2341.19, fread('   # lead comment with padding
+\t# and tab
+a,b
+1,2', comment.char='#'), data.table(a=1L, b=2L))
+test(2341.20, fread('a,b      # header comment with padding
+1,2
+3,4', comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
