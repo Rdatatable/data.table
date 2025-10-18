@@ -301,6 +301,15 @@ static inline bool eol(const char **pch)
   return eol_one_r && **pch == '\r';
 }
 
+
+static inline const char *skip_line(const char *ch, const char *eof) {
+  while (ch < eof && *ch != '\n' && *ch != '\r')
+    ch++;
+  if (ch < eof && eol(&ch)) ch++;
+  return ch;
+}
+
+
 /**
  * Return True iff `ch` is a valid field terminator character: either a field
  * separator or a newline.
@@ -352,15 +361,12 @@ static inline int countfields(const char **pch)
     if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
     skip_white(&ch);
     if (commentChar && *ch == commentChar) {
-      while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
-      if (ch < eof) {
-        if (*ch == '\r' || *ch == '\n') {
-          eol(&ch);
-          if (ch < eof) ch++;
-        }
+      const char *next = skip_line(ch, eof);
+      if (next < eof) {
+        ch = next;
         continue;  // rescan next line
       }
-      *pch = ch;
+      *pch = next;
       return 0;
     }
     break;
@@ -378,13 +384,7 @@ static inline int countfields(const char **pch)
   while (ch < eof) {
     Field(&ctx);
     if (commentChar && *ch == commentChar) {
-      while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
-      if (ch < eof) {
-        if (*ch == '\r' || *ch == '\n') {
-          eol(&ch);
-          if (ch < eof) ch++;
-        }
-      }
+      ch = skip_line(ch, eof);
       *pch = ch;
       return ncol;
     }
@@ -416,10 +416,8 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If this doesn't return the true line start, no matter. The previous thread will run-on and
   // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
-  while (*ch != '\n' && *ch != '\r' && (*ch != '\0' || ch < eof)) ch++;
+  ch = skip_line(ch, eof);
   if (ch == eof) return eof;
-  if (eol(&ch)) // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
-    ch++;       // and then move to first byte of next line
   const char *simpleNext = ch;  // simply the first newline after the jump
   // if a better one can't be found, return this one (simpleNext). This will be the case when
   // fill=TRUE and the jump lands before 5 too-short lines, for example.
@@ -427,8 +425,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   for (int attempts = 0; attempts < 5 && ch < eof; attempts++) {
     const char *ch2 = ch;
     if (countfields(&ch2) == ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
-    while (*ch != '\n' && *ch != '\r' && (*ch != '\0' || ch < eof)) ch++;
-    if (eol(&ch)) ch++;
+    ch = skip_line(ch, eof);
   }
   return simpleNext;
 }
@@ -2021,6 +2018,21 @@ int freadMain(freadMainArgs _args)
   for (int jump = 0; jump < nJumps; jump++) {
     if (jump == 0) {
       ch = pos;
+      // Skip leading comment lines before processing header
+      if (commentChar) {
+        while (ch < eof) {
+          const char *lineStart = ch;
+          ch = skip_to_comment_or_nonwhite(ch);
+          if (ch < eof && *ch == commentChar) {
+            ch = skip_line(ch, eof);
+            row1line++;
+            continue;
+          }
+          ch = lineStart;
+          break;
+        }
+        pos = ch;
+      }
       if (args.header != false) {
         countfields(&ch); // skip first row for type guessing as it's probably column names
         row1line++;
@@ -2225,7 +2237,17 @@ int freadMain(freadMainArgs _args)
     if (verbose) DTPRINT(_("[08] Assign column names\n"));
     
     ch = pos;  // back to start of first row (column names if header==true)
-    
+    // Skip leading comment lines before parsing header
+    if (args.header != false && commentChar) {
+      while (ch < eof) {
+        ch = skip_to_comment_or_nonwhite(ch);
+        if (ch < eof && *ch == commentChar) {
+          ch = skip_line(ch, eof);
+        } else break;
+      }
+      pos = ch; 
+      colNamesAnchor = pos;
+    }
     if (args.header == false) {
       colNames = NULL;  // userOverride will assign V1, V2, etc
     } else {
@@ -2249,8 +2271,7 @@ int freadMain(freadMainArgs _args)
           // skip leading whitespace to detect inline comment marker in header row
           const char *commentPos = skip_to_comment_or_nonwhite(ch);
           if (commentPos < eof && *commentPos == commentChar) {
-            ch = commentPos;
-            while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+            ch = skip_line(commentPos, eof);
             break; // stop header parsing after comment
           }
         }
@@ -2264,13 +2285,23 @@ int freadMain(freadMainArgs _args)
         // fast-trim trailing comment text after the header names
         const char *commentPos = skip_to_comment_or_nonwhite(ch);
         if (commentPos < eof && *commentPos == commentChar) {
-          ch = commentPos;
-          while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+          ch = skip_line(commentPos, eof);
         }
       }
-      if (eol(&ch)) pos = ++ch;
-      else if (*ch == '\0') pos = ch;
-      else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
+      if (ch == eof || *ch == '\0') {
+        pos = ch;
+      } else if (*ch == '\n' || *ch == '\r') {
+        if (eol(&ch)) {
+          if (ch < eof) ch++;
+          pos = ch;
+        } else {
+          INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
+        }
+      } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) {
+        pos = ch;
+      } else {
+        INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
+      }
       // now on first data row (row after column names)
       // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
     }
@@ -2882,7 +2913,7 @@ int freadMain(freadMainArgs _args)
     } else {
       const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
-      while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+      ch = skip_line(ch, eof);
       while (ch < eof && isspace(*ch)) ch++;
       if (ch == eof) {
         DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[500]) {0}, 500));
