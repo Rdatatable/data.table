@@ -746,7 +746,7 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivevarExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=0; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -765,6 +765,7 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
             if (!narm) {
               ans->dbl_v[i] = (double) wsum; // propagate NAs
             }
+            #pragma omp atomic write
             truehasnf = true;
           } else {
             ans->dbl_v[i] = R_NaN;
