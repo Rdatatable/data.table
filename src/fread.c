@@ -2309,6 +2309,7 @@ int freadMain(freadMainArgs _args)
           ch = skip_to_eol(commentPos, eof);
         }
       }
+      // consider different cases line ending after column names
       if (ch == eof || *ch == '\0') {
         pos = ch;
       } else if (*ch == '\n' || *ch == '\r') {
@@ -2318,7 +2319,7 @@ int freadMain(freadMainArgs _args)
         } else {
           INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
         }
-      } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) {
+      } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) { // trimmed a comment and now on next rows first byte
         pos = ch;
       } else {
         INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
