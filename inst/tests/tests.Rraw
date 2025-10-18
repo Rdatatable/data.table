@@ -21747,14 +21747,14 @@ test(2341.15, fread('a,b
 3,4
 5,6', nrows=2, comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
 # sep and comment char same
-test(2341.19, fread('a#b
+test(2341.16, fread('a#b
 1#2
 # only comment', sep="#", comment.char="#"), data.table(a=1L))
 # na.strings
-test(2341.20, fread('v
+test(2341.17, fread('v
 #NA
 1
 # comment', na.strings="#NA", comment.char='#'), data.table(v=1L))
-test(2341.29, fread('a,b
+test(2341.18, fread('a,b
 "p#q",2 # tail
 "r#s",3', comment.char='#'), data.table(a=c("p#q","r#s"), b=c(2L,3L)))
