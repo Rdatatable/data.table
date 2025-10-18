@@ -267,10 +267,14 @@ static inline void skip_white(const char **pch)
   *pch = ch;
 }
 
+/**
+ * Advance `ch` past spaces/NULs until we hit a comment marker or the first
+ * non-whitespace character. Leaves `ch` unchanged if already on content.
+ */
 static inline const char *skip_to_comment_or_nonwhite(const char *ch)
 {
   while (ch < eof && (*ch == ' ' || *ch == '\t' || *ch == '\0')) {
-    if (commentChar && *ch == commentChar) break;
+    if (commentChar && *ch == commentChar) break; // comment char might be space or tab
     ch++;
   }
   return ch;
@@ -301,14 +305,16 @@ static inline bool eol(const char **pch)
   return eol_one_r && **pch == '\r';
 }
 
-
+/**
+ * Walk to the start of the next line (or `eof` if none) by skipping the
+ * current line's contents and its newline sequence.
+ */
 static inline const char *skip_line(const char *ch, const char *eof) {
   while (ch < eof && *ch != '\n' && *ch != '\r')
     ch++;
   if (ch < eof && eol(&ch)) ch++;
   return ch;
 }
-
 
 /**
  * Return True iff `ch` is a valid field terminator character: either a field
