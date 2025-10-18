@@ -9,7 +9,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     error(_("l must be a list."));
   if (!length(l))
     return(copyAsPlain(l));
-  if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0] == NA_LOGICAL)
+  if (!isLogical(ignoreArg) || LOGICAL_RO(ignoreArg)[0] == NA_LOGICAL)
     error(_("ignore.empty should be logical TRUE/FALSE."));
   const bool ignore = LOGICAL_RO(ignoreArg)[0];
   if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg) == 1)))
