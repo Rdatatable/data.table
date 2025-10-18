@@ -31,7 +31,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     is.numeric(nrows), length(nrows)==1L
   )
   if (!is.character(comment.char) || length(comment.char) != 1L || is.na(comment.char) || nchar(comment.char) > 1L) {
-    stopf("comment.char= must be a single non-NA character string.")
+    stopf("comment.char= must be a single non-NA character.")
   }
   fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
