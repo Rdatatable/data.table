@@ -30,7 +30,6 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
-  if (is.null(comment.char)) comment.char = ""
   if (!is.character(comment.char) || length(comment.char) != 1L || is.na(comment.char) || nchar(comment.char) > 1L) {
     stopf("comment.char= must be a single non-NA character string.")
   }
