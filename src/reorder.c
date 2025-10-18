@@ -42,7 +42,7 @@ SEXP reorder(SEXP x, SEXP order)
   int nprotect = 0;
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
-  const int *restrict idx = INTEGER(order);
+  const int *restrict idx = INTEGER_RO(order);
   int i=0;
   while (i<nrow && idx[i] == i+1) ++i;
   const int start=i;
