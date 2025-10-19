@@ -216,7 +216,7 @@ void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int 
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemeanExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;                                     // flag to re-run if NAs detected
   if (!truehasnf || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=0; i<nx; i++) {                             // loop on every observation to produce final answer
       if (narm && truehasnf) {
         continue;                                               // if NAs detected no point to continue
@@ -239,6 +239,7 @@ void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int 
           if (!narm) {
             ans->dbl_v[i] = (double) w;
           }
+          #pragma omp atomic write
           truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
         } else {
           ans->dbl_v[i] = (double) w;                           // Inf and -Inf
@@ -436,7 +437,7 @@ void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivesumExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=0; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -454,6 +455,7 @@ void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *
           if (!narm) {
             ans->dbl_v[i] = (double) w;
           }
+          #pragma omp atomic write
           truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
         } else {
           ans->dbl_v[i] = (double) w;                           // Inf and -Inf
@@ -671,7 +673,7 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveprodExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=0; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -689,6 +691,7 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
           if (!narm) {
             ans->dbl_v[i] = (double) w;
           }
+          #pragma omp atomic write
           truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
         } else {
           ans->dbl_v[i] = (double) w;                           // Inf and -Inf
