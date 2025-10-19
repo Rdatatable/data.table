@@ -332,6 +332,8 @@
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
+20. `fread()` honors now duplicate column names when using `select=` or `drop=`, so every matching column is kept or removed consistently, [#1899](https://github.com/Rdatatable/data.table/issues/1899). Thanks @MichaelChirico for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
