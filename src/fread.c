@@ -276,11 +276,8 @@ static inline const char *skip_to_comment_or_nonwhite(const char *ch)
   while (ch < eof && *ch == '\0') ++ch;
   if (!stripWhite) return ch;
 
-  const unsigned char stopSpace = (commentChar == ' ');
-  const unsigned char stopTab   = (commentChar == '\t');
-
   while (ch < eof && (*ch == ' ' || *ch == '\t')) {
-    if ((stopSpace && *ch == ' ') || (stopTab && *ch == '\t')) break;
+    if (*ch == commentChar) break;
     ++ch;
   }
   return ch;
