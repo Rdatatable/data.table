@@ -1418,6 +1418,86 @@ test(6001.693, frollapply(FUN=median, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,
 test(6001.694, frollapply(FUN=median, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,NA_integer_,2L))
 test(6001.695, frollapply(FUN=median, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,NA_real_,2))
 
+test(6001.711, frollvar(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.712, frollvar(1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.713, frollvar(c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.714, frollvar(c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.715, frollvar(1:3, 0, algo="exact"), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.716, frollvar(c(1:2,NA), 0, algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.717, frollvar(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.718, frollvar(c(1:2,NA), 2), c(NA,0.5,NA), options=c("datatable.verbose"=TRUE), output="redirecting to frollvarExact")
+test(6001.721, frollvar(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,0.5), options=c("datatable.verbose"=TRUE), output="not implemented, fall back to")
+test(6001.722, frollvar(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,0.5))
+test(6001.723, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.724, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.7241, frollvar(adaptive=TRUE, c(1:2,NA), c(2,2,2), has.nf=FALSE), c(NA_real_,0.5,NA_real_), warning="used but non-finite values are present in input")
+test(6001.7242, frollvar(adaptive=TRUE, c(1:2,NA), c(2,2,2)), c(NA_real_,0.5,NA_real_), options=c("datatable.verbose"=TRUE), output="propagates NFs properply, no need to re-run")
+test(6001.7243, frollvar(adaptive=TRUE, c(1:2,NA), c(2,2,2), na.rm=TRUE), c(NA_real_,0.5,NA_real_), options=c("datatable.verbose"=TRUE), output="re-running with extra care for NFs")
+test(6001.725, frollvar(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,NA,0.5))
+test(6001.726, frollvar(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,NA,0.5))
+test(6001.727, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.728, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.729, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.730, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA,NA))
+y = c(1e8+2.980232e-8, 1e8, 1e8, 1e8) # CLAMP0 test
+test(6001.731, frollvar(y, 3)[4L], 0)
+test(6001.732, frollsd(y, 3)[4L], 0)
+test(6001.733, frollvar(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
+test(6001.734, frollsd(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
+test(6001.781, frollapply(FUN=var, 1:3, 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.782, frollapply(FUN=var, 1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.783, frollapply(FUN=var, c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.784, frollapply(FUN=var, c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.7910, frollapply(FUN=var, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,0.5))
+test(6001.7911, frollapply(FUN=var, adaptive=TRUE, list(1:3,2:4), c(2,0,2)), list(c(NA,NA,0.5), c(NA,NA,0.5)))
+test(6001.7912, frollapply(FUN=var, adaptive=TRUE, 1:3, list(c(2,0,2), c(0,2,0))), list(c(NA,NA,0.5), c(NA,0.5,NA)))
+test(6001.7913, frollapply(FUN=var, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,NA,0.5), c(NA,0.5,NA), c(NA,NA,0.5), c(NA,0.5,NA)))
+test(6001.792, frollapply(FUN=var, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,0.5))
+test(6001.793, frollapply(FUN=var, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.794, frollapply(FUN=var, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.795, frollapply(FUN=var, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+
+test(6001.810, frollsd(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="frollsdFast: calling sqrt(frollvarFast(...))")
+test(6001.811, frollsd(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.812, frollsd(1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.813, frollsd(c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.814, frollsd(c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.815, frollsd(1:3, 0, algo="exact"), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.816, frollsd(c(1:2,NA), 0, algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.817, frollsd(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.818, frollsd(c(1:2,NA), 2), c(NA,sqrt(0.5),NA), options=c("datatable.verbose"=TRUE), output="redirecting to frollvarExact")
+test(6001.8191, frollsd(1:3, 2, fill=99), c(99,sqrt(0.5),sqrt(0.5)))
+test(6001.8192, frollsd(1:3, 2, fill=99, algo="exact"), c(99,sqrt(0.5),sqrt(0.5)))
+test(6001.8193, frollsd(c(1:2,NA), 2, has.nf=FALSE), c(NA,sqrt(0.5),NA), warning="used but non-finite values are present in input")
+test(6001.8194, frollsd(c(NA,2:3), 2, has.nf=FALSE), c(NA,NA,sqrt(0.5)), warning="used but non-finite values are present in input")
+test(6001.8195, frollsd(c(NA,2:3), 2), c(NA,NA,sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="skip non-finite inaware attempt and run with extra care")
+test(6001.8196, frollsd(c(NA,2:3), 2, has.nf=FALSE, algo="exact"), c(NA,NA,sqrt(0.5)), warning="used but non-finite values are present in input")
+test(6001.8197, frollsd(c(NA,2:3), 2, algo="exact", na.rm=TRUE), c(NA,NA,sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="re-running with extra care for NF")
+test(6001.8201, frollsd(adaptive=TRUE, 1:3, c(2,2,2)), c(NA,sqrt(0.5),sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6001.8202, frollsd(adaptive=TRUE, 1:3, c(2,2,2)), c(NA,sqrt(0.5),sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="frolladaptivesdExact: calling sqrt(frolladaptivevarExact(...))")
+test(6001.821, frollsd(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,sqrt(0.5)))
+test(6001.822, frollsd(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,sqrt(0.5)))
+test(6001.823, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.824, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.825, frollsd(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,NA,sqrt(0.5)))
+test(6001.826, frollsd(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,NA,sqrt(0.5)))
+test(6001.827, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.828, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.829, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.830, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA,NA))
+test(6001.881, frollapply(FUN=sd, 1:3, 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.882, frollapply(FUN=sd, 1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.883, frollapply(FUN=sd, c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.884, frollapply(FUN=sd, c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.8910, frollapply(FUN=sd, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,sqrt(0.5)))
+test(6001.8911, frollapply(FUN=sd, adaptive=TRUE, list(1:3,2:4), c(2,0,2)), list(c(NA,NA,sqrt(0.5)), c(NA,NA,sqrt(0.5))))
+test(6001.8912, frollapply(FUN=sd, adaptive=TRUE, 1:3, list(c(2,0,2), c(0,2,0))), list(c(NA,NA,sqrt(0.5)), c(NA,sqrt(0.5),NA)))
+test(6001.8913, frollapply(FUN=sd, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,NA,sqrt(0.5)), c(NA,sqrt(0.5),NA), c(NA,NA,sqrt(0.5)), c(NA,sqrt(0.5),NA)))
+test(6001.892, frollapply(FUN=sd, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,sqrt(0.5)))
+test(6001.893, frollapply(FUN=sd, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.894, frollapply(FUN=sd, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.895, frollapply(FUN=sd, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+
 # frollmedian
 rollmedian = function(x, k, na.rm=FALSE) {
   ans = rep(NA_real_, length(x))
@@ -2250,7 +2330,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   }
   ans
 }
-base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
   num.step = 0.0001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -2334,7 +2414,7 @@ base_compare(x, n)
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
     num.step = 0.0001
     #### fun, align, na.rm, fill, algo, partial
     for (fun in funs) {
@@ -2432,7 +2512,7 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, align, na.rm, fill, algo
   for (fun in funs) {
