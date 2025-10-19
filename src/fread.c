@@ -2312,17 +2312,16 @@ int freadMain(freadMainArgs _args)
       // consider different cases line ending after column names
       if (ch == eof || *ch == '\0') {
         pos = ch;
-      } else if (*ch == '\n' || *ch == '\r') {
-        if (eol(&ch)) {
-          if (ch < eof) ch++;
+      } else {
+        const char *lineEnd = ch;
+        if (eol(&lineEnd)) {
+          if (lineEnd < eof) lineEnd++;
+          pos = lineEnd;
+        } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) { // trimmed a comment and now on next row's first byte
           pos = ch;
         } else {
           INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
         }
-      } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) { // trimmed a comment and now on next rows first byte
-        pos = ch;
-      } else {
-        INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
       }
       // now on first data row (row after column names)
       // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
