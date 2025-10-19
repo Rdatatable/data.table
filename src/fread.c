@@ -2258,17 +2258,7 @@ int freadMain(freadMainArgs _args)
     if (verbose) DTPRINT(_("[08] Assign column names\n"));
     
     ch = pos;  // back to start of first row (column names if header==true)
-    // Skip leading comment lines before parsing header
-    if (args.header != false && commentChar) {
-      while (ch < eof) {
-        ch = skip_to_comment_or_nonwhite(ch);
-        if (ch < eof && *ch == commentChar) {
-          ch = skip_to_nextline(ch, eof);
-        } else break;
-      }
-      pos = ch; 
-      colNamesAnchor = pos;
-    }
+
     if (args.header == false) {
       colNames = NULL;  // userOverride will assign V1, V2, etc
     } else {
@@ -2302,27 +2292,9 @@ int freadMain(freadMainArgs _args)
           if (ch[1] == '\r' || ch[1] == '\n' || ch[1] == '\0') { ch++; break; }
         }
       }
-      if (commentChar) {
-        // fast-trim trailing comment text after the header names
-        const char *commentPos = skip_to_comment_or_nonwhite(ch);
-        if (commentPos < eof && *commentPos == commentChar) {
-          ch = skip_to_eol(commentPos, eof);
-        }
-      }
-      // consider different cases line ending after column names
-      if (ch == eof || *ch == '\0') {
-        pos = ch;
-      } else {
-        const char *lineEnd = ch;
-        if (eol(&lineEnd)) {
-          if (lineEnd < eof) lineEnd++;
-          pos = lineEnd;
-        } else if (ch > sof && (ch[-1] == '\n' || ch[-1] == '\r')) { // trimmed a comment and now on next row's first byte
-          pos = ch;
-        } else {
-          INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
-        }
-      }
+      if (eol(&ch)) pos = ++ch;
+      else if (*ch == '\0') pos = ch;
+      else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
       // now on first data row (row after column names)
       // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
     }
