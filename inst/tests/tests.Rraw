@@ -21769,3 +21769,11 @@ test(2341.21, fread('# meta1 # meta2
 a,b
 1,2', comment.char = '#'), data.table(a=1L, b=2L))
 test(2341.22, fread('a,b   # inline header comment\r\n1,2\r\n', comment.char = '#'), data.table(a=1L, b=2L))
+# control skipping white space before comments with strip.white
+test(2341.23, fread('a
+b  # trailing cmnt
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a="b  "))
+test(2341.24, fread('a
+  # leading cmnt
+b
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))

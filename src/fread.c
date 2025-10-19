@@ -273,9 +273,15 @@ static inline void skip_white(const char **pch)
  */
 static inline const char *skip_to_comment_or_nonwhite(const char *ch)
 {
-  while (ch < eof && (*ch == ' ' || *ch == '\t' || *ch == '\0')) {
-    if (commentChar && *ch == commentChar) break; // comment char might be space or tab
-    ch++;
+  while (ch < eof && *ch == '\0') ++ch;
+  if (!stripWhite) return ch;
+
+  const unsigned char stopSpace = (commentChar == ' ');
+  const unsigned char stopTab   = (commentChar == '\t');
+
+  while (ch < eof && (*ch == ' ' || *ch == '\t')) {
+    if ((stopSpace && *ch == ' ') || (stopTab && *ch == '\t')) break;
+    ++ch;
   }
   return ch;
 }
