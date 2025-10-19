@@ -1137,8 +1137,6 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   }
 }
 
-#define CLAMP0(x) (((x) < 0) ? 0 : (x))
-
 /* fast rolling var - fast
   Welford's online algorithm
   numerically stable
@@ -1172,7 +1170,7 @@ void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
     wmean += delta / (i + 1);
     m2 += delta * (x[i] - wmean);
     double ans_i = m2 / k0;
-    ans->dbl_v[i] = CLAMP0(ans_i);
+    ans->dbl_v[i] = MAX(0,ans_i);
     if (R_FINITE((double) m2)) {
       for (uint64_t i=k; i<nx; i++) {
           double x_out = x[i-k];
@@ -1184,7 +1182,7 @@ void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
           wmean += delta_in / k;
           m2 += delta_in * (x_in - wmean);
           double ans_i = m2 / k0;
-          ans->dbl_v[i] = CLAMP0(ans_i);
+          ans->dbl_v[i] = MAX(0,ans_i);
       }
       if (!R_FINITE((double) m2)) {
         if (hasnf==-1)
@@ -1255,7 +1253,7 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
           wsumxi += (xi * xi);
         }
         double ans_i = wsumxi / (k - 1);
-        ans->dbl_v[i] = CLAMP0(ans_i);
+        ans->dbl_v[i] = MAX(0,ans_i);
       }
     }
     if (truehasnf) {
@@ -1291,7 +1289,7 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
             wsumxi += (xi * xi);
           }
           double ans_i = wsumxi / (k - 1);
-          ans->dbl_v[i] = CLAMP0(ans_i);
+          ans->dbl_v[i] = MAX(0,ans_i);
         } else if (nc < (k - 1)) { // var(scalar) is also NA thats why k-1 so at least 2 numbers must be there
           long double wmean = wsum / (k - nc);
           long double xi = 0.0;
@@ -1303,7 +1301,7 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
             }
           }
           double ans_i = wsumxi / (k - nc - 1);
-          ans->dbl_v[i] = CLAMP0(ans_i);
+          ans->dbl_v[i] = MAX(0,ans_i);
         } else {
           ans->dbl_v[i] = NA_REAL;
         }

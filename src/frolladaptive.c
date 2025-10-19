@@ -737,8 +737,6 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
   }
 }
 
-#define CLAMP0(x) (((x) < 0) ? 0 : (x))
-
 /* fast rolling adaptive var - exact
  */
 void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
@@ -779,7 +777,7 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
             wsumxi += (xi * xi);
           }
           double ans_i = (wsumxi / (k[i] - 1));
-          ans->dbl_v[i] = CLAMP0(ans_i);
+          ans->dbl_v[i] = MAX(0,ans_i);
         }
       }
     }
