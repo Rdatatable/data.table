@@ -13,6 +13,8 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   } else {
     o = forderv(x, by=query$by, sort=FALSE, retGrp=TRUE)
+    if (isTRUE(as.logical(attr(o, "anynotutf8", exact=TRUE))))
+      warningf("Mixed encodings detected. Strings were coerced to UTF-8 before duplicated(x).")
     if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(rep.int(FALSE, nrow(x)))
     f = attr(o, "starts", exact=TRUE)
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
@@ -31,6 +33,9 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   if (nrow(x) <= 1L) return(copy(x)) # unique(x)[, col := val] should not alter x, #5932
   if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
+  if (isTRUE(as.logical(attr(o, "anynotutf8", exact=TRUE)))) {
+    warningf("Mixed encodings detected. Strings were coerced to UTF-8 before unique(x).")
+  }
   if (!is.null(cols)) {
       x = .shallow(x, c(by, cols), retain.key=TRUE)
   }

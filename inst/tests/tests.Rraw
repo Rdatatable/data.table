@@ -21688,3 +21688,9 @@ d3 = unserialize(serialize(d2, NULL))
 test(2340.05, .selfref.ok(d3), FALSE)
 setDT(d3)
 test(2340.06, .selfref.ok(d3), TRUE)
+
+# warn about different encodings in unique and duplicated, #469
+dt = data.table(x=c(iconv("\u00E9","UTF-8","latin1"), "\u00E9"))
+test(2341.1, unique(dt), data.table(x="\u00E9"), warning="Mixed encodings.*")
+test(2341.2, duplicated(dt), c(FALSE, TRUE), warning="Mixed encodings.*")
+test(2341.3, unique(dt[c(2L,2L)]), data.table(x="\u00E9"))
