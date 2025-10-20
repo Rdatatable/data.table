@@ -21769,13 +21769,16 @@ test(2341.16, fread('a#b
 # only comment', sep="#", comment.char="#"), data.table(a=1L))
 
 # na.strings
-txt = 'v
-#NA
-1
-# comment'
-writeLines(txt, tmp <- tempfile())
-test(2341.170, fread(tmp, na.strings="#NA", comment.char='#'), data.table(v=1L))
-test(2341.171, fread(tmp, na.strings="#NA", comment.char='#'), setDT(read.table(tmp, na.strings="#NA", comment.char='#', header=TRUE)))
+local({
+  txt = 'v
+  #NA
+  1
+  # comment'
+  writeLines(txt, tmp <- tempfile())
+  on.exit(unlink(tmp))
+  test(2341.170, fread(tmp, na.strings="#NA", comment.char='#'), data.table(v=1L))
+  test(2341.171, fread(tmp, na.strings="#NA", comment.char='#'), setDT(read.table(tmp, na.strings="#NA", comment.char='#', header=TRUE)))
+})
 
 test(2341.18, fread('a,b
 "p#q",2 # tail
