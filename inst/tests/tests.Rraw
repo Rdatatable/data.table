@@ -21688,3 +21688,130 @@ d3 = unserialize(serialize(d2, NULL))
 test(2340.05, .selfref.ok(d3), FALSE)
 setDT(d3)
 test(2340.06, .selfref.ok(d3), TRUE)
+
+# implement comment.char argument in fread, #856
+test(2341.01, fread('a,b
+#a comment
+1,2
+#another comment
+3,4', comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
+
+test(2341.02, fread('a,b #line-trailing comment
+1,2', comment.char='#'), data.table(a=1L, b=2L))
+
+test(2341.03, fread('a,b#line-trailing comment and no whitespace
+1,2', comment.char='#'), data.table(a=1L, b=2L))
+
+test(2341.04, fread('a,b
+1,2 #trailing after numeric', comment.char='#'), data.table(a=1L, b=2L))
+
+# comment char inside quotes
+test(2341.05, fread('a
+"#quotes#"', comment.char="#"), data.table(a="#quotes#"))
+
+# multi line comments
+test(2341.06, fread('# multi line
+# comment
+1,2 # line-end comment
+# multi line
+# comment
+3,4 # line-end comment
+# trailing comment', comment.char='#'), data.table(V1=c(1L,3L), V2=c(2L,4L)))
+
+test(2341.07, fread('id;value
+1;2,5! trailing comment
+2;NA
+!final comment', sep=';', dec=',', na.strings='NA', comment.char='!'), data.table(id=1:2, value=c(2.5, NA_real_)))
+
+# skip
+test(2341.08, fread('meta line
+DATA STARTS
+x,y
+# skip this
+1,2', skip="DATA", header=TRUE, comment.char='#'), data.table(x=1L, y=2L))
+
+# weird comment chars like space or quote
+test(2341.09, fread('a
+  inline comment
+1', comment.char=' '), data.table(a=1L))
+test(2341.10, fread('a,b
+1,2" trailing"
+"comment line"
+3,4', comment.char='"', quote=""), data.table(a=c(1L,3L), b=c(2L,4L)))
+
+# invalid comment chars
+test(2341.11, fread('a,b
+## multichar commentchar
+1,2', comment.char = '##'), error = "comment.char= must be a single non-NA character")
+
+test(2341.12, fread('a,b
+NA,NA
+1,2', comment.char = NA), error = "comment.char= must be a single non-NA character")
+
+# CLRF
+test(2341.13, fread('a,b\r\n# cmt\r\n1,2\r\n3,4\r\n', comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
+
+# header comment
+test(2341.14, fread('# hdr cmt
+x,y
+1,2', header=TRUE, comment.char='#'), data.table(x=1L, y=2L))
+
+# nrow not counting comments
+test(2341.15, fread('a,b
+1,2
+# cmt
+3,4
+5,6', nrows=2, comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
+
+# sep and comment char same
+test(2341.16, fread('a#b
+1#2
+# only comment', sep="#", comment.char="#"), data.table(a=1L))
+
+# na.strings
+local({
+  txt = 'v
+#NA
+1
+# comment'
+  writeLines(txt, tmp <- tempfile())
+  on.exit(unlink(tmp))
+  test(2341.170, fread(tmp, na.strings="#NA", comment.char='#'), data.table(v=1L))
+  test(2341.171, fread(tmp, na.strings="#NA", comment.char='#'), setDT(read.table(tmp, na.strings="#NA", comment.char='#', header=TRUE)))
+})
+
+test(2341.18, fread('a,b
+"p#q",2 # tail
+"r#s",3', comment.char='#'), data.table(a=c("p#q","r#s"), b=c(2L,3L)))
+
+test(2341.19, fread('   # lead comment with padding
+\t# and tab
+a,b
+1,2', comment.char='#'), data.table(a=1L, b=2L))
+
+test(2341.20, fread('a,b      # header cmt with padding # second cmt
+1,2
+3,4', comment.char='#'), data.table(a=c(1L,3L), b=c(2L,4L)))
+
+test(2341.21, fread('# meta1 # meta2
+a,b
+1,2', comment.char = '#'), data.table(a=1L, b=2L))
+test(2341.22, fread('a,b   # inline header comment\r\n1,2\r\n', comment.char = '#'), data.table(a=1L, b=2L))
+
+# control skipping white space before comments with strip.white
+test(2341.230, fread('a
+b  # trailing cmnt
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a="b  "))
+test(2341.231, fread('a  # trailing header cmnt 
+b
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(`a  `="b"))
+test(2341.232, fread('a
+# full line cmnt
+  # full line with leading ws cmnt
+b
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))
+
+test(2341.24, fread('a
+  # leading cmnt
+b
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))

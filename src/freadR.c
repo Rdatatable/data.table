@@ -61,6 +61,7 @@ SEXP freadR(
   SEXP NAstringsArg,
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
+  SEXP commentCharArg,
   SEXP fillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
@@ -158,6 +159,8 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  const char *commentStr = CHAR(STRING_ELT(commentCharArg, 0));
+  args.comment = strlen(commentStr) == 0 ? '\0' : commentStr[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0] < 1)

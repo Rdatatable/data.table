@@ -2,7 +2,7 @@ fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
-col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
+col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="", key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
@@ -30,6 +30,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  if (!is.character(comment.char) || length(comment.char) != 1L || is.na(comment.char) || nchar(comment.char) > 1L) {
+    stopf("comment.char= must be a single non-NA character.")
+  }
   fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
@@ -289,7 +292,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     if (identical(tt,"") || is_utc(tt)) # empty TZ env variable ("") means UTC in C library, unlike R; _unset_ TZ means local
       tz="UTC"
   }
-  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
+  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,comment.char,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
