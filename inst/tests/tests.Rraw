@@ -21802,6 +21802,11 @@ b  # trailing cmnt
 test(2341.231, fread('a  # trailing header cmnt 
 b
 ', comment.char = '#', strip.white = FALSE, sep = ","), data.table(`a  `="b"))
+test(2341.232, fread('a
+# full line cmnt
+  # full line with leading ws cmnt
+b
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))
 
 test(2341.24, fread('a
   # leading cmnt
