@@ -246,7 +246,7 @@
     #9: 2025-09-22     9         8           9.0
     ```
 
-19. New rolling functions: `frollmin`, `frollprod` and `frollmedian`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation. Implementation of rolling median is based on a novel algorithm "sort-median" described by [@suomela](https://github.com/suomela) in his 2014 paper [Median Filtering is Equivalent to Sorting](https://arxiv.org/abs/1406.1717). "sort-median" scales very well, not only for size of input vector but also for size of rolling window.
+19. Other new rolling functions: `frollmin`, `frollprod`, `frollmedian`, `frollvar` and `frollsd`, have been implemented, resolving long standing issue [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation. Implementation of rolling median is based on a novel algorithm "sort-median" described by [@suomela](https://github.com/suomela) in his 2014 paper [Median Filtering is Equivalent to Sorting](https://arxiv.org/abs/1406.1717). "sort-median" scales very well, not only for size of input vector but also for size of rolling window.
     ```r
     rollmedian = function(x, n) {
       ans = rep(NA_real_, nx<-length(x))

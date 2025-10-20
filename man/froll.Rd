@@ -10,6 +10,8 @@
 \alias{frollmin}
 \alias{frollprod}
 \alias{frollmedian}
+\alias{frollvar}
+\alias{frollsd}
 \alias{roll}
 \alias{rollmean}
 \alias{rollsum}
@@ -17,6 +19,8 @@
 \alias{rollmin}
 \alias{rollprod}
 \alias{rollmedian}
+\alias{rollvar}
+\alias{rollsd}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on a sliding window. For a user-defined rolling function see \code{\link{frollapply}}. For "time-aware" (irregularly spaced time series) rolling function see \code{\link{frolladapt}}.
@@ -33,6 +37,10 @@
   frollprod(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
   frollmedian(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
+  frollvar(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
+  frollsd(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
 }
 \arguments{
@@ -85,25 +93,26 @@
     \item \code{has.nf=TRUE} uses non-finite aware implementation straightaway.
     \item \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
     \itemize{
-      \item (\emph{mean, sum, prod}) detect non-finite, re-run non-finite aware.
+      \item (\emph{mean, sum, prod, var, sd}) detect non-finite, re-run non-finite aware.
       \item (\emph{max, min, median}) does not detect non-finites and may silently produce an incorrect answer.
     }
     In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care.
   }
 }
 \section{Implementation}{
-  Each rolling function has 4 different implementations. First factor that decides which implementation is used is the \code{adaptive} argument (either \code{TRUE} or \code{FALSE}), see section below for details. Then for each of those two algorithms there are usually two implementations depending on the \code{algo} argument.
+  Most of the rolling functions have 4 different implementations. First factor that decides which implementation is used is the \code{adaptive} argument (either \code{TRUE} or \code{FALSE}), see section below for details. Then for each of those two algorithms there are usually two implementations depending on the \code{algo} argument.
   \itemize{
     \item \code{algo="fast"} uses \emph{"online"}, single pass, algorithm.
     \itemize{
       \item \emph{max} and \emph{min} rolling function will not do only a single pass but, on average, they will compute \code{length(x)/n} nested loops. The larger the window, the greater the advantage over the \emph{exact} algorithm, which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window sizes and many CPUs it may actually be faster than \emph{fast}. However, in such cases the elapsed timings will likely be far below a single second.
       \item \emph{median} will use a novel algorithm described by \emph{Jukka Suomela} in his paper \emph{Median Filtering is Equivalent to Sorting (2014)}. See references section for the link. Implementation here is extended to support arbitrary length of input and an even window size. Despite extensive validation of results this function should be considered experimental. When missing values are detected it will fall back to slower \code{algo="exact"} implementation.
-      \item Not all functions have \emph{fast} implementation available. As of now adaptive \emph{max}, adaptive \emph{min} and adaptive \emph{median} do not have \emph{fast} implementation, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that.
+      \item \emph{var} and \emph{sd} will use numerically stable \emph{Welford}'s online algorithm.
+      \item Not all functions have \emph{fast} implementation available. As of now, adaptive \emph{max}, \emph{min}, \emph{median}, \emph{var} and \emph{sd} do not have \emph{fast} adaptive implementation, therefore it will automatically fall back to \emph{exact} adaptive implementation. Similarly, non-adaptive fast implementations of \emph{median}, \emph{var} and \emph{sd} will fall back to \emph{exact} implementations if they detect any non-finite values in the input. \code{datatable.verbose} option can be used to check that.
     }
     \item \code{algo="exact"} will make the rolling functions use a more computationally-intensive algorithm. For each observation in the input vector it will compute a function on a rolling window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
       \item Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}).
-      \item In case of \emph{mean} (and possibly other functions in future), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads.
+      \item In case of \emph{mean}, it will additionally make an extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads.
     }
   }
 }
@@ -158,6 +167,8 @@ frollmax(d, 3:4)
 frollmin(d, 3:4)
 frollprod(d, 3:4)
 frollmedian(d, 3:4)
+frollvar(d, 3:4)
+frollsd(d, 3:4)
 
 # partial=TRUE
 x = 1:6/2
@@ -178,6 +189,11 @@ frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
 # has.nf=FALSE should be used with care
 frollmax(c(1,2,NA,4,5), 2)
 frollmax(c(1,2,NA,4,5), 2, has.nf=FALSE)
+
+# use verobse=TRUE for extra insight
+.op = options(datatable.verbose = TRUE)
+frollsd(c(1:5,NA,7:8), 4)
+options(.op)
 
 # performance vs exactness
 set.seed(108)

@@ -42,7 +42,7 @@ SEXP reorder(SEXP x, SEXP order)
   int nprotect = 0;
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
-  const int *restrict idx = INTEGER(order);
+  const int *restrict idx = INTEGER_RO(order);
   int i=0;
   while (i<nrow && idx[i] == i+1) ++i;
   const int start=i;
@@ -63,14 +63,17 @@ SEXP reorder(SEXP x, SEXP order)
     // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
 
-  char *TMP = R_alloc(nmid, maxSize);
+  void *TMP = R_alloc(nmid, maxSize);
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
     const size_t size = RTYPE_SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
-    if (size==4) {
+
+    switch (size)
+    {
+    case 4: {
       const int *restrict vd = DATAPTR_RO(v);
-      int *restrict tmp = (int *)TMP;
+      int *restrict tmp = TMP;
       #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 4 bytes; e.g. INTSXP and also SEXP pointers on 32bit (STRSXP and VECSXP)
@@ -79,30 +82,39 @@ SEXP reorder(SEXP x, SEXP order)
       // The write to TMP is contiguous, so sync between cpus of written-cache-lines should not be an issue.
       // The read from vd is random, but at least the column has a good chance of being all in cache as parallelism is within column.
       // As idx approaches being ordered (e.g. moving blocks around) then this should approach read cache-efficiency too.
-    } else if (size==8) {
+      break;
+    }
+    case 8: {
       const double *restrict vd = DATAPTR_RO(v);
-      double *restrict tmp = (double *)TMP;
+      double *restrict tmp = TMP;
       #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 8 bytes; e.g. REALSXP and also SEXP pointers on 64bit (STRSXP and VECSXP)
       }
-    } else if (size==16) {
+      break;
+    }
+    case 16: {
       const Rcomplex *restrict vd = DATAPTR_RO(v);
-      Rcomplex *restrict tmp = (Rcomplex *)TMP;
+      Rcomplex *restrict tmp = TMP;
       #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];
       }
-    } else { // size 1; checked up front // support raw as column #5100
+      break;
+    }
+    default: { // size 1; checked up front // support raw as column #5100
       const Rbyte *restrict vd = DATAPTR_RO(v);
-      Rbyte *restrict tmp = (Rbyte *)TMP;
+      Rbyte *restrict tmp = TMP;
       #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 1 bytes; e.g. RAWSXP
       }
+      break;
     }
+    }
+
     // Unique and somber line. Not done lightly. Please read all comments in this file.
-    memcpy((char *)DATAPTR_RO(v) + size*start, TMP, size*nmid);
+    memcpy((char*)DATAPTR_RO(v) + size*start, TMP, size*nmid);
     // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
     // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
     // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.

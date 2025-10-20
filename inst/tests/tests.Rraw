@@ -17078,16 +17078,19 @@ DT = data.table(dates, times)
 DT_trunc = copy(DT)[, times := as.POSIXct(trunc(times))]
 tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
-fwrite(DT, tmp)
-test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
-fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker. Also truncates milliseconds, hence DT_trunc below.
-test(2150.021, env=list(TZ=NULL), sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
-test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT_trunc)  # user can tell fread to interpret the unmarked datetimes as UTC
-test(2150.023, env=c(TZ='UTC'), fread(tmp), DT_trunc)  # TZ environment variable is also recognized
-if (.Platform$OS.type!="windows") {
-  test(2150.024, env=c(TZ=''), fread(tmp), DT_trunc) # on Windows this unsets TZ, see ?Sys.setenv
-  # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
-}
+local({
+  old=options(digits.secs=0); on.exit(options(old))
+  fwrite(DT, tmp)
+  test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
+  fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker. Also truncates milliseconds, hence DT_trunc below.
+  test(2150.021, env=list(TZ=NULL), sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
+  test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT_trunc)  # user can tell fread to interpret the unmarked datetimes as UTC
+  test(2150.023, env=c(TZ='UTC'), fread(tmp), DT_trunc)  # TZ environment variable is also recognized
+  if (.Platform$OS.type!="windows") {
+    test(2150.024, env=c(TZ=''), fread(tmp), DT_trunc) # on Windows this unsets TZ, see ?Sys.setenv
+    # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
+  }
+})
 # Notes:
 #  - from v1.14.0 tz="" needed
 #  - as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)

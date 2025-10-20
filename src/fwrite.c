@@ -437,7 +437,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
     int m = ((x - xi) * 10000000); // 7th digit used to round up if 9
     m += (m % 10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
     m /= 10;
-    int carry = m / 1000000; // Need to know if we rounded up to a whole second
+    const int carry = m / 1000000; // Need to know if we rounded up to a whole second
     m -= carry * 1000000;
     xi += carry;
     if (xi >= 0) {
