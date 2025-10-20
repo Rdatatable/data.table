@@ -21771,9 +21771,9 @@ test(2341.16, fread('a#b
 # na.strings
 local({
   txt = 'v
-  #NA
-  1
-  # comment'
+#NA
+1
+# comment'
   writeLines(txt, tmp <- tempfile())
   on.exit(unlink(tmp))
   test(2341.170, fread(tmp, na.strings="#NA", comment.char='#'), data.table(v=1L))
