@@ -21774,8 +21774,8 @@ txt = 'v
 1
 # comment'
 writeLines(txt, tmp <- tempfile())
-test(2341.17, fread(tmp, na.strings="#NA", comment.char='#'), data.table(v=1L))
-test(2341.175, fread(tmp, na.strings="#NA", comment.char='#'), setDT(read.table(tmp, na.strings="#NA", comment.char='#', header=TRUE)))
+test(2341.170, fread(tmp, na.strings="#NA", comment.char='#'), data.table(v=1L))
+test(2341.171, fread(tmp, na.strings="#NA", comment.char='#'), setDT(read.table(tmp, na.strings="#NA", comment.char='#', header=TRUE)))
 
 test(2341.18, fread('a,b
 "p#q",2 # tail
@@ -21796,9 +21796,12 @@ a,b
 test(2341.22, fread('a,b   # inline header comment\r\n1,2\r\n', comment.char = '#'), data.table(a=1L, b=2L))
 
 # control skipping white space before comments with strip.white
-test(2341.23, fread('a
+test(2341.230, fread('a
 b  # trailing cmnt
 ', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a="b  "))
+test(2341.231, fread('a  # trailing header cmnt 
+b
+', comment.char = '#', strip.white = FALSE, sep = ","), data.table(`a  `="b"))
 
 test(2341.24, fread('a
   # leading cmnt
