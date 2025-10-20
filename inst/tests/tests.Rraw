@@ -21712,10 +21712,10 @@ test(2341.05, fread('a
 # multi line comments
 test(2341.06, fread('# multi line
 # comment
-1,2
+1,2 # line-end comment
 # multi line
 # comment
-3,4
+3,4 # line-end comment
 # trailing comment', comment.char='#'), data.table(V1=c(1L,3L), V2=c(2L,4L)))
 
 test(2341.07, fread('id;value
