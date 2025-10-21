@@ -333,7 +333,7 @@
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
-20. `week()` now calculates the week of the year sequentially, where days 1-7 are always week 1. This fixes a long-standing bug where the first week of the year was incorrectly calculated as having only 6 days, [#2611](https://github.com/Rdatatable/data.table/issues/2611). Thanks to @MichaelChirico for the report and @venom1204 for the fix.
+20. BREAKING CHANGE: `week()` now calculates the week of the year sequentially (days 1-7 are week 1), fixing a bug where the first week could have 6 days. A one-time warning is now issued if this change affects the output for a given input, which can be disabled via `options(datatable.warn.week.change = FALSE)`. [#2611](https://github.com/Rdatatable/data.table/issues/2611). Thanks to @MichaelChirico for the report and @venom1204 for the fix.
 
 ### NOTES
 
