@@ -1,5 +1,7 @@
 #include "data.table.h"
 
+static int week_warning_issued = 0;
+
 static const int YEARS400 = 146097;
 static const int YEARS100 = 36524;
 static const int YEARS4 = 1461;
@@ -64,7 +66,7 @@ void convertSingleDate(int x, datetype type, void *out)
             yday -= YEARS1 + leap;
         *(int *)out = ++yday;
         if (type == WEEK)
-            *(int *)out = (*(int *)out / 7) + 1;
+            *(int *)out = ((*(int *)out - 1) / 7) + 1;
         return;
     }
 
@@ -143,6 +145,29 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(ctype_str, "yearqtr")) { ctype = YEARQTR; ansint = false; }
     else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
     
+    if (ctype == WEEK) {
+        if (!week_warning_issued) {
+            SEXP dt_week_warn_opt = GetOption(install("datatable.warn.week.change"), R_NilValue);
+            if (!isLogical(dt_week_warn_opt) || LOGICAL(dt_week_warn_opt)[0] != FALSE) {
+                for (int i = 0; i < n; i++) {
+                    if (ix[i] == NA_INTEGER) continue;
+
+                    int yday;
+                    convertSingleDate(ix[i], YDAY, &yday);
+
+                    int old_week = (yday / 7) + 1;
+                    int new_week = ((yday - 1) / 7) + 1;
+
+                    if (new_week != old_week) {
+                        Rf_warning("data.table::week() behavior has changed and is now sequential (day 1-7 is week 1). The first week of the year may differ from previous versions. To suppress this warning, run: options(datatable.warn.week.change = FALSE)");
+                        week_warning_issued = 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     if (ansint) {
         SEXP ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
