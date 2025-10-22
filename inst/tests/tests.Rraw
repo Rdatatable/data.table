@@ -21817,7 +21817,7 @@ b
 ', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))
 
 # week() sequential numbering fix tests #2611
-test(2342.1, week(as.IDate("1970-01-01") + 0:7), c(1L,1L,1L,1L,1L,1L,1L,2L), options = list(datatable.week = "sequential"))
+test(2342.1, options = c(datatable.week = "sequential"), week(as.IDate("1970-01-01") + 0:7), c(1L,1L,1L,1L,1L,1L,1L,2L))
 test(2342.2, week(as.IDate(c("2012-02-28","2012-02-29","2012-03-01"))), c(9L,9L,9L), options = list(datatable.week = "sequential"))
 test(2342.3, week(as.IDate(c("2019-12-31","2020-01-01"))), c(53L,1L), options = list(datatable.week = "sequential"))
 test(2342.4, week(as.IDate(c("2020-12-31","2021-01-01"))), c(53L,1L), options = list(datatable.week = "sequential"))
