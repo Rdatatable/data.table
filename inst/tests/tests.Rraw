@@ -21823,4 +21823,6 @@ idx = sort(sample(10, 20, TRUE))
 x = matrix(rnorm(N), nrow=10)
 DT = as.data.table(x[idx,])
 DT[, V1000 := 20:1]
-test(2342, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
+test(2342.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
+x = c(rep(0, 7e5), 1e6)
+test(2342.2, forderv(list(x)), integer(0))
