@@ -34,6 +34,8 @@
 
 5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
 
+6. `unique()` and `duplicated()` warn now if columns with encodings other than UTF-8 are present, since these are converted to UTF-8 for comparison, which may lead to unexpected results, [#469](https://github.com/Rdatatable/data.table/issues/469). Additionally, `fread(encoding=)` now defaults to `"UTF-8"` (previously `"unknown"`) since most systems already use UTF-8 as the native encoding. Thanks to @arunsrinivasan for the request and @ben-schwen for the implementation.
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
@@ -357,7 +359,6 @@
 
 7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
-8. `unique()` and `duplicated()` warn now if columns with encodings other than UTF-8 are present, since these are converted to UTF-8 for comparison, which may lead to unexpected results, [#469](https://github.com/Rdatatable/data.table/issues/469). Thanks to @arunsrinivasan for the request and @ben-schwen for the implementation.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 

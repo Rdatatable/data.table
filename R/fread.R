@@ -2,7 +2,7 @@ fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
-col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
+col.names, check.names=FALSE, encoding="UTF-8", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
