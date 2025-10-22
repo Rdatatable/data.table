@@ -387,7 +387,8 @@ z_cpy   # 1 2 3
 
 To select a single column as a vector, remember:
 - `DT[, mycol]` is safer as it always returns a new, independent copy.
-- `DT$mycol` is fast but may return a reference. Use `copy(DT$mycol)` to guarantee independence.
+- `DT$mycol` is fast but may return a reference. 
+- Use `copy(DT$mycol)` to guarantee independence.
 
 ## Summary
 
