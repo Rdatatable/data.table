@@ -60,20 +60,11 @@ void convertSingleDate(int x, datetype type, void *out)
 
     int leap = !years1 && (years4 || !years100);
 
-    if (type == YDAY || type == WEEK) {
+    if (type == YDAY) {
         int yday = days + 31 + 28 + leap;
         if (yday >= YEARS1 + leap)
             yday -= YEARS1 + leap;
         *(int *)out = ++yday;
-        if (type == WEEK) {
-            SEXP opt_new = GetOption(install("datatable.week.new"), R_NilValue);
-            bool use_new_behavior = isLogical(opt_new) && LOGICAL(opt_new)[0] == TRUE;
-            if (use_new_behavior) {
-                *(int *)out = ((*(int *)out - 1) / 7) + 1;
-            } else {
-                *(int *)out = (*(int *)out / 7) + 1;
-            }
-        }
         return;
     }
 
