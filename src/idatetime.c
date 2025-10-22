@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-static int week_warning_issued = 0;
+static int week_deprecation_warning_issued = 0;
 
 static const int YEARS400 = 146097;
 static const int YEARS100 = 36524;
@@ -65,8 +65,15 @@ void convertSingleDate(int x, datetype type, void *out)
         if (yday >= YEARS1 + leap)
             yday -= YEARS1 + leap;
         *(int *)out = ++yday;
-        if (type == WEEK)
-            *(int *)out = ((*(int *)out - 1) / 7) + 1;
+        if (type == WEEK) {
+            SEXP opt_new = GetOption(install("datatable.week.new"), R_NilValue);
+            bool use_new_behavior = isLogical(opt_new) && LOGICAL(opt_new)[0] == TRUE;
+            if (use_new_behavior) {
+                *(int *)out = ((*(int *)out - 1) / 7) + 1;
+            } else {
+                *(int *)out = (*(int *)out / 7) + 1;
+            }
+        }
         return;
     }
 
@@ -146,26 +153,43 @@ SEXP convertDate(SEXP x, SEXP type)
     else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
     
     if (ctype == WEEK) {
-        if (!week_warning_issued) {
-            SEXP dt_week_warn_opt = GetOption(install("datatable.warn.week.change"), R_NilValue);
-            if (!isLogical(dt_week_warn_opt) || LOGICAL(dt_week_warn_opt)[0] != FALSE) {
-                for (int i = 0; i < n; i++) {
-                    if (ix[i] == NA_INTEGER) continue;
+        SEXP ans = PROTECT(allocVector(INTSXP, n));
+        int *ansp = INTEGER(ans);
 
-                    int yday;
-                    convertSingleDate(ix[i], YDAY, &yday);
+        SEXP opt_new = GetOption(install("datatable.week.new"), R_NilValue);
+        bool use_new_behavior = isLogical(opt_new) && LOGICAL(opt_new)[0] == TRUE;
 
-                    int old_week = (yday / 7) + 1;
+        bool can_warn = false;
+        if (!use_new_behavior && !week_deprecation_warning_issued) {
+            SEXP opt_warn_depr = GetOption(install("datatable.warn.week.deprecation"), R_NilValue);
+            can_warn = !isLogical(opt_warn_depr) || LOGICAL(opt_warn_depr)[0] != FALSE;
+        }
+
+        for (int i = 0; i < n; i++) {
+            if (ix[i] == NA_INTEGER) {
+                ansp[i] = NA_INTEGER;
+                continue;
+            }
+            int yday;
+            convertSingleDate(ix[i], YDAY, &yday);
+
+            if (use_new_behavior) {
+                ansp[i] = ((yday - 1) / 7) + 1;
+            } else {
+                int old_week = (yday / 7) + 1;
+                ansp[i] = old_week;
+                if (can_warn) {
                     int new_week = ((yday - 1) / 7) + 1;
-
                     if (new_week != old_week) {
-                        Rf_warning("data.table::week() behavior has changed and is now sequential (day 1-7 is week 1). The first week of the year may differ from previous versions. To suppress this warning, run: options(datatable.warn.week.change = FALSE)");
-                        week_warning_issued = 1;
-                        break;
+                        Rf_warning("The current behavior of data.table::week() is deprecated and will be fixed in a future version to be sequential (day 1-7 is week 1). To opt-in to the new behavior now, run: options(datatable.week.new = TRUE). To suppress this warning, run: options(datatable.warn.week.deprecation = FALSE)");
+                        week_deprecation_warning_issued = 1;
+                        can_warn = false;
                     }
                 }
             }
         }
+        UNPROTECT(1);
+        return ans;
     }
 
     if (ansint) {
