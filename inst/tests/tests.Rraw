@@ -21815,3 +21815,12 @@ test(2341.24, fread('a
   # leading cmnt
 b
 ', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))
+
+# forderv should not segfault on long single group keys due to recursion #4300
+N = 1e4
+set.seed(1)
+idx = sort(sample(10, 20, TRUE))
+x = matrix(rnorm(N), nrow=10)
+DT = as.data.table(x[idx,])
+DT[, V1000 := 20:1]
+test(2342, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
