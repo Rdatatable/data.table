@@ -172,7 +172,7 @@ SEXP convertDate(SEXP x, SEXP type)
                 if (can_warn) {
                     int new_week = ((yday - 1) / 7) + 1;
                     if (new_week != old_week) {
-                        Rf_warning("The current behavior of data.table::week() is deprecated and will be fixed in a future version to be sequential (day 1-7 is week 1). To opt-in to the new behavior now, run: options(datatable.week.new = TRUE). To suppress this warning, run: options(datatable.warn.week.deprecation = FALSE)");
+                        warning("The current behavior of data.table::week() is deprecated and will be fixed in a future version to be sequential (day 1-7 is week 1). To opt-in to the new behavior now, run: options(datatable.week.new = TRUE). To suppress this warning, run: options(datatable.warn.week.deprecation = FALSE)");
                         week_deprecation_warning_issued = 1;
                         can_warn = false;
                     }
