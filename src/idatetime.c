@@ -147,14 +147,12 @@ SEXP convertDate(SEXP x, SEXP type)
         SEXP ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
 
-        SEXP opt_new = GetOption(install("datatable.week.new"), R_NilValue);
-        bool use_new_behavior = isLogical(opt_new) && LOGICAL(opt_new)[0] == TRUE;
+        SEXP opt = GetOption(install("datatable.week"), R_NilValue);
+        const char *mode = isString(opt) && length(opt) == 1 ? CHAR(STRING_ELT(opt, 0)) : "default";
 
-        bool can_warn = false;
-        if (!use_new_behavior && !week_deprecation_warning_issued) {
-            SEXP opt_warn_depr = GetOption(install("datatable.warn.week.deprecation"), R_NilValue);
-            can_warn = !isLogical(opt_warn_depr) || LOGICAL(opt_warn_depr)[0] != FALSE;
-        }
+        bool use_sequential = !strcmp(mode, "sequential");
+        bool use_legacy = !strcmp(mode, "legacy");
+        bool can_warn = !use_sequential && !use_legacy && !week_deprecation_warning_issued;
 
         for (int i = 0; i < n; i++) {
             if (ix[i] == NA_INTEGER) {
@@ -163,19 +161,18 @@ SEXP convertDate(SEXP x, SEXP type)
             }
             int yday;
             convertSingleDate(ix[i], YDAY, &yday);
+            int new_week = ((yday - 1) / 7) + 1;
 
-            if (use_new_behavior) {
-                ansp[i] = ((yday - 1) / 7) + 1;
+            if (use_sequential) {
+                ansp[i] = new_week;
             } else {
                 int old_week = (yday / 7) + 1;
                 ansp[i] = old_week;
-                if (can_warn) {
-                    int new_week = ((yday - 1) / 7) + 1;
-                    if (new_week != old_week) {
-                        warning("The current behavior of data.table::week() is deprecated and will be fixed in a future version to be sequential (day 1-7 is week 1). To opt-in to the new behavior now, run: options(datatable.week.new = TRUE). To suppress this warning, run: options(datatable.warn.week.deprecation = FALSE)");
+                if (can_warn && new_week != old_week) {
+                    warning(_("The default behavior of data.table::week() is deprecated. It will be changed to 'sequential' in a future version. To opt-in to the new behavior now, run: options(datatable.week = 'sequential'). To suppress this warning and continue using the legacy behavior, run: options(datatable.week = 'legacy')."));
                         week_deprecation_warning_issued = 1;
                         can_warn = false;
-                    }
+                        
                 }
             }
         }
