@@ -169,7 +169,7 @@ SEXP convertDate(SEXP x, SEXP type)
                 int old_week = (yday / 7) + 1;
                 ansp[i] = old_week;
                 if (can_warn && new_week != old_week) {
-                    warning(_("The default behavior of data.table::week() is deprecated. It will be changed to 'sequential' in a future version. To opt-in to the new behavior now, run: options(datatable.week = 'sequential'). To suppress this warning and continue using the legacy behavior, run: options(datatable.week = 'legacy')."));
+                    warning(_("The default behavior of week() is changing. Previously ('legacy' mode), week numbers advanced every 7th day of the year. The new 'sequential' mode ensures the first week always has 7 days. For example, as.IDate('2023-01-07') returns week 2 in legacy mode but week 1 in sequential mode (week 2 starts on '2023-01-08'). To adopt the new behavior now, set options(datatable.week = 'sequential'). To keep the old results and silence this warning, set options(datatable.week = 'legacy'). See https://github.com/Rdatatable/data.table/issues/2611"));
                         week_deprecation_warning_issued = 1;
                         can_warn = false;
                         
