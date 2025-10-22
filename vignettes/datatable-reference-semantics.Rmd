@@ -365,10 +365,9 @@ However we could improve this functionality further by *shallow* copying instead
     ```
 ### c) Selecting columns: `$` vs `[, col]`
 
-When selecting a column as a vector, `DT$col` and `DT[, col]` have a key difference: `DT$col` may return a reference to the data, while `DT[, col]` always returns a copy.
+When you extract a single column as a vector there is a subtle but important difference: `DT$col` may return a reference to the internal column, while `DT[, col]` always returns a copy. Because of that, a variable created with `DT$col` can change if you later modify DT by reference.
 
-This means a variable created with `$` can change if the `data.table` is modified later, which can be unexpected. A single example demonstrates this behavior and how `copy()` provides a solution:
-
+A short example:
 ```{r}
 DT = data.table(a = 1:3)
 
