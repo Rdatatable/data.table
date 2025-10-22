@@ -367,31 +367,27 @@ However we could improve this functionality further by *shallow* copying instead
 
 When you extract a single column as a vector, there is a subtle but important difference between standard R methods ($ and [[...]]) and data.table's j expression. DT$col and DT[['col']] may return a reference to the internal column, while DT[, col] always returns a copy.
 
-This means a variable created with `$` can change if the `data.table` is modified later, which can be unexpected. A single example demonstrates this behavior and how `copy()` provides a solution:
-
+A short example:
 ```{r}
 DT = data.table(a = 1:3)
 
-# Create three variables using the different methods
-x_ref = DT$a        # 1. By reference with $
-y_cpy = DT[, a]     # 2. By copy with []
-z_cpy = copy(DT$a)  # 3. Forced copy with copy()
+# three ways to get the column
+x_ref = DT$a        # may be a reference
+y_cpy = DT[, a]     # always a copy
+z_cpy = copy(DT$a)  # forced copy
 
-# Now, modify the original data.table by reference
+# modify DT by reference
 DT[, a := a + 10L]
 
-# Check the variables:
-x_ref 
-#> [1] 11 12 13
-y_cpy
-#> [1] 1 2 3
-z_cpy 
-#> [1] 1 2 3
+# observe results
+x_ref   # may show 11 12 13
+y_cpy   # 1 2 3
+z_cpy   # 1 2 3
 ```
 
 To select a single column as a vector, remember:
 - `DT[, mycol]` is safer as it always returns a new, independent copy.
-- `DT$mycol` and `DT[['mycol']]` are fast but may return a reference.
+- `DT$mycol` is fast but may return a reference. Use `copy(DT$mycol)` to guarantee independence.
 
 ## Summary
 
