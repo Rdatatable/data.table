@@ -370,8 +370,6 @@ When selecting a column as a vector, `DT$col` and `DT[, col]` have a key differe
 This means a variable created with `$` can change if the `data.table` is modified later, which can be unexpected. A single example demonstrates this behavior and how `copy()` provides a solution:
 
 ```{r}
-library(data.table)
-
 DT = data.table(a = 1:3)
 
 # Create three variables using the different methods
