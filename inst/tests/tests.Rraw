@@ -7900,7 +7900,7 @@ test(1547, foo(1L, 5L, a=2L, "c"), c("2", "c"))
 # Fix for encoding issues in windows, #563
 f = testDir("issue_563_fread.txt")
 ans1 <- fread(f, sep=",", header=TRUE)
-test(1548.1, unique(unlist(lapply(ans2, Encoding))), "UTF-8")
+test(1548.1, unique(unlist(lapply(ans1, Encoding))), "UTF-8")
 
 # 1549 moved to benchmark.Rraw, #5517
 
