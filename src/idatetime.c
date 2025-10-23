@@ -1,7 +1,5 @@
 #include "data.table.h"
 
-static int week_deprecation_warning_issued = 0;
-
 static const int YEARS400 = 146097;
 static const int YEARS100 = 36524;
 static const int YEARS4 = 1461;
@@ -152,7 +150,7 @@ SEXP convertDate(SEXP x, SEXP type)
 
         bool use_sequential = !strcmp(mode, "sequential");
         bool use_legacy = !strcmp(mode, "legacy");
-        bool can_warn = !use_sequential && !use_legacy && !week_deprecation_warning_issued;
+        bool can_warn = !use_sequential && !use_legacy;
 
         for (int i = 0; i < n; i++) {
             if (ix[i] == NA_INTEGER) {
@@ -170,9 +168,7 @@ SEXP convertDate(SEXP x, SEXP type)
                 ansp[i] = old_week;
                 if (can_warn && new_week != old_week) {
                     warning(_("The default behavior of week() is changing. Previously ('legacy' mode), week numbers advanced every 7th day of the year. The new 'sequential' mode ensures the first week always has 7 days. For example, as.IDate('2023-01-07') returns week 2 in legacy mode but week 1 in sequential mode (week 2 starts on '2023-01-08'). To adopt the new behavior now, set options(datatable.week = 'sequential'). To keep the old results and silence this warning, set options(datatable.week = 'legacy'). See https://github.com/Rdatatable/data.table/issues/2611"));
-                        week_deprecation_warning_issued = 1;
-                        can_warn = false;
-                        
+                    can_warn = false;
                 }
             }
         }
