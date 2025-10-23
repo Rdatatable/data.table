@@ -1636,12 +1636,13 @@ int freadMain(freadMainArgs _args)
   if ((size_t)(eof - sof) > 100000) sample_end = sof + 100000; // Sample first 100KB or whole file if smaller
   while (ch < sample_end) {
     if (*ch == '\r') {
-      if (ch + 1 < sample_end && ch[1] == '\n') {
+      // Skip consecutive \r to avoid miscounting \r\r\n as multiple line endings
+      while (ch < sample_end && *ch == '\r') ch++;
+      if (ch < sample_end && *ch == '\n') {
         count_with_n++;
-        ch += 2;  // skip \r\n
+        ch++;
       } else {
         count_r_only++;
-        ch++;
       }
     } else if (*ch == '\n') {
       count_with_n++;
