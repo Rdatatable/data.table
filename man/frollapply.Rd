@@ -11,10 +11,10 @@
     give.names=FALSE, simplify=TRUE, x, n)
 }
 \arguments{
-  \item{X}{ Atomic vector, \code{data.frame}, \code{data.table} or a \code{list} on which sliding window calculates \code{FUN} function. How the \code{X} is handled depends on the \code{by.column} argument. It supports vectorized input, for \code{by.column=TRUE} it needs to be a \code{data.table}, \code{data.frame} or a \code{list}, and for \code{by.column=FALSE} list of data.frames/data.tables, but not list of lists. }
-  \item{N}{ Integer, non-negative, rolling window size. This is the \emph{total} number of included values in aggregate function. In case of an adaptive rolling function window size has to be provided as a vector for each indivdual value of \code{X}. It supports vectorized input, then it needs to be a vector, or in case of an adaptive rolling a \code{list} of vectors. }
+  \item{X}{ Atomic vector, \code{data.frame}, \code{data.table} or a \code{list} on which sliding window calculates \code{FUN} function. How the \code{X} is handled depends on the \code{by.column} argument. It supports vectorized input, for \code{by.column=TRUE} it needs to be a \code{data.table}, \code{data.frame} or a \code{list}, and for \code{by.column=FALSE} list of data.frames/data.tables, but not a list of lists. }
+  \item{N}{ Integer, non-negative, non-NA, rolling window size. This is the \emph{total} number of included values in aggregate function. In case of an adaptive rolling function window size has to be provided as a vector for each indivdual value of \code{X}. It supports vectorized input, then it needs to be a vector, or in case of an adaptive rolling a \code{list} of vectors. }
   \item{FUN}{ The function to be applied on subsets of \code{X}. }
-  \item{\dots}{ Extra arguments passed to \code{FUN}. Note that arguments passed to \dots cannot have same names as arguments of \code{frollapply}. }
+  \item{\dots}{ Extra arguments passed to \code{FUN}. Note that argument names passed to \dots should not overlap with arguments of \code{frollapply}. }
   \item{by.column}{ Logical. When \code{TRUE} (default) then \code{X} of types list/data.frame/data.table is treated as vectorized input rather an object to apply rolling window on. Setting to \code{FALSE} allows rolling window to be applied on multiple variables, using data.frame, data.table or a list, as a whole. For details see \emph{\code{by.column} argument} section below. }
   \item{fill}{ An object; value to pad by. Defaults to \code{NA}. When \code{partial=TRUE} this argument is ignored. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. For details see \code{\link{froll}}. }
@@ -33,14 +33,11 @@
     \item \code{simplify=TRUE} will try to simplify results by \code{unlist}, \code{rbind} or other functions, its behavior is subject to change, see \emph{\code{simplify} argument} section below for more details.
   }
 }
-\note{
-  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in the input, or use adaptive rolling function to handle gaps, for which we provide helper function \code{\link{frolladapt}} to generate adaptive window size.
-}
 \section{\code{by.column} argument}{
-  Setting \code{by.column} to \code{FALSE} allows to apply function on multiple variables rather than a single vector. Then \code{X} expects to be data.table, data.table or a list of equal length vectors, and window size provided in \code{N} refers to number of rows (or length of a vectors in a list). See examples for use cases. Error \emph{"incorrect number of dimensions"} can be commonly observed when \code{by.column} was not set to \code{FALSE} when \code{FUN} expects its input to be a data.frame/data.table.
+  Setting \code{by.column} to \code{FALSE} allows to apply function on multiple variables rather than a single vector. Then \code{X} expects to be data.table, data.frame or a list of equal length vectors, and window size provided in \code{N} refers to number of rows (or length of a vectors in a list). See examples for use cases. Error \emph{"incorrect number of dimensions"} can be commonly observed when \code{by.column} was not set to \code{FALSE} when \code{FUN} expects its input to be a data.table or data.frame.
 }
 \section{\code{simplify} argument}{
-  When set to \code{TRUE}, the default, results from rolling function which are normally stored in a list may be simplified either with \code{unlist} or \code{rbindlist}. It also attempts to match type, size and names of \code{fill} argument to the results of a function.
+  When set to \code{TRUE} (default), then results from rolling function which are normally stored in a list may be simplified either with \code{unlist} or \code{rbindlist}. It also attempts to match type, size and names of \code{fill} argument to the results of a function.
   One should avoid \code{simplify=TRUE} when writing robust code. One reason is performance, as explained in \emph{Performance consideration} section below. Another is backward compatibility. For backward compatibility and performance one should always provide desired function to \code{simplify} explicitly. In future version we may change internal \code{simplifylist} function, then \code{simplify=TRUE} may return object of a different type, breaking downstream code.
 }
 \section{Caveats}{
@@ -76,7 +73,8 @@ frollapply(c(1, 9), N=1L, FUN=function(x) copy(list(x)))
     \item \code{FUN} calls are internally passed to \code{parallel::mcparallel} to evaluate them in parallel. We inherit few limitations from \code{parallel} package explained below. This optimization can be disabled completely by calling \code{setDTthreads(1)}, then limitations listed below do not apply because all iterations of \code{FUN} evaluation will be made sequentially without use of \code{parallel} package. Note that on Windows platform this optimization is always disabled due to lack of \emph{fork} used by \code{parallel} package. One can use \code{options(datatable.verbose=TRUE)} to get extra information if \code{frollapply} is running multithreaded or not.
       \itemize{
         \item Warnings produced inside the function are silently ignored; for consistency we ignore warnings also when running single threaded path.
-        \item \code{FUN} should not use any on-screen devices, GUI elements, tcltk, multithreaded libraries. Note that \code{setDTthreads(1L)} is passed to forked processes, therefore any data.table code inside \code{FUN} will be forced to be single threaded. It is advised to not call \code{setDTthreads} inside \code{FUN}. \code{frollapply} is already parallelized and nested parallelism is rarely a good idea.
+        \item \code{FUN} should not use any on-screen devices, GUI elements, tcltk, multithreaded libraries.
+        \item \code{setDTthreads(1L)} is passed to forked processes, therefore any data.table code inside \code{FUN} will be forced to be single threaded. It is advised to not call \code{setDTthreads} inside \code{FUN}. \code{frollapply} is already parallelized and nested parallelism is rarely a good idea.
         \item Any operation that could misbehave when run in parallel has to be handled. For example writing to the same file from multiple CPU threads.
 \preformatted{
 old = setDTthreads(1L)
@@ -140,10 +138,10 @@ x = setDT(lapply(1:1000, function(x) as.double(rep.int(x,1e4L))))
 f = function(x) sum(x$V1 * x$V2)
 system.time(frollapply(x, 100, f, by.column=FALSE))
 #   user  system elapsed
-#  0.376   0.073   0.233
+#  0.373   0.069   0.234
 system.time(frollapply(x[, c("V1","V2"), with=FALSE], 100, f, by.column=FALSE))
 #   user  system elapsed
-#  0.376   0.073   0.233
+#  0.050   0.058   0.061
 }
     \item Avoid \code{partial} argument, see \emph{\code{partial} argument} section of \code{\link{froll}} manual.
     \item Avoid \code{simplify=TRUE} and provide a function instead:
@@ -157,7 +155,6 @@ system.time(frollapply(x, 2, function(x) 1L, simplify=unlist))
 #  0.054   0.049   0.091
 }
     \item CPU threads utilization in \code{frollapply} can be controlled by \code{\link{setDTthreads}}, which by default uses half of available CPU threads. Usage of multiple CPU threads will be throttled for small input, as described in \code{\link{setDTthreads}} manual.
-    \item Optimization that avoids repeated allocation of a window subset (see \emph{Implementation} section for details), in case of adaptive rolling function, depends on R's \emph{growable bit}. This feature has been added in R 3.4.0. Adaptive \code{frollapply} will still work on older versions of R but, due to repeated allocation of window subset, it will be much slower.
     \item Parallel computation of \code{FUN} is handled by \code{parallel} package (part of R core since 2.14.0) and its \emph{fork} mechanism. \emph{Fork} is not available on Windows OS therefore it will be always single threaded on that platform.
   }
 }
@@ -236,8 +233,11 @@ system.time(for (i in 1:1e4) x[["v1"]])
     \item No repeated allocation of a rolling window subset.\cr
     Object (type of \code{X} and size of \code{N}) is allocated once (for each CPU thread), and then for each iteration this object is being re-used by copying expected subset of data into it. This means we still have to subset data on each iteration, but we only copy data into pre-allocated window object, instead of allocating in each iteration. Allocation is carrying much bigger overhead than copy. The faster the \code{FUN} evaluates the more relative speedup we are getting, because allocation of a subset does not depend on how fast or slow \code{FUN} evaluates. See \emph{caveats} section for possible edge cases caused by this optimization.
     \item Parallel evaluation of \code{FUN} calls.\cr
-    Until now (September 2025) all the multithreaded code in data.table was using \emph{OpenMP}. It can be used only in C language and it has very low overhead. Unfortunately it could not be applied in \code{frollapply} because to evaluate UDF from C code one has to call R's C api that is not thread safe (can be run only from single threaded C code). Therefore \code{frollapply} uses \code{\link[parallel]{parallel-package}} to provide parallelism on R language level. It uses \emph{fork} parallelism, which has low overhead as well (unless results of computation are big in size which is not an issue for rolling statistics). \emph{Fork} is not available on Windows OS. See \emph{caveats} section for limitations caused by using this optimization.
+    Until September 2025 all the multithreaded code in data.table was using \emph{OpenMP}. It can be used only in C language and it has very low overhead. Unfortunately it could not be applied in \code{frollapply} because to evaluate UDF from C code one has to call R's C api that is not thread safe (can be run only from single threaded C code). Therefore \code{frollapply} uses \code{\link[parallel]{parallel-package}}, which is included in base R, to provide parallelism on R language level. It uses \emph{fork} parallelism, which has low overhead as well (unless results of computation are big in size which is not an issue for rolling statistics). \emph{Fork} is not available on Windows OS. See \emph{caveats} section for limitations caused by using this optimization.
   }
+}
+\note{
+  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in the input, or use adaptive rolling function to handle gaps, for which we provide helper function \code{\link{frolladapt}} to generate adaptive window size.
 }
 \examples{
 frollapply(1:16, 4, median)
