@@ -16,7 +16,7 @@ stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64", "integer64"),
 col.names,
-check.names=FALSE, encoding="unknown",
+check.names=FALSE, encoding="UTF-8",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="",
 key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
@@ -51,7 +51,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC"
   \item{dec}{ The decimal separator as in \code{utils::read.csv}. When \code{"auto"} (the default), an attempt is made to decide whether \code{"."} or \code{","} is more suitable for this input. See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. This is applied after \code{check.names} and before \code{key} and \code{index}. }
   \item{check.names}{default is \code{FALSE}. If \code{TRUE} then the names of the variables in the \code{data.table} are checked to ensure that they are syntactically valid variable names. If necessary they are adjusted (by \code{\link{make.names}}) so that they are, and also to ensure that there are no duplicates.}
-  \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
+  \item{encoding}{ default is \code{"UTF-8"}. Other possible options are \code{"unknown"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
   \item{quote}{ By default (\code{"\""}), if a field starts with a double quote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. It is not expected to ever need to pass anything other than \"\" to quote; i.e., to turn it off. }
   \item{strip.white}{ Logical, default \code{TRUE}, in which case leading and trailing whitespace is stripped from unquoted \code{"character"} fields. \code{"numeric"} fields are always stripped of leading and trailing whitespace.}
   \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. If \code{fill=Inf} then the whole file is read for detecting the number of columns. }

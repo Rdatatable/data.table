@@ -7900,9 +7900,7 @@ test(1547, foo(1L, 5L, a=2L, "c"), c("2", "c"))
 # Fix for encoding issues in windows, #563
 f = testDir("issue_563_fread.txt")
 ans1 <- fread(f, sep=",", header=TRUE)
-ans2 <- fread(f, sep=",", header=TRUE, encoding="UTF-8")
-test(1548.1, unique(unlist(lapply(ans1, Encoding))), "unknown")
-test(1548.2, unique(unlist(lapply(ans2, Encoding))), "UTF-8")
+test(1548.1, unique(unlist(lapply(ans1, Encoding))), "UTF-8")
 
 # 1549 moved to benchmark.Rraw, #5517
 
@@ -21815,3 +21813,9 @@ test(2341.24, fread('a
   # leading cmnt
 b
 ', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))
+
+# warn about different encodings in unique and duplicated, #469
+dt = data.table(x=c(iconv("\u00E9","UTF-8","latin1"), "\u00E9"))
+test(2342.1, unique(dt), data.table(x="\u00E9"), warning="Mixed encodings.*")
+test(2342.2, duplicated(dt), c(FALSE, TRUE), warning="Mixed encodings.*")
+test(2342.3, unique(dt[c(2L,2L)]), data.table(x="\u00E9"))
