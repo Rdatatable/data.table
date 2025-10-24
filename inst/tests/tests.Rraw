@@ -21818,9 +21818,9 @@ b
 
 # week() sequential numbering fix tests #2611
 test(2342.1, options = c(datatable.week = "sequential"), week(as.IDate("1970-01-01") + 0:7), c(1L,1L,1L,1L,1L,1L,1L,2L))
-test(2342.2, week(as.IDate(c("2012-02-28","2012-02-29","2012-03-01"))), c(9L,9L,9L), options = list(datatable.week = "sequential"))
-test(2342.3, week(as.IDate(c("2019-12-31","2020-01-01"))), c(53L,1L), options = list(datatable.week = "sequential"))
-test(2342.4, week(as.IDate(c("2020-12-31","2021-01-01"))), c(53L,1L), options = list(datatable.week = "sequential"))
-test(2342.5, week(as.IDate("2021-01-06") + 0:6), c(1L,1L,2L,2L,2L,2L,2L), options = list(datatable.week = "sequential"))
-test(2342.6, week(as.IDate(c("2016-02-27","2016-02-28","2016-02-29","2016-03-01","2016-03-02"))), c(9L,9L,9L,9L,9L), options = list(datatable.week = "sequential"))
-test(2342.7, week(as.IDate("1970-01-07")), 2L, warning = "The default behavior of week() is changing", options = list(datatable.week = NULL))
+test(2342.2, options = c(datatable.week = "sequential"), week(as.IDate(c("2012-02-28","2012-02-29","2012-03-01"))), c(9L,9L,9L))
+test(2342.3, options = c(datatable.week = "sequential"), week(as.IDate(c("2019-12-31","2020-01-01"))), c(53L,1L))
+test(2342.4, options = c(datatable.week = "sequential"), week(as.IDate(c("2020-12-31","2021-01-01"))), c(53L,1L))
+test(2342.5, options = c(datatable.week = "sequential"), week(as.IDate("2021-01-06") + 0:6), c(1L,1L,2L,2L,2L,2L,2L))
+test(2342.6, options = c(datatable.week = "sequential"), week(as.IDate(c("2016-02-27","2016-02-28","2016-02-29","2016-03-01","2016-03-02"))), c(9L,9L,9L,9L,9L))
+test(2342.7, options = c(datatable.week = "default"), week(as.IDate("1970-01-07")), 2L, warning = "The default behavior of week() is changing")
