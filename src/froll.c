@@ -79,7 +79,9 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     if (algo==0) {
       frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose, par); // par is used only when NAs - fallback to exact, to know if outer parallelism has been applied
     } else if (algo==1) {
-      frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose, /*par=*/ true); // par=true because frollvarExact at this place was invoked directly, and not by fallback, so algo=exact have been used explicitly, then outer parallelism in frollR.c is disabled already
+      if (!par) // par should be true because frollvarExact at this place was invoked directly, and not by fallback, so algo=exact have been used explicitly, then outer parallelism in frollR.c is disabled already
+        internal_error(__func__, "par=FALSE but should be TRUE, algo=exact should have disabled outer parallelism for vectorized input so frollvarExact should be allowed to go parallel"); // # nocov
+      frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose, par);
     }
     break;
   case SD :
@@ -1331,7 +1333,7 @@ void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, b
 void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarExact(...))\n"), "frollsdExact");
-  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose, /*par=*/ true); // par=true because frollsdExact at this place was invoked directly, and not by fallback, so algo=exact have been used explicitly, then outer parallelism in frollR.c is disabled already
+  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose, /*par=*/true); // par=true because frollsdExact at this place was invoked directly, and not by fallback, so algo=exact have been used explicitly, then outer parallelism in frollR.c is disabled already. If it would be algo=fast then sdFast -> varFast -> NAs -> varExact, so sdExact is no emplyed in the process, nothing redirects to sdExact
   for (uint64_t i=k-1; i<nx; i++) {
     ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
