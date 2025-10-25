@@ -1628,12 +1628,35 @@ int freadMain(freadMainArgs _args)
   if (verbose) DTPRINT(_("[04] Arrange mmap to be \\0 terminated\n"));
 
   // First, set 'eol_one_r' for use by eol() to know if \r-only line ending is allowed, #2371
+  // Count different line ending types to handle mixed endings (e.g. Mac CSV with mostly \r and final \r\n) #4186
+  int count_r_only = 0;   // \r not followed by \n
+  int count_with_n = 0;   // \n with or without \r
   ch = sof;
-  while (ch < eof && *ch != '\n') ch++;
-  eol_one_r = (ch == eof);
+  const char *sample_end = eof;
+  if ((size_t)(eof - sof) > 100000) sample_end = sof + 100000; // Sample first 100KB or whole file if smaller
+  while (ch < sample_end) {
+    if (*ch == '\r') {
+      // Skip consecutive \r to avoid miscounting \r\r\n as multiple line endings
+      while (ch < sample_end && *ch == '\r') ch++;
+      if (ch < sample_end && *ch == '\n') {
+        count_with_n++;
+        ch++;
+      } else {
+        count_r_only++;
+      }
+    } else if (*ch == '\n') {
+      count_with_n++;
+      ch++;
+    } else {
+      ch++;
+    }
+  }
+  // If file has mostly \r-only line endings, treat \r as line ending
+  eol_one_r = (count_r_only > count_with_n);
   if (verbose) DTPRINT(eol_one_r ?
-    _("  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n") :
-    _("  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"));
+    _("  An \\r by itself will be taken as one line ending (counts: %d \\r by themselves vs %d [\\r]*\\n). This happens with old Mac CSV or when there is no \\r at all.\n") :
+    _("  \\n has been found in the input (counts: %d \\r by themselves vs %d [\\r]*\\n) and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"),
+    count_r_only, count_with_n);
 
   bool lastEOLreplaced = false;
   if (args.filename) {
