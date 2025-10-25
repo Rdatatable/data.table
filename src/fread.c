@@ -2870,7 +2870,9 @@ int freadMain(freadMainArgs _args)
             size[j] = 0;
           }
         }
-        allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi);
+        // When type bump with fill occurs, reallocate with DTi (rows read so far) plus a buffer
+        // Using DTi alone could be short #5110
+        allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi + (fill > 0 ? (DTi / 10) + 1 : 0));
         // reread from the beginning
         DTi = 0;
         headPos = pos;

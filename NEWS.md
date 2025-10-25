@@ -338,6 +338,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
+20. `fread()` now adds a small safety margin when reallocating for a reread after out-of-sample type bumps, so that healed rows when `fill=TRUE` cannot outrun the resized table, [#5110](https://github.com/Rdatatable/data.table/issues/5110). Thanks to @kmichelson for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
