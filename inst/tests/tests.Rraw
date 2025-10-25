@@ -18384,7 +18384,7 @@ x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "202
 test(2236.1, yday(x), c(315L, 1L, 59L, 60L, 365L, 60L, 61L, 366L, 1L, 366L, 60L, NA))
 test(2236.2, mday(x), c(11L, 1L, 28L, 1L, 31L, 29L, 1L, 31L, 1L, 31L, 1L, NA))
 test(2236.3, wday(x), c(7L, 3L, 5L, 6L, 3L, 7L, 1L, 5L, 1L, 2L, 2L, NA))
-test(2236.4, week(x), c(46L, 1L, 9L, 9L, 53L, 9L, 9L, 53L, 1L, 53L, 9L, NA))
+test(2236.4, options = c(datatable.week = "legacy"), week(x), c(46L, 1L, 9L, 9L, 53L, 9L, 9L, 53L, 1L, 53L, 9L, NA))
 test(2236.5, month(x), c(11L, 1L, 2L, 3L, 12L, 2L, 3L, 12L, 1L, 12L, 3L, NA))
 test(2236.6, quarter(x), c(4L, 1L, 1L, 1L, 4L, 1L, 1L, 4L, 1L, 4L, 1L, NA))
 test(2236.7, year(x), c(1111L, 2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L, 2040L, 2040L, 2100L, NA))
@@ -21816,6 +21816,15 @@ test(2341.24, fread('a
 b
 ', comment.char = '#', strip.white = FALSE, sep = ","), data.table(a=c("  ", "b")))
 
+# week() sequential numbering fix tests #2611
+test(2342.1, options = c(datatable.week = "sequential"), week(as.IDate("1970-01-01") + 0:7), c(1L,1L,1L,1L,1L,1L,1L,2L))
+test(2342.2, options = c(datatable.week = "sequential"), week(as.IDate(c("2012-02-28","2012-02-29","2012-03-01"))), c(9L,9L,9L))
+test(2342.3, options = c(datatable.week = "sequential"), week(as.IDate(c("2019-12-31","2020-01-01"))), c(53L,1L))
+test(2342.4, options = c(datatable.week = "sequential"), week(as.IDate(c("2020-12-31","2021-01-01"))), c(53L,1L))
+test(2342.5, options = c(datatable.week = "sequential"), week(as.IDate("2021-01-06") + 0:6), c(1L,1L,2L,2L,2L,2L,2L))
+test(2342.6, options = c(datatable.week = "sequential"), week(as.IDate(c("2016-02-27","2016-02-28","2016-02-29","2016-03-01","2016-03-02"))), c(9L,9L,9L,9L,9L))
+test(2342.7, options = c(datatable.week = "default"), week(as.IDate("1970-01-07")), 2L, warning = "The default behavior of week() is changing")
+
 # forderv should not segfault on long single group keys due to recursion #4300
 N = 1e4
 set.seed(1)
@@ -21823,6 +21832,6 @@ idx = sort(sample(10, 20, TRUE))
 x = matrix(rnorm(N), nrow=10)
 DT = as.data.table(x[idx,])
 DT[, V1000 := 20:1]
-test(2342.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
+test(2343.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
 x = c(rep(0, 7e5), 1e6)
-test(2342.2, forderv(list(x)), integer(0))
+test(2343.2, forderv(list(x)), integer(0))
