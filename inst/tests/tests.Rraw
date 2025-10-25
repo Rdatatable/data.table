@@ -78,6 +78,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
+  utf8_check = data.table:::utf8_check
   warningf = data.table:::warningf
   which_ = data.table:::which_
   which.first = data.table:::which.first
