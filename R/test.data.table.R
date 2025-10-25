@@ -381,12 +381,14 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   if (!isFALSE(requires_utf8)) {
     test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8
     if (!utf8_check(test_str)) {
+      # nocov start
       last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
       if (num - last_utf8_skip >= 1) {
         catf("Test %s skipped because required UTF-8 symbols cannot be represented in native encoding.\n", num)
       }
       assign("last_utf8_skip", num, parent.frame(), inherits=TRUE)
       return(invisible(TRUE))
+      # nocov end
     }
   }
   # Usage:
