@@ -41,7 +41,7 @@
 2. The behavior of `week()` will be changed in a future release to calculate weeks sequentially (days 1-7 as week 1), which is a potential breaking change. For now, the current "legacy" behavior, where week numbers advance every 7th day of the year (e.g., day 7 starts week 2), remains the default, and a deprecation warning will be issued when the old and new behaviors differ. Users can control this behavior with the temporary option `options(datatable.week = "...")`:
     *   `"sequential"`: Opt-in to the new, sequential behavior (no warning).
     *   `"legacy"`: Continue using the legacy behavior but suppress the deprecation warning.
-See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. Thanks @MichaelChirico for the  report and @venom1204 for the implementation.
+See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. Thanks @MichaelChirico for the report and @venom1204 for the implementation.
     
 ### NEW FEATURES
 
