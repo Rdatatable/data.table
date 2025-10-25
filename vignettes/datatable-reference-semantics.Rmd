@@ -365,7 +365,7 @@ However we could improve this functionality further by *shallow* copying instead
     ```
 ### c) Selecting columns: `$` / `[[...]]` vs `[, col]`
 
-When you extract a single column as a vector, there is a subtle but important difference between standard R methods ($ and [[...]]) and data.table's j expression. DT$col and DT[['col']] may return a reference to the internal column, while DT[, col] always returns a copy.
+When you extract a single column as a vector, there is a subtle but important difference between standard R methods ($ and [[...]]) and data.table's j expression. DT$col and DT[['col']] may return a reference to the column, while DT[, col] always returns a copy.
 
 A short example:
 ```{r}
