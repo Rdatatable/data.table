@@ -363,6 +363,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
+8. `test()` gains new argument `requires_utf8` to skip tests when UTF-8 support is not available, [#7336](https://github.com/Rdatatable/data.table/issues/7336). Thanks @MichaelChirico for the suggestion and @ben-schwen for the implementation.
+
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
