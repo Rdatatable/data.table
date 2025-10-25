@@ -338,6 +338,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
+20. `forderv` could segfault on keys with long runs of identical bytes (e.g., many duplicate columns) because the single-group branch tail-recursed radix-by-radix until the C stack ran out, [#4300](https://github.com/Rdatatable/data.table/issues/4300). This is a major problem since sorting is extensively used in `data.table`. Thanks @quantitative-technologies for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:

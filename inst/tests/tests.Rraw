@@ -21824,3 +21824,14 @@ test(2342.4, options = c(datatable.week = "sequential"), week(as.IDate(c("2020-1
 test(2342.5, options = c(datatable.week = "sequential"), week(as.IDate("2021-01-06") + 0:6), c(1L,1L,2L,2L,2L,2L,2L))
 test(2342.6, options = c(datatable.week = "sequential"), week(as.IDate(c("2016-02-27","2016-02-28","2016-02-29","2016-03-01","2016-03-02"))), c(9L,9L,9L,9L,9L))
 test(2342.7, options = c(datatable.week = "default"), week(as.IDate("1970-01-07")), 2L, warning = "The default behavior of week() is changing")
+
+# forderv should not segfault on long single group keys due to recursion #4300
+N = 1e4
+set.seed(1)
+idx = sort(sample(10, 20, TRUE))
+x = matrix(rnorm(N), nrow=10)
+DT = as.data.table(x[idx,])
+DT[, V1000 := 20:1]
+test(2343.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
+x = c(rep(0, 7e5), 1e6)
+test(2343.2, forderv(list(x)), integer(0))
