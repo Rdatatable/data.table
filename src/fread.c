@@ -1654,8 +1654,8 @@ int freadMain(freadMainArgs _args)
   // If file has mostly \r-only line endings, treat \r as line ending
   eol_one_r = (count_r_only > count_with_n);
   if (verbose) DTPRINT(eol_one_r ?
-    _("  Single \\r (if any) will be taken as one line ending (count: %d \\r vs %d \\n). This happens with old Mac CSV or when there is no \\r either.\n") :
-    _("  \\n has been found in the input (count: %d \\r vs %d \\n) and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"),
+    _("  An \\r by itself will be taken as one line ending (counts: %d \\r by themselves vs %d [\\r]*\\n). This happens with old Mac CSV or when there is no \\r at all.\n") :
+    _("  \\n has been found in the input (counts: %d \\r by themselves vs %d [\\r]*\\n) and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"),
     count_r_only, count_with_n);
 
   bool lastEOLreplaced = false;
