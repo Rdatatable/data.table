@@ -39,7 +39,7 @@ jobs:
 
   lint-r:
     needs: changes
-    if: needs.changes.outputs.r == 'true'
+    if: needs.changes.outputs.r == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -65,7 +65,7 @@ jobs:
           R_LINTR_LINTER_FILE: .ci/.lintr
   lint-c:
     needs: changes
-    if: needs.changes.outputs.c == 'true'
+    if: needs.changes.outputs.c == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
           Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
   lint-po:
     needs: changes
-    if: needs.changes.outputs.po == 'true'
+    if: needs.changes.outputs.po == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,7 +93,7 @@ jobs:
           Rscript .ci/lint.R .ci/linters/po po '[.]po$'
   lint-md:
     needs: changes
-    if: needs.changes.outputs.md == 'true'
+    if: needs.changes.outputs.md == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
         run: Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
   lint-rd:
     needs: changes
-    if: needs.changes.outputs.rd == 'true'
+    if: needs.changes.outputs.rd == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
