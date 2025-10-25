@@ -361,7 +361,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,requires_utf8=FALSE) {
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
@@ -374,6 +374,29 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
+  }
+  # Check UTF-8 requirement
+  if (requires_utf8) {
+    utf8_available = l10n_info()$`UTF-8` || {
+      lc_ctype = Sys.getlocale('LC_CTYPE')
+      lc_wantctype = 'en_US.UTF-8'
+      # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
+      # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
+      # Avoid the warning upon possible failure, #7210.
+      lc_newctype = suppressWarnings(Sys.setlocale('LC_CTYPE', lc_wantctype))
+      if (identical(lc_newctype, lc_wantctype)) {
+        on.exit(Sys.setlocale('LC_CTYPE', lc_ctype), add=TRUE)
+        TRUE
+      } else FALSE
+    }
+    if (!utf8_available) {
+      last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
+      if (num - last_utf8_skip >= 1) {
+        catf("Test %s skipped because it needs a UTF-8 locale.\n", num)
+      }
+      assign("last_utf8_skip", num, parent.frame(), inherits=TRUE)
+      return(invisible(TRUE))
+    }
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage

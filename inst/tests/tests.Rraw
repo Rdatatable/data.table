@@ -3568,7 +3568,28 @@ DT[,`:=`(last.x=tail(x,1L),last.x1=tail(x1,1L)),by=y]
 test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
 test(1087, class(DT$last.x1), "ITime")
 
-# Tests 1088-1093 were non-ASCII. Now in DtNonAsciiTests
+# chmatch on 'unknown' encoding (e.g. as.character(as.symbol("\u00E4")) )falling back to match, #2538 and #4818
+x1 <- c("al\u00E4", "ala", "\u00E4allc", "coep")
+x2 <- c("ala", "al\u00E4")
+test(1088.1, requires_utf8=TRUE, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
+test(1088.2, requires_utf8=TRUE, x1 %chin% x2, x1 %in% x2)
+# change x1 to symbol to character
+x3 <- unlist(lapply(x1, function(x) as.character(as.name(x))), use.names=FALSE)
+test(1089.1, requires_utf8=TRUE, chmatch(x3, x2), match(x3, x2)) # should fallback to match in "x"
+test(1089.2, requires_utf8=TRUE, x3 %chin% x2, x3 %in% x2) # should fallback to match in "x"
+# change x2 to symbol to character
+x4 <- unlist(lapply(x2, function(x) as.character(as.name(x))), use.names=FALSE)
+test(1090.1, requires_utf8=TRUE, chmatch(x1,x4), match(x1, x4)) # should fallback to match in "table"
+test(1090.2, requires_utf8=TRUE, x1 %chin% x4, x1 %in% x4)
+# both are symbols to characters
+test(1091.1, requires_utf8=TRUE, chmatch(x3, x4), match(x3, x4)) # should fallback to "match" in "x" as well.
+test(1091.2, requires_utf8=TRUE, x3 %chin% x4, x3 %in% x4)
+# for completness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
+
+DT = data.table(pas = c(1:5, NA, 6:10), good = c(1:10, NA))
+setnames(DT, "pas", "p\u00E4s")
+test(1092, requires_utf8=TRUE, eval(parse(text="DT[is.na(p\u00E4s), p\u00E4s := 99L]")), data.table("p\u00E4s" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
+test(1093, requires_utf8=TRUE, eval(parse(text="DT[, p\u00E4s := 34L]")), data.table("p\u00E4s" = 34L, good=c(1:10,NA)))
 
 # print of unnamed DT with >20 <= 100 rows, #97 (RF#4934)
 DT <- data.table(x=1:25, y=letters[1:25])
@@ -4320,7 +4341,10 @@ test(1162.24, is.sorted(rep(NA_character_, 2)))
 x <- character(0)
 test(1163, last(x), character(0))
 
-# Test 1164 was a non-ASCII test, now in DtNonAsciiTests
+# Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
+a<-c("a","\u00E4","\u00DF","z")
+au<-iconv(a,"UTF8","latin1")
+test(1164.1, requires_utf8=TRUE, chmatch(a, au), match(a, au))
 
 # Bug fix for #73 - segfault when rbindlist on empty data.tables
 x <- as.data.table(BOD)
@@ -4606,7 +4630,22 @@ test(1228.4, class(DT), class(DT[, sum(b), by=a]))
 test(1228.5, class(DT), class(DT[a>1, sum(b), by=a]))
 test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 
-# test 1229 was non-ASCII, now in package DtNonAsciiTests
+# savetl_init error after error, in v1.9.2, thanks Arun
+DT <- data.table(x=1:5, y=10:6)
+test(1229.1, DT[forderv(DT, -1)], error="non-existing column")
+test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
+# umlaut in column names (red herring I think, but testing anyway)
+sentEx = data.table(abend = c(1, 1, 0, 0, 2),
+                    aber = c(0, 1, 0, 0, 0),
+                    "\u00FCber" = c(1, 0, 0, 0, 0),
+                    "\u00FCberall" = c(0, 0, 0, 0, 0),
+                    "\u00FCberlegt" = c(0, 0, 0, 0, 0),
+                    ID = structure(c(1L, 1L, 2L, 2L, 2L), .Label = c("0019", "0021"), class = "factor"),
+                    abgeandert = c(1, 1, 1, 0, 0),
+                    abgebildet = c(0, 0, 1, 1, 0),
+                    abgelegt = c(0, 0, 0, 0, 3))
+test(1229.3, requires_utf8=TRUE, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), "\u00FCber"=c(1,0),
+             "\u00FCberall"=c(0,0), "\u00FCberlegt" = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
 
 # Test that ad hoc by detects if ordered and dogroups switches to memcpy if contiguous, #1050
 DT = data.table(a=1:3,b=1:6,key="a")
@@ -17655,11 +17694,7 @@ test(2194.5, endsWithAny(NA_character_, 'a'), FALSE)
 test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or lengths incorrect")
 # file used in encoding tests
 txt = readLines(testDir("issue_563_fread.txt"))
-local(if (eval(utf8_check_expr)) {
-  test(2194.7, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
-} else {
-  cat("Test 2194.7 skipped because it needs a UTF-8 locale.\n")
-})
+test(2194.7, requires_utf8=TRUE, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
 test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
 
 # uniqueN(x, by=character()) was internal error, #4594
@@ -18641,59 +18676,55 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters #5096
-local(if (eval(utf8_check_expr)) {
-  accented_a = "\u0061\u0301"
-  ja_ichi = "\u4E00"
-  ja_ni = "\u4E8C"
-  ja_ko = "\u3053"
-  ja_n = "\u3093"
-  dots = "..."
-  clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
-  # Tests for combining character latin a and acute accent, single row
-  DT = data.table(strrep(accented_a, 4L))
-  test(2253.01, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(accented_a, 4L))
-  test(2253.02, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(accented_a, 3L), dots))
-  test(2253.03, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(accented_a, 1L), dots))
-  # Tests for full-width japanese character ichi, single row
-  DT = data.table(strrep(ja_ichi, 4L))
-  test(2253.04, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(ja_ichi, 4L))
-  test(2253.05, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(ja_ichi, 3L), dots))
-  test(2253.06, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(ja_ichi, 1L), dots))
-  # Tests for multiple, different length combining character rows
-  DT = data.table(strrep(accented_a, 1L:4L))
-  test(2253.07, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), strrep(accented_a, 1:4L))
-  test(2253.08, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(strrep(accented_a, 1:3), paste0(strrep(accented_a, 3L), dots)))
-  test(2253.09, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(accented_a, rep(paste0(accented_a, dots), 3L)))
-  # Tests for multiple, different length full-width characters
-  DT = data.table(strrep(ja_ichi, 1L:4L))
-  test(2253.10, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), strrep(ja_ichi, 1:4L))
-  test(2253.11, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(strrep(ja_ichi, 1:3), paste0(strrep(ja_ichi, 3L), dots)))
-  test(2253.12, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(ja_ichi, rep(paste0(ja_ichi, dots), 3L)))
-  # Tests for combined characters, multiple columns
-  DT = data.table(paste0(ja_ichi), strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa")
-  test(2253.13, options=list(datatable.prettyprint.char = 4L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
-  test(2253.14, options=list(datatable.prettyprint.char = 3L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
-  test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa..."))
-  test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a..."))
-  # Tests for multiple columns, multiple rows
-  DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
-  test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-    c(paste0(ja_ko, "     ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
-    paste0(strrep(ja_ko, 2L), "   ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
-    paste(strrep(ja_ko, 3L), strrep(ja_n, 4L), strrep(accented_a, 3L))))
-  test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-    c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
-    paste0(strrep(ja_ko, 2L), "    ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
-    paste(strrep(ja_ko, 3L), paste0(strrep(ja_n, 3L), dots), strrep(accented_a, 3L))))
-  test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-    c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
-    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
-    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
-  # test for data.table with NA, #6441
-  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
-} else {
-  cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
-})
+accented_a = "\u0061\u0301"
+ja_ichi = "\u4E00"
+ja_ni = "\u4E8C"
+ja_ko = "\u3053"
+ja_n = "\u3093"
+dots = "..."
+clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
+# Tests for combining character latin a and acute accent, single row
+DT = data.table(strrep(accented_a, 4L))
+test(2253.01, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(accented_a, 4L))
+test(2253.02, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(accented_a, 3L), dots))
+test(2253.03, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(accented_a, 1L), dots))
+# Tests for full-width japanese character ichi, single row
+DT = data.table(strrep(ja_ichi, 4L))
+test(2253.04, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(ja_ichi, 4L))
+test(2253.05, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(ja_ichi, 3L), dots))
+test(2253.06, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(ja_ichi, 1L), dots))
+# Tests for multiple, different length combining character rows
+DT = data.table(strrep(accented_a, 1L:4L))
+test(2253.07, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), strrep(accented_a, 1:4L))
+test(2253.08, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(strrep(accented_a, 1:3), paste0(strrep(accented_a, 3L), dots)))
+test(2253.09, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(accented_a, rep(paste0(accented_a, dots), 3L)))
+# Tests for multiple, different length full-width characters
+DT = data.table(strrep(ja_ichi, 1L:4L))
+test(2253.10, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), strrep(ja_ichi, 1:4L))
+test(2253.11, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(strrep(ja_ichi, 1:3), paste0(strrep(ja_ichi, 3L), dots)))
+test(2253.12, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(ja_ichi, rep(paste0(ja_ichi, dots), 3L)))
+# Tests for combined characters, multiple columns
+DT = data.table(paste0(ja_ichi), strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa")
+test(2253.13, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 4L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
+test(2253.14, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 3L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
+test(2253.15, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa..."))
+test(2253.16, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a..."))
+# Tests for multiple columns, multiple rows
+DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
+test(2253.17, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+  c(paste0(ja_ko, "     ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
+  paste0(strrep(ja_ko, 2L), "   ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
+  paste(strrep(ja_ko, 3L), strrep(ja_n, 4L), strrep(accented_a, 3L))))
+test(2253.18, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+  c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
+  paste0(strrep(ja_ko, 2L), "    ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
+  paste(strrep(ja_ko, 3L), paste0(strrep(ja_n, 3L), dots), strrep(accented_a, 3L))))
+test(2253.19, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+  c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
+  paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
+  paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
+# test for data.table with NA, #6441
+test(2253.20, requires_utf8=TRUE, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
 
 # allow 1-D matrix in j for consistency, #783
 DT=data.table(a = rep(1:2, 3), b = 1:6)
@@ -20830,21 +20861,17 @@ x = data.table(a=1, b=2L)
 y = data.table(c=1.5, d=1L)
 test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
 
-local(if (eval(utf8_check_expr)) {
-  # rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
-  x = data.table(a = 1, b = 2, c = 3)
-  y = data.table(x = 4, y = 5, z = 6)
-  # a-umlaut, o-umlaut, u-umlaut
-  setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
-  setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
-  test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
-  test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
-  set(y, j="\u00e4", value=NULL)
-  test(2298.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
-  test(2298.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
-} else {
-  cat("Tests 2298.* skipped because they need a UTF-8 locale.\n")
-})
+# rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
+x = data.table(a = 1, b = 2, c = 3)
+y = data.table(x = 4, y = 5, z = 6)
+# a-umlaut, o-umlaut, u-umlaut
+setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
+setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+test(2298.1, requires_utf8=TRUE, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+test(2298.2, requires_utf8=TRUE, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
+set(y, j="\u00e4", value=NULL)
+test(2298.3, requires_utf8=TRUE, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+test(2298.4, requires_utf8=TRUE, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
 
 # #6592: printing nested single-column frames
 test(2299.01, format_list_item(data.frame(a=1)),                      output="<data.frame[1x1]>")
@@ -21615,13 +21642,13 @@ if (base::getRversion() >= "4.3.0") { ## follow up of #7213, see #7321
 }
 
 # fwrite: allow dec=',' with single column, #7227
-test(2337.1, fwrite(data.table(1), dec=","), NULL)
+test(2337.1, fwrite(data.table(1), dec=","), output = "V1\n1")
 if (base::getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
   test(2337.2, fwrite(data.table(0.1, 0.2), dec=",", sep=","), error = "dec and sep must be distinct")
 }
-test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
-test(2337.4, is.null(fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=",")))
-test(2337.5, is.null(fwrite(data.table(a=numeric()), dec=",", sep=",")))
+test(2337.3, fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t"), output = "V1\n0,1\n0,2")
+test(2337.4, fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=","), output = "a,b")
+test(2337.5, fwrite(data.table(a=numeric()), dec=",", sep=","), output = "a")
 
 # 2864 force decimal points for whole numbers in numeric columns
 dd = data.table(x=c(1, 2, 3))
