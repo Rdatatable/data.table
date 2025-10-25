@@ -4346,8 +4346,8 @@ test(1163, last(x), character(0))
 
 # Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
 a<-c("a","\u00E4","\u00DF","z")
- au<-iconv(a,"UTF8","latin1")
- test(1164.1, requires_utf8=c("\u00E4", "\u00DF"), chmatch(a, au), match(a, au))
+au<-iconv(a,"UTF8","latin1")
+test(1164.1, requires_utf8=c("\u00E4", "\u00DF"), chmatch(a, au), match(a, au))
 
 # Bug fix for #73 - segfault when rbindlist on empty data.tables
 x <- as.data.table(BOD)
@@ -4653,7 +4653,7 @@ local(if (utf8_check("\u00e4\u00f6\u00fc")) {
          "\u00FCberall"=c(0,0), "\u00FCberlegt" = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
   '))
 } else {
-  cat("Tests 1229.3 skipped because required UTF-8 symbols cannot be represented in native encoding.\n")
+  cat("Test 1229.3 skipped because required UTF-8 symbols cannot be represented in native encoding.\n")
 })
 
 # Test that ad hoc by detects if ordered and dogroups switches to memcpy if contiguous, #1050

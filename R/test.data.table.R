@@ -379,13 +379,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   }
   # Check UTF-8 requirement
   if (!isFALSE(requires_utf8)) {
-    # Test string with common UTF-8 symbols that appear in tests: ñ (test 2266), ü (test 1229.3), ん (Japanese)
-    # If requires_utf8 is TRUE, use the default test string; if it's a string, use that string
-    if (isTRUE(requires_utf8)) {
-      test_str = "a\u00F1o \u00FCber \u3093"
-    } else {
-      test_str = requires_utf8
-    }
+    test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8
     if (!utf8_check(test_str)) {
       last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
       if (num - last_utf8_skip >= 1) {
