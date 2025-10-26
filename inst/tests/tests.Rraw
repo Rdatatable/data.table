@@ -21852,6 +21852,6 @@ test(2344.02, nrow(r), 2L)
 test(2344.03, setkey(d1[, .(V1, label = c("one", "zero", "one"), V2)][data.table(label = "one"), on = "label", allow.cartesian = TRUE], NULL),
               setkey(d1, NULL)[, .(V1, label = c("one", "zero", "one"), V2)][data.table(label = "one"), on = "label", allow.cartesian = TRUE])
 
-# keep subset of multiple keys until no missing key with changing order of key columns
+# keep sub-key in case of multiple keys, even with new columns and changing column order
 DT = data.table(V1 = 1:2, V2 = 3:4, V3 = 5:6, key = c("V1", "V2", "V3"))
 test(2344.04, key(DT[, .(V4 = c("b", "a"), V2, V5 = c("y", "x"), V1)]), c("V1", "V2"))
