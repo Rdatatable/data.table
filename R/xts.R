@@ -5,7 +5,7 @@ as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   if (is.na(keep.rownames)) stopf("keep.rownames must not be NA")
   # as.data.frame.xts will handle copying, and
   #   the error check above ensures as.data.frame.xts is applied
-  r = setDT(as.data.frame(x, row.names=NULL))
+  r = setDT(as.data.frame(x, row.names=NULL), duplicateShared=FALSE)
   if (identical(keep.rownames, FALSE)) return(r[])
   index_nm = if (is.character(keep.rownames)) keep.rownames else "index"
   if (index_nm %chin% names(x)) stopf("Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index column name.", index_nm, index_nm)

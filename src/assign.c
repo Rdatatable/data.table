@@ -285,15 +285,27 @@ int checkOverAlloc(SEXP x)
   return ans;
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
+SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose, SEXP duplicateSharedArg) {
   if (!IS_TRUE_OR_FALSE(verbose))
     error(_("%s must be TRUE or FALSE"), "verbose");
-  int overAlloc = checkOverAlloc(overAllocArg);
+  bool duplicateShared = false;
+  if (duplicateSharedArg != R_NilValue) {
+    if (!IS_TRUE_OR_FALSE(duplicateSharedArg))
+      error(_("%s must be TRUE or FALSE"), "duplicateShared");
+    duplicateShared = LOGICAL(duplicateSharedArg)[0];
+  }
+  const int overAlloc = checkOverAlloc(overAllocArg);
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
+    SEXP col = VECTOR_ELT(ans, i);
+    // Check if column is shared with another object and duplicate on request (#2683)
+    if (duplicateShared && MAYBE_SHARED(col)) {
+      col = duplicate(col);
+      SET_VECTOR_ELT(ans, i, col);
+    }
     // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #103).
-    setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
+    setAttrib(col, R_NamesSymbol, R_NilValue);
 
     // But don't clear dim and dimnames. Because as from 1.12.4 we keep the matrix column as-is and ask user to use as.data.table to
     // unpack matrix columns when they really need to; test 2089.2

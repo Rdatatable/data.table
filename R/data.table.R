@@ -38,7 +38,7 @@ null.data.table = function() {
   ans = list()
   setattr(ans,"class",c("data.table","data.frame"))
   setattr(ans,"row.names",.set_row_names(0L))
-  setalloccol(ans)
+  setalloccol(ans, duplicateShared=FALSE)
 }
 
 data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
@@ -73,7 +73,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     for (j in which(vapply_1b(ans, is.character))) set(ans, NULL, j, as_factor(.subset2(ans, j)))
     # as_factor is internal function in fread.R currently
   }
-  setalloccol(ans)  # returns a NAMED==0 object, unlike data.frame()
+  setalloccol(ans, duplicateShared=FALSE)  # returns a NAMED==0 object, unlike data.frame()
 }
 
 replace_dot_alias = function(e) {
@@ -523,7 +523,7 @@ replace_dot_alias = function(e) {
       xo = ans$xo ## to make it available for further use.
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
-      if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
+      if (length(ans$indices)) setorder(setDT(ans[1L:3L], duplicateShared=FALSE), indices)
       allLen1 = ans$allLen1
       f__ = ans$starts
       len__ = ans$lens
@@ -575,7 +575,7 @@ replace_dot_alias = function(e) {
         }
         if (nqbyjoin) {
           irows = if (length(xo)) xo[irows] else irows
-          xo = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
+          xo = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows), duplicateShared=FALSE))[["irows"]]
           ans = .Call(CnqRecreateIndices, xo, len__, indices__, max(indices__), nomatch) # issue#4388 fix
           f__ = ans[[1L]]; len__ = ans[[2L]]
           allLen1 = FALSE # TODO; should this always be FALSE?
@@ -594,7 +594,7 @@ replace_dot_alias = function(e) {
         irows = xo[irows]   # TO DO: fsort here?
         if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
           if (verbose) {last.started.at=proc.time();catf("Reorder irows for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
-          irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
+          irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows), duplicateShared=FALSE))[["irows"]]
           if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         }
       }
@@ -1245,7 +1245,7 @@ replace_dot_alias = function(e) {
               # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
               # don't mind.
             }
-            setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+            setalloccol(x, n, verbose=verbose, duplicateShared=FALSE)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
@@ -1352,7 +1352,7 @@ replace_dot_alias = function(e) {
         setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing(on)) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
         setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
         setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
-        setalloccol(ans)
+        setalloccol(ans, duplicateShared=FALSE)
       }
       if (!with || missing(j)) return(ans)
       if (!is.data.table(ans)) setattr(ans, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...]) .SD should be data.table, test 2212.013
@@ -2018,7 +2018,7 @@ replace_dot_alias = function(e) {
   } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
     setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
   }
-  setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
+  setalloccol(ans, duplicateShared=FALSE)   # TODO: overallocate in dogroups in the first place and remove this line
 }
 
 # can the specified merge of x and i be marked as sorted? return the columns for which this is true, otherwise NULL
@@ -2242,7 +2242,7 @@ tail.data.table = function(x, n=6L, ...) {
   if (!cedta()) {
     x = if (nargs()<4L) `[<-.data.frame`(x, i, value=value)
         else `[<-.data.frame`(x, i, j, value)
-    return(setalloccol(x))    # over-allocate (again).   Avoid all this by using :=.
+    return(setalloccol(x, duplicateShared=FALSE))    # over-allocate (again).   Avoid all this by using :=.
   }
   # TO DO: warningf("Please use DT[i,j:=value] syntax instead of DT[i,j]<-value, for efficiency. See ?':='")
   if (!missing(i)) {
@@ -2251,7 +2251,7 @@ tail.data.table = function(x, n=6L, ...) {
     if (is.matrix(i)) {
       if (!missing(j)) stopf("When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
       x = `[<-.data.frame`(x, i, value=value)
-      return(setalloccol(x))
+      return(setalloccol(x, duplicateShared=FALSE))
     }
     i = x[i, which=TRUE]
     # Tried adding ... after value above, and passing ... in here (e.g. for mult="first") but R CMD check
@@ -2284,11 +2284,11 @@ tail.data.table = function(x, n=6L, ...) {
     reinstatekey=key(x)
   }
   if (!selfrefok(x) || truelength(x) < ncol(x)+length(newnames)) {
-    x = setalloccol(x, length(x)+length(newnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
+    x = setalloccol(x, length(x)+length(newnames), duplicateShared=FALSE) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
     # search for one other .Call to assign in [.data.table to see how it differs
   }
   x = .Call(Cassign,copy(x),i,cols,newnames,value) # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a (so in this [<-.data.table method we need to copy)
-  setalloccol(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
+  setalloccol(x, duplicateShared=FALSE)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
   if (length(reinstatekey)) setkeyv(x,reinstatekey)
   invisible(x)
   # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
@@ -2302,7 +2302,7 @@ tail.data.table = function(x, n=6L, ...) {
 "$<-.data.table" = function(x, name, value) {
   if (!cedta()) {
     ans = `$<-.data.frame`(x, name, value) # nocov
-    return(setalloccol(ans))           # nocov. over-allocate (again)
+    return(setalloccol(ans, duplicateShared=FALSE))           # nocov. over-allocate (again)
   }
   x = copy(x)
   set(x,j=name,value=value)  # important i is missing here
@@ -2359,7 +2359,7 @@ dimnames.data.table = function(x) {
     setattr(x,"names",NULL)   # e.g. plyr::melt() calls base::unname()
   else {
     setnames(x,value)
-    setalloccol(x)
+    setalloccol(x, duplicateShared=FALSE)
   }
   x   # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change.
 }
@@ -2601,7 +2601,7 @@ copy = function(x) {
   reallocate = function(y) {
     if (is.data.table(y)) {
       .Call(C_unlock, y)
-      setalloccol(y)
+      setalloccol(y, duplicateShared=FALSE)
     } else if (is.list(y)) {
       oldClass = class(y)
       setattr(y, 'class', NULL)  # otherwise [[.person method (which returns itself) results in infinite recursion, #4620
@@ -2666,11 +2666,11 @@ shallow = function(x, cols=NULL) {
   ans
 }
 
-setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))
+setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"), duplicateShared=TRUE)
 {
   name = substitute(DT)
   if (identical(name, quote(`*tmp*`))) stopf("setalloccol attempting to modify `*tmp*`")
-  ans = .Call(Calloccolwrapper, DT, eval(n), verbose)
+  ans = .Call(Calloccolwrapper, DT, eval(n), verbose, duplicateShared)
   if (is.name(name)) {
     name = as.character(name)
     assign(name,ans,parent.frame(),inherits=TRUE)
@@ -2875,7 +2875,7 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL, ignore.attr=F
   }
   ans = .Call(Crbindlist, l, use.names, fill, idcol, ignore.attr)
   if (!length(ans)) return(null.data.table())
-  setDT(ans)[]
+  setDT(ans, duplicateShared=FALSE)[]
 }
 
 vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
@@ -2953,7 +2953,7 @@ setDF = function(x, rownames=NULL) {
   invisible(x)
 }
 
-setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
+setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, duplicateShared=TRUE) {
   name = substitute(x)
   if (is.name(name)) {
     home = function(x, env) {
@@ -2968,12 +2968,14 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stopf("Cannot convert '%1$s' to data.table by reference because binding is locked. It is very likely that '%1$s' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.", cname)
     }
   }
+  if (!isTRUEorFALSE(duplicateShared))
+    stopf("'%s' must be TRUE or FALSE", "duplicateShared")
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, 'data.table'))
     if (!missing(key)) setkeyv(x, key) # fix for #1169
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
-    if (selfrefok(x) > 0L) return(invisible(x)) else setalloccol(x)
+    if (selfrefok(x) > 0L) return(invisible(x)) else setalloccol(x, duplicateShared=duplicateShared)
   } else if (is.data.frame(x)) {
     # check no matrix-like columns, #3760. Allow a single list(matrix) is unambiguous and depended on by some revdeps, #3581
     # for performance, only warn on the first such column, #5426
@@ -2988,8 +2990,9 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     setattr(x, "row.names", .set_row_names(nrow(x)))
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
     # fix for #1078 and #1128, see .resetclass() for explanation.
-    setattr(x, "class", .resetclass(x, 'data.frame'))
-    setalloccol(x)
+    setalloccol(x, duplicateShared=duplicateShared)
+    setattr(x, "class", .resetclass(x, 'data.frame')) # selfrek not ok after setattr class
+    setalloccol(x, duplicateShared=duplicateShared)
     if (!is.null(rn)) {
       nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
       x[, (nm[1L]) := rn]
@@ -3017,7 +3020,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
     setattr(x, "row.names", .set_row_names(nrow))
     setattr(x, "class", c("data.table", "data.frame"))
-    setalloccol(x)
+    setalloccol(x, duplicateShared = duplicateShared)
   } else {
     stopf("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
   }

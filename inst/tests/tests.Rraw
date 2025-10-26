@@ -16224,13 +16224,13 @@ test(2087.01, x[a == 1L, .(b, b2=b)][ , address(b)!=address(b2)])
 # setkey detects and copies shared address columns, #3496
 x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
 x$b = x$a
-setDT(x)
+setDT(x, duplicateShared=FALSE)
 test(2087.02, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), key="a"),
               output='Found and copied 1 column with a shared memory address')
 x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
 x$b = x$a
 x$c = x$a
-setDT(x)
+setDT(x, duplicateShared=FALSE)
 test(2087.03, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), c=paste0(1:2), key="a"),
               output='Found and copied 2 columns with a shared memory address')
 # follow-up from #3890; function body and variable in calling scope
@@ -21837,3 +21837,45 @@ DT[, V1000 := 20:1]
 test(2343.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
 x = c(rep(0, 7e5), 1e6)
 test(2343.2, forderv(list(x)), integer(0))
+
+# setDT should not modify shared vectors #2683
+sDT = function(x) setalloccol(setattr(x, "class", c("data.table", "data.frame")), duplicateShared=TRUE)
+y = c(a=4, b=5)
+x = list(c=y)
+test(2344.01, {sDT(x); y}, c(a=4, b=5))
+y = c(a=4, b=5)
+x = list(c=y)
+test(2344.02, {setDT(x, duplicateShared=TRUE); y}, c(a=4, b=5))
+y = c(a=4, b=5)
+x = list(c=y)
+setattr(x, "class", c("data.table", "data.frame"))
+test(2344.03, {sDT(x)[1, c := 0L]; y}, c(a=4, b=5))
+y = c(a=4, b=5)
+x = list(c=y)
+test(2344.04, {setDT(x, duplicateShared=TRUE)[1, c := 0L]; y}, c(a=4, b=5))
+# frank should not modify shared vectors #4240
+x = setNames(c(3,1,4,1,5,9,2,6,5,3,5), letters[1:11])
+test(2344.11, {frank(y<-copy(x)); names(y)}, names(x))
+test(2344.12, frank(copy(x)), rank(copy(x)))
+# consistent semantics after setDT #4783
+df = data.frame(a=c(1,2,3,4,5), b=c(2,3,4,5,6))
+d1 = copy(df)
+d2 = d1
+setDT(d2)
+test(2344.21, {setDT(d2); class(d1)}, "data.frame")
+d1 = copy(df)
+d2 = d1
+setDT(d2)
+test(2344.22, {d2[, b:=3:7]; d1}, df)
+d1 = copy(df)
+d2 = d1
+setDT(d2)
+test(2344.23, {d2[, c:=4:8]; d1}, df)
+d1 = copy(df)
+d2 = d1
+setDT(d2)
+test(2344.24, {d2[!is.na(a), b:=5:9]; d1}, df)
+d1 = copy(df)
+d2 = d1
+setDT(d2)
+test(2344.25, {d2[, b:=30]; d1}, df)

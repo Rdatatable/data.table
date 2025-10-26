@@ -154,7 +154,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   runtime test number (i.e. 'numStr') since we're just doing a static check here, though we _are_ careful to match the
     #   full test expression string, i.e., not just limited to numeric literal test numbers.
     arg_line = call_id = col1 = col2 = i.line1 = id = line1 = parent = preceding_line = test_start_line = text = token = x.line1 = x.parent = NULL # R CMD check
-    pd = setDT(utils::getParseData(parse(fn, keep.source=TRUE)))
+    pd = setDT(utils::getParseData(parse(fn, keep.source=TRUE)), duplicateShared=FALSE)
     file_lines = readLines(fn)
     # NB: a call looks like (with id/parent tracking)
     # <expr>

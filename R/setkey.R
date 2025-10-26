@@ -331,8 +331,8 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   nrow = prod(lengths(l))
   if (nrow > .Machine$integer.max) stopf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max)
   l = .Call(Ccj, l)
-  setDT(l)
-  l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
+  setDT(l, duplicateShared=FALSE)
+  l = setalloccol(l, duplicateShared=FALSE)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
                     # it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
   setnames(l, vnames)
   if (sorted) {

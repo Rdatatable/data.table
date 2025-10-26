@@ -4,7 +4,7 @@ cbindlist_impl_ = function(l, copy) {
     setattr(ans, "sorted", NULL)
     setattr(ans, "index", NULL)
   }
-  setDT(ans)
+  setDT(ans, duplicateShared=FALSE)
   ans
 }
 
@@ -254,7 +254,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       out = rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE)
     }
   }
-  setDT(out)
+  setDT(out, duplicateShared=FALSE)
 }
 
 mergelist_impl_ = function(l, on, cols, how, mult, join.many, copy) {

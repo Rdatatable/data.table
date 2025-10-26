@@ -162,7 +162,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (any(vapply_1b(dat[varnames], is.list))) {
     stopf("Columns specified in formula can not be of type list")
   }
-  setDT(dat)
+  setDT(dat, duplicateShared=FALSE)
 
   m = as.list(match.call()[-1L])
   subset = m[["subset"]][[2L]]
@@ -214,7 +214,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
   # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
   if (all(drop)) {
-    map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE))) # #2202 fix
+    map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE)), duplicateShared=FALSE) # #2202 fix
     maporder = lapply(map, order_)
     mapunique = lapply(seq_along(map), function(i) .Call(CsubsetVector, map[[i]], maporder[[i]]))
     lhs = .Call(CsubsetDT, lhs, maporder[[1L]], seq_along(lhs))
@@ -225,7 +225,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     map = vector("list", 2L)
     .Call(Csetlistelt, map, 1L, lhs_[lhs, which=TRUE])
     .Call(Csetlistelt, map, 2L, rhs_[rhs, which=TRUE])
-    setDT(map)
+    setDT(map, duplicateShared=FALSE)
     mapunique = vector("list", 2L)
     .Call(Csetlistelt, mapunique, 1L, seq_len(nrow(lhs_)))
     .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
@@ -245,7 +245,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
           else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
     # removed 'setcolorder()' here, #1153
   setattr(ans, 'names', c(lhsnames, allcols))
-  setDT(ans)
+  setDT(ans, duplicateShared=FALSE)
   setattr(ans, 'sorted', lhsnames)
   ans
 }

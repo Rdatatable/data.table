@@ -10,16 +10,19 @@
 truelength(x)
 setalloccol(DT,
     n = getOption("datatable.alloccol"),        # default: 1024L
-    verbose = getOption("datatable.verbose"))   # default: FALSE
+    verbose = getOption("datatable.verbose"),   # default: FALSE
+    duplicateShared = TRUE)
 alloc.col(DT,
     n = getOption("datatable.alloccol"),        # default: 1024L
-    verbose = getOption("datatable.verbose"))   # default: FALSE
+    verbose = getOption("datatable.verbose"),   # default: FALSE
+    duplicateShared = TRUE)
 }
 \arguments{
 \item{x}{ Any type of vector, including \code{data.table} which is a \code{list} vector of column pointers. }
 \item{DT}{ A \code{data.table}. }
 \item{n}{ The number of spare column pointer slots to ensure are available. If \code{DT} is a 1,000 column \code{data.table} with 24 spare slots remaining, \code{n=1024L} means grow the 24 spare slots to be 1024. \code{truelength(DT)} will then be 2024 in this example. }
 \item{verbose}{ Output status and information. }
+\item{duplicateShared}{ Logical. When \code{TRUE} (the default), columns that are shared with other objects (i.e., \code{MAYBE_SHARED} is true) are duplicated to avoid unintended modification of the original data. Set to \code{FALSE} only if you are certain no columns are shared or if you explicitly want shared column behavior for performance reasons. }
 }
 \details{
     When adding columns by reference using \code{:=}, we \emph{could} simply create a new column list vector (one longer) and memcpy over the old vector,

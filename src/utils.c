@@ -500,8 +500,8 @@ int n_columns(SEXP x) {
  error("internal error: C setDT should be called only on a list"); // # nocov
  setAttrib(x, R_ClassSymbol, char2_dtdf());
  setAttrib(x, sym_rownames, set_row_names(n_rows(x)));
- return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
- }*/
+ return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue), R_NilValue);
+}*/
 
 // inherits(x, "data.table")
 bool isDataTable(SEXP x) {
