@@ -145,7 +145,7 @@ SEXP convertDate(SEXP x, SEXP type)
         SEXP ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
 
-        SEXP opt = GetOption(install("datatable.week"), R_NilValue);
+        SEXP opt = GetOption1(install("datatable.week"));
         const char *mode = isString(opt) && length(opt) == 1 ? CHAR(STRING_ELT(opt, 0)) : "default";
 
         bool use_sequential = !strcmp(mode, "sequential");
