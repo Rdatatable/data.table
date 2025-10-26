@@ -21837,3 +21837,28 @@ DT[, V1000 := 20:1]
 test(2343.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
 x = c(rep(0, 7e5), 1e6)
 test(2343.2, forderv(list(x)), integer(0))
+
+# Test for issue #7364 - cartesian join returns fewer rows than expected
+test(9061.1, {
+  daily_dat = data.table(
+    id = c(1L, 0L, 1L, 0L),
+    label = c("ONE", "ZERO", "ONE", "ZERO"),
+    week_day = c("FRI", "FRI", "SAT", "SAT"),
+    key = "week_day"
+  )
+  
+  transformed_daily_dat = daily_dat[, .(
+    id,
+    label = fifelse(id == 0L, "ZERO", "ONE"),
+    week_day
+  )]
+  
+  result = transformed_daily_dat[
+    data.table(label = "ONE", id = 1L),
+    on = "label",
+    allow.cartesian = TRUE
+  ]
+  
+  nrow(result)
+}, 2L) # Expected: 2 rows, currently returns 1
+
