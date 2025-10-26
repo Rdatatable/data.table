@@ -21840,27 +21840,23 @@ test(2343.2, forderv(list(x)), integer(0))
 
 # Keep key when new column added before existing key in j
 # Incorrect key can lead to incorrect join result #7364
-local({
-  DT = data.table(V1 = 1:2, key = "V1")
-  test(2344.00, key(DT[, .(V2 = c("b", "a"), V1)]), "V1")
-  test(2344.01, key(DT[, .(V2 = -V1, V1)]), "V1")
+DT = data.table(V1 = 1:2, key = "V1")
+test(2344.00, key(DT[, .(V2 = c("b", "a"), V1)]), "V1")
+test(2344.01, key(DT[, .(V2 = -V1, V1)]), "V1")
 
-  d1 = data.table(
-    V1 = c(1L, 0L, 1L),
-    V2 = c("a", "a", "b"),
-    key = "V2"
-  )
-
-  d2 = d1[, .(
-    V1,
-    label = c("one", "zero", "one"),
-    V2
-  )]
-
-  r = d2[
-    data.table(label = "one"),
-    on = "label",
-    allow.cartesian = TRUE
-  ]
-  test(2344.02, nrow(r), 2L)
-})
+d1 = data.table(
+  V1 = c(1L, 0L, 1L),
+  V2 = c("a", "a", "b"),
+  key = "V2"
+)
+d2 = d1[, .(
+  V1,
+  label = c("one", "zero", "one"),
+  V2
+)]
+r = d2[
+  data.table(label = "one"),
+  on = "label",
+  allow.cartesian = TRUE
+]
+test(2344.02, nrow(r), 2L)
