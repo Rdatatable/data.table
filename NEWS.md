@@ -1,4 +1,8 @@
 # data.table news and updates
+## BUG FIXES
+
+1. Cartesian joins with `allow.cartesian=TRUE` after transformations using `[.data.table` would return fewer rows than expected due to incorrect `sorted` attribute being set. The issue occurred when `get_shared_keys()` used `jnames` instead of `jvnames` for index calculation, [#7364](https://github.com/Rdatatable/data.table/issues/7364). Thanks to @czeildi for reporting, @aitap for analysis, and @ANAMASGARD for fixing.
+
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 

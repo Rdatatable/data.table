@@ -1449,7 +1449,7 @@ replace_dot_alias = function(e) {
           jvnames = jnames = sdvars
         else
           jnames = as.character(Filter(is.name, jsub)[-1L])
-        key_idx = chmatch(key, jnames)
+        key_idx = chmatch(key, jvnames)
         missing_keys = which(is.na(key_idx))
         if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
         if (!length(missing_keys)) return(jvnames[key_idx])
