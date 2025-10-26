@@ -69,7 +69,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     for (i in ic) value[[i]] = as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
   col_labels = dimnames(x)[[2L]]
-  setDT(value)
+  setDT(value, duplicateShared=FALSE)
   if (length(col_labels) == ncols) {
     if (any(empty <- !nzchar(col_labels)))
       col_labels[empty] = paste0("V", ic[empty])
@@ -233,7 +233,7 @@ as.data.table.list = function(x,
     }
   }
   setattr(ans, "names", vnames)
-  setDT(ans, key=key) # copy ensured above; also, setDT handles naming
+  setDT(ans, key=key, duplicateShared=FALSE) # copy ensured above; also, setDT handles naming
   if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
   ans
 }
@@ -282,7 +282,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
 
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(ans, "class", .resetclass(x, "data.frame"))
-  setalloccol(ans)
+  setalloccol(ans, duplicateShared=FALSE)
   setkeyv(ans, key)
   ans
 }

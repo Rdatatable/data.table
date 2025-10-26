@@ -8,19 +8,22 @@
 
 }
 \usage{
-setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
+setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, duplicateShared=TRUE)
 }
 \arguments{
   \item{x}{ A named or unnamed \code{list}, \code{data.frame} or \code{data.table}. }
-  \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. \code{keep.rownames = "id"} names the column \code{"id"} instead. } 
+  \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. \code{keep.rownames = "id"} names the column \code{"id"} instead. }
   \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkeyv}}. }
   \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}. }
+  \item{duplicateShared}{ Logical. When \code{TRUE}, columns that are shared with other objects (i.e., \code{MAYBE_SHARED} is true) are duplicated to avoid unintended modification of the original data. Default is \code{TRUE}. }
 }
 
 \details{
   When working on large \code{list}s or \code{data.frame}s, it might be both time- and memory-consuming to convert them to a \code{data.table} using \code{as.data.table(.)}, which will make a complete copy of the input object before converting it to a \code{data.table}. \code{setDT} takes care of this issue by converting any \code{list} (named or unnamed, data.frame or not) \emph{by reference} instead. That is, the input object is modified in place with no copy.
 
   This should come with low overhead, but note that \code{setDT} does check that the input is valid by looking for inconsistent input lengths and inadmissible column types (e.g. matrix).
+
+  The \code{duplicateShared} parameter controls whether columns that might be shared with other R objects are duplicated. When \code{TRUE} (the default), \code{setDT} checks each column to see if it is shared (using R's internal \code{MAYBE_SHARED} macro) and duplicates any shared columns. This prevents unintended side effects where modifying the data.table would also modify the original objects. For example, if a list contains a vector \code{y} that is also referenced elsewhere, operations on the resulting data.table would not affect \code{y} when \code{duplicateShared=TRUE}. Set to \code{FALSE} only if you are certain no columns are shared or if you explicitly want shared column behavior for performance reasons.
 }
 
 \value{

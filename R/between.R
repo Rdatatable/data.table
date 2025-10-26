@@ -66,8 +66,8 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, 
 # issue FR #707
 # is x[i] found anywhere within [lower, upper] range?
 inrange = function(x,lower,upper,incbounds=TRUE) {
-  query = setDT(list(x=x))
-  subject = setDT(list(l=lower, u=upper))
+  query = setDT(list(x=x), duplicateShared=FALSE)
+  subject = setDT(list(l=lower, u=upper), duplicateShared=FALSE)
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
   verbose = isTRUE(getOption("datatable.verbose"))
   if (verbose) {last.started.at=proc.time();catf("forderv(query) took ... ");flush.console()}
@@ -81,7 +81,7 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   )
   xo = ans$xo
   options(datatable.verbose=FALSE)
-  setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
+  setDT(ans[c("starts", "lens")], key=c("starts", "lens"), duplicateShared=FALSE)
   options(datatable.verbose=verbose)
   if (verbose) {last.started.at=proc.time();catf("Generating final logical vector ... ");flush.console()}
   .Call(Cinrange, idx <- vector("logical", length(x)), xo, ans[["starts"]], ans[["lens"]])

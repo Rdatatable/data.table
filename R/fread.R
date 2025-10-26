@@ -301,7 +301,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
   if (isTRUE(data.table)) {
     setattr(ans, "class", c("data.table", "data.frame"))
-    setalloccol(ans)
+    setalloccol(ans, duplicateShared=FALSE)
   } else {
     setattr(ans, "class", "data.frame")
   }

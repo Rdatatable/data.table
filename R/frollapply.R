@@ -265,7 +265,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     } else {
       rev.d = function(d) {
         l = lapply(d, rev)
-        if (is.data.table(d)) setDT(l) else if (is.data.frame(d)) setDF(l) else l
+        if (is.data.table(d)) setDT(l, duplicateShared=FALSE) else if (is.data.frame(d)) setDF(l) else l
       }
       X = lapply(X, rev.d)
     }

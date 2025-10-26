@@ -5,6 +5,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     warningf("length(na.last) > 1, only the first element will be used")
     na.last = na.last[1L]
   }
+  input_names = NULL
   keep = (na.last == "keep")
   na.last = as.logical(na.last)
   as_list = function(x) {
@@ -16,6 +17,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     if (!missing(cols) && !is.null(cols))
       stopf("x is a single vector, non-NULL 'cols' doesn't make sense")
     cols = 1L
+    input_names = names(x) 
     x = as_list(x)
   } else {
     cols = colnamesInt(x, cols, check_dups=TRUE)
@@ -24,7 +26,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   }
   # need to unlock for #4429
   x = .shallow(x, cols, unlock = TRUE) # shallow copy even if list..
-  setDT(x)
+  setDT(x, duplicateShared=TRUE)
   cols = seq_along(cols)
   if (is.na(na.last)) {
     if ("..na_prefix.." %chin% names(x))
@@ -66,10 +68,15 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   # take care of na.last="keep"
   V1 = NULL # for R CMD CHECK warning
   if (isTRUE(keep)) {
-    ans = (setDT(as_list(ans))[which_(nas, TRUE), V1 := NA])[[1L]]
+    ans = (setDT(as_list(ans), duplicateShared=TRUE)[which_(nas, TRUE), V1 := NA])[[1L]]
   } else if (is.na(na.last)) {
-    ans = ans[which_(nas, FALSE)]
+    idx = which_(nas, FALSE)
+    if (!is.null(input_names))
+      input_names = input_names[idx]
+    ans = ans[idx]
   }
+  if (!is.null(input_names))
+    names(ans) = input_names
   ans
 }
 

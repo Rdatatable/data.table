@@ -34,6 +34,8 @@
 
 5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
 
+6. `setDT()` and `setalloccol()` gain `duplicateShared` argument (default `TRUE`). When `TRUE`, columns that are shared with other objects are duplicated to avoid unintended modification of the original data, [#2683](https://github.com/Rdatatable/data.table/issues/2683). Previously, shared columns were not duplicated, which could lead to unexpected side effects. `frank()` now uses this internally to preserve names from the input vector and avoid modifying shared vectors, [#4240](https://github.com/Rdatatable/data.table/issues/4240). Thanks to @jangorecki, @BenoitLondon, and @MichaelChirico for the report and @ben-schwen for the fix.
+
 ### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.

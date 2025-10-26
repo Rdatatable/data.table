@@ -172,7 +172,7 @@ foverlaps = function(x, y, by.x=key(x) %||% key(y), by.y=key(y), maxgap=0L, mino
   }
   # nocov end
 
-  setDT(olaps)
+  setDT(olaps, duplicateShared=FALSE)
   setnames(olaps, c("xid", "yid"))
   yid = NULL  # for 'no visible binding for global variable' from R CMD check on i clauses below
 

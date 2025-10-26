@@ -354,7 +354,7 @@ SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
 SEXP setdt_nrows(SEXP);
-SEXP alloccolwrapper(SEXP, SEXP, SEXP);
+SEXP alloccolwrapper(SEXP, SEXP, SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
 SEXP setcharvec(SEXP, SEXP, SEXP);

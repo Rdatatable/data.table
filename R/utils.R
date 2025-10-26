@@ -207,7 +207,7 @@ is_utc = function(tz) {
 
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {
-  setDT(NextMethod('edit', name))[]
+  setDT(NextMethod('edit', name), duplicateShared=FALSE)[]
 }
 # nocov end
 
