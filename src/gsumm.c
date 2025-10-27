@@ -2,9 +2,9 @@
 //#include <time.h>
 
 static int ngrp = 0;         // number of groups
-static int *grpsize = NULL;  // size of each group, used by gmean (and gmedian) not gsum
+static const int *grpsize = NULL;  // size of each group, used by gmean (and gmedian) not gsum
 static int nrow = 0;         // length of underlying x; same as length(ghigh) and length(glow)
-static int *irows;           // GForce support for subsets in 'i' (TODO: joins in 'i')
+static const int *irows;           // GForce support for subsets in 'i' (TODO: joins in 'i')
 static int irowslen = -1;    // -1 is for irows = NULL
 static uint16_t *high=NULL, *low=NULL;  // the group of each x item; a.k.a. which-group-am-I
 static int *restrict grp;    // TODO: eventually this can be made local for gforce as won't be needed globally when all functions here use gather
@@ -55,7 +55,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     irowslen = -1;
   }
   else if (isInteger(irowsArg)) {
-    irows = INTEGER(irowsArg);
+    irows = INTEGER_RO(irowsArg);
     irowslen = LENGTH(irowsArg);
   }
   else error(_("irowsArg is neither an integer vector nor NULL"));  // # nocov
@@ -63,7 +63,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(f) != ngrp)
     error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp); // # notranslate
   nrow=0;
-  grpsize = INTEGER(l);
+  grpsize = INTEGER_RO(l);
   maxgrpn = 0;
   for (int i=0; i<ngrp; i++) {
     nrow+=grpsize[i];
@@ -72,7 +72,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(o) && LENGTH(o)!=nrow) error(_("o has length %d but sum(l)=%d"), LENGTH(o), nrow);
   {
     SEXP tt = getAttrib(o, install("maxgrpn"));
-    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) internal_error(__func__, "o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
+    if (length(tt)==1 && INTEGER_RO(tt)[0]!=maxgrpn) internal_error(__func__, "o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
   }
 
   int nb = nbit(ngrp-1);
@@ -112,7 +112,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //  for (int j=0; j<grpsize[g]; j++)  grp[ elem[j]-1 ] = g;
     //}
 
-    const int *restrict op = INTEGER(o);  // o is a permutation of 1:nrow
+    const int *restrict op = INTEGER_RO(o);  // o is a permutation of 1:nrow
     int nb = nbit(nrow-1);
     int bitshift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>bitshift) + 1;
@@ -349,7 +349,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
 {
   if (!IS_TRUE_OR_FALSE(narmArg))
     error(_("%s must be TRUE or FALSE"), "na.rm");
-  const bool narm = LOGICAL(narmArg)[0];
+  const bool narm = LOGICAL_RO(narmArg)[0];
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), "sum");
   const int n = (irowslen == -1) ? length(x) : irowslen;
@@ -585,7 +585,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
     error(_("%s is not meaningful for factors."), "mean");
   if (!IS_TRUE_OR_FALSE(narmArg))
     error(_("%s must be TRUE or FALSE"), "na.rm");
-  const bool narm = LOGICAL(narmArg)[0];
+  const bool narm = LOGICAL_RO(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
   const bool verbose=GetVerbose();
@@ -744,7 +744,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   case LGLSXP: case INTSXP: {
     ans = PROTECT(allocVector(INTSXP, ngrp));
     int *ansd = INTEGER(ans);
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     if (!LOGICAL(narm)[0]) {
       const int init = min ? INT_MAX : INT_MIN+1;  // NA_INTEGER==INT_MIN checked in init.c
       for (int i=0; i<ngrp; ++i) ansd[i] = init;
@@ -770,7 +770,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     ans = PROTECT(allocVector(STRSXP, ngrp));
     const SEXP *ansd = STRING_PTR_RO(ans);
     const SEXP *xd = STRING_PTR_RO(x);
-    if (!LOGICAL(narm)[0]) {
+    if (!LOGICAL_RO(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
       for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init);
       for (int i=0; i<n; ++i) {
@@ -795,8 +795,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     ans = PROTECT(allocVector(REALSXP, ngrp));
     if (INHERITS(x, char_integer64)) {
       int64_t *ansd = (int64_t *)REAL(ans);
-      const int64_t *xd = (const int64_t *)REAL(x);
-      if (!LOGICAL(narm)[0]) {
+      const int64_t *xd = (const int64_t *)REAL_RO(x);
+      if (!LOGICAL_RO(narm)[0]) {
         const int64_t init = min ? INT64_MAX : INT64_MIN+1;
         for (int i=0; i<ngrp; ++i) ansd[i] = init;
         for (int i=0; i<n; ++i) {
@@ -818,8 +818,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
       }
     } else {
       double *ansd = REAL(ans);
-      const double *xd = REAL(x);
-      if (!LOGICAL(narm)[0]) {
+      const double *xd = REAL_RO(x);
+      if (!LOGICAL_RO(narm)[0]) {
         const double init = min ? R_PosInf : R_NegInf;
         for (int i=0; i<ngrp; ++i) ansd[i] = init;
         for (int i=0; i<n; ++i) {
@@ -881,8 +881,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   switch(TYPEOF(x)) {
   case REALSXP: {
     double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
-    int64_t *xi64 = (int64_t *)REAL(x);
-    double  *xd = REAL(x);
+    const int64_t *xi64 = (const int64_t*)REAL_RO(x);
+    const double *xd = REAL_RO(x);
     for (int i=0; i<ngrp; ++i) {
       int thisgrpsize = grpsize[i], nacount=0;
       for (int j=0; j<thisgrpsize; ++j) {
@@ -898,7 +898,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     break;
   case LGLSXP: case INTSXP: {
     int *subi = INTEGER(PROTECT(allocVector(INTSXP, maxgrpn)));
-    int *xi = INTEGER(x);
+    const int *xi = INTEGER_RO(x);
     for (int i=0; i<ngrp; i++) {
       const int thisgrpsize = grpsize[i];
       int nacount=0;
@@ -976,6 +976,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
       internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);      \
     }                                                                                              \
   }
+
   switch(TYPEOF(x)) {
   case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val) } break;
   case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val) } break;
@@ -1003,19 +1004,19 @@ SEXP gfirst(SEXP x) {
 
 SEXP gtail(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
-  const int n=INTEGER(nArg)[0];
+  const int n=INTEGER_RO(nArg)[0];
   return n==1 ? glast(x) : gfirstlast(x, false, n, true);
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
-  const int n=INTEGER(nArg)[0];
+  const int n=INTEGER_RO(nArg)[0];
   return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
-  return gfirstlast(x, true, INTEGER(nArg)[0], false);
+  return gfirstlast(x, true, INTEGER_RO(nArg)[0], false);
 }
 
 // TODO: gwhich.min, gwhich.max
@@ -1032,12 +1033,12 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
-  const bool narm = LOGICAL(narmArg)[0];
+  const bool narm = LOGICAL_RO(narmArg)[0];
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
     int *subd = INTEGER(sub);
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<ngrp; ++i) {
       const int thisgrpsize = grpsize[i];
       if (thisgrpsize==1) {
@@ -1068,7 +1069,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   case REALSXP: {
     sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
     double *subd = REAL(sub);
-    const double *xd = REAL(x);
+    const double *xd = REAL_RO(x);
     for (int i=0; i<ngrp; ++i) {
       const int thisgrpsize = grpsize[i];
       if (thisgrpsize==1) {
@@ -1131,7 +1132,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<n; ++i) {
       const int thisgrp = grp[i];
       const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
@@ -1144,7 +1145,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
     break;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      const int64_t *xd = (const int64_t *)REAL(x);
+      const int64_t *xd = (const int64_t*)REAL_RO(x);
       for (int i=0; i<n; ++i) {
         const int thisgrp = grp[i];
         const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
@@ -1155,7 +1156,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
         s[thisgrp] *= elem;
       }
     } else {
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       for (int i=0; i<n; ++i) {
         const int thisgrp = grp[i];
         const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
@@ -1217,7 +1218,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   R_xlen_t nk = length(nArg);
   if (!isInteger(nArg))
     internal_error(__func__, "n must be integer"); // # nocov
-  const int *kd = INTEGER(nArg);
+  const int *kd = INTEGER_RO(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;

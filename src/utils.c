@@ -59,7 +59,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return false;
   case LGLSXP:
   case INTSXP: {
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
       return false;
     }
@@ -67,19 +67,19 @@ bool allNA(SEXP x, bool errorForBadType) {
   }
   case REALSXP:
     if (INHERITS(x, char_integer64)) {
-      const int64_t *xd = (int64_t *)REAL(x);
+      const int64_t *xd = (const int64_t *)REAL_RO(x);
       for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
         return false;
       }
     } else {
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
         return false;
       }
     }
     return true;
   case CPLXSXP: {
-    const Rcomplex *xd = COMPLEX(x);
+    const Rcomplex *xd = COMPLEX_RO(x);
     for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
@@ -121,7 +121,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
-  bool bskip_absent = LOGICAL(skip_absent)[0];
+  bool bskip_absent = LOGICAL_RO(skip_absent)[0];
   SEXP ricols = R_NilValue;
   if (isNull(cols)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
@@ -162,7 +162,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   } else {
     error(_("argument specifying columns must be character or numeric"));
   }
-  if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
+  if (LOGICAL_RO(check_dups)[0] && any_duplicated(ricols, FALSE))
     error(_("argument specifying columns received duplicate column(s)"));
   UNPROTECT(protecti);
   return ricols;

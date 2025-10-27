@@ -5,8 +5,8 @@
 
 // TO DO: margins
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP some_fillArg) {
-  int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
-  int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
+  const int nrows=INTEGER_RO(nrowArg)[0], ncols=INTEGER_RO(ncolArg)[0];
+  const int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP target;
 
   SEXP ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
@@ -15,7 +15,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
   }
   // get val cols
-  bool some_fill = LOGICAL(some_fillArg)[0];
+  const bool some_fill = LOGICAL_RO(some_fillArg)[0];
   for (int i=0; i<nval; ++i) {
     const SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
@@ -37,43 +37,43 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     switch (thistype) {
     case INTSXP:
     case LGLSXP: {
-      const int *ithiscol = INTEGER(thiscol);
+      const int *ithiscol = INTEGER_RO(thiscol);
       const int *ithisfill = 0;
-      if (some_fill) ithisfill = INTEGER(thisfill);
+      if (some_fill) ithisfill = INTEGER_RO(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          int thisidx = idx[k*ncols + j];
+          const int thisidx = idx[k*ncols + j];
           itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
         }
       }
     } break;
     case REALSXP: {
-      const double *dthiscol = REAL(thiscol);
+      const double *dthiscol = REAL_RO(thiscol);
       const double *dthisfill = 0;
-      if (some_fill) dthisfill = REAL(thisfill);
+      if (some_fill) dthisfill = REAL_RO(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         double *dtarget = REAL(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          int thisidx = idx[k*ncols + j];
+          const int thisidx = idx[k*ncols + j];
           dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill[0] : dthiscol[thisidx-1];
         }
       }
     } break;
     case CPLXSXP: {
-      const Rcomplex *zthiscol = COMPLEX(thiscol);
+      const Rcomplex *zthiscol = COMPLEX_RO(thiscol);
       const Rcomplex *zthisfill = 0;
-      if (some_fill) zthisfill = COMPLEX(thisfill);
+      if (some_fill) zthisfill = COMPLEX_RO(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         Rcomplex *ztarget = COMPLEX(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          int thisidx = idx[k*ncols + j];
+          const int thisidx = idx[k*ncols + j];
           ztarget[k] = (thisidx == NA_INTEGER) ? zthisfill[0] : zthiscol[thisidx-1];
         }
       }
@@ -83,7 +83,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          int thisidx = idx[k*ncols + j];
+          const int thisidx = idx[k*ncols + j];
           SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? STRING_ELT(thisfill, 0) : STRING_ELT(thiscol, thisidx-1));
         }
       }
@@ -93,7 +93,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          int thisidx = idx[k*ncols + j];
+          const int thisidx = idx[k*ncols + j];
           SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(thiscol, thisidx-1));
         }
       }
