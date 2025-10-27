@@ -16,9 +16,8 @@ require(data.table)
 litedown::reactor(comment = "# ")
 ```
 
-```{r, echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, results='asis', file='../_translation_links.R', i18n_msg='Une traduction de ce document est disponible en : %s'}
 ```
-`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 Dans cette vignette nous apprendrons à réaliser les opérations de jointure en utilisant les ressources de la syntaxe `data.table`.
 

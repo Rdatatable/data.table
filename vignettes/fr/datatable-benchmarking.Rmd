@@ -18,9 +18,8 @@ h2 {
 }
 </style>
 
-```{r, echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, results='asis', file='../_translation_links.R', i18n_msg='Une traduction de ce document est disponible en : %s'}
 ```
-`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 Ce document a pour but de guider la mesure de la performance de `data.table`. Il centralise la documentation des meilleures pratiques et des pièges à éviter.
 

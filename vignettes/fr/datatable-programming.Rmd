@@ -9,9 +9,8 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r, echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, results='asis', file='../_translation_links.R', i18n_msg='Une traduction de ce document est disponible en : %s'}
 ```
-`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r init, include = FALSE}
 require(data.table)

@@ -16,9 +16,8 @@ library(data.table)
 litedown::reactor(comment = "# ")
 ```
 
-```{r, echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, results='asis', file='_translation_links.R', i18n_msg='Translations of this document are available in: %s'}
 ```
-`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
 

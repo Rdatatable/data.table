@@ -20,9 +20,8 @@ h2 {
 }
 </style>
 
-```{r, echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, results='asis', file='../_translation_links.R', i18n_msg='Une traduction de ce document est disponible en : %s'}
 ```
-`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 Ce document se concentre sur l'utilisation de `data.table` comme dépendance dans d'autres packages R. Si vous souhaitez utiliser le code C de `data.table` à partir d'une application non-R, ou appeler directement ses fonctions C, passez à la [dernière section](#non-r-API) de cette vignette.
 

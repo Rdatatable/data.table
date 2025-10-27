@@ -15,9 +15,8 @@ litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
-```{r, echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, results='asis', file='../_translation_links.R', i18n_msg='Данное руководство также доступно на следующих языках: %s'}
 ```
-`{r} .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 В этом руководстве рассматривается стандартное использование функций
 изменения формы данных `melt` (из широкой в длинную) и `dcast` (из длинной в
