@@ -9,17 +9,20 @@
     path = knitr::current_input(TRUE)
     i18n_msg = knitr::opts_current$get("i18n_msg")
   } else {
-    path = litedown::get_context("input")
+    path = normalizePath(litedown::get_context("input"))
     i18n_msg = litedown::reactor("i18n_msg")
   }
-  path_dir = dirname(path)
-  if (basename(path_dir) == "vignettes") {
+  rmdfile = basename(path)
+  rmddir = dirname(path)
+  if (basename(rmddir) == "vignettes") {
     lang = "en"
+    main_dir = rmddir
   } else {
-    lang = basename(path_dir)
-    path_dir = dirname(path_dir)   # might be "vignettes"
+    lang = basename(rmddir)
+    main_dir = dirname(rmddir)       # should be "vignettes"
   }
-  translation = dir(path_dir, recursive = TRUE, pattern = glob2rx(path))
+  # search for translated rmd's with same name in subfolders
+  translation = dir(main_dir, recursive = TRUE, pattern = glob2rx(rmdfile))
   transl_lang = dirname(translation)
   transl_lang[transl_lang == "."] = "en"
   if (any(transl_lang != lang)) {
@@ -30,7 +33,6 @@
   } else {
     block = ""
   }
-   #if (knitr) block else litedown::raw_text(block)
   cat(block)
 }
 .write.translation.links()
