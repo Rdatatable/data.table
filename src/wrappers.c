@@ -38,8 +38,8 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
 }
 
 // fix for #1142 - duplicated levels for factors
-SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
-
+SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels)
+{
   R_len_t nx = length(x);
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
@@ -128,7 +128,8 @@ SEXP dim(SEXP x)
   return ans;
 }
 
-SEXP warn_matrix_column_r(SEXP i) {
+SEXP warn_matrix_column_r(SEXP i)
+{
   warn_matrix_column(INTEGER(i)[0]);
   return R_NilValue;
 }

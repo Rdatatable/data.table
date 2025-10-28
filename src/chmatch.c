@@ -1,6 +1,7 @@
 #include "data.table.h"
 
-static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
+static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup)
+{
   if (!isString(table) && !isNull(table))
     error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
   if (chin && chmatchdup)
@@ -140,21 +141,29 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
 }
 
 // for internal use from C :
-SEXP chmatch(SEXP x, SEXP table, int nomatch) {  // chin=  chmatchdup=
+SEXP chmatch(SEXP x, SEXP table, int nomatch)  // chin=  chmatchdup=
+{
   return chmatchMain(x, table, nomatch,             false, false);
 }
-SEXP chin(SEXP x, SEXP table) {
+
+SEXP chin(SEXP x, SEXP table)
+{
   return chmatchMain(x, table, 0,                   true,  false);
 }
 
 // for use from internals at R level; chmatch and chin are exported too but not chmatchdup yet
-SEXP chmatch_R(SEXP x, SEXP table, SEXP nomatch) {
+SEXP chmatch_R(SEXP x, SEXP table, SEXP nomatch)
+{
   return chmatchMain(x, table, INTEGER(nomatch)[0], false, false);
 }
-SEXP chin_R(SEXP x, SEXP table) {
+
+SEXP chin_R(SEXP x, SEXP table)
+{
   return chmatchMain(x, table, 0,                   true,  false);
 }
-SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch) {
+
+SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch)
+{
   return chmatchMain(x, table, INTEGER(nomatch)[0], false, true);
 }
 

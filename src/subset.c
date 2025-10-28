@@ -275,7 +275,8 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 *
 *  OpenMP is used here to parallelize the loops that perform the subsetting of vectors, with conditional checks and filtering of data. 
 */
-SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
+SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) // API change needs update NEWS.md and man/cdt.Rd
+{
   int nprotect=0;
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
   if (!length(x)) return(x);  // return empty list
@@ -363,7 +364,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   return ans;
 }
 
-SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
+SEXP subsetVector(SEXP x, SEXP idx) // idx is 1-based passed from R level
+{
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
   if (isNull(x))

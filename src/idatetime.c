@@ -7,7 +7,8 @@ static const int YEARS1 = 365;
 
 typedef enum { YDAY, WDAY, MDAY, WEEK, MONTH, QUARTER, YEAR, YEARMON, YEARQTR} datetype;
 
-static inline bool isLeapYear(int year) {
+static inline bool isLeapYear(int year)
+{
     return (year % 100 != 0 || year % 400 == 0) && year % 4 == 0;
 }
 

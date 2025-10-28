@@ -1,7 +1,8 @@
 #include "data.table.h"
 
 // set(x, NULL, cols, copy(unclass(x)[cols])) ## but keeps the index
-SEXP copyCols(SEXP x, SEXP cols) {
+SEXP copyCols(SEXP x, SEXP cols)
+{
   // used in R/mergelist.R
   if (!isDataTable(x))
     internal_error(__func__, "'x' must be a data.table"); // # nocov
@@ -17,7 +18,8 @@ SEXP copyCols(SEXP x, SEXP cols) {
   return R_NilValue;
 }
 
-void mergeIndexAttrib(SEXP to, SEXP from) {
+void mergeIndexAttrib(SEXP to, SEXP from)
+{
   if (!isInteger(to) || LENGTH(to)!=0)
     internal_error(__func__, "'to' must be integer() already"); // # nocov
   if (isNull(from))
@@ -31,7 +33,8 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
   }
 }
 
-SEXP cbindlist(SEXP x, SEXP copyArg) {
+SEXP cbindlist(SEXP x, SEXP copyArg)
+{
   if (!isNewList(x) || isDataFrame(x))
     error(_("'%s' must be a list"), "x");
   bool copy = (bool)LOGICAL(copyArg)[0];

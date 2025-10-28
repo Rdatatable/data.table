@@ -70,8 +70,7 @@ static const int writerMaxLen[] = {  // same order as fun[] and WFs above; max f
   0,  //&writeList
 };
 
-typedef struct fwriteMainArgs
-{
+typedef struct fwriteMainArgs {
   // Name of the file to open (a \0-terminated C string). If the file name
   // contains non-ASCII characters, it should be UTF-8 encoded (however fread
   // will not validate the encoding).

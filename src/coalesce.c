@@ -6,7 +6,8 @@
     - The replacement of NAs with non-NA values from subsequent vectors
     - The conditional checks within parallelized loops
 */
-SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
+SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg)
+{
   if (TYPEOF(x)!=VECSXP) internal_error(__func__, "input is list(...) at R level"); // # nocov
   if (!IS_TRUE_OR_FALSE(inplaceArg)) internal_error(__func__, "argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg)) internal_error(__func__, "argument 'nan_is_na_arg' must be TRUE or FALSE"); // # nocov

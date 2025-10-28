@@ -22,7 +22,8 @@ static const int sedgewick1982[17] = {
  * uses sedgewick1982 gap sequence formula as it turned out to be the most efficient - tested various n, k (for rnorm only!)
  * currently used in frollmedian algo="fast" when no NAs
 */
-void shellsort(const double *x, int n, int *o) {
+void shellsort(const double *x, int n, int *o)
+{
   for (int i=0; i < n; i++) o[i] = i;
   int gap = 0;
   while (sedgewick1982[gap] > n) gap++;

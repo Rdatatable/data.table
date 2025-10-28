@@ -109,7 +109,8 @@ SEXP dt_na(SEXP x, SEXP cols)
   return(ans);
 }
 
-SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
+SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method)
+{
   const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
   enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
 
@@ -186,7 +187,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 }
 
 // internal version of anyNA for data.tables
-SEXP anyNA(SEXP x, SEXP cols) {
+SEXP anyNA(SEXP x, SEXP cols)
+{
   int n=0;
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
   if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov

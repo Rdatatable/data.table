@@ -238,7 +238,8 @@ static const char* strlim(const char *ch, char buf[static 500], size_t limit)
 
 static const char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-static char *typesAsString(int ncol) {
+static char *typesAsString(int ncol)
+{
   const int nLetters = strlen(typeLetter);
   if (NUMTYPE > nLetters) INTERNAL_STOP("NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
   static char str[101];

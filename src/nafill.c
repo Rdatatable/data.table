@@ -1,6 +1,7 @@
 #include "data.table.h"
 
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose) {
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose)
+{
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
@@ -42,7 +43,9 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
   if (verbose)
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
-void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
+
+void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose)
+{
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
@@ -64,7 +67,9 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   if (verbose)
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
-void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose) {
+
+void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose)
+{
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
@@ -92,7 +97,8 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     over columns of the input data. This includes handling different data types
     and applying the designated filling method to each column in parallel.
 */
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols)
+{
   int protecti=0;
   const bool verbose = GetVerbose();
 

@@ -25,7 +25,8 @@ static void substitute_call_arg_names(SEXP expr, SEXP env)
   }
 }
 
-SEXP substitute_call_arg_namesR(SEXP expr, SEXP env) {
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env)
+{
   SEXP ans = PROTECT(MAYBE_REFERENCED(expr) ? duplicate(expr) : expr);
   substitute_call_arg_names(ans, env); // updates in-place
   UNPROTECT(1);

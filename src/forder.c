@@ -70,14 +70,16 @@ static char msg[1001];
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
-static void free_ustr(void) {
+static void free_ustr(void)
+{
   for(int i=0; i<ustr_n; i++)
     SET_TRUELENGTH(ustr[i],0);
   free(ustr); ustr=NULL;
   ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
 }
 
-static void cleanup(void) {
+static void cleanup(void)
+{
   free(gs); gs=NULL;
   gs_alloc = 0;
   gs_n = 0;
@@ -100,7 +102,8 @@ static void cleanup(void) {
 }
 
 // # nocov start
-void internal_error_with_cleanup(const char *call_name, const char *format, ...) {
+void internal_error_with_cleanup(const char *call_name, const char *format, ...)
+{
   char buff[1024];
   va_list args;
   va_start(args, format);
@@ -113,7 +116,8 @@ void internal_error_with_cleanup(const char *call_name, const char *format, ...)
 }
 // # nocov end
 
-static void push(const int *x, const int n) {
+static void push(const int *x, const int n)
+{
   if (!retgrp) return;  // clearer to have the switch here rather than before each call
   int me = omp_get_thread_num();
   int newn = gs_thread_n[me] + n;
@@ -126,7 +130,8 @@ static void push(const int *x, const int n) {
   gs_thread_n[me] += n;
 }
 
-static void flush(void) {
+static void flush(void)
+{
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
@@ -901,7 +906,8 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-void radix_r(const int from, const int to, int radix) {
+void radix_r(const int from, const int to, int radix)
+{
   for (;;) {
   TBEG();
   const int my_n = to-from+1;
@@ -1557,7 +1563,8 @@ SEXP binary(SEXP x)
 }
 
 // all(x==1L)
-static bool all1(SEXP x) {
+static bool all1(SEXP x)
+{
   if (!isInteger(x))
     internal_error_with_cleanup(__func__, "all1 got non-integer"); // # nocov
   int *xp = INTEGER(x);
@@ -1566,7 +1573,8 @@ static bool all1(SEXP x) {
 }
 
 // identical(cols, head(chmatch(key(x), names(x)), length(cols)))
-bool colsKeyHead(SEXP x, SEXP cols) {
+bool colsKeyHead(SEXP x, SEXP cols)
+{
   if (!isNewList(x))
     internal_error_with_cleanup(__func__, "'x' must be a list"); // # nocov
   if (!isInteger(cols))
@@ -1590,7 +1598,8 @@ bool colsKeyHead(SEXP x, SEXP cols) {
 }
 
 // paste0("__", names(x)[cols], collapse="")
-SEXP idxName(SEXP x, SEXP cols) {
+SEXP idxName(SEXP x, SEXP cols)
+{
   if (!isInteger(cols))
     internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   SEXP dt_names = PROTECT(getAttrib(x, R_NamesSymbol));
@@ -1610,7 +1619,8 @@ SEXP idxName(SEXP x, SEXP cols) {
 }
 
 // attr(attr(x, "index"), idxName(x, cols))
-SEXP getIndex(SEXP x, SEXP cols) {
+SEXP getIndex(SEXP x, SEXP cols)
+{
   if (!isInteger(cols))
     internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   SEXP index = getAttrib(x, sym_index);
@@ -1624,7 +1634,8 @@ SEXP getIndex(SEXP x, SEXP cols) {
 }
 
 // attr(attr(x, "index"), idxName(x, cols)) <- o
-void putIndex(SEXP x, SEXP cols, SEXP o) {
+void putIndex(SEXP x, SEXP cols, SEXP o)
+{
   if (!isInteger(cols))
     internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   if (!isInteger(o))
@@ -1645,7 +1656,8 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
 }
 
 // isTRUE(getOption("datatable.use.index"))
-bool GetUseIndex(void) {
+bool GetUseIndex(void)
+{
   SEXP opt = GetOption1(install("datatable.use.index"));
   if (!IS_TRUE_OR_FALSE(opt))
     error(_("'datatable.use.index' option must be TRUE or FALSE")); // # nocov
@@ -1653,7 +1665,8 @@ bool GetUseIndex(void) {
 }
 
 // isTRUE(getOption("datatable.auto.index"))
-bool GetAutoIndex(void) {
+bool GetAutoIndex(void)
+{
   // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
   // because it writes attr on .SD which is re-used by all groups leading to incorrect results
   // DT[, .(uN=uniqueN(.SD)), by=A]
@@ -1666,12 +1679,14 @@ bool GetAutoIndex(void) {
 }
 
 // attr(idx, "anyna")>0 || attr(idx, "anyinfnan")>0
-bool idxAnyNF(SEXP idx) {
+bool idxAnyNF(SEXP idx)
+{
   return INTEGER(getAttrib(idx, sym_anyna))[0]>0 || INTEGER(getAttrib(idx, sym_anyinfnan))[0]>0;
 }
 
 // forder, re-use existing key or index if possible, otherwise call forder
-SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg) {
+SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg)
+{
   const bool verbose = GetVerbose();
   int protecti = 0;
   double tic=0.0;
