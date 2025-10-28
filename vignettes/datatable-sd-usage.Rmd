@@ -1,6 +1,6 @@
 ---
 title: "Using .SD for Data Analysis"
-date: "`{r} Sys.Date()`"
+date: !r Sys.Date()
 output:
   litedown::html_format:
     options:

@@ -1,6 +1,6 @@
 ---
 title: "Utiliser .SD pour l’analyse de données"
-date: "`{r} Sys.Date()`"
+date: !r Sys.Date()
 output:
   markdown::html_format:
     options:

@@ -1,6 +1,6 @@
 ---
 title: "Programming on data.table"
-date: "`{r} Sys.Date()`"
+date: !r Sys.Date()
 output:
   litedown::html_format
 vignette: >

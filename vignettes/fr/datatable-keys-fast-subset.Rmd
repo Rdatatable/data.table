@@ -1,6 +1,6 @@
 ---
 title: "Extraire des sous-ensemble avec les clés et la recherche binaire rapide"
-date: "`{r} Sys.Date()`"
+date: !r Sys.Date()
 output:
   markdown::html_format
 vignette: >

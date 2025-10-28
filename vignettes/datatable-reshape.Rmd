@@ -1,6 +1,6 @@
 ---
 title: "Efficient reshaping using data.tables"
-date: "`{r} Sys.Date()`"
+date: !r Sys.Date()
 output:
   litedown::html_format
 vignette: >
