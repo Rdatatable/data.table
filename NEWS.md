@@ -367,6 +367,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
+8. `tools` and `parallel` packages added to Suggests, [#7288](https://github.com/Rdatatable/data.table/issues/7288). These are used internally by `fread` and `frollapply`. Thanks to @jangorecki for identifying this dependency issue.
+
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
