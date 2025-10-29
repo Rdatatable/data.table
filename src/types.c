@@ -4,14 +4,16 @@
 /*
  * find end of a string, used to append verbose messages or warnings
  */
-char *end(char *start) {
+char *end(char *start)
+{
   return strchr(start, 0);
 }
 
 /*
  * logging status and messages, warnings, errors to ans_t
  */
-void ansSetMsg(ans_t *ans, uint8_t status, const char *msg, const char *func) {
+void ansSetMsg(ans_t *ans, uint8_t status, const char *msg, const char *func)
+{
   if (status > ans->status)
     ans->status = status;
   snprintf(end(ans->message[status]), 500, _(msg), func); // func should be passed via ... really, thus this helper cannot replace all cases we need
@@ -21,7 +23,8 @@ void ansSetMsg(ans_t *ans, uint8_t status, const char *msg, const char *func) {
 /*
  * function to print verbose messages, stderr messages, warnings and errors stored in ans_t struct
  */
-void ansGetMsgs(ans_t *ans, int n, bool verbose, const char *func) {
+void ansGetMsgs(ans_t *ans, int n, bool verbose, const char *func)
+{
   for (int i=0; i<n; i++) {
     if (verbose && (ans[i].message[0][0] != '\0'))
       Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]); // # notranslate
@@ -39,7 +42,8 @@ void ansGetMsgs(ans_t *ans, int n, bool verbose, const char *func) {
  * see inst/tests/types.Rraw
  */
 // # notranslate start
-void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
+void testRaiseMsg(ans_t *ans, int istatus, bool verbose)
+{
   if (verbose) {
     ansSetMsg(ans, 0, "%s: stdout 1 message\n", __func__);
     ansSetMsg(ans, 0, "%s: stdout 2 message\n", __func__);
@@ -61,6 +65,7 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   }
   ans->int_v[0] = ans->status;
 }
+
 /*
   This caters to internal tests (not user-facing), and OpenMP is being used
     here to test a message printing function inside a nested loop which has
@@ -68,7 +73,8 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
     collapse(2), along with specification of dynamic scheduling for distributing
     the iterations in a way that can balance the workload among the threads.
 */
-SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
+SEXP testMsgR(SEXP status, SEXP x, SEXP k)
+{
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
     internal_error(__func__, "status, nx, nk must be integer"); // # nocov
   int protecti = 0;

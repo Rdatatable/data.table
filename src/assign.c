@@ -23,7 +23,8 @@ static void finalizer(SEXP p)
   return;
 }
 
-void setselfref(SEXP x) {
+void setselfref(SEXP x)
+{
   if(!INHERITS(x, char_datatable))  return; // #5286
   SEXP p;
   // Store pointer to itself so we can detect if the object has been copied. See
@@ -106,7 +107,8 @@ Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. t
   \code{identical()} and \code{object.size()}.
 */
 
-static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
+static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose)
+{
   SEXP v, p, tag, prot, names;
   v = getAttrib(x, SelfRefSymbol);
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
@@ -138,10 +140,12 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
-static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
+static Rboolean selfrefok(SEXP x, Rboolean verbose)   // for readability
+{
   return(_selfrefok(x, FALSE, verbose)==1);
 }
-static Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
+static Rboolean selfrefnamesok(SEXP x, Rboolean verbose)
+{
   return(_selfrefok(x, TRUE, verbose)==1);
 }
 
@@ -199,7 +203,8 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 }
 
 // Wrapped in a function so the same message is issued for the data.frame case at the R level
-void warn_matrix_column(/* 1-indexed */ int i) {
+void warn_matrix_column(/* 1-indexed */ int i)
+{
   warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i);
 }
 
@@ -285,7 +290,8 @@ int checkOverAlloc(SEXP x)
   return ans;
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
+SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose)
+{
   if (!IS_TRUE_OR_FALSE(verbose))
     error(_("%s must be TRUE or FALSE"), "verbose");
   int overAlloc = checkOverAlloc(overAllocArg);
@@ -305,7 +311,8 @@ SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
   return ans;
 }
 
-SEXP shallowwrapper(SEXP dt, SEXP cols) {
+SEXP shallowwrapper(SEXP dt, SEXP cols)
+{
   // selfref will be FALSE on manually created data.table, e.g., via dput() or structure()
   if (!selfrefok(dt, FALSE)) {
     int n = isNull(cols) ? length(dt) : length(cols);
@@ -1258,7 +1265,8 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   return(v);
 }
 
-SEXP allocNAVectorLike(SEXP x, R_len_t n) {
+SEXP allocNAVectorLike(SEXP x, R_len_t n)
+{
   // writeNA needs the attribute retained to write NA_INTEGER64, #3723
   // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
@@ -1271,7 +1279,8 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
 static SEXP *saveds=NULL;
 static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
-void savetl_init(void) {
+void savetl_init(void)
+{
   if (nsaved || nalloc || saveds || savedtl) {
     internal_error(__func__, "savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
@@ -1313,7 +1322,8 @@ void savetl(SEXP s)
   nsaved++;
 }
 
-void savetl_end(void) {
+void savetl_end(void)
+{
   // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
   // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
   for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);

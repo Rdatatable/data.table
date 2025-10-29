@@ -6,7 +6,8 @@
      the specified lower and upper bounds, for INTSXP and REALSXP types
    - The checking and handling of undefined values (such as NaNs)
 */
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, SEXP checkArg) {
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, SEXP checkArg)
+{
   int nprotect = 0;
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
   if (!nx || !nl || !nu)

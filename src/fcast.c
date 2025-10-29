@@ -4,7 +4,8 @@
 // raise(SIGINT);
 
 // TO DO: margins
-SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP some_fillArg) {
+SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP some_fillArg)
+{
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
   int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP target;

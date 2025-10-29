@@ -1,6 +1,7 @@
 #include "data.table.h"
 
-static inline void memcpy_sexp(SEXP dest, size_t offset, SEXP src, int count) {
+static inline void memcpy_sexp(SEXP dest, size_t offset, SEXP src, int count)
+{
   switch (TYPEOF(dest)) {
   case INTSXP: {
     memcpy(INTEGER(dest), INTEGER_RO(src) + offset, count * sizeof(int));
@@ -30,12 +31,14 @@ static inline void memcpy_sexp(SEXP dest, size_t offset, SEXP src, int count) {
  * memcpy src data into preallocated window
  * we don't call memcpyVector from memcpyDT because they are called in tight loop and we don't want to have extra branches inside
  */
-SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size) {
+SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size)
+{
   memcpy_sexp(dest, INTEGER_RO(offset)[0] - INTEGER_RO(size)[0], src, LENGTH(dest));
   return dest;
 }
 // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
-SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
+SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size)
+{
   //Rprintf("%d",1); // manual code coverage to confirm it is reached when marking nocov
   const int ncol = LENGTH(dest);
   const int nrow = LENGTH(VECTOR_ELT(dest, 0));
@@ -46,7 +49,8 @@ SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 }
 // # nocov end
 
-SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
+SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size)
+{
   const size_t oi = INTEGER_RO(offset)[0];
   const int nrow = INTEGER_RO(size)[oi - 1];
   const size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
@@ -57,7 +61,8 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   return dest;
 }
 // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
-SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
+SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size)
+{
   //Rprintf("%d",2); // manual code coverage to confirm it is reached when marking nocov
   size_t oi = INTEGER_RO(offset)[0];
   const int nrow = INTEGER_RO(size)[oi - 1];
@@ -75,7 +80,8 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 // # nocov end
 
 // needed in adaptive=TRUE
-SEXP setgrowable(SEXP x) {
+SEXP setgrowable(SEXP x)
+{
   if (!isNewList(x)) {
     SET_GROWABLE_BIT(x);
     SET_TRUELENGTH(x, LENGTH(x)); // important because gc() uses TRUELENGTH to keep counts

@@ -4,7 +4,8 @@
 // raise(SIGINT);
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
-SEXP seq_int(int n, int start) {
+SEXP seq_int(int n, int start)
+{
   if (n <= 0) return(R_NilValue);
   SEXP ans = PROTECT(allocVector(INTSXP, n));
   int *ians = INTEGER(ans);
@@ -14,7 +15,8 @@ SEXP seq_int(int n, int start) {
 }
 
 // very specific "set_diff" for integers
-SEXP set_diff(SEXP x, int n) {
+SEXP set_diff(SEXP x, int n)
+{
   if (TYPEOF(x) != INTSXP) error(_("'x' must be an integer"));
   if (n <= 0) error(_("'n' must be a positive integer"));
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
@@ -34,8 +36,8 @@ SEXP set_diff(SEXP x, int n) {
   return(ans);
 }
 
-SEXP which(SEXP x, Rboolean val) {
-
+SEXP which(SEXP x, Rboolean val)
+{
   int j=0, n = length(x);
   SEXP ans;
   if (!isLogical(x)) error(_("Argument to 'which' must be logical"));
@@ -55,13 +57,15 @@ SEXP which(SEXP x, Rboolean val) {
 }
 
 // whichwrapper for R
-SEXP whichwrapper(SEXP x, SEXP val) {
+SEXP whichwrapper(SEXP x, SEXP val)
+{
   // if (LOGICAL(val)[0] == NA_LOGICAL)
   //     error(_("val should be logical TRUE/FALSE"));
   return which(x, LOGICAL(val)[0]);
 }
 
-static const char *concat(SEXP vec, SEXP idx) {
+static const char *concat(SEXP vec, SEXP idx)
+{
   if (!isString(vec)) error(_("concat: 'vec' must be a character vector"));
   if (!isInteger(idx))
     error(_("concat: 'idx' must be an integer vector"));
@@ -118,7 +122,8 @@ SEXP chmatch_na(SEXP x, SEXP table)
 }
 
 // deal with measure.vars of type VECSXP
-SEXP measurelist(SEXP measure, SEXP dtnames) {
+SEXP measurelist(SEXP measure, SEXP dtnames)
+{
   const int n=length(measure);
   SEXP ans = PROTECT(allocVector(VECSXP, n));
   for (int i=0; i<n; ++i) {
@@ -142,7 +147,8 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
 }
 
 // internal function just to unlist integer lists
-static SEXP unlist_(SEXP xint) {
+static SEXP unlist_(SEXP xint)
+{
   int totn=0, n=length(xint);
   for (int i=0; i<n; ++i)
     totn += length(VECTOR_ELT(xint, i));
@@ -160,7 +166,8 @@ static SEXP unlist_(SEXP xint) {
 
 // convert NA in user-supplied integer vector input to -1 in order to
 // trigger error in uniq_diff().
-SEXP na_to_negative(SEXP vec_with_NA){
+SEXP na_to_negative(SEXP vec_with_NA)
+{
   SEXP vec_with_negatives = PROTECT(allocVector(INTSXP, length(vec_with_NA)));
   for (int i=0; i<length(vec_with_NA); i++) {
     int input_i = INTEGER(vec_with_NA)[i];
@@ -172,12 +179,14 @@ SEXP na_to_negative(SEXP vec_with_NA){
 
 // If neither id.vars nor measure.vars is provided by user, then this
 // function decides which input columns are default measure.vars.
-bool is_default_measure(SEXP vec) {
+bool is_default_measure(SEXP vec)
+{
   return (isInteger(vec) || isNumeric(vec) || isLogical(vec)) && !isFactor(vec);
 }
 
 // maybe unlist, then unique, then set_diff.
-SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
+SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure)
+{
   SEXP int_vec = PROTECT(isNewList(int_or_list) ? unlist_(int_or_list) : int_or_list);
   SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE)); 
   int n_unique_cols = 0;
@@ -205,7 +214,8 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   return out;
 }
 
-SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
+SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure)
+{
   switch(TYPEOF(cols)) {
   case STRSXP  : return chmatch(cols, dtnames, 0); 
   case REALSXP : return coerceVector(cols, INTSXP); 
@@ -220,7 +230,8 @@ SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
   }
 }
 
-SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
+SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose)
+{
   int ncol=LENGTH(DT), n_target_cols=0, protecti=0, target_col_i=0, id_col_i=0;
   SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, ans;
   SEXP dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
@@ -301,8 +312,8 @@ struct processData {
   bool narm;           // remove missing values?
 };
 
-static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {
-
+static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data)
+{
   SEXP vars,tmp,thiscol;
   SEXPTYPE type;
   data->lmax = 0; data->totlen = 0; data->nrow = length(VECTOR_ELT(DT, 0));
@@ -449,7 +460,8 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   return ans;
 }
 
-SEXP input_col_or_NULL(SEXP DT, struct processData* data, SEXP thisvaluecols, int out_col, int in_col) {
+SEXP input_col_or_NULL(SEXP DT, struct processData* data, SEXP thisvaluecols, int out_col, int in_col)
+{
   if (in_col < data->leach[out_col]) {
     int input_column_num = INTEGER(thisvaluecols)[in_col];
     if (input_column_num != NA_INTEGER) {
@@ -459,7 +471,8 @@ SEXP input_col_or_NULL(SEXP DT, struct processData* data, SEXP thisvaluecols, in
   return R_NilValue;
 }
 
-SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
+SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data)
+{
   for (int i=0; i<data->lvalues; ++i) {
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
@@ -589,7 +602,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   return(ansvals);
 }
 
-SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, struct processData *data) {
+SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, struct processData *data)
+{
   // reworked in PR#3455 to create character/factor directly for efficiency, and handle duplicates (#1754)
   // data->nrow * data->lmax == data->totlen
   int protecti=0;
@@ -691,7 +705,8 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   return(ansvars);
 }
 
-SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data) {
+SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data)
+{
   SEXP ansids = PROTECT(allocVector(VECSXP, data->lids));
   for (int i=0; i<data->lids; ++i) {
     int counter = 0;
@@ -783,7 +798,8 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
   return (ansids);
 }
 
-SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP varnames, SEXP valnames, SEXP narmArg, SEXP verboseArg) {
+SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP varnames, SEXP valnames, SEXP narmArg, SEXP verboseArg)
+{
   SEXP dtnames, ansvals, ansvars, ansids, ansnames, ans;
   Rboolean narm=FALSE, verbose=FALSE;
 

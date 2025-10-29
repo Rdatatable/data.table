@@ -6,7 +6,8 @@
     supplied logical vector based on the condition (test) and values
     provided for the remaining arguments (yes, no, and na).
 */
-SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
+SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na)
+{
   if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
   }
@@ -207,7 +208,8 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   return ans;
 }
 
-SEXP fcaseR(SEXP rho, SEXP args) {
+SEXP fcaseR(SEXP rho, SEXP args)
+{
   const int narg=length(args); // `default` will take the last two positions
   if (narg % 2) {
     error(_("Received %d inputs; please supply an even number of arguments in ..., "

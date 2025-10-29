@@ -19,16 +19,19 @@ static const char *sep2start, *sep2end;
 // if there are no list columns, set sep2=='\0'
 // Non-agnostic helpers ...
 
-const char *getString(const SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
+const char *getString(const SEXP *col, int64_t row) // TODO: inline for use in fwrite.c
+{
   SEXP x = col[row];
   return x == NA_STRING ? NULL : ENCODED_CHAR(x);
 }
 
-int getStringLen(SEXP *col, int64_t row) {
+int getStringLen(SEXP *col, int64_t row)
+{
   return LENGTH(col[row]);  // LENGTH of CHARSXP is nchar
 }
 
-int getMaxStringLen(const SEXP *col, const int64_t n) {
+int getMaxStringLen(const SEXP *col, const int64_t n)
+{
   int max = 0;
   SEXP last = NULL;
   for (int64_t i = 0; i < n; i++) {
@@ -41,13 +44,15 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
   return max;
 }
 
-int getMaxCategLen(SEXP col) {
+int getMaxCategLen(SEXP col)
+{
   col = getAttrib(col, R_LevelsSymbol);
   if (!isString(col)) internal_error(__func__, "col passed to getMaxCategLen is missing levels");
   return getMaxStringLen(STRING_PTR_RO(col), LENGTH(col));
 }
 
-const char *getCategString(SEXP col, int64_t row) {
+const char *getCategString(SEXP col, int64_t row)
+{
   // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];
   return x == NA_INTEGER ? NULL : ENCODED_CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x - 1));
@@ -73,7 +78,8 @@ writer_fun_t *funs[] = {
 
 static int32_t whichWriter(SEXP);
 
-void writeList(const void *col, int64_t row, char **pch) {
+void writeList(const void *col, int64_t row, char **pch)
+{
   SEXP v = ((const SEXP*)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v) == VECSXP || wf == INT32_MIN || isFactor(v)) {
@@ -92,7 +98,8 @@ void writeList(const void *col, int64_t row, char **pch) {
   *pch = ch;
 }
 
-int getMaxListItemLen(const SEXP *col, const int64_t n) {
+int getMaxListItemLen(const SEXP *col, const int64_t n)
+{
   int max = 0;
   SEXP last = NULL;
   for (int64_t i = 0; i < n; i++) {
@@ -117,7 +124,8 @@ int getMaxListItemLen(const SEXP *col, const int64_t n) {
   return max;
 }
 
-static int32_t whichWriter(SEXP column) {
+static int32_t whichWriter(SEXP column)
+{
 // int32_t is returned here just so the caller can output nice context-full error message should INT32_MIN be returned
 // the caller then passes uint8_t to fwriteMain
   switch(TYPEOF(column)) {
