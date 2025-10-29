@@ -21855,3 +21855,24 @@ test(2344.03, setkey(d1[, .(V1, label = c("one", "zero", "one"), V2)][data.table
 # keep sub-key in case of multiple keys, even with new columns and changing column order
 DT = data.table(V1 = 1:2, V2 = 3:4, V3 = 5:6, key = c("V1", "V2", "V3"))
 test(2344.04, key(DT[, .(V4 = c("b", "a"), V2, V5 = c("y", "x"), V1)]), c("V1", "V2"))
+
+# #7288: tools and parallel packages used by fread and frollapply
+# Test 1: fread works when tools package is available
+test(2345.01, {
+  tf = tempfile()
+  writeLines("a,b,c\n1,2,3\n4,5,6", tf)
+  dt = fread(tf)
+  unlink(tf)
+  all(dim(dt) == c(2,3))
+}, TRUE)
+# Test 2: frollapply works when parallel package is available
+test(2345.02, {
+  x = 1:20
+  result = frollapply(x, N=5, FUN=sum)
+  is.numeric(result) && length(result) == 20
+}, TRUE)
+# Test 3: Check tools namespace is available
+test(2345.03, requireNamespace("tools", quietly=TRUE), TRUE)
+# Test 4: Check parallel namespace is available
+test(2345.04, requireNamespace("parallel", quietly=TRUE), TRUE)
+
