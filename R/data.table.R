@@ -210,7 +210,7 @@ replace_dot_alias = function(e) {
   NULL
 }
 
-# Optimize c(...) expressions 
+# Optimize c(...) expressions
 .optimize_c_expr = function(jsub, jvnames, sdvars, SDenv, funi, envir) {
   if (!jsub %iscall% "c" || length(jsub) <= 1L) {
     return(list(jsub=jsub, jvnames=jvnames, funi=funi, optimized=FALSE))
@@ -328,13 +328,13 @@ replace_dot_alias = function(e) {
   # Return result
   if (!is_valid || !any_SD) {
     # Can't optimize - return original
-    return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
+    list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE)
   } else {
     # Optimization successful
     setattr(jsubl, 'names', NULL)
     jsub_new = as.call(unlist(jsubl, use.names=FALSE))
     jsub_new[[1L]] = quote(list)
-    return(list(jsub=jsub_new, jvnames=jvnames, funi=funi, optimized=TRUE))
+    list(jsub=jsub_new, jvnames=jvnames, funi=funi, optimized=TRUE)
   }
 }
 
