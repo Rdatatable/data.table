@@ -279,7 +279,7 @@ melt(who, measure.vars = measure(
 
 When using the `pattern` argument, it must be a Perl-compatible
 regular expression containing the same number of capture groups
-(parenthesized sub-expressions) as the number other arguments (group
+(parenthesized sub-expressions) as the number of other arguments (group
 names). The code below shows how to use a more complex regex with five
 groups, two numeric output columns, and an anonymous type conversion
 function,
