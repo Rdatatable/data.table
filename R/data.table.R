@@ -364,6 +364,18 @@ replace_dot_alias = function(e) {
     jvnames = massage_result$jvnames
     funi = massage_result$funi
   }
+  # Pattern 3a2: lapply(list(col1, col2, ...), fun)
+  else if (is.call(jsub) && jsub %iscall% "lapply" && length(jsub) >= 2L &&
+           jsub[[2L]] %iscall% "list" && length(jsub[[2L]]) > 1L) {
+    cnames = as.list(jsub[[2L]])[-1L]
+    if (all(vapply_1b(cnames, is.name))) {
+      cnames = vapply_1c(cnames, as.character)
+      massage_result = .massageSD(jsub, cnames, SDenv, funi)
+      jsub = massage_result$jsub
+      jvnames = NULL # consistent with datatable.optimize=0L behavior
+      funi = massage_result$funi
+    }
+  }
   # Pattern 3b: Map(fun, .SD)
   else if (is.call(jsub) && jsub %iscall% "Map" && length(jsub) >= 3L && jsub[[3L]] == ".SD" && length(sdvars)) {
     massage_result = .massageSD(jsub, sdvars, SDenv, funi)
