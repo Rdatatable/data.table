@@ -361,7 +361,37 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,levels=NULL) {
+  # if levels is provided, test across multiple optimization levels
+  if (!is.null(levels)) {
+    cl = match.call()
+    cl$levels = NULL  # Remove levels from the recursive call
+
+    vector_params = c("error", "warning", "message", "output", "notOutput", "ignore.warning")
+    # Check if y was explicitly provided (not just the default)
+    y_provided = !missing(y)
+    compare = !y_provided && length(levels)>1L && !any(vapply_1b(vector_params, function(p) length(get(p, envir=environment())) > 0L))
+
+    for (i in seq_along(levels)) {
+      cl$num = num + (i - 1L) * 1e-6
+      opt_level = list(datatable.optimize = levels[i])
+      cl$options = if (!is.null(options)) c(as.list(options), opt_level) else opt_level
+      for (p in vector_params) {
+        val = get(p, envir=environment())
+        if (length(val) > 0L) {
+          cl[[p]] = val[((i - 1L) %% length(val)) + 1L] # ccycle through values if fewer than levels
+        } else if (p %in% names(cl)) {
+          cl[[p]] = NULL
+        }
+      }
+
+      if (compare && i == 1L) cl$y = eval(cl$x, parent.frame())
+      eval(cl, parent.frame())
+    }
+    return(invisible())
+  }
+
+  # print(match.call())
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
