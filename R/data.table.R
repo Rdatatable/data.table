@@ -225,7 +225,7 @@ replace_dot_alias = function(e) {
   # For now, we optimise all functions mentioned in 'optfuns' below.
   optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
   is_valid = TRUE
-  any_SD = FALSE
+  any_optimized = FALSE
   jsubl = as.list.default(jsub)
   oldjvnames = jvnames
   jvnames = NULL  # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*length(sdvars) + other jvars ?? not straightforward.
@@ -235,7 +235,7 @@ replace_dot_alias = function(e) {
     # Case 1: Plain name (.SD or .N)
     if (is.name(this)) {  # no need to check length(this)==1L; is.name() returns single TRUE or FALSE (documented); can't have a vector of names
       if (this == ".SD") { # optimise '.SD' alone
-        any_SD = TRUE
+        any_optimized = TRUE
         jsubl[[i_]] = lapply(sdvars, as.name)
         jvnames = c(jvnames, sdvars)
       } else if (this == ".N") {
@@ -254,7 +254,7 @@ replace_dot_alias = function(e) {
       is_lapply = this[[1L]] == "lapply" && length(this) >= 2L && this[[2L]] == ".SD"
       is_map = this[[1L]] == "Map" && length(this) >= 3L && this[[3L]] == ".SD"
       if ((is_lapply || is_map) && length(sdvars)) {
-        any_SD = TRUE
+        any_optimized = TRUE
         massage_result = .massageSD(this, sdvars, SDenv, funi)
         funi = massage_result$funi
         jsubl[[i_]] = as.list(massage_result$jsub[-1L]) # just keep the '.' from list(.)
@@ -289,6 +289,7 @@ replace_dot_alias = function(e) {
             jn__[idx & !nzchar(jn__)] = "I"  # this & is correct not &&
           jvnames = c(jvnames, jn__)
           jsubl[[i_]] = jl__
+          any_optimized = TRUE
         }
       }
       # Case 2c: Single-value functions like mean, sum, etc.
@@ -299,7 +300,7 @@ replace_dot_alias = function(e) {
       else if (length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") &&
                this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N")) {
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
-        any_SD = TRUE
+        any_optimized = TRUE
         jsubl[[i_]] = lapply(sdvars, function(x) { this[[2L]] = as.name(x); this })
         jvnames = c(jvnames, sdvars)
       }
@@ -326,7 +327,7 @@ replace_dot_alias = function(e) {
   }
 
   # Return result
-  if (!is_valid || !any_SD) {
+  if (!is_valid || !any_optimized) {
     # Can't optimize - return original
     list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE)
   } else {
