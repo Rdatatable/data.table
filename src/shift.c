@@ -30,7 +30,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
 
   int nx = length(x), nk = length(k);
   if (!isInteger(k)) internal_error(__func__, "k must be integer"); // # nocov
-  const int *kd = INTEGER(k);
+  const int *kd = INTEGER_RO(k);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
 
   const bool cycle = stype == CYCLIC;
@@ -49,14 +49,14 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));  // #4865 use coerceAs for type coercion
     switch (TYPEOF(elem)) {
     case INTSXP: case LGLSXP: {
-      const int ifill = INTEGER(thisfill)[0];
+      const int ifill = INTEGER_RO(thisfill)[0];
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(TYPEOF(elem), xrows) );
-        const int *restrict ielem = INTEGER(elem);
+        const int *restrict ielem = INTEGER_RO(elem);
         int *restrict itmp = INTEGER(tmp);
-        size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
-        size_t tailk = xrows-thisk;
+        const size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
+        const size_t tailk = xrows-thisk;
         if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
           // LAG when type %in% c('lag','cyclic') and n >= 0 _or_ type = 'lead' and n < 0
           if (tailk > 0) memmove(itmp+thisk, ielem, tailk*size);
@@ -75,11 +75,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       }
     } break;
     case REALSXP : {
-      const double dfill = REAL(thisfill)[0];
+      const double dfill = REAL_RO(thisfill)[0];
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
-        const double *restrict delem = REAL(elem);
+        const double *restrict delem = REAL_RO(elem);
         double *restrict dtmp = REAL(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
@@ -98,11 +98,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       }
     } break;
     case CPLXSXP : {
-      const Rcomplex cfill = COMPLEX(thisfill)[0];
+      const Rcomplex cfill = COMPLEX_RO(thisfill)[0];
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
-        const Rcomplex *restrict celem = COMPLEX(elem);
+        const Rcomplex *restrict celem = COMPLEX_RO(elem);
         Rcomplex *restrict ctmp = COMPLEX(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
@@ -151,11 +151,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       }
     } break;
     case RAWSXP : {
-      const Rbyte rfill = RAW(thisfill)[0];
+      const Rbyte rfill = RAW_RO(thisfill)[0];
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(RAWSXP, xrows) );
-        const Rbyte *restrict delem = RAW(elem);
+        const Rbyte *restrict delem = RAW_RO(elem);
         Rbyte *restrict dtmp = RAW(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;

@@ -24,7 +24,7 @@ SEXP cj(SEXP base_list) {
     switch(TYPEOF(source)) {
     case LGLSXP:
     case INTSXP: {
-      const int *restrict sourceP = INTEGER(source);
+      const int *restrict sourceP = INTEGER_RO(source);
       int *restrict targetP = INTEGER(target);
       #pragma omp parallel for num_threads(getDTthreads(thislen*eachrep, true))
       // default static schedule so two threads won't write to same cache line in last column
@@ -40,7 +40,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     case REALSXP: {
-      const double *restrict sourceP = REAL(source);
+      const double *restrict sourceP = REAL_RO(source);
       double *restrict targetP = REAL(target);
       #pragma omp parallel for num_threads(getDTthreads(thislen*eachrep, true))
       for (int i=0; i<thislen; ++i) {
@@ -54,7 +54,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     case CPLXSXP: {
-      const Rcomplex *restrict sourceP = COMPLEX(source);
+      const Rcomplex *restrict sourceP = COMPLEX_RO(source);
       Rcomplex *restrict targetP = COMPLEX(target);
       #pragma omp parallel for num_threads(getDTthreads(thislen*eachrep, true))
       for (int i=0; i<thislen; ++i) {

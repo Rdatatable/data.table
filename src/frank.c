@@ -28,12 +28,12 @@ SEXP dt_na(SEXP x, SEXP cols)
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
     case LGLSXP: {
-      const int *iv = LOGICAL(v);
+      const int *iv = LOGICAL_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_LOGICAL);
     }
       break;
     case INTSXP: {
-      const int *iv = INTEGER(v);
+      const int *iv = INTEGER_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_INTEGER);
     }
       break;
@@ -44,10 +44,10 @@ SEXP dt_na(SEXP x, SEXP cols)
       break;
     case REALSXP: {
       if (INHERITS(v, char_integer64)) {
-        const int64_t *dv = (int64_t *)REAL(v);
+        const int64_t *dv = (const int64_t*)REAL_RO(v);
         for (int j=0; j<n; ++j) ians[j] |= (dv[j] == NA_INTEGER64);
       } else {
-        const double *dv = REAL(v);
+        const double *dv = REAL_RO(v);
         for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
       }
     }
@@ -59,7 +59,7 @@ SEXP dt_na(SEXP x, SEXP cols)
       break;
     case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
-      for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
+      for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX_RO(v)[j].r) || ISNAN(COMPLEX_RO(v)[j].i));
     }
       break;
     case VECSXP: {
@@ -69,11 +69,11 @@ SEXP dt_na(SEXP x, SEXP cols)
         SEXP list_element = VECTOR_ELT(v, j);
         switch (TYPEOF(list_element)) {
         case LGLSXP: {
-          ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
+          ians[j] |= (length(list_element)==1 && LOGICAL_RO(list_element)[0] == NA_LOGICAL);
         }
           break;
         case INTSXP: {
-          ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
+          ians[j] |= (length(list_element)==1 && INTEGER_RO(list_element)[0] == NA_INTEGER);
         }
           break;
         case STRSXP: {
@@ -82,7 +82,7 @@ SEXP dt_na(SEXP x, SEXP cols)
           break;
         case CPLXSXP: {
           if (length(list_element)==1) {
-            Rcomplex first_complex = COMPLEX(list_element)[0];
+            Rcomplex first_complex = COMPLEX_RO(list_element)[0];
             ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
           }
         }
@@ -90,9 +90,9 @@ SEXP dt_na(SEXP x, SEXP cols)
         case REALSXP: {
           if (length(list_element)==1) {
             if (INHERITS(list_element, char_integer64)) {
-              ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
+              ians[j] |= ((const int64_t *)REAL_RO(list_element))[0] == NA_INTEGER64;
             } else {
-              ians[j] |= ISNAN(REAL(list_element)[0]);
+              ians[j] |= ISNAN(REAL_RO(list_element)[0]);
             }
           }
         }
@@ -110,7 +110,7 @@ SEXP dt_na(SEXP x, SEXP cols)
 }
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
-  const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
+  const int *xstart = INTEGER_RO(xstartArg), *xlen = INTEGER_RO(xlenArg), *xorder = INTEGER_RO(xorderArg);
   enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
 
   const char *pties = CHAR(STRING_ELT(ties_method, 0));
@@ -191,7 +191,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
   if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
-    const int elem = INTEGER(cols)[i];
+    const int elem = INTEGER_RO(cols)[i];
     if (elem<1 || elem>LENGTH(x))
       error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
@@ -205,11 +205,11 @@ SEXP anyNA(SEXP x, SEXP cols) {
     j=0;
     switch (TYPEOF(v)) {
     case LGLSXP: {
-      const int *iv = LOGICAL(v);
+      const int *iv = LOGICAL_RO(v);
       while(j<n && iv[j]!=NA_LOGICAL) j++;
     } break;
     case INTSXP: {
-      const int *iv = INTEGER(v);
+      const int *iv = INTEGER_RO(v);
       while(j<n && iv[j]!=NA_INTEGER) j++;
     } break;
     case STRSXP: {
@@ -218,10 +218,10 @@ SEXP anyNA(SEXP x, SEXP cols) {
     } break;
     case REALSXP:
       if (INHERITS(v, char_integer64)) {
-        const int64_t *dv = (int64_t *)REAL(v);
+        const int64_t *dv = (const int64_t*)REAL_RO(v);
         while (j<n && dv[j]!=NA_INTEGER64) j++;
       } else {
-        const double *dv = REAL(v);
+        const double *dv = REAL_RO(v);
         while (j<n && !ISNAN(dv[j])) j++;
       }
       break;
@@ -230,7 +230,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       j = n;
       break;
     case CPLXSXP: {
-      const Rcomplex *cv = COMPLEX(v);
+      const Rcomplex *cv = COMPLEX_RO(v);
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       while (j<n && !ISNAN(cv[j].r) && !ISNAN(cv[j].i)) j++;
     } break;
