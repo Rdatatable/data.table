@@ -378,7 +378,9 @@ replace_dot_alias = function(e) {
     }
   }
   # Pattern 3b: Map(fun, .SD)
-  else if (is.call(jsub) && jsub %iscall% "Map" && length(jsub) >= 3L && jsub[[3L]] == ".SD" && length(sdvars)) {
+  # Only optimize if .SD appears exactly once to avoid cases like Map(rep, .SD, .SD)
+  else if (is.call(jsub) && jsub %iscall% "Map" && length(jsub) >= 3L && jsub[[3L]] == ".SD" && length(sdvars) &&
+           sum(vapply_1b(as.list(jsub), function(x) identical(x, quote(.SD)))) == 1L) {
     massage_result = .massageSD(jsub, sdvars, SDenv, funi)
     jsub = massage_result$jsub
     jvnames = massage_result$jvnames
@@ -3313,13 +3315,15 @@ is_constantish = function(q, check_singleton=FALSE) {
 .gweighted.mean_ok = function(q, x) { #3977
   q = match.call(gweighted.mean, q)
   is_constantish(q[["na.rm"]]) &&
+    !(is.symbol(q[["na.rm"]]) && q[["na.rm"]] %chin% names(x)) &&
     (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
 }
 # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
 .get_gcall = function(q) {
   if (!is.call(q)) return(NULL)
   # is.symbol() is for #1369, #1974 and #2949
-  if (!is.symbol(q[[2L]])) return(NULL)
+  if (!is.symbol(q[[2L]]) && !is.call(q[[2L]])) return(NULL)
+  if (is.call(q[[2L]]) && !.is_type_conversion(q[[2L]])) return(NULL)
   q1 = q[[1L]]
   if (is.symbol(q1)) return(if (q1 %chin% gfuns) q1)
   if (!q1 %iscall% "::") return(NULL)
@@ -3332,12 +3336,20 @@ is_constantish = function(q, check_singleton=FALSE) {
 #   is robust to unnamed expr. Note that NA names are not possible here.
 .arg_is_narm = function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
 
+.is_type_conversion = function(expr) {
+  is.call(expr) && is.symbol(expr[[1L]]) && expr[[1L]] %chin%
+    c("as.numeric", "as.double", "as.integer", "as.character", "as.integer64",
+      "as.complex", "as.logical", "as.Date", "as.POSIXct", "as.factor")
+}
+
 .gforce_ok = function(q, x, envir=parent.frame(2L)) {
   if (is.N(q)) return(TRUE) # For #334
   q1 = .get_gcall(q)
   if (is.null(q1)) return(FALSE)
-  if (!(q2 <- q[[2L]]) %chin% names(x) && q2 != ".I") return(FALSE)  # 875
-  if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]))) return(TRUE)
+  q2 = if (.is_type_conversion(q[[2L]]) && is.symbol(q[[2L]][[2L]])) q[[2L]][[2L]] else q[[2L]]
+  if (!q2 %chin% names(x) && q2 != ".I") return(FALSE)  # 875
+  if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]) &&
+      !(is.symbol(q[[3L]]) && q[[3L]] %chin% names(x)))) return(TRUE)
   switch(as.character(q1),
     "shift" = .gshift_ok(q),
     "weighted.mean" = .gweighted.mean_ok(q, x),
