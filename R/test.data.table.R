@@ -380,8 +380,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         val = get(p, envir=environment())
         if (length(val) > 0L) {
           cl[[p]] = val[((i - 1L) %% length(val)) + 1L] # ccycle through values if fewer than levels
-        } else if (p %in% names(cl)) {
-          cl[[p]] = NULL
         }
       }
 
