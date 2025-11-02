@@ -379,17 +379,16 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       for (p in vector_params) {
         val = get(p, envir=environment())
         if (length(val) > 0L) {
-          cl[[p]] = val[((i - 1L) %% length(val)) + 1L] # ccycle through values if fewer than levels
+          cl[[p]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than levels
         }
       }
 
       if (compare && i == 1L) cl$y = eval(cl$x, parent.frame())
-      eval(cl, parent.frame())
+      eval(cl, parent.frame()) # actual test call
     }
     return(invisible())
   }
 
-  # print(match.call())
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
