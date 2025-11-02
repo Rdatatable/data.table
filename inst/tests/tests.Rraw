@@ -13676,6 +13676,7 @@ DT = data.table(A=1:5, B=-3i, C=2147483647L)
 test(1968.2, storage.mode(DT$C), "integer")
 test(1968.3, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)),
              warning="sum.*integer column.*more than type 'integer' can hold.*coerced to 'numeric'")
+test(1968.35, DT[, sum(as.numeric(C)), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)))
 DT[3,C:=NA]
 test(1968.4, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(NA, 4294967294)), warning="coerced to 'numeric'")
 test(1968.5, DT[, sum(C,na.rm=TRUE), by=A%%2L], data.table(A=c(1L,0L), V1=c(4294967294, 4294967294)), warning="coerced to 'numeric'")
@@ -21213,3 +21214,18 @@ test(2344.03, setkey(d1[, .(V1, label = c("one", "zero", "one"), V2)][data.table
 # keep sub-key in case of multiple keys, even with new columns and changing column order
 DT = data.table(V1 = 1:2, V2 = 3:4, V3 = 5:6, key = c("V1", "V2", "V3"))
 test(2344.04, key(DT[, .(V4 = c("b", "a"), V2, V5 = c("y", "x"), V1)]), c("V1", "V2"))
+
+# gforce should also work with Map in j #5336
+# conversions should not turn gforce off #2934
+# lapply gforce should also work without .SD #5032
+dt = data.table(a=1:4, b=1:2)
+out = c("GForce FALSE", "GForce FALSE", "GForce TRUE")
+test(2345.01, levels=0:2, dt[, max(as.character(a)), by=b, verbose=TRUE], data.table(b=1:2, V1=c("3","4")), output=out)
+test(2345.02, levels=0:2, dt[, max(as.numeric(a)), by=b, verbose=TRUE], data.table(b=1:2, V1=c(3,4)), output=out)
+test(2345.03, levels=0:2, dt[, Map(sum, .SD), b, verbose=TRUE], dt[, lapply(.SD, sum), b], output=out)
+dt = data.table(a = NA_integer_, b = 1:2, c = c(TRUE, FALSE))
+test(2345.04, levels=0:2, dt[, Map(weighted.mean, .SD, na.rm=c), b, .SDcols="a", verbose=TRUE], data.table(b=1:2, a=c(NaN, NA_real_)), output="GForce FALSE")
+test(2345.05, levels=0:2, dt[,list(weighted.mean(a, na.rm=c)), b, verbose=TRUE], data.table(b=1:2, V1=c(NaN, NA_real_)), output="GForce FALSE")
+dt = data.table(a=1:2, b=1, c=1:4)
+test(2345.06, levels=1:2, dt[, lapply(list(b, c), sum), by=a, verbose=TRUE], output=c("lapply optimization changed j", "GForce TRUE"))
+test(2345.07, levels=1:2, dt[, c(list(sum(b), sum(c))), by=a, verbose=TRUE], output=c("lapply optimization changed j", "GForce TRUE"))
