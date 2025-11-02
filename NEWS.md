@@ -342,6 +342,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 21. `[` now preserves existing key(s) when new columns are added before them, instead of incorrectly setting a new column as key, [#7364](https://github.com/Rdatatable/data.table/issues/7364). Thanks @czeildi for the bug report and the fix.
 
+22. `setDTthreads(percent=)` and `setDTthreads(threads=)` now respect `OMP_NUM_THREADS` and `omp_get_max_threads()`, ensuring consistency with `setDTthreads()` (no arguments) when OpenMP environment variables are set, [#7165](https://github.com/Rdatatable/data.table/issues/7165). Previously, explicitly setting a thread count or percentage would ignore these OpenMP limits, potentially exceeding the user's intended thread cap. Thanks to @bastistician for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
