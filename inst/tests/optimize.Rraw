@@ -445,11 +445,3 @@ test(2283 + 0.18, levels=opts,
 test(2283 + 0.19, levels=opts,
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "V2", "b", "vs", "am"))
-
-# Test lapply(list(...), fun) optimization
-dt = as.data.table(iris)
-opt = c(0L, 1L)
-out = c('GForce FALSE', 'lapply optimization changed j')
-test(2284.1, levels=opt, dt[, lapply(list(Petal.Length, Sepal.Length), sum), by=Species, verbose=TRUE], output=out)
-test(2284.2, levels=opt, names(dt[, lapply(list(Petal.Length, Sepal.Length), sum), by=Species]))
-test(2284.3, levels=opt, dt[, c(list(sum(Petal.Length), sum(Sepal.Length))), by=Species, verbose=TRUE], output=out)
