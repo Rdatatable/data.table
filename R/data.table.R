@@ -3342,9 +3342,12 @@ is_constantish = function(q, check_singleton=FALSE) {
       "as.complex", "as.logical", "as.Date", "as.POSIXct", "as.factor")
 }
 
+.gforce_ops = c("+", "-", "*", "/", "^", "%%", "%/%")
+
 .gforce_ok = function(q, x, envir=parent.frame(2L)) {
   if (is.N(q)) return(TRUE) # For #334
   if (!is.call(q)) return(FALSE)  # plain columns are not gforce-able since they might not aggregate (see test 104.1)
+  if (q %iscall% "(") return(.gforce_ok(q[[2L]], x, envir))
 
   q1 = .get_gcall(q)
   if (!is.null(q1)) {
@@ -3362,7 +3365,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   }
 
   # check if arithmetic operator -> recursively validate ALL branches (like in AST)
-  if (is.symbol(q[[1L]]) && q[[1L]] %chin% c("+", "-", "*", "/", "^", "%%", "%/%")) {
+  if (is.symbol(q[[1L]]) && q[[1L]] %chin% .gforce_ops) {
     for (i in 2:length(q)) {
       if (!.gforce_ok(q[[i]], x, envir)) return(FALSE)
     }
@@ -3374,6 +3377,10 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 .gforce_jsub = function(q, names_x, envir=parent.frame(2L)) {
   if (!is.call(q)) return(q)
+  if (q %iscall% "(") {
+    q[[2L]] = .gforce_jsub(q[[2L]], names_x, envir)
+    return(q)
+  }
 
   q1 = .get_gcall(q)
   if (!is.null(q1)) {
@@ -3390,7 +3397,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   }
 
   # if arithmetic operator, recursively substitute its operands. we know what branches are valid from .gforce_ok
-  if (is.symbol(q[[1L]]) && q[[1L]] %chin% c("+", "-", "*", "/", "^", "%%", "%/%")) {
+  if (is.symbol(q[[1L]]) && q[[1L]] %chin% .gforce_ops) {
     for (i in 2:length(q)) {
       q[[i]] = .gforce_jsub(q[[i]], names_x, envir)
     }
