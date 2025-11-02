@@ -3346,7 +3346,7 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 .gforce_ok = function(q, x, envir=parent.frame(2L)) {
   if (is.N(q)) return(TRUE) # For #334
-  if (!is.call(q)) return(FALSE)  # plain columns are not gforce-able since they might not aggregate (see test 104.1)
+  if (!is.call(q)) return(is.numeric(q)) # plain columns are not gforce-able since they might not aggregate (see test 104.1)
   if (q %iscall% "(") return(.gforce_ok(q[[2L]], x, envir))
 
   q1 = .get_gcall(q)
