@@ -3344,31 +3344,59 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 .gforce_ok = function(q, x, envir=parent.frame(2L)) {
   if (is.N(q)) return(TRUE) # For #334
+  if (!is.call(q)) return(FALSE)  # plain columns are not gforce-able since they might not aggregate (see test 104.1)
+
   q1 = .get_gcall(q)
-  if (is.null(q1)) return(FALSE)
-  q2 = if (.is_type_conversion(q[[2L]]) && is.symbol(q[[2L]][[2L]])) q[[2L]][[2L]] else q[[2L]]
-  if (!q2 %chin% names(x) && q2 != ".I") return(FALSE)  # 875
-  if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]) &&
-      !(is.symbol(q[[3L]]) && q[[3L]] %chin% names(x)))) return(TRUE)
-  switch(as.character(q1),
-    "shift" = .gshift_ok(q),
-    "weighted.mean" = .gweighted.mean_ok(q, x),
-    "tail" = , "head" = .ghead_ok(q),
-    "[[" = , "[" = `.g[_ok`(q, x, envir),
-    FALSE
-  )
+  if (!is.null(q1)) {
+    q2 = if (.is_type_conversion(q[[2L]]) && is.symbol(q[[2L]][[2L]])) q[[2L]][[2L]] else q[[2L]]
+    if (!q2 %chin% names(x) && q2 != ".I") return(FALSE)  # 875
+    if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]) &&
+        !(is.symbol(q[[3L]]) && q[[3L]] %chin% names(x)))) return(TRUE)
+    return(switch(as.character(q1),
+      "shift" = .gshift_ok(q),
+      "weighted.mean" = .gweighted.mean_ok(q, x),
+      "tail" = , "head" = .ghead_ok(q),
+      "[[" = , "[" = `.g[_ok`(q, x, envir),
+      FALSE
+    ))
+  }
+
+  # check if arithmetic operator -> recursively validate ALL branches (like in AST)
+  if (is.symbol(q[[1L]]) && q[[1L]] %chin% c("+", "-", "*", "/", "^", "%%", "%/%")) {
+    for (i in 2:length(q)) {
+      if (!.gforce_ok(q[[i]], x, envir)) return(FALSE)
+    }
+    return(TRUE)
+  }
+
+  FALSE
 }
 
 .gforce_jsub = function(q, names_x, envir=parent.frame(2L)) {
-  call_name = if (is.symbol(q[[1L]])) q[[1L]] else q[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
-  q[[1L]] = as.name(paste0("g", call_name))
-  # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
-  # do not evaluate vars present as columns in x
-  if (length(q) >= 3L) {
-    for (i in 3:length(q)) {
-      if (is.symbol(q[[i]]) && !(q[[i]] %chin% names_x)) q[[i]] = eval(q[[i]], envir) # tests 1187.2 & 1187.4
+  if (!is.call(q)) return(q)
+
+  q1 = .get_gcall(q)
+  if (!is.null(q1)) {
+    call_name = if (is.symbol(q[[1L]])) q[[1L]] else q[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
+    q[[1L]] = as.name(paste0("g", call_name))
+    # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
+    # do not evaluate vars present as columns in x
+    if (length(q) >= 3L) {
+      for (i in 3:length(q)) {
+        if (is.symbol(q[[i]]) && !(q[[i]] %chin% names_x)) q[[i]] = eval(q[[i]], envir) # tests 1187.2 & 1187.4
+      }
     }
+    return(q)
   }
+
+  # if arithmetic operator, recursively substitute its operands. we know what branches are valid from .gforce_ok
+  if (is.symbol(q[[1L]]) && q[[1L]] %chin% c("+", "-", "*", "/", "^", "%%", "%/%")) {
+    for (i in 2:length(q)) {
+      q[[i]] = .gforce_jsub(q[[i]], names_x, envir)
+    }
+    return(q)
+  }
+  # should not reach here since .gforce_ok
   q
 }
 

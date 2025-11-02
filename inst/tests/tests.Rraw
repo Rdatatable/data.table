@@ -21218,6 +21218,7 @@ test(2344.04, key(DT[, .(V4 = c("b", "a"), V2, V5 = c("y", "x"), V1)]), c("V1", 
 # gforce should also work with Map in j #5336
 # conversions should not turn gforce off #2934
 # lapply gforce should also work without .SD #5032
+# support arithmetic in j with gforce #3815
 dt = data.table(a=1:4, b=1:2)
 out = c("GForce FALSE", "GForce FALSE", "GForce TRUE")
 test(2345.01, levels=0:2, dt[, max(as.character(a)), by=b, verbose=TRUE], data.table(b=1:2, V1=c("3","4")), output=out)
@@ -21231,3 +21232,7 @@ out = c("GForce FALSE", "lapply optimization changed j", "GForce TRUE")
 test(2345.06, levels=0:2, dt[, lapply(list(b, c), sum), by=a, verbose=TRUE], output=out)
 test(2345.07, levels=0:2, dt[, c(list(sum(b), sum(c))), by=a, verbose=TRUE], output=out)
 test(2345.08, levels=0:2, names(dt[, lapply(list(b, c), sum), by=a]))
+dt = data.table(a=1:4, b=1:2)
+out = c("GForce FALSE", "GForce FALSE", "GForce TRUE")
+test(2345.09, levels=0:2, dt[, .(max(a)-min(a)), by=b, verbose=TRUE], output=out)
+dt = data.table(a=1:4, b=1:2)
