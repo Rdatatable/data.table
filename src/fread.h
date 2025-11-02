@@ -123,6 +123,10 @@ typedef struct freadMainArgs
   // non-ASCII, or different open/closing quotation marks are not supported.
   char quote;
 
+  // Character that marks the beginning of a comment. When '\0', comment
+  // parsing is disabled.
+  char comment;
+
   // Is there a header at the beginning of the file?
   // 0 = no, 1 = yes, -128 = autodetect
   int8_t header;

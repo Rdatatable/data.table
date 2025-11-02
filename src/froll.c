@@ -75,6 +75,20 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
       frollmedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
+  case VAR :
+    if (algo==0) {
+      frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+  case SD :
+    if (algo==0) {
+      frollsdFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in froll: %d", rfun); // # nocov
   }
@@ -231,7 +245,7 @@ void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   }
   bool truehasnf = hasnf>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {                           // loop on every observation with complete window, partial already filled in single threaded section
       if (narm && truehasnf) {
         continue;                                               // if NAs detected no point to continue
@@ -251,6 +265,7 @@ void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
         if (!narm) {
           ans->dbl_v[i] = (double) w;                           // NAs should be propagated
         }
+        #pragma omp atomic write
         truehasnf = true;                                       // NAs detected for this window, set flag so rest of windows will not be re-run
       } else {
         ans->dbl_v[i] = (double) w;                             // Inf and -Inf
@@ -418,7 +433,7 @@ void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -433,6 +448,7 @@ void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
         if (!narm) {
           ans->dbl_v[i] = (double) w;
         }
+        #pragma omp atomic write
         truehasnf = true;
       } else {
         ans->dbl_v[i] = (double) w;
@@ -1065,7 +1081,7 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   }
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -1080,6 +1096,7 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
         if (!narm) {
           ans->dbl_v[i] = (double) w;
         }
+        #pragma omp atomic write
         truehasnf = true;
       } else {
         ans->dbl_v[i] = (double) w;
@@ -1120,6 +1137,203 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
         }
       }
     }
+  }
+}
+
+/* fast rolling var - fast
+  Welford's online algorithm
+  numerically stable
+  no support for NFs, redirecting to exact
+  Welford wmean and m2 would have to be recalculated on each NF element
+ */
+void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarFast", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0 || k == 1) { // var(scalar) is also NA
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size %d, returning all NA vector\n"), __func__, k);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = NA_REAL;
+    }
+    return;
+  }
+  long double wmean = 0.0;
+  long double m2 = 0.0;
+  int k0 = k-1;
+  bool truehasnf = hasnf>0;
+  if (!truehasnf) {
+    int i;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      long double delta = x[i] - wmean;
+      wmean += delta / (i + 1);
+      m2 += delta * (x[i] - wmean);
+      ans->dbl_v[i] = fill;
+    }
+    long double delta = x[i] - wmean; // i==k-1
+    wmean += delta / (i + 1);
+    m2 += delta * (x[i] - wmean);
+    double ans_i = m2 / k0;
+    ans->dbl_v[i] = MAX(0,ans_i);
+    if (R_FINITE((double) m2)) {
+      for (uint64_t i=k; i<nx; i++) {
+          double x_out = x[i-k];
+          long double delta_out = x_out - wmean;
+          wmean = (wmean * k - x_out) / k0;
+          m2 -= delta_out * (x_out - wmean);
+          double x_in = x[i];
+          long double delta_in = x_in - wmean;
+          wmean += delta_in / k;
+          m2 += delta_in * (x_in - wmean);
+          double ans_i = m2 / k0;
+          ans->dbl_v[i] = MAX(0,ans_i);
+      }
+      if (!R_FINITE((double) m2)) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+        if (verbose)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        /*wmean = 0.0; m2 = 0.0; */truehasnf = true;
+      }
+    } else {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
+      /*wmean = 0.0; m2 = 0.0; */truehasnf = true;
+    }
+  }
+  if (truehasnf) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: non-finite values are present in input, redirecting to frollvarExact using has.nf=TRUE\n"), __func__);
+    frollvarExact(x, nx, ans, k, fill, narm, /*hasnf=*/true, verbose);
+    return;
+  }
+}
+
+/* fast rolling var - exact
+ */
+void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarExact", (uint64_t)nx, k, hasnf, (int)narm);
+  if (k == 0 || k == 1) { // var(scalar) is also NA
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width of size %d, returning all NA vector\n"), __func__, k);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = NA_REAL;
+    }
+    return;
+  }
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
+    for (uint64_t i=k-1; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      long double wsum = 0.0;
+      for (int j=-k+1; j<=0; j++) {
+        wsum += x[i+j];
+      }
+      if (!R_FINITE((double) wsum)) {
+        if (ISNAN((double) wsum)) {
+          if (!narm) {
+            ans->dbl_v[i] = (double) wsum; // propagate NAs
+          }
+          #pragma omp atomic write
+          truehasnf = true;
+        } else {
+          ans->dbl_v[i] = R_NaN;
+        }
+      } else {
+        long double wmean = wsum / k;
+        long double xi = 0.0;
+        long double wsumxi = 0;
+        for (int j=-k+1; j<=0; j++) {
+          xi = x[i+j] - wmean;
+          wsumxi += (xi * xi);
+        }
+        double ans_i = wsumxi / (k - 1);
+        ans->dbl_v[i] = MAX(0,ans_i);
+      }
+    }
+    if (truehasnf) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+          if (narm)
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+          else
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      long double wsum = 0.0;
+      int nc = 0;
+      for (int j=-k+1; j<=0; j++) {
+        if (ISNAN(x[i+j])) {
+          nc++;
+        } else {
+          wsum += x[i+j];
+        }
+      }
+      if (R_FINITE((double) wsum)) {
+        if (nc == 0) {
+          long double wmean = wsum / k;
+          long double xi = 0.0;
+          long double wsumxi = 0;
+          for (int j=-k+1; j<=0; j++) {
+            xi = x[i+j] - wmean;
+            wsumxi += (xi * xi);
+          }
+          double ans_i = wsumxi / (k - 1);
+          ans->dbl_v[i] = MAX(0,ans_i);
+        } else if (nc < (k - 1)) { // var(scalar) is also NA thats why k-1 so at least 2 numbers must be there
+          long double wmean = wsum / (k - nc);
+          long double xi = 0.0;
+          long double wsumxi = 0;
+          for (int j=-k+1; j<=0; j++) {
+            if (!ISNAN(x[i+j])) {
+              xi = x[i+j] - wmean;
+              wsumxi += (xi * xi);
+            }
+          }
+          double ans_i = wsumxi / (k - nc - 1);
+          ans->dbl_v[i] = MAX(0,ans_i);
+        } else {
+          ans->dbl_v[i] = NA_REAL;
+        }
+      } else {
+        ans->dbl_v[i] = (double) R_NaN;
+      }
+    }
+  }
+}
+
+/* fast rolling sd - fast
+ */
+void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarFast(...))\n"), "frollsdFast");
+  frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+  for (uint64_t i=k-1; i<nx; i++) {
+    ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
+  }
+}
+
+/* fast rolling sd - exact
+ */
+void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarExact(...))\n"), "frollsdExact");
+  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  for (uint64_t i=k-1; i<nx; i++) {
+    ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
 }
 

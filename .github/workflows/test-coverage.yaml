@@ -3,7 +3,20 @@
 on:
   push:
     branches: [master]
+    paths:
+      - '.github/workflows/test-coverage.yaml'
+      - 'inst/tests/**'
+      - 'R/**'
+      - 'src/**'
+      - 'tests/**'
   pull_request:
+    paths:
+      - '.github/workflows/test-coverage.yaml'
+      - 'inst/tests/**'
+      - 'R/**'
+      - 'src/**'
+      - 'tests/**'
+  workflow_dispatch:
 
 name: test-coverage.yaml
 
