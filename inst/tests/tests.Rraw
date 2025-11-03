@@ -3995,8 +3995,6 @@ DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.1
 test(1143.3, DT[, list(lx=x[.N]), by=x], data.table(x=DT$x, lx=DT$x))
 test(1143.4,optimization=c(0L, 2L), copy(DT)[,`:=`(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
 test(1143.5,optimization=c(0L, 2L), copy(DT)[, let(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
-test(1143.6, copy(DT)[,`:=`(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
-test(1143.7, copy(DT)[, let(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
 
 # FR #2356 - retain names of named vector as column with keep.rownames=TRUE
 x <- 1:5
