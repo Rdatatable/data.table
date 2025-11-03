@@ -4738,42 +4738,23 @@ set.seed(45L)
 dt = data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), d=sample(5,10,TRUE))
 dt2 = data.table(x=c(1,1,1,2,2,2), y=1:6)
 
+gf_out = c("All optimizations are turned off", "Old mean optimization.*(GForce FALSE)", "GForce optimized j to")
+lp_out = c("All optimizations are turned off", "Old mean optimization.*(GForce FALSE)", "lapply optimization changed j")
+opt = c(0L, 1L, Inf)
 # auto-naming behavior is different for no-optimization case; just check optimization is off
-test(1268.01,optimization=0L, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output = 'All optimizations are turned off')
-test(1268.02,optimization=0L, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], output = 'All optimizations are turned off')
-test(1268.03,optimization=0L, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
-test(1268.04,optimization=0L, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
-test(1268.05,optimization=0L, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+test(1268.01,optimization=opt, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output = gf_out)
+test(1268.02,optimization=opt, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], output = lp_out)
+test(1268.03,optimization=opt, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output= lp_out)
+test(1268.04,optimization=opt, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], output= gf_out)
+test(1268.05,optimization=opt, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output= lp_out)
 # newly added tests for #861 -- optimise, but no GForce
-test(1268.06,optimization=0L, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+test(1268.06,optimization=opt, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output= lp_out)
 # don't optimise .I in c(...)
-test(1268.07,optimization=0L, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], output="All optimizations are turned off")
-
-test(1268.08,optimization=1L, ans1 <- dt[ , c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output="Old mean optimization.*(GForce FALSE)")
-test(1268.09,optimization=1L, ans2 <- dt[, c(lapply(.SD, mean), .N), by=a, verbose = TRUE], output="Old mean optimization.*GForce FALSE")
-test(1268.10,optimization=1L, ans3 <- dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output = 'Old mean optimization.*GForce FALSE')
-test(1268.11,optimization=1L, ans4 <- dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose = TRUE], output="Old mean optimization.*GForce FALSE")
-test(1268.12,optimization=1L, ans5 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
-test(1268.13,optimization=1L, ans6 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
-test(1268.14,optimization=1L, ans7 <- dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
-
-test(1268.15,optimization=Inf, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans1,
-             output="GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
-test(1268.16,optimization=Inf, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
-                  output = "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
-test(1268.17,optimization=Inf, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans3,
-             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(c, mean(b), mean(c), mean(d))")
-test(1268.18,optimization=Inf, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans4,
-             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-test(1268.19,optimization=Inf, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans5,
-             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-test(1268.20,optimization=Inf, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans6,
-             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
-test(1268.21,optimization=Inf, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans7,
-             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
-test(1268.22,optimization=Inf, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
+test(1268.07,optimization=opt, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE],
+  output= c("All optimizations are turned off", "Old mean optimization.*(GForce FALSE)", "lapply optimization is on, j unchanged as"))
+# tests .08-.21 were different optimization levels
+test(1268.22,optimization=opt, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
              error = "j doesn't evaluate to the same number of columns for each group")
-
 
 ### FR #2722 tests end here ###
 
