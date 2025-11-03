@@ -158,7 +158,7 @@ replace_dot_alias = function(e) {
     # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
     # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
     # replaced SDenv$.SD to SDenv to deal with Bug #87 reported by Ricardo (Nice catch!)
-    thisfun = paste0("..FUN", funi) # Fix for #985
+    thisfun = paste0("..LAPPLY_FUN", funi) # Fix for #985
     assign(thisfun, eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
     lockBinding(thisfun, SDenv)
     txt[[1L]] = as.name(thisfun)
