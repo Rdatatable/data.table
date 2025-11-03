@@ -337,6 +337,7 @@ test-win-old:
 ## R-release on MacOS
 test-mac-rel:
   <<: *test-mac
+  image: macos-14-xcode-15
   variables:
     R_VERSION: "$R_REL_VERSION"
     R_BIN: "$R_REL_MAC_BIN"
@@ -344,6 +345,7 @@ test-mac-rel:
 ## R-oldrel on MacOS
 test-mac-old:
   <<: *test-mac
+  image: macos-14-xcode-15
   variables:
     R_VERSION: "$R_OLD_VERSION"
     R_BIN: "$R_OLD_MAC_BIN"
