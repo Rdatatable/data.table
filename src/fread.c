@@ -1899,14 +1899,29 @@ int freadMain(freadMainArgs _args)
                 thisBlockStart = lineStart;
               }
             }
-            if ((thisBlockLines > topNumLines && lastncol > 1) ||  // more lines wins even with fewer fields, so long as number of fields >= 2
-                (thisBlockLines == topNumLines &&
-                 lastncol > topNumFields &&                      // when number of lines is tied, choose the sep which separates it into more columns
-                 (quoteRule < QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
-                 (topNumFields <= 1 || sep != ' '))) {
+            bool blockHasQuote = false;
+            if (quote && lastncol == 1) {
+              for (const char *scan = thisBlockStart; scan < ch; scan++) {
+                if (*scan == quote) {
+                  blockHasQuote = true;
+                  break;
+                }
+              }
+            }
+            bool singleColumnCandidate = (lastncol == 1 && thisBlockLines >= 2 && blockHasQuote && quoteRule < QUOTE_RULE_IGNORE_QUOTES);
+            // more contiguous rows than the current best; only allow 1-column wins while we still have no multi-column pick
+            bool betterLines = thisBlockLines > topNumLines && (lastncol > 1 || (singleColumnCandidate && topNumFields <= 1));
+            // first multi-column candidate after only single-column options so far
+            bool promoteOverSingle = (topNumFields <= 1 && lastncol > topNumFields && thisBlockLines >= 2);
+            // more lines wins even with fewer fields, so long as number of fields >= 2
+            bool betterTie = (thisBlockLines == topNumLines &&
+                              lastncol > topNumFields &&                      // when number of lines is tied, choose the sep which separates it into more columns
+                              (quoteRule < QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
+                              (topNumFields <= 1 || sep != ' '));
+            if (betterLines || promoteOverSingle || betterTie) {
               topNumLines = thisBlockLines;
               topNumFields = lastncol;
-              topSep = sep;
+              topSep = singleColumnCandidate ? 127 : sep;  // treat consistent single-column quoted blocks as single-column input (#7366)
               topQuoteRule = quoteRule;
               firstJumpEnd = ch;
               topStart = thisBlockStart;
