@@ -372,7 +372,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # Check if y was explicitly provided (not just the default)
     y_provided = !missing(y)
     vector_params = mget(c("error", "warning", "message", "output", "notOutput", "ignore.warning"), environment())
-    compare = !y_provided && length(optimize)>1L && !any(lengths(vector_params)) 
+    compare = !y_provided && length(optimize)>1L && !any(lengths(vector_params))
 
     for (i in seq_along(optimize)) {
       cl$num = num + (i - 1L) * 1e-6
