@@ -361,11 +361,11 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,optimization=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,optimize=NULL) {
   # if optimization is provided, test across multiple optimization levels
   if (!is.null(optimization)) {
     cl = match.call()
-    cl$optimization = NULL  # Remove optimization levels from the recursive call
+    cl$optimize= NULL  # Remove optimization levels from the recursive call
 
     # Check if y was explicitly provided (not just the default)
     y_provided = !missing(y)

@@ -19,34 +19,34 @@ for (s in sugg) {
 
 # := by group
 DT = data.table(a=1:3,b=(1:9)/10)
-test(611.1,optimization=c(0L, 2L), DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
+test(611.1,optimize=c(0L, 2L), DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
 setkey(DT,a)
-test(611.2,optimization=c(0L, 2L), DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
+test(611.2,optimize=c(0L, 2L), DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
 # Combining := by group with i
-test(611.3,optimization=c(0L, 2L), DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
-test(611.4,optimization=c(0L, 2L), DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
+test(611.3,optimize=c(0L, 2L), DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
+test(611.4,optimize=c(0L, 2L), DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
 # 612 was just level repetition of 611
 # Assign to subset ok (NA initialized in the other items) ok :
-test(613,optimization=c(0L, 2L), DT[J(2),w:=8.3]$w, rep(c(NA,8.3,NA),each=3))
-test(614,optimization=c(0L, 2L), DT[J(3),x:=9L]$x, rep(c(NA_integer_,NA_integer_,9L),each=3))
-test(615,optimization=c(0L, 2L), DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each=3))
+test(613,optimize=c(0L, 2L), DT[J(2),w:=8.3]$w, rep(c(NA,8.3,NA),each=3))
+test(614,optimize=c(0L, 2L), DT[J(3),x:=9L]$x, rep(c(NA_integer_,NA_integer_,9L),each=3))
+test(615,optimize=c(0L, 2L), DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each=3))
 
 # Empty i clause, #2034. Thanks to Chris for testing, tests from him. Plus changes from #759
 ans = copy(DT)[,r:=NA_real_]
-test(618.1,optimization=c(0L, 2L), copy(DT)[a>3,r:=sum(b)],   ans)
-test(618.2,optimization=c(0L, 2L), copy(DT)[J(-1),r:=sum(b)], ans)
-test(618.3,optimization=c(0L, 2L), copy(DT)[NA,r:=sum(b)],    ans)
-test(618.4,optimization=c(0L, 2L), copy(DT)[0,r:=sum(b)],     ans)
-test(618.5,optimization=c(0L, 2L), copy(DT)[NULL,r:=sum(b)],  null.data.table())
+test(618.1,optimize=c(0L, 2L), copy(DT)[a>3,r:=sum(b)],   ans)
+test(618.2,optimize=c(0L, 2L), copy(DT)[J(-1),r:=sum(b)], ans)
+test(618.3,optimize=c(0L, 2L), copy(DT)[NA,r:=sum(b)],    ans)
+test(618.4,optimize=c(0L, 2L), copy(DT)[0,r:=sum(b)],     ans)
+test(618.5,optimize=c(0L, 2L), copy(DT)[NULL,r:=sum(b)],  null.data.table())
 # test 619 was level 2 of 618
 
 DT = data.table(x=letters, key="x")
-test(621,optimization=c(0L, 2L), copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
-test(622,optimization=c(0L, 2L), copy(DT)[J("bb"), x:="foo",nomatch=0], DT, warning="ignoring nomatch")
+test(621,optimize=c(0L, 2L), copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
+test(622,optimize=c(0L, 2L), copy(DT)[J("bb"), x:="foo",nomatch=0], DT, warning="ignoring nomatch")
 
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
-test(623,optimization=c(0L, 2L), copy(DT)[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
+test(623,optimize=c(0L, 2L), copy(DT)[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
 
 # Setup for test 656.x - gforce tests
 set.seed(9)
@@ -57,36 +57,36 @@ DT = data.table(grp1=sample.int(150L, n, replace=TRUE),
                 y=rnorm(n))
 opt = 0:2
 out = c('GForce FALSE', 'GForce FALSE' ,'GForce TRUE')
-test(656.1,optimization=opt, DT[ , mean(x), by=grp1, verbose=TRUE],                output=out)
-test(656.2,optimization=opt, DT[ , list(mean(x)), by=grp1, verbose=TRUE],          output=out)
-test(656.3,optimization=opt, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output=out)
+test(656.1,optimize=opt, DT[ , mean(x), by=grp1, verbose=TRUE],                output=out)
+test(656.2,optimize=opt, DT[ , list(mean(x)), by=grp1, verbose=TRUE],          output=out)
+test(656.3,optimize=opt, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output=out)
 
 # Test := keyby does setkey, #2065
 DT = data.table(x=1:2, y=1:6)
 ans = data.table(x=rep(1:2,each=3),y=c(1L,3L,5L,2L,4L,6L),z=rep(c(9L,12L),each=3),key="x")
-test(670.1,optimization=c(0L, 2L), copy(DT)[,z:=sum(y),keyby=x], ans)
-test(670.2,optimization=c(0L, 2L), copy(DT)[,z:=sum(y),keyby="x"], ans)
-test(670.3,optimization=c(0L, 2L), copy(DT)[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
+test(670.1,optimize=c(0L, 2L), copy(DT)[,z:=sum(y),keyby=x], ans)
+test(670.2,optimize=c(0L, 2L), copy(DT)[,z:=sum(y),keyby="x"], ans)
+test(670.3,optimize=c(0L, 2L), copy(DT)[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
           warning="The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=")
-test(670.4,optimization=c(0L, 2L), copy(DT)[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
-test(670.5,optimization=c(0L, 2L), copy(DT)[x>1,z:=sum(y),keyby=x], error=":= with keyby is only possible when i is not supplied since")
+test(670.4,optimize=c(0L, 2L), copy(DT)[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
+test(670.5,optimize=c(0L, 2L), copy(DT)[x>1,z:=sum(y),keyby=x], error=":= with keyby is only possible when i is not supplied since")
 # test 671 was level 2 of 670
 
 # varname holding colnames, by group, linked from #2120.
 DT = data.table(a=rep(1:3,1:3),b=1:6)
 colname = "newcol"
-test(751,optimization=c(0L, 2L), DT[,(colname):=sum(b),by=a], data.table(a=rep(1:3,1:3),b=1:6,newcol=INT(1,5,5,15,15,15)))
+test(751,optimize=c(0L, 2L), DT[,(colname):=sum(b),by=a], data.table(a=rep(1:3,1:3),b=1:6,newcol=INT(1,5,5,15,15,15)))
 
 # Add tests for nested := in j by group, #1987
 DT = data.table(a=rep(1:3,2:4),b=1:9)
-test(752,optimization=c(0L, 2L), DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:4,6:7),new=1:2))
+test(752,optimize=c(0L, 2L), DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:4,6:7),new=1:2))
 
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
 opt = c(0:2, Inf)
 out = c('GForce FALSE', 'GForce FALSE', 'GForce TRUE', 'GForce TRUE')
 # v1.9.7 treats wrapped {} better, so this is now optimized
-test(865,optimization=opt, DT[,{list(name1=sum(v),name2=sum(w))},by=c('a', 'b'),verbose=TRUE], output=out)
-test(867,optimization=opt, names(DT[,list(name1=sum(v),name2=sum(w)),by=c('a', 'b')]), c("a", "b", "name1", "name2"))  # list names extracted here
+test(865,optimize=opt, DT[,{list(name1=sum(v),name2=sum(w))},by=c('a', 'b'),verbose=TRUE], output=out)
+test(867,optimize=opt, names(DT[,list(name1=sum(v),name2=sum(w)),by=c('a', 'b')]), c("a", "b", "name1", "name2"))  # list names extracted here
 
 # tests of gsum and gmean with NA
 DT = data.table(x=rep(c("a","b","c","d"),each=3), y=c(1L,3L,6L), v=as.numeric(1:12))
@@ -96,82 +96,82 @@ set(DT,10:12,"y",NA)
 set(DT,10:12,"v",NA)
 opt = c(1L, 2L)
 out = c("(GForce FALSE)", "GForce optimized j to")
-test(1184.1,optimization=opt, DT[, sum(v), by=x, verbose=TRUE], output=out)
-test(1184.2,optimization=1L, DT[, mean(v), by=x, verbose=TRUE], output="(GForce FALSE)")
-test(1185.2,optimization=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], 
+test(1184.1,optimize=opt, DT[, sum(v), by=x, verbose=TRUE], output=out)
+test(1184.2,optimize=1L, DT[, mean(v), by=x, verbose=TRUE], output="(GForce FALSE)")
+test(1185.2,optimize=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], 
   output=c("All optimizations.*off", "Old mean.*changed j", "GForce optimized j to"))
-test(1187.1,optimization=c(0L, 1L, 2L), DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
+test(1187.1,optimize=c(0L, 1L, 2L), DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
 MyVar = TRUE
-test(1187.2,optimization=opt, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=TRUE], output=out)
-test(1187.3,optimization=opt, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output=out)
+test(1187.2,optimize=opt, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=TRUE], output=out)
+test(1187.3,optimize=opt, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output=out)
 MyVar = FALSE
-test(1187.4,optimization=opt, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=TRUE], output=out)
-test(1187.5,optimization=opt, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output=out)
+test(1187.4,optimize=opt, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=TRUE], output=out)
+test(1187.5,optimize=opt, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output=out)
 # GForce should not turn on when the .ok function isn't triggered
-test(1187.6,optimization=2L, DT[, mean(y, trim=.2), by=x, verbose=TRUE],
+test(1187.6,optimize=2L, DT[, mean(y, trim=.2), by=x, verbose=TRUE],
              data.table(x = c("a", "b", "c", "d"), V1 = c(NA, 3.33333333333333, NA, NA)),
              output='j unchanged', warning="'trim' is not yet optimized")
 
 # FR #334. Test to just make sure that GForce and dogroups with .N are giving the same results.
 set.seed(2L)
 dt <- data.table(x=sample(rep(1:5e3, each=3)), y=sample(10))
-test(1304.1,optimization=0:2, dt[, list(.N, sum(y)), by=x])
+test(1304.1,optimize=0:2, dt[, list(.N, sum(y)), by=x])
 dt <- data.table(x=sample(rep(1:5e3, each=3)), y=sample(10), key="x")
-test(1304.2,optimization=0:2, dt[, list(.N, sum(y)), by=x])
+test(1304.2,optimize=0:2, dt[, list(.N, sum(y)), by=x])
 
 # gmin and gmax extensive testing (because there are tricky cases)
 DT <- data.table(x=rep(1:6, each=3), y=INT(4,-1,0, NA,4,10, 4,NA,10, 4,10,NA, -2147483647, -2147483647, -2147483647, 2147483647, 2147483647, 2147483647))
 opts = 0:2
 # for integers
-test(1313.01,optimization=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
-test(1313.02,optimization=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.03,optimization=opts, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
-test(1313.04,optimization=opts, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
+test(1313.01,optimize=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
+test(1313.02,optimize=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
+test(1313.03,optimize=opts, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
+test(1313.04,optimize=opts, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
 # testing all NA - GForce automatically converts to numeric.. optimize=1L errors due to change from integer/numeric (like median)
 DT[x==6, y := INT(NA)]
-test(1313.05,optimization=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
-test(1313.06,optimization=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.07,optimization=2L,   DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=INT(-1,4,4,4,-2147483647,NA)))
-test(1313.08,optimization=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=INT(4,10,10,10,-2147483647,NA)))
+test(1313.05,optimize=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
+test(1313.06,optimize=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
+test(1313.07,optimize=2L,   DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=INT(-1,4,4,4,-2147483647,NA)))
+test(1313.08,optimize=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=INT(4,10,10,10,-2147483647,NA)))
 # for numeric
 DT <- data.table(x=rep(1:6, each=3), y=c(4,-1,0, NA,4,10, 4,NA,10, 4,10,NA, -Inf, NA, NA, Inf, NA, NA))
-test(1313.09,optimization=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
-test(1313.10,optimization=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.11,optimization=opts, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
-test(1313.12,optimization=opts, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
+test(1313.09,optimize=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
+test(1313.10,optimize=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
+test(1313.11,optimize=opts, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
+test(1313.12,optimize=opts, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
 # testing all NA - GForce automatically converts to numeric.. optimize=1L errors due to change from integer/numeric (like median)
 DT[x==6, y := NA_real_]
-test(1313.13,optimization=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
-test(1313.14,optimization=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.15,optimization=2L,   DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c(-1,4,4,4,-Inf,NA)))
-test(1313.16,optimization=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c(4,10,10,10,-Inf,NA)))
+test(1313.13,optimize=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
+test(1313.14,optimize=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
+test(1313.15,optimize=2L,   DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c(-1,4,4,4,-Inf,NA)))
+test(1313.16,optimize=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c(4,10,10,10,-Inf,NA)))
 # for date (attribute check.. especially after issues/689 !!!)
 DT <- data.table(x = rep(letters[1:2], each=5), y = as.POSIXct('2010-01-01', tz="UTC") + seq(0, 86400*9, 86400))
-test(1313.17,optimization=opts, DT[, list(y=min(y)), by=x], DT[c(1,6)])
-test(1313.18,optimization=opts, DT[, list(y=max(y)), by=x], DT[c(5,10)])
+test(1313.17,optimize=opts, DT[, list(y=min(y)), by=x], DT[c(1,6)])
+test(1313.18,optimize=opts, DT[, list(y=max(y)), by=x], DT[c(5,10)])
 DT[c(1,6), y := NA]
-test(1313.19,optimization=opts, DT[, list(y=min(y)), by=x], DT[c(1,6)])
-test(1313.20,optimization=opts, DT[, list(y=max(y)), by=x], DT[c(1,6)])
-test(1313.21,optimization=opts, DT[, list(y=min(y, na.rm=TRUE)), by=x], DT[c(2,7)])
-test(1313.22,optimization=opts, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
+test(1313.19,optimize=opts, DT[, list(y=min(y)), by=x], DT[c(1,6)])
+test(1313.20,optimize=opts, DT[, list(y=max(y)), by=x], DT[c(1,6)])
+test(1313.21,optimize=opts, DT[, list(y=min(y, na.rm=TRUE)), by=x], DT[c(2,7)])
+test(1313.22,optimize=opts, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 # for character
 set.seed(1L)
 DT <- data.table(x=rep(1:7, each=3), y=sample(c("", letters[1:3], NA), 21, TRUE))
 DT[x==7, y := c("","b","c")]
-test(1313.23,optimization=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
-test(1313.24,optimization=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.25,optimization=opts, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
-test(1313.26,optimization=opts, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
+test(1313.23,optimize=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
+test(1313.24,optimize=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
+test(1313.25,optimize=opts, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
+test(1313.26,optimize=opts, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
 DT[x==6, y := NA_character_]
-test(1313.27,optimization=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
-test(1313.28,optimization=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.29,optimization=2L,   DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("a","a","c","","a",NA,"")))
-test(1313.30,optimization=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("b","a","c","a","c",NA,"c")))
+test(1313.27,optimize=opts, DT[, min(y), by=x], DT[, base::min(y), by=x])
+test(1313.28,optimize=opts, DT[, max(y), by=x], DT[, base::max(y), by=x])
+test(1313.29,optimize=2L,   DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("a","a","c","","a",NA,"")))
+test(1313.30,optimize=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("b","a","c","a","c",NA,"c")))
 
 # Fix for #1251, DT[, .N, by=a] and DT[, .(.N), by=a] uses GForce now
 dt = data.table(a=sample(3,20,TRUE), b=1:10)
-test(1565.1,optimization=c(0,1,Inf), dt[, .N, by=a, verbose=TRUE], 
+test(1565.1,optimize=c(0,1,Inf), dt[, .N, by=a, verbose=TRUE], 
   output=c("All optimizations are turned off", "lapply optimization is on, j unchanged", "GForce optimized j to"))
 
 # gforce optimisations
@@ -188,32 +188,32 @@ opt = 0:2
 out = c('GForce FALSE', 'GForce FALSE' ,'GForce TRUE')
 # make sure gforce is on
 # testing gforce::gmedian
-test(1579.01,optimization=2L,  dt[, lapply(.SD, median), by=x, verbose=TRUE],
+test(1579.01,optimize=2L,  dt[, lapply(.SD, median), by=x, verbose=TRUE],
                           dt[, lapply(.SD, function(x) median(as.numeric(x))), by=x], output="GForce optimized")
-test(1579.02,optimization=2L,  dt[, lapply(.SD, median, na.rm=TRUE), by=x],
+test(1579.02,optimize=2L,  dt[, lapply(.SD, median, na.rm=TRUE), by=x],
                           dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), by=x])
-test(1579.03,optimization=2L, dt[, lapply(.SD, median), keyby=x],
+test(1579.03,optimize=2L, dt[, lapply(.SD, median), keyby=x],
                           dt[, lapply(.SD, function(x) median(as.numeric(x))), keyby=x])
-test(1579.04,optimization=2L, dt[, lapply(.SD, median, na.rm=TRUE), keyby=x],
+test(1579.04,optimize=2L, dt[, lapply(.SD, median, na.rm=TRUE), keyby=x],
                           dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), keyby=x])
 # testing gforce::ghead and gforce::gtail
 # head(.SD, 1) and tail(.SD, 1) optimisation
-test(1579.06,optimization=opt, dt[, head(.SD,1),  by=x,    verbose=TRUE], output=out)
-test(1579.08,optimization=opt, dt[, head(.SD,1),  keyby=x, verbose=TRUE], output=out)
-test(1579.10,optimization=opt, dt[, head(.SD,1L), by=x,    verbose=TRUE], output=out)
-test(1579.12,optimization=opt, dt[, head(.SD,1L), keyby=x, verbose=TRUE], output=out)
-test(1579.14,optimization=opt, dt[, tail(.SD,1),  by=x,    verbose=TRUE], output=out)
-test(1579.16,optimization=opt, dt[, tail(.SD,1),  keyby=x, verbose=TRUE], output=out)
-test(1579.18,optimization=opt, dt[, tail(.SD,1L), by=x,    verbose=TRUE], output=out)
-test(1579.20,optimization=opt, dt[, tail(.SD,1L), keyby=x, verbose=TRUE], output=out)
+test(1579.06,optimize=opt, dt[, head(.SD,1),  by=x,    verbose=TRUE], output=out)
+test(1579.08,optimize=opt, dt[, head(.SD,1),  keyby=x, verbose=TRUE], output=out)
+test(1579.10,optimize=opt, dt[, head(.SD,1L), by=x,    verbose=TRUE], output=out)
+test(1579.12,optimize=opt, dt[, head(.SD,1L), keyby=x, verbose=TRUE], output=out)
+test(1579.14,optimize=opt, dt[, tail(.SD,1),  by=x,    verbose=TRUE], output=out)
+test(1579.16,optimize=opt, dt[, tail(.SD,1),  keyby=x, verbose=TRUE], output=out)
+test(1579.18,optimize=opt, dt[, tail(.SD,1L), by=x,    verbose=TRUE], output=out)
+test(1579.20,optimize=opt, dt[, tail(.SD,1L), keyby=x, verbose=TRUE], output=out)
 # 1579.22 tested gtail with n>1; now 1579.4+ below
 mysub <- function(x, n) x[n]
-test(1579.23,optimization=2L,  dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], output="GForce optimized.*g[[]")
-test(1579.24,optimization=opt, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.25,optimization=opt, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.26,optimization=opt, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
-test(1579.27,optimization=opt, dt[, .SD[15], by=x],    dt[, mysub(.SD,15), by=x])   # tests 15 > grpsize and that NA is correct including for integer64
-test(1579.28,optimization=opt, dt[, .SD[15], keyby=x], dt[, mysub(.SD,15), keyby=x])
+test(1579.23,optimize=2L,  dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], output="GForce optimized.*g[[]")
+test(1579.24,optimize=opt, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
+test(1579.25,optimize=opt, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
+test(1579.26,optimize=opt, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.27,optimize=opt, dt[, .SD[15], by=x],    dt[, mysub(.SD,15), by=x])   # tests 15 > grpsize and that NA is correct including for integer64
+test(1579.28,optimize=opt, dt[, .SD[15], keyby=x], dt[, mysub(.SD,15), keyby=x])
 # gforce head/tail for n>1, #5060
 set.seed(99)
 DT = data.table(x = sample(letters[1:5], 20, TRUE),
@@ -223,16 +223,16 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 s = sample(c("foo","bar",NA), 20, TRUE),
                 l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
 if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
-test(1579.401,optimization=0:2, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
-test(1579.402,optimization=2L,  DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
-test(1579.403,optimization=2L,  DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
-test(1579.404,optimization=2L,  DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
-test(1579.405,optimization=2L,  DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
-test(1579.406,optimization=2L,  DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
-test(1579.407,optimization=2L,  DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
-test(1579.408,optimization=2L,  DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
-test(1579.409,optimization=2L,  DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
-test(1579.410,optimization=2L,  DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
+test(1579.401,optimize=0:2, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
+test(1579.402,optimize=2L,  DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
+test(1579.403,optimize=2L,  DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
+test(1579.404,optimize=2L,  DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
+test(1579.405,optimize=2L,  DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
+test(1579.406,optimize=2L,  DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
+test(1579.407,optimize=2L,  DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
+test(1579.408,optimize=2L,  DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
+test(1579.409,optimize=2L,  DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
+test(1579.410,optimize=2L,  DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
 
 
 # FR #971, partly addressed (only subsets in 'i')
@@ -242,7 +242,7 @@ dt = data.table(x  = sample(letters, 300, TRUE),
                 d2 = as.numeric(sample(c(NA, NaN, -10:10), 300, TRUE)))
 opt = 1:2
 out = c("GForce FALSE","GForce optimized j")
-test(1581.01,optimization=opt, ans1 <- dt[x %in% letters[15:20],
+test(1581.01,optimize=opt, ans1 <- dt[x %in% letters[15:20],
                         c(.N, lapply(.SD, sum, na.rm=TRUE),
                               lapply(.SD, min, na.rm=TRUE),
                               lapply(.SD, max, na.rm=TRUE),
@@ -252,11 +252,11 @@ test(1581.01,optimization=opt, ans1 <- dt[x %in% letters[15:20],
   output = out)
 
 # subsets in 'i' for head and tail
-test(1581.04,optimization=opt, dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE], output=out)
-test(1581.07,optimization=opt, dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE], output=out)
-test(1581.10,optimization=opt, dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE], output=out)
+test(1581.04,optimize=opt, dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE], output=out)
+test(1581.07,optimize=opt, dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE], output=out)
+test(1581.10,optimize=opt, dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE], output=out)
 # #3209 g[[
-test(1581.13,optimization=opt, dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE], output=out)
+test(1581.13,optimize=opt, dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE], output=out)
 # also, block for non-atomic input, #4159
 dt = data.table(a=1:3)
 dt[ , l := .(list(1, 2, 3))]
@@ -284,16 +284,16 @@ DT = data.table(
      C2 = c(rep("a", 3), rep("b",3), rep("c",3), rep("d",3)),
      Val = c(1:5, NaN, NaN, 8,9,10,NaN,12))
 opt = 0:2
-test(1583.1,optimization=opt, DT[, .(agg = min(Val, na.rm=TRUE)), by=c('C1', 'C2')],
+test(1583.1,optimize=opt, DT[, .(agg = min(Val, na.rm=TRUE)), by=c('C1', 'C2')],
              data.table(C1=c("A","A","B","B","C","C"),
                         C2=c("a","b","b","c","c","d"),
                         agg=c(1,4,5,8,9,10)))
 # extra test with a size-1 group containing one NaN too
 DT = data.table(x=INT(1,1,1,2,2,2,3,3,3,4,4,4,5), y=c(NaN,1,2, 2,NaN,1, NA,NaN,2, NaN,NA,NaN, NaN))
-test(1583.2,optimization=2L, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:5, V1=c(1,1,2,NA,NA)))
-test(1583.3,optimization=2L, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:5, V1=c(2,2,2,NA,NA)))
-test(1583.4,optimization=opt, DT[, min(y), by=x], data.table(x=1:5, V1=c(NaN,NaN,NA,NaN,NaN)))
-test(1583.5,optimization=opt, DT[, max(y), by=x], data.table(x=1:5, V1=c(NaN,NaN,NA,NaN,NaN)))
+test(1583.2,optimize=2L, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:5, V1=c(1,1,2,NA,NA)))
+test(1583.3,optimize=2L, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:5, V1=c(2,2,2,NA,NA)))
+test(1583.4,optimize=opt, DT[, min(y), by=x], data.table(x=1:5, V1=c(NaN,NaN,NA,NaN,NaN)))
+test(1583.5,optimize=opt, DT[, max(y), by=x], data.table(x=1:5, V1=c(NaN,NaN,NA,NaN,NaN)))
 
 # FR #523, var, sd and prod
 DT = data.table(x=sample(5, 100, TRUE),
@@ -303,24 +303,24 @@ DT = data.table(x=sample(5, 100, TRUE),
                z2=sample(c(runif(10),NA,NaN), 100, TRUE))
 opt = 0:2
 out = c("GForce FALSE", "GForce FALSE", "GForce optimized j to")
-test(1594.01,optimization=opt, DT[, lapply(.SD, var, na.rm=FALSE), by=x])
-test(1594.02,optimization=opt, DT[, lapply(.SD, var, na.rm=TRUE), by=x])
-test(1594.03,optimization=opt, DT[, lapply(.SD, var, na.rm=TRUE), by=x, verbose=TRUE], output=out)
+test(1594.01,optimize=opt, DT[, lapply(.SD, var, na.rm=FALSE), by=x])
+test(1594.02,optimize=opt, DT[, lapply(.SD, var, na.rm=TRUE), by=x])
+test(1594.03,optimize=opt, DT[, lapply(.SD, var, na.rm=TRUE), by=x, verbose=TRUE], output=out)
 # coverage: default group .N=1 case
 idx=DT[ , .I[1L], by=x]$V1
 ans=data.table(x=DT[(idx), x], V1=NA_real_)
-test(1594.05,optimization=opt, DT[(idx), var(y1), by=x], ans)
-test(1594.06,optimization=opt, DT[(idx), var(y1, na.rm=TRUE), by=x], ans)
-test(1594.07,optimization=opt, DT[(idx), var(z1), by=x], ans)
-test(1594.08,optimization=opt, DT[(idx), var(z1, na.rm=TRUE), by=x], ans)
+test(1594.05,optimize=opt, DT[(idx), var(y1), by=x], ans)
+test(1594.06,optimize=opt, DT[(idx), var(y1, na.rm=TRUE), by=x], ans)
+test(1594.07,optimize=opt, DT[(idx), var(z1), by=x], ans)
+test(1594.08,optimize=opt, DT[(idx), var(z1, na.rm=TRUE), by=x], ans)
 
-test(1594.09,optimization=opt,DT[, lapply(.SD, sd, na.rm=FALSE), by=x])
-test(1594.10,optimization=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
-test(1594.11,optimization=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output=out)
+test(1594.09,optimize=opt,DT[, lapply(.SD, sd, na.rm=FALSE), by=x])
+test(1594.10,optimize=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
+test(1594.11,optimize=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output=out)
  
-test(1594.12,optimization=opt, DT[, lapply(.SD, prod, na.rm=FALSE), by=x])
-test(1594.13,optimization=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x])
-test(1594.14,optimization=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output=out)
+test(1594.12,optimize=opt, DT[, lapply(.SD, prod, na.rm=FALSE), by=x])
+test(1594.13,optimize=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x])
+test(1594.14,optimize=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output=out)
 
 # when datatable.optimize<1, no optimisation of j should take place:
 dt = data.table(x=1:5, y=6:10, z=c(1,1,1,2,2))
@@ -330,53 +330,53 @@ test(1638, options=c(datatable.optimize=0L), dt[, .SD, by=z, verbose=TRUE], outp
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
 opt = c(1L,2L)
 out = c("GForce FALSE", "GForce optimized j to")
-test(2231.01,optimization=opt, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output=out)
-test(2231.02,optimization=opt, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output=out)
-test(2231.03,optimization=opt, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output=out)
+test(2231.01,optimize=opt, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output=out)
+test(2231.02,optimize=opt, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output=out)
+test(2231.03,optimize=opt, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output=out)
 # multiple groups
 DT = data.table(x=c(1L,2L,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2231.04,optimization=opt, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output=out)
-test(2231.05,optimization=opt, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output=out)
-test(2231.06,optimization=opt, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output=out)
+test(2231.04,optimize=opt, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output=out)
+test(2231.05,optimize=opt, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output=out)
+test(2231.06,optimize=opt, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output=out)
 # (only x XOR w) containing NA
 DT = data.table(x=c(1L,NA,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,2L,2L), g=rep(1L:2L, each=4L))
-test(2231.07,optimization=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output=out)
-test(2231.08,optimization=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output=out)
-test(2231.09,optimization=opt, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
-test(2231.10,optimization=opt, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
+test(2231.07,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output=out)
+test(2231.08,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output=out)
+test(2231.09,optimize=opt, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
+test(2231.10,optimize=opt, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
 # (only x XOR w) containing NaN
 DT = data.table(x=c(1L,2L,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,NaN,2L), g=rep(1L:2L, each=4L))
-test(2231.11,optimization=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output=out)
-test(2231.12,optimization=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output=out)
-test(2231.13,optimization=opt, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output=out)
-test(2231.14,optimization=opt, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
+test(2231.11,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output=out)
+test(2231.12,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output=out)
+test(2231.13,optimize=opt, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output=out)
+test(2231.14,optimize=opt, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
 # (only x XOR w) containing NA and NaN
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,NaN,2L), g=rep(1L:2L, each=4L))
-test(2231.15,optimization=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output=out)
-test(2231.16,optimization=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output=out)
-test(2231.17,optimization=opt, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
-test(2231.18,optimization=opt, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
+test(2231.15,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output=out)
+test(2231.16,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output=out)
+test(2231.17,optimize=opt, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
+test(2231.18,optimize=opt, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
 # (x and w) containing NA and NaN
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NA,NaN,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2231.19,optimization=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
-test(2231.20,optimization=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
+test(2231.19,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
+test(2231.20,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2231.21,optimization=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
-test(2231.22,optimization=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
+test(2231.21,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
+test(2231.22,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
 # let wrongly named arguments get lost in ellipsis #5543
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
-test(2231.61,optimization=opt, DT[, weighted.mean(x, w),        g, verbose=TRUE], data.table(g=1L, V1=3.45+1/300), output=out)
-test(2231.62,optimization=opt, DT[, weighted.mean(x, weight=w), g, verbose=TRUE], data.table(g=1L, V1=3.325),      output=out)
-test(2231.63,optimization=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g],    DT[, stats::weighted.mean(x, w, na.rm=FALSE), g])
-test(2231.64,optimization=opt, DT[, weighted.mean(x, weight=w, na.rm=TRUE)], DT[, stats::weighted.mean(x, weight=w, na.rm=TRUE)])
+test(2231.61,optimize=opt, DT[, weighted.mean(x, w),        g, verbose=TRUE], data.table(g=1L, V1=3.45+1/300), output=out)
+test(2231.62,optimize=opt, DT[, weighted.mean(x, weight=w), g, verbose=TRUE], data.table(g=1L, V1=3.325),      output=out)
+test(2231.63,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g],    DT[, stats::weighted.mean(x, w, na.rm=FALSE), g])
+test(2231.64,optimize=opt, DT[, weighted.mean(x, weight=w, na.rm=TRUE)], DT[, stats::weighted.mean(x, weight=w, na.rm=TRUE)])
 
 # GForce retains attributes in by arguments #5567
 dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer"), att=1), c=structure(c(1L,2L,1L,2L), class = c("class_c", "integer")))
 opt = c(0,Inf)
 out = c("GForce FALSE", "GForce optimized j to")
-test(2263.1,optimization=opt, options=list(datatable.verbose=TRUE), dt[, .N, b], data.table(b=dt$b, N=1L),               output=out)
-test(2263.2,optimization=opt, options=list(datatable.verbose=TRUE), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L),  output=out)
-test(2263.3,optimization=opt, options=list(datatable.verbose=TRUE), names(attributes(dt[, .N, b]$b)), c("class", "att"), output=out)
+test(2263.1,optimize=opt, options=list(datatable.verbose=TRUE), dt[, .N, b], data.table(b=dt$b, N=1L),               output=out)
+test(2263.2,optimize=opt, options=list(datatable.verbose=TRUE), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L),  output=out)
+test(2263.3,optimize=opt, options=list(datatable.verbose=TRUE), names(attributes(dt[, .N, b]$b)), c("class", "att"), output=out)
 
 # named arguments of c() in j get prepended to lapply(.SD, FUN) #2311
 M <- as.data.table(mtcars)
@@ -388,60 +388,60 @@ sdlist <- vector("list", length(sdnames))
 names(sdlist) <- sdnames
 
 opts = 0:2
-test(2283 + 0.01, optimization=opts,
+test(2283 + 0.01, optimize=opts,
        names(M[, c(m=lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c(m=sdlist))))
-test(2283 + 0.02, optimization=opts,
+test(2283 + 0.02, optimize=opts,
        names(M[, c(Mpg=list(mpg), lapply(.SD, mean)), by="cyl"]),
        c("cyl", "Mpg", sdnames))
-test(2283 + 0.03, optimization=opts,
+test(2283 + 0.03, optimize=opts,
        names(M[, c(Mpg=list(mpg), m=lapply(.SD, mean)), by="cyl"]),
        c("cyl", "Mpg", names(c(m=sdlist))))
-test(2283 + 0.04, optimization=opts,
+test(2283 + 0.04, optimize=opts,
        names(M[, c(mpg=list(mpg), mpg=lapply(.SD, mean)), by="cyl"]),
        c("cyl", "mpg", names(c(mpg=sdlist))))
-test(2283 + 0.05, optimization=opts,
+test(2283 + 0.05, optimize=opts,
        names(M[, c(list(mpg), lapply(.SD, mean)), by="cyl"]),
        c("cyl", "V1", sdnames))
-test(2283 + 0.06, optimization=opts,
+test(2283 + 0.06, optimize=opts,
        names(M[, c(lapply(.SD, mean), list(mpg)), by="cyl"]),
        c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)))
-test(2283 + 0.07, optimization=opts,
+test(2283 + 0.07, optimize=opts,
        names(M[, c(lapply(.SD, mean), lapply(.SD, sum)), by="cyl"]),
        c("cyl", sdnames, sdnames))
-test(2283 + 0.08, optimization=opts,
+test(2283 + 0.08, optimize=opts,
        names(M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
        c("cyl", names(c(mean=sdlist, sum=sdlist))))
-test(2283 + 0.09, optimization=opts,
+test(2283 + 0.09, optimize=opts,
        names(M[, c(lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
        c("cyl", sdnames, names(c(sum=sdlist))) )
-test(2283 + 0.10, optimization=opts,
+test(2283 + 0.10, optimize=opts,
        names(M[, c(" "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]),
        c("cyl", names(c(" "=sdlist, "."=sdlist))))
-test(2283 + 0.11, optimization=opts,
+test(2283 + 0.11, optimize=opts,
        names(M[, c(A=list(a=mpg, b=hp), lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c(A=list(a=0, b=0))), sdnames))
-test(2283 + 0.12, optimization=opts,
+test(2283 + 0.12, optimize=opts,
        names(M[, c(A=list(mpg, hp), lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c(A=list(0, 0))), sdnames))
-test(2283 + 0.13, optimization=opts,
+test(2283 + 0.13, optimize=opts,
        names(M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c(A=list(0, b=0, 0))), sdnames))
-test(2283 + 0.14, optimization=opts,
+test(2283 + 0.14, optimize=opts,
        names(M[, c(A=list(mpg), lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c(A=list(0))), sdnames))
-test(2283 + 0.15, optimization=opts,
+test(2283 + 0.15, optimize=opts,
        names(M[, c(" "=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames))
-test(2283 + 0.16, optimization=opts,
+test(2283 + 0.16, optimize=opts,
        names(M[, c("."=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
        c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames))
-test(2283 + 0.17, optimization=opts,
+test(2283 + 0.17, optimize=opts,
        names(M[, c(list(mpg, b=hp), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "b", "vs", "am"))
-test(2283 + 0.18, optimization=opts,
+test(2283 + 0.18, optimize=opts,
        names(M[, c(list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "b", "vs", "am"))
-test(2283 + 0.19, optimization=opts,
+test(2283 + 0.19, optimize=opts,
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "V2", "b", "vs", "am"))
