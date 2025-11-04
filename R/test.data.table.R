@@ -367,19 +367,19 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     cl = match.call()
     cl$optimization = NULL  # Remove optimization levels from the recursive call
 
-    vector_params = c("error", "warning", "message", "output", "notOutput", "ignore.warning")
     # Check if y was explicitly provided (not just the default)
     y_provided = !missing(y)
-    compare = !y_provided && length(optimization)>1L && !any(vapply_1b(vector_params, function(p) length(get(p, envir=environment())) > 0L))
+    vector_params = mget(c("error", "warning", "message", "output", "notOutput", "ignore.warning"), environment())
+    compare = !y_provided && length(optimization)>1L && !any(lengths(vector_params)) 
 
     for (i in seq_along(optimization)) {
       cl$num = num + (i - 1L) * 1e-6
       opt_level = list(datatable.optimize = optimization[i])
       cl$options = if (!is.null(options)) c(as.list(options), opt_level) else opt_level
-      for (p in vector_params) {
-        val = get(p, envir=environment())
+      for (param in names(vector_params)) {
+        val = vector_params[[param]]
         if (length(val) > 0L) {
-          cl[[p]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than optimization levels
+          cl[[param]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than optimization levels
         }
       }
 
