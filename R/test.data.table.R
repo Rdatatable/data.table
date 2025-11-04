@@ -363,18 +363,18 @@ gc_mem = function() {
 
 test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,optimize=NULL) {
   # if optimization is provided, test across multiple optimization levels
-  if (!is.null(optimization)) {
+  if (!is.null(optimize)) {
     cl = match.call()
     cl$optimize= NULL  # Remove optimization levels from the recursive call
 
     # Check if y was explicitly provided (not just the default)
     y_provided = !missing(y)
     vector_params = mget(c("error", "warning", "message", "output", "notOutput", "ignore.warning"), environment())
-    compare = !y_provided && length(optimization)>1L && !any(lengths(vector_params)) 
+    compare = !y_provided && length(optimize)>1L && !any(lengths(vector_params)) 
 
-    for (i in seq_along(optimization)) {
+    for (i in seq_along(optimize)) {
       cl$num = num + (i - 1L) * 1e-6
-      opt_level = list(datatable.optimize = optimization[i])
+      opt_level = list(datatable.optimize = optimize[i])
       cl$options = if (!is.null(options)) c(as.list(options), opt_level) else opt_level
       for (param in names(vector_params)) {
         val = vector_params[[param]]
