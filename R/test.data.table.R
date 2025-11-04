@@ -364,6 +364,8 @@ gc_mem = function() {
 test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,optimize=NULL) {
   # if optimization is provided, test across multiple optimization levels
   if (!is.null(optimize)) {
+    if (!is.numeric(optimize) || length(optimize) < 1L || anyNA(optimize) || any(optimize < 0L))
+      stopf("optimize must be numeric, length >= 1, non-NA, and >= 0; got: %s", optimize)
     cl = match.call()
     cl$optimize= NULL  # Remove optimization levels from the recursive call
 
