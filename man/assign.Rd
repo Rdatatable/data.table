@@ -81,6 +81,32 @@ When \code{LHS} is a factor column and \code{RHS} is a character vector with ite
 Unlike \samp{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given when fractional data is truncated. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening and it is clearer to readers of your code that you really do intend to change the column type; e.g., \code{DT[, colA:=as.integer(colA)]}. A plonk occurs whenever you provide a RHS value to \samp{:=} which is \code{nrow} long. When a column is \emph{plonked}, the original column is not updated by reference because that would entail updating every single element of that column whereas the plonk is just one column pointer update.
 
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
+
+\subsection{Side effects on keys and other attributes}{
+An important side effect to be aware of: when you modify a key column using \code{:=}, the key attribute is automatically removed. This happens because modifying the values in a key column would violate the sorted invariant that the key represents. Adding new columns (that are not part of the key) or modifying non-key columns does not affect the key.
+
+For example:
+\preformatted{
+  DT = data.table(a=1:3, b=4:6, key="a")
+  key(DT)           # "a"
+  DT[, a := a + 10] # modifies key column
+  key(DT)           # NULL - key was removed
+
+  DT2 = data.table(a=1:3, b=4:6, key="a")
+  DT2[, c := 1]     # adds new column
+  key(DT2)          # "a" - key preserved
+}
+
+If you need to preserve the original data.table and its key attribute, use \code{\link{copy}} before the \code{:=} operation:
+\preformatted{
+  DT = data.table(a=1:3, b=4:6, key="a")
+  DT_modified = copy(DT)[, a := a + 10]
+  key(DT)           # "a" - original preserved
+  key(DT_modified)  # NULL - copy was modified
+}
+
+This is particularly important in contexts where the same data.table may be reused multiple times, such as in testing scenarios, function arguments, or when passing data.tables between different parts of your code. See \code{\link{copy}} and \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} for more details on reference semantics.
+}
 }
 
 \section{Advanced (internals):}{It is easy to see how \emph{sub-assigning} to existing columns is done internally. Removing columns by reference is also straightforward by modifying the vector of column pointers only (using memmove in C). However adding (new) columns is more tricky as to how the \code{data.table} can be grown \emph{by reference}: the list vector of column pointers is \emph{over-allocated}, see \code{\link{truelength}}. By defining \code{:=} in \code{j} we believe update syntax is natural, and scales, but it also bypasses \code{[<-} dispatch and allows \code{:=} to update by reference with no copies of any part of memory at all.

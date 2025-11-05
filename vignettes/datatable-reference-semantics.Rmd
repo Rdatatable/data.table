@@ -363,7 +363,42 @@ However we could improve this functionality further by *shallow* copying instead
     ## DT_n doesn't get updated
     DT_n
     ```
-### c) Selecting columns: `$` / `[[...]]` vs `[, col]`
+### c) Side effects on keys and attributes
+
+An important side effect to be aware of: when you modify a key column using `:=`, the key attribute is automatically removed. This happens because modifying the values in a key column would violate the sorted invariant that the key represents. Adding new columns (that are not part of the key) or modifying non-key columns does not affect the key.
+
+```{r}
+# Modifying a key column removes the key
+DT_keyed = data.table(x = c("a", "a", "b", "b"), y = 1:4, key = "x")
+key(DT_keyed)
+
+# Modify the key column
+DT_keyed[, x := toupper(x)]
+key(DT_keyed)  # Key was removed!
+
+# Adding new columns preserves the key
+DT_keyed2 = data.table(x = c("a", "a", "b", "b"), y = 1:4, key = "x")
+DT_keyed2[, z := y * 2]
+key(DT_keyed2)  # Key is still present
+```
+
+If you need to preserve the original data.table and its key attribute, use `copy()`:
+
+```{r}
+DT_original = data.table(x = c("a", "a", "b", "b"), y = 1:4, key = "x")
+DT_modified = copy(DT_original)[, x := toupper(x)]
+
+key(DT_original)  # Original key preserved
+key(DT_modified)  # Key removed on the copy
+```
+
+This is particularly important when:
+
+* Writing functions that take a data.table as input and use `:=` but shouldn't modify the original
+* Testing code where you need to run multiple tests on the same data.table
+* Working in contexts where you need to preserve the original state (e.g., in loops or when comparing before/after states)
+
+### d) Selecting columns: `$` / `[[...]]` vs `[, col]`
 
 When you extract a single column as a vector, there is a subtle but important difference between standard R methods ($ and [[...]]) and data.table's j expression. DT$col and DT[['col']] may return a reference to the column, while DT[, col] always returns a copy.
 
