@@ -26,7 +26,15 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
     __func__, "n=%zu / load_factor=%g would overflow size_t",
     n_elements, load_factor
   );
-  return ceil(n_elements / load_factor);
+  size_t min_size = ceil(n_elements / load_factor);
+  // Round up to next power of 2 for fast modulo using bitwise AND
+  size_t pow2 = 1;
+  while (pow2 < min_size) {
+    if (pow2 > SIZE_MAX / 2)
+      internal_error(__func__, "size %zu would overflow size_t", min_size); // # nocov
+    pow2 *= 2;
+  }
+  return pow2;
 }
 
 static hashtab * hash_create_(size_t n, double load_factor) {
@@ -83,19 +91,20 @@ void hash_rehash(hashtab *h) {
 }
 
 void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
-  size_t max_relocations = h->size; 
+  size_t max_relocations = h->size;
+  size_t mask = h->size - 1;
   struct hash_pair item = { .key = key, .value = value };
   for (size_t i = 0; i < max_relocations; ++i) {
-    size_t idx1 = hash_index1(item.key, h->multiplier1) % h->size;
+    size_t idx1 = hash_index1(item.key, h->multiplier1) & mask;
     if (!h->tb1[idx1].key) {
       h->tb1[idx1] = item;
       return;
     }
     struct hash_pair temp = h->tb1[idx1];
     h->tb1[idx1] = item;
-    item = temp;    
-    
-    size_t idx2 = hash_index2(item.key, h->multiplier2) % h->size;
+    item = temp;
+
+    size_t idx2 = hash_index2(item.key, h->multiplier2) & mask;
     if (!h->tb2[idx2].key) {
       h->tb2[idx2] = item;
       return;
@@ -110,10 +119,11 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
 }
 
 R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
-  size_t idx1 = hash_index1(key, h->multiplier1) % h->size;
+  size_t mask = h->size - 1;
+  size_t idx1 = hash_index1(key, h->multiplier1) & mask;
   if (h->tb1[idx1].key == key) return h->tb1[idx1].value;
-    
-  size_t idx2 = hash_index2(key, h->multiplier2) % h->size;
+
+  size_t idx2 = hash_index2(key, h->multiplier2) & mask;
   if (h->tb2[idx2].key == key) return h->tb2[idx2].value;
   // Should be impossible with a load factor below 1, but just in case:
   return ifnotfound; // # nocov
@@ -172,11 +182,13 @@ static void dhash_enlarge(dhashtab_ * self) {
   if (self->size > SIZE_MAX / 2)
     internal_error(__func__, "doubling %zu elements would overflow size_t", self->size); // # nocov
   size_t new_size = self->size * 2;
+  size_t new_mask = new_size - 1;
   struct hash_pair * new = dhash_allocate(new_size);
   uintptr_t new_multiplier = new_size * hash_multiplier1;
   for (size_t i = 0; i < self->size; ++i) {
+    if (!self->table[i].key) continue;
     for (size_t j = 0; j < new_size; ++j) {
-      size_t ii = (hash_index1(self->table[i].key, new_multiplier) + j) % new_size;
+      size_t ii = (hash_index1(self->table[i].key, new_multiplier) + j) & new_mask;
       if (!new[ii].key) {
         new[ii] = (struct hash_pair){
           .key = self->table[i].key,
@@ -209,7 +221,7 @@ void dhash_set(dhashtab * h, SEXP key, R_xlen_t value) {
   dhashtab_ * self = (dhashtab_ *)h;
   struct hash_pair *cell, *end;
 again:
-  cell = self->table + hash_index1(key, self->multiplier) % self->size;
+  cell = self->table + (hash_index1(key, self->multiplier) & (self->size - 1));
   end = self->table + self->size - 1;
   for (size_t i = 0; i < self->size; ++i, cell = cell == end ? self->table : cell+1) {
     if (cell->key == key) {
@@ -235,7 +247,7 @@ R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound) {
   #pragma omp flush // no locking or atomic access! this is bad
   dhashtab_ self = *(dhashtab_ *)h;
   R_xlen_t ret = ifnotfound;
-  const struct hash_pair * cell = self.table + hash_index1(key, self.multiplier) % self.size;
+  const struct hash_pair * cell = self.table + (hash_index1(key, self.multiplier) & (self.size - 1));
   const struct hash_pair * end = self.table + self.size - 1;
   for (size_t i = 0; i < self.size; ++i, cell = cell == end ? self.table : cell+1) {
     if (cell->key == key) {
