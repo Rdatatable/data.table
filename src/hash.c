@@ -65,22 +65,21 @@ static hashtab * hash_create_(size_t n, double load_factor) {
 
 hashtab * hash_create(size_t n) { return hash_create_(n, .5); }
 
-// Fast hash mixing using XOR-shift and integer multiplication
+// double hashing
 static R_INLINE size_t hash_index1(SEXP key, uintptr_t multiplier) {
-  uintptr_t h = (uintptr_t)key >> 4;
-  // XOR folding to mix high bits into low bits
-  h ^= h >> 16;
-  h *= multiplier;
-  h ^= h >> 13;
-  return h;
+  // The 4 lowest bits of the pointer are probably zeroes because a typical SEXPREC exceeds 16 bytes in size.
+  // Since SEXPRECs are heap-allocated, they are subject to malloc() alignment guarantees,
+  // which is at least 4 bytes on 32-bit platforms, most likely more than 8 bytes.
+  return ((((uintptr_t)key) >> 4) & 0x0fffffff) * multiplier;
 }
 
 static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
-  uintptr_t h = (uintptr_t)key >> 6;
-  h ^= h >> 18;
-  h *= multiplier;
-  h ^= h >> 15;
-  return h;
+  // For double hashing, we need a different hash that's coprime with table size.
+  // We use higher-order bits that hash_index1 mostly ignores, and ensure
+  // the result is always odd (coprime with power-of-2 table sizes).
+  uintptr_t ptr = (uintptr_t)key;
+  ptr = (ptr >> 12) | (ptr << (sizeof(uintptr_t) * 8 - 12));
+  return ((ptr & 0x0fffffff) * multiplier) | 1;
 }
 
 void hash_rehash(hashtab *h) {
