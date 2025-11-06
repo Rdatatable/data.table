@@ -68,15 +68,19 @@ hashtab * hash_create(size_t n) { return hash_create_(n, .5); }
 
 // Hashing for an open addressing hash table. See Cormen et al., Introduction to Algorithms, 3rd ed., section 11.4.
 // This is far from perfect. Make size a prime or a power of two and you'll be able to use double hashing.
-static R_INLINE size_t hash_index1(SEXP key, uintptr_t multiplier) {
+static R_INLINE size_t hash_index1(SEXP key, size_t mask) {
   // The 4 lowest bits of the pointer are probably zeroes because a typical SEXPREC exceeds 16 bytes in size.
   // Since SEXPRECs are heap-allocated, they are subject to malloc() alignment guarantees,
   // which is at least 4 bytes on 32-bit platforms, most likely more than 8 bytes.
-  return ((((uintptr_t)key) >> 4) & 0x0fffffff) * multiplier;
+  uintptr_t h = (uintptr_t)key >> 4;
+  return h & mask;
 }
 
-static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
-    return ((((uintptr_t)key) >> 6) & 0x0fffffff) * multiplier;
+static R_INLINE size_t hash_index2(SEXP key, size_t mask) {
+  // Use XOR folding to mix up the bits
+  uintptr_t h = (uintptr_t)key >> 4;
+  h ^= h >> 10;
+  return h & mask;
 }
 
 void hash_rehash(hashtab *h) {
@@ -95,7 +99,7 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
   size_t mask = h->size - 1;
   struct hash_pair item = { .key = key, .value = value };
   for (size_t i = 0; i < max_relocations; ++i) {
-    size_t idx1 = hash_index1(item.key, h->multiplier1) & mask;
+    size_t idx1 = hash_index1(item.key, mask);
     if (!h->tb1[idx1].key) {
       h->tb1[idx1] = item;
       return;
@@ -104,7 +108,7 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
     h->tb1[idx1] = item;
     item = temp;
 
-    size_t idx2 = hash_index2(item.key, h->multiplier2) & mask;
+    size_t idx2 = hash_index2(item.key, mask);
     if (!h->tb2[idx2].key) {
       h->tb2[idx2] = item;
       return;
@@ -120,10 +124,10 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
 
 R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
   size_t mask = h->size - 1;
-  size_t idx1 = hash_index1(key, h->multiplier1) & mask;
+  size_t idx1 = hash_index1(key, mask);
   if (h->tb1[idx1].key == key) return h->tb1[idx1].value;
 
-  size_t idx2 = hash_index2(key, h->multiplier2) & mask;
+  size_t idx2 = hash_index2(key, mask);
   if (h->tb2[idx2].key == key) return h->tb2[idx2].value;
   // Should be impossible with a load factor below 1, but just in case:
   return ifnotfound; // # nocov
@@ -188,7 +192,7 @@ static void dhash_enlarge(dhashtab_ * self) {
   for (size_t i = 0; i < self->size; ++i) {
     if (!self->table[i].key) continue;
     for (size_t j = 0; j < new_size; ++j) {
-      size_t ii = (hash_index1(self->table[i].key, new_multiplier) + j) & new_mask;
+      size_t ii = (hash_index1(self->table[i].key, new_mask) + j) & new_mask;
       if (!new[ii].key) {
         new[ii] = (struct hash_pair){
           .key = self->table[i].key,
@@ -221,7 +225,7 @@ void dhash_set(dhashtab * h, SEXP key, R_xlen_t value) {
   dhashtab_ * self = (dhashtab_ *)h;
   struct hash_pair *cell, *end;
 again:
-  cell = self->table + (hash_index1(key, self->multiplier) & (self->size - 1));
+  cell = self->table + hash_index1(key, self->size - 1);
   end = self->table + self->size - 1;
   for (size_t i = 0; i < self->size; ++i, cell = cell == end ? self->table : cell+1) {
     if (cell->key == key) {
@@ -247,7 +251,7 @@ R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound) {
   #pragma omp flush // no locking or atomic access! this is bad
   dhashtab_ self = *(dhashtab_ *)h;
   R_xlen_t ret = ifnotfound;
-  const struct hash_pair * cell = self.table + (hash_index1(key, self.multiplier) & (self.size - 1));
+  const struct hash_pair * cell = self.table + hash_index1(key, self.size - 1);
   const struct hash_pair * end = self.table + self.size - 1;
   for (size_t i = 0; i < self.size; ++i, cell = cell == end ? self.table : cell+1) {
     if (cell->key == key) {
