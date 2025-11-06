@@ -12,15 +12,10 @@ struct hash_tab {
   struct hash_pair *tb1, *tb2;
 };
 
-// Fast integer hash multipliers based on golden ratio and other constants
-// 0x9e3779b9 is 2^32 * phi (golden ratio) for 32-bit mixing
-#if SIZE_MAX == UINT64_MAX
-  static const uintptr_t hash_multiplier1 = 0x9e3779b97f4a7c15ULL;
-  static const uintptr_t hash_multiplier2 = 0x85ebca77c2b2ae35ULL;
-#else
-  static const uintptr_t hash_multiplier1 = 0x9e3779b9U;
-  static const uintptr_t hash_multiplier2 = 0x85ebca77U;
-#endif
+// TAOCP vol. 3, section 6.4: for multiplication hashing, use A ~ 1/phi, the golden ratio.
+// 
+static const double hash_multiplier1 = 0.618033988749895;
+static const double hash_multiplier2 = 0.316227766016838;
 
 static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   if (load_factor <= 0 || load_factor >= 1)
