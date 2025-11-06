@@ -9,7 +9,7 @@ struct hash_pair {
 struct hash_tab {
   size_t size, free;
   uintptr_t multiplier1, multiplier2;
-  struct hash_pair *tb1, *tb2;
+  struct hash_pair *table;  // Single table for double hashing
 };
 
 // TAOCP vol. 3, section 6.4: for multiplication hashing, use A ~ 1/phi, the golden ratio.
@@ -55,12 +55,10 @@ static hashtab * hash_create_(size_t n, double load_factor) {
   // Multiply by size to get different hash functions when rehashing
   ret->multiplier1 = n_full * hash_multiplier1;
   ret->multiplier2 = n_full * hash_multiplier2;
-  ret->tb1 = (struct hash_pair *)R_alloc(sizeof(struct hash_pair[n_full]), 1);
-  ret->tb2 = (struct hash_pair *)R_alloc(sizeof(struct hash_pair[n_full]), 1);
+  ret->table = (struct hash_pair *)R_alloc(sizeof(struct hash_pair[n_full]), 1);
   // No valid SEXP is a null pointer, so it's a safe marker for empty cells.
   for (size_t i = 0; i < n_full; ++i) {
-    ret->tb1[i].key = NULL;
-    ret->tb2[i].key = NULL;
+    ret->table[i].key = NULL;
   }
   return ret;
 }
@@ -90,35 +88,36 @@ void hash_rehash(hashtab *h) {
   hashtab *new_h = hash_create_(new_size, 0.5);
 
   for (size_t i = 0; i < h->size; ++i) {
-    if (h->tb1[i].key) hash_set(new_h, h->tb1[i].key, h->tb1[i].value);
-    if (h->tb2[i].key) hash_set(new_h, h->tb2[i].key, h->tb2[i].value);
+    if (h->table[i].key) hash_set(new_h, h->table[i].key, h->table[i].value);
   }
-    *h = *new_h;
+  *h = *new_h;
 }
 
 void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
-  size_t max_relocations = h->size;
   size_t mask = h->size - 1;
-  struct hash_pair item = { .key = key, .value = value };
-  for (size_t i = 0; i < max_relocations; ++i) {
-    size_t idx1 = hash_index1(item.key, h->multiplier1) & mask;
-    if (!h->tb1[idx1].key) {
-      h->tb1[idx1] = item;
-      return;
-    }
-    struct hash_pair temp = h->tb1[idx1];
-    h->tb1[idx1] = item;
-    item = temp;
+  size_t h1 = hash_index1(key, h->multiplier1) & mask;
+  size_t h2 = hash_index2(key, h->multiplier2) & mask;
 
-    size_t idx2 = hash_index2(item.key, h->multiplier2) & mask;
-    if (!h->tb2[idx2].key) {
-      h->tb2[idx2] = item;
+  if (h2 == 0) h2 = 1;
+  else if ((h2 & 1) == 0) h2 |= 1;
+
+  for (size_t i = 0; i < h->size; ++i) {
+    size_t idx = (h1 + i * h2) & mask;
+
+    if (!h->table[idx].key) {
+      // Empty slot found
+      h->table[idx].key = key;
+      h->table[idx].value = value;
+      h->free--;
       return;
     }
-    temp = h->tb2[idx2];
-    h->tb2[idx2] = item;
-    item = temp;
+
+    if (h->table[idx].key == key) {
+      h->table[idx].value = value;
+      return;
+    }
   }
+
   // need to rehash
   hash_rehash(h);
   hash_set(h, key, value);
@@ -126,12 +125,18 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
 
 R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
   size_t mask = h->size - 1;
-  size_t idx1 = hash_index1(key, h->multiplier1) & mask;
-  if (h->tb1[idx1].key == key) return h->tb1[idx1].value;
+  size_t h1 = hash_index1(key, h->multiplier1) & mask;
+  size_t h2 = hash_index2(key, h->multiplier2) & mask;
 
-  size_t idx2 = hash_index2(key, h->multiplier2) & mask;
-  if (h->tb2[idx2].key == key) return h->tb2[idx2].value;
-  // Should be impossible with a load factor below 1, but just in case:
+  if (h2 == 0) h2 = 1;
+  else if ((h2 & 1) == 0) h2 |= 1;
+
+  for (size_t i = 0; i < h->size; ++i) {
+    size_t idx = (h1 + i * h2) & mask;
+    if (!h->table[idx].key) return ifnotfound;
+    if (h->table[idx].key == key) return h->table[idx].value;
+  }
+
   return ifnotfound; // # nocov
 }
 

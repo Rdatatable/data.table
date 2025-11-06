@@ -101,10 +101,12 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     free(counts);
     free(map);
   } else if (chin) {
+    #pragma omp parallel for if(xlen > 100000) schedule(static) num_threads(getDTthreads(xlen, false))
     for (int i=0; i<xlen; i++) {
       ansd[i] = hash_lookup(marks,xd[i],0)<0;
     }
   } else {
+    #pragma omp parallel for if(xlen > 100000) schedule(static) num_threads(getDTthreads(xlen, false))
     for (int i=0; i<xlen; i++) {
       const int m = hash_lookup(marks,xd[i],0);
       ansd[i] = (m<0) ? -m : nomatch;
