@@ -83,7 +83,7 @@ What numbers should be used for new tests? Numbers should be new relative to cur
 
 See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
 
-**References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
+**References:** If you are not sure how to create a PR, but would like to contribute, these links should help get you started:
 
 1. **[How to Github: Fork, Branch, Track, Squash and Pull request](https://gun.io/blog/how-to-github-fork-branch-and-pull-request/)**.
 1. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
