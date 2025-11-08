@@ -743,24 +743,24 @@ void progress(int p, int eta)
 // Spill connection contents to a tempfile so R-level fread can treat it like a filename
 SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit) {
   if (!inherits(connection, "connection")) {
-    INTERNAL_STOP(_("spillConnectionToFile: argument must be a connection"));
+    INTERNAL_STOP(_("spillConnectionToFile: argument must be a connection")); // # nocov
   }
 
   if (!isString(tempfile_path) || LENGTH(tempfile_path) != 1) {
-    INTERNAL_STOP(_("spillConnectionToFile: tempfile_path must be a single string"));
+    INTERNAL_STOP(_("spillConnectionToFile: tempfile_path must be a single string")); // # nocov
   }
 
   if (!isReal(nrows_limit) || LENGTH(nrows_limit) != 1) {
-    INTERNAL_STOP(_("spillConnectionToFile: nrows_limit must be a single numeric value"));
+    INTERNAL_STOP(_("spillConnectionToFile: nrows_limit must be a single numeric value")); // # nocov
   }
 
   Rconnection con = R_GetConnection(connection);
   if (con == NULL) {
-    INTERNAL_STOP(_("spillConnectionToFile: invalid connection"));
+    INTERNAL_STOP(_("spillConnectionToFile: invalid connection")); // # nocov
   }
 
   if (!con->isopen) {
-    INTERNAL_STOP(_("spillConnectionToFile: connection is not open"));
+    INTERNAL_STOP(_("spillConnectionToFile: connection is not open")); // # nocov
   }
 
   const char *filepath = CHAR(STRING_ELT(tempfile_path, 0));
@@ -775,15 +775,15 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
 
   FILE *outfile = fopen(filepath, "wb");
   if (outfile == NULL) {
-    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing"), filepath);
+    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing"), filepath); // # nocov
   }
 
   // Read and write in chunks // TODO tune chunk size
   size_t chunk_size = 256 * 1024;
   char *buffer = malloc(chunk_size);
   if (!buffer) {
-    fclose(outfile);
-    STOP(_("spillConnectionToFile: failed to allocate buffer"));
+    fclose(outfile);                                             // # nocov
+    STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
   }
 
   size_t total_read = 0;
@@ -810,9 +810,11 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
 
     size_t nwritten = fwrite(buffer, 1, bytes_to_write, outfile);
     if (nwritten != bytes_to_write) {
+      // # nocov start
       free(buffer);
       fclose(outfile);
       STOP(_("spillConnectionToFile: write error (wrote %zu of %zu bytes)"), nwritten, bytes_to_write);
+      // # nocov end
     }
     total_read += bytes_to_write;
 
