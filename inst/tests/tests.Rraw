@@ -21865,7 +21865,7 @@ test(2345, fread('"this_that"\n"2025-01-01 00:00:01"'), data.table(this_that = a
 
 # fread supports connections #561
 f = testDir("russellCRLF.csv")
-test(2346.1, fread(file(f, "r"), verbose=TRUE), fread(f), output="Spill connection to tempfile")
+test(2346.1, fread(file=file(f, "r"), verbose=TRUE), fread(f), output="Spill connection to tempfile")
 test(2346.2, fread(file(f, "r"), nrows=0L), fread(f, nrows=0L))
 test(2346.3, fread(file(f, "r"), nrows=5), fread(f, nrows=5))
 test(2346.4, fread(file(f, "r"), nrows=5, header=FALSE), fread(f, nrows=5, header=FALSE))
