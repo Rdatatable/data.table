@@ -93,15 +93,13 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   connection_spill_info = NULL
   if (input_is_con) {
     if (verbose) {
-      catf("[00] Spill connection to tempfile\n")
-      catf("  Connection class: %s\n", paste(class(input), collapse=", "))
-      catf("  Reading connection into RAM buffer... ")
+      catf("[00] Spill connection to tempfile\n  Connection class: %s\n  Reading connection into RAM buffer... ", toString(class(input)))
       flush.console()
     }
     spill_started.at = proc.time()
     con_summary = summary(input)
     con_desc = con_summary$description
-    con_class = class(input)[1L]
+    con_class = class1(input)
     con_open = isOpen(input)
 
     needs_reopen = FALSE

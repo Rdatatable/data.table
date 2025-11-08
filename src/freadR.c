@@ -780,7 +780,7 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
 
   // Read and write in chunks // TODO tune chunk size
   size_t chunk_size = 256 * 1024;
-  char *buffer = (char *)malloc(chunk_size);
+  char *buffer = malloc(chunk_size);
   if (buffer == NULL) {
     fclose(outfile);
     STOP(_("spillConnectionToFile: failed to allocate buffer"));
