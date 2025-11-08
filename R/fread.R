@@ -64,7 +64,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     input_is_con = TRUE
     file = NULL
   }
-  if (!input_is_con && is.null(cmd)) {
+  if (!input_is_con && is.null(cmd) && is.null(text)) {
     if (!is.character(input) || length(input)!=1L) {
       stopf("input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
     }
