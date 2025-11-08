@@ -135,7 +135,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     }
 
     if (verbose) {
-      catf("done in %s (read %d bytes)\n", timetaken(spill_started.at), bytes_copied)
+      catf("done in %s\n", timetaken(spill_started.at))
       flush.console()
     }
     connection_spill_info = c(spill_elapsed, bytes_copied)
