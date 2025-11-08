@@ -55,7 +55,16 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       input = text
     }
   }
-  else if (is.null(cmd)) {
+  # Check if input is a connection and read it into memory
+  input_is_con = FALSE
+  if (!missing(input) && inherits(input, "connection")) {
+    input_is_con = TRUE
+  } else if (!is.null(file) && inherits(file, "connection")) {
+    input = file
+    input_is_con = TRUE
+    file = NULL
+  }
+  if (!input_is_con && is.null(cmd)) {
     if (!is.character(input) || length(input)!=1L) {
       stopf("input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
     }
@@ -80,6 +89,61 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       stopf("External command failed with exit code %d. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", status, tmpdir)
     }
     file = tmpFile
+  }
+  connection_spill_info = NULL
+  if (input_is_con) {
+    if (verbose) {
+      catf("[00] Spill connection to tempfile\n")
+      catf("  Connection class: %s\n", paste(class(input), collapse=", "))
+      catf("  Reading connection into RAM buffer... ")
+      flush.console()
+    }
+    spill_started.at = proc.time()
+    con_summary = summary(input)
+    con_desc = con_summary$description
+    con_class = class(input)[1L]
+    con_open = isOpen(input)
+
+    needs_reopen = FALSE
+    if (con_open) {
+      binary_modes = c("rb", "r+b", "wb", "w+b", "ab", "a+b")
+      if (!con_summary$mode %chin% binary_modes) needs_reopen = TRUE
+    }
+
+    close_con = NULL
+
+    if (needs_reopen) {
+      close(input)
+      input = switch(con_class,
+                     "file" = file(con_desc, "rb"),
+                     "gzfile" = gzfile(con_desc, "rb"),
+                     "bzfile" = bzfile(con_desc, "rb"),
+                     "url" = url(con_desc, "rb"),
+                     "pipe" = pipe(con_desc, "rb"),
+                     stopf("Unsupported connection type: %s", con_class))
+      close_con = input
+    } else if (!con_open) {
+      open(input, "rb")
+      close_con = input
+    }
+    tmpFile = tempfile(tmpdir=tmpdir)
+    on.exit(unlink(tmpFile), add=TRUE)
+    bytes_copied = .Call(CspillConnectionToFile, input, tmpFile, as.numeric(nrows))
+    spill_elapsed = (proc.time() - spill_started.at)[["elapsed"]]
+
+    if (bytes_copied == 0) {
+      warningf("Connection has size 0. Returning a NULL %s.", if (data.table) 'data.table' else 'data.frame')
+      return(if (data.table) data.table(NULL) else data.frame(NULL))
+    }
+
+    if (verbose) {
+      catf("done in %s (read %d bytes)\n", timetaken(spill_started.at), bytes_copied)
+      flush.console()
+    }
+    connection_spill_info = c(spill_elapsed, bytes_copied)
+    input = tmpFile
+    file = tmpFile
+    if (!is.null(close_con)) close(close_con)
   }
   if (!is.null(file)) {
     if (!is.character(file) || length(file)!=1L)
@@ -293,7 +357,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       tz="UTC"
   }
   ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,comment.char,
-              fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
+              fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC",connection_spill_info)
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
   require_bit64_if_needed(ans)

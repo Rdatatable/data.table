@@ -2971,7 +2971,10 @@ int freadMain(freadMainArgs _args)
 
   if (verbose) {
     DTPRINT("=============================\n"); // # notranslate
+    tTot = tTot + (args.connectionSpillActive ? args.connectionSpillSeconds : 0.0);
     if (tTot < 0.000001) tTot = 0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
+    if (args.connectionSpillActive)
+      DTPRINT(_("%8.3fs (%3.0f%%) Spill connection to tempfile (%.3fGiB)\n"), args.connectionSpillSeconds, 100.0 * args.connectionSpillSeconds / tTot, args.connectionSpillBytes / (1024.0 * 1024.0 * 1024.0));
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout - tMap, 100.0 * (tLayout - tMap) / tTot);
       DTPRINT(sep == '\t' ? "'\\t'" : (sep == '\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
