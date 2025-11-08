@@ -742,10 +742,6 @@ void progress(int p, int eta)
 
 // Spill connection contents to a tempfile so R-level fread can treat it like a filename
 SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit) {
-  if (!inherits(connection, "connection")) {
-    INTERNAL_STOP(_("spillConnectionToFile: argument must be a connection")); // # nocov
-  }
-
   if (!isString(tempfile_path) || LENGTH(tempfile_path) != 1) {
     INTERNAL_STOP(_("spillConnectionToFile: tempfile_path must be a single string")); // # nocov
   }
@@ -755,14 +751,6 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
   }
 
   Rconnection con = R_GetConnection(connection);
-  if (con == NULL) {
-    INTERNAL_STOP(_("spillConnectionToFile: invalid connection")); // # nocov
-  }
-
-  if (!con->isopen) {
-    INTERNAL_STOP(_("spillConnectionToFile: connection is not open")); // # nocov
-  }
-
   const char *filepath = CHAR(STRING_ELT(tempfile_path, 0));
   const double nrows_max = REAL_RO(nrows_limit)[0];
   const bool limit_rows = R_FINITE(nrows_max) && nrows_max >= 0.0;
@@ -790,7 +778,7 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
   size_t nrows_seen = 0;
 
   while (true) {
-    size_t nread = con->read(buffer, 1, chunk_size, con);
+    size_t nread = R_ReadConnection(con, buffer, chunk_size);
     if (nread == 0) {
       break; // EOF
     }
