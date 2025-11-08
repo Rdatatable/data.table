@@ -1575,9 +1575,16 @@ int freadMain(freadMainArgs _args)
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
     #endif
-      int nbit = 8 * sizeof(char*); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
-           nbit <= 32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
+      // # nocov start
+      int nbit = 8 * sizeof(char*);
+      if (nrowLimit < INT64_MAX) {
+        STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. Since you specified nrows=%"PRId64", try wrapping the file in a connection: fread(file('filename'), nrows=%"PRId64")."),
+             filesize_to_str(fileSize), nbit, nrowLimit, nrowLimit);
+      } else {
+        STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
+             nbit <= 32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available"));
+      }
+      // # nocov end
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
