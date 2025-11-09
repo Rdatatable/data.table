@@ -131,7 +131,7 @@ as.data.table.list = function(x,
   ...)
 {
   if (is.data.table(x)) {
-    # operate on plain list to avoid [[<-.data.table dispatch 
+    # operate on plain list to avoid [[<-.data.table dispatch
     x = as.list(x)
   }
   n = length(x)
