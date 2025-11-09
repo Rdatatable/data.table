@@ -71,7 +71,7 @@ navbar:
       text: Manual
       href: reference/index.html
     cheatsheet:
-      text: Cheat Sheet
+      text: Cheatsheet
       menu:
       - text: "English"
         href: datatable_cheatsheet.pdf
