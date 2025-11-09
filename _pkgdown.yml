@@ -69,7 +69,11 @@ navbar:
       href: reference/index.html
     cheatsheet:
       text: Cheat Sheet
-      href: datatable_cheatsheet.pdf
+      menu:
+      - text: "English"
+        href: datatable_cheatsheet.pdf
+      - text: "Français"
+        href: datatable_cheatsheet_fr.pdf
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
