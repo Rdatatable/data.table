@@ -11,7 +11,7 @@ Filing issues
 
 - Please read and follow all the instructions at **[Support](https://github.com/Rdatatable/data.table/wiki/Support)** before filing; e.g. **check [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)** first and **search existing [Issues](https://github.com/Rdatatable/data.table/issues)**.
 - One issue for one purpose. Don't report more than one bug or request several features in the same issue.
-- Feel free to add reactions to existing issues that are important to you. We monitor this and it helps us prioritize where to devote our efforts! We expect [this issue](https://github.com/Rdatatable/data.table/issues/3189) to be evergreen.
+- Feel free to add reactions to existing issues that are important to you. We [monitor this](https://github.com/Rdatatable/data.table/issues?q=is%3Aissue%20state%3Aopen%20sort%3Areactions-%2B1-desc) and assign [Top request label](https://github.com/Rdatatable/data.table/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22top%20request%22) to prioritize where to devote our efforts!
 
 **Filing issues is contributing. Thank you!**
 
