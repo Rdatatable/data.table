@@ -18,7 +18,7 @@ home:
 
 navbar:
   structure:
-    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference]
+    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference, cheatsheet]
     right: [search, github, lightswitch]
   components:
     home:
@@ -67,6 +67,9 @@ navbar:
     reference:
       text: Manual
       href: reference/index.html
+    cheatsheet:
+      text: Cheat Sheet
+      href: datatable_cheatsheet.pdf
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
