@@ -2308,6 +2308,19 @@ tail.data.table = function(x, n=6L, ...) {
   set(x,j=name,value=value)  # important i is missing here
 }
 
+"[[<-.data.table" = function(x, i, j, value) {
+  if (!cedta()) {
+    ans = `[[<-.data.frame`(x, i, j, value) # nocov
+    return(setalloccol(ans))           # nocov. over-allocate (again)
+  }
+  x = copy(x)
+  if (nargs()<4L) {
+    set(x, j=i, value=value)
+  } else {
+    set(x, i, j, value)
+  }
+}
+
 as.data.frame.data.table = function(x, row.names = NULL, ...)
 {
   ans = setDF(copy(x), rownames = row.names) # issue #5319
