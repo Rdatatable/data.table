@@ -3,9 +3,6 @@ url: https://rdatatable.gitlab.io/data.table
 template:
   bootstrap: 5
   light-switch: true
-  assets:
-  - inst/datatable_cheatsheet.pdf
-  - inst/datatable_cheatsheet_fr.pdf
 
 development:
   version_tooltip: "Development version"
