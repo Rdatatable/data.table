@@ -130,6 +130,10 @@ as.data.table.list = function(x,
                 # e.g. cbind(foo=DF1, bar=DF2) have .named=c(TRUE,TRUE) due to the foo= and bar= and trigger "prefix." for non-vector items
   ...)
 {
+  if (is.data.table(x)) {
+    # operate on plain list to avoid [[<-.data.table dispatch 
+    x = as.list(x)
+  }
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)

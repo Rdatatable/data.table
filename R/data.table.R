@@ -2309,12 +2309,16 @@ tail.data.table = function(x, n=6L, ...) {
 }
 
 "[[<-.data.table" = function(x, i, j, value) {
+  n = nargs()
   if (!cedta()) {
-    ans = `[[<-.data.frame`(x, i, j, value) # nocov
-    return(setalloccol(ans))           # nocov. over-allocate (again)
+    # nocov start
+    ans = if (n<4L) `[<-.data.frame`(x, i, value=value)
+          else `[<-.data.frame`(x, i, j, value)
+    return(setalloccol(ans))           # over-allocate (again)
+    # nocov end
   }
   x = copy(x)
-  if (nargs()<4L) {
+  if (n<4L) {
     set(x, j=i, value=value)
   } else {
     set(x, i, j, value)
