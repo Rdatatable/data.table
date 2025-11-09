@@ -7,6 +7,9 @@ template:
 development:
   version_tooltip: "Development version"
 
+news:
+  one_page: true
+
 home:
   links:
   - text: CRAN-like website
