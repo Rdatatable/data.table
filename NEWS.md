@@ -346,7 +346,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 23. `fread()` auto-detects separators for single-column files consisting solely of quoted values (e.g. `"this_that"\n"2025-01-01 00:00:01"`), [#7366](https://github.com/Rdatatable/data.table/issues/7366). Thanks @arunsrinivasan for the report and @ben-schwen for the fix.
 
-24. Assigning via `[[<-` now works for data.tables by reference, so forms like `DT[["col"]] = value` or `DT[[1, "col"]] = value` keep over-allocation intact instead of falling back to the data.frame method, [#6734](https://github.com/Rdatatable/data.table/issues/6734). Thanks @mb706 for the report and @ben-schwen for the fix.
+24. Assigning via `[[<-` now changes data.tables by reference, so forms like `DT[["col"]] = value` or `DT[[1, "col"]] = value` keep over-allocation intact instead of falling back to the data.frame method, [#6734](https://github.com/Rdatatable/data.table/issues/6734). Thanks @mb706 for the report and @ben-schwen for the implementation.
 
 ### NOTES
 
