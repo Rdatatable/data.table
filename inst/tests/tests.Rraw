@@ -1415,8 +1415,8 @@ test(483.4, DT$baz, c(1L,1L,1L))
 DT[[5]] = 9L
 test(438.5, truelength(DT), tl+3L)
 DT[[1,"qux"]] = 10L
-test(438.4, truelength(DT), tl+3L)
-test(438.5, DT, data.table(a=1:3,b=4:6,foo=7L,bar=8L,baz=9L,qux=c(10L,NA_integer_,NA_integer_)))
+test(438.6, truelength(DT), tl+3L)
+test(438.7, DT, data.table(a=1:3,b=4:6,foo=7L,bar=8L,baz=9L,qux=c(10L,NA_integer_,NA_integer_)))
 
 # Test rbind works by colname now, for consistency with base, FR#1634
 DT = data.table(a=1:3,b=4:6)
