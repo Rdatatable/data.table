@@ -4,7 +4,7 @@ reopen_connection = function(con, ...) {
 }
 
 reopen_connection.default = function(con, ...) {
-  con_class = class(con)[1L]
+  con_class = class1(con)
   stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
 }
 
@@ -132,8 +132,6 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     }
     spill_started.at = proc.time()
     con_summary = summary(input)
-    con_desc = con_summary$description
-    con_class = class1(input)
     con_open = isOpen(input)
 
     needs_reopen = FALSE
