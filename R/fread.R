@@ -1,3 +1,33 @@
+# S3 generic for reopening connections in binary mode
+reopen_connection = function(con, ...) {
+  UseMethod("reopen_connection")
+}
+
+reopen_connection.default = function(con, ...) {
+  con_class = class(con)[1L]
+  stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
+}
+
+reopen_connection.file = function(con, ...) {
+  file(summary(con)$description, "rb")
+}
+
+reopen_connection.gzfile = function(con, ...) {
+  gzfile(summary(con)$description, "rb")
+}
+
+reopen_connection.bzfile = function(con, ...) {
+  bzfile(summary(con)$description, "rb")
+}
+
+reopen_connection.url = function(con, ...) {
+  url(summary(con)$description, "rb")
+}
+
+reopen_connection.pipe = function(con, ...) {
+  pipe(summary(con)$description, "rb")
+}
+
 fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
@@ -112,13 +142,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
     if (needs_reopen) {
       close(input)
-      input = switch(con_class,
-                     "file" = file(con_desc, "rb"),
-                     "gzfile" = gzfile(con_desc, "rb"),
-                     "bzfile" = bzfile(con_desc, "rb"),
-                     "url" = url(con_desc, "rb"),
-                     "pipe" = pipe(con_desc, "rb"),
-                     stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class))
+      input = reopen_connection(input)
       close_con = input
     } else if (!con_open) {
       open(input, "rb")
