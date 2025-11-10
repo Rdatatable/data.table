@@ -1,35 +1,35 @@
 # S3 generic for reopening connections in binary mode
-reopen_connection = function(con, ...) {
+reopen_connection = function(con, description, ...) {
   UseMethod("reopen_connection")
 }
 
-reopen_connection.default = function(con, ...) {
+reopen_connection.default = function(con, description, ...) {
   con_class = class1(con)
   stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
 }
 
-reopen_connection.file = function(con, ...) {
-  file(summary(con)$description, "rb")
+reopen_connection.file = function(con, description, ...) {
+  file(description, "rb")
 }
 
-reopen_connection.gzfile = function(con, ...) {
-  gzfile(summary(con)$description, "rb")
+reopen_connection.gzfile = function(con, description, ...) {
+  gzfile(description, "rb")
 }
 
-reopen_connection.bzfile = function(con, ...) {
-  bzfile(summary(con)$description, "rb")
+reopen_connection.bzfile = function(con, description, ...) {
+  bzfile(description, "rb")
 }
 
-reopen_connection.url = function(con, ...) {
-  url(summary(con)$description, "rb")
+reopen_connection.url = function(con, description, ...) {
+  url(description, "rb")
 }
 
-reopen_connection.unz = function(con, ...) {
-  unz(summary(con)$description, "rb")
+reopen_connection.unz = function(con, description, ...) {
+  unz(description, "rb")
 }
 
-reopen_connection.pipe = function(con, ...) {
-  pipe(summary(con)$description, "rb")
+reopen_connection.pipe = function(con, description, ...) {
+  pipe(description, "rb")
 }
 
 fread = function(
@@ -131,11 +131,11 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       flush.console()
     }
     spill_started.at = proc.time()
-    con_summary = summary(input)
     con_open = isOpen(input)
 
     needs_reopen = FALSE
     if (con_open) {
+      con_summary = summary(input)
       binary_modes = c("rb", "r+b", "wb", "w+b", "ab", "a+b")
       if (!con_summary$mode %chin% binary_modes) needs_reopen = TRUE
     }
@@ -144,7 +144,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
     if (needs_reopen) {
       close(input)
-      input = reopen_connection(input)
+      input = reopen_connection(input, con_summary$description)
       close_con = input
     } else if (!con_open) {
       open(input, "rb")
