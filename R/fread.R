@@ -136,7 +136,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     needs_reopen = FALSE
     if (con_open) {
       con_summary = summary(input)
-      binary_modes = c("rb", "r+b", "wb", "w+b", "ab", "a+b")
+      binary_modes = c("rb", "r+b")
       if (!con_summary$mode %chin% binary_modes) needs_reopen = TRUE
     }
 
