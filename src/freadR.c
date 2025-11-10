@@ -741,6 +741,75 @@ void progress(int p, int eta)
 }
 // # nocov end
 
+typedef struct {
+  Rconnection con;
+  const char *filepath;
+  size_t row_limit;
+  FILE *outfile;
+  char *buffer;
+} SpillState;
+
+static void spill_cleanup(void *data)
+{
+  SpillState *state = (SpillState *)data;
+  if (!state) return;
+  free(state->buffer); // free(NULL) is safe no-op
+  if (state->outfile) {
+    fclose(state->outfile);
+  }
+}
+
+static SEXP do_spill(void *data)
+{
+  SpillState *state = (SpillState *)data;
+  const size_t chunk_size = 256 * 1024; // TODO tune chunk size
+
+  state->outfile = fopen(state->filepath, "wb");
+  if (state->outfile == NULL) {
+    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), state->filepath, strerror(errno)); // # nocov
+  }
+
+  state->buffer = malloc(chunk_size);
+  if (!state->buffer) {
+    STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
+  }
+  const bool limit_rows = R_FINITE(state->row_limit) && (state->row_limit > 0);
+  size_t total_read = 0;
+  size_t nrows_seen = 0;
+
+  while (true) {
+    size_t nread = R_ReadConnection(state->con, state->buffer, chunk_size);
+    if (nread == 0) {
+      break; // EOF
+    }
+
+    size_t bytes_to_write = nread;
+    if (limit_rows && nrows_seen < state->row_limit) {
+      for (size_t i = 0; i < nread; i++) {
+        if (state->buffer[i] == '\n') {
+          nrows_seen++;
+          if (nrows_seen >= state->row_limit) {
+            bytes_to_write = i + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    size_t nwritten = fwrite(state->buffer, 1, bytes_to_write, state->outfile);
+    if (nwritten != bytes_to_write) {
+      STOP(_("spillConnectionToFile: write error %s (wrote %zu of %zu bytes)"), strerror(errno), nwritten, bytes_to_write); // # nocov
+    }
+    total_read += bytes_to_write;
+
+    if (limit_rows && nrows_seen >= state->row_limit) {
+      break;
+    }
+  }
+
+  return ScalarReal((double)total_read);
+}
+
 // Spill connection contents to a tempfile so R-level fread can treat it like a filename
 SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit) {
 #if R_CONNECTIONS_VERSION != 1
@@ -754,70 +823,22 @@ INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", 
     INTERNAL_STOP(_("spillConnectionToFile: nrows_limit must be a single numeric value")); // # nocov
   }
 
-  Rconnection con = R_GetConnection(connection);
-  const char *filepath = CHAR(STRING_ELT(tempfile_path, 0));
+  SpillState state = {
+    .con = R_GetConnection(connection),
+    .filepath = CHAR(STRING_ELT(tempfile_path, 0)),
+    .row_limit = 0,
+    .outfile = NULL,
+    .buffer = NULL
+  };
+
   const double nrows_max = REAL_RO(nrows_limit)[0];
-  const bool limit_rows = R_FINITE(nrows_max) && nrows_max >= 0.0;
-  size_t row_limit = 0;
-  if (limit_rows) {
-    row_limit = (size_t)nrows_max;
-    if (row_limit == 0) row_limit = 100;  // read at least 100 rows if nrows==0
-    row_limit++; // cater for potential header row
+  if (R_FINITE(nrows_max) && nrows_max >= 0.0) {
+    state.row_limit = (size_t)nrows_max;
+    if (state.row_limit == 0) state.row_limit = 100;  // read at least 100 rows if nrows==0
+    state.row_limit++; // cater for potential header row
   }
 
-  FILE *outfile = fopen(filepath, "wb");
-  if (outfile == NULL) {
-    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), filepath, strerror(errno)); // # nocov
-  }
-
-  // Read and write in chunks // TODO tune chunk size
-  size_t chunk_size = 256 * 1024;
-  char *buffer = malloc(chunk_size);
-  if (!buffer) {
-    fclose(outfile);                                             // # nocov
-    STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
-  }
-
-  size_t total_read = 0;
-  size_t nrows_seen = 0;
-
-  while (true) {
-    size_t nread = R_ReadConnection(con, buffer, chunk_size);
-    if (nread == 0) {
-      break; // EOF
-    }
-
-    size_t bytes_to_write = nread;
-    if (limit_rows && nrows_seen < row_limit) {
-      for (size_t i = 0; i < nread; i++) {
-        if (buffer[i] == '\n') {
-          nrows_seen++;
-          if (nrows_seen >= row_limit) {
-            bytes_to_write = i + 1;
-            break;
-          }
-        }
-      }
-    }
-
-    size_t nwritten = fwrite(buffer, 1, bytes_to_write, outfile);
-    if (nwritten != bytes_to_write) {
-      // # nocov start
-      free(buffer);
-      fclose(outfile);
-      STOP(_("spillConnectionToFile: write error %s (wrote %zu of %zu bytes)"), strerror(errno), nwritten, bytes_to_write);
-      // # nocov end
-    }
-    total_read += bytes_to_write;
-
-    if (limit_rows && nrows_seen >= row_limit) {
-      break;
-    }
-  }
-
-  free(buffer);
-  fclose(outfile);
-  return ScalarReal((double)total_read);
+  return R_ExecWithCleanup(do_spill, &state, spill_cleanup, &state);
 #endif // was R_CONNECTIONS_VERSION not != 1?
 }
 
