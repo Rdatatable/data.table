@@ -12,7 +12,7 @@ reopen_connection(con, ...)
   \item{...}{ Additional arguments for methods. }
 }
 \details{
-  Reopens a connection in binary read mode (\code{"rb"}). Methods are provided for \code{file}, \code{gzfile}, \code{bzfile}, \code{url}, and \code{pipe} connections.
+  Reopens a connection in binary read mode (\code{"rb"}). Methods are provided for \code{file}, \code{gzfile}, \code{bzfile}, \code{url}, \code{unz} and \code{pipe} connections.
 
   To support custom connection types with \code{fread}, define a method for your connection class that returns a new connection opened in binary mode.
 }
