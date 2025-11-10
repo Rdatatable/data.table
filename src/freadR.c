@@ -766,7 +766,7 @@ INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", 
 
   FILE *outfile = fopen(filepath, "wb");
   if (outfile == NULL) {
-    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing"), filepath); // # nocov
+    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), filepath, strerror(errno)); // # nocov
   }
 
   // Read and write in chunks // TODO tune chunk size
@@ -804,7 +804,7 @@ INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", 
       // # nocov start
       free(buffer);
       fclose(outfile);
-      STOP(_("spillConnectionToFile: write error (wrote %zu of %zu bytes)"), nwritten, bytes_to_write);
+      STOP(_("spillConnectionToFile: write error %s (wrote %zu of %zu bytes)"), strerror(errno), nwritten, bytes_to_write);
       // # nocov end
     }
     total_read += bytes_to_write;
