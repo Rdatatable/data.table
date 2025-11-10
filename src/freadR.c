@@ -2,6 +2,7 @@
 #include "freadR.h"
 #include "data.table.h"
 #include <R_ext/Connections.h>
+#include <errno.h>
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
