@@ -24,6 +24,10 @@ reopen_connection.url = function(con, ...) {
   url(summary(con)$description, "rb")
 }
 
+reopen_connection.unz = function(con, ...) {
+  unz(summary(con)$description, "rb")
+}
+
 reopen_connection.pipe = function(con, ...) {
   pipe(summary(con)$description, "rb")
 }
@@ -148,6 +152,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       open(input, "rb")
       close_con = input
     }
+    if (!is.null(close_con)) on.exit(close(close_con), add=TRUE)
     tmpFile = tempfile(tmpdir=tmpdir)
     on.exit(unlink(tmpFile), add=TRUE)
     bytes_copied = .Call(CspillConnectionToFile, input, tmpFile, as.numeric(nrows))
@@ -165,7 +170,6 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     connection_spill_info = c(spill_elapsed, bytes_copied)
     input = tmpFile
     file = tmpFile
-    if (!is.null(close_con)) close(close_con)
   }
   if (!is.null(file)) {
     if (!is.character(file) || length(file)!=1L)
