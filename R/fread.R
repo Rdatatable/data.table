@@ -93,7 +93,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   connection_spill_info = NULL
   if (input_is_con) {
     if (verbose) {
-      catf("[00] Spill connection to tempfile\n  Connection class: %s\n  Reading connection into RAM buffer... ", toString(class(input)))
+      catf("[00] Spill connection to tempfile\n  Connection class: %s\n  Reading connection into a temporary file... ", toString(class(input)))
       flush.console()
     }
     spill_started.at = proc.time()
@@ -118,7 +118,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
                      "bzfile" = bzfile(con_desc, "rb"),
                      "url" = url(con_desc, "rb"),
                      "pipe" = pipe(con_desc, "rb"),
-                     stopf("Unsupported connection type: %s", con_class))
+                     stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class))
       close_con = input
     } else if (!con_open) {
       open(input, "rb")
