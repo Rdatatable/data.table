@@ -1,3 +1,4 @@
+# nocov start
 # S3 generic for reopening connections in binary mode
 reopen_connection = function(con, description, ...) {
   UseMethod("reopen_connection")
@@ -31,6 +32,7 @@ reopen_connection.unz = function(con, description, ...) {
 reopen_connection.pipe = function(con, description, ...) {
   pipe(description, "rb")
 }
+# nocov end
 
 fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
