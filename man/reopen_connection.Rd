@@ -5,10 +5,11 @@
   S3 generic to reopen a connection in binary read mode. Used internally by \code{fread}. Exported so packages with custom connection classes can define methods.
 }
 \usage{
-reopen_connection(con, ...)
+reopen_connection(con, description, ...)
 }
 \arguments{
   \item{con}{ A connection object. }
+  \item{description}{ character string. A description of the connection. }
   \item{...}{ Additional arguments for methods. }
 }
 \details{
