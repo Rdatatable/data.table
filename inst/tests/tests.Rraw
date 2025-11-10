@@ -1411,7 +1411,7 @@ test(438.2, truelength(DT), tl+2L)
 # also allow DT[[...]]= syntax #6734
 DT[["baz"]] = 1L
 test(438.3, truelength(DT), tl+2L)
-test(483.4, DT$baz, c(1L,1L,1L))
+test(438.4, DT$baz, c(1L,1L,1L))
 DT[[5]] = 9L
 test(438.5, truelength(DT), tl+3L)
 DT[[1,"qux"]] = 10L
