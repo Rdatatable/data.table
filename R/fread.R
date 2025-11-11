@@ -1,36 +1,36 @@
 # nocov start
-# S3 generic for reopening connections in binary mode
-reopen_connection = function(con, description, ...) {
-  UseMethod("reopen_connection")
+# S3 generic that returns a function to open connections in binary mode
+connection_opener = function(con, ...) {
+  UseMethod("connection_opener")
 }
 
-reopen_connection.default = function(con, description, ...) {
+connection_opener.default = function(con, ...) {
   con_class = class1(con)
   stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
 }
 
-reopen_connection.file = function(con, description, ...) {
-  file(description, "rb")
+connection_opener.file = function(con, ...) {
+  function(description) file(description, "rb", ...)
 }
 
-reopen_connection.gzfile = function(con, description, ...) {
-  gzfile(description, "rb")
+connection_opener.gzfile = function(con, ...) {
+  function(description) gzfile(description, "rb", ...)
 }
 
-reopen_connection.bzfile = function(con, description, ...) {
-  bzfile(description, "rb")
+connection_opener.bzfile = function(con, ...) {
+  function(description) bzfile(description, "rb", ...)
 }
 
-reopen_connection.url = function(con, description, ...) {
-  url(description, "rb")
+connection_opener.url = function(con, ...) {
+  function(description) url(description, "rb", ...)
 }
 
-reopen_connection.unz = function(con, description, ...) {
-  unz(description, "rb")
+connection_opener.unz = function(con, ...) {
+  function(description) unz(description, "rb", ...)
 }
 
-reopen_connection.pipe = function(con, description, ...) {
-  pipe(description, "rb")
+connection_opener.pipe = function(con, ...) {
+  function(description) pipe(description, "rb", ...)
 }
 # nocov end
 
@@ -146,7 +146,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
     if (needs_reopen) {
       close(input)
-      input = reopen_connection(input, con_summary$description)
+      input = connection_opener(input)(con_summary$description)
       close_con = input
     } else if (!con_open) {
       open(input, "rb")
