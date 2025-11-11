@@ -21869,6 +21869,11 @@ test(2346.1, fread(file=file(f, "r"), verbose=TRUE), fread(f), output="Spill con
 test(2346.2, fread(file(f, "r"), nrows=0L), fread(f, nrows=0L))
 test(2346.3, fread(file(f, "r"), nrows=5), fread(f, nrows=5))
 test(2346.4, fread(file(f, "r"), nrows=5, header=FALSE), fread(f, nrows=5, header=FALSE))
+# test with open connection consuming part of the connection before fread
+con = file(f, "rb")
+readLines(con, n=3)
+test(2346.5, fread(con), fread(f, skip=3L))
+close(con)
 file.create(f <- tempfile())
-test(2346.5, fread(file(f)), data.table(), warning="Connection has size 0.")
+test(2346.6, fread(file(f)), data.table(), warning="Connection has size 0.")
 unlink(f)
