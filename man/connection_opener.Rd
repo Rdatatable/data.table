@@ -1,5 +1,12 @@
 \name{connection_opener}
 \alias{connection_opener}
+\alias{connection_opener.default}
+\alias{connection_opener.file}
+\alias{connection_opener.gzfile}
+\alias{connection_opener.bzfile}
+\alias{connection_opener.url}
+\alias{connection_opener.unz}
+\alias{connection_opener.pipe}
 \title{ Create a function to open connections in binary mode }
 \description{
   S3 generic that returns a function to open a connection in binary read mode. Used internally by \code{fread}. Exported so packages with custom connection classes can define methods.
