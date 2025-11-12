@@ -141,6 +141,12 @@ as.data.table.list = function(x,
   rownames_ = NULL
   check_rownames = !isFALSE(keep.rownames)
 
+  # conversion must happen after capturing names
+  if (is.data.table(x)) {
+    # operate on plain list to avoid [[<-.data.table dispatch
+    x = as.list(x)
+  }
+
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
