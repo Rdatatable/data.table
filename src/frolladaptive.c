@@ -7,7 +7,8 @@
  * algo = 1: exact
  *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
-void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -113,7 +114,8 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
  * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`
  * if NFs detected re-run rollmean implemented as cumsum with NF support
  */
-void frolladaptivemeanFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivemeanFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemeanFast", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;                                     // flag to re-run if NAs detected
@@ -211,7 +213,8 @@ void frolladaptivemeanFast(const double *x, uint64_t nx, ans_t *ans, const int *
  * requires much more cpu
  * uses multiple cores
  */
-void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemeanExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;                                     // flag to re-run if NAs detected
@@ -336,7 +339,8 @@ void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int 
 /* fast rolling adaptive sum - fast
  * same as adaptive mean fast
  */
-void frolladaptivesumFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivesumFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivesumFast", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
@@ -432,7 +436,8 @@ void frolladaptivesumFast(const double *x, uint64_t nx, ans_t *ans, const int *k
 /* fast rolling adaptive sum - exact
  * same as adaptive mean exact
  */
-void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivesumExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
@@ -507,7 +512,8 @@ void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *
 /* fast rolling adaptive max - exact
  * for has.nf=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
  */
-void frolladaptivemaxExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivemaxExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemaxExact", (uint64_t)nx, hasnf, (int) narm);
   if (narm || hasnf==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when has.nf=FALSE
@@ -582,7 +588,8 @@ void frolladaptivemaxExact(const double *x, uint64_t nx, ans_t *ans, const int *
 /* fast rolling adaptive min - exact
  * for has.nf=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
  */
-void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveminExact", (uint64_t)nx, hasnf, (int) narm);
   if (narm || hasnf==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when has.nf=FALSE
@@ -668,7 +675,8 @@ void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *
 /* fast rolling adaptive prod - exact
  * same as adaptive mean exact
  */
-void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveprodExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
@@ -742,7 +750,8 @@ void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int 
 
 /* fast rolling adaptive var - exact
  */
-void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivevarExact", (uint64_t)nx, hasnf, (int) narm);
   bool truehasnf = hasnf>0;
@@ -846,7 +855,8 @@ void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *
 
 /* fast rolling adaptive sd - exact
  */
-void frolladaptivesdExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivesdExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frolladaptivevarExact(...))\n"), "frolladaptivesdExact");
   frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
@@ -865,7 +875,8 @@ void frolladaptivesdExact(const double *x, uint64_t nx, ans_t *ans, const int *k
  *   nc for rolling NA count
  *   isna for NA mask
  */
-static int frolladaptiveNAFast(const double *x, uint64_t nx, const int *k, int *nc, bool *isna) {
+static int frolladaptiveNAFast(const double *x, uint64_t nx, const int *k, int *nc, bool *isna)
+{
   int cnc = 0; // cumulative na count
   for (uint64_t i=0; i<nx; i++) {
     if (ISNAN(x[i])) {
@@ -924,7 +935,8 @@ static int frolladaptiveNAFast(const double *x, uint64_t nx, const int *k, int *
 /* fast rolling adaptive median - exact
  * loop in parallel for each element of x and call quickselect
  */
-void frolladaptivemedianExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+void frolladaptivemedianExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemedianExact", (uint64_t)nx, hasnf, (int) narm);
   int maxk = k[0]; // find largest window size

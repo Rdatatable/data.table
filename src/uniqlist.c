@@ -146,7 +146,8 @@ SEXP uniqlist(SEXP l, SEXP order)
   return(ans);
 }
 
-SEXP uniqlengths(SEXP x, SEXP n) {
+SEXP uniqlengths(SEXP x, SEXP n)
+{
   // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
   if (TYPEOF(x) != INTSXP) error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
   if (TYPEOF(n) != INTSXP || length(n) != 1) error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
@@ -167,7 +168,8 @@ SEXP uniqlengths(SEXP x, SEXP n) {
 // we could compute `uniqlist` and `uniqlengths` and then construct the result
 // but that seems unnecessary waste of memory and roundabout..
 // so, we'll do it directly here..
-SEXP rleid(SEXP l, SEXP cols) {
+SEXP rleid(SEXP l, SEXP cols)
+{
   R_xlen_t nrow = xlength(VECTOR_ELT(l, 0));
   R_len_t ncol = length(l), lencols = length(cols);
   if (!nrow || !ncol) return(allocVector(INTSXP, 0));
@@ -256,7 +258,8 @@ SEXP rleid(SEXP l, SEXP cols) {
   return(ans);
 }
 
-SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
+SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg)
+{
   Rboolean byorder = (length(order)>0);
   SEXP v, ans;
   if (!isNewList(l) || length(l) < 1) internal_error(__func__, "l is not a list length 1 or more"); // # nocov
@@ -351,7 +354,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   return(ans);
 }
 
-SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
+SEXP uniqueNlogical(SEXP x, SEXP narmArg)
+{
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
   if (!IS_TRUE_OR_FALSE(narmArg))

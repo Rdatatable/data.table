@@ -355,7 +355,8 @@ static inline void write_time(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeITime(const void *col, int64_t row, char **pch) {
+void writeITime(const void *col, int64_t row, char **pch)
+{
   write_time(((const int32_t*)col)[row], pch);
 }
 
@@ -413,7 +414,8 @@ void writeDateInt32(const void *col, int64_t row, char **pch) {
   write_date(((const int32_t*)col)[row], pch);
 }
 
-void writeDateFloat64(const void *col, int64_t row, char **pch) {
+void writeDateFloat64(const void *col, int64_t row, char **pch)
+{
   double x = ((const double*)col)[row];
   write_date(isfinite(x) ? (int)(x) : INT32_MIN, pch);
 }
@@ -576,7 +578,8 @@ void writeCategString(const void *col, int64_t row, char **pch)
 }
 
 #ifndef NOZLIB
-int init_stream(z_stream *stream) {
+int init_stream(z_stream *stream)
+{
   stream->next_in = Z_NULL;
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;

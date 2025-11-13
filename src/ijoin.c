@@ -6,8 +6,8 @@
 // TODO: rewrite/simplify logic -- took me ages to understand what I wrote!!
 // TODO: benchmark and parallelise slow regions
 // TODO: implement 'lookup' for 'gaps' and 'overlaps' arguments
-SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP multArg, SEXP typeArg, SEXP verbose) {
-
+SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP multArg, SEXP typeArg, SEXP verbose)
+{
   SEXP vv, tt, lookup, type_lookup;
   R_len_t *idx,*count,*type_count,xrows=INTEGER(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
   int *from = INTEGER(VECTOR_ELT(indices, 0));
@@ -221,8 +221,8 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   return(R_NilValue);
 }
 
-SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchArg, SEXP verbose) {
-
+SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchArg, SEXP verbose)
+{
   R_len_t uxcols=LENGTH(ux),rows=length(VECTOR_ELT(imatches,0));
   int nomatch = INTEGER(nomatchArg)[0], totlen=0, thislen;
   int *from   = INTEGER(VECTOR_ELT(imatches, 0));

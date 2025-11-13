@@ -3,7 +3,8 @@
 #include <fcntl.h>
 #include <time.h>
 
-static bool anySpecialStatic(SEXP x) {
+static bool anySpecialStatic(SEXP x)
+{
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
   // creates .SD for the largest group once up front, overwriting the contents for each group. Their

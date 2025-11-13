@@ -1,6 +1,7 @@
 #include "data.table.h"
 
-bool within_int32_repres(double x) {
+bool within_int32_repres(double x)
+{
   // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
   // standard states that behaviour is undefined only if the integral part of a
   // finite value of standard floating type cannot be represented.
@@ -8,13 +9,15 @@ bool within_int32_repres(double x) {
   return R_FINITE(x) && x < 2147483648 && x > -2147483648;
 }
 
-bool within_int64_repres(double x) {
+bool within_int64_repres(double x)
+{
   return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
 // used to error if not passed type double but this needed extra is.double() calls in calling R code
 // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
-bool fitsInInt32(SEXP x) {
+bool fitsInInt32(SEXP x)
+{
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
@@ -27,11 +30,13 @@ bool fitsInInt32(SEXP x) {
   return i==n;
 }
 
-SEXP fitsInInt32R(SEXP x) {
+SEXP fitsInInt32R(SEXP x)
+{
   return ScalarLogical(fitsInInt32(x));
 }
 
-bool fitsInInt64(SEXP x) {
+bool fitsInInt64(SEXP x)
+{
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
@@ -44,11 +49,13 @@ bool fitsInInt64(SEXP x) {
   return i==n;
 }
 
-SEXP fitsInInt64R(SEXP x) {
+SEXP fitsInInt64R(SEXP x)
+{
   return ScalarLogical(fitsInInt64(x));
 }
 
-bool allNA(SEXP x, bool errorForBadType) {
+bool allNA(SEXP x, bool errorForBadType)
+{
   // less space and time than all(is.na(x)) at R level because that creates full size is.na(x) first before all()
   // whereas this allNA can often return early on testing the first value without reading the rest
   const int n = length(x);
@@ -98,7 +105,8 @@ bool allNA(SEXP x, bool errorForBadType) {
   //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
 }
 
-SEXP allNAR(SEXP x) {
+SEXP allNAR(SEXP x)
+{
   return ScalarLogical(allNA(x, /*errorForBadType=*/true));
 }
 
@@ -111,7 +119,8 @@ SEXP allNAR(SEXP x) {
  *   optionally (check_dups) check for no duplicates
  *   optionally (skip_absent) skip (return 0) for numbers outside the range or not naming extant columns
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent)
+{
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
@@ -168,7 +177,8 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   return ricols;
 }
 
-inline bool INHERITS(SEXP x, SEXP char_) {
+inline bool INHERITS(SEXP x, SEXP char_)
+{
   // Thread safe inherits() by pre-calling install() in init.c and then
   // passing those char_* in here for simple and fast non-API pointer compare.
   // The thread-safety aspect here is only currently actually needed for list columns in
@@ -203,7 +213,8 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
-SEXP copyAsPlain(SEXP x) {
+SEXP copyAsPlain(SEXP x)
+{
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
   //      .Internal(inspect(x[[5]]))
@@ -263,7 +274,8 @@ SEXP copyAsPlain(SEXP x) {
   return ans;
 }
 
-void copySharedColumns(SEXP x) {
+void copySharedColumns(SEXP x)
+{
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
   bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
@@ -314,23 +326,31 @@ void copySharedColumns(SEXP x) {
 // lock, unlock and islocked at C level :
 // 1) for speed to reduce overhead
 // 2) to avoid an R level wrapper which bumps MAYBE_SHARED; see the unlock after eval(jval) in data.table.R, #1341 #2245
-SEXP lock(SEXP DT) {
+SEXP lock(SEXP DT)
+{
   setAttrib(DT, sym_datatable_locked, ScalarLogical(TRUE));
   return DT;
 }
-SEXP unlock(SEXP DT) {
+
+SEXP unlock(SEXP DT)
+{
   setAttrib(DT, sym_datatable_locked, R_NilValue);
   return DT;
 }
-bool islocked(SEXP DT) {
+
+bool islocked(SEXP DT)
+{
   SEXP att = getAttrib(DT, sym_datatable_locked);
   return isLogical(att) && LENGTH(att)==1 && LOGICAL(att)[0]==1;
 }
-SEXP islockedR(SEXP DT) {
+
+SEXP islockedR(SEXP DT)
+{
   return ScalarLogical(islocked(DT));
 }
 
-bool need2utf8(SEXP x) {
+bool need2utf8(SEXP x)
+{
   const int xlen = length(x);
   const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
@@ -340,7 +360,8 @@ bool need2utf8(SEXP x) {
   return(false);
 }
 
-SEXP coerceUtf8IfNeeded(SEXP x) {
+SEXP coerceUtf8IfNeeded(SEXP x)
+{
   if (!need2utf8(x))
     return(x);
   const int xlen = length(x);
@@ -354,7 +375,8 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
 }
 
 // class1 is used by coerceAs only, which is used by frollR.c and nafill.c only
-const char *class1(SEXP x) {
+const char *class1(SEXP x)
+{
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
     return(CHAR(STRING_ELT(cl, 0)));
@@ -383,7 +405,8 @@ const char *class1(SEXP x) {
 }
 
 // main motivation for this function is to have coercion helper that is aware of int64 NAs, unlike base R coerce #3913
-SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg)
+{
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
     error(_("'x' is not atomic"));
@@ -412,7 +435,9 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #ifndef NOZLIB
 #include <zlib.h>
 #endif
-SEXP dt_zlib_version(void) {
+
+SEXP dt_zlib_version(void)
+{
   char out[70];
 #ifndef NOZLIB
   snprintf(out, sizeof(out), "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
@@ -421,7 +446,9 @@ SEXP dt_zlib_version(void) {
 #endif
   return ScalarString(mkChar(out));
 }
-SEXP dt_has_zlib(void) {
+
+SEXP dt_has_zlib(void)
+{
 #ifndef NOZLIB
   return ScalarLogical(1);
 #else
@@ -429,7 +456,8 @@ SEXP dt_has_zlib(void) {
 #endif
 }
 
-SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
+SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start)
+{
   // for is_url in fread.R added in #5097
   // basically any(startsWith()), short and simple ascii-only
   if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
@@ -456,7 +484,8 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 
 // if (length(x)) length(x[[1L]]) else 0L
 // used in src/mergelist.c and below in commented out set_row_names
-int n_rows(SEXP x) {
+int n_rows(SEXP x)
+{
   if (!LENGTH(x))
     return 0; // # nocov. Not yet reached from anywhere, cbindlist uses it but escapes for !n_columns(x)
   return length(VECTOR_ELT(x, 0));
@@ -465,7 +494,8 @@ int n_rows(SEXP x) {
 // length(x)
 // used in src/mergelist.c
 // to be an abstraction layer on C level
-int n_columns(SEXP x) {
+int n_columns(SEXP x)
+{
   return LENGTH(x);
 }
 
@@ -504,13 +534,15 @@ int n_columns(SEXP x) {
  }*/
 
 // inherits(x, "data.table")
-bool isDataTable(SEXP x) {
+bool isDataTable(SEXP x)
+{
   return INHERITS(x, char_datatable);
 }
 
 // rectangular list; NB does not allow length-1 recycling
 // length(x) <= 1L || length(unique(lengths(x))) == 1L
-static inline bool isRectangular(SEXP x) {
+static inline bool isRectangular(SEXP x)
+{
   int n = LENGTH(x);
   if (n < 2)
     return true;
@@ -524,7 +556,8 @@ static inline bool isRectangular(SEXP x) {
 
 // setDT()-friendly rectangular list, i.e.
 //   a named list() with all entries of equal length()
-bool isRectangularList(SEXP x) {
+bool isRectangularList(SEXP x)
+{
   if (!isNewList(x))
     return false;
   if (!LENGTH(x))
@@ -534,14 +567,18 @@ bool isRectangularList(SEXP x) {
   return isRectangular(x);
 }
 
-bool perhapsDataTable(SEXP x) {
+bool perhapsDataTable(SEXP x)
+{
   return isDataTable(x) || isDataFrame(x) || isRectangularList(x);
 }
-SEXP perhapsDataTableR(SEXP x) {
+
+SEXP perhapsDataTableR(SEXP x)
+{
   return ScalarLogical(perhapsDataTable(x));
 }
 
-SEXP frev(SEXP x, SEXP copyArg) {
+SEXP frev(SEXP x, SEXP copyArg)
+{
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!IS_TRUE_OR_FALSE(copyArg))
@@ -649,7 +686,8 @@ SEXP frev(SEXP x, SEXP copyArg) {
   return x;
 }
 
-void internal_error(const char *call_name, const char *format, ...) {
+void internal_error(const char *call_name, const char *format, ...)
+{
   char buff[1024];
   va_list args;
   va_start(args, format);

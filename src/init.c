@@ -169,7 +169,8 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
-static void setSizes(void) {
+static void setSizes(void)
+{
   for (int i=0; i<100; ++i) { r_type_sizes[i]=0; r_type_order[i]=0; }
   // only these types are currently allowed as column types :
   r_type_sizes[LGLSXP] =  sizeof(int);       r_type_order[LGLSXP] =  0;
@@ -314,7 +315,8 @@ void attribute_visible R_init_data_table(DllInfo *info)
   avoid_openmp_hang_within_fork();
 }
 
-inline long long DtoLL(double x) {
+inline long long DtoLL(double x)
+{
   // Type punning such as
   //     *(long long *)&REAL(column)[i]
   // is undefined by C standards. This may have been the cause of 1.10.2 failing on 31 Jan 2017
@@ -330,13 +332,15 @@ inline long long DtoLL(double x) {
   return (long long)u.i64;
 }
 
-inline double LLtoD(long long x) {
+inline double LLtoD(long long x)
+{
   union {double d; int64_t i64;} u;
   u.i64 = (int64_t)x;
   return u.d;
 }
 
-int GetVerbose(void) {
+int GetVerbose(void)
+{
   // don't call repetitively; save first in that case
   SEXP opt = GetOption1(sym_verbose);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
@@ -345,8 +349,8 @@ int GetVerbose(void) {
 }
 
 // # nocov start
-SEXP hasOpenMP(void) {
-
+SEXP hasOpenMP(void)
+{
 #if defined(_OPENMP)
   // gcc build of libomp
   return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
@@ -364,13 +368,15 @@ SEXP hasOpenMP(void) {
 
 extern int *_Last_updated;  // assign.c
 
-SEXP initLastUpdated(SEXP var) {
+SEXP initLastUpdated(SEXP var)
+{
   if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.updated in namespace is not a length 1 integer"));
   _Last_updated = INTEGER(var);
   return R_NilValue;
 }
 
-SEXP dllVersion(void) {
+SEXP dllVersion(void)
+{
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
   return(ScalarString(mkChar("1.17.99")));
 }

@@ -42,7 +42,8 @@ static int nbit(int n)
     grouped summaries over a large data.table. OpenMP is used here to
     parallelize operations involved in calculating common group-wise statistics.
 */
-SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg)
+{
   double started = wallclock();
   const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
@@ -866,7 +867,8 @@ SEXP gmax(SEXP x, SEXP narm)
 }
 
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
-SEXP gmedian(SEXP x, SEXP narmArg) {
+SEXP gmedian(SEXP x, SEXP narmArg)
+{
   if (!IS_TRUE_OR_FALSE(narmArg))
     error(_("%s must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'"));
@@ -920,7 +922,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) {
+static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw)
+{
   // w: which item (1 other than for gnthvalue when could be >1)
   // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail)
   const bool nosubset = irowslen == -1;
@@ -993,27 +996,32 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   return(ans);
 }
 
-SEXP glast(SEXP x) {
+SEXP glast(SEXP x)
+{
   return gfirstlast(x, false, 1, false);
 }
 
-SEXP gfirst(SEXP x) {
+SEXP gfirst(SEXP x)
+{
   return gfirstlast(x, true, 1, false);
 }
 
-SEXP gtail(SEXP x, SEXP nArg) {
+SEXP gtail(SEXP x, SEXP nArg)
+{
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? glast(x) : gfirstlast(x, false, n, true);
 }
 
-SEXP ghead(SEXP x, SEXP nArg) {
+SEXP ghead(SEXP x, SEXP nArg)
+{
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
 }
 
-SEXP gnthvalue(SEXP x, SEXP nArg) {
+SEXP gnthvalue(SEXP x, SEXP nArg)
+{
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
   return gfirstlast(x, true, INTEGER(nArg)[0], false);
 }
@@ -1105,15 +1113,18 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   return ans;
 }
 
-SEXP gvar(SEXP x, SEXP narm) {
+SEXP gvar(SEXP x, SEXP narm)
+{
   return (gvarsd1(x, narm, FALSE));
 }
 
-SEXP gsd(SEXP x, SEXP narm) {
+SEXP gsd(SEXP x, SEXP narm)
+{
   return (gvarsd1(x, narm, TRUE));
 }
 
-SEXP gprod(SEXP x, SEXP narmArg) {
+SEXP gprod(SEXP x, SEXP narmArg)
+{
   if (!IS_TRUE_OR_FALSE(narmArg))
     error(_("%s must be TRUE or FALSE"), "na.rm");
   const bool narm=LOGICAL(narmArg)[0];
@@ -1192,7 +1203,8 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
+SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg)
+{
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
   const int n = nosubset ? length(x) : irowslen;

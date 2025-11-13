@@ -19,7 +19,8 @@
  * algo = 1: exact
  *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
-void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par) {
+void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par)
+{
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -166,7 +167,8 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
  * rollmean implemented as single pass sliding window for align="right"
  * if non-finite detected re-run rollmean implemented as single pass sliding window with NA support
  */
-void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -229,7 +231,8 @@ void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
  * rollmean implemented as mean of k obs for each observation for align="right"
  * if non-finite detected and na.rm=TRUE then re-run NF aware rollmean
  */
-void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmeanExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -356,7 +359,8 @@ void frollmeanExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
 /* fast rolling sum - fast
  * same as mean fast
  */
-void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -417,7 +421,8 @@ void frollsumFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
 /* fast rolling sum - exact
  * same as mean exact
  */
-void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollsumExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -492,7 +497,8 @@ void frollsumExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
 }
 
-static inline void wmax(const double * restrict x, uint64_t o, int k, double * restrict w, uint64_t *iw, bool narm) {
+static inline void wmax(const double * restrict x, uint64_t o, int k, double * restrict w, uint64_t *iw, bool narm)
+{
   if (narm) {
     for (int i=0; i<k; i++) {
       const uint64_t ii = o+i-k+1;
@@ -533,7 +539,8 @@ static inline void wmax(const double * restrict x, uint64_t o, int k, double * r
  * new max is used to continue outer single pass as long as new max index is not leaving the running window
  * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
  */
-void frollmaxFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmaxFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -629,7 +636,8 @@ void frollmaxFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
  * otherwise we scan for NaN/NA and run either of two loops
  * has.nf=FALSE can give incorrect results if NAs provided, documented to be used with care
  */
-void frollmaxExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmaxExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -704,7 +712,8 @@ void frollmaxExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
 }
 
-static inline void wmin(const double * restrict x, uint64_t o, int k, double * restrict w, uint64_t *iw, bool narm) {
+static inline void wmin(const double * restrict x, uint64_t o, int k, double * restrict w, uint64_t *iw, bool narm)
+{
   if (narm) {
     for (int i=0; i<k; i++) {
       if (x[o+i-k+1] <= w[0]) { // this never true if all x NAs and narm=TRUE
@@ -740,7 +749,8 @@ static inline void wmin(const double * restrict x, uint64_t o, int k, double * r
 /* fast rolling min - fast
  * see rolling max fast details
  */
-void frollminFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollminFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -833,7 +843,8 @@ void frollminFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
 /* fast rolling min - exact
  * see rolling max exact details
  */
-void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -979,7 +990,8 @@ void frollminExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 /* fast rolling prod - fast
  * same as mean fast
  */
-void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -1065,7 +1077,8 @@ void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 /* fast rolling prod - exact
  * same as mean exact
  */
-void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -1146,7 +1159,8 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   no support for NFs, redirecting to exact
   Welford wmean and m2 would have to be recalculated on each NF element
  */
-void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0 || k == 1) { // var(scalar) is also NA
@@ -1212,7 +1226,8 @@ void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
 
 /* fast rolling var - exact
  */
-void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0 || k == 1) { // var(scalar) is also NA
@@ -1317,7 +1332,8 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 
 /* fast rolling sd - fast
  */
-void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarFast(...))\n"), "frollsdFast");
   frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
@@ -1328,7 +1344,8 @@ void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, b
 
 /* fast rolling sd - exact
  */
-void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarExact(...))\n"), "frollsdExact");
   frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
@@ -1347,7 +1364,8 @@ void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
 // initialize prev and next pointers for list L
-static void setlinks(const int *o, int *next, int *prev, int tail) {
+static void setlinks(const int *o, int *next, int *prev, int tail)
+{
   int p = tail;
   int k = tail;
   int q;
@@ -1361,14 +1379,16 @@ static void setlinks(const int *o, int *next, int *prev, int tail) {
   prev[tail] = p;
 }
 // Return the first large element in block, or Inf if all elements are small
-inline static double peek(const double *x, int m, int tail) {
+inline static double peek(const double *x, int m, int tail)
+{
   return m == tail ? R_PosInf : x[m];
 }
 #define PEEK(j) peek(&x[(j)*k], m[(j)], tail)
 // return median, for even k, from x_A[m_a], x_A[n_A], x_B[m_B], x_B[n_B] - having two sets of sorted 2 elements, take two smallest and give their mean
 #define MED(A, B) MIN(PEEK(A), PEEK(B))
 // delete all elements from B in reverse order
-static void unwind(int *prev, int *next, int *m, int *s, int k, int tail) {
+static void unwind(int *prev, int *next, int *m, int *s, int k, int tail)
+{
    for (int i=k-1; i>=0; i--) {
      next[prev[i]] = next[i];
      prev[next[i]] = prev[i];
@@ -1378,12 +1398,14 @@ static void unwind(int *prev, int *next, int *m, int *s, int k, int tail) {
  }
 #define UNWIND(j) unwind(&prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], k, tail);
 // checks if object i is "small" - smaller than value(s) used for median answer
-inline static bool small(int i, const double *x, int m, int tail) {
+inline static bool small(int i, const double *x, int m, int tail)
+{
   return (m == tail) || (x[i] < x[m]) || ((x[i] == x[m]) && (i < m));
 }
 #define SMALL(i) small((i), x, m[0], tail)
 // delete element from A
-static void delete(int i, const double *x, int *prev, int *next, int *m, int *s, int tail) {
+static void delete(int i, const double *x, int *prev, int *next, int *m, int *s, int tail)
+{
   next[prev[i]] = next[i];
   prev[next[i]] = prev[i];
   if (SMALL(i)) {
@@ -1400,7 +1422,8 @@ static void delete(int i, const double *x, int *prev, int *next, int *m, int *s,
 }
 #define DELETE(j) delete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], tail)
 // undelete element from B
-static void undelete(int i, const double *x, int *prev, int *next, int *m, int tail) {
+static void undelete(int i, const double *x, int *prev, int *next, int *m, int tail)
+{
   next[prev[i]] = i;
   prev[next[i]] = i;
   if (SMALL(i)) {
@@ -1409,14 +1432,16 @@ static void undelete(int i, const double *x, int *prev, int *next, int *m, int t
 }
 #define UNDELETE(j) undelete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], tail)
 // advance - balance block after delete/undelete, fixed m (and n) pointers and s counter
-static void advance(int *next, int* m, int *s) {
+static void advance(int *next, int* m, int *s)
+{
   m[0] = next[m[0]];
   s[0]++;
 }
 #define ADVANCE(j) advance(&next[(j)*(k+1)], &m[(j)], &s[(j)])
 // same helper functions supporting any k
 #define PEEK2(j) peek(&x[(j)*k], n[(j)], tail)
-static double med2(const double *xa, const double *xb, int ma, int na, int mb, int nb, int tail) {
+static double med2(const double *xa, const double *xb, int ma, int na, int mb, int nb, int tail)
+{
   double xam = ma == tail ? R_PosInf : xa[ma];
   double xan = na == tail ? R_PosInf : xa[na];
   double xbm = mb == tail ? R_PosInf : xb[mb];
@@ -1438,7 +1463,8 @@ static double med2(const double *xa, const double *xb, int ma, int na, int mb, i
   }
 }
 #define MED2(A, B) med2(&x[(A)*k], &x[(B)*k], m[(A)], n[(A)], m[(B)], n[(B)], tail)
-static void unwind2(int *prev, int *next, int *m, int *n, int *s, int k, int tail, bool even) {
+static void unwind2(int *prev, int *next, int *m, int *n, int *s, int k, int tail, bool even)
+{
   for (int i=k-1; i>=0; i--) {
     next[prev[i]] = next[i];
     prev[next[i]] = prev[i];
@@ -1450,7 +1476,8 @@ static void unwind2(int *prev, int *next, int *m, int *n, int *s, int k, int tai
 }
 #define UNWIND2(j) unwind2(&prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &n[(j)], &s[(j)], k, tail, even);
 #define SMALL2(i) small((i), x, n[0], tail)
-static void delete2(int i, const double *x, int *prev, int *next, int *m, int *n, int *s, int tail, bool even) {
+static void delete2(int i, const double *x, int *prev, int *next, int *m, int *n, int *s, int tail, bool even)
+{
   next[prev[i]] = next[i];
   prev[next[i]] = prev[i];
   if (SMALL(i)) {
@@ -1472,7 +1499,8 @@ static void delete2(int i, const double *x, int *prev, int *next, int *m, int *n
   }
 }
 #define DELETE2(j) delete2(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &n[(j)], &s[(j)], tail, even)
-static void undelete2(int i, const double *x, int *prev, int *next, int *m, int *n, int tail, bool even) {
+static void undelete2(int i, const double *x, int *prev, int *next, int *m, int *n, int tail, bool even)
+{
   next[prev[i]] = i;
   prev[next[i]] = i;
   if (SMALL(i)) {
@@ -1484,7 +1512,8 @@ static void undelete2(int i, const double *x, int *prev, int *next, int *m, int 
   }
 }
 #define UNDELETE2(j) undelete2(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &n[(j)], tail, even)
-static void advance2(int *next, int* m, int* n, int *s, bool even) {
+static void advance2(int *next, int* m, int* n, int *s, bool even)
+{
   m[0] = next[m[0]];
   if (even)
     n[0] = next[n[0]];
@@ -1498,7 +1527,8 @@ static void advance2(int *next, int* m, int* n, int *s, bool even) {
  * finding order of blocks of input is made in parallel
  * NA handling redirected to algo="exact"
  */
-void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par) {
+void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {
@@ -1728,7 +1758,8 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
  * isna must be initialized to false
  * nc doesn't have to be initialized
  */
-static int frollNAFast(const double *x, uint64_t nx, int k, int *nc, bool *isna) {
+static int frollNAFast(const double *x, uint64_t nx, int k, int *nc, bool *isna)
+{
   int w = 0; // rolling nc
   for (int i=0; i<k-1; i++) {
     if (ISNAN(x[i])) {
@@ -1759,7 +1790,8 @@ static int frollNAFast(const double *x, uint64_t nx, int k, int *nc, bool *isna)
 /* fast rolling median - exact
  * loop in parallel for each element of x and call quickselect
  */
-void frollmedianExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmedianExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose)
+{
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianExact", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0) {

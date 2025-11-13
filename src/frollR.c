@@ -2,7 +2,8 @@
 #include <Rdefines.h>
 
 // validate and coerce to list of real
-SEXP coerceX(SEXP obj) {
+SEXP coerceX(SEXP obj)
+{
   // accept atomic/list of integer/logical/real returns list of real
   int protecti = 0;
   if (isVectorAtomic(obj)) {
@@ -23,7 +24,8 @@ SEXP coerceX(SEXP obj) {
   return x;
 }
 // validate and coerce to integer or list of integer
-SEXP coerceK(SEXP obj, bool adaptive) {
+SEXP coerceK(SEXP obj, bool adaptive)
+{
   int protecti = 0;
   SEXP ans = R_NilValue;
   if (!adaptive) {
@@ -78,7 +80,8 @@ SEXP coerceK(SEXP obj, bool adaptive) {
   return ans;
 }
 
-SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive) {
+SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive)
+{
   int protecti = 0;
   const bool verbose = GetVerbose();
 
@@ -224,7 +227,8 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
 }
 
 // helper called from R to generate adaptive window for irregularly spaced time series
-SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
+SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial)
+{
 
   bool p = LOGICAL(partial)[0];
   int n = INTEGER(kobj)[0];

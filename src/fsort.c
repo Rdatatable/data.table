@@ -2,7 +2,8 @@
 
 static const int INSERT_THRESH = 200;  // TODO: expose via api and test
 
-static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, double => ull
+static void dinsert(double *x, const int n) // TODO: if and when twiddled, double => ull
+{
   if (n<2) return;
   for (int i=1; i<n; ++i) {
     double xtmp = x[i];
@@ -25,7 +26,8 @@ static void dradix_r(  // single-threaded recursive worker
   int fromBit,         // After twiddle to ordered ull, the bits [fromBit,toBit] are used to count
   int toBit,           //   fromBit<toBit; bit 0 is the least significant; fromBit is right shift amount too
   uint64_t *counts     // already zero'd counts vector, 2^(toBit-fromBit+1) long. A stack of these is reused.
-) {
+)
+{
   uint64_t width = 1ULL<<(toBit-fromBit+1);
   uint64_t mask = width-1;
 
@@ -85,7 +87,8 @@ static void dradix_r(  // single-threaded recursive worker
 
 uint64_t *qsort_data;
 // would have liked to define cmp inside fsort where qsort is called but wasn't sure that's portable
-int qsort_cmp(const void *a, const void *b) {
+int qsort_cmp(const void *a, const void *b)
+{
   // return >0 if the element a goes after the element b
   // doesn't master if stable or not
   uint64_t x = qsort_data[*(int *)a];
@@ -96,7 +99,8 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
-static size_t shrinkMSB(size_t MSBsize, uint64_t *msbCounts, int *order, Rboolean verbose) {
+static size_t shrinkMSB(size_t MSBsize, uint64_t *msbCounts, int *order, Rboolean verbose)
+{
   size_t oldMSBsize = MSBsize;
   while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2)
     MSBsize--;
@@ -110,7 +114,8 @@ static size_t shrinkMSB(size_t MSBsize, uint64_t *msbCounts, int *order, Rboolea
   OpenMP is used here to find the range and distribution of data for efficient
     grouping and sorting.
 */
-SEXP fsort(SEXP x, SEXP verboseArg) {
+SEXP fsort(SEXP x, SEXP verboseArg)
+{
   double t[10];
   t[0] = wallclock();
   if (!IS_TRUE_OR_FALSE(verboseArg))
