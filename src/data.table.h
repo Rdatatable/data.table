@@ -147,7 +147,6 @@ SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n, const bool listNA);
-void savetl_init(void), savetl(SEXP s), savetl_end(void);
 int checkOverAlloc(SEXP x);
 
 // forder.c
@@ -341,6 +340,31 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
+
+// hash.c
+typedef struct hash_tab hashtab;
+// Allocate, initialise, and return a pointer to the new hash table.
+// n is the maximal number of elements that will be inserted.
+// Lower load factors lead to fewer collisions and faster lookups, but waste memory.
+// May raise an R error if an allocation fails or a size is out of bounds.
+// The table is temporary (allocated via R_alloc()) and will be unprotected upon return from the .Call().
+// See vmaxget()/vmaxset() if you need to unprotect it manually.
+hashtab * hash_create(size_t n);
+// Inserts a new key-value pair into the hash, or overwrites an existing value.
+// Will raise an R error if inserting more than n elements.
+// Don't try to insert a null pointer, nothing good will come out of it.
+void hash_set(hashtab *, SEXP key, R_xlen_t value);
+// Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
+R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
+
+// The dynamically-allocated hash table has a public field for the R protection wrapper.
+// Keep it PROTECTed while the table is in use.
+typedef struct dhash_tab {
+  SEXP prot;
+} dhashtab;
+dhashtab * dhash_create(size_t n);
+void dhash_set(dhashtab * h, SEXP key, R_xlen_t value);
+R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound);
 
 // mergelist.c
 SEXP cbindlist(SEXP x, SEXP copyArg);
