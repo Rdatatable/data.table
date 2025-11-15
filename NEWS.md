@@ -1,4 +1,4 @@
-# data.table news and updates
+## data.table news and updates
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
@@ -38,6 +38,11 @@
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
 
+2. The behavior of `week()` will be changed in a future release to calculate weeks sequentially (days 1-7 as week 1), which is a potential breaking change. For now, the current "legacy" behavior, where week numbers advance every 7th day of the year (e.g., day 7 starts week 2), remains the default, and a deprecation warning will be issued when the old and new behaviors differ. Users can control this behavior with the temporary option `options(datatable.week = "...")`:
+    *   `"sequential"`: Opt-in to the new, sequential behavior (no warning).
+    *   `"legacy"`: Continue using the legacy behavior but suppress the deprecation warning.
+See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. Thanks @MichaelChirico for the report and @venom1204 for the implementation.
+    
 ### NEW FEATURES
 
 1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also matches `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
@@ -177,20 +182,20 @@
     ```r
     x = data.table(v1=rnorm(120), v2=rnorm(120))
     f = function(x) coef(lm(v2 ~ v1, data=x))
-    coef.fill = c("(Intercept)"=NA_real_, "v1"=NA_real_)
-    frollapply(x, 4, f, by.column=FALSE, fill=coef.fill)
+    frollapply(x, 4, f, by.column=FALSE)
     #     (Intercept)         v1
+    #           <num>      <num>
     #  1:          NA         NA
     #  2:          NA         NA
     #  3:          NA         NA
-    #  4:  0.65456931  0.3138012
-    #  5: -1.07977441 -2.0588094
+    #  4: -0.04648236 -0.6349687
+    #  5:  0.09208733 -0.4964023
     #---
-    #116:  0.15828417  0.3570216
-    #117: -0.09083424  1.5494507
-    #118: -0.18345878  0.6424837
-    #119: -0.28964772  0.6116575
-    #120: -0.40598313  0.6112854
+    #116: -0.21169439  0.7421358
+    #117: -0.19729119  0.4926939
+    #118: -0.04217896  0.0452713
+    #119:  0.22472549 -0.5245874
+    #120:  0.54540359 -0.1638333
     ```
     - uses multiple CPU threads (on a decent OS); evaluation of UDF is inherently slow so this can be a great help.
     ```r
@@ -246,7 +251,52 @@
     #9: 2025-09-22     9         8           9.0
     ```
 
-19. New rolling functions, `frollmin` and `frollprod`, have been implemented, towards [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation.
+19. Other new rolling functions: `frollmin`, `frollprod`, `frollmedian`, `frollvar` and `frollsd`, have been implemented, resolving long standing issue [#2778](https://github.com/Rdatatable/data.table/issues/2778). Thanks to @jangorecki for implementation. Implementation of rolling median is based on a novel algorithm "sort-median" described by [@suomela](https://github.com/suomela) in his 2014 paper [Median Filtering is Equivalent to Sorting](https://arxiv.org/abs/1406.1717). "sort-median" scales very well, not only for size of input vector but also for size of rolling window.
+    ```r
+    rollmedian = function(x, n) {
+      ans = rep(NA_real_, nx<-length(x))
+      if (n<=nx) for (i in n:nx) ans[i] = median(x[(i-n+1L):(i)])
+      ans
+    }
+    library(data.table)
+    setDTthreads(8)
+    set.seed(108)
+    x = rnorm(1e5)
+
+    n = 100
+    system.time(rollmedian(x, n))
+    #   user  system elapsed
+    #  2.049   0.001   2.051
+    system.time(frollapply(x, n, median, simplify=unlist))
+    #   user  system elapsed
+    #  3.071   0.223   0.436
+    system.time(frollmedian(x, n))
+    #   user  system elapsed
+    #  0.013   0.000   0.004
+
+    n = 1000
+    system.time(rollmedian(x, n))
+    #   user  system elapsed
+    #  3.496   0.009   3.507
+    system.time(frollapply(x, n, median, simplify=unlist))
+    #   user  system elapsed
+    #  4.552   0.307   0.632
+    system.time(frollmedian(x, n))
+    #   user  system elapsed
+    #  0.015   0.000   0.004
+
+    n = 10000
+    system.time(rollmedian(x, n))
+    #   user  system elapsed
+    # 16.350   0.025  16.382
+    system.time(frollapply(x, n, median, simplify=unlist))
+    #   user  system elapsed
+    # 14.865   0.722   2.267
+    system.time(frollmedian(x, n))
+    #   user  system elapsed
+    #  0.028   0.000   0.005
+    ```
+    20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
 
 ### BUG FIXES
 
@@ -288,6 +338,14 @@
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
+20. `forderv` could segfault on keys with long runs of identical bytes (e.g., many duplicate columns) because the single-group branch tail-recursed radix-by-radix until the C stack ran out, [#4300](https://github.com/Rdatatable/data.table/issues/4300). This is a major problem since sorting is extensively used in `data.table`. Thanks @quantitative-technologies for the report and @ben-schwen for the fix.
+
+21. `[` now preserves existing key(s) when new columns are added before them, instead of incorrectly setting a new column as key, [#7364](https://github.com/Rdatatable/data.table/issues/7364). Thanks @czeildi for the bug report and the fix.
+
+22. `setDTthreads(percent=)` and `setDTthreads(threads=)` now respect `OMP_NUM_THREADS` and `omp_get_max_threads()`, ensuring consistency with `setDTthreads()` (no arguments) when OpenMP environment variables are set, [#7165](https://github.com/Rdatatable/data.table/issues/7165). Previously, explicitly setting a thread count or percentage would ignore these OpenMP limits, potentially exceeding the user's intended thread cap. Thanks to @bastistician for the report and @ben-schwen for the fix.
+
+23. `fread()` auto-detects separators for single-column files consisting solely of quoted values (e.g. `"this_that"\n"2025-01-01 00:00:01"`), [#7366](https://github.com/Rdatatable/data.table/issues/7366). Thanks @arunsrinivasan for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
@@ -310,6 +368,8 @@
 5. A GitHub Actions workflow is now in place to warn the entire maintainer team, as well as any contributor following the GitHub repository, when the package is at risk of archival on CRAN [#7008](https://github.com/Rdatatable/data.table/issues/7008). Thanks @tdhock for the original report and @Bisaloo and @TysonStanley for the fix.
 
 6. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
+
+7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
@@ -481,6 +541,8 @@ rowwiseDT(
 20. Fixed a memory issue causing segfaults in `forder`, [#6797](https://github.com/Rdatatable/data.table/issues/6797). Thanks @dkutner for the report and @MichaelChirico for the fix.
 
 21. `setDT(get0('var'))` now correctly modifies `var` by reference, consistent with the long-standing behavior of `setDT(get('var'))`, [#6864](https://github.com/Rdatatable/data.table/issues/6864). Thanks to @rikivillalba for the report and @venom1204 for the fix.
+
+22. `fread()` could fail to read Mac CSV files (with `\r` line endings) if the file contained any `\n` character, such as a final `\r\n`. This was fixed by detecting the predominant line ending in a sample of the file, [#4186](https://github.com/Rdatatable/data.table/issues/4186). Thanks to @MPagel for the report and @ben-schwen for the fix.
 
 ### NOTES
 

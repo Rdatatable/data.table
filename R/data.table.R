@@ -1448,7 +1448,7 @@ replace_dot_alias = function(e) {
         if (SD_only)
           jvnames = jnames = sdvars
         else
-          jnames = as.character(Filter(is.name, jsub)[-1L])
+          jnames = vapply_1c(jsub, function(x) if (is.name(x)) as.character(x) else NA_character_)[-1L]
         key_idx = chmatch(key, jnames)
         missing_keys = which(is.na(key_idx))
         if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)

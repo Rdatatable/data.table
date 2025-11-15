@@ -29,6 +29,17 @@ static int getIntEnv(const char *name, int def)
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 
+static inline int cap_threads(int n)
+{
+  n = imin(n, omp_get_thread_limit());  // honors OMP_THREAD_LIMIT when OpenMP started; e.g. CRAN sets this to 2. Often INT_MAX meaning unlimited/unset
+  n = imin(n, omp_get_max_threads());   // honors OMP_NUM_THREADS when OpenMP started, plus reflects any omp_set_* calls made since
+  // max_threads() -vs- num_procs(): https://software.intel.com/en-us/forums/intel-visual-fortran-compiler-for-windows/topic/302866
+  n = imin(n, getIntEnv("OMP_THREAD_LIMIT", INT_MAX));  // user might expect `Sys.setenv(OMP_THREAD_LIMIT=2);setDTthreads()` to work. Satisfy this
+  n = imin(n, getIntEnv("OMP_NUM_THREADS", INT_MAX));   //   expectation by reading them again now. OpenMP just reads them on startup (quite reasonably)
+  n = imax(n, 1);  // just in case omp_get_* returned <=0 for any reason, or the env variables above are set <=0
+  return n;
+}
+
 void initDTthreads(void)
 {
   // called at package startup from init.c
@@ -48,13 +59,7 @@ void initDTthreads(void)
     }
     ans = imax(omp_get_num_procs() * perc / 100, 1); // imax for when formula would result in 0.
   }
-  ans = imin(ans, omp_get_thread_limit());  // honors OMP_THREAD_LIMIT when OpenMP started; e.g. CRAN sets this to 2. Often INT_MAX meaning unlimited/unset
-  ans = imin(ans, omp_get_max_threads());   // honors OMP_NUM_THREADS when OpenMP started, plus reflects any omp_set_* calls made since
-  // max_threads() -vs- num_procs(): https://software.intel.com/en-us/forums/intel-visual-fortran-compiler-for-windows/topic/302866
-  ans = imin(ans, getIntEnv("OMP_THREAD_LIMIT", INT_MAX));  // user might expect `Sys.setenv(OMP_THREAD_LIMIT=2);setDTthreads()` to work. Satisfy this
-  ans = imin(ans, getIntEnv("OMP_NUM_THREADS", INT_MAX));   //   expectation by reading them again now. OpenMP just reads them on startup (quite reasonably)
-  ans = imax(ans, 1);  // just in case omp_get_* returned <=0 for any reason, or the env variables above are set <=0
-  DTthreads = ans;
+  DTthreads = cap_threads(ans);
   DTthrottle = imax(1, getIntEnv("R_DATATABLE_THROTTLE", 1024)); // 2nd thread is used only when n>1024, 3rd thread when n>2048, etc
 }
 
@@ -151,9 +156,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
     } else {
       if (n == 0 || n > num_procs) n = num_procs; // setDTthreads(0) == setDTthread(percent=100); i.e. use all logical CPUs (the default in 1.12.0 and before, from 1.12.2 it's 50%)
     }
-    n = imin(n, omp_get_thread_limit());  // can't think why this might be different from its value on startup, but call it just in case
-    n = imin(n, getIntEnv("OMP_THREAD_LIMIT", INT_MAX));  // user might have called Sys.setenv(OMP_THREAD_LIMIT=) since startup and expect setDTthreads to respect it
-    DTthreads = imax(n, 1);  // imax just in case
+    DTthreads = cap_threads(n);
     // Do not call omp_set_num_threads() here. Any calls to omp_set_num_threads() affect other
     // packages and R itself too which has some OpenMP usage. Instead we set our own DTthreads
     // static variable and read that from getDTthreads(n, throttle).

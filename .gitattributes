@@ -1,6 +1,7 @@
 * text eol=lf
 *.ico   -text
 *.mo    -text
+*.pdf   -text
 *.png   -text
 *.RData -text
 # Important for test CSV files, where we definitely

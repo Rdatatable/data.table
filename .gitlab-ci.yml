@@ -182,7 +182,7 @@ test-lin-dev-gcc-strict-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls, V8 package) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (non-API calls, V8 package) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
 # R compiled with clang, flags removed: -flto=auto -fopenmp
@@ -205,7 +205,7 @@ test-lin-dev-clang-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls, V8 package) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (non-API calls, V8 package) but ", shQuote(l)) else q("no")'
 
 # stated dependency on R
 test-lin-ancient-cran:
@@ -314,6 +314,8 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - curl -LO https://github.com/XQuartz/XQuartz/releases/download/XQuartz-2.8.5/XQuartz-2.8.5.pkg
+    - sudo installer -pkg "$(ls -1t XQuartz-*.pkg | head -n 1)" -target /
     - curl -O $R_BIN
     - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
     - sudo Rscript -e "source('https://mac.R-project.org/bin/install.R'); install.libs('gettext')"
@@ -335,6 +337,7 @@ test-win-old:
 ## R-release on MacOS
 test-mac-rel:
   <<: *test-mac
+  image: macos-14-xcode-15
   variables:
     R_VERSION: "$R_REL_VERSION"
     R_BIN: "$R_REL_MAC_BIN"
@@ -342,6 +345,7 @@ test-mac-rel:
 ## R-oldrel on MacOS
 test-mac-old:
   <<: *test-mac
+  image: macos-14-xcode-15
   variables:
     R_VERSION: "$R_OLD_VERSION"
     R_BIN: "$R_OLD_MAC_BIN"
