@@ -741,7 +741,7 @@ test(6000.177, frollmean(x, n, align="left"), output=c(
 nn = c(1:4,2:3,1:4)
 test(6000.178, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*sequentially because adaptive.*",
   "frollfunR: 1:",
   "frolladaptivemeanFast: running for input length 10, hasnf 0, narm 0",
   "frolladaptivefun: processing fun 0 algo 0 took.*",
@@ -773,7 +773,7 @@ test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*sequentially because adaptive.*",
   "frollfunR: 1:",
   "frolladaptivemeanFast: running for input length 10, hasnf 0, narm 0",
   "frolladaptivemeanFast: non-finite values are present in input, re-running with extra care for NFs",
@@ -1444,6 +1444,13 @@ test(6001.731, frollvar(y, 3)[4L], 0)
 test(6001.732, frollsd(y, 3)[4L], 0)
 test(6001.733, frollvar(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
 test(6001.734, frollsd(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
+test(6001.740, frollvar(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.25,NA), c(NA,NA,0.25,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # ensure no nested parallelism in rolling functions #7352
+test(6001.741, frollsd(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.5,NA), c(NA,NA,0.5,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+test(6001.742, frollvar(c(1.5,2.5,2,1.5), c(3,3)), list(c(NA,NA,0.25,0.25), c(NA,NA,0.25,0.25)), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # no NA - no fallback to exact
+test(6001.743, frollsd(c(1.5,2.5,2,1.5), c(3,3)), list(c(NA,NA,0.5,0.5), c(NA,NA,0.5,0.5)), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+test(6001.744, frollvar(c(1.5,2.5,2,NA), 3), c(NA,NA,0.25,NA), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # not vectorized - no outer parallelism
+test(6001.745, frollsd(c(1.5,2.5,2,NA), 3), c(NA,NA,0.5,NA), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+test(6001.750, frollvar(c(1.5,2.5,2,1.5), rep(3,4), adaptive=TRUE), c(NA,NA,0.25,0.25), output="sequentially because adaptive=TRUE is already parallelised within each rolling computation", options=c(datatable.verbose=TRUE)) # adaptive also disables outer parallelism
 test(6001.781, frollapply(FUN=var, 1:3, 0), c(NA_real_,NA_real_,NA_real_))
 test(6001.782, frollapply(FUN=var, 1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
 test(6001.783, frollapply(FUN=var, c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
