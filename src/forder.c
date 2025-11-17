@@ -437,7 +437,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
   STOP(_("Unknown non-finite value; not NA, NaN, -Inf or +Inf"));  // # nocov
 }
 
-void radix_r(const int from, const int to, const int radix);
+void radix_r(const int from, const int to, int radix);
 
 /*
   OpenMP is used here to parallelize multiple operations that come together to
@@ -901,7 +901,8 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-void radix_r(const int from, const int to, const int radix) {
+void radix_r(const int from, const int to, int radix) {
+  for (;;) {
   TBEG();
   const int my_n = to-from+1;
   if (my_n==1) {  // minor TODO: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
@@ -1025,6 +1026,11 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(9)
     if (radix+1==nradix || ngrp==my_n) {  // ngrp==my_n => unique groups all size 1 and we can stop recursing now
       push(my_gs, ngrp);
+    } else if (ngrp==1) {  // ngrp == 1 => all same byte at this radix; go to next radix with same splits #4300
+      // no need to push since gs stays the same
+      free(my_gs);
+      radix++;
+      continue;
     } else {
       for (int i=0, f=from; i<ngrp; i++) {
         radix_r(f, f+my_gs[i]-1, radix+1);
@@ -1128,6 +1134,11 @@ void radix_r(const int from, const int to, const int radix) {
     if (radix+1==nradix) {
       // aside: cannot be all size 1 (a saving used in my_n<=256 case above) because my_n>256 and ngrp<=256
       push(my_gs, ngrp);
+    } else if (ngrp==1) {  // ngrp == 1 => all same byte at this radix; go to next radix with same splits #4300
+      // no need to push since gs stays the same
+      free(my_gs);
+      radix++;
+      continue;
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
       for (int i=0, my_from=from; i<ngrp; i++) {
@@ -1313,6 +1324,16 @@ void radix_r(const int from, const int to, const int radix) {
     push(my_gs, ngrp);
     TEND(23)
   }
+  else if (ngrp==1) {
+    // no need to push since gs stays the same
+    free(my_gs);
+    free(counts);
+    free(starts);
+    free(ugrps);
+    free(ngrps);
+    radix++;
+    continue;
+  }
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
     bool anyBig = false;
@@ -1364,7 +1385,8 @@ void radix_r(const int from, const int to, const int radix) {
   free(ugrps);
   free(ngrps);
   TEND(26)
-}
+  return;
+}}
 
 
 SEXP issorted(SEXP x, SEXP by)

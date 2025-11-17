@@ -7,6 +7,9 @@ template:
 development:
   version_tooltip: "Development version"
 
+news:
+  one_page: true
+
 home:
   links:
   - text: CRAN-like website
@@ -18,7 +21,7 @@ home:
 
 navbar:
   structure:
-    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference]
+    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference, cheatsheet]
     right: [search, github, lightswitch]
   components:
     home:
@@ -67,6 +70,13 @@ navbar:
     reference:
       text: Manual
       href: reference/index.html
+    cheatsheet:
+      text: Cheatsheet
+      menu:
+      - text: "English"
+        href: datatable_cheatsheet.pdf
+      - text: "Français"
+        href: datatable_cheatsheet_fr.pdf
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
