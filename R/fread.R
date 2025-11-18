@@ -1,35 +1,35 @@
 # nocov start
 # S3 generic that returns a function to open connections in binary mode
-connection_opener = function(con, ...) {
-  UseMethod("connection_opener")
+binary_reopener = function(con, ...) {
+  UseMethod("binary_reopener")
 }
 
-connection_opener.default = function(con, ...) {
+binary_reopener.default = function(con, ...) {
   con_class = class1(con)
   stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
 }
 
-connection_opener.file = function(con, ...) {
+binary_reopener.file = function(con, ...) {
   function(description) file(description, "rb", ...)
 }
 
-connection_opener.gzfile = function(con, ...) {
+binary_reopener.gzfile = function(con, ...) {
   function(description) gzfile(description, "rb", ...)
 }
 
-connection_opener.bzfile = function(con, ...) {
+binary_reopener.bzfile = function(con, ...) {
   function(description) bzfile(description, "rb", ...)
 }
 
-connection_opener.url = function(con, ...) {
+binary_reopener.url = function(con, ...) {
   function(description) url(description, "rb", ...)
 }
 
-connection_opener.unz = function(con, ...) {
+binary_reopener.unz = function(con, ...) {
   function(description) unz(description, "rb", ...)
 }
 
-connection_opener.pipe = function(con, ...) {
+binary_reopener.pipe = function(con, ...) {
   function(description) pipe(description, "rb", ...)
 }
 # nocov end
@@ -146,7 +146,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
     if (needs_reopen) {
       close(input)
-      input = connection_opener(input)(con_summary$description)
+      input = binary_reopener(input)(con_summary$description)
       close_con = input
     } else if (!con_open) {
       open(input, "rb")

@@ -1,18 +1,18 @@
-\name{connection_opener}
-\alias{connection_opener}
-\alias{connection_opener.default}
-\alias{connection_opener.file}
-\alias{connection_opener.gzfile}
-\alias{connection_opener.bzfile}
-\alias{connection_opener.url}
-\alias{connection_opener.unz}
-\alias{connection_opener.pipe}
+\name{binary_reopener}
+\alias{binary_reopener}
+\alias{binary_reopener.default}
+\alias{binary_reopener.file}
+\alias{binary_reopener.gzfile}
+\alias{binary_reopener.bzfile}
+\alias{binary_reopener.url}
+\alias{binary_reopener.unz}
+\alias{binary_reopener.pipe}
 \title{ Create a function to open connections in binary mode }
 \description{
   S3 generic that returns a function to open a connection in binary read mode. Used internally by \code{fread}. Exported so packages with custom connection classes can define methods.
 }
 \usage{
-connection_opener(con, ...)
+binary_reopener(con, ...)
 }
 \arguments{
   \item{con}{ A connection object. }
@@ -29,7 +29,7 @@ connection_opener(con, ...)
 \examples{
 \dontrun{
 # Define a method for a custom connection class
-connection_opener.my_con = function(con, ...) {
+binary_reopener.my_con = function(con, ...) {
   function(description) my_con(description, mode = "rb", ...)
 }
 }
