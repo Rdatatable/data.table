@@ -2,8 +2,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
                            memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0L), memtest.id=NULL, optional=FALSE) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress), isTRUEorFALSE(optional))
 
-  # Skip optional tests unless RunAllDataTableTests is set
-  if (optional && Sys.getenv("RunAllDataTableTests") != "yes") {
+  # Skip optional tests unless RUN_ALL_DATATABLE_TESTS is set
+  if (optional && Sys.getenv("RUN_ALL_DATATABLE_TESTS") != "yes") {
     return(invisible(TRUE))
   }
 

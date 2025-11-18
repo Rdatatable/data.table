@@ -42,7 +42,7 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      RunAllDataTableTests: yes
+      RUN_ALL_DATATABLE_TESTS: yes
 
     steps:
       - name: Set locale
