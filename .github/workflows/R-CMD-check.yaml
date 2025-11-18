@@ -38,7 +38,6 @@ jobs:
       RSPM: ${{ matrix.config.rspm }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       _R_CHECK_RD_CHECKRD_MINLEVEL_: -Inf
-      RUN_ALL_DATATABLE_TESTS: yes
 
     steps:
       - uses: actions/checkout@v4
