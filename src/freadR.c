@@ -825,7 +825,7 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
 
   SpillState state = {
     .con = R_GetConnection(connection),
-    .filepath = CHAR(STRING_ELT(tempfile_path, 0)),
+    .filepath = translateChar(STRING_ELT(tempfile_path, 0)),
     .row_limit = 0,
     .outfile = NULL,
     .buffer = NULL
