@@ -1,39 +1,3 @@
-# nocov start
-# S3 generic that returns a function to open connections in binary mode
-binary_reopener = function(con, ...) {
-  UseMethod("binary_reopener")
-}
-
-binary_reopener.default = function(con, ...) {
-  con_class = class1(con)
-  stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
-}
-
-binary_reopener.file = function(con, ...) {
-  function(description) file(description, "rb", ...)
-}
-
-binary_reopener.gzfile = function(con, ...) {
-  function(description) gzfile(description, "rb", ...)
-}
-
-binary_reopener.bzfile = function(con, ...) {
-  function(description) bzfile(description, "rb", ...)
-}
-
-binary_reopener.url = function(con, ...) {
-  function(description) url(description, "rb", ...)
-}
-
-binary_reopener.unz = function(con, ...) {
-  function(description) unz(description, "rb", ...)
-}
-
-binary_reopener.pipe = function(con, ...) {
-  function(description) pipe(description, "rb", ...)
-}
-# nocov end
-
 fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
@@ -135,24 +99,15 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     spill_started.at = proc.time()
     con_open = isOpen(input)
 
-    needs_reopen = FALSE
-    if (con_open) {
-      con_summary = summary(input)
-      binary_modes = c("rb", "r+b")
-      if (!con_summary$mode %chin% binary_modes) needs_reopen = TRUE
-    }
-
     close_con = NULL
 
-    if (needs_reopen) {
-      close(input)
-      input = binary_reopener(input)(con_summary$description)
-      close_con = input
-    } else if (!con_open) {
+    if (!con_open) {
       open(input, "rb")
       close_con = input
+      on.exit(close(close_con), add=TRUE)
     }
-    if (!is.null(close_con)) on.exit(close(close_con), add=TRUE)
+    if (identical(summary(input)$text, "text"))
+      encoding = "unknown"
     tmpFile = tempfile(tmpdir=tmpdir)
     on.exit(unlink(tmpFile), add=TRUE)
     bytes_copied = .Call(CspillConnectionToFile, input, tmpFile, as.numeric(nrows))
