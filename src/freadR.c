@@ -774,7 +774,7 @@ static SEXP do_spill(void *data)
   if (!state->buffer) {
     STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
   }
-  const bool limit_rows = R_FINITE(state->row_limit) && (state->row_limit > 0);
+  const bool limit_rows = state->row_limit > 0;
   size_t total_read = 0;
   size_t nrows_seen = 0;
 
