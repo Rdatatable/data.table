@@ -8,7 +8,10 @@
 #include "po.h"
 
 #define FREAD_MAIN_ARGS_EXTRA_FIELDS \
-  bool oldNoDateTime;
+  bool oldNoDateTime; \
+  bool connectionSpillActive; \
+  double connectionSpillSeconds; \
+  double connectionSpillBytes;
 
 #define FREAD_PUSH_BUFFERS_EXTRA_FIELDS \
   int nStringCols; \
