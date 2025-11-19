@@ -741,6 +741,7 @@ void progress(int p, int eta)
 }
 // # nocov end
 
+#if R_CONNECTIONS_VERSION == 1
 typedef struct {
   Rconnection con;
   const char *filepath;
@@ -809,12 +810,11 @@ static SEXP do_spill(void *data)
 
   return ScalarReal((double)total_read);
 }
+#endif // R_CONNECTIONS_VERSION == 1
 
 // Spill connection contents to a tempfile so R-level fread can treat it like a filename
 SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit) {
-#if R_CONNECTIONS_VERSION != 1
-INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", R_CONNECTIONS_VERSION)); // # nocov
-#else
+#if R_CONNECTIONS_VERSION == 1
   if (!isString(tempfile_path) || LENGTH(tempfile_path) != 1) {
     INTERNAL_STOP(_("spillConnectionToFile: tempfile_path must be a single string")); // # nocov
   }
@@ -839,7 +839,9 @@ INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", 
   }
 
   return R_ExecWithCleanup(do_spill, &state, spill_cleanup, &state);
-#endif // was R_CONNECTIONS_VERSION not != 1?
+#else // R_CONNECTIONS_VERSION != 1
+  INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", R_CONNECTIONS_VERSION)); // # nocov
+#endif
 }
 
 void halt__(bool warn, const char *format, ...)
