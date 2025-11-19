@@ -760,21 +760,16 @@ static void spill_cleanup(void *data)
   }
 }
 
-static SEXP do_spill(void *data)
-{
+static SEXP do_spill_binary(void *data) {
   SpillState *state = (SpillState *)data;
+
   const size_t chunk_size = 256 * 1024; // TODO tune chunk size
-
-  state->outfile = fopen(state->filepath, "wb");
-  if (state->outfile == NULL) {
-    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), state->filepath, strerror(errno)); // # nocov
-  }
-
   state->buffer = malloc(chunk_size);
   if (!state->buffer) {
     STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
   }
   const bool limit_rows = state->row_limit > 0;
+
   size_t total_read = 0;
   size_t nrows_seen = 0;
 
@@ -808,7 +803,32 @@ static SEXP do_spill(void *data)
     }
   }
 
-  return ScalarReal((double)total_read);
+  return ScalarReal(total_read);
+}
+
+static SEXP do_spill_text(void *data) {
+  SpillState *state = (SpillState *)data;
+  const bool limit_rows = state->row_limit > 0;
+
+  size_t total_read = 0;
+  size_t nrows_seen = 0;
+
+  FILE * f = state->outfile;
+  Rconnection con = state->con;
+  while (true) {
+    int ch = con->fgetc(con);
+    if (ch < 0 || ch > 255) break; // R API doesn't specify EOF: currently it's -1
+    ++total_read;
+    if (fputc(ch, f) == EOF)
+      STOP(_("spillConnectionToFile: write error %s after %zu bytes"), strerror(errno), total_read); // # nocov
+    if (ch == '\n') {
+      nrows_seen++;
+      if (limit_rows && nrows_seen >= state->row_limit)
+        break;
+    }
+  }
+
+  return ScalarReal(total_read);
 }
 #endif // R_CONNECTIONS_VERSION == 1
 
@@ -840,7 +860,12 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
     state.row_limit++; // cater for potential header row
   }
 
-  return R_ExecWithCleanup(do_spill, &state, spill_cleanup, &state);
+  state.outfile = fopen(state.filepath, state.con->text ? "w" : "wb");
+  if (state.outfile == NULL) {
+    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), state.filepath, strerror(errno)); // # nocov
+  }
+
+  return R_ExecWithCleanup(state.con->text ? do_spill_text : do_spill_binary, &state, spill_cleanup, &state);
 #else // R_CONNECTIONS_VERSION != 1
   INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", R_CONNECTIONS_VERSION)); // # nocov
 #endif
