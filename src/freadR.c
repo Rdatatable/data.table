@@ -833,6 +833,8 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
 
   const double nrows_max = REAL_RO(nrows_limit)[0];
   if (R_FINITE(nrows_max) && nrows_max >= 0.0) {
+    if (nrows_max > SIZE_MAX)
+      STOP(_("spillConnectionToFile: nrows_limit (%g) must fit into a native-size unsigned integer (<= %zu)"), nrows_max, (size_t)SIZE_MAX); // # nocov
     state.row_limit = (size_t)nrows_max;
     if (state.row_limit == 0) state.row_limit = 100;  // read at least 100 rows if nrows==0
     state.row_limit++; // cater for potential header row
