@@ -1,4 +1,4 @@
-# data.table news and updates
+## data.table news and updates
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
@@ -343,6 +343,10 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 21. `[` now preserves existing key(s) when new columns are added before them, instead of incorrectly setting a new column as key, [#7364](https://github.com/Rdatatable/data.table/issues/7364). Thanks @czeildi for the bug report and the fix.
 
 22. `setDTthreads(percent=)` and `setDTthreads(threads=)` now respect `OMP_NUM_THREADS` and `omp_get_max_threads()`, ensuring consistency with `setDTthreads()` (no arguments) when OpenMP environment variables are set, [#7165](https://github.com/Rdatatable/data.table/issues/7165). Previously, explicitly setting a thread count or percentage would ignore these OpenMP limits, potentially exceeding the user's intended thread cap. Thanks to @bastistician for the report and @ben-schwen for the fix.
+
+23. `fread()` auto-detects separators for single-column files consisting solely of quoted values (e.g. `"this_that"\n"2025-01-01 00:00:01"`), [#7366](https://github.com/Rdatatable/data.table/issues/7366). Thanks @arunsrinivasan for the report and @ben-schwen for the fix.
+
+24. Rolling functions now ensure there is no nested parallelism. It could have happened for vectorized input and `adaptive=TRUE`, [#7352](https://github.com/Rdatatable/data.table/issues/7352). Thanks @jangorecki for the fix.
 
 ### NOTES
 
