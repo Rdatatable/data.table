@@ -1,30 +1,5 @@
 #include "data.table.h"
 
-static void finalizer(SEXP p)
-{
-  R_len_t n, l, tl;
-  if(!R_ExternalPtrAddr(p)) internal_error(__func__, "didn't receive an ExternalPtr"); // # nocov
-  p = R_ExternalPtrTag(p);
-  if (!isString(p)) internal_error(__func__, "ExternalPtr doesn't see names in tag"); // # nocov
-  l = LENGTH(p);
-  tl = TRUELENGTH(p);
-  if (l<0 || tl<l) internal_error(__func__, "l=%d, tl=%d", l, tl); // # nocov
-  n = tl-l;
-  if (n==0) {
-    // gc's ReleaseLargeFreeVectors() will have reduced R_LargeVallocSize by the correct amount
-    // already, so nothing to do (but almost never the case).
-    return;
-  }
-#ifdef DODO
-  SEXP x;
-  x = PROTECT(allocVector(INTSXP, 50));  // 50 so it's big enough to be on LargeVector heap. See NodeClassSize in memory.c:allocVector
-                                         // INTSXP rather than VECSXP so that GC doesn't inspect contents after LENGTH (thanks to Karl Millar, Jul 2015)
-  SETLENGTH(x,50+n*2*sizeof(void *)/4);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated).
-#endif
-  UNPROTECT(1);
-  return;
-}
-
 void setselfref(SEXP x) {
   if(!INHERITS(x, char_datatable))  return; // #5286
   SEXP p;
@@ -40,7 +15,6 @@ void setselfref(SEXP x) {
       R_NilValue
     ))
   ));
-  R_RegisterCFinalizerEx(p, finalizer, FALSE);
   UNPROTECT(2);
 
 /*
@@ -66,39 +40,8 @@ void setselfref(SEXP x) {
 */
 }
 
-/* There are two reasons the finalizer doesn't restore the LENGTH to TRUELENGTH. i) The finalizer
-happens too late after GC has already released the memory, and ii) copies by base R (e.g.
-[<- in write.table just before test 894) allocate at length LENGTH but copy the TRUELENGTH over.
-If the finalizer sets LENGTH to TRUELENGTH, that's a fail as it wasn't really allocated at
-TRUELENGTH when R did the copy.
-Karl Millar suggested an ENVSXP so that restoring LENGTH in finalizer should work. This is the
-closest I got to getting it to pass all tests :
-
-  SEXP env = PROTECT(allocSExp(ENVSXP));
-  defineVar(SelfRefSymbol, x, env);
-  defineVar(R_NamesSymbol, getAttrib(x, R_NamesSymbol), env);
-  setAttrib(x, SelfRefSymbol, p = R_MakeExternalPtr(
-    R_NilValue,         // for identical() to return TRUE. identical() doesn't look at tag and prot
-    R_NilValue, //getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
-    PROTECT(            // needed when --enable-strict-barrier it seems, iiuc. TO DO: test under that flag and remove if not needed.
-      env               // wrap x in env to avoid an infinite loop in object.size() if prot=x were here
-    )
-  ));
-  R_RegisterCFinalizerEx(p, finalizer, FALSE);
-  UNPROTECT(2);
-
-Then in finalizer:
-  SETLENGTH(names, tl)
-  SETLENGTH(dt, tl)
-
-and that finalizer indeed now happens before the GC releases memory (thanks to the env wrapper).
-
-However, we still have problem (ii) above and it didn't pass tests involving base R copies.
-
-We really need R itself to start setting TRUELENGTH to be the allocated length and then
-for GC to release TRUELENGTH not LENGTH.  Would really tidy this up.
-
-Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
+/*
+  Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
   The problem (for \code{data.table}) with the copy by \code{key<-} (other than
   being slower) is that \R doesn't maintain the over-allocated truelength, but it
   looks as though it has. Adding a column by reference using \code{:=} after a
