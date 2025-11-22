@@ -301,7 +301,7 @@ SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
-SEXP setgrowable(SEXP x);
+SEXP copyAsGrowable(SEXP x, SEXP by_column);
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
