@@ -87,6 +87,25 @@
 # endif
 #endif
 
+// TODO(R>=4.6.0): remove the SVN revision check
+#if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89077
+  static inline SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+    SEXP ret = allocVector(type, maxlen);
+    SET_TRUELENGTH(ret, maxlen);
+    SET_GROWABLE_BIT(ret);
+    return ret;
+  }
+# define R_allocResizableVector(type, maxlen) R_allocResizableVector_(type, maxlen)
+  static inline SEXP R_duplicateAsResizable_(SEXP x) {
+    SEXP ret = duplicate(x);
+    SET_TRUELENGTH(ret, xlength(ret));
+    SET_GROWABLE_BIT(ret);
+    return ret;
+  }
+# define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
+# define R_resizeVector(x, newlen) SETLENGTH(x, newlen)
+#endif
+
 // init.c
 extern SEXP char_integer64;
 extern SEXP char_ITime;
