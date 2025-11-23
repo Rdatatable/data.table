@@ -21858,3 +21858,10 @@ test(2344.04, key(DT[, .(V4 = c("b", "a"), V2, V5 = c("y", "x"), V1)]), c("V1", 
 
 # fread with quotes and single column #7366
 test(2345, fread('"this_that"\n"2025-01-01 00:00:01"'), data.table(this_that = as.POSIXct("2025-01-01 00:00:01", tz="UTC")))
+
+# one-byte stack overflow in strlim() to be tested with sanitizers, #7408
+text = paste0(
+ strrep("mary had a little lamb\n", 100),
+ strrep("a", 500), "\n", "a"
+)
+test(2346, data.table::fread(text = text), data.table(mary = rep("mary", 99), had = "had", a = "a", little = "little", lamb = "lamb"), warning = "First discarded non-empty line")

@@ -61,9 +61,9 @@ default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 this means "descending" and not "negative" because the implementation simply
 reverses the sort order, as opposed to sorting the opposite of the input
 (which would be inefficient).
-
 Note that \code{-b} also works with columns of type \code{character} unlike
 \code{\link[base]{order}}, which requires \code{-xtfrm(y)} instead (which is slow).
+
 \code{setorderv} in turn accepts a character vector of column names and an
 integer vector of column order separately.
 

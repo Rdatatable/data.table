@@ -77,14 +77,16 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     break;
   case VAR :
     if (algo==0) {
-      frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+      frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose, par); // par is used only when NAs - fallback to exact, to know if outer parallelism has been applied
     } else if (algo==1) {
-      frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+      if (!par) // par should be true because frollvarExact at this place was invoked directly, and not by fallback, so algo=exact have been used explicitly, then outer parallelism in frollR.c is disabled already
+        internal_error(__func__, "par=FALSE but should be TRUE, algo=exact should have disabled outer parallelism for vectorized input so frollvarExact should be allowed to go parallel"); // # nocov
+      frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose, par);
     }
     break;
   case SD :
     if (algo==0) {
-      frollsdFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+      frollsdFast(x, nx, ans, k, fill, narm, hasnf, verbose, par); // par is used only when NAs - fallback to exact, to know if outer parallelism has been applied
     } else if (algo==1) {
       frollsdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
@@ -1146,7 +1148,7 @@ void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill
   no support for NFs, redirecting to exact
   Welford wmean and m2 would have to be recalculated on each NF element
  */
-void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0 || k == 1) { // var(scalar) is also NA
@@ -1205,16 +1207,16 @@ void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, 
   if (truehasnf) {
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: non-finite values are present in input, redirecting to frollvarExact using has.nf=TRUE\n"), __func__);
-    frollvarExact(x, nx, ans, k, fill, narm, /*hasnf=*/true, verbose);
+    frollvarExact(x, nx, ans, k, fill, narm, /*hasnf=*/true, verbose, par);
     return;
   }
 }
 
 /* fast rolling var - exact
  */
-void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarExact", (uint64_t)nx, k, hasnf, (int)narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running %s for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollvarExact", par ? "in parallel" : "sequentially, because outer parallelism has been used,", (uint64_t)nx, k, hasnf, (int)narm);
   if (k == 0 || k == 1) { // var(scalar) is also NA
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: window width of size %d, returning all NA vector\n"), __func__, k);
@@ -1228,7 +1230,7 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
   }
   bool truehasnf = hasnf>0;
   if (!truehasnf || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
+    #pragma omp parallel for if (par) num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasnf) {
         continue;
@@ -1271,7 +1273,7 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
     }
   }
   if (truehasnf && narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    #pragma omp parallel for if (par) num_threads(getDTthreads(nx, true))
     for (uint64_t i=k-1; i<nx; i++) {
       long double wsum = 0.0;
       int nc = 0;
@@ -1317,10 +1319,10 @@ void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 
 /* fast rolling sd - fast
  */
-void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarFast(...))\n"), "frollsdFast");
-  frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+  frollvarFast(x, nx, ans, k, fill, narm, hasnf, verbose, par);
   for (uint64_t i=k-1; i<nx; i++) {
     ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
@@ -1331,7 +1333,7 @@ void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, b
 void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frollvarExact(...))\n"), "frollsdExact");
-  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  frollvarExact(x, nx, ans, k, fill, narm, hasnf, verbose, /*par=*/true); // par=true because frollsdExact at this place was invoked directly, and not by fallback, so algo=exact have been used explicitly, then outer parallelism in frollR.c is disabled already. If it would be algo=fast then sdFast -> varFast -> NAs -> varExact, so sdExact is no emplyed in the process, nothing redirects to sdExact
   for (uint64_t i=k-1; i<nx; i++) {
     ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
   }
