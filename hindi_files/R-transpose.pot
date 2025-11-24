@@ -1,0 +1,73 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: transpose 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: transpose.R:7
+msgid "make.names='%s' not found in names of input"
+msgstr ""
+
+#: transpose.R:12
+msgid "make.names=%d is out of range [1,ncol=%d]"
+msgstr ""
+
+#: transpose.R:28
+msgid "'names' must be TRUE/FALSE or a character vector."
+msgstr ""
+
+#: transpose.R:34
+msgid "'keep' should contain integer values between %d and %d."
+msgstr ""
+
+#: transpose.R:51
+msgid "The argument 'type.convert' does not support empty list."
+msgstr ""
+
+#: transpose.R:57
+msgid ""
+"When the argument 'type.convert' contains an unnamed element, it is expected "
+"to be the last element and should be a function. More than one unnamed "
+"element is not allowed unless all elements are functions with length equal "
+"to %d (the length of the transpose list or 'keep' argument if it is "
+"specified)."
+msgstr ""
+
+#: transpose.R:66
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, it should "
+"be a named list of non-missing integer values (with no duplicate) except the "
+"last element that should be unnamed if it is a function."
+msgstr ""
+
+#: transpose.R:68
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, they "
+"should be integer values contained in the argument 'keep' (if it is "
+"specified) or be between %d and %d (if it is not). But '%s' is/are not "
+"contained in '%s'."
+msgstr ""
+
+#: transpose.R:74
+msgid ""
+"In the argument 'type.convert', '%s' was ignored because all elements in the "
+"transpose list or elements corresponding to indices specified in the 'keep' "
+"argument have already been converted."
+msgstr ""
+
+#: transpose.R:83
+msgid ""
+"The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
+"functions, or a named list of pairs 'fun=indices' with optionally one "
+"unnamed element (a function) but an object of type '%s' was provided."
+msgstr ""
+
+#: transpose.R:88
+msgid "length(names) (= %d) is not equal to length(%s) (= %d)."
+msgstr ""
