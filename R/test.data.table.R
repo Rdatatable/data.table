@@ -361,7 +361,9 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+utf8_check = function(test_str) identical(test_str, enc2native(test_str))
+
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL,requires_utf8=FALSE) {
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
@@ -374,6 +376,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
+  }
+  # Check UTF-8 requirement
+  if (!isFALSE(requires_utf8)) {
+    test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8
+    if (!utf8_check(test_str)) {
+      # nocov start
+      last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
+      if (num - last_utf8_skip >= 1) {
+        catf("Test %s skipped because required UTF-8 symbols cannot be represented in native encoding.\n", num)
+      }
+      assign("last_utf8_skip", num, parent.frame(), inherits=TRUE)
+      return(invisible(TRUE))
+      # nocov end
+    }
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
