@@ -412,10 +412,10 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
               # nocov start
               suspendInterrupts({
                 lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
-                parallel::mccollect(jobs, wait = FALSE)
+                parallel::mccollect(jobs)
               })
-              invokeRestart("abort") ## raise SIGINT
               # nocov end
+              # Let the interrupt continue without invoking restarts
             }
           )
           ## check for any errors in FUN, warnings are silently ignored
