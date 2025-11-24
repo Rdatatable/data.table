@@ -2,6 +2,8 @@
 
 # data.table [v1.17.10](https://github.com/Rdatatable/data.table/milestone/43)
 
+1. Replaced the use of the non-API entry point `OBJECT` with the API entry point `Rf_isObject`, [#7419](https://github.com/Rdatatable/data.table/issues/7419). Thanks to Prof. Kurt Hornik for the report and @aitap for the fix, [#6900](https://github.com/Rdatatable/data.table/pull/6900).
+
 # data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
