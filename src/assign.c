@@ -2,7 +2,6 @@
 
 static void finalizer(SEXP p)
 {
-  SEXP x;
   R_len_t n, l, tl;
   if(!R_ExternalPtrAddr(p)) internal_error(__func__, "didn't receive an ExternalPtr"); // # nocov
   p = R_ExternalPtrTag(p);
@@ -16,9 +15,12 @@ static void finalizer(SEXP p)
     // already, so nothing to do (but almost never the case).
     return;
   }
+#ifdef DODO
+  SEXP x;
   x = PROTECT(allocVector(INTSXP, 50));  // 50 so it's big enough to be on LargeVector heap. See NodeClassSize in memory.c:allocVector
-                                         // INTSXP rather than VECSXP so that GC doesn't inspect contents after LENGTH (thanks to Karl Miller, Jul 2015)
+                                         // INTSXP rather than VECSXP so that GC doesn't inspect contents after LENGTH (thanks to Karl Millar, Jul 2015)
   SETLENGTH(x,50+n*2*sizeof(void *)/4);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated).
+#endif
   UNPROTECT(1);
   return;
 }
@@ -69,7 +71,7 @@ happens too late after GC has already released the memory, and ii) copies by bas
 [<- in write.table just before test 894) allocate at length LENGTH but copy the TRUELENGTH over.
 If the finalizer sets LENGTH to TRUELENGTH, that's a fail as it wasn't really allocated at
 TRUELENGTH when R did the copy.
-Karl Miller suggested an ENVSXP so that restoring LENGTH in finalizer should work. This is the
+Karl Millar suggested an ENVSXP so that restoring LENGTH in finalizer should work. This is the
 closest I got to getting it to pass all tests :
 
   SEXP env = PROTECT(allocSExp(ENVSXP));
@@ -151,7 +153,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // called from alloccol where n is checked carefully, or from shallow() at R level
   // where n is set to truelength (i.e. a shallow copy only with no size change)
   int protecti=0;
-  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
+  SEXP newdt = PROTECT(R_allocResizableVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   SHALLOW_DUPLICATE_ATTRIB(newdt, dt);
 
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
@@ -169,7 +171,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   setAttrib(newdt, sym_sorted, duplicate(sorted));
 
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
-  SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
+  SEXP newnames = PROTECT(R_allocResizableVector(STRSXP, n)); protecti++;
   const int l = isNull(cols) ? LENGTH(dt) : length(cols);
   if (isNull(cols)) {
     for (int i=0; i<l; ++i) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
@@ -186,13 +188,9 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
       for (int i=0; i<l; ++i) SET_STRING_ELT( newnames, i, STRING_ELT(names,INTEGER(cols)[i]-1) );
     }
   }
+  R_resizeVector(newdt,l);
+  R_resizeVector(newnames,l);
   setAttrib(newdt, R_NamesSymbol, newnames);
-  // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
-  // otherwise (if the SET were were first) the 100 tl is assigned to length.
-  SETLENGTH(newnames,l);
-  SET_TRUELENGTH(newnames,n);
-  SETLENGTH(newdt,l);
-  SET_TRUELENGTH(newdt,n);
   setselfref(newdt);
   UNPROTECT(protecti);
   return(newdt);
@@ -527,8 +525,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)TRUELENGTH(names), oldtncol);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
-    SETLENGTH(dt, oldncol+LENGTH(newcolnames));
-    SETLENGTH(names, oldncol+LENGTH(newcolnames));
+    R_resizeVector(dt, oldncol+LENGTH(newcolnames));
+    R_resizeVector(names, oldncol+LENGTH(newcolnames));
+    setAttrib(dt, R_NamesSymbol, names);
     for (int i=0; i<LENGTH(newcolnames); ++i)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
@@ -726,8 +725,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       SET_VECTOR_ELT(dt, i, R_NilValue);
       SET_STRING_ELT(names, i, NA_STRING);  // release reference to the CHARSXP
     }
-    SETLENGTH(dt,    ndt-ndelete);
-    SETLENGTH(names, ndt-ndelete);
+    R_resizeVector(dt,    ndt-ndelete);
+    R_resizeVector(names, ndt-ndelete);
+    setAttrib(dt, R_NamesSymbol, names);
     if (LENGTH(names)==0) {
       // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
       PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
