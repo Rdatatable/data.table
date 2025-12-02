@@ -81,7 +81,7 @@ static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
   return ((ptr & 0x0fffffff) * multiplier) | 1;
 }
 
-void hash_rehash(hashtab *h) {
+static R_INLINE void hash_rehash(hashtab *h) {
   size_t new_size = h->size * 2;
   hashtab *new_h = hash_create_(new_size, default_load_factor);
 
