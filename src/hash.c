@@ -16,6 +16,7 @@ struct hash_tab {
 // 
 static const double hash_multiplier1 = 0.618033988749895;
 static const double hash_multiplier2 = 0.316227766016838;
+static const double default_load_factor = .5;
 
 static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   if (load_factor <= 0 || load_factor >= 1)
@@ -61,7 +62,7 @@ static hashtab * hash_create_(size_t n, double load_factor) {
   return ret;
 }
 
-hashtab * hash_create(size_t n) { return hash_create_(n, .5); }
+hashtab * hash_create(size_t n) { return hash_create_(n, default_load_factor); }
 
 // double hashing
 static R_INLINE size_t hash_index1(SEXP key, uintptr_t multiplier) {
@@ -82,7 +83,7 @@ static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
 
 void hash_rehash(hashtab *h) {
   size_t new_size = h->size * 2;
-  hashtab *new_h = hash_create_(new_size, 0.5);
+  hashtab *new_h = hash_create_(new_size, default_load_factor);
 
   for (size_t i = 0; i < h->size; ++i) {
     if (h->table[i].key) hash_set(new_h, h->table[i].key, h->table[i].value);
