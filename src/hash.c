@@ -40,11 +40,9 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
 
 static hashtab * hash_create_(size_t n, double load_factor) {
   size_t n_full = get_full_size(n, load_factor);
-  // precondition: sizeof hashtab + hash_pair[n_full] < SIZE_MAX
-  //                        n_full * sizeof hash_pair < SIZE_MAX - sizeof hashtab
-  //                                 sizeof hash_pair < (SIZE_MAX - sizeof hashtab) / n_full
+  // precondition: sizeof hash_pair[n_full] < SIZE_MAX
   // (note that sometimes n is 0)
-  if (n_full && sizeof(struct hash_pair) >= (SIZE_MAX - sizeof(hashtab)) / n_full)
+  if (n_full && sizeof(struct hash_pair) >= SIZE_MAX / n_full)
     internal_error(
       __func__, "n=%zu with load_factor=%g would overflow total allocation size",
       n, load_factor
