@@ -12,8 +12,7 @@ struct hash_tab {
   struct hash_pair *table;  // Single table for double hashing
 };
 
-// TAOCP vol. 3, section 6.4: for multiplication hashing, use A ~ 1/phi, the golden ratio.
-// 
+// 1/phi and sqrt(0.1)
 static const double hash_multiplier1 = 0.618033988749895;
 static const double hash_multiplier2 = 0.316227766016838;
 static const double default_load_factor = .5;
