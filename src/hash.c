@@ -23,7 +23,7 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   // precondition: n / load_factor < SIZE_MAX
   // this is implemented a bit stricter than needed and would fail some almost-too-high sizes
   // due to the size_t -> double conversion
-  if ((size_t)((double)SIZE_MAX * load_factor) <= n_elements) internal_error(
+  if ((size_t)((double)SIZE_MAX * load_factor) <= n_elements) internal_error( // # nocov
     __func__, "n=%zu / load_factor=%g would overflow size_t",
     n_elements, load_factor
   );
