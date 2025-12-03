@@ -58,13 +58,11 @@ void convertSingleDate(int x, datetype type, void *out)
 
     int leap = !years1 && (years4 || !years100);
 
-    if (type == YDAY || type == WEEK) {
+    if (type == YDAY) {
         int yday = days + 31 + 28 + leap;
         if (yday >= YEARS1 + leap)
             yday -= YEARS1 + leap;
         *(int *)out = ++yday;
-        if (type == WEEK)
-            *(int *)out = (*(int *)out / 7) + 1;
         return;
     }
 
@@ -143,6 +141,41 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(ctype_str, "yearqtr")) { ctype = YEARQTR; ansint = false; }
     else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
     
+    if (ctype == WEEK) {
+        SEXP ans = PROTECT(allocVector(INTSXP, n));
+        int *ansp = INTEGER(ans);
+
+        SEXP opt = GetOption1(install("datatable.week"));
+        const char *mode = isString(opt) && length(opt) == 1 ? CHAR(STRING_ELT(opt, 0)) : "default";
+
+        bool use_sequential = !strcmp(mode, "sequential");
+        bool use_legacy = !strcmp(mode, "legacy");
+        bool can_warn = !use_sequential && !use_legacy;
+
+        for (int i = 0; i < n; i++) {
+            if (ix[i] == NA_INTEGER) {
+                ansp[i] = NA_INTEGER;
+                continue;
+            }
+            int yday;
+            convertSingleDate(ix[i], YDAY, &yday);
+            int new_week = ((yday - 1) / 7) + 1;
+
+            if (use_sequential) {
+                ansp[i] = new_week;
+            } else {
+                int old_week = (yday / 7) + 1;
+                ansp[i] = old_week;
+                if (can_warn && new_week != old_week) {
+                    warning(_("The default behavior of week() is changing. Previously ('legacy' mode), week numbers advanced every 7th day of the year. The new 'sequential' mode ensures the first week always has 7 days. For example, as.IDate('2023-01-07') returns week 2 in legacy mode but week 1 in sequential mode (week 2 starts on '2023-01-08'). To adopt the new behavior now, set options(datatable.week = 'sequential'). To keep the old results and silence this warning, set options(datatable.week = 'legacy'). See https://github.com/Rdatatable/data.table/issues/2611"));
+                    can_warn = false;
+                }
+            }
+        }
+        UNPROTECT(1);
+        return ans;
+    }
+
     if (ansint) {
         SEXP ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
