@@ -40,20 +40,13 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
 
 static hashtab * hash_create_(size_t n, double load_factor) {
   size_t n_full = get_full_size(n, load_factor);
-  // precondition: sizeof hash_pair[n_full] < SIZE_MAX
-  // (note that sometimes n is 0)
-  if (n_full && sizeof(struct hash_pair) >= SIZE_MAX / n_full)
-    internal_error(
-      __func__, "n=%zu with load_factor=%g would overflow total allocation size",
-      n, load_factor
-    );
   hashtab *ret = (hashtab *)R_alloc(sizeof(hashtab), 1);
   ret->size = n_full;
   ret->free = n;
   // Multiply by size to get different hash functions when rehashing
   ret->multiplier1 = n_full * hash_multiplier1;
   ret->multiplier2 = n_full * hash_multiplier2;
-  ret->table = (struct hash_pair *)R_alloc(sizeof(struct hash_pair[n_full]), 1);
+  ret->table = (struct hash_pair *)R_alloc(n_full, sizeof(*ret->table));
   // No valid SEXP is a null pointer, so it's a safe marker for empty cells.
   for (size_t i = 0; i < n_full; ++i) {
     ret->table[i].key = NULL;
