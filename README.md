@@ -3,16 +3,33 @@
 
 <!-- badges: start -->
 [![CRAN status](https://badges.cranchecks.info/flavor/release/data.table.svg)](https://cran.r-project.org/web/checks/check_results_data.table.html)
-[![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
+[![R-CMD-check](https://github.com/Rdatatable/data.table/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/Rdatatable/data.table/actions)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://app.codecov.io/github/Rdatatable/data.table?branch=master)
-[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/-/pipelines)
+[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![indirect usage](https://jangorecki.gitlab.io/rdeps/data.table/indirect_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
+[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](https://numfocus.org)
 <!-- badges: end -->
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
+
+[//]: # (numfocus-fiscal-sponsor-attribution)
+
+The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
+a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
+pay for developer time, professional services, travel, workshops, and a variety of other needs.
+
+<div align="center">
+  <a href="https://numfocus.org/project/data-table">
+    <img width="25%" 
+         src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png" 
+         align="center">
+  </a>
+</div>
+<br>
 
 ## Why `data.table`?
 
@@ -85,7 +102,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 `data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://medium.datadriveninvestor.com/most-starred-and-forked-github-repos-for-r-in-data-science-fb87a54d2a6a) R packages on GitHub, and was highly rated by the [Depsy project](http://depsy.org/package/r/data.table). If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
 
-A list of packages that significantly support, extend, or make use of `data.table` can be found in the [Seal of Approval](Seal_of_Approval.md) document.
+A list of packages that significantly support, extend, or make use of `data.table` can be found in the [Seal of Approval](https://github.com/Rdatatable/data.table/blob/master/Seal_of_Approval.md) document.
 
 ### Stay up-to-date
 

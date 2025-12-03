@@ -142,14 +142,13 @@ typedef struct dhashtab_ {
   dhashtab public; // must be at offset 0
   size_t size, used, limit;
   uintptr_t multiplier;
-  struct hash_pair *table, *previous;
+  struct hash_pair *table;
 } dhashtab_;
 
 static void dhash_finalizer(SEXP dhash) {
   dhashtab_ * self = R_ExternalPtrAddr(dhash);
   if (!self) return;
   R_ClearExternalPtr(dhash);
-  free(self->previous);
   free(self->table);
   free(self);
 }
@@ -207,23 +206,14 @@ static void dhash_enlarge(dhashtab_ * self) {
       }
     }
   }
-  // Not trying to protect from calls to _set -> _enlarge from other threads!
-  // Writes only come from a critical section, so two threads will not attempt to enlarge at the same time.
-  // What we have to prevent is yanking the self->table from under a different thread reading it right now.
-  free(self->previous);
-  struct hash_pair * previous = self->table;
-  dhashtab public = self->public;
-  size_t used = self->used, limit = self->limit*2;
-  *self = (dhashtab_){
-    .public = public,
-    .size = new_size,
-    .used = used,
-    .limit = limit,
-    .multiplier = new_multiplier,
-    .table = new,
-    .previous = previous,
-  };
-  #pragma omp flush // no locking or atomic access! this is bad
+  // This is thread-unsafe, but this function is only called either from a single-thread context, or
+  // from under an OpenMP critical section, so there's no reason to worry about another thread
+  // getting a use-after-free. They are all sleeping.
+  self->size = new_size;
+  self->limit *= 2;
+  self->multiplier = new_multiplier;
+  self->table = new;
+  #pragma omp flush
 }
 
 void dhash_set(dhashtab * h, SEXP key, R_xlen_t value) {
