@@ -8,12 +8,14 @@ struct hash_pair {
 };
 struct hash_tab {
   size_t size, free;
-  uintptr_t multiplier;
-  struct hash_pair tb[];
+  uintptr_t multiplier1, multiplier2;
+  struct hash_pair *table;  // Single table for double hashing
 };
 
-// TAOCP vol. 3, section 6.4: for multiplication hashing, use A ~ 1/phi, the golden ratio.
-static const double hash_multiplier = 0.618033988749895;
+// 1/phi and sqrt(0.1)
+static const double hash_multiplier1 = 0.618033988749895;
+static const double hash_multiplier2 = 0.316227766016838;
+static const double default_load_factor = .5;
 
 static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   if (load_factor <= 0 || load_factor >= 1)
@@ -21,77 +23,110 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   // precondition: n / load_factor < SIZE_MAX
   // this is implemented a bit stricter than needed and would fail some almost-too-high sizes
   // due to the size_t -> double conversion
-  if ((size_t)((double)SIZE_MAX * load_factor) <= n_elements) internal_error(
+  if ((size_t)((double)SIZE_MAX * load_factor) <= n_elements) internal_error( // # nocov
     __func__, "n=%zu / load_factor=%g would overflow size_t",
     n_elements, load_factor
   );
-  return ceil(n_elements / load_factor);
+  size_t min_size = ceil(n_elements / load_factor);
+  // Round up to next power of 2 for fast modulo using bitwise AND
+  size_t pow2 = 1;
+  while (pow2 < min_size) {
+    if (pow2 > SIZE_MAX / 2)
+      internal_error(__func__, "size %zu would overflow size_t", min_size); // # nocov
+    pow2 *= 2;
+  }
+  return pow2;
 }
 
 static hashtab * hash_create_(size_t n, double load_factor) {
   size_t n_full = get_full_size(n, load_factor);
-  // precondition: sizeof hashtab + hash_pair[n_full] < SIZE_MAX
-  //                        n_full * sizeof hash_pair < SIZE_MAX - sizeof hashtab
-  //                                 sizeof hash_pair < (SIZE_MAX - sizeof hashtab) / n_full
-  // (note that sometimes n is 0)
-  if (n_full && sizeof(struct hash_pair) >= (SIZE_MAX - sizeof(hashtab)) / n_full)
-    internal_error(
-      __func__, "n=%zu with load_factor=%g would overflow total allocation size",
-      n, load_factor
-    );
-  hashtab * ret = (hashtab *)R_alloc(sizeof(hashtab) + sizeof(struct hash_pair[n_full]), 1);
+  hashtab *ret = (hashtab *)R_alloc(sizeof(hashtab), 1);
   ret->size = n_full;
   ret->free = n;
-  // To compute floor(size * (A * key % 1)) in integer arithmetic with A < 1, use ((size * A) * key) % size.
-  ret->multiplier = n_full * hash_multiplier;
+  // Multiply by size to get different hash functions when rehashing
+  ret->multiplier1 = n_full * hash_multiplier1;
+  ret->multiplier2 = n_full * hash_multiplier2;
+  ret->table = (struct hash_pair *)R_alloc(n_full, sizeof(*ret->table));
   // No valid SEXP is a null pointer, so it's a safe marker for empty cells.
-  for (size_t i = 0; i < n_full; ++i)
-    ret->tb[i].key = NULL;
+  for (size_t i = 0; i < n_full; ++i) {
+    ret->table[i].key = NULL;
+  }
   return ret;
 }
 
-hashtab * hash_create(size_t n) { return hash_create_(n, .5); }
+hashtab * hash_create(size_t n) { return hash_create_(n, default_load_factor); }
 
-// Hashing for an open addressing hash table. See Cormen et al., Introduction to Algorithms, 3rd ed., section 11.4.
-// This is far from perfect. Make size a prime or a power of two and you'll be able to use double hashing.
-static R_INLINE size_t hash_index(SEXP key, uintptr_t multiplier) {
+// double hashing
+static R_INLINE size_t hash_index1(SEXP key, uintptr_t multiplier) {
   // The 4 lowest bits of the pointer are probably zeroes because a typical SEXPREC exceeds 16 bytes in size.
   // Since SEXPRECs are heap-allocated, they are subject to malloc() alignment guarantees,
   // which is at least 4 bytes on 32-bit platforms, most likely more than 8 bytes.
   return ((((uintptr_t)key) >> 4) & 0x0fffffff) * multiplier;
 }
 
-void hash_set(hashtab * h, SEXP key, R_xlen_t value) {
-  struct hash_pair *cell = h->tb + hash_index(key, h->multiplier) % h->size, *end = h->tb + h->size - 1;
-  for (size_t i = 0; i < h->size; ++i, cell = cell == end ? h->tb : cell+1) {
-    if (cell->key == key) {
-      cell->value = value;
-      return;
-    } else if (!cell->key) {
-      if (!h->free) internal_error(
-        __func__, "no free slots left (full size=%zu)", h->size
-      );
-      --h->free;
-      *cell = (struct hash_pair){.key = key, .value = value};
-      return;
-    }
-  }
-  internal_error( // # nocov
-    __func__, "did not find a free slot for key %p; size=%zu, free=%zu",
-    (void*)key, h->size, h->free
-  );
+static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
+  // For double hashing, we need a different hash that's coprime with table size.
+  // We use higher-order bits that hash_index1 mostly ignores, and ensure
+  // the result is always odd (coprime with power-of-2 table sizes).
+  uintptr_t ptr = (uintptr_t)key;
+  ptr = (ptr >> 12) | (ptr << (sizeof(uintptr_t) * 8 - 12));
+  return ((ptr & 0x0fffffff) * multiplier) | 1;
 }
 
-R_xlen_t hash_lookup(const hashtab * h, SEXP key, R_xlen_t ifnotfound) {
-  const struct hash_pair * cell = h->tb + hash_index(key, h->multiplier) % h->size, *end = h->tb + h->size - 1;
-  for (size_t i = 0; i < h->size; ++i, cell = cell == end ? h->tb : cell+1) {
-    if (cell->key == key) {
-      return cell->value;
-    } else if (!cell->key) {
-      return ifnotfound;
+static R_INLINE void hash_rehash(hashtab *h) {
+  size_t new_size = h->size * 2;
+  hashtab *new_h = hash_create_(new_size, default_load_factor);
+
+  for (size_t i = 0; i < h->size; ++i) {
+    if (h->table[i].key) hash_set(new_h, h->table[i].key, h->table[i].value);
+  }
+  *h = *new_h;
+}
+
+void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
+  size_t mask = h->size - 1;
+  size_t h1 = hash_index1(key, h->multiplier1) & mask;
+  size_t h2 = hash_index2(key, h->multiplier2) & mask;
+
+  if (h2 == 0) h2 = 1;
+  else if ((h2 & 1) == 0) h2 |= 1;
+
+  for (size_t i = 0; i < h->size; ++i) {
+    size_t idx = (h1 + i * h2) & mask;
+
+    if (!h->table[idx].key) {
+      // Empty slot found
+      h->table[idx].key = key;
+      h->table[idx].value = value;
+      h->free--;
+      return;
+    }
+
+    if (h->table[idx].key == key) {
+      h->table[idx].value = value;
+      return;
     }
   }
-  // Should be impossible with a load factor below 1, but just in case:
+
+  // need to rehash
+  hash_rehash(h);
+  hash_set(h, key, value);
+}
+
+R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
+  size_t mask = h->size - 1;
+  size_t h1 = hash_index1(key, h->multiplier1) & mask;
+  size_t h2 = hash_index2(key, h->multiplier2) & mask;
+
+  if (h2 == 0) h2 = 1;
+  else if ((h2 & 1) == 0) h2 |= 1;
+
+  for (size_t i = 0; i < h->size; ++i) {
+    size_t idx = (h1 + i * h2) & mask;
+    if (!h->table[idx].key) return ifnotfound;
+    if (h->table[idx].key == key) return h->table[idx].value;
+  }
+
   return ifnotfound; // # nocov
 }
 
@@ -134,7 +169,7 @@ static dhashtab * dhash_create_(size_t n, double load_factor) {
   self->table = dhash_allocate(n_full);
   self->size = n_full;
   self->limit = n;
-  self->multiplier = n_full * hash_multiplier;
+  self->multiplier = n_full * hash_multiplier1;
   // this is the last time we're allowed to set the table parts piece by piece
 
   UNPROTECT(1);
@@ -147,11 +182,13 @@ static void dhash_enlarge(dhashtab_ * self) {
   if (self->size > SIZE_MAX / 2)
     internal_error(__func__, "doubling %zu elements would overflow size_t", self->size); // # nocov
   size_t new_size = self->size * 2;
+  size_t new_mask = new_size - 1;
   struct hash_pair * new = dhash_allocate(new_size);
-  uintptr_t new_multiplier = new_size * hash_multiplier;
+  uintptr_t new_multiplier = new_size * hash_multiplier1;
   for (size_t i = 0; i < self->size; ++i) {
+    if (!self->table[i].key) continue;
     for (size_t j = 0; j < new_size; ++j) {
-      size_t ii = (hash_index(self->table[i].key, new_multiplier) + j) % new_size;
+      size_t ii = (hash_index1(self->table[i].key, new_multiplier) + j) & new_mask;
       if (!new[ii].key) {
         new[ii] = (struct hash_pair){
           .key = self->table[i].key,
@@ -175,7 +212,7 @@ void dhash_set(dhashtab * h, SEXP key, R_xlen_t value) {
   dhashtab_ * self = (dhashtab_ *)h;
   struct hash_pair *cell, *end;
 again:
-  cell = self->table + hash_index(key, self->multiplier) % self->size;
+  cell = self->table + (hash_index1(key, self->multiplier) & (self->size - 1));
   end = self->table + self->size - 1;
   for (size_t i = 0; i < self->size; ++i, cell = cell == end ? self->table : cell+1) {
     if (cell->key == key) {
@@ -201,7 +238,7 @@ R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound) {
   #pragma omp flush // no locking or atomic access! this is bad
   dhashtab_ self = *(dhashtab_ *)h;
   R_xlen_t ret = ifnotfound;
-  const struct hash_pair * cell = self.table + hash_index(key, self.multiplier) % self.size;
+  const struct hash_pair * cell = self.table + (hash_index1(key, self.multiplier) & (self.size - 1));
   const struct hash_pair * end = self.table + self.size - 1;
   for (size_t i = 0; i < self.size; ++i, cell = cell == end ? self.table : cell+1) {
     if (cell->key == key) {
