@@ -104,6 +104,8 @@
   }
 # define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
 # define R_resizeVector(x, newlen) SETLENGTH(x, newlen)
+# define R_maxLength(x) TRUELENGTH(x)
+# define R_isResizable(x) ((bool)(IS_GROWABLE(x)))
 #endif
 
 // init.c
