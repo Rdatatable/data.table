@@ -71,15 +71,9 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
   names = getAttrib(x, R_NamesSymbol);
-  if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
-    SET_TRUELENGTH(names, LENGTH(names));
-    // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
-    // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
-    SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
@@ -201,7 +195,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
   //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
-  tl = TRUELENGTH(dt);
+  tl = R_maxLength(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
@@ -251,11 +245,11 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   if (!selfrefok(dt, FALSE)) {
     int n = isNull(cols) ? length(dt) : length(cols);
     return(shallow(dt, cols, n));
-  } else return(shallow(dt, cols, TRUELENGTH(dt)));
+  } else return(shallow(dt, cols, R_maxLength(dt)));
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
+  return ScalarInteger(isNull(x) || !R_isResizable(x) ? 0 : R_maxLength(x));
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -450,10 +444,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    if (!R_isResizable(dt)) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
+    oldtncol = R_maxLength(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
-      if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
       internal_error(__func__, "oldtncol(%d) < oldncol(%d)", oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
@@ -463,9 +457,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
-    else if (TRUELENGTH(names) != oldtncol)
+    else if (R_maxLength(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
-      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)TRUELENGTH(names), oldtncol);  // # nocov
+      internal_error(__func__, "selfrefnames is ok but maxLength(names) [%lld] != maxLength(dt) [%d]", (long long)R_maxLength(names), oldtncol);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
     R_resizeVector(dt, oldncol+LENGTH(newcolnames));
