@@ -359,15 +359,6 @@ hashtab *hash_set_shared(hashtab *, SEXP key, R_xlen_t value);
 // Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
 R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
 
-// The dynamically-allocated hash table has a public field for the R protection wrapper.
-// Keep it PROTECTed while the table is in use.
-typedef struct dhash_tab {
-  SEXP prot;
-} dhashtab;
-dhashtab * dhash_create(size_t n);
-void dhash_set(dhashtab * h, SEXP key, R_xlen_t value);
-R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound);
-
 // mergelist.c
 SEXP cbindlist(SEXP x, SEXP copyArg);
 SEXP copyCols(SEXP x, SEXP cols);
