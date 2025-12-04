@@ -351,9 +351,11 @@ typedef struct hash_tab hashtab;
 // See vmaxget()/vmaxset() if you need to unprotect it manually.
 hashtab * hash_create(size_t n);
 // Inserts a new key-value pair into the hash, or overwrites an existing value.
-// Will raise an R error if inserting more than n elements.
+// Will grow the table in a thread-unsafe manner if needed.
 // Don't try to insert a null pointer, nothing good will come out of it.
 void hash_set(hashtab *, SEXP key, R_xlen_t value);
+// Same as hash_set, but returns the new hash table pointer, which the caller may assign atomically in a thread-safe manner.
+hashtab *hash_set_shared(hashtab *, SEXP key, R_xlen_t value);
 // Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
 R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
 

@@ -73,17 +73,17 @@ static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
   return ((ptr & 0x0fffffff) * multiplier) | 1;
 }
 
-static R_INLINE void hash_rehash(hashtab *h) {
+static R_INLINE hashtab *hash_rehash(const hashtab *h) {
   size_t new_size = h->size * 2;
   hashtab *new_h = hash_create_(new_size, default_load_factor);
 
   for (size_t i = 0; i < h->size; ++i) {
     if (h->table[i].key) hash_set(new_h, h->table[i].key, h->table[i].value);
   }
-  *h = *new_h;
+  return new_h;
 }
 
-void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
+static bool hash_set_(hashtab *h, SEXP key, R_xlen_t value) {
   size_t mask = h->size - 1;
   size_t h1 = hash_index1(key, h->multiplier1) & mask;
   size_t h2 = hash_index2(key, h->multiplier2) & mask;
@@ -99,18 +99,30 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
       h->table[idx].key = key;
       h->table[idx].value = value;
       h->free--;
-      return;
+      return true;
     }
 
     if (h->table[idx].key == key) {
       h->table[idx].value = value;
-      return;
+      return true;
     }
   }
 
   // need to rehash
-  hash_rehash(h);
-  hash_set(h, key, value);
+  return false;
+}
+
+void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
+  if (!hash_set_(h, key, value))
+    *h = *hash_rehash(h);
+  (void)hash_set_(h, key, value); // must succeed on the second try
+}
+
+hashtab *hash_set_shared(hashtab *h, SEXP key, R_xlen_t value) {
+  if (!hash_set_(h, key, value))
+    h = hash_rehash(h);
+  (void)hash_set_(h, key, value);
+  return h;
 }
 
 R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
