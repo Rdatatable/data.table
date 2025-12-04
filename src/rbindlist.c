@@ -74,7 +74,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     SEXP *uniq = malloc(sizeof(*uniq) * upperBoundUniqueNames);  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
     if (!uniq)
       error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
-    dhashtab * marks = dhash_create(1 + (LENGTH(l) ? (2 * LENGTH(getAttrib(VECTOR_ELT(l, 0), R_NamesSymbol))) : 0));
+    hashtab * marks = hash_create(1 + (LENGTH(l) ? (2 * LENGTH(getAttrib(VECTOR_ELT(l, 0), R_NamesSymbol))) : 0));
     int nuniq=0;
     // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
@@ -86,9 +86,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       const SEXP *cnp = STRING_PTR_RO(cn);
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-        if (dhash_lookup(marks, s, 0)<0) continue;  // seen this name before
+        if (hash_lookup(marks, s, 0)<0) continue;  // seen this name before
         uniq[nuniq++] = s;
-        dhash_set(marks, s,-nuniq);
+        hash_set(marks, s,-nuniq);
       }
     }
     if (nuniq>0) uniq = realloc(uniq, sizeof(SEXP)*nuniq);  // shrink to only what we need to release the spare
@@ -113,7 +113,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       memset(counts, 0, nuniq*sizeof(*counts));
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-        counts[ -dhash_lookup(marks, s, 0)-1 ]++;
+        counts[ -hash_lookup(marks, s, 0)-1 ]++;
       }
       for (int u=0; u<nuniq; u++) {
         if (counts[u] > maxdup[u]) maxdup[u] = counts[u];
@@ -152,7 +152,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         memset(counts, 0, nuniq*sizeof(*counts));
         for (int j=0; j<thisncol; j++) {
           SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-          int w = -dhash_lookup(marks, s, 0)-1;
+          int w = -hash_lookup(marks, s, 0)-1;
           int wi = counts[w]++; // how many dups have we seen before of this name within this item
           if (uniqMap[w]==-1) {
             // first time seen this name across all items
@@ -356,7 +356,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int ansloc=0;
     if (factor) {
       char warnStr[1000] = "";
-      dhashtab * marks = dhash_create(1024);
+      hashtab * marks = hash_create(1024);
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       if (orderedFactor) {
@@ -376,7 +376,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
           levelsRaw[k] = s;
-          dhash_set(marks, s, -k-1);
+          hash_set(marks, s, -k-1);
         }
         for (int i=0; i<LENGTH(l); ++i) {
           SEXP li = VECTOR_ELT(l, i);
@@ -389,7 +389,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
             const int n = length(levels);
             for (int k=0, last=0; k<n; ++k) {
               SEXP s = levelsD[k];
-              const int tl = dhash_lookup(marks, s, 0);
+              const int tl = hash_lookup(marks, s, 0);
               if (tl>=last) {  // if tl>=0 then also tl>=last because last<=0
                 if (tl>=0) {
                   snprintf(warnStr, sizeof(warnStr),   // not direct warning as we're inside tl region
@@ -428,7 +428,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           for (int k=0; k<n; ++k) {
             SEXP s = thisColStrD[k];
             if (s==NA_STRING ||             // remove NA from levels; test 1979 found by package emil when revdep testing 1.12.2 (#3473)
-                dhash_lookup(marks, s, 0)<0) continue;  // seen this level before; handles removing dups from levels as well as finding unique of character columns
+                hash_lookup(marks, s, 0)<0) continue;  // seen this level before; handles removing dups from levels as well as finding unique of character columns
             if (allocLevel==nLevel) {       // including initial time when allocLevel==nLevel==0
               SEXP *tt = NULL;
               if (allocLevel<INT_MAX) {
@@ -439,14 +439,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
               if (tt==NULL) {
                 // # nocov start
                 // C spec states that if realloc() fails (above) the original block (levelsRaw) is left untouched: it is not freed or moved. We ...
-                for (int k=0; k<nLevel; k++) dhash_set(marks, levelsRaw[k], 0);   // ... rely on that in this loop which uses levelsRaw.
+                for (int k=0; k<nLevel; k++) hash_set(marks, levelsRaw[k], 0);   // ... rely on that in this loop which uses levelsRaw.
                 free(levelsRaw);
                 error(_("Failed to allocate working memory for %d factor levels of result column %d when reading item %d of item %d"), allocLevel, idcol+j+1, w+1, i+1);
                 // # nocov end
               }
               levelsRaw = tt;
             }
-            dhash_set(marks,s,-(++nLevel));
+            hash_set(marks,s,-(++nLevel));
             levelsRaw[nLevel-1] = s;
           }
           int *targetd = INTEGER(target);
@@ -455,7 +455,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
             if (length(thisCol)<=1) {
               // recycle length-1, or NA-fill length-0
               SEXP lev;
-              const int val = (length(thisCol)==1 && id[0]!=NA_INTEGER && (lev=thisColStrD[id[0]-1])!=NA_STRING) ? -dhash_lookup(marks,lev,0) : NA_INTEGER;
+              const int val = (length(thisCol)==1 && id[0]!=NA_INTEGER && (lev=thisColStrD[id[0]-1])!=NA_STRING) ? -hash_lookup(marks,lev,0) : NA_INTEGER;
               //                                                                                    ^^ #3915 and tests 2015.2-5
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
             } else {
@@ -466,22 +466,22 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
                 // retain the position of NA level (if any) and the integer mappings to it
                 for (int k=0; k<n; ++k) {
                   SEXP s = thisColStrD[k];
-                  if (s!=NA_STRING && -dhash_lookup(marks,s,0)!=k+1) { hop=true; break; }
+                  if (s!=NA_STRING && -hash_lookup(marks,s,0)!=k+1) { hop=true; break; }
                 }
               } else {
                 for (int k=0; k<n; ++k) {
                   SEXP s = thisColStrD[k];
-                  if (s==NA_STRING || -dhash_lookup(marks,s,0)!=k+1) { hop=true; break; }
+                  if (s==NA_STRING || -hash_lookup(marks,s,0)!=k+1) { hop=true; break; }
                 }
               }
               if (hop) {
                 if (orderedFactor) {
                   for (int r=0; r<thisnrow; ++r)
-                    targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -dhash_lookup(marks,thisColStrD[id[r]-1],0);
+                    targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks,thisColStrD[id[r]-1],0);
                 } else {
                   for (int r=0; r<thisnrow; ++r) {
                     SEXP lev;
-                    targetd[ansloc+r] = id[r]==NA_INTEGER || (lev=thisColStrD[id[r]-1])==NA_STRING ? NA_INTEGER : -dhash_lookup(marks,lev,0);
+                    targetd[ansloc+r] = id[r]==NA_INTEGER || (lev=thisColStrD[id[r]-1])==NA_STRING ? NA_INTEGER : -hash_lookup(marks,lev,0);
                   }
                 }
               } else {
@@ -491,10 +491,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           } else {
             const SEXP *sd = STRING_PTR_RO(thisColStr);
             if (length(thisCol)<=1) {
-              const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -dhash_lookup(marks,sd[0],0) : NA_INTEGER;
+              const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -hash_lookup(marks,sd[0],0) : NA_INTEGER;
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
             } else {
-              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -dhash_lookup(marks,sd[r],0);
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -hash_lookup(marks,sd[r],0);
             }
           }
         }
