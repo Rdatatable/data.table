@@ -111,7 +111,7 @@ replace_dot_alias = function(e) {
   )
   idx = regexpr(missing_obj_regex, err_str, perl=TRUE)
   if (idx == -1L)
-    stopf(err, domain=NA) # Pass 'err' to retain call site data (#7444); beware also #6588
+    stopf(err) # Pass 'err' to retain call site data (#7444); beware also #6588
   start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
   used = substr(
     err_str,
