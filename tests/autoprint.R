@@ -1,4 +1,4 @@
-require(data.table)
+suppressPackageStartupMessages(require(data.table))
 # Tests the suppression of := output
 # Since this tests autoprinting at the console, it needs to use the .Rout.save mechanism in R CMD check
 DT = data.table(a=1:2)                # Should print at console?
