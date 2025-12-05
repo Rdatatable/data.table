@@ -21865,3 +21865,8 @@ text = paste0(
  strrep("a", 500), "\n", "a"
 )
 test(2346, data.table::fread(text = text), data.table(mary = rep("mary", 99), had = "had", a = "a", little = "little", lamb = "lamb"), warning = "First discarded non-empty line")
+
+# With 'i' containing NA and no GForce, columns for missing groups weren't fully missing, #7442
+DT = data.table(a="a", grp=1L)
+i = c(1, 1, 1, NA, NA)
+test(2347, DT[i, .(result = all(is.na(grp) == is.na(a))), by = grp][,all(result)], options = list(datatable.optimize = 0))
