@@ -74,7 +74,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     SEXP *uniq = malloc(sizeof(*uniq) * upperBoundUniqueNames);  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
     if (!uniq)
       error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
-    hashtab * marks = hash_create(1 + (LENGTH(l) ? (2 * LENGTH(getAttrib(VECTOR_ELT(l, 0), R_NamesSymbol))) : 0));
+    hashtab * marks = hash_create(upperBoundUniqueNames);
     int nuniq=0;
     // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
