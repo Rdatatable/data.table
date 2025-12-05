@@ -111,15 +111,17 @@ static bool hash_set_(hashtab *h, SEXP key, R_xlen_t value) {
 }
 
 void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
-  if (!hash_set_(h, key, value))
+  if (!hash_set_(h, key, value)) {
     *h = *hash_rehash(h);
-  (void)hash_set_(h, key, value); // must succeed on the second try
+    (void)hash_set_(h, key, value); // must succeed on the second try
+  }
 }
 
 hashtab *hash_set_shared(hashtab *h, SEXP key, R_xlen_t value) {
-  if (!hash_set_(h, key, value))
+  if (!hash_set_(h, key, value)) {
     h = hash_rehash(h);
-  (void)hash_set_(h, key, value);
+    (void)hash_set_(h, key, value);
+  }
   return h;
 }
 
