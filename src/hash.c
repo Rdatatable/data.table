@@ -13,7 +13,8 @@ struct hash_tab {
 // 1/phi and sqrt(0.1)
 static const double hash_multiplier1 = 0.618033988749895;
 static const double hash_multiplier2 = 0.316227766016838;
-static const double default_load_factor = .5;
+static const double default_load_factor = .75;
+static const size_t min_hash_size = 256;
 
 static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   if (load_factor <= 0 || load_factor >= 1)
@@ -26,6 +27,8 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
     n_elements, load_factor
   );
   size_t min_size = ceil(n_elements / load_factor);
+  // Enforce minimum hash size to reduce allocation overhead for small tables
+  if (min_size < min_hash_size) min_size = min_hash_size;
   // Round up to next power of 2 for fast modulo using bitwise AND
   size_t pow2 = 1;
   while (pow2 < min_size) {
@@ -46,9 +49,8 @@ static hashtab * hash_create_(size_t n, double load_factor) {
   ret->multiplier2 = n_full * hash_multiplier2;
   ret->table = (struct hash_pair *)R_alloc(n_full, sizeof(*ret->table));
   // No valid SEXP is a null pointer, so it's a safe marker for empty cells.
-  for (size_t i = 0; i < n_full; ++i) {
-    ret->table[i].key = NULL;
-  }
+  // Use memset for init
+  memset(ret->table, 0, n_full * sizeof(*ret->table));
   return ret;
 }
 
