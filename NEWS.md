@@ -2,6 +2,8 @@
 
 # data.table v1.17.12
 
+1. By-group operations on missing rows (e.g. `foo[c(i, NA), bar, by=grp]`) now avoid leaving in data from the previous groups, [#7442](https://github.com/Rdatatable/data.table/issues/7442). Thanks @aitap for the report and the fix.
+
 # data.table [v1.17.10](https://github.com/Rdatatable/data.table/milestone/43)
 
 1. Replaced the use of the non-API entry point `OBJECT` with the API entry point `Rf_isObject`, [#7419](https://github.com/Rdatatable/data.table/issues/7419). Thanks to Prof. Kurt Hornik for the report and @aitap for the fix, [#6900](https://github.com/Rdatatable/data.table/pull/6900).
