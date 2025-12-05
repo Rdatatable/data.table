@@ -1,4 +1,4 @@
-suppressPackageStartupMessages(require(data.table))
+require(data.table, warn.conflicts=!exists("%notin%", "package:base"))
 # Tests the suppression of := output
 # Since this tests autoprinting at the console, it needs to use the .Rout.save mechanism in R CMD check
 DT = data.table(a=1:2)                # Should print at console?
