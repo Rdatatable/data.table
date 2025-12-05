@@ -21866,3 +21866,8 @@ text = paste0(
  strrep("a", 500), "\n", "a"
 )
 test(2346, data.table::fread(text = text), data.table(mary = rep("mary", 99), had = "had", a = "a", little = "little", lamb = "lamb"), warning = "First discarded non-empty line")
+
+# .checkTypos internal implementation not exposed for non-typo bug, #7444
+DT = data.table(a = as.Date("2010-01-01"), b = 1L)
+test(2347.1, tryCatch(DT[a == as.Date("20100101")], error=conditionCall)[[1L]], quote(charToDate))
+test(2347.2, tryCatch(DT[a == as.Date("20100101") | b == 2L], error=conditionCall)[[1L]], quote(charToDate))
