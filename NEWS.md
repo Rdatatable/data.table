@@ -348,6 +348,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 24. Rolling functions now ensure there is no nested parallelism. It could have happened for vectorized input and `adaptive=TRUE`, [#7352](https://github.com/Rdatatable/data.table/issues/7352). Thanks @jangorecki for the fix.
 
+25. By-group operations on missing rows (e.g. `foo[c(i, NA), bar, by=grp]`) now avoid leaving in data from the previous groups, [#7442](https://github.com/Rdatatable/data.table/issues/7442). Thanks @aitap for the report and the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
