@@ -375,6 +375,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
+8. Retain important information in the error message about the source of the error when `i=` fails, e.g. pointing to `charToDate()` failing in `DT[date_col == "20250101"]`, [#7444](https://github.com/Rdatatable/data.table/issues/7444). Thanks @jan-swissre for the report and @MichaelChirico for the fix.
+
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
 1. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
