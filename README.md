@@ -108,7 +108,7 @@ A list of packages that significantly support, extend, or make use of `data.tabl
 
 - click the **Watch** button at the top and right of GitHub project page
 - read [NEWS file](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)
-- follow [#rdatatable](https://twitter.com/hashtag/rdatatable) and the [r_data_table](https://x.com/r_data_table) account on X/Twitter
+- follow [#rdatatable](https://x.com/hashtag/rdatatable) and the [r_data_table](https://x.com/r_data_table) account on X/Twitter
 - follow [#rdatatable](https://fosstodon.org/tags/rdatatable) and the [r_data_table account](https://fosstodon.org/@r_data_table) on fosstodon
 - follow the [data.table community page](https://www.linkedin.com/company/data-table-community) on LinkedIn
 - watch recent [Presentations](https://github.com/Rdatatable/data.table/wiki/Presentations)
