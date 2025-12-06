@@ -322,8 +322,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
           // Increment length only if the allocation passes, #1676. But before SET_VECTOR_ELT otherwise attempt-to-set-index-n/n R error
-          SETLENGTH(dtnames, LENGTH(dtnames)+1);
-          SETLENGTH(dt, LENGTH(dt)+1);
+          R_resizeVector(dtnames, LENGTH(dtnames)+1);
+          R_resizeVector(dt, LENGTH(dt)+1);
+          setAttrib(dt, R_NamesSymbol, dtnames);
           SET_VECTOR_ELT(dt, colj, target);
           UNPROTECT(1);
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
@@ -534,7 +535,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   SEXP newx;
   R_len_t len = length(x);
   if (isNull(x)) error(_("growVector passed NULL"));
-  PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
+  PROTECT(newx = R_allocResizableVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   if (!len) { // cannot memcpy invalid pointer, #6819
     keepattr(newx, x);

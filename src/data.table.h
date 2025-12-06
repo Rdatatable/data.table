@@ -87,6 +87,31 @@
 # endif
 #endif
 
+// TODO(R>=4.6.0): remove the SVN revision check
+#if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89077
+  static inline SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+    SEXP ret = allocVector(type, maxlen);
+    SET_TRUELENGTH(ret, maxlen);
+    SET_GROWABLE_BIT(ret);
+    return ret;
+  }
+# define R_allocResizableVector(type, maxlen) R_allocResizableVector_(type, maxlen)
+  static inline SEXP R_duplicateAsResizable_(SEXP x) {
+    SEXP ret = duplicate(x);
+    SET_TRUELENGTH(ret, xlength(ret));
+    SET_GROWABLE_BIT(ret);
+    return ret;
+  }
+# define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
+# define R_resizeVector(x, newlen) SETLENGTH(x, newlen)
+# define R_maxLength(x) TRUELENGTH(x)
+# define R_isResizable(x) R_isResizable_(x)
+  static inline bool R_isResizable_(SEXP x) {
+    // IS_GROWABLE also checks for TRUELENGTH < XLENGTH
+    return (LEVELS(x) & 0x20) && TRUELENGTH(x);
+  }
+#endif
+
 // init.c
 extern SEXP char_integer64;
 extern SEXP char_ITime;
@@ -282,7 +307,7 @@ SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
-SEXP setgrowable(SEXP x);
+SEXP copyAsGrowable(SEXP x, SEXP by_column);
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
