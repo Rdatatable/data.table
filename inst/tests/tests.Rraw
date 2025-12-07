@@ -21876,3 +21876,12 @@ test(2347, DT[i, .(result = all(is.na(grp) == is.na(a))), by = grp][,all(result)
 DT = data.table(a = as.Date("2010-01-01"), b = 1L)
 test(2348.1, tryCatch(DT[a == as.Date("20100101")], error=conditionCall)[[1L]], quote(charToDate))
 test(2348.2, tryCatch(DT[a == as.Date("20100101") | b == 2L], error=conditionCall)[[1L]], quote(charToDate))
+
+# rbindlist did not protect the temporary UTF-8 strings, #7452
+DTn = apply(matrix(as.raw(rep(0xa1:0xff, length.out = 100)), 10), 2, rawToChar)
+Encoding(DTn) = 'latin1' # will need conversion to UTF-8
+DTl = lapply(DTn, function(n) setNames(list(42), n))[c(1, rep(2:length(DTn), length.out = 3e5), 1)]
+DT = suppressMessages(rbindlist(DTl)) # used to crash
+test(2349.1, dim(DT), c(300002L, 1L))
+test(2349.2, DT[[1]], rep(42, nrow(DT)))
+rm(DTn, DTl, DT)
