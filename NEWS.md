@@ -350,6 +350,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 25. By-group operations on missing rows (e.g. `foo[c(i, NA), bar, by=grp]`) now avoid leaving in data from the previous groups, [#7442](https://github.com/Rdatatable/data.table/issues/7442). Thanks @aitap for the report and the fix.
 
+26. `rbindlist()` now avoids the crash when working with many non-UTF-8 column names, [#7452](https://github.com/Rdatatable/data.table/issues/7452). Thanks @aitap for the report and the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
