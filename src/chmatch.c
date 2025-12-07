@@ -55,6 +55,37 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     return ans;
   }
   // else xlen>1; nprotect is const above since no more R allocations should occur after this point
+  // When table >> x, hash x and scan table // ToDo tune the kick-in factor
+  if (!chmatchdup && tablelen > 4 * xlen) {
+    hashtab *marks = hash_create(xlen);
+    int nuniq = 0;
+    for (int i = 0; i < xlen; ++i) {
+      // todo use lookup_insert?
+      int tl = hash_lookup(marks, xd[i], 0);
+      if (tl == 0) {
+        hash_set(marks, xd[i], -1);
+        nuniq++;
+      }
+    }
+
+    for (int i = 0; i < tablelen; ++i) {
+      int tl = hash_lookup(marks, td[i], 0);
+      if (tl == -1) {
+        hash_set(marks, td[i], chin ? 1 : i + 1);
+        nuniq--;
+        if (nuniq == 0) break; // all found, stop scanning
+      }
+    }
+
+    const int not_found = chin ? 0 : nomatch;
+    #pragma omp parallel for num_threads(getDTthreads(xlen, true))
+    for (int i = 0; i < xlen; ++i) {
+      int tl = hash_lookup(marks, xd[i], 0);
+      ansd[i] = tl == -1 ? not_found : tl;
+    }
+    UNPROTECT(nprotect);
+    return ans;
+  }
   hashtab * marks = hash_create(tablelen);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
