@@ -56,7 +56,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   }
   // else xlen>1; nprotect is const above since no more R allocations should occur after this point
   // When table >> x, hash x and scan table // ToDo tune the kick-in factor
-  if (!chmatchdup && tablelen > 4 * xlen) {
+  if (!chmatchdup && tablelen > 2 * xlen) {
     hashtab *marks = hash_create(xlen);
     int nuniq = 0;
     for (int i = 0; i < xlen; ++i) {
