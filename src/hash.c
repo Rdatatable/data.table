@@ -7,7 +7,7 @@ struct hash_pair {
     R_xlen_t value;
 };
 struct hash_tab {
-  size_t size, free, mask;
+  size_t size, free;
   int shift;
   struct hash_pair *table;
 };
@@ -49,7 +49,6 @@ static hashtab * hash_create_(size_t n, double load_factor) {
   size_t n_full = get_full_size(n, load_factor);
   hashtab *ret = (hashtab *)R_alloc(sizeof(hashtab), 1);
   ret->size = n_full;
-  ret->mask = n_full - 1;
   ret->free = (size_t)(n_full * load_factor);
 
   int k = 0;
@@ -78,8 +77,8 @@ static R_INLINE hashtab *hash_rehash(const hashtab *h) {
 }
 
 static bool hash_set_(hashtab *h, SEXP key, R_xlen_t value) {
+  size_t mask = h->size - 1;
   size_t idx = hash_index(key, h->shift);
-  size_t mask = h->mask;
   while (true) {
     if (!h->table[idx].key) {
       if (h->free == 0) return false; // table full -> need rehash
@@ -113,8 +112,8 @@ hashtab *hash_set_shared(hashtab *h, SEXP key, R_xlen_t value) {
 }
 
 R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
+  size_t mask = h->size - 1;
   size_t idx = hash_index(key, h->shift);
-  size_t mask = h->mask;
   while (true) {
     if (h->table[idx].key == key) return h->table[idx].value;
     if (h->table[idx].key == NULL) return ifnotfound;
