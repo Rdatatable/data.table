@@ -92,10 +92,13 @@
 # define R_allocResizableVector(type, maxlen) R_allocResizableVector_(type, maxlen)
 # define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
 # define R_resizeVector(x, newlen) SETLENGTH(x, newlen)
-# define R_maxLength(x) TRUELENGTH(x)
+# define R_maxLength(x) R_maxLength_(x)
+  static inline R_xlen_t R_maxLength_(SEXP x) {
+    return IS_GROWABLE(x) ? TRUELENGTH(x) : XLENGTH(x);
+  }
 # define R_isResizable(x) R_isResizable_(x)
   static inline bool R_isResizable_(SEXP x) {
-    // IS_GROWABLE also checks for TRUELENGTH < XLENGTH
+    // IS_GROWABLE also checks for XLENGTH < TRUELENGTH
     return (LEVELS(x) & 0x20) && TRUELENGTH(x);
   }
 #endif
