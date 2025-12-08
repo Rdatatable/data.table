@@ -76,7 +76,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 
 // needed in adaptive=TRUE
 SEXP copyAsGrowable(SEXP x, SEXP by_column) {
-  if (LOGICAL_RO(by_column)[0])
+  if (asLogical(by_column))
     return R_duplicateAsResizable(x);
 
   SEXP ret = PROTECT(shallow_duplicate(x));
