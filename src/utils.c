@@ -659,3 +659,17 @@ void internal_error(const char *call_name, const char *format, ...) {
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
+
+SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+  SEXP ret = allocVector(type, maxlen);
+  SET_TRUELENGTH(ret, maxlen);
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+SEXP R_duplicateAsResizable_(SEXP x) {
+  SEXP ret = duplicate(x);
+  SET_TRUELENGTH(ret, xlength(ret));
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
