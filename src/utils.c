@@ -668,6 +668,7 @@ SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
 }
 
 SEXP R_duplicateAsResizable_(SEXP x) {
+  if (ALTREP(x)) internal_error(__func__, "Cannot duplicate an ALTREP object as resizable"); // # nocov
   SEXP ret = duplicate(x);
   SET_TRUELENGTH(ret, xlength(ret));
   SET_GROWABLE_BIT(ret);
