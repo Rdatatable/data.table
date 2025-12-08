@@ -54,52 +54,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     UNPROTECT(nprotect);
     return ans;
   }
-  // else xlen>1; nprotect is const above since no more R allocations should occur after this point
   // When table >> x, hash x and scan table // ToDo tune the kick-in factor
-  if (!chmatchdup && tablelen > 2 * xlen) {
-    hashtab *marks = hash_create(xlen);
-    int nuniq = 0;
-    for (int i = 0; i < xlen; ++i) {
-      // todo use lookup_insert?
-      int tl = hash_lookup(marks, xd[i], 0);
-      if (tl == 0) {
-        hash_set(marks, xd[i], -1);
-        nuniq++;
-      }
-    }
-
-    for (int i = 0; i < tablelen; ++i) {
-      int tl = hash_lookup(marks, td[i], 0);
-      if (tl == -1) {
-        hash_set(marks, td[i], i + 1);
-        nuniq--;
-        if (nuniq == 0) break; // all found, stop scanning
-      }
-    }
-
-    if (chin) {
-      #pragma omp parallel for num_threads(getDTthreads(xlen, true))
-      for (int i = 0; i < xlen; ++i) {
-        ansd[i] = hash_lookup(marks, xd[i], 0) > 0;
-      }
-    } else {
-      #pragma omp parallel for num_threads(getDTthreads(xlen, true))
-      for (int i = 0; i < xlen; ++i) {
-        const int m = hash_lookup(marks, xd[i], 0);
-        ansd[i] = (m < 0) ? nomatch : m;
-      }
-    }
-    UNPROTECT(nprotect);
-    return ans;
-  }
-  hashtab * marks = hash_create(tablelen);
-  int nuniq=0;
-  for (int i=0; i<tablelen; ++i) {
-    const SEXP s = td[i];
-    int tl = hash_lookup(marks, s, 0);
-    if (tl==0) hash_set(marks, s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
-  }
-  // in future if we need NAs in x not to be matched to NAs in table ...
+  const bool inverted = (tablelen > 2 * xlen);
   if (chmatchdup) {
     // chmatchdup() is basically base::pmatch() but without the partial matching part. For example :
     //   chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
@@ -112,41 +68,105 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     //                                                                                        uniq         dups
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
-    unsigned int mapsize = tablelen+nuniq; // lto compilation warning #5760 // +nuniq to store a 0 at the end of each group
-    int *counts = calloc(nuniq, sizeof(*counts));
-    int *map =    calloc(mapsize, sizeof(*map));
-    if (!counts || !map) {
-      // # nocov start
-      free(counts); free(map);
-      error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
-      // # nocov end
+    const int tlen = inverted ? xlen : tablelen;
+    const SEXP *targetd = inverted ? xd : td;
+
+    hashtab *marks = hash_create(tlen);
+    int *head = malloc(tlen * sizeof(int));
+    int *next = malloc(tlen * sizeof(int));
+    // # nocov start
+    if (!head || !next) {
+      free(head); free(next);
+      error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d"), (uint64_t)tlen * 2 * sizeof(int), tlen);
     }
-    for (int i=0; i<tablelen; ++i) counts[-hash_lookup(marks, td[i], 0)-1]++;
-    for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
-    for (int i=0; i<tablelen; ++i) map[counts[-hash_lookup(marks, td[i], 0)-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
-    for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
-    for (int i=0; i<xlen; ++i) {
-      int u = hash_lookup(marks, xd[i], 0);
-      if (u<0) {
-        const int w = counts[-u-1]++;
-        if (map[w]) { ansd[i]=map[w]; continue; }
-        hash_set(marks,xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
-        // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
+    // # nocov end
+    for (int i=0; i<tlen; i++) head[i] = -1;
+    int nuniq = 0;
+    for (int i=tlen-1; i >= 0; i--) {
+      int u = hash_lookup(marks, targetd[i], 0);
+      if (u == 0) {
+        u = ++nuniq;
+        hash_set(marks, targetd[i], u);
       }
-      ansd[i] = nomatch;
+      next[i] = head[u-1];
+      head[u-1] = i;
     }
-    free(counts);
-    free(map);
-  } else if (chin) {
+
+    if (inverted) {
+      #pragma omp parallel for num_threads(getDTthreads(xlen, true))
+      for (int i=0; i<xlen; i++) ansd[i] = nomatch;
+      int remaining = xlen;
+      for (int i=0; i<tablelen; i++) {
+        if (remaining == 0) break;
+        const int u = hash_lookup(marks, td[i], 0);
+        if (u != 0) {
+          const int idx = head[u-1];
+          if (idx != -1) {
+            ansd[idx] = i+1;
+            head[u-1] = next[idx];
+            remaining--;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<xlen; i++) {
+        const int u = hash_lookup(marks, xd[i], 0);
+        int res = nomatch;
+        if (u != 0) {
+          const int idx = head[u-1];
+          if (idx != -1) {
+            res = idx+1;
+            head[u-1] = next[idx];
+          }
+        }
+        ansd[i] = res;
+      }
+    }
+    free(head);
+    free(next);
+    UNPROTECT(nprotect);
+    return ans;
+  }
+
+  hashtab *marks;
+
+  if (inverted) {
+    marks = hash_create(xlen);
+    int nuniq = 0;
+    for (int i=0; i<xlen; i++) {
+      int tl = hash_lookup(marks, xd[i], 0);
+      if (tl == 0) {
+        hash_set(marks, xd[i], -1);
+        nuniq++;
+      }
+    }
+    for (int i=0; i<tablelen; i++) {
+      int tl = hash_lookup(marks, td[i], 0);
+      if (tl == -1) {
+        hash_set(marks, td[i], i+1);
+        nuniq--;
+        if (nuniq == 0) break; // leave early if all found
+      }
+    }
+  } else {
+    marks = hash_create(tablelen);
+    for (int i=0; i<tablelen; i++) {
+      const SEXP s = td[i];
+      int tl = hash_lookup(marks, s, 0);
+      if (tl == 0) hash_set(marks, s, i + 1);
+    }
+  }
+
+  if (chin) {
     #pragma omp parallel for num_threads(getDTthreads(xlen, true))
     for (int i=0; i<xlen; i++) {
-      ansd[i] = hash_lookup(marks,xd[i],0)<0;
+      ansd[i] = hash_lookup(marks,xd[i],0)>0;
     }
   } else {
     #pragma omp parallel for num_threads(getDTthreads(xlen, true))
     for (int i=0; i<xlen; i++) {
       const int m = hash_lookup(marks,xd[i],0);
-      ansd[i] = (m<0) ? -m : nomatch;
+      ansd[i] = (m>0) ? m : nomatch;
     }
   }
   UNPROTECT(nprotect);  // ans, xd, td
