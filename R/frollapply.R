@@ -297,7 +297,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       tight = function(i, dest, src, n) FUN(.Call(CmemcpyDT, dest, src, i, n), ...)
     }
   } else {
-    cpy = function(x) .Call(CcopyAsGrowable, x, by.column)
+    cpy = function(x) .Call(CcopyAsGrowable, x)
     ansMask = function(len, n) {
       mask = seq_len(len) >= n
       mask[is.na(mask)] = FALSE ## test 6010.206
