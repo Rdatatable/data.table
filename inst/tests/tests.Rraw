@@ -20800,7 +20800,8 @@ baz(x)
 test(2295.7, is.data.table(x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
-test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+DT = data.table(a = 1)
+test(2296, DT[x %no such operator% 1], error = '%no such operator%')
 
 # fix coercing integer/double for joins on multiple columns, #6602
 x = data.table(a=1L)
@@ -21865,3 +21866,13 @@ text = paste0(
  strrep("a", 500), "\n", "a"
 )
 test(2346, data.table::fread(text = text), data.table(mary = rep("mary", 99), had = "had", a = "a", little = "little", lamb = "lamb"), warning = "First discarded non-empty line")
+
+# With 'i' containing NA and no GForce, columns for missing groups weren't fully missing, #7442
+DT = data.table(a="a", grp=1L)
+i = c(1, 1, 1, NA, NA)
+test(2347, DT[i, .(result = all(is.na(grp) == is.na(a))), by = grp][,all(result)], options = list(datatable.optimize = 0))
+
+# .checkTypos internal implementation not exposed for non-typo bug, #7444
+DT = data.table(a = as.Date("2010-01-01"), b = 1L)
+test(2348.1, tryCatch(DT[a == as.Date("20100101")], error=conditionCall)[[1L]], quote(charToDate))
+test(2348.2, tryCatch(DT[a == as.Date("20100101") | b == 2L], error=conditionCall)[[1L]], quote(charToDate))

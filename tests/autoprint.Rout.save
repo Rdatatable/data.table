@@ -15,8 +15,8 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> require(data.table)
-Loading required package: data.table
+> # TODO(#7453): re-enable warn.conflicts
+> require(data.table, warn.conflicts=FALSE)
 > # Tests the suppression of := output
 > # Since this tests autoprinting at the console, it needs to use the .Rout.save mechanism in R CMD check
 > DT = data.table(a=1:2)                # Should print at console?

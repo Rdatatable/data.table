@@ -219,6 +219,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (int j=0; j<length(SDall); ++j) {
+        SETLENGTH(VECTOR_ELT(SDall, j), 1);
         writeNA(VECTOR_ELT(SDall, j), 0, 1, false);
         // writeNA uses SET_ for STR and VEC, and we always use SET_ to assign to SDall always too. Otherwise,
         // this writeNA could decrement the reference for the old value which wasn't incremented in the first place.
@@ -505,21 +506,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   return(ans);
 }
 
-SEXP keepattr(SEXP to, SEXP from)
-{
-  // Same as R_copyDFattr in src/main/attrib.c, but that seems not exposed in R's api
-  // Only difference is that we reverse from and to in the prototype, for easier calling above
-  SET_ATTRIB(to, ATTRIB(from));
-  if (isS4(from)) {
-    to = PROTECT(asS4(to, TRUE, 1));
-    SET_OBJECT(to, isObject(from));
-    UNPROTECT(1);
-  } else {
-    SET_OBJECT(to, isObject(from));
-  }
-  return to;
-}
-
 SEXP growVector(SEXP x, const R_len_t newlen)
 {
   // Similar to EnlargeVector in src/main/subassign.c, with the following changes :
@@ -532,7 +518,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   if (!len) { // cannot memcpy invalid pointer, #6819
-    keepattr(newx, x);
+    SHALLOW_DUPLICATE_ATTRIB(newx, x);
     UNPROTECT(1);
     return newx;
   }
@@ -557,7 +543,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
-  keepattr(newx,x);
+  SHALLOW_DUPLICATE_ATTRIB(newx, x);
   UNPROTECT(1);
   return newx;
 }
