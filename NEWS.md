@@ -1,5 +1,7 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
+# data.table v1.17.12
+
 # data.table [v1.17.10](https://github.com/Rdatatable/data.table/milestone/43)
 
 1. Replaced the use of the non-API entry point `OBJECT` with the API entry point `Rf_isObject`, [#7419](https://github.com/Rdatatable/data.table/issues/7419). Thanks to Prof. Kurt Hornik for the report and @aitap for the fix, [#6900](https://github.com/Rdatatable/data.table/pull/6900).
