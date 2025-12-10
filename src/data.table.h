@@ -89,18 +89,19 @@
 
 // TODO(R>=4.6.0): remove the SVN revision check
 #if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89077
+# define BACKPORT_RESIZABLE_API
 # define R_allocResizableVector(type, maxlen) R_allocResizableVector_(type, maxlen)
 # define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
-# define R_resizeVector(x, newlen) SETLENGTH(x, newlen)
 # define R_maxLength(x) R_maxLength_(x)
   static inline R_xlen_t R_maxLength_(SEXP x) {
     return IS_GROWABLE(x) ? TRUELENGTH(x) : XLENGTH(x);
   }
 # define R_isResizable(x) R_isResizable_(x)
   static inline bool R_isResizable_(SEXP x) {
-    // IS_GROWABLE also checks for XLENGTH < TRUELENGTH
-    return (LEVELS(x) & 0x20) && TRUELENGTH(x);
+    // IS_GROWABLE checks for XLENGTH < TRUELENGTH instead
+    return (LEVELS(x) & 0x20) && XLENGTH(x) <= TRUELENGTH(x);
   }
+# define R_resizeVector(x, newlen) R_resizeVector_(x, newlen)
 #endif
 
 // init.c
@@ -338,8 +339,11 @@ bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
 SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
+#ifdef BACKPORT_RESIZABLE_API
 SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen);
 SEXP R_duplicateAsResizable_(SEXP x);
+void R_resizeVector_(SEXP x, R_xlen_t newlen);
+#endif
 
 // types.c
 char *end(char *start);
