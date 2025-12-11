@@ -131,7 +131,6 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
         const int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
         hash_set(marks,xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
-        // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
       }
       ansd[i] = nomatch;
     }
