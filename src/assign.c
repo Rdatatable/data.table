@@ -762,6 +762,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
         hashtab * marks = hash_create((size_t)nTargetLevels + nSourceLevels);
+        PROTECT(marks->prot); protecti++;
         for (int k=0; k<nTargetLevels; ++k) {
           const SEXP s = targetLevelsD[k];
           hash_set(marks, s, -k-1);
