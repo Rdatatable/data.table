@@ -87,6 +87,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     hashtab * marks = hash_create(upperBoundUniqueNames);
+    PROTECT(marks->prot);
     int nuniq=0;
     // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
@@ -176,7 +177,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
       }
     }
-    UNPROTECT(1); // cnl
+    UNPROTECT(2); // cnl, marks
     vmaxset(vmax); // unprotect counts, uniqMap, dupLink
 
     // to view map when debugging ...

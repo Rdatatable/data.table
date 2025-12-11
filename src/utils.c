@@ -268,6 +268,7 @@ void copySharedColumns(SEXP x) {
   if (!isNewList(x) || ncol==1) return;
   bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
   hashtab * marks = hash_create(ncol);
+  PROTECT(marks->prot);
   const SEXP *xp = SEXPPTR_RO(x);
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
@@ -295,6 +296,7 @@ void copySharedColumns(SEXP x) {
               nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
+  UNPROTECT(1);
 }
 
 // lock, unlock and islocked at C level :

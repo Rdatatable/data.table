@@ -58,6 +58,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   // When table >> x, hash x and scan table // ToDo tune the kick-in factor
   if (!chmatchdup && tablelen > 2 * xlen) {
     hashtab *marks = hash_create(xlen);
+    PROTECT(marks->prot); nprotect++;
     int nuniq = 0;
     for (int i = 0; i < xlen; ++i) {
       // todo use lookup_insert?
@@ -93,6 +94,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     return ans;
   }
   hashtab * marks = hash_create(tablelen);
+  PROTECT(marks->prot); nprotect++;
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     const SEXP s = td[i];
