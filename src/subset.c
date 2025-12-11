@@ -297,7 +297,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   }
 
   int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
-  SEXP ans = PROTECT(R_allocResizableVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+  SEXP ans = PROTECT(R_allocResizableVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here
 
   // user-defined and superclass attributes get copied as from v1.12.0
   copyMostAttrib(x, ans);
