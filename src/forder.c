@@ -609,6 +609,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
       marks = hash_create(4096); // relatively small to allocate, can grow exponentially later
+      PROTECT(marks->prot); n_protect++;
       range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8, marks);
       break;
     default:

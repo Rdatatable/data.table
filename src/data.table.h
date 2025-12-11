@@ -364,13 +364,12 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 SEXP notchin(SEXP x, SEXP table);
 
 // hash.c
-typedef struct hash_tab hashtab;
+typedef struct {
+  SEXP prot; // make sure to PROTECT() while the table is in use
+} hashtab;
 // Allocate, initialise, and return a pointer to the new hash table.
 // n is the maximal number of elements that will be inserted.
-// Lower load factors lead to fewer collisions and faster lookups, but waste memory.
 // May raise an R error if an allocation fails or a size is out of bounds.
-// The table is temporary (allocated via R_alloc()) and will be unprotected upon return from the .Call().
-// See vmaxget()/vmaxset() if you need to unprotect it manually.
 hashtab * hash_create(size_t n);
 // Inserts a new key-value pair into the hash, or overwrites an existing value.
 // Will grow the table in a thread-unsafe manner if needed.

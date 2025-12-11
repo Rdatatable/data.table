@@ -92,6 +92,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
 
   hashtab * specials = hash_create(3 + ngrpcols + xlength(SDall)); // .I, .N, .GRP plus columns of .BY plus SDall
+  PROTECT(specials->prot); nprotect++;
 
   defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
   SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?

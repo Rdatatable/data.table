@@ -409,6 +409,7 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   for (R_xlen_t i = 0; i < nitem; ++i)
     hl += xlength(VECTOR_ELT(factorLevels, i));
   hashtab * marks = hash_create(hl);
+  PROTECT(marks->prot);
   int nlevel=0;
   for (int i=0; i<nitem; ++i) {
     const SEXP this = VECTOR_ELT(factorLevels, i);
@@ -443,7 +444,7 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   } else {
     setAttrib(ans, R_ClassSymbol, ScalarString(char_factor));
   }
-  UNPROTECT(1);
+  UNPROTECT(2);
   return ans;
 }
 

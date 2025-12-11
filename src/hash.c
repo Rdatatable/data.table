@@ -7,9 +7,11 @@ struct hash_pair {
     R_xlen_t value;
 };
 struct hash_tab {
+  hashtab public; // must be the first member
   size_t size, free;
   int shift;
   struct hash_pair *table;
+  struct hash_tab *next;
 };
 
 static const double default_load_factor = .75;
@@ -45,38 +47,65 @@ static R_INLINE size_t get_full_size(size_t n_elements, double load_factor) {
   return pow2;
 }
 
-static hashtab * hash_create_(size_t n, double load_factor) {
+static struct hash_tab * hash_create_(size_t n, double load_factor) {
   size_t n_full = get_full_size(n, load_factor);
-  hashtab *ret = (hashtab *)R_alloc(sizeof(hashtab), 1);
+
+  struct hash_tab *ret = malloc(sizeof *ret);
+  if (!ret)
+    return NULL; // #nocov
+
+  // Not strictly portable but faster than an explicit loop setting keys to NULL
+  struct hash_pair *table = calloc(n_full, sizeof(*table));
+  if (!table) {
+    // #nocov start
+    free(ret);
+    return NULL;
+    // #nocov end
+  }
+
   ret->size = n_full;
   ret->free = (size_t)(n_full * load_factor);
 
   int k = 0;
   while ((1ULL << k) < n_full) k++;
   ret->shift = HASH_BITS - k;
-  ret->table = (struct hash_pair *)R_alloc(n_full, sizeof(*ret->table));
-  // No valid SEXP is a null pointer, so it's a safe marker for empty cells.
-  memset(ret->table, 0, n_full * sizeof(struct hash_pair));
+  ret->table = table;
+  ret->next = NULL;
+
   return ret;
 }
 
-hashtab * hash_create(size_t n) { return hash_create_(n, default_load_factor); }
+static void hash_finalizer(SEXP prot) {
+  struct hash_tab * h = R_ExternalPtrAddr(prot);
+  R_ClearExternalPtr(prot);
+  while (h) {
+    struct hash_tab * next = h->next;
+    free(h->table);
+    free(h);
+    h = next;
+  }
+}
+
+hashtab * hash_create(size_t n) {
+  SEXP prot = R_MakeExternalPtr(NULL, R_NilValue, R_NilValue);
+  R_RegisterCFinalizer(prot, hash_finalizer);
+
+  struct hash_tab *ret = hash_create_(n, default_load_factor);
+  if (!ret) internal_error( // #nocov
+    __func__, "failed to allocate a hash table for %zu entries", n
+  );
+
+  ret->public.prot = prot;
+  R_SetExternalPtrAddr(prot, ret);
+
+  return &ret->public;
+}
 
 static R_INLINE size_t hash_index(SEXP key, int shift) {
   return (size_t)((uintptr_t)key * HASH_MULTIPLIER) >> shift;
 }
 
-static R_INLINE hashtab *hash_rehash(const hashtab *h) {
-  size_t new_size = h->size * 2;
-  hashtab *new_h = hash_create_(new_size, default_load_factor);
-
-  for (size_t i = 0; i < h->size; ++i) {
-    if (h->table[i].key) hash_set(new_h, h->table[i].key, h->table[i].value);
-  }
-  return new_h;
-}
-
-static bool hash_set_(hashtab *h, SEXP key, R_xlen_t value) {
+static bool hash_set_(struct hash_tab *h, SEXP key, R_xlen_t value) {
   size_t mask = h->size - 1;
   size_t idx = hash_index(key, h->shift);
   while (true) {
@@ -96,22 +125,54 @@ static bool hash_set_(hashtab *h, SEXP key, R_xlen_t value) {
   }
 }
 
-void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
+static R_INLINE struct hash_tab *hash_rehash(const struct hash_tab *h) {
+  if (h->size > SIZE_MAX / 2) return NULL; // #nocov
+
+  size_t new_size = h->size * 2;
+  struct hash_tab *new_h = hash_create_(new_size, default_load_factor);
+  if (!new_h) return NULL;
+
+  new_h->public = h->public;
+
+  for (size_t i = 0; i < h->size; ++i) {
+    if (h->table[i].key)
+      (void)hash_set_(new_h, h->table[i].key, h->table[i].value);
+  }
+
+  return new_h;
+}
+
+void hash_set(hashtab *self, SEXP key, R_xlen_t value) {
+  struct hash_tab *h = (struct hash_tab *)self;
   if (!hash_set_(h, key, value)) {
-    *h = *hash_rehash(h);
+    struct hash_tab *new_h = hash_rehash(h);
+    if (!new_h) internal_error( // # nocov
+      __func__, "hash table full at n_full=%zu and failed to rehash", h->size
+    );
+    // overwrite the existing table, keeping the external pointer
+    free(h->table);
+    *h = *new_h;
+    free(new_h);
     (void)hash_set_(h, key, value); // must succeed on the second try
   }
 }
 
-hashtab *hash_set_shared(hashtab *h, SEXP key, R_xlen_t value) {
+hashtab *hash_set_shared(hashtab *self, SEXP key, R_xlen_t value) {
+  struct hash_tab *h = (struct hash_tab *)self;
   if (!hash_set_(h, key, value)) {
-    h = hash_rehash(h);
+    struct hash_tab * new_h = hash_rehash(h);
+    if (!new_h) return NULL; // # nocov
+    // existing 'h' may still be in use by another thread
+    h->next = new_h;
+    h = new_h;
     (void)hash_set_(h, key, value);
   }
-  return h;
+  return &h->public;
 }
 
-R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
+R_xlen_t hash_lookup(const hashtab *self, SEXP key, R_xlen_t ifnotfound) {
+  const struct hash_tab *h = (const struct hash_tab *)self;
+
   size_t mask = h->size - 1;
   size_t idx = hash_index(key, h->shift);
   while (true) {

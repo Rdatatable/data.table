@@ -75,6 +75,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (!uniq)
       error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
     hashtab * marks = hash_create(upperBoundUniqueNames);
+    PROTECT(marks->prot);
     int nuniq=0;
     // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
@@ -171,6 +172,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     }
     free(uniq); free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
 
+    UNPROTECT(1); // marks
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
     // move it to R's heap so it gets automatically free'd on exit, and on any error between now and the end of rbindlist.
     colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(*colMap));
@@ -357,6 +359,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (factor) {
       char warnStr[1000] = "";
       hashtab * marks = hash_create(xlength(longestLevels));
+      PROTECT(marks->prot);
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       if (orderedFactor) {
@@ -513,6 +516,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
+      UNPROTECT(1); // marks
     } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
