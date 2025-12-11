@@ -15,7 +15,7 @@ struct hash_tab {
 static const double default_load_factor = .75;
 
 static R_INLINE size_t get_next_pow2(size_t n) {
-  if (n <= 1) return 1;
+  if (n <= 2) return 2;
   n--;
   n |= n >> 1;
   n |= n >> 2;

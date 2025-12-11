@@ -356,7 +356,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int ansloc=0;
     if (factor) {
       char warnStr[1000] = "";
-      hashtab * marks = hash_create(1024);
+      hashtab * marks = hash_create(xlength(longestLevels));
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       if (orderedFactor) {
