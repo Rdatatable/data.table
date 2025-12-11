@@ -298,7 +298,8 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
   bool anynotascii=false, anynotutf8=false;
   if (ustr_n!=0) internal_error_with_cleanup(__func__, "ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) internal_error_with_cleanup(__func__, "ustr_maxlen isn't 0 when starting range_str");  // # nocov
-  #pragma omp parallel for num_threads(getDTthreads(n, true)) shared(marks)
+  bool fail = false;
+  #pragma omp parallel for num_threads(getDTthreads(n, true)) shared(marks, fail)
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
     if (s==NA_STRING) {
@@ -317,9 +318,16 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
-      // Under the OpenMP memory model, if the hash table is expanded, we have to explicitly update the pointer.
-      #pragma omp atomic write
-      marks = hash_set_shared(marks, s, -ustr_n); // unique in any order is fine. first-appearance order is achieved later in count_group
+      hashtab *new_marks = hash_set_shared(marks, s, -ustr_n); // unique in any order is fine. first-appearance order is achieved later in count_group
+      if (new_marks != marks) {
+        if (new_marks) {
+          // Under the OpenMP memory model, if the hash table is expanded, we have to explicitly update the pointer.
+          #pragma omp atomic write
+          marks = new_marks;
+        } else { // longjmp() from a non-main thread not allowed
+          fail = true;
+        }
+      }
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
             !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
@@ -330,6 +338,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       }
     }
   }
+  if (fail) internal_error_with_cleanup(__func__, "failed to grow the 'marks' hash table");
   *out_na_count = na_count;
   *out_anynotascii = anynotascii;
   *out_anynotutf8 = anynotutf8;
