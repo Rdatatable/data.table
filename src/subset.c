@@ -297,7 +297,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   }
 
   int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+  SEXP ans = PROTECT(R_allocResizableVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here
 
   // user-defined and superclass attributes get copied as from v1.12.0
   copyMostAttrib(x, ans);
@@ -305,8 +305,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
   // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
 
-  SET_TRUELENGTH(ans, LENGTH(ans));
-  SETLENGTH(ans, LENGTH(cols));
+  R_resizeVector(ans, LENGTH(cols));
   int ansn;
   if (isNull(rows)) {
     ansn = nrow;
@@ -329,9 +328,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
       subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
-  SET_TRUELENGTH(tmp, LENGTH(tmp));
-  SETLENGTH(tmp, LENGTH(cols));
+  SEXP tmp = PROTECT(R_allocResizableVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
+  R_resizeVector(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
   subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
 
@@ -345,7 +343,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chin(key, getAttrib(ans,R_NamesSymbol))); nprotect++;
+    SEXP innames = PROTECT(getAttrib(ans,R_NamesSymbol)); nprotect++;
+    SEXP in = PROTECT(chin(key, innames)); nprotect++;
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0 || !orderedSubset) {
