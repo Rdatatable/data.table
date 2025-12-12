@@ -72,7 +72,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!is.character(cols)) {
     stopf("cols must be a character vector of column names")
   }
-  prob.i <- if (is.null(names(fun.list))) {
+  prob.i = if (is.null(names(fun.list))) {
     seq_along(fun.list)
   } else {
     which(!nzchar(names(fun.list)))
@@ -101,7 +101,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("number of elements of fun.list (%d) must be the same as the number of capture groups in pattern (%d)", length(fun.list), ncol(start))
     }
     end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
-    measure.vec <- cols[measure.vec.i]
+    measure.vec = cols[measure.vec.i]
     names.mat = matrix(measure.vec, nrow(start), ncol(start))
     substr(names.mat, start, end)
   } else { #pattern not specified, so split using sep.
@@ -182,13 +182,17 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stopf("'data' must be a data.table")
-  if (missing(id.vars)) id.vars=NULL
-  if (missing(measure.vars)) measure.vars = NULL
-  measure.sub = substitute(measure.vars)
-  if (is.call(measure.sub)) {
-    eval.result = eval_with_cols(measure.sub, names(data))
-    if (!is.null(eval.result)) {
-      measure.vars = eval.result
+  for(type.vars in c("id.vars","measure.vars")){
+    sub.lang <- substitute({
+      if (missing(VAR)) VAR=NULL
+      substitute(VAR)
+    }, list(VAR=as.symbol(type.vars)))
+    sub.result = eval(sub.lang)
+    if (is.call(sub.result)) {
+      eval.result = eval_with_cols(sub.result, names(data))
+      if (!is.null(eval.result)) {
+        assign(type.vars, eval.result)
+      }
     }
   }
   if (is.list(measure.vars)) {

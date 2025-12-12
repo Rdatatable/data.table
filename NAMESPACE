@@ -54,13 +54,23 @@ S3method(cube, data.table)
 S3method(rollup, data.table)
 export(frollmean)
 export(frollsum)
+export(frollmax)
+export(frollmin)
+export(frollprod)
+export(frollmedian)
+export(frollvar)
+export(frollsd)
 export(frollapply)
+export(frolladapt)
 export(nafill)
 export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
+export(mergelist, setmergelist)
+export(cbindlist, setcbindlist)
 export(substitute2)
 #export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
+export(fctr)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
@@ -150,8 +160,9 @@ if (getRversion() >= "3.6.0") {
 
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
-export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year,yearmon,yearqtr)
+export(second,minute,hour,yday,wday,mday,week,isoweek,isoyear,month,quarter,year,yearmon,yearqtr)
 
+if (getRversion() >= "4.3.0") S3method(chooseOpsMethod, IDate)
 S3method("[", ITime)
 S3method("+", IDate)
 S3method("-", IDate)
@@ -206,3 +217,8 @@ S3method(format_list_item, data.frame)
 
 export(fdroplevels, setdroplevels)
 S3method(droplevels, data.table)
+export(frev)
+export(.selfref.ok)
+
+# sort_by added in R 4.4.0, #6662, https://stat.ethz.ch/pipermail/r-announce/2024/000701.html
+if (getRversion() >= "4.4.0") S3method(sort_by, data.table)  

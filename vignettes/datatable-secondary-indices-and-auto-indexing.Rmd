@@ -9,9 +9,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-secondary-indices-and-auto-indexing.html)
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -24,7 +24,11 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html), [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html), and [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignettes first.
+This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the following vignettes first:
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) 
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
 
 ***
 
@@ -61,6 +65,26 @@ Secondary indices are similar to `keys` in *data.table*, except for two major di
 * It *doesn't* physically reorder the entire data.table in RAM. Instead, it only computes the order for the set of columns provided and stores that *order vector* in an additional attribute called `index`.
 
 * There can be more than one secondary index for a data.table (as we will see below).
+
+#### Keyed vs. Indexed Subsetting
+
+While both **keys** and **indices** enable fast binary search subsetting, they differ significantly in usage:
+
+**Keyed subsetting** (implicit column matching)
+
+```{r keyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setkey(DT, a)                # Set key, reordering DT
+DT[.(TRUE)]                  # 'on' is optional; if omitted, the key is used
+```
+
+**Indexed subsetting** (explicit column specification)
+
+```{r unkeyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setindex(DT, a)              # Set index only (no reorder)
+DT[.(TRUE), on = "a"]        # 'on' is required
+```
 
 ### b) Set and get secondary indices
 
@@ -190,6 +214,14 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 * `on` argument accepts a character vector of column names corresponding to the order provided to `i-argument`.
 
 * Since the time to compute the secondary index is quite small, we don't have to use `setindex()`, unless, once again, the task involves repeated subsetting on the same column.
+
+* For clarity/readability, it might help to name the inputs in `i`, e.g.,
+
+```{r}
+flights[.(origin = "JFK", dest = "LAX"), on = c("origin", "dest")]
+```
+
+This makes it clear which entries in `j` correspond to which element of `on`.
 
 ### b) Select in `j`
 

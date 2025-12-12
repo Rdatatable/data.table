@@ -1,0 +1,354 @@
+require(methods)
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  froll = data.table:::froll
+}
+
+exact_NaN = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
+if (!exact_NaN) {
+  cat("\n**** Skipping 7 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
+  # for Matt when he runs valgrind it is 53, but 64 when running regular R
+  # froll.c uses long double and appears to require full long double accuracy in the algo='exact'
+}
+
+
+## batch validation
+set.seed(108)
+makeNA = function(x, ratio=0.1, nf=FALSE) {
+  n = as.integer(length(x) * ratio)
+  id = sample(length(x), n)
+  if (!nf) {
+    x[id] = NA
+  } else {
+    x[id[1:(n/4)]] = NA
+    x[id[(n/4+1):(n/2)]] = NaN
+    x[id[(n/2+1):(3*n/4)]] = -Inf
+    x[id[(3*n/4+1):n]] = +Inf
+  }
+  x
+}
+## against base to verify exactness of non-finite values, not handled in zoo
+rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=FALSE) {
+  ans = rep(fill, nx<-length(x))
+  f = match.fun(FUN)
+  if (nf.rm) x[is.infinite(x)] = NA_real_
+  for (i in seq_along(x)) {
+    ans[i] = if (n==0)
+      f(x[integer()], na.rm=na.rm)
+    else if (i >= n)
+      f(x[(i-n+1L):i], na.rm=na.rm)
+    else if (partial)
+      f(x[max((i-n+1), 1L):i], na.rm=na.rm)
+    else
+      as.double(fill)
+  }
+  ans
+}
+base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
+  num.step = 0.0001
+  for (fun in funs) {
+    for (na.rm in c(FALSE, TRUE)) {
+      for (fill in c(NA_real_, 0)) {
+        for (partial in c(FALSE,TRUE)) {
+          for (has.nf in c(NA,TRUE,FALSE)) {
+            if (identical(has.nf, FALSE)) {
+              if (na.rm)
+                next ## errors "not make sense"
+              if (any(!is.finite(x)))
+                next ## do not test warnings (mean, sum) or incorrect expect results (max)
+            }
+            for (algo in algos) {
+              num <<- num + num.step
+              eval(substitute( # so we can have values displayed in output/log rather than variables
+                test(.num, ignore.warning="no non-missing arguments",
+                     rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, partial=.partial),
+                     froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
+                list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
+              ))
+            }
+          }
+          num <<- num + num.step
+          eval(substitute( # so we can have values displayed in output/log rather than variables
+            test(.num, ignore.warning="no non-missing arguments",
+                 frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, partial=.partial),
+                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, partial=.partial)),
+            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .partial=partial)
+          ))
+        }
+      }
+    }
+  }
+}
+num = 7000.0
+x = rnorm(1e3); n = 50
+base_compare(x, n)
+x = rnorm(1e3+1); n = 50 ## uneven len
+base_compare(x, n)
+x = rnorm(1e3); n = 51 ## uneven window
+base_compare(x, n)
+x = rnorm(1e3+1); n = 51
+base_compare(x, n)
+x = sort(rnorm(1e3)); n = 50 ## inc
+base_compare(x, n)
+x = sort(rnorm(1e3+1)); n = 50
+base_compare(x, n)
+x = sort(rnorm(1e3)); n = 51
+base_compare(x, n)
+x = sort(rnorm(1e3+1)); n = 51
+base_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = 50 ## desc
+base_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = 50
+base_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = 51
+base_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = 51
+base_compare(x, n)
+x = rep(rnorm(1), 1e3); n = 50 ## const
+base_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = 50
+base_compare(x, n)
+x = rep(rnorm(1), 1e3); n = 51
+base_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = 51
+base_compare(x, n)
+num = 7100.0
+## random NA non-finite
+x = makeNA(rnorm(1e3), nf=TRUE); n = 50
+base_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = 50
+base_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = 51
+base_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = 51
+base_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = 0
+base_compare(x, n)
+
+#### against zoo
+if (requireNamespace("zoo", quietly=TRUE)) {
+  drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
+  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
+    num.step = 0.0001
+    #### fun, align, na.rm, fill, algo, partial
+    for (fun in funs) {
+      for (align in c("right","center","left")) {
+        for (na.rm in c(FALSE, TRUE)) {
+          for (fill in c(NA_real_, 0)) {
+            for (partial in c(FALSE,TRUE)) {
+              if (partial && align=="center")
+                next ## not implemented
+              for (has.nf in c(NA,TRUE,FALSE)) {
+                if (identical(has.nf, FALSE)) {
+                  if (na.rm)
+                    next ## errors "not make sense"
+                  if (any(!is.finite(x)))
+                    next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min, median)
+                }
+                for (algo in algos) {
+                  num <<- num + num.step
+                  eval(substitute( # so we can have values displayed in output/log rather than variables
+                    test(.num, ignore.warning="no non-missing arguments",
+                         drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
+                         froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
+                    list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
+                  ))
+                }
+              }
+              num <<- num + num.step
+              eval(substitute( # so we can have values displayed in output/log rather than variables
+                test(.num, ignore.warning="no non-missing arguments",
+                     frollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
+                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, partial=.partial)),
+                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .partial=partial)
+              ))
+            }
+          }
+        }
+      }
+    }
+  }
+  num = 7200.0
+  ## no NA
+  x = rnorm(1e3); n = 50 # x even, n even
+  zoo_compare(x, n)
+  x = rnorm(1e3+1); n = 50 # x odd, n even
+  zoo_compare(x, n)
+  x = rnorm(1e3); n = 51 # x even, n odd
+  zoo_compare(x, n)
+  x = rnorm(1e3+1); n = 51 # x odd, n odd
+  zoo_compare(x, n)
+  ## leading and trailing NAs
+  x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = 50
+  zoo_compare(x, n)
+  x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = 50
+  zoo_compare(x, n)
+  x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = 51
+  zoo_compare(x, n)
+  x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = 51
+  zoo_compare(x, n)
+  ## random NA
+  x = makeNA(rnorm(1e3)); n = 50
+  zoo_compare(x, n)
+  x = makeNA(rnorm(1e3+1)); n = 50
+  zoo_compare(x, n)
+  x = makeNA(rnorm(1e3)); n = 51
+  zoo_compare(x, n)
+  x = makeNA(rnorm(1e3+1)); n = 51
+  zoo_compare(x, n)
+}
+#### adaptive moving average compare
+arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf.rm=FALSE, partial=FALSE) {
+  # adaptive moving average in R
+  stopifnot((nx<-length(x))==length(n))
+  align = match.arg(align)
+  ans = rep(fill, nx)
+  if (nf.rm) x[is.infinite(x)] = NA_real_
+  f = match.fun(FUN)
+  if (align=="right") {
+    for (i in seq_along(x)) {
+      if (n[i] == 0)
+        ans[i] = f(x[integer()], na.rm=na.rm)
+      else if (i >= n[i])
+        ans[i] = f(x[(i-n[i]+1L):i], na.rm=na.rm)
+      else if (partial)
+        ans[i] = f(x[1L:i], na.rm=na.rm)
+    }
+  } else {
+    for (i in seq_along(x)) {
+      if (n[i] == 0)
+        ans[i] = f(x[integer()], na.rm=na.rm)
+      else if (i <= nx-n[i]+1)
+        ans[i] = f(x[i:(i+n[i]-1L)], na.rm=na.rm)
+      else if (partial)
+        ans[i] = f(x[i:length(x)], na.rm=na.rm)
+    }
+  }
+  ans
+}
+afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","var","sd"), algos=c("fast","exact")) {
+  num.step = 0.0001
+  #### fun, align, na.rm, fill, algo
+  for (fun in funs) {
+    for (align in c("right","left")) {
+      for (na.rm in c(FALSE, TRUE)) {
+        for (fill in c(NA_real_, 0)) {
+          for (partial in c(FALSE, TRUE)) {
+            for (has.nf in c(NA, TRUE, FALSE)) {
+              if (identical(has.nf, FALSE)) {
+                if (na.rm) {
+                  next
+                } ## errors "not make sense"
+                if (any(!is.finite(x))) {
+                  next
+                } ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min, median)
+              }
+              for (algo in algos) {
+                num <<- num + num.step
+                eval(substitute(
+                  test(.num,
+                    ignore.warning = "no non-missing arguments",
+                    arollfun(.fun, x, n, fill = .fill, na.rm = .na.rm, align = .align, partial=.partial),
+                    froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf, partial=.partial)
+                  ),
+                  list(.num = num, .fun = fun, .fill = fill, .na.rm = na.rm, .algo = algo, .align = align, .partial=partial, .has.nf = has.nf)
+                ))
+              }
+            }
+          }
+          num <<- num + num.step
+          eval(substitute(
+            test(.num, ignore.warning="no non-missing arguments",
+              frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align),
+              froll(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align)),
+            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .align=align)
+          ))
+        }
+      }
+    }
+  }
+}
+num = 7300.0
+x = rnorm(1e3); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(50, length(x), TRUE) ## uneven len
+afun_compare(x, n)
+x = rnorm(1e3); n = sample(51, length(x), TRUE) ## uneven window
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = sort(rnorm(1e3)); n = sample(50, length(x), TRUE) ## inc
+afun_compare(x, n)
+x = sort(rnorm(1e3+1)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = sort(rnorm(1e3)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = sort(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = sample(50, length(x), TRUE) ## desc
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3))); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rev(sort(rnorm(1e3+1))); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3); n = sample(50, length(x), TRUE) ## const
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = rep(rnorm(1), 1e3+1); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+num = 7400.0
+#### no NA
+x = rnorm(1e3); n = sample(50, length(x), TRUE) # x even, n even
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(50, length(x), TRUE) # x odd, n even
+afun_compare(x, n)
+x = rnorm(1e3); n = sample(51, length(x), TRUE) # x even, n odd
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(51, length(x), TRUE) # x odd, n odd
+afun_compare(x, n)
+x = rnorm(1e3); n = sample(0:49, length(x), TRUE) # x even, n even
+afun_compare(x, n)
+#### leading and trailing NAs
+x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(0:49, length(x), TRUE)
+afun_compare(x, n)
+#### random NA
+x = makeNA(rnorm(1e3)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3)); n = sample(0:49, length(x), TRUE)
+afun_compare(x, n)
+#### random NA non-finites
+x = makeNA(rnorm(1e3), nf=TRUE); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = sample(0:49, length(x), TRUE)
+afun_compare(x, n)
+rm(num)

@@ -4,7 +4,7 @@ rollup = function(x, ...) {
 rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
   if (!is.character(by))
     stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
@@ -13,7 +13,7 @@ rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
   jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label)
+  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label, enclos = parent.frame())
 }
 
 cube = function(x, ...) {
@@ -22,7 +22,7 @@ cube = function(x, ...) {
 cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
   if (!is.character(by))
     stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
@@ -35,13 +35,13 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
   # redirect to workhorse function
   jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label)
+  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label, enclos = parent.frame())
 }
 
 groupingsets = function(x, ...) {
   UseMethod("groupingsets")
 }
-groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, ...) {
+groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, enclos = parent.frame(), ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stopf("Argument 'x' must be a data.table object")
@@ -112,7 +112,11 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
   if (length(names(by))) by = unname(by)
   # 0 rows template data.table to keep colorder and type
-  empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
+  # inline all arguments that might clash with enclosing environment
+  pcall = substitute(x[0L, jj, by], list(x = x, jj = jj, by = by))
+  if (length(.SDcols)) pcall$.SDcols = .SDcols
+  # suppress e.g. the min(double()) warning, #6964
+  empty = suppressWarnings(eval(pcall, list(.datatable.aware = TRUE), enclos))
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stopf("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
@@ -129,13 +133,13 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
       by.vars.not.in.label = setdiff(by, names(label))
       by.vars.not.in.label.class1 = classes1(x, use.names=TRUE)[by.vars.not.in.label]
       labels.by.vars.not.in.label = label[by.vars.not.in.label.class1[by.vars.not.in.label.class1 %in% label.names.not.in.by]]
-      names(labels.by.vars.not.in.label) <- by.vars.not.in.label[by.vars.not.in.label.class1 %in% label.names.not.in.by]
+      names(labels.by.vars.not.in.label) = by.vars.not.in.label[by.vars.not.in.label.class1 %in% label.names.not.in.by]
       label.expanded = c(label[label.names.in.by], labels.by.vars.not.in.label)
       label.expanded = label.expanded[intersect(by, names(label.expanded))] # reorder
     } else {
       by.vars.matching.scalar.class1 = by[classes1(x, use.names=TRUE)[by] == class1(label)]
       label.expanded = as.list(rep(label, length(by.vars.matching.scalar.class1)))
-      names(label.expanded) <- by.vars.matching.scalar.class1
+      names(label.expanded) = by.vars.matching.scalar.class1
     }
     label.use = label.expanded[intersect(total.vars, names(label.expanded))]
     if (any(idx <- vapply_1b(names(label.expanded), function(u) label.expanded[[u]] %in% x[[u]]))) {
@@ -150,8 +154,12 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     stopf("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
+  # inline all arguments that might clash with enclosing environment
+  pcall = substitute(x[, jj], list(x = x, jj = jj))
+  if (length(.SDcols)) pcall$.SDcols = .SDcols
   aggregate.set = function(by.set) {
-    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
+    pcall$by = by.set
+    r = eval(pcall, list(.datatable.aware = TRUE), enclos)
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms

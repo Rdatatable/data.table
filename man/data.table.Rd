@@ -117,9 +117,11 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use \code{keyby=} routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
 
-    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to \code{cols} variable parent scope and not from your dataset.
+    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In the case of overlapping variable names inside \code{x} and in parent scope, you can use the double dot prefix \code{..cols} to explicitly refer to the \code{cols} variable in parent scope and not from \code{x}.
 
-        When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
+        When \code{j} is a character vector of column names, a numeric vector of column positions to select, or of the form \code{startcol:endcol}, the value returned is always a \code{data.table}.
+
+        New code should rarely use this argument, which was originally needed for similarity to data.frame. For example, to select columns from a character vector \code{cols}, in data.frame we do \code{x[, cols]}, which has several equivalents in data.table: \code{x[, .SD, .SDcols=cols]}, \code{x[, ..cols]}, \code{x[, cols, env = list(cols = I(cols))]}, or \code{x[, cols, with=FALSE]}.}
 
     \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. }
 
@@ -174,7 +176,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
             \item For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.
             \item From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.
         }
-        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
+        Note that providing \code{on} is \emph{required} for \code{X[Y]} joins when \code{X} is unkeyed. See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 
   \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
@@ -298,7 +300,9 @@ DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
 # fast ad hoc row subsets (subsets as joins)
 DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
+                               #   NB: requires DT to be keyed!
 DT["a", on=.(x)]               # same, for convenience, no need to quote every column
+                               #   NB: works regardless of whether or not DT is keyed!
 DT[.("a"), on="x"]             # same
 DT[x=="a"]                     # same, single "==" internally optimised to use binary search (fast)
 DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
@@ -417,6 +421,10 @@ DT[, list(MySum=sum(v),
           MyMin=min(v),
           MyMax=max(v)),
     by=.(x, y\%\%2)]                    # by 2 expressions
+
+# programmatic query with env=
+DT[, .(funvar = fun(var)), by=grp_var,
+   env = list(fun="sum", var="a", funvar="sum_a_by_x", grp_var="x")]
 
 DT[, .(a = .(a), b = .(b)), by=x]     # list columns
 DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations

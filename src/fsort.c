@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-#define INSERT_THRESH 200  // TODO: expose via api and test
+static const int INSERT_THRESH = 200;  // TODO: expose via api and test
 
 static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, double => ull
   if (n<2) return;
@@ -43,17 +43,16 @@ static void dradix_r(  // single-threaded recursive worker
     return;
   }
 
-  uint64_t cumSum=0;
-  for (uint64_t i=0; cumSum<n; ++i) { // cumSum<n better than i<width as may return early
-    uint64_t tmp;
-    if ((tmp=counts[i])) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
+  for (uint64_t i = 0, cumSum = 0; cumSum < n; i++) { // cumSum<n better than i<width as may return early
+    uint64_t tmp = counts[i];
+    if (tmp) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
       counts[i] = cumSum;
       cumSum += tmp;
     }
   } // leaves cumSum==n && 0<i && i<=width
 
   tmp=in;
-  for (uint64_t i=0; i<n; ++i) {  // go forwards not backwards to give cpu pipeline better chance
+  for (uint64_t i = 0; i<n; ++i) {  // go forwards not backwards to give cpu pipeline better chance
     int thisx = (*(uint64_t *)tmp - minULL) >> fromBit & mask;
     working[ counts[thisx]++ ] = *tmp;
     tmp++;
@@ -71,8 +70,7 @@ static void dradix_r(  // single-threaded recursive worker
     return;
   }
 
-  cumSum=0;
-  for (int i=0; cumSum<n; ++i) {   // again, cumSum<n better than i<width as it can return early
+  for (uint64_t i = 0, cumSum = 0; cumSum < n; i++) {   // again, cumSum<n better than i<width as it can return early
     if (counts[i] == 0) continue;
     uint64_t thisN = counts[i] - cumSum;  // undo cummulate; i.e. diff
     if (thisN <= INSERT_THRESH) {
@@ -93,7 +91,7 @@ int qsort_cmp(const void *a, const void *b) {
   uint64_t x = qsort_data[*(int *)a];
   uint64_t y = qsort_data[*(int *)b];
   // return x-y;  would like this, but this is long and the cast to int return may not preserve sign
-  // We have long vectors in mind (1e10(74GB), 1e11(740GB)) where extreme skew may feasibly mean the largest count
+  // We have long vectors in mind (1e10(74GiB), 1e11(740GiB)) where extreme skew may feasibly mean the largest count
   // is greater than 2^32. The first split is (currently) 16 bits so should be very rare but to be safe keep 64bit counts.
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
@@ -140,8 +138,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // and ii) for small vectors with just one batch
 
   t[1] = wallclock();
-  double *mins = (double *)malloc(nBatch * sizeof(double));
-  double *maxs = (double *)malloc(nBatch * sizeof(double));
+  double *mins = malloc(sizeof(*mins) * nBatch);
+  double *maxs = malloc(sizeof(*maxs) * nBatch);
   if (!mins || !maxs) {
     free(mins); free(maxs); // # nocov
     error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double))); // # nocov
@@ -189,13 +187,13 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (verbose)
     Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n", maxBit, MSBNbits, shift, MSBsize); // # notranslate
 
-  uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
-  memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));
+  uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(*counts));
+  memset(counts, 0, nBatch*MSBsize*sizeof(*counts));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
 
-  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
-                       (int)(nBatch*MSBsize*sizeof(uint64_t)/(1024*1024)),
-                       (int)(nBatch*MSBsize*sizeof(uint64_t)/(4*1024*nBatch)),
+  if (verbose) Rprintf(_("counts is %dMiB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
+                       (int)(nBatch*MSBsize*sizeof(*counts)/(1024*1024)),
+                       (int)(nBatch*MSBsize*sizeof(*counts)/(4*1024*nBatch)),
                        nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
@@ -233,7 +231,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       // This assignment to ans is not random access as it may seem, but cache efficient by
       // design since target pages are written to contiguously. MSBsize * 4k < cache.
       // TODO: therefore 16 bit MSB seems too big for this step. Time this step and reduce 16 a lot.
-      //       20MB cache / nth / 4k => MSBsize=160
+      //       20MiB cache / nth / 4k => MSBsize=160
       source++;
     }
   }
@@ -248,8 +246,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     uint64_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
     if (msbCounts[MSBsize-1] != xlength(x)) internal_error(__func__, "counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
-    uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(uint64_t));
-    int *order = (int *)R_alloc(MSBsize, sizeof(int));
+    uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(*msbFrom));
+    int *order = (int *)R_alloc(MSBsize, sizeof(*order));
     uint64_t cumSum = 0;
     for (int i=0; i<MSBsize; ++i) {
       msbFrom[i] = cumSum;
@@ -273,7 +271,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     {
       // each thread has its own small stack of counts
       // don't use VLAs here: perhaps too big for stack yes but more that VLAs apparently fail with schedule(dynamic)
-      uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(uint64_t));
+      uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(*mycounts));
       if (!mycounts) {
         failed=true; alloc_fail=true;  // # nocov
       }
@@ -300,7 +298,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
         uint64_t thisN = msbCounts[order[msb]];
 
         if (myworking==NULL) {
-          myworking = malloc(thisN * sizeof(double));
+          myworking = malloc(sizeof(*myworking) * thisN);
           if (!myworking) {
             failed=true; alloc_fail=true; continue;  // # nocov
           }
@@ -347,4 +345,3 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   UNPROTECT(nprotect);
   return(ansVec);
 }
-

@@ -123,6 +123,10 @@ typedef struct freadMainArgs
   // non-ASCII, or different open/closing quotation marks are not supported.
   char quote;
 
+  // Character that marks the beginning of a comment. When '\0', comment
+  // parsing is disabled.
+  char comment;
+
   // Is there a header at the beginning of the file?
   // 0 = no, 1 = yes, -128 = autodetect
   int8_t header;
@@ -167,6 +171,9 @@ typedef struct freadMainArgs
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
 
+  // Integer64 remap
+  colType readInt64As;
+
   char _padding[1];
 
   // Any additional implementation-specific parameters.
@@ -182,7 +189,7 @@ typedef struct ThreadLocalFreadParsingContext
 {
   // Pointer that serves as a starting point for all offsets within the `lenOff`
   // structs.
-  const char *__restrict__ anchor;
+  const char *restrict anchor;
 
   // Output buffers for values with different alignment requirements. For
   // example all `lenOff` columns, `double` columns and `int64` columns will be
@@ -190,9 +197,9 @@ typedef struct ThreadLocalFreadParsingContext
   // be stored in memory buffer `buff1`.
   // Within each buffer the data is stored in row-major order, i.e. in the same
   // order as in the original CSV file.
-  void *__restrict__ buff8;
-  void *__restrict__ buff4;
-  void *__restrict__ buff1;
+  void *restrict buff8;
+  void *restrict buff4;
+  void *restrict buff1;
 
   // Size (in bytes) for a single row of data within the buffers `buff8`,
   // `buff4` and `buff1` correspondingly.

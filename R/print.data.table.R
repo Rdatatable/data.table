@@ -19,6 +19,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     stopf("Valid options for col.names are 'auto', 'top', and 'none'")
   if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
     stopf("Valid options for trunc.cols are TRUE and FALSE")
+  stopifnot(isTRUEorFALSE(class))
   if (col.names == "none" && class)
     warningf("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
@@ -52,11 +53,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     ))
   }
   if (any(dim(x)==0L)) {
-    class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
+    x_class = if (is.data.table(x)) "data.table" else "data.frame"  # a data.frame could be passed to print.data.table() directly, #3363
     if (all(dim(x)==0L)) {
-      catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
+      catf("Null %s (0 rows and 0 cols)\n", x_class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
-      catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
+      catf("Empty %s (%d rows and %d cols)", x_class, NROW(x), NCOL(x))
       if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
       cat("\n") # notranslate
     }
@@ -66,8 +67,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (is.null(indices(x))) {
       show.indices = FALSE
     } else {
-      index_dt <- as.data.table(attributes(attr(x, 'index')))
-      print_names <- paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
+      index_dt = as.data.table(attributes(attr(x, 'index')))
+      print_names = paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
       setnames(index_dt, print_names)
     }
   }
@@ -86,6 +87,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   require_bit64_if_needed(x)
+  classes = classes1(toprint)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
@@ -93,20 +95,20 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (is.null(names(x)) || !any(nzchar(names(x), keepNA=TRUE)))
     # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
-  if (isTRUE(class) && col.names != "none") {
+  if (class && col.names != "none") {
     #Matching table for most common types & their abbreviations
     class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
       character = "<char>", Date = "<Date>", complex = "<cplx>",
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = classes1(x)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
+  } else {
+    abbs = ""
   }
-  if (isFALSE(class) || (isTRUE(class) && col.names == "none")) abbs = ""
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
@@ -121,7 +123,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
-    trunc.cols <- length(not_printed) > 0L
+    trunc.cols = length(not_printed) > 0L
   }
   print_default = function(x) {
     if (col.names != "none") cut_colnames = identity
@@ -131,18 +133,24 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   if (printdots) {
     if (isFALSE(row.names)) {
-      toprint = rbind(head(toprint, topn + isTRUE(class)), "---", tail(toprint, topn)) # 4083
+      toprint = rbind(head(toprint, topn + class), "---", tail(toprint, topn)) # 4083
     } else {
-      toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
+      toprint = rbind(head(toprint, topn + class), "---"="", tail(toprint, topn))
     }
     rownames(toprint) = format(rownames(toprint), justify="right")
     print_default(toprint)
     return(invisible(x))
   }
+  if (col.names == "none")
+    colnames(toprint) = rep.int("", ncol(toprint))
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint = rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
+    toprint = rbind(
+      toprint,
+      matrix(if (quote) old else colnames(toprint), nrow=1L), # see #97
+      if (class) matrix(if (trunc.cols) abbs[cols_to_print] else abbs, nrow=1L) # #6902
+    )
   print_default(toprint)
   invisible(x)
 }
@@ -165,14 +173,14 @@ shouldPrint = function(x) {
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 # be sure to remove colnames from any row where they exist, #4270
-cut_colnames = function(x) writeLines(grep("^\\s*(?:[0-9]+:|---)", capture.output(x), value=TRUE))
+cut_colnames = function(x) writeLines(grepv("^\\s*(?:[0-9]+:|---)", capture.output(x)))
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
   dims = if (isS4(x)) {
     length(slotNames(x))
   } else {
-    if (is.null(dim(x))) length(x) else dim(x)
+    dim(x) %||% length(x)
   }
   paste0("[", paste(dims,collapse="x"), "]")
 }
@@ -193,8 +201,6 @@ has_format_method = function(x) {
 format_col.default = function(x, ...) {
   if (!is.null(dim(x)))
     "<multi-column>"
-  else if (has_format_method(x) && length(formatted<-format(x, ...))==length(x))
-    formatted  #PR5224 motivated by package sf where column class is c("sfc_MULTIPOLYGON","sfc") and sf:::format.sfc exists
   else if (is.list(x))
     vapply_1c(x, format_list_item, ...)
   else
@@ -221,7 +227,7 @@ format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
     "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) sprintf("...[%d]", length(x))), collapse=",") # fix for #5435, #37, and #605 - format has to be added here...
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
     # the column's class does not have a format method (otherwise it would have been used by format_col and this
     # format_list_item would not be reached) but this particular list item does have a format method so use it
@@ -247,7 +253,6 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_chars = nchar(x, 'char')
   is_full_width = nchar_width > nchar_chars
   idx = !is.na(x) & pmin(nchar_width, nchar_chars) > trunc.char
-  if (!any(idx)) return(x) # strtrim() errors for width=integer() on R 3.3.0
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }
@@ -289,7 +294,7 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
 }
 
 # Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
-knit_print.data.table <- function(x, ...) {
+knit_print.data.table = function(x, ...) {
   if (!shouldPrint(x)) return(invisible(x))
   NextMethod()
 }
