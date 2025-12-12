@@ -794,13 +794,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         source = newSource;
         for (int k=0; k<nTargetLevels; ++k) hash_set(marks, targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
-          // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-          SEXP *temp = malloc(sizeof(*temp) * nAdd);
-          if (!temp) {
-            // # nocov start
-            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
-            // # nocov end
-          }
+          void *vmax = vmaxget();
+          SEXP *temp = (SEXP *)R_alloc(nAdd, sizeof(*temp));
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
             SEXP s = sourceLevelsD[k];
             int tl = hash_lookup(marks, s, 0);
@@ -814,7 +809,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int k=0; k<nAdd; ++k) {
             SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
           }
-          free(temp);
+          vmaxset(vmax);
         } else {
           // all source levels were already in target levels, but not with the same integers; we're done
         }
