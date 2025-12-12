@@ -71,9 +71,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missings after this branch
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
-    SEXP *uniq = malloc(sizeof(*uniq) * upperBoundUniqueNames);  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
-    if (!uniq)
-      error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
     hashtab * marks = hash_create(upperBoundUniqueNames);
     PROTECT(marks->prot);
     int nuniq=0;
@@ -88,18 +85,17 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
         if (hash_lookup(marks, s, 0)<0) continue;  // seen this name before
-        uniq[nuniq++] = s;
+        nuniq++;
         hash_set(marks, s,-nuniq);
       }
     }
-    if (nuniq>0) uniq = realloc(uniq, sizeof(SEXP)*nuniq);  // shrink to only what we need to release the spare
 
     // now count the dups (if any) and how they're distributed across the items
     int *counts = calloc(nuniq, sizeof(*counts)); // counts of names for each colnames
     int *maxdup = calloc(nuniq, sizeof(*maxdup)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
       // # nocov start
-      free(uniq); free(counts); free(maxdup);
+      free(counts); free(maxdup);
       error(_("Failed to allocate nuniq=%d items working memory in rbindlist.c"), nuniq);
       // # nocov end
     }
@@ -132,7 +128,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int *dupLink = malloc(sizeof(*dupLink) * ncol); // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
     if (!colMapRaw || !uniqMap || !dupLink) {
       // # nocov start
-      free(uniq); free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
+      free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
       error(_("Failed to allocate ncol=%d items working memory in rbindlist.c"), ncol);
       // # nocov end
     }
@@ -170,7 +166,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
       }
     }
-    free(uniq); free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
+    free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
 
     UNPROTECT(1); // marks
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
