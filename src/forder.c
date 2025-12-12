@@ -348,12 +348,11 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     return;
   }
   if (anynotutf8) {
+    void *vmax = vmaxget();
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
-    SEXP *ustr3 = malloc(sizeof(*ustr3) * ustr_n);
-    if (!ustr3)
-      STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(SEXP) * ustr_n);
+    SEXP *ustr3 = (SEXP *)R_alloc(sizeof(*ustr3), ustr_n);
+    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(*ustr3) * ustr_n);
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
@@ -368,18 +367,13 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       hash_set(marks, ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
-    int *tl = malloc(sizeof(*tl) * ustr_n);
-    if (!tl) {
-      free(ustr3); // # nocov
-      STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
-    }
+    int *tl = (int *)R_alloc(sizeof(*tl), ustr_n);
     const SEXP *tt = STRING_PTR_RO(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = hash_lookup(marks, tt[i], 0);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) hash_set(marks, ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
     for (int i=0; i<ustr_n; i++) hash_set(marks, ustr[i], tl[i]); // put back the o into ustr's tl
-    free(tl);
-    free(ustr3);
     UNPROTECT(1);
+    vmaxset(vmax);
     *out_min = 1;
     *out_max = -o;  // could be less than ustr_n if there are duplicates in the utf8s
   } else {
