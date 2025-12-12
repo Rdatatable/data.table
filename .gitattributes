@@ -8,3 +8,16 @@
 #   want to preserve the line endings robustly
 inst/tests/** -text
 inst/tests/*.Rraw text eol=lf linguist-language=R
+# Ensure GitHub  linguist only considers source code files
+#   for language statistics
+docs/** linguist-documentation
+man/** linguist-documentation
+tests/** linguist-vendored
+vignettes/** linguist-vendored
+po/** linguist-vendored
+.github/** linguist-vendored
+.ci/** linguist-vendored
+.dev/** linguist-vendored
+.devcontainer/** linguist-vendored
+.graphics/** linguist-vendored
+.Rproj.user/** linguist-vendored
