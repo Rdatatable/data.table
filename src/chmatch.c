@@ -115,17 +115,14 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
     unsigned int mapsize = tablelen+nuniq; // lto compilation warning #5760 // +nuniq to store a 0 at the end of each group
-    int *counts = calloc(nuniq, sizeof(*counts));
-    int *map =    calloc(mapsize, sizeof(*map));
-    if (!counts || !map) {
-      // # nocov start
-      free(counts); free(map);
-      error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
-      // # nocov end
-    }
+    void *vmax = vmaxget();
+    int *counts = (int *)R_alloc(nuniq, sizeof(*counts));
+    if (nuniq)   memset(counts, 0, sizeof(*counts) * nuniq);
+    int *map    = (int *)R_alloc(mapsize, sizeof(*map));
+    if (mapsize) memset(map,    0, sizeof(*map)    * mapsize);
     for (int i=0; i<tablelen; ++i) counts[-hash_lookup(marks, td[i], 0)-1]++;
     for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
-    for (int i=0; i<tablelen; ++i) map[counts[-hash_lookup(marks, td[i], 0)-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
+    for (int i=0; i<tablelen; ++i) map[counts[-hash_lookup(marks, td[i], 0)-1]++] = i+1;           // 0 is left ending each group thanks to the memset
     for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
     for (int i=0; i<xlen; ++i) {
       int u = hash_lookup(marks, xd[i], 0);
@@ -136,8 +133,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       }
       ansd[i] = nomatch;
     }
-    free(counts);
-    free(map);
+    vmaxset(vmax);
   } else if (chin) {
     #pragma omp parallel for num_threads(getDTthreads(xlen, true))
     for (int i=0; i<xlen; i++) {
