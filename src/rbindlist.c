@@ -375,7 +375,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
           levelsRaw[k] = s;
-          hash_set(marks, s, -k-1);
+          marks = hash_set_shared(marks, s, -k-1);
+          if (!marks) {
+            // # nocov start
+            free(levelsRaw);
+            error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1); // # nocov
+            // # nocov end
+          }
         }
         for (int i=0; i<LENGTH(l); ++i) {
           SEXP li = VECTOR_ELT(l, i);
@@ -445,7 +451,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
               }
               levelsRaw = tt;
             }
-            hash_set(marks,s,-(++nLevel));
+            marks = hash_set_shared(marks,s,-(++nLevel));
+            if (!marks) {
+              // # nocov start
+              free(levelsRaw);
+              error(_("Failed to allocate working memory for %d factor levels of result column %d when reading item %d of item %d"), allocLevel, idcol+j+1, w+1, i+1);
+              // # nocov end
+            }
             levelsRaw[nLevel-1] = s;
           }
           int *targetd = INTEGER(target);
