@@ -678,9 +678,9 @@ SEXP R_duplicateAsResizable_(SEXP x) {
 
 void R_resizeVector_(SEXP x, R_xlen_t newlen) {
   if (!R_isResizable(x))
-    internal_error(__func__, "attempt to resize a non-resizable vector");
+    internal_error(__func__, "attempt to resize a non-resizable vector"); // # nocov
   if (newlen > XTRUELENGTH(x))
-    internal_error(__func__, "newlen=%g exceeds maxlen=%g", (double)newlen, (double)R_maxLength(x));
+    internal_error(__func__, "newlen=%g exceeds maxlen=%g", (double)newlen, (double)R_maxLength(x)); // # nocov
   SETLENGTH(x, newlen);
 }
 #endif
