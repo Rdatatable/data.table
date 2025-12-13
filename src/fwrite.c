@@ -1096,9 +1096,10 @@ void fwriteMain(fwriteMainArgs args)
         if (hasPrinted || ETA >= 2) {
           // # nocov start
           if (verbose && !hasPrinted) DTPRINT("\n"); // # notranslate
+          DTPRINT("\r"); // # notranslate
           DTPRINT(Pl_(nth,
-                  "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
-                  "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                  "Written %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                  "Written %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
                   (100.0 * end) / args.nrow, args.nrow, (int)(now - startTime), nth, maxBuffUsedPC, ETA); // # nocov
           // TODO: use progress() as in fread
           nextTime = now + 1;
