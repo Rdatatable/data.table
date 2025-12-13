@@ -160,6 +160,7 @@ R_CallMethodDef callMethods[] = {
 {"CmemcpyDTadaptive", (DL_FUNC)&memcpyDTadaptive, -1},
 {"CcopyAsGrowable", (DL_FUNC)&copyAsGrowable, -1},
 {"Cfrolladapt", (DL_FUNC)&frolladapt, -1},
+{"Cis_direct_child", (DL_FUNC)&is_direct_child, -1},
 {NULL, NULL, 0}
 };
 
