@@ -1386,14 +1386,14 @@ replace_dot_alias = function(e) {
       # Replaces numerical lhs with respective names_x
       if(is.character(lhs)){
         m = chmatch(lhs, names_x)
-        if(!anyNA(m)){
+        if(!anyNA(m)) {
           # updates by reference to existing columns
           cols = as.integer(m)
-          newnames=NULL
-        }else{
+          newnames = NULL
+        } else {
           # Adding new column(s).
-          newnames=setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x)+seq_len(length(newnames))
+          newnames = setdiff(lhs, names_x)
+          m[is.na(m)] = ncol(x) + seq_along(newnames)
           cols = as.integer(m)
           # ok <- selfrefok above called without verbose -- only activated when
           #   ok=-1 which will trigger setalloccol with verbose in the next
