@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.17.99\n"
-"POT-Creation-Date: 2025-12-13 16:36+0000\n"
+"POT-Creation-Date: 2025-12-13 17:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -150,6 +150,11 @@ msgstr ""
 #: assign.c:316
 #, c-format
 msgid "Assigning to %d row subset of %d rows\n"
+msgstr ""
+
+#: assign.c:326
+#, c-format
+msgid "Added %d new column initialized with all-NA\n"
 msgstr ""
 
 #: assign.c:332
@@ -656,6 +661,10 @@ msgstr ""
 #: bmerge.c:241
 #, c-format
 msgid "bmerge: took %.3fs\n"
+msgstr ""
+
+#: bmerge.c:417
+msgid "mult='error' and multiple matches during merge"
 msgstr ""
 
 #: chmatch.c:5
@@ -1814,6 +1823,11 @@ msgstr ""
 msgid "  Skipped to line %d in the file"
 msgstr ""
 
+#: fread.c:1766
+#, c-format
+msgid "skip=%<PRId64> but the input only has %d line"
+msgstr ""
+
 #: fread.c:1777
 msgid ""
 "Input is either empty, fully whitespace, or skip has been set after the last "
@@ -2880,6 +2894,13 @@ msgstr ""
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
+#: fwrite.c:1100
+#, c-format
+msgid ""
+"\rWritten %.1f%% of %<PRId64> rows in %d secs using %d thread. maxBuffUsed=%d"
+"%%. ETA %d secs.      "
+msgstr ""
+
 #: fwrite.c:1131
 msgid "Failed to write gzip trailer"
 msgstr ""
@@ -2889,6 +2910,16 @@ msgstr ""
 msgid ""
 "zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), "
 "ratio=%.1f%%, crc=%x\n"
+msgstr ""
+
+#: fwrite.c:1154 fwrite.c:1154
+#, c-format
+msgid "Wrote %<PRId64> row in %.3f secs using %d thread. MaxBuffUsed=%d%%\n"
+msgstr ""
+
+#: fwrite.c:1156
+#, c-format
+msgid "Wrote %<PRId64> row in %.3f secs using %d threads. MaxBuffUsed=%d%%\n"
 msgstr ""
 
 #: fwrite.c:1171
@@ -3331,6 +3362,11 @@ msgstr ""
 msgid "fill must be a vector of length 1 or a list of length of x."
 msgstr ""
 
+#: nafill.c:237
+#, c-format
+msgid "%s: parallel processing of %d column took %.3fs\n"
+msgstr ""
+
 #: negate.c:6
 msgid "not logical or integer vector"
 msgstr ""
@@ -3421,6 +3457,13 @@ msgstr ""
 msgid ""
 "Column %d of item %d is length %d inconsistent with column %d which is "
 "length %d. Only length-1 columns are recycled."
+msgstr ""
+
+#: rbindlist.c:61
+#, c-format
+msgid ""
+"Column %d ['%s'] of item %d is length 0. This (and %d other like it) has "
+"been filled with NA (NULL for list columns) to make each item uniform."
 msgstr ""
 
 #: rbindlist.c:66
@@ -3739,6 +3782,11 @@ msgstr ""
 
 #: utils.c:166
 msgid "argument specifying columns received duplicate column(s)"
+msgstr ""
+
+#: utils.c:307
+#, c-format
+msgid "Found and copied %d column with a shared memory address\n"
 msgstr ""
 
 #: utils.c:389
