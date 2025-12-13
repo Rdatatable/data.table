@@ -2897,7 +2897,7 @@ msgstr ""
 #: fwrite.c:1100
 #, c-format
 msgid ""
-"\rWritten %.1f%% of %<PRId64> rows in %d secs using %d thread. maxBuffUsed=%d"
+"Written %.1f%% of %<PRId64> rows in %d secs using %d thread. maxBuffUsed=%d"
 "%%. ETA %d secs.      "
 msgstr ""
 
