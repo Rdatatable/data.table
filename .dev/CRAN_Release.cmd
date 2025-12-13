@@ -3,22 +3,22 @@
 ###############################################
 
 # 1) Update messages for new release
-## (a) Update C template file: src/data.table.pot
-##     ideally, we are including _() wrapping in
-##     new PRs throughout dev cycle, and this step
-##     becomes about tying up loose ends
-## Check the output here for translatable messages
-xgettext -o /dev/stdout ./*.c \
-  --keyword=Rprintf --keyword=error --keyword=warning --keyword=STOP --keyword=DTWARN --keyword=Error --keyword=DTPRINT --keyword=snprintf:3
+dt_custom_translators = list(
+  R = 'catf:fmt|1',
+  # TODO(MichaelChirico/potools#318): restore snprintf:3 here too
+  src = c('STOP:1', 'DTWARN:1', 'DTPRINT:1')
+)
+message_db =
+  potools::get_message_data(custom_translation_functions = dt_custom_translators)
+potools::check_cracked_messages(message_db)
+potools::check_untranslated_cat(message_db)
+potools::check_untranslated_src(message_db)
 
-## (b) Update R template file: src/R-data.table.pot
-##  NB: this relies on R >= 4.0 to remove a bug in update_pkg_po
-Rscript -e "tools::update_pkg_po('.')"
+## (b) Update R template files (po/*.pot)
+potools::po_extract(custom_translation_functions = dt_custom_translators)
 
 # 2) Open a PR with the new templates & contact the translators
-#   * zh_CN: @hongyuanjia
-#   * pt_BR: @rffontenelle
-#   * es: @rikivillalba
+#    using @Rdatatable/<lang>, e.g. @Rdatatable/chinese
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
@@ -94,17 +94,6 @@ grep "PROTECT_PTR" ./src/*.c
 
 # No use of long long, instead use int64_t. TODO
 # grep "long long" ./src/*.c
-
-// No use of llu, lld, zd or zu
-grep -nE "(llu|lld|zd|zu)" src/*.[hc]
-// Comment moved here from fread.c on 19 Nov 2019
-// [Moved from fread.c on 19 Nov 2019] On Windows variables of type `size_t` cannot be printed
-// with "%zu" in the `snprintf()` function. For those variables we used to cast them into
-// `unsigned long long int` before printing, and defined (llu) to make the cast shorter.
-// We're now observing warnings from gcc-8 with -Wformat-extra-args, #4062. So
-// now we're more strict and cast to [u]int64_t and use PRIu64/PRId64 from <inttypes.h>
-// In many cases the format specifier is passed to our own macro (e.g. DTPRINT) or to Rprintf(),
-// error() etc, and even if they don't call sprintf() now, they could in future.
 
 # No tabs in C or R code (sorry, Richard Hendricks)
 grep -P "\t" ./R/*.R
@@ -235,23 +224,23 @@ system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m +
 
 
 ###############################################
-#  R 3.3.0 (stated dependency)
+#  R 3.4.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.3.0.tar.gz
-tar xvf R-3.3.0.tar.gz
-cd R-3.3.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.4.0.tar.gz
+tar xvf R-3.4.0.tar.gz
+cd R-3.4.0
 CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
-alias R330=~/build/R-3.3.0/bin/R
+alias R340=~/build/R-3.4.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R330 CMD INSTALL ./data.table_1.16.99.tar.gz
-R330
+R340 CMD INSTALL ./data.table_1.16.99.tar.gz
+R340
 require(data.table)
 test.data.table(script="*.Rraw")
 
@@ -573,9 +562,9 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  3) dllVersion() at the end of init.c
 # DO NOT push to GitHub's master branch. Prevents even a slim possibility of user getting premature version. 
 # Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
-du -k inst/tests                # 1.5MB before
+du -k inst/tests                # 1.5MiB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
-du -k inst/tests                # 0.75MB after
+du -k inst/tests                # 0.75MiB after
 R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 Rdevel -q -e "packageVersion('xml2')"   # ensure installed
@@ -595,8 +584,7 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # Many thanks!
 # Best, Tyson
 # ------------------------------------------------------------
-# DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
-# DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
+
 # Leave milestone open with a 'release checks' issue open. Keep updating status there.
 # ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 # If it's evening, SLEEP.
@@ -604,17 +592,21 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
 # When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
 
-###### Bump dev for NON-PATCH RELEASE
-# 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
-# 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
-# 2. Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
-# 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
-# 4. Bump minor version in dllVersion() in init.c
-# 5. Bump 3 minor version numbers in Makefile
-# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.16.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
-# 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-# 8. Push to master with this consistent commit message: "1.17.0 on CRAN. Bump to 1.17.99"
-# 9. Take sha from the previous step and run `git tag 1.17.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+###### After submission for NON-PATCH RELEASE
+# 0. Start a new branch `cran-x.y.0` with the code as submitted to CRAN
+#    - Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
+#    - The branch should have one commit with precisely these 4 files being edited
+# 1. Follow up with a commit with this consistent commit message like: "1.17.0 on CRAN. Bump to 1.17.99" to this branch bumping to the next dev version
+#    - Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+#    - Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
+#    - Bump minor version in dllVersion() in init.c
+#    - Bump 3 minor version numbers in Makefile
+#    - Search and replace this .dev/CRAN_Release.cmd to update 1.16.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
+#    - Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 2. Ideally, no PRs are reviewed while a CRAN submission is pending. Any reviews that do happen MUST target this branch, NOT master!
+# 3. Once the submission lands on CRAN, merge this branch WITHOUT SQUASHING!
+# 4. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+# 5. Take SHA from the "...on CRAN. Bump to ..." commit and run `git tag 1.17.0 96c..sha..d77` then `git push origin 1.17.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
 
 ###### Branching policy for PATCH RELEASE

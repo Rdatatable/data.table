@@ -1,28 +1,5 @@
 #include "data.table.h"
 
-static void finalizer(SEXP p)
-{
-  SEXP x;
-  R_len_t n, l, tl;
-  if(!R_ExternalPtrAddr(p)) internal_error(__func__, "didn't receive an ExternalPtr"); // # nocov
-  p = R_ExternalPtrTag(p);
-  if (!isString(p)) internal_error(__func__, "ExternalPtr doesn't see names in tag"); // # nocov
-  l = LENGTH(p);
-  tl = TRUELENGTH(p);
-  if (l<0 || tl<l) internal_error(__func__, "l=%d, tl=%d", l, tl); // # nocov
-  n = tl-l;
-  if (n==0) {
-    // gc's ReleaseLargeFreeVectors() will have reduced R_LargeVallocSize by the correct amount
-    // already, so nothing to do (but almost never the case).
-    return;
-  }
-  x = PROTECT(allocVector(INTSXP, 50));  // 50 so it's big enough to be on LargeVector heap. See NodeClassSize in memory.c:allocVector
-                                         // INTSXP rather than VECSXP so that GC doesn't inspect contents after LENGTH (thanks to Karl Miller, Jul 2015)
-  SETLENGTH(x,50+n*2*sizeof(void *)/4);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated).
-  UNPROTECT(1);
-  return;
-}
-
 void setselfref(SEXP x) {
   if(!INHERITS(x, char_datatable))  return; // #5286
   SEXP p;
@@ -38,7 +15,6 @@ void setselfref(SEXP x) {
       R_NilValue
     ))
   ));
-  R_RegisterCFinalizerEx(p, finalizer, FALSE);
   UNPROTECT(2);
 
 /*
@@ -64,39 +40,8 @@ void setselfref(SEXP x) {
 */
 }
 
-/* There are two reasons the finalizer doesn't restore the LENGTH to TRUELENGTH. i) The finalizer
-happens too late after GC has already released the memory, and ii) copies by base R (e.g.
-[<- in write.table just before test 894) allocate at length LENGTH but copy the TRUELENGTH over.
-If the finalizer sets LENGTH to TRUELENGTH, that's a fail as it wasn't really allocated at
-TRUELENGTH when R did the copy.
-Karl Miller suggested an ENVSXP so that restoring LENGTH in finalizer should work. This is the
-closest I got to getting it to pass all tests :
-
-  SEXP env = PROTECT(allocSExp(ENVSXP));
-  defineVar(SelfRefSymbol, x, env);
-  defineVar(R_NamesSymbol, getAttrib(x, R_NamesSymbol), env);
-  setAttrib(x, SelfRefSymbol, p = R_MakeExternalPtr(
-    R_NilValue,         // for identical() to return TRUE. identical() doesn't look at tag and prot
-    R_NilValue, //getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
-    PROTECT(            // needed when --enable-strict-barrier it seems, iiuc. TO DO: test under that flag and remove if not needed.
-      env               // wrap x in env to avoid an infinite loop in object.size() if prot=x were here
-    )
-  ));
-  R_RegisterCFinalizerEx(p, finalizer, FALSE);
-  UNPROTECT(2);
-
-Then in finalizer:
-  SETLENGTH(names, tl)
-  SETLENGTH(dt, tl)
-
-and that finalizer indeed now happens before the GC releases memory (thanks to the env wrapper).
-
-However, we still have problem (ii) above and it didn't pass tests involving base R copies.
-
-We really need R itself to start setting TRUELENGTH to be the allocated length and then
-for GC to release TRUELENGTH not LENGTH.  Would really tidy this up.
-
-Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
+/*
+  Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
   The problem (for \code{data.table}) with the copy by \code{key<-} (other than
   being slower) is that \R doesn't maintain the over-allocated truelength, but it
   looks as though it has. Adding a column by reference using \code{:=} after a
@@ -126,15 +71,9 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
   names = getAttrib(x, R_NamesSymbol);
-  if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
-    SET_TRUELENGTH(names, LENGTH(names));
-    // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
-    // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
-    SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
@@ -151,7 +90,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // called from alloccol where n is checked carefully, or from shallow() at R level
   // where n is set to truelength (i.e. a shallow copy only with no size change)
   int protecti=0;
-  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
+  SEXP newdt = PROTECT(R_allocResizableVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   SHALLOW_DUPLICATE_ATTRIB(newdt, dt);
 
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
@@ -169,7 +108,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   setAttrib(newdt, sym_sorted, duplicate(sorted));
 
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
-  SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
+  SEXP newnames = PROTECT(R_allocResizableVector(STRSXP, n)); protecti++;
   const int l = isNull(cols) ? LENGTH(dt) : length(cols);
   if (isNull(cols)) {
     for (int i=0; i<l; ++i) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
@@ -186,13 +125,9 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
       for (int i=0; i<l; ++i) SET_STRING_ELT( newnames, i, STRING_ELT(names,INTEGER(cols)[i]-1) );
     }
   }
+  R_resizeVector(newdt,l);
+  R_resizeVector(newnames,l);
   setAttrib(newdt, R_NamesSymbol, newnames);
-  // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
-  // otherwise (if the SET were were first) the 100 tl is assigned to length.
-  SETLENGTH(newnames,l);
-  SET_TRUELENGTH(newnames,n);
-  SETLENGTH(newdt,l);
-  SET_TRUELENGTH(newdt,n);
   setselfref(newdt);
   UNPROTECT(protecti);
   return(newdt);
@@ -215,16 +150,12 @@ SEXP setdt_nrows(SEXP x)
      *   many operations still work in the presence of NULL columns and it might be convenient
      *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
      *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
-    if (Rf_isNull(xi)) continue;
+    if (isNull(xi)) continue;
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
-    SEXP dim_xi = getAttrib(xi, R_DimSymbol);
-    R_len_t len_xi;
-    // NB: LENGTH() produces an undefined large number here on R 3.3.0.
-    //   There's also a note in NEWS for R 3.1.0 saying length() should always be used by packages,
-    //   but with some overhead for being a function/not macro...
-    R_len_t n_dim = length(dim_xi);
+    SEXP dim_xi = PROTECT(getAttrib(xi, R_DimSymbol));
+    R_len_t len_xi, n_dim = length(dim_xi);
     if (n_dim) {
       if (test_matrix_cols && n_dim > 1) {
         warn_matrix_column(i+1);
@@ -232,8 +163,9 @@ SEXP setdt_nrows(SEXP x)
       }
       len_xi = INTEGER(dim_xi)[0];
     } else {
-      len_xi = LENGTH(xi);
+      len_xi = length(xi);
     }
+    UNPROTECT(1);
     if (!base_length) {
       base_length = len_xi;
     } else if (len_xi != base_length) {
@@ -263,7 +195,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
   //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
-  tl = TRUELENGTH(dt);
+  tl = R_maxLength(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
@@ -281,10 +213,10 @@ int checkOverAlloc(SEXP x)
   if (!isInteger(x) && !isReal(x))
     error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
   if (LENGTH(x) != 1)
-    error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
+    error(_("getOption('datatable.alloccol') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
   int ans = asInteger(x);
   if (ans<0)
-    error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
+    error(_("getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."), ans);
   return ans;
 }
 
@@ -313,11 +245,11 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   if (!selfrefok(dt, FALSE)) {
     int n = isNull(cols) ? length(dt) : length(cols);
     return(shallow(dt, cols, n));
-  } else return(shallow(dt, cols, TRUELENGTH(dt)));
+  } else return(shallow(dt, cols, R_maxLength(dt)));
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
+  return ScalarInteger(isNull(x) || !R_isResizable(x) ? 0 : R_maxLength(x));
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -356,10 +288,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (isNull(names)) error(_("dt passed to assign has no names"));
   if (length(names)!=oldncol)
     internal_error(__func__, "length of names (%d) is not length of dt (%d)", length(names), oldncol); // # nocov
-  if (isNull(dt)) {
-    error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
-    // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
-  }
   const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
                                 (isNewList(values) && length(values) && (length(values)==length(cols)) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added
@@ -372,7 +300,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(rows)) {
       rows = PROTECT(coerceVector(rows, INTSXP)); protecti++;
-      warning(_("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+      if (verbose)
+        Rprintf(_("Coerced %s from numeric to integer. Passing integer directly may be more efficient, e.g., 2L rather than 2"), "i");
     }
     if (!isInteger(rows))
       error(_("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency."), type2char(TYPEOF(rows)));
@@ -408,7 +337,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // FR #2077 - set able to add new cols by reference
   if (isString(cols)) {
     PROTECT(tmp = chmatch(cols, names, 0)); protecti++;
-    buf = (int *) R_alloc(length(cols), sizeof(int));
+    buf = (int *) R_alloc(length(cols), sizeof(*buf));
     int k=0;
     for (int i=0; i<length(cols); ++i) {
       if (INTEGER(tmp)[i] == 0) buf[k++] = i;
@@ -425,7 +354,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(cols)) {
       cols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
-      warning(_("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+      if (verbose)
+        Rprintf(_("Coerced %s from numeric to integer. Passing integer directly may be more efficient, e.g., 2L rather than 2"), "j");
     }
     if (!isInteger(cols))
       error(_("j is type '%s'. Must be integer, character, or numeric is coerced with warning."), type2char(TYPEOF(cols)));
@@ -514,10 +444,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    if (!R_isResizable(dt)) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
+    oldtncol = R_maxLength(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
-      if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
       internal_error(__func__, "oldtncol(%d) < oldncol(%d)", oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
@@ -527,13 +457,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
-    else if (TRUELENGTH(names) != oldtncol)
+    else if (R_maxLength(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
-      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)TRUELENGTH(names), oldtncol);  // # nocov
+      internal_error(__func__, "selfrefnames is ok but maxLength(names) [%lld] != maxLength(dt) [%d]", (long long)R_maxLength(names), oldtncol);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
-    SETLENGTH(dt, oldncol+LENGTH(newcolnames));
-    SETLENGTH(names, oldncol+LENGTH(newcolnames));
+    R_resizeVector(dt, oldncol+LENGTH(newcolnames));
+    R_resizeVector(names, oldncol+LENGTH(newcolnames));
+    setAttrib(dt, R_NamesSymbol, names);
     for (int i=0; i<LENGTH(newcolnames); ++i)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
@@ -558,11 +489,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
       if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
          (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
-         (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
+         (TYPEOF(values)!=VECSXP && i>0) || // assigning the same values to a second column. Have to ensure a copy #2540
+         ALTREP(thisvalue) // Some ALTREP wrappers have survived to here, e.g. #5400
          ) {
         if (verbose) {
-          Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d)\n"),
-                  i+1, MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue), length(values), length(cols));
+          Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d ALTREP==%d, but then is being plonked. length(values)==%d; length(cols)==%d\n"),
+                  i+1, MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue), ALTREP(thisvalue), length(values), length(cols));
         }
         thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {
@@ -587,7 +519,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       targetcol = VECTOR_ELT(dt,coln);
     }
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
-    if (ret) warning("%s", ret);
+    if (ret) warning("%s", ret); // # notranslate
   }
 
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
@@ -646,8 +578,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (!*tc1) internal_error(__func__, "index name ends with trailing __"); // # nocov
       // check the position of the first appearance of an assigned column in the index.
       // the new index will be truncated to this position.
-      char *s4 = (char*) malloc(strlen(c1) + 3);
-      if(s4 == NULL){
+      char *s4 = malloc(strlen(c1) + 3);
+      if (!s4) {
         internal_error(__func__, "Couldn't allocate memory for s4"); // # nocov
       }
       memcpy(s4, c1, strlen(c1));
@@ -656,8 +588,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       int newKeyLength = strlen(c1);
       for(int i = 0; i < xlength(assignedNames); i++){
         tc2 = CHAR(STRING_ELT(assignedNames, i));
-        char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
-        if(s5 == NULL){
+        char *s5 = malloc(strlen(tc2) + 5); //4 * '_' + \0
+        if (!s5) {
           free(s4);                                                  // # nocov
           internal_error(__func__, "Couldn't allocate memory for s5"); // # nocov
         }
@@ -707,7 +639,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (ndelete) {
     // delete any columns assigned NULL (there was a 'continue' earlier in loop above)
-    int *tt = (int *)R_alloc(ndelete, sizeof(int));
+    int *tt = (int *)R_alloc(ndelete, sizeof(*tt));
     const int *colsd=INTEGER(cols), ncols=length(cols), ndt=length(dt);
     for (int i=0, k=0; i<ncols; ++i) {   // find which ones to delete and put them in tt
       // Aside: a new column being assigned NULL (something odd to do) would have been warned above, added above, and now deleted. Just
@@ -730,8 +662,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       SET_VECTOR_ELT(dt, i, R_NilValue);
       SET_STRING_ELT(names, i, NA_STRING);  // release reference to the CHARSXP
     }
-    SETLENGTH(dt,    ndt-ndelete);
-    SETLENGTH(names, ndt-ndelete);
+    R_resizeVector(dt,    ndt-ndelete);
+    R_resizeVector(names, ndt-ndelete);
+    setAttrib(dt, R_NamesSymbol, names);
     if (LENGTH(names)==0) {
       // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
       PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
@@ -742,12 +675,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
-#define MSGSIZE 1000
-static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
+static char memrecycle_message[1000]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
 const char *columnDesc(int colnum, const char *colname) {
-  static char column_desc[MSGSIZE+1]; // can contain column names, hence relatively large allocation.
-  snprintf(column_desc, MSGSIZE, _("(column %d named '%s')"), colnum, colname);
+  static char column_desc[sizeof(memrecycle_message)]; // can contain column names, hence relatively large allocation.
+  snprintf(column_desc, sizeof(memrecycle_message), _("(column %d named '%s')"), colnum, colname);
   return column_desc;
 }
 
@@ -823,8 +755,10 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
       SEXP sourceLevels = source;  // character source
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
+      sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
       if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
         const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+        targetLevels = PROTECT(coerceUtf8IfNeeded(targetLevels)); protecti++;
         const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
         savetl_init();
@@ -871,7 +805,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
           // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-          SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
+          SEXP *temp = malloc(sizeof(*temp) * nAdd);
           if (!temp) {
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
@@ -946,7 +880,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         if (COND) {                                                                                                         \
           const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
           const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-          snprintf(memrecycle_message, MSGSIZE, FMT,                                                                        \
+          snprintf(memrecycle_message, sizeof(memrecycle_message), FMT,                                                     \
             FMTVAL, sType, i+1, tType,                                                                                      \
             /* NB: important for () to be part of the translated string as a signal of nominative case to translators */    \
             colnum == 0 ? _("(target vector)") : columnDesc(colnum, colname));                                              \
@@ -1044,7 +978,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     switch (TYPEOF(source)) {
     case RAWSXP:
       if (mc) {
-                    memcpy(td, RAW(source), slen*sizeof(Rbyte)); break;
+                    memcpy(td, RAW_RO(source), slen*sizeof(Rbyte)); break;
       } else        BODY(Rbyte, RAW,    Rbyte, val,                                     td[i]=cval)
     case LGLSXP:    BODY(int, LOGICAL,  Rbyte, val==1,                                  td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
@@ -1061,7 +995,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
     case LGLSXP:
       if (mc) {
-                    memcpy(td, LOGICAL(source), slen*sizeof(int)); break;
+                    memcpy(td, LOGICAL_RO(source), slen*sizeof(*td)); break;
       } else        BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
     case REALSXP:
@@ -1078,7 +1012,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case  LGLSXP:   // same as INTSXP ...
     case  INTSXP:
       if (mc) {
-                    memcpy(td, INTEGER(source), slen*sizeof(int)); break;
+                    memcpy(td, INTEGER_RO(source), slen*sizeof(*td)); break;
       } else        BODY(int, INTEGER,  int, val,                                       td[i]=cval)
     case REALSXP:
       if (sourceIsI64)
@@ -1098,7 +1032,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       case REALSXP:
         if (sourceIsI64) {
           if (mc) {
-                    memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
+                    memcpy(td, (const int64_t *)REAL_RO(source), slen*sizeof(*td)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
         } else      BODY(double, REAL,  int64_t, within_int64_repres(val) ? val : NA_INTEGER64,    td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
@@ -1113,7 +1047,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       case REALSXP:
         if (!sourceIsI64) {
           if (mc) {
-                    memcpy(td, (double *)REAL(source), slen*sizeof(double)); break;
+                    memcpy(td, (const double *)REAL_RO(source), slen*sizeof(double)); break;
           } else    BODY(double, REAL,  double, val,                                    td[i]=cval)
         } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, double, val.r,                              td[i]=cval)
@@ -1134,7 +1068,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       else          BODY(double,  REAL, double, ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val),         td[i].r=cval;td[i].i=im)
     case CPLXSXP:
       if (mc) {
-                    memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
+                    memcpy(td, COMPLEX_RO(source), slen*sizeof(Rcomplex)); break;
       } else        BODY(Rcomplex, COMPLEX, Rcomplex, val,                                            td[i]=cval)
     default:        COERCE_ERROR("complex");
     }
@@ -1155,7 +1089,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           }
           break;
         }
-        if (OBJECT(source) && getAttrib(source, R_ClassSymbol)!=R_NilValue) {
+        if (isObject(source)) {
           // otherwise coerceVector doesn't call the as.character method for Date, IDate, integer64, nanotime, etc; PR#5189
           // this if() is to save the overhead of the R call eval() when we know there can be no method
           source = PROTECT(eval(PROTECT(lang2(sym_as_character, source)), R_GlobalEnv)); protecti+=2;
@@ -1276,12 +1210,12 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 void savetl_init(void) {
   if (nsaved || nalloc || saveds || savedtl) {
-    internal_error(__func__, _("savetl_init checks failed (%d %d %p %p)"), nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
+    internal_error(__func__, "savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
-  saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
-  savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
+  saveds = malloc(sizeof(*saveds) * nalloc);
+  savedtl = malloc(sizeof(*savedtl) * nalloc);
   if (!saveds || !savedtl) {
     free(saveds); free(savedtl);                                            // # nocov
     savetl_end();                                                           // # nocov
@@ -1297,14 +1231,14 @@ void savetl(SEXP s)
       internal_error(__func__, "reached maximum %d items for savetl", nalloc); // # nocov
     }
     nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
-    char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));
+    char *tmp = realloc(saveds, sizeof(SEXP)*nalloc);
     if (tmp==NULL) {
       // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
       savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
       error(_("Failed to realloc saveds to %d items in savetl"), nalloc);   // # nocov
     }
     saveds = (SEXP *)tmp;
-    tmp = (char *)realloc(savedtl, nalloc*sizeof(R_len_t));
+    tmp = realloc(savedtl, sizeof(R_len_t)*nalloc);
     if (tmp==NULL) {
       savetl_end();                                                      // # nocov
       error(_("Failed to realloc savedtl to %d items in savetl"), nalloc);  // # nocov
@@ -1341,4 +1275,3 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   }
   return R_NilValue;
 }
-

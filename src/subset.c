@@ -49,17 +49,17 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 
   switch(TYPEOF(source)) {
   case INTSXP: case LGLSXP: {
-    int *sp = INTEGER(source);
+    const int *sp = INTEGER_RO(source);
     int *ap = INTEGER(ans);
     PARLOOP(NA_INTEGER)
   } break;
   case REALSXP : {
     if (INHERITS(source, char_integer64)) {
-      int64_t *sp = (int64_t *)REAL(source);
+      const int64_t *sp = (int64_t *)REAL_RO(source);
       int64_t *ap = (int64_t *)REAL(ans);
       PARLOOP(INT64_MIN)
     } else {
-      double *sp = REAL(source);
+      const double *sp = REAL_RO(source);
       double *ap = REAL(ans);
       PARLOOP(NA_REAL)
     }
@@ -88,12 +88,12 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     }
   } break;
   case CPLXSXP : {
-    Rcomplex *sp = COMPLEX(source);
+    const Rcomplex *sp = COMPLEX_RO(source);
     Rcomplex *ap = COMPLEX(ans);
     PARLOOP(NA_CPLX)
   } break;
   case RAWSXP : {
-    Rbyte *sp = RAW(source);
+    const Rbyte *sp = RAW_RO(source);
     Rbyte *ap = RAW(ans);
     PARLOOP(0)
   } break;
@@ -215,7 +215,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
-    bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
+    bool *keep = (bool *)R_alloc(max, sizeof(*keep));    // 4 times less memory that INTSXP in src/main/subscript.c
     for (int i=0; i<max; i++) keep[i] = true;
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
@@ -287,7 +287,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
-    if (err!=NULL) error("%s", err);
+    if (err!=NULL) error("%s", err); // # notranslate
   }
 
   if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
@@ -296,8 +296,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
-  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+  int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
+  SEXP ans = PROTECT(R_allocResizableVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here
 
   // user-defined and superclass attributes get copied as from v1.12.0
   copyMostAttrib(x, ans);
@@ -305,8 +305,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
   // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
 
-  SET_TRUELENGTH(ans, LENGTH(ans));
-  SETLENGTH(ans, LENGTH(cols));
+  R_resizeVector(ans, LENGTH(cols));
   int ansn;
   if (isNull(rows)) {
     ansn = nrow;
@@ -329,9 +328,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
       subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
-  SET_TRUELENGTH(tmp, LENGTH(tmp));
-  SETLENGTH(tmp, LENGTH(cols));
+  SEXP tmp = PROTECT(R_allocResizableVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
+  R_resizeVector(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
   subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
 
@@ -345,7 +343,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chin(key, getAttrib(ans,R_NamesSymbol))); nprotect++;
+    SEXP innames = PROTECT(getAttrib(ans,R_NamesSymbol)); nprotect++;
+    SEXP in = PROTECT(chin(key, innames)); nprotect++;
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0 || !orderedSubset) {
@@ -376,4 +375,3 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   UNPROTECT(nprotect);
   return ans;
 }
-

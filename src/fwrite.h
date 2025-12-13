@@ -10,7 +10,7 @@
   #define STOP     error
   #define DTPRINT  Rprintf
   static char internal_error_buff[256] __attribute__((unused)); // todo: fix imports such that compiler warns correctly #6468
-  #define INTERNAL_STOP(...) do {snprintf(internal_error_buff, 255, __VA_ARGS__); error("%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
+  #define INTERNAL_STOP(...) do {snprintf(internal_error_buff, sizeof(internal_error_buff), __VA_ARGS__); error("%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
 #endif
 
 typedef void writer_fun_t(const void *, int64_t, char **);
@@ -109,7 +109,7 @@ typedef struct fwriteMainArgs
                           //   iff scipen >= 3=8-5
   bool squashDateTime;
   bool append;
-  int buffMB;             // [1-1024] default 8MB
+  int buffMB;             // [1-1024] default 8MiB
   int nth;
   bool showProgress;
   bool is_gzip;
@@ -117,7 +117,7 @@ typedef struct fwriteMainArgs
   bool bom;
   const char *yaml;
   bool verbose;
+  bool forceDecimal;      // force writing decimal points for numeric columns
 } fwriteMainArgs;
 
 void fwriteMain(fwriteMainArgs args);
-

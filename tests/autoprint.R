@@ -1,4 +1,5 @@
-require(data.table)
+# TODO(#7453): re-enable warn.conflicts
+require(data.table, warn.conflicts=FALSE)
 # Tests the suppression of := output
 # Since this tests autoprinting at the console, it needs to use the .Rout.save mechanism in R CMD check
 DT = data.table(a=1:2)                # Should print at console?
@@ -57,17 +58,13 @@ local({
 })
 
 # child class of data.table doesn't induce unintended print, #3029
-dt <- data.table(x = 1)
-class(dt) <- c("foo", "data.table", "data.frame")
-print.foo <- function(x, ...) {
+dt = data.table(x = 1)
+setattr(dt, "class", c("foo", "data.table", "data.frame"))
+print.foo = function(x, ...) {
   NextMethod("print")
 }
 dt[, y := 1]                          # no
 
-# withAutoprint() testing (since R3.4.0)
-if (!exists("withAutoprint", baseenv())) {
-  q("no")
-}
 if (TRUE) withAutoprint({
   DT                                  # yes
   DT[1L, 1L]                          # yes

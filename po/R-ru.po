@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
-"POT-Creation-Date: 2025-01-29 23:31-0800\n"
-"PO-Revision-Date: 2025-02-02 22:32+0300\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
+"PO-Revision-Date: 2025-02-09 23:51+0300\n"
 "Last-Translator: Ivan Krylov <ikrylov@disroot.org>\n"
 "Language-Team: Russian <https://translate.codeberg.org/projects/data-table-"
 "ru/gettext-R/ru/>\n"
@@ -13,6 +13,9 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Poedit 3.2.2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: R\n"
+"X-Poedit-SearchPath-1: src\n"
 
 #: AllS4.R:2
 #, c-format
@@ -146,6 +149,14 @@ msgid "trying to use integer64 class when 'bit64' package is not installed"
 msgstr ""
 "попытка использовать класс integer64, тогда как пакет «bit64» не установлен"
 
+#: between.R:47
+msgid ""
+"optimised between not available for this data type, fallback to slow R "
+"routine"
+msgstr ""
+"оптимизированная функция 'between' не реализована для этого типа данных, "
+"использую встроенную функцию R"
+
 #: between.R:48
 #, c-format
 msgid ""
@@ -175,6 +186,22 @@ msgstr ""
 "length() для правой части равна %d, ожидается 2. %sПервый элемент должен "
 "быть нижней(ими) границей(ами), второй - верхней(ими)."
 
+#: between.R:77
+msgid "forderv(query) took ..."
+msgstr "forderv(запрос) заняло..."
+
+#: between.R:90
+msgid "Generating final logical vector ..."
+msgstr "Генерирую целевой логический вектор..."
+
+#: between.R:92 bmerge.R:200 bmerge.R:204 bmerge.R:211 data.table.R:496
+msgid "done in %s"
+msgstr "готово за %s"
+
+#: bmerge.R:21
+msgid "Coercing %s column %s%s to type %s to match type of %s%s."
+msgstr "Привожу столбец %2$s%3$s типа %1$s к типу %4$s столбца %5$s%6$s."
+
 #: bmerge.R:65 bmerge.R:66
 #, c-format
 msgid "%s is type %s which is not supported by data.table join"
@@ -191,6 +218,14 @@ msgstr ""
 "%s с %s. Только численные или строковые столбцы допустимы в скользящем "
 "соединении."
 
+#: bmerge.R:71
+msgid "Matching %s factor levels to %s factor levels."
+msgstr "Соотношу уровни фактора %s к уровням фактора %s."
+
+#: bmerge.R:80
+msgid "Matching character column %s to factor levels in %s."
+msgstr "Соотношу текстовый столбец %s к уровням фактора %s."
+
 #: bmerge.R:87
 #, c-format
 msgid ""
@@ -199,6 +234,10 @@ msgid ""
 msgstr ""
 "Несовместимые типы соединения: %s (%s) и %s (%s). Столбцы-факторы можно "
 "соединять только с факторами и строками."
+
+#: bmerge.R:91
+msgid "%s has same type (%s) as %s. No coercion needed."
+msgstr "%s того же типа (%s), что и %s. Приведение типов не требуется."
 
 #: bmerge.R:97 bmerge.R:101
 msgid "(all-NA)"
@@ -234,15 +273,63 @@ msgstr "(содержит дроби)"
 msgid "(for join)"
 msgstr "(для соединения)"
 
+#: bmerge.R:165
+msgid "on= matches existing key, using key"
+msgstr "on= совпадает с существующим ключом, использую его"
+
+#: bmerge.R:170
+msgid "on= matches existing index, using index"
+msgstr "on= совпадает с существующим индексом, использую его"
+
+#: bmerge.R:175
+msgid "Calculated ad hoc index in %s"
+msgstr "Временный индекс составлен за %s"
+
+#: bmerge.R:186
+msgid "Non-equi join operators detected ..."
+msgstr "Обнаружены операции соединения по неравенству..."
+
 #: bmerge.R:187
 #, c-format
 msgid "roll is not implemented for non-equi joins yet."
 msgstr "«roll» пока не реализовано для соединения по неравенствам."
 
+#: bmerge.R:188
+msgid "forder took ..."
+msgstr "forder занимает..."
+
+#: bmerge.R:197
+msgid "Generating group lengths ..."
+msgstr "Генерирую длины групп..."
+
+#: bmerge.R:202
+msgid "Generating non-equi group ids ..."
+msgstr "Генерирую группы соединения по неравенству ..."
+
 #: bmerge.R:207
 #, c-format
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
 msgstr "Имя столбца «_nqgrp_» зарезервировано для соединения по неравенствам."
+
+#: bmerge.R:208
+msgid "Recomputing forder with non-equi ids ..."
+msgstr "Пересчитываю forder() для групп соединения по неравенству..."
+
+#: bmerge.R:217
+msgid "Starting bmerge ..."
+msgstr "Запускаю bmerge()..."
+
+#: bmerge.R:219
+msgid "bmerge done in %s"
+msgstr "bmerge() закончено за %s"
+
+#: cedta.R:67
+msgid ""
+"cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
+"applied:"
+msgstr ""
+"cedta() считает, что '%s' не предназначено для работы с data.table. См. стек "
+"вызовов (после выделения [[1L]]):"
 
 #: data.table.R:55
 #, c-format
@@ -291,6 +378,10 @@ msgstr "Игнорирую «by»/«keyby», потому что «j» не бы
 #, c-format
 msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
 msgstr "Когда «by» и «keyby» оба переданы, «keyby» должно быть TRUE либо FALSE"
+
+#: data.table.R:177 data.table.R:242 data.table.R:331
+msgid "Argument '%s' after substitute: %s"
+msgstr "Аргумент «%s» после подстановки: %s"
 
 #: data.table.R:186
 #, c-format
@@ -547,11 +638,35 @@ msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr ""
 "Попытка выполнить «естественное» соединение, но у таблиц нет общих столбцов"
 
+#: data.table.R:462
+msgid "Joining but 'x' has no key, natural join using all 'x' columns"
+msgstr "Соединение для «x» без ключа; использую все столбцы «x»"
+
+#: data.table.R:464
+msgid "Joining but 'x' has no key, natural join using: %s"
+msgstr "Соединение для «x» без ключа; использую столбцы: %s"
+
+#: data.table.R:493
+msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
+msgstr "анти-соединение с 'by=.EACHI'; заменяю !i на i=setdiff_(x,i) ..."
+
+#: data.table.R:523
+msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
+msgstr "Собираю «irows» для '!byjoin || nqbyjoin' ..."
+
+#: data.table.R:562
+msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
+msgstr "Переставляю «irows» для 'mult==\"all\" && !allGrp1' ..."
+
+#: data.table.R:574
+msgid "Reordering %d rows after bmerge done in ..."
+msgstr "Перестановка %d строк после bmerge() готова за ..."
+
 #: data.table.R:591
 #, c-format
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
 msgstr ""
-"Логическая ошибка. «i» не является data.table, но передан аргумент «on»."
+"логическая ошибка. «i» не является data.table, но передан аргумент «on»."
 
 #: data.table.R:595
 #, c-format
@@ -580,6 +695,10 @@ msgid ""
 msgstr ""
 "Пожалуйста, используйте nomatch=NULL вместо nomatch=0; см. новость 5 для "
 "версии 1.12.0 (январь 2019)"
+
+#: data.table.R:635
+msgid "Inverting irows for notjoin done in ..."
+msgstr "Обращение «irows» для анти-соединения готово за ..."
 
 #: data.table.R:691
 #, c-format
@@ -649,6 +768,22 @@ msgstr ""
 msgid "At least one entry of by is empty"
 msgstr "Как минимум один элемент «by» пуст"
 
+#: data.table.R:827
+msgid "by index '%s' but that index has 0 length. Ignoring."
+msgstr "«by» использовано с индексом '%s', но он нулевой длины. Пропускаю его."
+
+#: data.table.R:850
+msgid "i clause present and columns used in by detected, only these subset: %s"
+msgstr "аргумент «i» использует следующие столбцы из «by»: %s"
+
+#: data.table.R:853
+msgid ""
+"i clause present but columns used in by not detected. Having to subset all "
+"columns before evaluating 'by': '%s'"
+msgstr ""
+"аргумент «i» не использует столбцы из «by». Вычисляю подмножество всех "
+"столбцов, прежде чем вычислить «by»: '%s'"
+
 #: data.table.R:875
 #, c-format
 msgid ""
@@ -687,14 +822,14 @@ msgstr ""
 "поддерживаемому типу, например by=sapply(list_col, toString), позаботившись "
 "при этом о сохранении различимости."
 
-#: data.table.R:896
-#, c-format
+#: data.table.R:916
 msgid ""
-"%s Each must be length %d; the same length as there are rows in x (after "
-"subsetting if i is provided)."
+"by-expression '%s' is not named, and the auto-generated name '%s' clashed "
+"with variable(s) in j. Therefore assigning the entire by-expression as name."
 msgstr ""
-"%s Каждый из них должен иметь длину %d, такую же, как и строки в «x» (после "
-"извлечения подмножества, если указано «i»)."
+"'by'-выражение '%s' не имеет имени, и автоматически придуманное имя '%s' "
+"пересекается со столбцами «j», так что использую выражение целиком в "
+"качестве его имени."
 
 #: data.table.R:950
 #, c-format
@@ -772,6 +907,23 @@ msgstr ".SDcols должен содержать номера или имена �
 msgid "Some items of .SDcols are not column names: %s"
 msgstr "Некоторые элементы .SDcols не являются именами столбцов: %s"
 
+#: data.table.R:1063
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+"'(m)get' присутствует в выражении «j». Считаю, что «ansvars» - все столбцы. "
+"Рекомендуется вместо этого использовать «.SDcols» или делать «j» вида "
+"'eval(единое выражение)'. В обоих случаях используемые столбцы будут "
+"определены более точно, что важно для быстродействия.\n"
+"Предыдущее значение «ansvars»: %s"
+
+#: data.table.R:1083
+msgid "New ansvars: %s"
+msgstr "Новое значение «ansvars»: %s"
+
 #: data.table.R:1092
 #, c-format
 msgid ""
@@ -780,6 +932,10 @@ msgid ""
 msgstr ""
 "Этот «j» не использует «.SD», но .SDcols был передан. Игнорирую «.SDcols». "
 "См. ?data.table."
+
+#: data.table.R:1095
+msgid "Detected that j uses these columns: %s"
+msgstr "Определено, что «j» использует следующие столбцы: %s"
 
 #: data.table.R:1108
 #, c-format
@@ -843,6 +999,15 @@ msgstr ""
 "Левая сторона присваивания := не является именем столбца (типа 'character') "
 "или позицией (типов 'integer' или 'numeric')"
 
+#: data.table.R:1175
+msgid ""
+"No rows match i. No new columns to add so not evaluating RHS of :=\n"
+"Assigning to 0 row subset of %d rows"
+msgstr ""
+"Ни одна строка не соответствует «i». Также нет новых столбцов, так что не "
+"вычисляю правую часть :=\n"
+"Присваивание пустому подмножеству из %d строк"
+
 #: data.table.R:1190
 #, c-format
 msgid ""
@@ -864,6 +1029,36 @@ msgstr ""
 "setnames и ?setattr. Если это сообщение не помогло, пожалуйста, сообщите о "
 "своем варианте использования в трекере проблем data.table, чтобы можно было "
 "устранить причину проблемы или улучшить это сообщение."
+
+# suppressWarnings() doesn't help against cat()
+#: data.table.R:1198
+msgid ""
+"Growing vector of column pointers from truelength %d to %d. A shallow copy "
+"has been taken, see ?setalloccol. Only a potential issue if two variables "
+"point to the same data (we can't yet detect that well) and if not you can "
+"safely ignore this. To avoid this message you could setalloccol() first, "
+"deep copy first using copy(), wrap with suppressWarnings() or increase the "
+"'datatable.alloccol' option."
+msgstr ""
+"Наращиваю вектор указателей на столбцы с %d до %d ячеек (включая избыточное "
+"выделение памяти). Сделана поверхностная копия, см. ?setalloccol. "
+"Потенциальные проблемы возможны в случае, если несколько переменных "
+"ссылаются на один и тот же участок памяти (мы не всегда это можем заметить); "
+"иначе можете смело игнорировать это сообщение. Чтобы его избежать, можно "
+"либо сначала нарастить объект при помощи setalloccol(), либо заранее "
+"скопировать его при помощи copy(), либо заранее увеличить опцию 'datatable."
+"alloccol'."
+
+#: data.table.R:1200
+msgid ""
+"Note that the shallow copy will assign to the environment from which := was "
+"called. That means for example that if := was called within a function, the "
+"original table may be unaffected."
+msgstr ""
+"Обратите внимание, что поверхностная копия будет присвоена в том окружении "
+"переменных, в котором была вызвана операция [,:=]. В частности, это значит, "
+"что если её вызвала функция для своего аргумента, то оригинал аргумента, "
+"переданного в функцию, может остаться неизменным."
 
 #: data.table.R:1221
 #, c-format
@@ -918,11 +1113,61 @@ msgstr ""
 "со специальной переменной .I. Попробуйте сначала выполнить setnames(DT,'."
 "I','I')."
 
+#: data.table.R:1486
+msgid ""
+"Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
+"explicitly to choose custom units"
+msgstr ""
+"Внимание: задаю units=\"secs\" для неявного вызова difftime() по группам; "
+"чтобы использовать другие единицы, добавьте явный вызов difftime()"
+
 #: data.table.R:1495
 #, c-format
 msgid "logical error. i is not a data.table, but mult='all' and 'by'=.EACHI"
 msgstr ""
-"Логическая ошибка. «i» не является data.table, но mult='all' и 'by'=.EACHI"
+"логическая ошибка. «i» не является data.table, но mult='all' и 'by'=.EACHI"
+
+#: data.table.R:1522
+msgid "Finding groups using forderv ..."
+msgstr "Нахожу группы с использованием forderv()..."
+
+#: data.table.R:1536 data.table.R:1568
+msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
+msgstr ""
+"Нахожу размеры групп из их позиций (что можно было бы избежать и сэкономить "
+"ОЗУ) ..."
+
+#: data.table.R:1544
+msgid "Getting back original order ..."
+msgstr "Возвращаю исходный порядок ..."
+
+#: data.table.R:1556
+msgid "Finding groups using uniqlist on key ..."
+msgstr "Нахожу группы с использованием uniqlist() от ключа..."
+
+#: data.table.R:1560
+msgid "Finding groups using uniqlist on index '%s' ..."
+msgstr "Нахожу группы с использованием uniqlist() от индекса '%s'..."
+
+#: data.table.R:1779
+msgid "lapply optimization changed j from '%s' to '%s'"
+msgstr "оптимизация lapply() изменила «j» с '%s' на '%s'"
+
+#: data.table.R:1781
+msgid "lapply optimization is on, j unchanged as '%s'"
+msgstr "оптимизация lapply() оставила «j» неизменным, равным '%s'"
+
+#: data.table.R:1790 data.table.R:1814
+msgid "GForce optimized j to '%s' (see ?GForce)"
+msgstr "«j» оптимизировано до '%s' (см. ?GForce)"
+
+#: data.table.R:1815
+msgid ""
+"GForce is on, but not activated for this query; left j unchanged (see ?"
+"GForce)"
+msgstr ""
+"GForce включено, но деактивировано для данного запроса; «j» оставлено "
+"неизменным (см. ?GForce)"
 
 #: data.table.R:1834
 #, c-format
@@ -934,6 +1179,31 @@ msgstr ""
 "Не удаётся оптимизировать вызов mean(); он может быть очень медленным. "
 "Обязательно явно называйте аргумент 'na.rm': mean(x,TRUE) будет воспринято "
 "как trim=TRUE, который еще не оптимизирован."
+
+#: data.table.R:1838
+msgid "Old mean optimization changed j from '%s' to '%s'"
+msgstr "Старая оптимизация mean() изменила «j» с '%s' до '%s'"
+
+#: data.table.R:1840
+msgid "Old mean optimization is on, left j unchanged."
+msgstr "Старая оптимизация mean() включена, оставила «j» неизменным."
+
+#: data.table.R:1850
+msgid "All optimizations are turned off"
+msgstr "Все оптимизации выключены"
+
+#: data.table.R:1851
+msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
+msgstr ""
+"Оптимизация включена, но оставила «j» неизменным (одно имя переменной): '%s'"
+
+#: data.table.R:1880
+msgid "Making each group and running j (GForce %s) ..."
+msgstr "Создаю каждую группу и вычисляю «j» (GForce %s)..."
+
+#: data.table.R:1976
+msgid "setkey() after the := with keyby= ..."
+msgstr "setkey() после присваивания := с keyby=..."
 
 #: data.table.R:1980
 #, c-format
@@ -948,6 +1218,10 @@ msgstr ""
 "содержит вычисляемые выражения. Чтобы избежать этого предупреждения, "
 "используйте вместо этого by= или укажите имена существующих столбцов в "
 "keyby=."
+
+#: data.table.R:2006
+msgid "setkey() afterwards for keyby=.EACHI ..."
+msgstr "setkey() после keyby=.EACHI..."
 
 #: data.table.R:2072
 #, c-format
@@ -1118,6 +1392,10 @@ msgid ""
 msgstr ""
 "Аргумент «by» должен называть только атомарные столбцы, но следующие "
 "оказались не-атомарными: %s"
+
+#: data.table.R:2511
+msgid "Processing split.data.table with: %s"
+msgstr "Обрабатываю split.data.table() с использованием: %s"
 
 #: data.table.R:2596
 #, c-format
@@ -1356,6 +1634,31 @@ msgstr ""
 "надежности не допускается «повторное использование» векторов (кроме случая "
 "длины 1). Попробуйте использовать %%in%%."
 
+#: data.table.R:3288
+msgid ""
+"Subsetting optimization disabled because the cross-product of RHS values "
+"exceeds 1e4, causing memory problems."
+msgstr ""
+"Оптимизация выбора подмножества отключена, поскольку декартово произведение "
+"правой части превышает 1e4 элементов, что проблематично с точки зрения "
+"памяти."
+
+#: data.table.R:3306
+msgid "Optimized subsetting with key %s"
+msgstr "Оптимизированная выборка подмножества с ключом %s"
+
+#: data.table.R:3325 data.table.R:3337
+msgid "Optimized subsetting with index '%s'"
+msgstr "Оптимизированная выборка подмножества по индексу '%s'"
+
+#: data.table.R:3332
+msgid "Creating new index '%s'"
+msgstr "Создаю новый индекс '%s'"
+
+#: data.table.R:3333
+msgid "Creating index %s done in ..."
+msgstr "Новый индекс %s создан за..."
+
 #: data.table.R:3371
 #, c-format
 msgid ""
@@ -1403,6 +1706,18 @@ msgstr "Недопустимые операторы соединения %s. Р�
 msgid "There is no package %s in provided repository."
 msgstr "В данном репозитории нет пакета %s."
 
+#: devel.R:30
+msgid ""
+"No revision information found in DESCRIPTION file for %s package. Make sure "
+"that '%s' is correct field in PACKAGES file in your package repository '%s'. "
+"Otherwise package will be re-installed every time, proceeding to "
+"installation."
+msgstr ""
+"Не найдено информации из системы контроля версий в файле DESCRIPTION для "
+"пакета %s. Убедитесь, что поле '%s' файлов PACKAGES правильно заполнено в "
+"репозитории '%s'. В противном случае пакет будет каждый раз переустановлен "
+"(как и сейчас)."
+
 #: devel.R:39
 msgid "R %s package has been updated to %s (%s)"
 msgstr "R-пакет %s обновлён до версии %s (%s)"
@@ -1410,6 +1725,19 @@ msgstr "R-пакет %s обновлён до версии %s (%s)"
 #: devel.R:41
 msgid "R %s package is up-to-date at %s (%s)"
 msgstr "R-пакет %s уже самой свежей версии %s (%s)"
+
+#: devel.R:53
+msgid ""
+"Git revision is not available. Most likely data.table was installed from "
+"CRAN or local archive.\n"
+"Git revision is available when installing from our repositories 'https://"
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"table'."
+msgstr ""
+"Не указан Git-коммит для установленной версии data.table. Вероятно, пакет "
+"был установлен с CRAN (или из локального архива).\n"
+"Git-коммит станет известен при установке из наших репозиториев 'https://"
+"Rdatatable.gitlab.io/data.table' и 'https://Rdatatable.github.io/data.table'."
 
 #: duplicated.R:7
 #, c-format
@@ -1619,7 +1947,7 @@ msgstr "«multiple.keyword» должно быть непустой строко
 #, c-format
 msgid "in measurev, elements of fun.list must be named, problems: %s"
 msgstr ""
-"В функции measurev(), элементы fun.list должны быть именованными, но это не "
+"в функции measurev() элементы fun.list должны быть именованными, но это не "
 "так для: %s"
 
 #: fmelt.R:84
@@ -1671,7 +1999,7 @@ msgid ""
 "all columns directly without using measure, or use a different sep/pattern "
 "specification"
 msgstr ""
-"Каждое имя столбца дает только один элемент после разделения с помощью sep, "
+"каждое имя столбца дает только один элемент после разделения с помощью sep, "
 "что означает, что все столбцы будут переработаны; пожалуйста, либо явным "
 "образом передайте melt() все столбцы без использования measure(), либо "
 "передайте другие «sep» и «pattern»"
@@ -1763,6 +2091,14 @@ msgstr ""
 #, c-format
 msgid "Please provide a name to each element of 'measure.vars'."
 msgstr "Пожалуйста, дайте имя каждому элементу «measure.vars»."
+
+#: fmelt.R:217
+msgid ""
+"Duplicate column names found in molten data.table. Setting unique names "
+"using 'make.names'"
+msgstr ""
+"Имена столбцов дублируются в data.table после melt(). Заменяю дубликаты при "
+"помощи make.names()"
 
 #: foverlaps.R:3
 #, c-format
@@ -1950,6 +2286,14 @@ msgstr ""
 "при печати значений может создаться ошибочное впечатление об отсутствии "
 "перекрывания. Во избежание путаницы сделайте всем интервальным столбцам типа "
 "POSIXct одинаковые атрибуты 'tzone'."
+
+#: foverlaps.R:132
+msgid "unique() + setkey() operations done in ..."
+msgstr "вычисления unique() + setkey() завершены за..."
+
+#: foverlaps.R:158
+msgid "binary search(es) done in ..."
+msgstr "бинарный поиск готов за..."
 
 #: foverlaps.R:165 foverlaps.R:167 foverlaps.R:171
 #, c-format
@@ -2211,6 +2555,12 @@ msgstr ""
 "заголовок состоит из строк, соответствующих регулярному выражению \"%s\". "
 "Пожалуйста, убедитесь, что входной файл является корректным CSVY."
 
+#: fread.R:203
+msgid ""
+"Processed %d lines of YAML metadata with the following top-level fields: %s"
+msgstr ""
+"Обработано %d строк метаданных YAML со следующими полями верхнего уровня: %s"
+
 #: fread.R:206
 #, c-format
 msgid "User-supplied 'header' will override that found in metadata."
@@ -2322,6 +2672,11 @@ msgstr ""
 #, c-format
 msgid "x being coerced from class: matrix to data.table"
 msgstr "преобразую «x» из класса matrix в data.table"
+
+#: fwrite.R:70
+msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
+msgstr ""
+"Дописываю в конец существующего файла, так что задаю bom=FALSE и yaml=FALSE"
 
 #: fwrite.R:83
 #, c-format
@@ -2551,6 +2906,11 @@ msgid ""
 msgstr ""
 "Использование столбцов класса integer64 требует установки пакета «bit64»."
 
+#: last.R:11 last.R:16 last.R:24 last.R:29 last.R:33 last.R:41 last.R:52
+#: last.R:57 last.R:65 last.R:70 last.R:74 last.R:82
+msgid "%s: using %s: %s"
+msgstr "%s: использую %s, поскольку %s"
+
 #: last.R:39 last.R:80
 #, c-format
 msgid ""
@@ -2618,7 +2978,7 @@ msgstr "Передано %d неизвестных и неименованных
 #: merge.R:121
 #, c-format
 msgid "column names %s are duplicated in the result"
-msgstr "Имена столбцов %s дублируются в результате"
+msgstr "имена столбцов %s дублируются в результате"
 
 #: onAttach.R:23
 #, c-format
@@ -2847,6 +3207,18 @@ msgid "Column classes will be suppressed when col.names is 'none'"
 msgstr ""
 "Классы столбцов будут игнорированы, если col.names имеет значение 'none'"
 
+#: print.data.table.R:47
+msgid "Key: <%s>"
+msgstr "Ключ: «%s»"
+
+#: print.data.table.R:57
+msgid "Null data.%s (0 rows and 0 cols)"
+msgstr "Пустой объект data.%s (0 строк и 0 столбцов)"
+
+#: print.data.table.R:59
+msgid "Empty data.%s (%d rows and %d cols)"
+msgstr "Пустой объект data.%s (%d строк и %d столбцов)"
+
 #: print.data.table.R:153
 #, c-format
 msgid ""
@@ -2998,6 +3370,18 @@ msgid ""
 msgstr ""
 "Столбец «%s» имеет тип «%s», который в настоящее время не поддерживается в "
 "качестве типа столбца-ключа."
+
+#: setkey.R:65
+msgid "forder took %.03f sec"
+msgstr "вызов forder() занял %.03f с"
+
+#: setkey.R:77
+msgid "reorder took %s"
+msgstr "вызов reorder() занял %s"
+
+#: setkey.R:79
+msgid "x is already ordered by these columns, no need to call reorder"
+msgstr "«x» уже отсортирован по этим столбцам, вызывать reorder() не нужно"
 
 #: setkey.R:132
 #, c-format
@@ -3255,10 +3639,18 @@ msgstr ""
 msgid "Provided argument fill=%s will be ignored since type='cyclic'."
 msgstr "Игнорирую переданный аргумент fill=%s, так как type='cyclic'."
 
+#: tables.R:31
+msgid "No objects of class data.table exist in %s"
+msgstr "В %s отсутствуют объекты класса data.table"
+
 #: tables.R:46
 #, c-format
 msgid "order.col='%s' not a column name of info"
 msgstr "order.col='%s' не является именем столбца «info»"
+
+#: tables.R:59
+msgid "Total: %sMB using %s"
+msgstr "Итого %s МБ согласно %s"
 
 #: test.data.table.R:17
 #, c-format
@@ -3279,11 +3671,41 @@ msgstr ""
 msgid "Neither %s nor %s exist in %s"
 msgstr "Ни %s, ни %s не существуют в %s"
 
-#: test.data.table.R:118
+#: test.data.table.R:115
+msgid "test.data.table() running: %s"
+msgstr "test.data.table() запускает: %s"
+
+#: test.data.table.R:119
 msgid "object '%s' not found"
 msgstr "объект '%s' не найден"
 
+#: test.data.table.R:122
+msgid ""
+"**** This R session's language is not English. Each test will still check "
+"that the correct number of errors and/or\n"
+"**** warnings are produced. However, to test the text of each error/warning "
+"too, please restart R with LANGUAGE=en"
+msgstr ""
+"**** Данная сессия R работает не на английском языке. Тесты проверят "
+"заданное\n"
+"**** количество ожидаемых ошибок и предупреждений, но не их текст. Чтобы "
+"провести\n"
+"**** более полную проверку, запустите R с LANGUAGE=en"
+
 #: test.data.table.R:142
+msgid ""
+"***\n"
+"*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R "
+"session for best results. Ctrl-C now if not.\n"
+"***"
+msgstr ""
+"***\n"
+"*** memtest=%d. Это должен быть самый первый вызов функции в сессии R, "
+"запущенной с R_GC_MEM_GROW=0. Если это не так, лучше прервите процесс "
+"сейчас.\n"
+"***"
+
+#: test.data.table.R:143
 #, c-format
 msgid ""
 "memtest intended for Linux. Step through data.table:::rss() to see what went "
@@ -3292,30 +3714,130 @@ msgstr ""
 "«memtest» рассчитано на Linux. Запустите data.table:::rss() в отладчике и "
 "посмотрите, что идёт не так."
 
-#: test.data.table.R:196
+#: test.data.table.R:197
 #, c-format
 msgid "Attempt to subset to %d tests matching '%s' failed, running full suite."
 msgstr ""
 "Не удалось выделить %d тестов, которые подходят под шаблон '%s', запускаю "
 "весь набор."
 
-#: test.data.table.R:245
+#: test.data.table.R:202
+msgid "Running %d of %d tests matching '%s'"
+msgstr "Запускаю %d из %d тестов, которые подходят под '%s'"
+
+#: test.data.table.R:248
 #, c-format
 msgid "Failed in %s after test %s before the next test() call in %s"
 msgstr "Сбой в %s после теста %s перед следующим вызовом test() в %s"
 
-#: test.data.table.R:268
+#: test.data.table.R:271
 #, c-format
 msgid "Timings count mismatch: %d vs %d"
 msgstr "Несоответствие количества измеренных промежутков времени: %d против %d"
 
-#: test.data.table.R:400
+#: test.data.table.R:273
+msgid "10 longest running tests took %ds (%d%% of %ds)"
+msgstr "10 самых долгих тестов заняли %d с (%d%% от %d с)"
+
+#: test.data.table.R:279
+msgid "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
+msgstr ""
+"10 самых больших скачков потребления памяти (МБ); интегральный эффект см. на "
+"графике"
+
+#: test.data.table.R:289
+msgid "All %d tests (last %.8g) in %s completed ok in %s"
+msgstr "Все %d тестов (последний №%.8g) в %s прошли успешно за %s"
+
+#: test.data.table.R:388
+msgid "Running test id"
+msgstr "Запускаю тест №"
+
+#: test.data.table.R:404
 #, c-format
 msgid ""
 "Test %s is invalid: when error= is provided it does not make sense to pass y "
 "as well"
 msgstr ""
 "Тест %s некорректен: если указано error=, не имеет смысла передавать также y="
+
+#: test.data.table.R:439
+msgid "Test id %s is not in increasing order"
+msgstr "Тест №%s не в порядке возрастания"
+
+# plural form
+#: test.data.table.R:456
+msgid ""
+"Test %s produced %d %ss but expected %d\n"
+"%s\n"
+"%s"
+msgstr ""
+"Тест №%s вызвал %d событий типа «%s», а должен был — %d\n"
+"%s\n"
+"%s"
+
+#: test.data.table.R:464
+msgid ""
+"Test %s didn't produce the correct %s:\n"
+"Expected: %s\n"
+"Observed: %s"
+msgstr ""
+"Тест №%s не вызвал корректное состояние типа «%s»:\n"
+"Ожидалось: %s\n"
+"Получено: %s"
+
+#: test.data.table.R:473
+msgid "Output captured before unexpected warning/error/message:"
+msgstr "Вывод перед неожиданным предупреждением/ошибкой/сообщением:"
+
+#: test.data.table.R:483
+msgid "Test %s did not produce correct output:"
+msgstr "Тест №%s не произвёл корректный вывод:"
+
+#: test.data.table.R:484
+msgid "Expected: <<%s>>"
+msgstr "Ожидалось: «%s»"
+
+#: test.data.table.R:485 test.data.table.R:497
+msgid "Observed: <<%s>>"
+msgstr "Получено: «%s»"
+
+#: test.data.table.R:487
+msgid "Expected (raw): <<%s>>"
+msgstr "Ожидалось (байты): «%s»"
+
+#: test.data.table.R:488 test.data.table.R:500
+msgid "Observed (raw): <<%s>>"
+msgstr "Получено (байты): «%s»"
+
+#: test.data.table.R:495
+msgid "Test %s produced output but should not have:"
+msgstr "Тест №%s произвёл вывод, хотя не был должен:"
+
+#: test.data.table.R:496
+msgid "Expected absent (case insensitive): <<%s>>"
+msgstr ""
+"Данного вывода не должно получаться (нечувствительно к регистру): <<%s>>"
+
+#: test.data.table.R:499
+msgid "Expected absent (raw): <<%s>>"
+msgstr "Данного вывода не должно получаться (байты): <<%s>>"
+
+#: test.data.table.R:513
+msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
+msgstr "Тест №%s не вызвал ошибок, но selfrefok(%s) == FALSE"
+
+#: test.data.table.R:538
+msgid "Test %s ran without errors but failed check that x equals y:"
+msgstr "Тест №%s не вызвал ошибок, но «x» не равно «y»:"
+
+#: test.data.table.R:543
+msgid "First %d of %d (type '%s'):"
+msgstr "Первые %d из %d элементов (тип '%s'):"
+
+#: test.data.table.R:548
+msgid "Non-ASCII string detected, raw representation:"
+msgstr "Обнаружена не-ASCII строка, её байты:"
 
 #: timetaken.R:3
 #, c-format
@@ -3517,11 +4039,25 @@ msgstr[1] "столбец(ы) не найден(ы): %s"
 msgstr[2] "столбец(ы) не найден(ы): %s"
 
 #: data.table.R:895
-msgid "The item in the 'by' or 'keyby' list is length %s."
-msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
-msgstr[0] "Элементы списков «by» или «keyby» имеют длины %s."
-msgstr[1] "Элементы списков «by» или «keyby» имеют длины %s."
-msgstr[2] "Элементы списков «by» или «keyby» имеют длины %s."
+msgid ""
+"The item in the 'by' or 'keyby' list is length %s. Each must be length %d; "
+"the same length as there are rows in x (after subsetting if i is provided)."
+msgid_plural ""
+"The items in the 'by' or 'keyby' list have lengths %s. Each must be length "
+"%d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
+msgstr[0] ""
+"Элемент(ы) списка «by» или «keyby» оказался(лись) длины %s. Каждый из них "
+"должен иметь длину %d, такую же, как и строки в «x» (после извлечения "
+"подмножества, если указано «i»)."
+msgstr[1] ""
+"Элементы списка «by» или «keyby» оказались длины %s. Каждый из них должен "
+"иметь длину %d, такую же, как и строки в «x» (после извлечения подмножества, "
+"если указано «i»)."
+msgstr[2] ""
+"Элементы списка «by» или «keyby» оказались длины %s. Каждый из них должен "
+"иметь длину %d, такую же, как и строки в «x» (после извлечения подмножества, "
+"если указано «i»)."
 
 #: fmelt.R:27
 msgid "Pattern not found: [%s]"
@@ -3558,7 +4094,7 @@ msgstr[0] "в «x» или «y» нашлись столбцы неподдер�
 msgstr[1] "в «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
 msgstr[2] "в «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
 
-#: test.data.table.R:255
+#: test.data.table.R:258
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
 msgid_plural ""
 "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
@@ -3582,6 +4118,12 @@ msgstr[1] ""
 msgstr[2] ""
 "В %s есть несколько дублированных имен столбцов: %s. Пожалуйста, удалите или "
 "переименуйте дубликаты и повторите попытку."
+
+#~ msgid "The item in the 'by' or 'keyby' list is length %s."
+#~ msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
+#~ msgstr[0] "Элементы списков «by» или «keyby» имеют длины %s."
+#~ msgstr[1] "Элементы списков «by» или «keyby» имеют длины %s."
+#~ msgstr[2] "Элементы списков «by» или «keyby» имеют длины %s."
 
 #, c-format
 #~ msgid ""
