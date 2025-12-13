@@ -71,10 +71,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missings after this branch
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
-    SEXP *uniq = malloc(sizeof(*uniq) * upperBoundUniqueNames);  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
-    if (!uniq)
-      error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
-    savetl_init();
+    hashtab * marks = hash_create(upperBoundUniqueNames);
+    PROTECT(marks->prot);
     int nuniq=0;
     // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
@@ -86,22 +84,18 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       const SEXP *cnp = STRING_PTR_RO(cn);
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-        if (TRUELENGTH(s)<0) continue;  // seen this name before
-        if (TRUELENGTH(s)>0) savetl(s);
-        uniq[nuniq++] = s;
-        SET_TRUELENGTH(s,-nuniq);
+        if (hash_lookup(marks, s, 0)<0) continue;  // seen this name before
+        nuniq++;
+        hash_set(marks, s,-nuniq);
       }
     }
-    if (nuniq>0) uniq = realloc(uniq, sizeof(SEXP)*nuniq);  // shrink to only what we need to release the spare
 
     // now count the dups (if any) and how they're distributed across the items
     int *counts = calloc(nuniq, sizeof(*counts)); // counts of names for each colnames
     int *maxdup = calloc(nuniq, sizeof(*maxdup)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
       // # nocov start
-      for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
-      free(uniq); free(counts); free(maxdup);
-      savetl_end();
+      free(counts); free(maxdup);
       error(_("Failed to allocate nuniq=%d items working memory in rbindlist.c"), nuniq);
       // # nocov end
     }
@@ -116,7 +110,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       memset(counts, 0, nuniq*sizeof(*counts));
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-        counts[ -TRUELENGTH(s)-1 ]++;
+        counts[ -hash_lookup(marks, s, 0)-1 ]++;
       }
       for (int u=0; u<nuniq; u++) {
         if (counts[u] > maxdup[u]) maxdup[u] = counts[u];
@@ -134,9 +128,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int *dupLink = malloc(sizeof(*dupLink) * ncol); // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
     if (!colMapRaw || !uniqMap || !dupLink) {
       // # nocov start
-      for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
-      free(uniq); free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
-      savetl_end();
+      free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
       error(_("Failed to allocate ncol=%d items working memory in rbindlist.c"), ncol);
       // # nocov end
     }
@@ -157,7 +149,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         memset(counts, 0, nuniq*sizeof(*counts));
         for (int j=0; j<thisncol; j++) {
           SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-          int w = -TRUELENGTH(s)-1;
+          int w = -hash_lookup(marks, s, 0)-1;
           int wi = counts[w]++; // how many dups have we seen before of this name within this item
           if (uniqMap[w]==-1) {
             // first time seen this name across all items
@@ -174,10 +166,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
       }
     }
-    for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);  // zero out our usage of tl
-    free(uniq); free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
-    savetl_end();  // restore R's usage
+    free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
 
+    UNPROTECT(1); // marks
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
     // move it to R's heap so it gets automatically free'd on exit, and on any error between now and the end of rbindlist.
     colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(*colMap));
@@ -349,7 +340,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
       // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
-      // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
       if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
       for (int i=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
@@ -364,7 +354,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int ansloc=0;
     if (factor) {
       char warnStr[1000] = "";
-      savetl_init();  // no error from now (or warning given options(warn=2)) until savetl_end
+      hashtab * marks = hash_create(xlength(longestLevels));
+      PROTECT(marks->prot);
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       if (orderedFactor) {
@@ -379,14 +370,18 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         nLevel = allocLevel = longestLen;
         levelsRaw = malloc(sizeof(*levelsRaw) * nLevel);
         if (!levelsRaw) {
-          savetl_end(); // # nocov
           error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1); // # nocov
         }
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
-          if (TRUELENGTH(s)>0) savetl(s);
           levelsRaw[k] = s;
-          SET_TRUELENGTH(s,-k-1);
+          marks = hash_set_shared(marks, s, -k-1);
+          if (!marks) {
+            // # nocov start
+            free(levelsRaw);
+            error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1); // # nocov
+            // # nocov end
+          }
         }
         for (int i=0; i<LENGTH(l); ++i) {
           SEXP li = VECTOR_ELT(l, i);
@@ -399,7 +394,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
             const int n = length(levels);
             for (int k=0, last=0; k<n; ++k) {
               SEXP s = levelsD[k];
-              const int tl = TRUELENGTH(s);
+              const int tl = hash_lookup(marks, s, 0);
               if (tl>=last) {  // if tl>=0 then also tl>=last because last<=0
                 if (tl>=0) {
                   snprintf(warnStr, sizeof(warnStr),   // not direct warning as we're inside tl region
@@ -438,8 +433,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           for (int k=0; k<n; ++k) {
             SEXP s = thisColStrD[k];
             if (s==NA_STRING ||             // remove NA from levels; test 1979 found by package emil when revdep testing 1.12.2 (#3473)
-                TRUELENGTH(s)<0) continue;  // seen this level before; handles removing dups from levels as well as finding unique of character columns
-            if (TRUELENGTH(s)>0) savetl(s);
+                hash_lookup(marks, s, 0)<0) continue;  // seen this level before; handles removing dups from levels as well as finding unique of character columns
             if (allocLevel==nLevel) {       // including initial time when allocLevel==nLevel==0
               SEXP *tt = NULL;
               if (allocLevel<INT_MAX) {
@@ -450,15 +444,20 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
               if (tt==NULL) {
                 // # nocov start
                 // C spec states that if realloc() fails (above) the original block (levelsRaw) is left untouched: it is not freed or moved. We ...
-                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);   // ... rely on that in this loop which uses levelsRaw.
+                // ... rely on that by freeing levelsRaw.
                 free(levelsRaw);
-                savetl_end();
                 error(_("Failed to allocate working memory for %d factor levels of result column %d when reading item %d of item %d"), allocLevel, idcol+j+1, w+1, i+1);
                 // # nocov end
               }
               levelsRaw = tt;
             }
-            SET_TRUELENGTH(s,-(++nLevel));
+            marks = hash_set_shared(marks,s,-(++nLevel));
+            if (!marks) {
+              // # nocov start
+              free(levelsRaw);
+              error(_("Failed to allocate working memory for %d factor levels of result column %d when reading item %d of item %d"), allocLevel, idcol+j+1, w+1, i+1);
+              // # nocov end
+            }
             levelsRaw[nLevel-1] = s;
           }
           int *targetd = INTEGER(target);
@@ -467,7 +466,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
             if (length(thisCol)<=1) {
               // recycle length-1, or NA-fill length-0
               SEXP lev;
-              const int val = (length(thisCol)==1 && id[0]!=NA_INTEGER && (lev=thisColStrD[id[0]-1])!=NA_STRING) ? -TRUELENGTH(lev) : NA_INTEGER;
+              const int val = (length(thisCol)==1 && id[0]!=NA_INTEGER && (lev=thisColStrD[id[0]-1])!=NA_STRING) ? -hash_lookup(marks,lev,0) : NA_INTEGER;
               //                                                                                    ^^ #3915 and tests 2015.2-5
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
             } else {
@@ -478,22 +477,22 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
                 // retain the position of NA level (if any) and the integer mappings to it
                 for (int k=0; k<n; ++k) {
                   SEXP s = thisColStrD[k];
-                  if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { hop=true; break; }
+                  if (s!=NA_STRING && -hash_lookup(marks,s,0)!=k+1) { hop=true; break; }
                 }
               } else {
                 for (int k=0; k<n; ++k) {
                   SEXP s = thisColStrD[k];
-                  if (s==NA_STRING || -TRUELENGTH(s)!=k+1) { hop=true; break; }
+                  if (s==NA_STRING || -hash_lookup(marks,s,0)!=k+1) { hop=true; break; }
                 }
               }
               if (hop) {
                 if (orderedFactor) {
                   for (int r=0; r<thisnrow; ++r)
-                    targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
+                    targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks,thisColStrD[id[r]-1],0);
                 } else {
                   for (int r=0; r<thisnrow; ++r) {
                     SEXP lev;
-                    targetd[ansloc+r] = id[r]==NA_INTEGER || (lev=thisColStrD[id[r]-1])==NA_STRING ? NA_INTEGER : -TRUELENGTH(lev);
+                    targetd[ansloc+r] = id[r]==NA_INTEGER || (lev=thisColStrD[id[r]-1])==NA_STRING ? NA_INTEGER : -hash_lookup(marks,lev,0);
                   }
                 }
               } else {
@@ -503,18 +502,16 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           } else {
             const SEXP *sd = STRING_PTR_RO(thisColStr);
             if (length(thisCol)<=1) {
-              const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -TRUELENGTH(sd[0]) : NA_INTEGER;
+              const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -hash_lookup(marks,sd[0],0) : NA_INTEGER;
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
             } else {
-              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -hash_lookup(marks,sd[r],0);
             }
           }
         }
         ansloc += thisnrow;
       }
-      for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
-      savetl_end();
-      if (warnStr[0]) warning("%s", warnStr);  // # notranslate. now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
+      if (warnStr[0]) warning("%s", warnStr);  // #notranslate. previously had to wait until savetl_end() for it to be safe to call warning (could error if options(warn=2))
       SEXP levelsSxp;
       setAttrib(target, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nLevel));
       for (int k=0; k<nLevel; ++k) SET_STRING_ELT(levelsSxp, k, levelsRaw[k]);
@@ -527,6 +524,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
+      UNPROTECT(1); // marks
     } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
