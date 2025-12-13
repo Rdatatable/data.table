@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.17.99\n"
-"POT-Creation-Date: 2025-12-13 16:36+0000\n"
+"POT-Creation-Date: 2025-12-13 16:50+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2426,35 +2426,7 @@ msgstr ""
 msgid "column names %s are duplicated in the result"
 msgstr ""
 
-#: merge.R:131
-#, c-format
-msgid ""
-"merge.data.table() received %d unnamed argument in '...' which will be "
-"ignored."
-msgstr ""
-
-#: merge.R:132
-#, c-format
-msgid ""
-"merge.data.table() received %d unnamed arguments in '...' which will be "
-"ignored."
-msgstr ""
-
-#: merge.R:137
-#, c-format
-msgid ""
-"merge.data.table() received %d unknown keyword argument which will be "
-"ignored: %s"
-msgstr ""
-
-#: merge.R:138
-#, c-format
-msgid ""
-"merge.data.table() received %d unknown keyword arguments which will be "
-"ignored: %s"
-msgstr ""
-
-#: merge.R:144
+#: merge.R:146
 #, c-format
 msgid "merge.data.table() received %s and %s, all of which will be ignored: %s"
 msgstr ""
@@ -3336,19 +3308,19 @@ msgid_plural "merge.data.table() received %d unnamed arguments in '...' which wi
 msgstr[0] ""
 msgstr[1] ""
 
-#: merge.R:137
+#: merge.R:138
 msgid "merge.data.table() received %d unknown keyword argument which will be ignored: %s"
 msgid_plural "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"
 msgstr[0] ""
 msgstr[1] ""
 
-#: merge.R:142
+#: merge.R:144
 msgid "%d unnamed argument in '...'"
 msgid_plural "%d unnamed arguments in '...'"
 msgstr[0] ""
 msgstr[1] ""
 
-#: merge.R:143
+#: merge.R:145
 msgid "%d unknown keyword argument"
 msgid_plural "%d unknown keyword arguments"
 msgstr[0] ""
