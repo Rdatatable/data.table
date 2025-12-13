@@ -561,7 +561,7 @@ replace_dot_alias = function(e) {
             }
             irows = vecseq(f__, len__, limit)
           }
-          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
           # Fix for #1092 and #1074
           # TODO: implement better version of "any"/"all"/"which" to avoid
           # unnecessary construction of logical vectors
