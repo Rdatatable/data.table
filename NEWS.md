@@ -550,6 +550,8 @@ rowwiseDT(
 
 22. `fread()` could fail to read Mac CSV files (with `\r` line endings) if the file contained any `\n` character, such as a final `\r\n`. This was fixed by detecting the predominant line ending in a sample of the file, [#4186](https://github.com/Rdatatable/data.table/issues/4186). Thanks to @MPagel for the report and @ben-schwen for the fix.
 
+23. By reference assignments (':=') with functions that modified the data.table by reference e.g. (`foo=function(DT){modify(DT);return(1L)}`, `DT[,a:=foo(DT)]`) returned a malformed data.table due to the modification of the targeted named column index ("a") during the j expression evaluation [#6768](https://github.com/Rdatatable/data.table/issues/6768). Thanks @AntonNM for the report and fix.
+
 ### NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
