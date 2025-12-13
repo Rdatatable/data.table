@@ -217,6 +217,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (int j=0; j<length(SDall); ++j) {
+        SETLENGTH(VECTOR_ELT(SDall, j), 1);
         writeNA(VECTOR_ELT(SDall, j), 0, 1, false);
         // writeNA uses SET_ for STR and VEC, and we always use SET_ to assign to SDall always too. Otherwise,
         // this writeNA could decrement the reference for the old value which wasn't incremented in the first place.
@@ -321,8 +322,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
           // Increment length only if the allocation passes, #1676. But before SET_VECTOR_ELT otherwise attempt-to-set-index-n/n R error
-          SETLENGTH(dtnames, LENGTH(dtnames)+1);
-          SETLENGTH(dt, LENGTH(dt)+1);
+          R_resizeVector(dtnames, LENGTH(dtnames)+1);
+          R_resizeVector(dt, LENGTH(dt)+1);
+          setAttrib(dt, R_NamesSymbol, dtnames);
           SET_VECTOR_ELT(dt, colj, target);
           UNPROTECT(1);
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
@@ -509,21 +511,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   return(ans);
 }
 
-SEXP keepattr(SEXP to, SEXP from)
-{
-  // Same as R_copyDFattr in src/main/attrib.c, but that seems not exposed in R's api
-  // Only difference is that we reverse from and to in the prototype, for easier calling above
-  SET_ATTRIB(to, ATTRIB(from));
-  if (isS4(from)) {
-    to = PROTECT(asS4(to, TRUE, 1));
-    SET_OBJECT(to, isObject(from));
-    UNPROTECT(1);
-  } else {
-    SET_OBJECT(to, isObject(from));
-  }
-  return to;
-}
-
 SEXP growVector(SEXP x, const R_len_t newlen)
 {
   // Similar to EnlargeVector in src/main/subassign.c, with the following changes :
@@ -533,10 +520,10 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   SEXP newx;
   R_len_t len = length(x);
   if (isNull(x)) error(_("growVector passed NULL"));
-  PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
+  PROTECT(newx = R_allocResizableVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   if (!len) { // cannot memcpy invalid pointer, #6819
-    keepattr(newx, x);
+    SHALLOW_DUPLICATE_ATTRIB(newx, x);
     UNPROTECT(1);
     return newx;
   }
@@ -561,7 +548,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
-  keepattr(newx,x);
+  SHALLOW_DUPLICATE_ATTRIB(newx, x);
   UNPROTECT(1);
   return newx;
 }

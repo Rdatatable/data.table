@@ -664,6 +664,31 @@ void internal_error(const char *call_name, const char *format, ...) {
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
 
+#ifdef BACKPORT_RESIZABLE_API
+SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+  SEXP ret = allocVector(type, maxlen);
+  SET_TRUELENGTH(ret, maxlen);
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+SEXP R_duplicateAsResizable_(SEXP x) {
+  if (ALTREP(x)) internal_error(__func__, "Cannot duplicate an ALTREP object as resizable"); // # nocov
+  SEXP ret = duplicate(x);
+  SET_TRUELENGTH(ret, xlength(ret));
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+void R_resizeVector_(SEXP x, R_xlen_t newlen) {
+  if (!R_isResizable(x))
+    internal_error(__func__, "attempt to resize a non-resizable vector"); // # nocov
+  if (newlen > XTRUELENGTH(x))
+    internal_error(__func__, "newlen=%g exceeds maxlen=%g", (double)newlen, (double)R_maxLength(x)); // # nocov
+  SETLENGTH(x, newlen);
+}
+#endif
+
 #ifdef _WIN32
 NORET
 #endif
@@ -673,7 +698,7 @@ SEXP is_direct_child(SEXP pids) {
 #else
   int *ppids = INTEGER(pids);
   R_xlen_t len = xlength(pids);
-  R_xlen_t ret = allocVector(LGLSXP, len);
+  SEXP ret = allocVector(LGLSXP, len);
   int *pret = LOGICAL(ret);
   siginfo_t info;
   for (R_xlen_t i = 0; i < len; ++i)

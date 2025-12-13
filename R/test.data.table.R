@@ -1,6 +1,12 @@
 test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent, testPattern=NULL,
-                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0L), memtest.id=NULL) {
-  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
+                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0L), memtest.id=NULL, optional=FALSE) {
+  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress), isTRUEorFALSE(optional))
+
+  # Skip optional tests unless RUN_ALL_DATATABLE_TESTS is set
+  if (optional && Sys.getenv("RUN_ALL_DATATABLE_TESTS") != "yes") {
+    return(invisible(TRUE))
+  }
+
   memtest = as.integer(memtest)
   stopifnot(length(memtest)==1L, memtest %in% 0:2)
   memtest.id = as.integer(memtest.id)

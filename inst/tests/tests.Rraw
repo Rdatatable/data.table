@@ -1960,8 +1960,9 @@ test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
 
 # Test that with=FALSE by number isn't messed up by dup column names, #2025
-DT = data.table(a=1:3,a=4:6)
-test(634, DT[,2:=200L], data.table(a=1:3,a=200L))
+DT = data.table(a=1:3, a=4:6, a=7:9)
+test(634, DT[,2:=200L], data.table(a=1:3, a=200L, a=7:9))
+test(634.1, DT[,c(2, 3):=200L], data.table(a=1:3, a=200L, a=200L))
 
 # Test names when not all items are named, #2029
 DT = data.table(x=1:3,y=1:3)
@@ -19453,7 +19454,7 @@ test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in
 df = data.frame(a=1:3)
 setDT(df)
 attr(df, "att") = 1
-test(2291.1, set(df, NULL, "new", "new"), error="attributes .* have been reassigned")
+test(2291.1, set(df, NULL, "new", "new"), error="either been loaded from disk.*or constructed manually.*Please run setDT.*setalloccol.*on it first")
 
 # ns-qualified bysub error, #6493
 DT = data.table(a = 1)
@@ -20800,7 +20801,8 @@ baz(x)
 test(2295.7, is.data.table(x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
-test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+DT = data.table(a = 1)
+test(2296, DT[x %no such operator% 1], error = '%no such operator%')
 
 # fix coercing integer/double for joins on multiple columns, #6602
 x = data.table(a=1L)
@@ -21858,3 +21860,28 @@ test(2344.04, key(DT[, .(V4 = c("b", "a"), V2, V5 = c("y", "x"), V1)]), c("V1", 
 
 # fread with quotes and single column #7366
 test(2345, fread('"this_that"\n"2025-01-01 00:00:01"'), data.table(this_that = as.POSIXct("2025-01-01 00:00:01", tz="UTC")))
+
+# one-byte stack overflow in strlim() to be tested with sanitizers, #7408
+text = paste0(
+ strrep("mary had a little lamb\n", 100),
+ strrep("a", 500), "\n", "a"
+)
+test(2346, data.table::fread(text = text), data.table(mary = rep("mary", 99), had = "had", a = "a", little = "little", lamb = "lamb"), warning = "First discarded non-empty line")
+
+# With 'i' containing NA and no GForce, columns for missing groups weren't fully missing, #7442
+DT = data.table(a="a", grp=1L)
+i = c(1, 1, 1, NA, NA)
+test(2347, DT[i, .(result = all(is.na(grp) == is.na(a))), by = grp][,all(result)], options = list(datatable.optimize = 0))
+
+# .checkTypos internal implementation not exposed for non-typo bug, #7444
+DT = data.table(a = as.Date("2010-01-01"), b = 1L)
+test(2348.1, tryCatch(DT[a == as.Date("20100101")], error=conditionCall)[[1L]], quote(charToDate))
+test(2348.2, tryCatch(DT[a == as.Date("20100101") | b == 2L], error=conditionCall)[[1L]], quote(charToDate))
+
+# j expressions that modify a data.table by reference, (#6768)
+inner = function(dt)   dt[,b:=4:6]
+outer = function(dt) {   inner(dt); return(7:9) }
+foo   = function(dt) { dt[,b:=4:6]; return(7:9) }
+DT = data.table(a=1:3)
+test(2349, DT[,c:=outer(DT)], data.table(a=1:3, b=4:6, c=7:9))
+test(2349.1, DT[,c:=foo(DT)], data.table(a=1:3, b=4:6, c=7:9))

@@ -50,7 +50,7 @@ SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   const size_t oi = INTEGER_RO(offset)[0];
   const int nrow = INTEGER_RO(size)[oi - 1];
   const size_t o = oi - nrow; // oi should always be bigger than nrow because we filter out incomplete window using ansMask
-  SETLENGTH(dest, nrow); // must be before memcpy_sexp because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
+  R_resizeVector(dest, nrow); // must be before memcpy_sexp because attempt to set index 1/1 in SET_STRING_ELT test 6010.150
   if (nrow) { // support k[i]==0
     memcpy_sexp(dest, o, src, nrow);
   }
@@ -65,7 +65,7 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
   const int ncol = LENGTH(dest);
   for (int i = 0; i < ncol; i++) {
     SEXP d = VECTOR_ELT(dest, i);
-    SETLENGTH(d, nrow);
+    R_resizeVector(d, nrow);
     if (nrow) { // support k[i]==0
       memcpy_sexp(d, o, VECTOR_ELT(src, i), nrow);
     }
@@ -75,19 +75,15 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 // # nocov end
 
 // needed in adaptive=TRUE
-SEXP setgrowable(SEXP x) {
-  if (!isNewList(x)) {
-    SET_GROWABLE_BIT(x);
-    SET_TRUELENGTH(x, LENGTH(x)); // important because gc() uses TRUELENGTH to keep counts
-  } else {
-    // # nocov start ## does not seem to be reported to codecov most likely due to running in a fork, I manually debugged that it is being called when running froll.Rraw
-    for (int i = 0; i < LENGTH(x); i++) {
-      //Rprintf("%d",3); // manual code coverage to confirm it is reached when marking nocov
-      SEXP col = VECTOR_ELT(x, i);
-      SET_GROWABLE_BIT(col);
-      SET_TRUELENGTH(col, LENGTH(col));
-    }
-    // # nocov end
-  }
-  return x;
+SEXP copyAsGrowable(SEXP x) {
+  if (!isNewList(x))
+    return R_duplicateAsResizable(x);
+
+  SEXP ret = PROTECT(shallow_duplicate(x));
+  R_xlen_t n = xlength(ret);
+  for (R_xlen_t i = 0; i < n; ++i)
+    SET_VECTOR_ELT(ret, i, R_duplicateAsResizable(VECTOR_ELT(ret, i)));
+
+  UNPROTECT(1);
+  return ret;
 }
