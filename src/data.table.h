@@ -322,6 +322,7 @@ bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
 SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
+SEXP is_direct_child(SEXP pids);
 
 // types.c
 char *end(char *start);

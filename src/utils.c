@@ -1,3 +1,7 @@
+#ifndef _WIN32
+#  include <sys/wait.h>
+#endif
+
 #include "data.table.h"
 
 bool within_int32_repres(double x) {
@@ -658,4 +662,22 @@ void internal_error(const char *call_name, const char *format, ...) {
   va_end(args);
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
+}
+
+#ifdef _WIN32
+NORET
+#endif
+SEXP is_direct_child(SEXP pids) {
+#ifdef _WIN32
+  internal_error(__func__, "not implemented on Windows");
+#else
+  int *ppids = INTEGER(pids);
+  R_xlen_t len = xlength(pids);
+  R_xlen_t ret = allocVector(LGLSXP, len);
+  int *pret = LOGICAL(ret);
+  siginfo_t info;
+  for (R_xlen_t i = 0; i < len; ++i)
+    pret[i] = waitid(P_PID, ppids[i], &info, WCONTINUED | WEXITED | WNOHANG | WNOWAIT | WSTOPPED) == 0;
+  return ret;
+#endif
 }

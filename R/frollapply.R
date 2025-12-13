@@ -411,7 +411,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             interrupt = function(e) {
               # nocov start
               suspendInterrupts({
-                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
+                lapply(jobs[.Call(Cis_direct_child, jobs)], function(pid) try(tools::pskill(pid), silent = TRUE))
                 parallel::mccollect(jobs)
               })
               # nocov end
