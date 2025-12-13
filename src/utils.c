@@ -689,6 +689,7 @@ void R_resizeVector_(SEXP x, R_xlen_t newlen) {
 }
 #endif
 
+// # nocov start
 #ifdef _WIN32
 NORET
 #endif
@@ -706,3 +707,4 @@ SEXP is_direct_child(SEXP pids) {
   return ret;
 #endif
 }
+// # nocov end
