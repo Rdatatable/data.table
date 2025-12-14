@@ -149,7 +149,7 @@ void hash_set(hashtab *self, SEXP key, R_xlen_t value) {
     if (!new_h) internal_error( // # nocov
       __func__, "hash table full at n_full=%zu and failed to rehash", h->size
     );
-    // overwrite the existing table, keeping the external pointer
+    // overwrite the existing table, keeping the EXTPTR -> (next ->)* h chain intact
     free(h->table);
     *h = *new_h;
     free(new_h);

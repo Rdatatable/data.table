@@ -291,7 +291,7 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8, hashtab * marks)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8, hashtab **marks_)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
@@ -299,6 +299,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
   if (ustr_n!=0) internal_error_with_cleanup(__func__, "ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) internal_error_with_cleanup(__func__, "ustr_maxlen isn't 0 when starting range_str");  // # nocov
   bool fail = false;
+  hashtab *marks = *marks_;
   #pragma omp parallel for num_threads(getDTthreads(n, true)) shared(marks, fail)
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
@@ -338,6 +339,8 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       }
     }
   }
+  // if the hash table grew, propagate the changes to the caller
+  *marks_ = marks;
   if (fail) internal_error_with_cleanup(__func__, "failed to grow the 'marks' hash table");
   *out_na_count = na_count;
   *out_anynotascii = anynotascii;
@@ -613,7 +616,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       // need2utf8 now happens inside range_str on the uniques
       marks = hash_create(4096); // relatively small to allocate, can grow exponentially later
       PROTECT(marks->prot); n_protect++;
-      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8, marks);
+      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8, &marks);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));

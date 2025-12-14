@@ -21876,3 +21876,10 @@ test(2347, DT[i, .(result = all(is.na(grp) == is.na(a))), by = grp][,all(result)
 DT = data.table(a = as.Date("2010-01-01"), b = 1L)
 test(2348.1, tryCatch(DT[a == as.Date("20100101")], error=conditionCall)[[1L]], quote(charToDate))
 test(2348.2, tryCatch(DT[a == as.Date("20100101") | b == 2L], error=conditionCall)[[1L]], quote(charToDate))
+
+# exercise rehashing during forder, #6694
+strings = as.character(6145:1)
+DT = data.table(x = strings)
+setorder(DT, x)
+test(2349, DT[["x"]], sort.int(strings, method='radix'))
+rm(DT, strings)
