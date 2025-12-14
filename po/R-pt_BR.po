@@ -6,7 +6,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: data.table 1.80.0\n"
+"Project-Id-Version: data.table 1.18.0\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
 "PO-Revision-Date: 2025-12-14 00:09-0300\n"
 "Last-Translator: Rafael Fontenelle <rffontenelle@gmail.com>\n"
