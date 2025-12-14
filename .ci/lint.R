@@ -6,7 +6,8 @@ if (identical(args, '--help')) {
     'Usage: Rscript .ci/lint.R .ci/linters/<KIND> <WHERE> <WHAT>',
     'KIND must name the directory containing the *.R files defining the linter functions.',
     'WHERE must name the directory containing the files to lint, e.g. "po", or "src".',
-    "WHAT must contain the regular expression matching the files to lint, e.g., '[.]po$', or '[.][ch]$'."
+    "WHAT must contain the regular expression matching the files to lint, e.g., '[.]po$', or '[.][ch]$'.",
+    NULL
   ))
   q('no')
 }
