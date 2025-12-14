@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-02-09 23:51+0300\n"
+"PO-Revision-Date: 2025-12-14 12:08+0300\n"
 "Last-Translator: Ivan Krylov <ikrylov@disroot.org>\n"
 "Language-Team: Russian <https://translate.codeberg.org/projects/data-table-"
 "ru/gettext-R/ru/>\n"
@@ -25,7 +25,7 @@ msgstr "Пакет data.table загружен. При разработке не
 #: IDateTime.R:108
 #, c-format
 msgid "binary + is not defined for \"IDate\" objects"
-msgstr "сложение не определено для объектов «IDate»"
+msgstr "сложение не определено для пары объектов «IDate»"
 
 #: IDateTime.R:115
 #, c-format
@@ -203,16 +203,13 @@ msgid "Coercing %s column %s%s to type %s to match type of %s%s."
 msgstr "Привожу столбец %2$s%3$s типа %1$s к типу %4$s столбца %5$s%6$s."
 
 #: bmerge.R:34
-#, fuzzy, c-format
-#| msgid ""
-#| "Attempting roll join on factor column when joining %s to %s. Only "
-#| "integer, double or character columns may be roll joined."
+#, c-format
 msgid ""
 "Attempting roll join on factor column when joining x.%s to i.%s. Only "
 "integer, double or character columns may be roll joined."
 msgstr ""
 "Ошибочная попытка скользящего соединения для столбца-фактора при соединении "
-"%s с %s. Только численные или строковые столбцы допустимы в скользящем "
+"x.%s с i.%s. Только численные или строковые столбцы допустимы в скользящем "
 "соединении."
 
 #: bmerge.R:72 bmerge.R:73
@@ -355,6 +352,9 @@ msgid ""
 "Invalid set* operation on a recursive index L[[i]] where i has length %d. "
 "Chain [[ instead."
 msgstr ""
+"Некорректная операция присваивания с использованием рекурсивного индекса "
+"L[[i]], где i длины %d. Вместо этого используйте цепочку из операторов [[, "
+"аргумент каждого из которых длины 1."
 
 #: data.table.R:139
 #, c-format
@@ -369,11 +369,10 @@ msgid ""
 "intended for data.table methods to be called. See vignette('datatable-"
 "importing') for details on properly importing data.table."
 msgstr ""
-"Метод [ был вызван для data.table из окружения, не поддерживающего "
-"data.table (см. ?cedta()), но было передано '%s', что означает, что "
-"вызывающей функции действительно нужен метод data.table. Подробнее о "
-"правильном использовании data.table в пакетах см. в vignette('datatable-"
-"importing')."
+"Метод [ был вызван для data.table из окружения, не поддерживающего data."
+"table (см. ?cedta()), но было передано '%s', что означает, что вызывающей "
+"функции действительно нужен метод data.table. Подробнее о правильном "
+"использовании data.table в пакетах см. в vignette('datatable-importing')."
 
 #: data.table.R:170
 #, c-format
@@ -406,9 +405,9 @@ msgid ""
 "frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
 "on= which is '%s'."
 msgstr ""
-"Если указано on=, но не i=, on= должно быть именованным списком или "
-"data.table|frame; тогда будет выполнено натуральное соединение (т. е. по "
-"столбцам с общими именами). Игнорирую on=, которое имеет значение '%s'."
+"Если указано on=, но не i=, on= должно быть именованным списком или data."
+"table|frame; тогда будет выполнено натуральное соединение (т. е. по столбцам "
+"с общими именами). Игнорирую on=, которое имеет значение '%s'."
 
 #: data.table.R:218
 #, c-format
@@ -420,10 +419,9 @@ msgstr ""
 "предупреждение будет преобразовано в ошибку."
 
 #: data.table.R:222
-#, fuzzy, c-format
-#| msgid "mult argument can only be 'first', 'last' or 'all'"
+#, c-format
 msgid "mult argument can only be 'first', 'last', 'all' or 'error'"
-msgstr "аргумент «mult» должен быть 'first', 'last' или 'all'"
+msgstr "аргумент «mult» должен быть 'first', 'last', 'all' или 'error'"
 
 #: data.table.R:224
 #, c-format
@@ -549,6 +547,10 @@ msgid ""
 "` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := "
 "tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
 msgstr ""
+"Некорректное использование := внутри {}. Операция := должна быть "
+"единственным выражением внутри {скобок} в аргументе j. Вместо DT[{tmp1 "
+"<- ...; tmp2 <- ...; столбец := tmp1 * tmp2}], используйте: DT[, столбец := "
+"{tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
 
 #: data.table.R:334
 #, c-format
@@ -630,13 +632,7 @@ msgstr ""
 "A[B] из data.table FAQ 2.14). Подробнее см. FR #657 в трекере data.table."
 
 #: data.table.R:471
-#, fuzzy, c-format
-#| msgid ""
-#| "When i is a data.table (or character vector), the columns to join by must "
-#| "be specified using 'on=' argument (see ?data.table), by keying x (i.e. "
-#| "sorted, and, marked as sorted, see ?setkey), or by sharing column names "
-#| "between x and i (i.e., a natural join). Keyed joins might have further "
-#| "speed benefits on very large data due to x being sorted in RAM."
+#, c-format
 msgid ""
 "When i is a data.table (or character vector), the columns to join by must be "
 "specified using the 'on=' argument (see ?data.table); by keying x (i.e., x "
@@ -645,9 +641,9 @@ msgid ""
 "join). Keyed joins might have further speed benefits on very large data due "
 "to x being sorted in RAM."
 msgstr ""
-"Если i - таблица данных (или строковой вектор), столбцы для соединения можно "
-"указать в аргументе «on=» (см. ?data.table), или путём сортировки «x» по "
-"ключу (см. ?setkey), или путем «естественного» соединения «x» и «i» по общим "
+"Если i - data.table (или строковой вектор), столбцы для соединения можно "
+"указать в аргументе «on=» (см. ?data.table), путём сортировки «x» по ключу "
+"(см. ?setkey), или неявно (on = .NATURAL) для соединения «x» и «i» по общим "
 "именам столбцов. Соединения с ключом могут выиграть немного скорости на "
 "очень больших данных за счёт того, что «x» уже отсортирован."
 
@@ -680,6 +676,9 @@ msgid ""
 "use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows "
 "explosion."
 msgstr ""
+"Соединение многих строк ко многим. Проверьте свои данные, используйте mult!"
+"='all', либо задайте options(datatable.join.many=TRUE), чтобы разрешить "
+"такое соединение."
 
 #: data.table.R:596
 msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
@@ -730,7 +729,7 @@ msgstr "Обращение «irows» для анти-соединения гот
 #: data.table.R:725
 #, c-format
 msgid "`:=` is only supported under with=TRUE, see ?`:=`."
-msgstr ""
+msgstr ":= поддерживается только в сочетании с with=TRUE. См. ?`:=`."
 
 #: data.table.R:767
 #, c-format
@@ -1087,8 +1086,8 @@ msgstr ""
 "ссылаются на один и тот же участок памяти (мы не всегда это можем заметить); "
 "иначе можете смело игнорировать это сообщение. Чтобы его избежать, можно "
 "либо сначала нарастить объект при помощи setalloccol(), либо заранее "
-"скопировать его при помощи copy(), либо заранее увеличить опцию "
-"'datatable.alloccol'."
+"скопировать его при помощи copy(), либо заранее увеличить опцию 'datatable."
+"alloccol'."
 
 #: data.table.R:1410
 msgid ""
@@ -1108,8 +1107,8 @@ msgid ""
 "variable. Try setnames(DT,'.N','N') first."
 msgstr ""
 "Не могу группировать по содержимому стобца «.N», потому что он конфликтует "
-"со специальной переменной .N. Попробуйте сначала выполнить "
-"setnames(DT,'.N','N')."
+"со специальной переменной .N. Попробуйте сначала выполнить setnames(DT,'."
+"N','N')."
 
 #: data.table.R:1496
 #, c-format
@@ -1118,8 +1117,8 @@ msgid ""
 "variable. Try setnames(DT,'.I','I') first."
 msgstr ""
 "Не могу группировать по содержимому стобца «.I», потому что он конфликтует "
-"со специальной переменной .I. Попробуйте сначала выполнить "
-"setnames(DT,'.I','I')."
+"со специальной переменной .I. Попробуйте сначала выполнить setnames(DT,'."
+"I','I')."
 
 #: data.table.R:1515
 msgid ""
@@ -1180,8 +1179,8 @@ msgstr ""
 #: data.table.R:1863
 #, c-format
 msgid ""
-"Unable to optimize call to mean() and could be very slow. You must name "
-"'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
 "'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
 msgstr ""
 "Не удаётся оптимизировать вызов mean(); он может быть очень медленным. "
@@ -1268,8 +1267,8 @@ msgstr "«%s» не является столбцом в x"
 #: data.table.R:2171
 #, c-format
 msgid ""
-"as.integer(rownames)==%d which is outside the column number range "
-"[1,ncol=%d]."
+"as.integer(rownames)==%d which is outside the column number range [1,"
+"ncol=%d]."
 msgstr ""
 "as.integer(rownames)==%d, что выходит за пределы диапазона номеров столбцов "
 "[1,ncol=%d]."
@@ -1318,10 +1317,10 @@ msgid ""
 "not. Has it been created manually (e.g. by using 'structure' rather than "
 "'data.table') or saved to disk using a prior version of data.table?"
 msgstr ""
-"Обычно data.table наследует от data.frame (начиная с версии 1.5), а эта "
-"data.table - нет. Была ли она создана вручную (например, с помощью "
-"'structure', а не 'data.table') или сохранена на диск с помощью предыдущей "
-"версии data.table?"
+"Обычно data.table наследует от data.frame (начиная с версии 1.5), а эта data."
+"table - нет. Была ли она создана вручную (например, с помощью 'structure', а "
+"не 'data.table') или сохранена на диск с помощью предыдущей версии data."
+"table?"
 
 #: data.table.R:2366
 #, c-format
@@ -1372,15 +1371,15 @@ msgstr "Нужно передать либо аргумент «by», либо �
 #, c-format
 msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
 msgstr ""
-"Имя столбца «.ll.tech.split» зарезервировано для внутренних нужд "
-"split.data.table"
+"Имя столбца «.ll.tech.split» зарезервировано для внутренних нужд split.data."
+"table"
 
 #: data.table.R:2534
 #, c-format
 msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
 msgstr ""
-"Имя столбца «.nm.tech.split» зарезервировано для внутренних нужд "
-"split.data.table"
+"Имя столбца «.nm.tech.split» зарезервировано для внутренних нужд split.data."
+"table"
 
 #: data.table.R:2535
 #, c-format
@@ -1540,9 +1539,16 @@ msgid ""
 "j, once only and in particular ways. See help(\":=\", \"data.table\"). A "
 "common reason for this error is allocating a new column in `j` and using `<-"
 "` instead of `:=`; e.g., `DT[, new_col <- 1]` should be `DT[, new_col := "
-"1]`. Another is using `:=` in a multi-statement `{...}` block; please use "
-"`:=` as the only statement in `j`."
+"1]`. Another is using `:=` in a multi-statement `{...}` block; please use `:"
+"=` as the only statement in `j`."
 msgstr ""
+"Убедитесь, что is.data.table(DT) == TRUE. В противном случае := может "
+"работать в аргументе j, но с ограничениями. См. help(\":=\", \"data."
+"table\"). Частой причиной данной ошибки является добавление нового столбца в "
+"j с использованием <- вместо :=. Например, вместо DT[, ещё_столбец <- 1] "
+"нужно писать DT[, ещё_столбец := 1]. Также нельзя использовать := в "
+"{блоках}, содержащих несколько выражений; пожалуйста, сделайте операцию := "
+"единственным выражением верхнего уровня в аргументе j."
 
 #: data.table.R:2925
 #, c-format
@@ -1727,8 +1733,8 @@ msgid ""
 "Git revision is not available. Most likely data.table was installed from "
 "CRAN or local archive.\n"
 "Git revision is available when installing from our repositories 'https://"
-"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/"
-"data.table'."
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"table'."
 msgstr ""
 "Не указан Git-коммит для установленной версии data.table. Вероятно, пакет "
 "был установлен с CRAN (или из локального архива).\n"
@@ -1761,12 +1767,11 @@ msgid ""
 "method from reshape2, try installing that package first, but do note that "
 "reshape2 is superseded and is no longer actively developed."
 msgstr ""
-"Общей функции %1$s в data.table было передано значение типа %2$s, но "
-"data.table::%1$s в настоящее время имеет метод только для data.table. "
-"Сделайте входное значение data.table при помощи setDT(%3$s) или "
-"as.data.table(%3$s). Если хотите использовать метод из reshape2, попробуйте "
-"сначала установить этот пакет, но учтите, что reshape2 устарел и больше "
-"активно не развивается."
+"Общей функции %1$s в data.table было передано значение типа %2$s, но data."
+"table::%1$s в настоящее время имеет метод только для data.table. Сделайте "
+"входное значение data.table при помощи setDT(%3$s) или as.data.table(%3$s). "
+"Если хотите использовать метод из reshape2, попробуйте сначала установить "
+"этот пакет, но учтите, что reshape2 устарел и больше активно не развивается."
 
 #: fcast.R:24
 #, c-format
@@ -1839,16 +1844,16 @@ msgid ""
 "is used to derive a single representative value for each combination in the "
 "output data.table, for example by summing or averaging (fun.aggregate=sum or "
 "fun.aggregate=mean, respectively). Check the resulting table for values "
-"larger than 1 to see which combinations were not unique. See ?"
-"dcast.data.table for more details."
+"larger than 1 to see which combinations were not unique. See ?dcast.data."
+"table for more details."
 msgstr ""
 "'fun.aggregate' является NULL, но обнаружены дублирующиеся комбинации строк/"
 "столбцов, поэтому использую length(). Иными словами, переменные %s, "
 "используемые в «formula», не идентифицируют однозначно строки во «data». В "
 "таких случаях используется 'fun.aggregate' для получения одного "
-"репрезентативного значения для каждой комбинации в выходной таблице "
-"data.table, например, путем суммирования или усреднения (fun.aggregate=sum "
-"или fun.aggregate=mean, соответственно). Посмотрите значения больше 1 в "
+"репрезентативного значения для каждой комбинации в выходной таблице data."
+"table, например, путем суммирования или усреднения (fun.aggregate=sum или "
+"fun.aggregate=mean, соответственно). Посмотрите значения больше 1 в "
 "возвращаемой таблице, чтобы узнать, какие комбинации не были уникальными. "
 "Дополнительные сведения см. в ?dcast.data.table."
 
@@ -1870,16 +1875,15 @@ msgid ""
 "redirect to the relevant reshape2 method; please note that reshape2 is "
 "superseded and is no longer actively developed, and this redirection is now "
 "deprecated. To continue using melt methods from reshape2 while both packages "
-"are attached, e.g. melt.list, you can prepend the namespace, i.e. "
-"reshape2::%1$s(%3$s). In the next version, this warning will become an error."
+"are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::"
+"%1$s(%3$s). In the next version, this warning will become an error."
 msgstr ""
 "Общая функция %1$s в data.table получила значение %2$s и попытается передать "
 "его соответствующемому методу reshape2; обратите внимание, что reshape2 "
 "больше не развивается и это перенаправление теперь устарело. Чтобы "
 "продолжить использовать метод melt из reshape2, когда оба пакета подключены "
-"(например, melt.list), указывайте полное имя функции, например, "
-"reshape2::%1$s(%3$s). В следующей версии это предупреждение превратится в "
-"ошибку."
+"(например, melt.list), указывайте полное имя функции, например, reshape2::"
+"%1$s(%3$s). В следующей версии это предупреждение превратится в ошибку."
 
 #: fmelt.R:19 fmelt.R:73
 #, c-format
@@ -2150,8 +2154,8 @@ msgstr ""
 #: foverlaps.R:27
 #, c-format
 msgid ""
-"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= "
-"by.x <= length(x)"
+"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by."
+"x <= length(x)"
 msgstr ""
 "Недопустимое числовое значение для «by.x»; это должен быть вектор со "
 "значениями 1 <= by.x <= length(x)"
@@ -2159,8 +2163,8 @@ msgstr ""
 #: foverlaps.R:32
 #, c-format
 msgid ""
-"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= "
-"by.y <= length(y)"
+"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by."
+"y <= length(y)"
 msgstr ""
 "Недопустимое числовое значение для «by.y»; это должен быть вектор со "
 "значениями 1 <= by.y <= length(x)"
@@ -2321,8 +2325,8 @@ msgid ""
 "Input column '..na_prefix..' conflicts with data.table internal usage; "
 "please rename"
 msgstr ""
-"Входной столбец «..na_prefix..» конфликтует с деталями реализации "
-"data.table; пожалуйста, переименуйте его"
+"Входной столбец «..na_prefix..» конфликтует с деталями реализации data."
+"table; пожалуйста, переименуйте его"
 
 #: frank.R:46
 #, c-format
@@ -2330,8 +2334,8 @@ msgid ""
 "Input column '..stats_runif..' conflicts with data.table internal usage; "
 "please rename"
 msgstr ""
-"Входной столбец «..stats_runif..» конфликтует с деталями реализации "
-"data.table; пожалуйста, переименуйте его"
+"Входной столбец «..stats_runif..» конфликтует с деталями реализации data."
+"table; пожалуйста, переименуйте его"
 
 #: fread.R:12
 #, c-format
@@ -2346,7 +2350,7 @@ msgstr "Аргумент «encoding» должен быть 'unknown', 'UTF-8' �
 #: fread.R:34
 #, c-format
 msgid "comment.char= must be a single non-NA character."
-msgstr ""
+msgstr "comment.char= должен быть строкой из одного символа, не NA."
 
 #: fread.R:47
 #, c-format
@@ -2400,6 +2404,9 @@ msgid ""
 "External command failed with exit code %d. This can happen when the disk is "
 "full in the temporary directory ('%s'). See ?fread for the tmpdir argument."
 msgstr ""
+"Внешняя команда завершилась неудачно с кодом %d. Такое бывает, если "
+"недостаточно места во временной директории ('%s'). См. ?fread про аргумент "
+"tmpdir."
 
 #: fread.R:86
 #, c-format
@@ -2439,8 +2446,8 @@ msgid ""
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
 msgstr ""
 "Для прямого чтения файлов %s функция fread() требует пакет «R.utils»; не "
-"могу его загрузить. Пожалуйста, установите «R.utils» с помощью "
-"install.packages('R.utils')."
+"могу его загрузить. Пожалуйста, установите «R.utils» с помощью install."
+"packages('R.utils')."
 
 #: fread.R:127
 #, c-format
@@ -2448,6 +2455,8 @@ msgid ""
 "Reading compressed files in fread requires R.utils version 2.13.0 or higher. "
 "Please upgrade R.utils."
 msgstr ""
+"Для чтения сжатых файлов при помощи fread необходим пакет R.utils версии "
+"2.13.0 или выше. Пожалуйста, обновите R.utils."
 
 #: fread.R:134
 #, c-format
@@ -2457,6 +2466,10 @@ msgid ""
 ". This can happen when the disk is full in the temporary directory ('%s'). "
 "See ?fread for the tmpdir argument."
 msgstr ""
+"Не удалось распаковать файл '%s' с использованием R.utils::decompressFile:\n"
+"  %s\n"
+"Такое бывает, если во временной директории ('%s') недостаточно места. См. ?"
+"fread про аргумент tmpdir."
 
 #: fread.R:143
 #, c-format
@@ -2511,8 +2524,8 @@ msgstr ""
 #: fread.R:173
 #, c-format
 msgid ""
-"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with "
-"na.strings=\"\" to turn any number of spaces in string columns into <NA>"
+"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
 msgstr ""
 "%s. Но strip.white=FALSE. Используйте strip.white=TRUE (по умолчанию) вместе "
 "с na.strings=\"\", чтобы превратить любое количество пробелов в строковых "
@@ -2666,67 +2679,69 @@ msgstr ""
 "именами столбцов (NB: с учётом «col.names»)"
 
 #: froll.R:30
-#, fuzzy, c-format
-#| msgid "class must be length 1"
+#, c-format
 msgid "n must be non 0 length"
-msgstr "класс должен быть длины 1"
+msgstr "n должно быть ненулевой длины"
 
 #: froll.R:32
 #, c-format
 msgid "'partial' cannot be used together with align='center'"
-msgstr ""
+msgstr "нельзя использовать 'partial' вместе с align='center'"
 
 #: froll.R:35
 #, c-format
 msgid "'partial' does not support variable length of columns in x"
-msgstr ""
+msgstr "'partial' не поддерживает столбцы переменной длины в x"
 
 #: froll.R:37
 #, c-format
 msgid "'partial' does not support variable nrow of data.tables in x"
-msgstr ""
+msgstr "'partial' не поддерживает таблицы с различным количеством строк в x"
 
 #: froll.R:48
 #, c-format
 msgid "n must be an integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "n должен быть целочисленным; для adaptive=TRUE также допустим список"
 
 #: froll.R:50 froll.R:62
 #, c-format
 msgid "n must be an integer vector or a list of integer vectors"
-msgstr ""
+msgstr "n должен быть целочисленным вектором или списком из них"
 
 #: froll.R:52
 msgid ""
 "partial2adaptive: froll partial=TRUE trimming n and redirecting to "
 "adaptive=TRUE"
-msgstr ""
+msgstr "partial2adaptive: froll(partial=TRUE) усекаю n и вызываю adaptive=TRUE"
 
 #: froll.R:64
 #, c-format
 msgid "adaptive windows provided in n must not to have different lengths"
-msgstr ""
+msgstr "длины векторов адаптивных окон в «n» должны совпадать"
 
 #: froll.R:66
 #, c-format
 msgid ""
 "length of n argument must be equal to number of observations provided in x"
-msgstr ""
+msgstr "длина аргумента n должна совпадать с количеством наблюдений в x"
 
 #: froll.R:68
 #, c-format
 msgid "length of vectors in x must match to length of adaptive window in n"
 msgstr ""
+"длины векторов в x должны совпадать с длинами векторов адаптивных окон в n"
 
 #: froll.R:70
 msgid "partial2adaptive: froll adaptive=TRUE and partial=TRUE trimming n"
-msgstr ""
+msgstr "partial2adaptive: froll adaptive=TRUE и partial=TRUE; усекаю n"
 
 #: froll.R:86
 #, c-format
 msgid ""
 "internal error: misuse of make.roll.names, n must be numeric for !adaptive"
 msgstr ""
+"внутренняя ошибка: неправильное использование make.roll.names, для !adaptive "
+"n должен быть численным"
 
 #: froll.R:92
 #, c-format
@@ -2734,6 +2749,8 @@ msgid ""
 "internal error: misuse of make.roll.names, non-null length 0 n is not "
 "possible for !adaptive"
 msgstr ""
+"внутренняя ошибка: некорректное использование make.roll.names, не-NULL n "
+"длины 0 несовместим с !adaptive"
 
 #: froll.R:106
 #, c-format
@@ -2741,94 +2758,86 @@ msgid ""
 "internal error: make.roll.names call should have been escaped in frollapply "
 "during 'unpack atomic input'"
 msgstr ""
+"внутренняя ошибка: frollapply должна была обойтись без вызова make.roll."
+"names (см. комментарий 'unpack atomic input')"
 
 #: froll.R:110
 #, c-format
 msgid "internal error: make.roll.names generated names of wrong length"
-msgstr ""
+msgstr "внутренняя ошибка: make.roll.names создала имена неправильной длины"
 
 #: froll.R:118
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'x' must be of a numeric type"
-msgstr "«x» должен быть списком"
+msgstr "«x» должен быть численного типа"
 
 #: froll.R:122 froll.R:127
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'n' must be an integer"
-msgstr "«x» должен быть списком"
+msgstr "'n' должен быть целочисленным вектором"
 
 #: froll.R:132
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'n' must be non 0 length"
-msgstr "«x» должен быть списком"
+msgstr "«x» должен быть ненулевой длины"
 
 #: froll.R:134
-#, fuzzy, c-format
-#| msgid "maxgap and minoverlap arguments are not yet implemented."
+#, c-format
 msgid "'align' other than 'right' has not yet been implemented"
-msgstr "Аргументы «maxgap» и «minoverlap» пока не реализованы."
+msgstr "«align» реализован только для значения 'right'"
 
 #: froll.R:136 froll.R:138 mergelist.R:61
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'%s' must be TRUE or FALSE"
-msgstr "%s должно быть TRUE или FALSE"
+msgstr "'%s' должно быть TRUE или FALSE"
 
 #: froll.R:157 froll.R:158
 #, c-format
 msgid "hasNA is deprecated, use has.nf instead"
-msgstr ""
+msgstr "пожалуйста, используйте has.nf вместо hasNA"
 
 #: froll.R:183
 msgid "froll: adaptive=TRUE && align='left' pre-processing for align='right'"
-msgstr ""
+msgstr "froll: adaptive=TRUE && align='left' предобработка для align='right'"
 
 #: froll.R:191
 msgid "froll: adaptive=TRUE && align='left' post-processing from align='right'"
-msgstr ""
+msgstr "froll: adaptive=TRUE && align='left' постобработка из align='right'"
 
 #: frollapply.R:130
 #, c-format
 msgid "'x' is deprecated in frollapply, use 'X' instead"
-msgstr ""
+msgstr "frollapply: пожалуйста, используйте «X» вместо «x»"
 
 #: frollapply.R:134
 #, c-format
 msgid "'n' is deprecated in frollapply, use 'N' instead"
-msgstr ""
+msgstr "frollapply: пожалуйста, используйте «N» вместо «n»"
 
 #: frollapply.R:138
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'by.column' must be TRUE or FALSE"
-msgstr "'fromLast' должно быть TRUE или FALSE"
+msgstr "«by.column» должно быть TRUE или FALSE"
 
 #: frollapply.R:140
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'adaptive' must be TRUE or FALSE"
-msgstr "'fromLast' должно быть TRUE или FALSE"
+msgstr "«adaptive» должно быть TRUE или FALSE"
 
 #: frollapply.R:142
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'partial' must be TRUE or FALSE"
-msgstr "'fromLast' должно быть TRUE или FALSE"
+msgstr "«partial» должно быть TRUE или FALSE"
 
 #: frollapply.R:144
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'give.names' must be TRUE or FALSE"
-msgstr "%s должно быть TRUE или FALSE"
+msgstr "«give.names» должно быть TRUE или FALSE"
 
 #: frollapply.R:146
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'simplify' must be TRUE or FALSE or a function"
-msgstr "%s должно быть TRUE или FALSE"
+msgstr "«simplify» должно быть TRUE или FALSE, либо функцией"
 
 #: frollapply.R:170
 #, c-format
@@ -2836,6 +2845,8 @@ msgid ""
 "frollapply by.column=TRUE requires 'X' argument to be atomic or a list of "
 "those"
 msgstr ""
+"frollapply(by.column=TRUE) требует, чтобы «X» был атомарным вектором или "
+"списком из них"
 
 #: frollapply.R:182
 #, c-format
@@ -2843,6 +2854,8 @@ msgid ""
 "frollapply by.column=FALSE, when provided a list in 'X' then all vectors "
 "must have equal lengths, like data.frame"
 msgstr ""
+"frollapply(by.column=FALSE): если «X» является списком, все векторы в нём "
+"должны быть одинаковой длины, как в таблице данных"
 
 #: frollapply.R:191
 #, c-format
@@ -2850,14 +2863,19 @@ msgid ""
 "frollapply by.column=FALSE got vectorized input in 'X', list of data.frames/"
 "data.tables, but not all columns of data.frames/data.tables are atomic"
 msgstr ""
+"frollapply(by.column=FALSE): «X» является списком таблиц данных, но не все "
+"их столбцы являются атомарными"
 
 #: frollapply.R:197
 #, c-format
 msgid ""
 "frollapply by.column=FALSE supports vectorized input in 'X' as a list of "
-"data.frames/data.tables, not a list of lists. Turn nested lists into "
-"data.frames/data.table and retry."
+"data.frames/data.tables, not a list of lists. Turn nested lists into data."
+"frames/data.table and retry."
 msgstr ""
+"frollapply(by.column=FALSE) поддерживает векторизацию в «X» для списка "
+"таблиц данных, но не для списка из списков. Попробуйте попробовать ещё раз, "
+"превратив вложенные списки в таблицы данных."
 
 #: frollapply.R:199
 #, c-format
@@ -2868,38 +2886,44 @@ msgid ""
 "vectorized input, passing multiple objects to apply function to, it must be "
 "a list of data.frames/data.tables."
 msgstr ""
+"frollapply(by.column=FALSE) список в «X» не является корректно "
+"сформированным. Если список — не векторизованный ввод, а единый объект, от "
+"которого нужно вычислить функцию, все его элементы должны быть атомарными "
+"векторами. Для векторизованного ввода все элементы списка должны быть "
+"таблицами данных."
 
 #: frollapply.R:202
 #, c-format
 msgid ""
-"frollapply by.column=FALSE requires 'X' argument to be a data.table/"
-"data.frame or a list of equal length vectors. For vectorized input can be a "
-"list of data.frames/data.tables, but not a list of lists. All columns/"
-"vectors must be atomic."
+"frollapply by.column=FALSE requires 'X' argument to be a data.table/data."
+"frame or a list of equal length vectors. For vectorized input can be a list "
+"of data.frames/data.tables, but not a list of lists. All columns/vectors "
+"must be atomic."
 msgstr ""
+"frollapply(by.column=FALSE): «X» должен быть таблицей данных или списком "
+"векторов одинаковой длины. Для векторизованного ввода также допустим список "
+"из таблиц данных, но не других списков. Все столбцы должны быть атомарного "
+"типа."
 
 #: frollapply.R:206
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'N' must be non 0 length"
-msgstr "«x» должен быть списком"
+msgstr "«N» должен быть ненулевой длины"
 
 #: frollapply.R:209
 #, c-format
 msgid "'N' must be an integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "«N» должно быть целочисленным; для adaptive=TRUE также допустим список"
 
 #: frollapply.R:211
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'N' must be an integer"
-msgstr "«x» должен быть списком"
+msgstr "«N» должен быть целочисленным"
 
 #: frollapply.R:216 frollapply.R:227 frollapply.R:241
-#, fuzzy, c-format
-#| msgid "maxgap must be a non-negative integer value of length 1"
+#, c-format
 msgid "'N' must be non-negative integer values (>= 0)"
-msgstr "«maxgap» должно быть неотрицательным целым скаляром"
+msgstr "«N» должно содержать целые неотрицательные значения (>= 0)"
 
 #: frollapply.R:220
 #, c-format
@@ -2908,6 +2932,9 @@ msgid ""
 "elements; If you want to call rolling function on list having variable "
 "length of elements call it for each field separately"
 msgstr ""
+"могу вычислять скользящие функции только для «X», длины элементов которого "
+"совпадают; чтобы работать с элементами различных длин, вызовите функцию для "
+"каждого элемента по отдельности"
 
 #: frollapply.R:223 frollapply.R:233
 #, c-format
@@ -2915,26 +2942,29 @@ msgid ""
 "length of integer vector(s) provided as list to 'N' argument must be equal "
 "to number of observations provided in 'X'"
 msgstr ""
+"длины целочисленных элементов списка «N» должны совпадать с количеством "
+"наблюдений в «X»"
 
 #: frollapply.R:235
 #, c-format
 msgid "adaptive windows provided in 'N' must not to have different lengths"
-msgstr ""
+msgstr "векторы ширин окон в «N» должны быть одинаковой длины"
 
 #: frollapply.R:237 frollapply.R:245
 #, c-format
 msgid "'N' must be an integer vector or list of integer vectors"
-msgstr ""
+msgstr "«N» должен быть целочисленным вектором или списком из них"
 
 #: frollapply.R:257
 #, c-format
 msgid "using adaptive TRUE and align 'center' is not implemented"
-msgstr ""
+msgstr "сочетание adaptive=TRUE и align='center' пока не реализовано"
 
 #: frollapply.R:262
 msgid ""
 "frollapply: adaptive=TRUE && align='left' pre-processing for align='right'"
 msgstr ""
+"frollapply(adaptive=TRUE, align='left') предобработка для align='right'"
 
 #: frollapply.R:319
 msgid ""
@@ -2942,6 +2972,9 @@ msgid ""
 "processes raised an error.\n"
 "%s"
 msgstr ""
+"frollapply: вызов parallel::mccollect для получения результатов от дочерних "
+"процессов привёл к ошибке.\n"
+"%s"
 
 #: frollapply.R:320
 msgid ""
@@ -2949,6 +2982,9 @@ msgid ""
 "warnings should have been suppressed by parallel.\n"
 "%s"
 msgstr ""
+"frollapply внутренний вызов parallel::mccollect вызвал предупреждение; "
+"parallel должен был перехватить все предупреждения, исходящие из самой FUN.\n"
+"%s"
 
 #: frollapply.R:322
 msgid ""
@@ -2958,6 +2994,11 @@ msgid ""
 "returned by the your function. Use simplify=FALSE to obtain a list instead.\n"
 "%s"
 msgstr ""
+"frollapply() успешно завершил вычисления, но затем при выполнении функции "
+"«simplify» произошла ошибка. Убедитесь, что аргумент «fill» соответствует "
+"типу и размерности результатов вычисления функции. Используйте "
+"simplify=FALSE, чтобы вернуть список.\n"
+"%s"
 
 #: frollapply.R:323
 msgid ""
@@ -2967,6 +3008,11 @@ msgid ""
 "returned by the your function. Use simplify=FALSE to obtain a list instead.\n"
 "%s"
 msgstr ""
+"frollapply() успешно завершил вычисления, но затем при выполнении функции "
+"«simplify» произошло предупреждение. Убедитесь, что аргумент «fill» "
+"соответствует типу и размерности результатов вычисления функции. Используйте "
+"simplify=FALSE, чтобы вернуть список.\n"
+"%s"
 
 #: frollapply.R:325
 msgid ""
@@ -2978,6 +3024,13 @@ msgid ""
 "use case as new issue in our issue tracker.\n"
 "%s"
 msgstr ""
+"frollapply() успешно завершил вычисления, но затем при выполнении внутренней "
+"функции «simplifylist» произошла ошибка. Убедитесь, что аргумент «fill» "
+"соответствует типу и размерности результатов вычисления функции. Используйте "
+"simplify=FALSE, чтобы вернуть список. Если хотите, чтобы списки данного типа "
+"можно было автоматически упрощать, создайте заявку в системе отслеживания "
+"задач.\n"
+"%s"
 
 #: frollapply.R:326
 msgid ""
@@ -2989,19 +3042,28 @@ msgid ""
 "use case as new issue in our issue tracker.\n"
 "%s"
 msgstr ""
+"frollapply() успешно завершил вычисления, но затем при выполнении внутренней "
+"функции «simplifylist» произошло предупреждение. Убедитесь, что аргумент "
+"«fill» соответствует типу и размерности результатов вычисления функции. "
+"Используйте simplify=FALSE, чтобы вернуть список. Если хотите, чтобы списки "
+"данного типа можно было автоматически упрощать, создайте заявку в системе "
+"отслеживания задач.\n"
+"%s"
 
 #: frollapply.R:332
 msgid "frollapply running on single CPU thread"
-msgstr ""
+msgstr "frollapply: работаю в одном процессе"
 
 #: frollapply.R:348
 msgid ""
 "frollapply run on %d CPU threads throttled to %d threads, input length %d"
 msgstr ""
+"frollapply: из %d возможных процессов ограничиваюсь %d, длина входных данных "
+"%d"
 
 #: frollapply.R:350
 msgid "frollapply running on %d CPU threads"
-msgstr ""
+msgstr "frollapply: работаю на %d дочерних процессах"
 
 #: frollapply.R:409 frollapply.R:433
 #, c-format
@@ -3009,6 +3071,8 @@ msgid ""
 "frollapply received an error(s) when evaluating FUN:\n"
 "%s"
 msgstr ""
+"frollapply: произошла(и) ошибка(и) при выполнении FUN:\n"
+"%s"
 
 #: fwrite.R:20
 #, c-format
@@ -3254,21 +3318,19 @@ msgstr ""
 "Использование столбцов класса integer64 требует установки пакета «bit64»."
 
 #: helpers.R:6
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "argument 'sort' must be TRUE or FALSE"
-msgstr "'fromLast' должно быть TRUE или FALSE"
+msgstr "«sort» должно быть TRUE или FALSE"
 
 #: helpers.R:8
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "argument 'rev' must be TRUE or FALSE"
-msgstr "'fromLast' должно быть TRUE или FALSE"
+msgstr "«rev» должно быть TRUE или FALSE"
 
 #: helpers.R:17
 #, c-format
 msgid ".selfref.ok expects data.table class object."
-msgstr ""
+msgstr "для .selfref.ok необходим объект класса data.table."
 
 #: last.R:11 last.R:16 last.R:24 last.R:29 last.R:33 last.R:41 last.R:52
 #: last.R:57 last.R:65 last.R:70 last.R:74 last.R:82
@@ -3337,19 +3399,17 @@ msgstr "имена столбцов %s дублируются в результ�
 #: merge.R:146
 #, c-format
 msgid "merge.data.table() received %s and %s, all of which will be ignored: %s"
-msgstr ""
+msgstr "merge.data.table() получил %s и %s и все из них проигнорирует: %s"
 
 #: mergelist.R:52
-#, fuzzy, c-format
-#| msgid "'data' must be a data.table"
+#, c-format
 msgid "'x' must be data.table"
-msgstr "«data» должна быть data.table"
+msgstr "«x» должна быть data.table"
 
 #: mergelist.R:54
-#, fuzzy, c-format
-#| msgid "cols must be a character vector of column names"
+#, c-format
 msgid "'on' must be character column names of 'x' argument"
-msgstr "«cols» должен быть строковым вектором имён столбцов"
+msgstr "«on» должен быть строковым вектором имён столбцов «x»"
 
 #: mergelist.R:59
 #, c-format
@@ -3357,66 +3417,65 @@ msgid ""
 "'cols' must be non-zero length, non-NA, integer or character columns of 'x' "
 "argument"
 msgstr ""
+"«cols» должен быть ненулевой длины, не-NA, содержать целочисленные номера "
+"или имена столбцов аргумента «x»"
 
 #: mergelist.R:98
 #, c-format
 msgid "cross join must be used with zero-length on, mult='all', join.many=TRUE"
 msgstr ""
+"перекрёстное соединение необходимо использовать с «on» нулевой длины, "
+"mult='all', join.many=TRUE"
 
 #: mergelist.R:104
-#, fuzzy, c-format
-#| msgid "'names' must be TRUE/FALSE or a character vector."
+#, c-format
 msgid "'on' must be non-zero length character vector"
-msgstr "«names» должно быть TRUE, FALSE или строковым вектором."
+msgstr "«on» должен быть непустым вектором строк"
 
 #: mergelist.R:106
 #, c-format
 msgid "semi and anti joins must be used with mult!='all'"
-msgstr ""
+msgstr "полу- и анти-соединения необходимо использовать с mult!='all'"
 
 #: mergelist.R:157
 #, c-format
 msgid "'on' is missing and necessary key is not present"
-msgstr ""
+msgstr "«on» не указано и нет ключа для соединения"
 
+# %2$s is "LHS" or "RHS", not translatable
 #: mergelist.R:160 mergelist.R:162
 #, c-format
 msgid ""
 "'on' argument specifies columns to join %s that are not present in %s table "
 "%s"
 msgstr ""
+"«on» задаёт столбцы для соединения %s, которые отсутствуют в таблице %s %s"
 
 #: mergelist.R:206
-#, fuzzy, c-format
-#| msgid ""
-#| "%s has duplicated column name %s. Please remove or rename the duplicate "
-#| "and try again."
-#| msgid_plural ""
-#| "%s has duplicated column names %s. Please remove or rename the duplicates "
-#| "and try again."
+#, c-format
 msgid ""
 "merge result has duplicated column names %s, use 'cols' argument or rename "
 "columns in 'l' tables"
 msgstr ""
-"В %s есть несколько дублированных имен столбцов: %s. Пожалуйста, удалите или "
-"переименуйте дубликаты и повторите попытку."
+"результат соединения содержит дублирующиеся имена столбцов %s; используйте "
+"аргумент «cols» или переименуйте столбцы в таблицах «l»"
 
 #: mergelist.R:266 mergelist.R:304
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'%s' must be a list"
-msgstr "«x» должен быть списком"
+msgstr "'%s' должно быть списком"
 
 #: mergelist.R:268
-#, fuzzy, c-format
-#| msgid "Argument 'x' must be a data.table object"
+#, c-format
 msgid "Every element of 'l' list must be data.table objects"
-msgstr "Аргумент «x» должен быть объектом data.table"
+msgstr "Каждый элемент списка «l» должен быть объектом data.table"
 
 #: mergelist.R:270
 #, c-format
 msgid "Tables in 'l' must all have columns, but these entries have 0: %s"
 msgstr ""
+"Во всех таблицах в «l» должны быть столбцы, но в следующих они отсутствуют: "
+"%s"
 
 #: mergelist.R:272
 #, c-format
@@ -3424,10 +3483,12 @@ msgid ""
 "Column names in individual 'l' entries must be unique, but these have some "
 "duplicates: %s"
 msgstr ""
+"В каждом элементе «l» имена столбцов должны различаться, но в следующих "
+"присутствуют дубликаты: %s"
 
 #: mergelist.R:279
 msgid "mergelist: merging %d table(s), took %.3fs"
-msgstr ""
+msgstr "mergelist: соединение %d таблиц(ы), прошло %.3f с"
 
 #: mergelist.R:286
 #, c-format
@@ -3435,6 +3496,8 @@ msgid ""
 "'join.many' must be TRUE or FALSE, or a list of such whose length must be "
 "length(l)-1L"
 msgstr ""
+"«join.many» должно быть TRUE, FALSE, либо списком таких логических скаляров "
+"длиной length(l)-1"
 
 #: mergelist.R:293
 #, c-format
@@ -3442,6 +3505,8 @@ msgid ""
 "'mult' must be one of [error, all, first, last] or NULL, or a list of such "
 "whose length must be length(l)-1L"
 msgstr ""
+"«mult» должен быть скалярной строкой из ['error', 'all', 'first', 'last'], "
+"либо NULL, либо списком из таких элементов длиной length(l)-1L"
 
 #: mergelist.R:298
 #, c-format
@@ -3449,11 +3514,13 @@ msgid ""
 "'how' must be one of [left, inner, full, right, semi, anti, cross], or a "
 "list of such whose length must be length(l)-1L"
 msgstr ""
+"«how» должен быть скалярной строкой из ['left', 'inner', 'full', 'right', "
+"'semi', 'anti', 'cross'] либо списком таких строк длиной length(l)-1L"
 
 #: mergelist.R:306
 #, c-format
 msgid "'cols' must be same length as 'l' (%d != %d)"
-msgstr ""
+msgstr "«cols» должно быть такой же длины, что и «l» (%d != %d)"
 
 #: mergelist.R:309
 #, c-format
@@ -3461,11 +3528,13 @@ msgid ""
 "'cols' must be a list of non-zero length, non-NA, non-duplicated, character "
 "vectors, or eventually NULLs (all columns)"
 msgstr ""
+"«cols» должен быть списком из векторов строк (длины больше 0, без дубликатов "
+"и пропущенных значений) либо значений NULL (что значит все столбцы)"
 
 #: mergelist.R:311
 #, c-format
 msgid "'cols' specify columns not present in corresponding table"
-msgstr ""
+msgstr "«cols» ссылается на столбцы, которых нет в соответствующей таблице"
 
 #: mergelist.R:320
 #, c-format
@@ -3473,10 +3542,12 @@ msgid ""
 "'on' must be non-NA, non-duplicated, character vector, or a list of such "
 "which length must be length(l)-1L"
 msgstr ""
+"«on» должен быть вектором строк (без пропущенных значений или дубликатов) "
+"либо списком длиной length(l)-1L из таких значений"
 
 #: mergelist.R:343
 msgid "mergelist: merging %d tables, took %.3fs"
-msgstr ""
+msgstr "mergelist: соединение %d таблиц заняло %.3f с"
 
 #: onAttach.R:23
 #, c-format
@@ -3524,6 +3595,7 @@ msgid ""
 "You can also try calling Sys.setLanguage('en') prior to reproducing the "
 "error message."
 msgstr ""
+"Вы также можете вызвать Sys.setLanguage('en') и воспроизвести ошибку ещё раз."
 
 #: onAttach.R:34
 #, c-format
@@ -3562,8 +3634,8 @@ msgid ""
 msgstr ""
 "Работаю на Mac. Пожалуйста, прочитайте https://mac.r-project.org/openmp/. "
 "Обратитесь в компанию Apple за поддержкой. Следите за обновлениями на r-"
-"datatable.com, а также за нашими инструкциями для Mac здесь: https://"
-"github.com/Rdatatable/data.table/wiki/Installation. После нескольких лет "
+"datatable.com, а также за нашими инструкциями для Mac здесь: https://github."
+"com/Rdatatable/data.table/wiki/Installation. После нескольких лет "
 "многочисленных сообщений о проблемах с установкой на Mac стоит осторожно "
 "заметить, что на Windows или Linux подобных проблем не возникало.\n"
 "**********"
@@ -3578,9 +3650,9 @@ msgid ""
 "**********"
 msgstr ""
 "Работаю на %s. Это предупреждение обычно не должно появляться на Windows или "
-"Linux, где OpenMP включается скриптом configure пакета путем передачи "
-"-fopenmp компилятору. Если вы видите это предупреждение на Windows или "
-"Linux, пожалуйста, сообщите о проблеме на наш GitHub.\n"
+"Linux, где OpenMP включается скриптом configure пакета путем передачи -"
+"fopenmp компилятору. Если вы видите это предупреждение на Windows или Linux, "
+"пожалуйста, сообщите о проблеме на наш GitHub.\n"
 "**********"
 
 #: onLoad.R:5
@@ -3603,8 +3675,8 @@ msgid ""
 "C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. "
 "Once a package is in this mismatch state it may produce wrong results "
 "silently until you next upgrade the package. This mismatch between R and C "
-"code can happen with any package not just data.table. It is just that "
-"data.table has added this check."
+"code can happen with any package not just data.table. It is just that data."
+"table has added this check."
 msgstr ""
 "Версия data_table.%s (%s) не соответствует пакету (%s). Пожалуйста, закройте "
 "все сеансы R, чтобы освободить старый %s, и переустановите data.table в "
@@ -3694,16 +3766,12 @@ msgid "Key: <%s>"
 msgstr "Ключ: «%s»"
 
 #: print.data.table.R:58
-#, fuzzy
-#| msgid "Null data.%s (0 rows and 0 cols)"
 msgid "Null %s (0 rows and 0 cols)"
-msgstr "Пустой объект data.%s (0 строк и 0 столбцов)"
+msgstr "Пустой объект %s (0 строк и 0 столбцов)"
 
 #: print.data.table.R:60
-#, fuzzy
-#| msgid "Empty data.%s (%d rows and %d cols)"
 msgid "Empty %s (%d rows and %d cols)"
-msgstr "Пустой объект data.%s (%d строк и %d столбцов)"
+msgstr "Пустой объект %s (%d строк и %d столбцов)"
 
 #: print.data.table.R:161
 #, c-format
@@ -3808,8 +3876,8 @@ msgstr ""
 #, c-format
 msgid ""
 "Setting a physical key on .SD is reserved for possible future use; to modify "
-"the original data's order by group. Try setindex() instead. Or, "
-"set*(copy(.SD)) as a (slow) last resort."
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
 msgstr ""
 "Установка физического ключа в .SD зарезервирована для возможного "
 "использования в будущем (например, для изменения порядка исходных данных по "
@@ -3845,8 +3913,8 @@ msgstr "некоторые столбцы отсутствуют в data.table: 
 msgid ""
 "x contains a column called '.xi'. Conflicts with internal use by data.table."
 msgstr ""
-"«x» содержит столбец с именем '.xi'. Оно необходимо для внутренних нужд "
-"data.table."
+"«x» содержит столбец с именем '.xi'. Оно необходимо для внутренних нужд data."
+"table."
 
 #: setkey.R:57
 #, c-format
@@ -4020,8 +4088,9 @@ msgid ""
 "When x's column ('%s') is factor, the corresponding column in y ('%s') "
 "should be character or factor, but found incompatible type '%s'."
 msgstr ""
-"Когда столбец «x» ('%s') является фактором, соответствующий столбец в «y» "
-"('%s') должен быть фактором или строковым, но найден несовместимый тип '%s'."
+"Когда столбец «x» ('%s') является фактором, соответствующий столбец в "
+"«y» ('%s') должен быть фактором или строковым, но найден несовместимый тип "
+"'%s'."
 
 #: setops.R:21
 #, c-format
@@ -4030,9 +4099,9 @@ msgid ""
 "('%s') can not be character or logical types, but found incompatible type "
 "'%s'."
 msgstr ""
-"Когда столбец «x» ('%s') является численным, соответствующий столбец в «y» "
-"('%s') не должен быть логическим или строковым, но найден несовместимый тип "
-"'%s'."
+"Когда столбец «x» ('%s') является численным, соответствующий столбец в "
+"«y» ('%s') не должен быть логическим или строковым, но найден несовместимый "
+"тип '%s'."
 
 #: setops.R:39
 #, c-format
@@ -4093,8 +4162,8 @@ msgstr ""
 #: setops.R:197
 #, c-format
 msgid ""
-"Argument 'tolerance' was forced to lowest accepted value "
-"`sqrt(.Machine$double.eps)` from provided %s"
+"Argument 'tolerance' was forced to lowest accepted value `sqrt(."
+"Machine$double.eps)` from provided %s"
 msgstr ""
 "Увеличиваю аргумент «tolerance» с %s до наиболее строгого допустимого "
 "значения `sqrt(.Machine$double.eps)`"
@@ -4219,6 +4288,8 @@ msgid ""
 "Tests succeeded, but non-test code caused warnings. Search %s for tests "
 "shown above."
 msgstr ""
+"Тесты завершились успешно, но код между тестами вызвал предупреждения. Ищите "
+"указанные выше тесты в %s."
 
 #: test.data.table.R:316
 #, c-format
@@ -4230,23 +4301,18 @@ msgid "10 longest running tests took %ds (%d%% of %ds)"
 msgstr "10 самых долгих тестов заняли %d с (%d%% от %d с)"
 
 #: test.data.table.R:324
-#, fuzzy
-#| msgid ""
-#| "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
 msgid "10 largest RAM increases (MiB); see plot for cumulative effect (if any)"
 msgstr ""
-"10 самых больших скачков потребления памяти (МБ); интегральный эффект см. на "
-"графике"
+"10 самых больших скачков потребления памяти (МиБ); интегральный эффект см. "
+"на графике (если он есть)"
 
 #: test.data.table.R:334
 msgid "All %d tests (last %.8g) in %s completed ok in %s"
 msgstr "Все %d тестов (последний №%.8g) в %s прошли успешно за %s"
 
 #: test.data.table.R:430
-#, fuzzy
-#| msgid "Running test id"
 msgid "Running test id %s"
-msgstr "Запускаю тест №"
+msgstr "Запускаю тест №%s"
 
 #: test.data.table.R:448
 #, c-format
@@ -4575,9 +4641,9 @@ msgid ""
 msgid_plural ""
 "merge.data.table() received %d unnamed arguments in '...' which will be "
 "ignored."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "merge.data.table() игнорирует %d безымянный аргумент в «...»."
+msgstr[1] "merge.data.table() игнорирует %d безымянных аргумента в «...»."
+msgstr[2] "merge.data.table() игнорирует %d безымянных аргументов в «...»."
 
 #: merge.R:138
 msgid ""
@@ -4587,24 +4653,25 @@ msgid_plural ""
 "merge.data.table() received %d unknown keyword arguments which will be "
 "ignored: %s"
 msgstr[0] ""
+"merge.data.table() игнорирует %d неизвестный именованный аргумент: %s"
 msgstr[1] ""
+"merge.data.table() игнорирует %d неизвестных именованных аргумента: %s"
 msgstr[2] ""
+"merge.data.table() игнорирует %d неизвестных именованных аргументов: %s"
 
 #: merge.R:144
 msgid "%d unnamed argument in '...'"
 msgid_plural "%d unnamed arguments in '...'"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%d безымянный аргумент в «...»"
+msgstr[1] "%d безымянных аргумента в «...»"
+msgstr[2] "%d безымянных аргументов в «...»"
 
 #: merge.R:145
-#, fuzzy
-#| msgid "Passed %d unknown and unnamed arguments."
 msgid "%d unknown keyword argument"
 msgid_plural "%d unknown keyword arguments"
-msgstr[0] "Передано %d неизвестных и неименованных аргументов."
-msgstr[1] "Передано %d неизвестных и неименованных аргументов."
-msgstr[2] "Передано %d неизвестных и неименованных аргументов."
+msgstr[0] "%d неизвестный именованный аргумент"
+msgstr[1] "%d неизвестных именованных аргумента"
+msgstr[2] "%d неизвестных именованных аргументов"
 
 #: print.data.table.R:51
 msgid "Index: %s\n"
@@ -4638,9 +4705,9 @@ msgstr[2] "%d ошибок из %d. Ищите в %s тесты №№%s. Про
 #: test.data.table.R:298
 msgid "Caught %d warning outside the test() calls:\n"
 msgid_plural "Caught %d warnings outside the test() calls:\n"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Обнаружено %d предупреждение снаружи вызовов функции test():\n"
+msgstr[1] "Обнаружено %d предупреждения снаружи вызовов функции test():\n"
+msgstr[2] "Обнаружено %d предупреждений снаружи вызовов функции test():\n"
 
 #: utils.R:43
 msgid ""
@@ -4663,13 +4730,13 @@ msgstr[2] ""
 #~ msgid ""
 #~ "You have wrapped := with {} which is ok but then := must be the only "
 #~ "thing inside {}. You have something else inside {} as well. Consider "
-#~ "placing the {} on the RHS of := instead; e.g. "
-#~ "DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]"
+#~ "placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;"
+#~ "tmpVar2<-...;tmpVar1*tmpVar2}]"
 #~ msgstr ""
 #~ "Вы обернули := в {}, что приемлемо, но тогда := должно быть единственным "
 #~ "элементом внутри {}. У вас внутри {} также есть что-то еще. Возможно, вам "
-#~ "нужно поместить {} в правую часть присваивания: "
-#~ "DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]"
+#~ "нужно поместить {} в правую часть присваивания: DT[,someCol:"
+#~ "={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]"
 
 #, c-format
 #~ msgid ""
@@ -4687,8 +4754,8 @@ msgstr[2] ""
 
 #, c-format
 #~ msgid ""
-#~ "Cannot assign to an under-allocated recursively indexed list -- L[[i]]"
-#~ "[,:=] syntax is only valid when i is length 1, but its length is %d"
+#~ "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:"
+#~ "=] syntax is only valid when i is length 1, but its length is %d"
 #~ msgstr ""
 #~ "Невозможно присвоить рекурсивно индексируемому списку с недостаточным "
 #~ "выделением памяти: синтаксис L[[i]][,:=] работает только в том случае, "
@@ -4707,8 +4774,8 @@ msgstr[2] ""
 #~ msgstr ""
 #~ "Убедитесь, что is.data.table(DT) == TRUE. В противном случае внутри "
 #~ "аргумента j можно использовать :=, `:=`(...) и let(...) только один раз и "
-#~ "определенным образом. Обратите внимание, что полное имя "
-#~ "data.table::`:=`(...) не поддерживается. См. help(\":=\")."
+#~ "определенным образом. Обратите внимание, что полное имя data.table::`:"
+#~ "=`(...) не поддерживается. См. help(\":=\")."
 
 #, c-format
 #~ msgid ""
@@ -4783,9 +4850,8 @@ msgstr[2] ""
 #~ "The %1$s generic in data.table has been passed a %2$s and will attempt to "
 #~ "redirect to the relevant reshape2 method; please note that reshape2 is "
 #~ "superseded and is no longer actively developed, and this redirection is "
-#~ "now deprecated. Please do this redirection yourself like "
-#~ "reshape2::%1$s(%3$s). In the next version, this warning will become an "
-#~ "error."
+#~ "now deprecated. Please do this redirection yourself like reshape2::"
+#~ "%1$s(%3$s). In the next version, this warning will become an error."
 #~ msgstr ""
 #~ "Общей функции %1$s в data.table было передано значение %2$s, и она "
 #~ "попытается передать его соответствующему методу из reshape2; обратите "
@@ -4864,3 +4930,11 @@ msgstr[2] ""
 #~ msgstr ""
 #~ "Внутренняя ошибка: объекты difftime не могут быть вычтены из IDate, но "
 #~ "диспетчерская служба должна была вмешаться, чтобы предотвратить это"
+
+#, c-format
+#~ msgid ""
+#~ "%s Each must be length %d; the same length as there are rows in x (after "
+#~ "subsetting if i is provided)."
+#~ msgstr ""
+#~ "%s Каждый из них должен иметь длину %d, такую же, как и строки в "
+#~ "«x» (после извлечения подмножества, если указано «i»)."

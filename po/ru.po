@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-02-09 21:01+0300\n"
+"PO-Revision-Date: 2025-12-14 12:29+0300\n"
 "Last-Translator: Ivan Krylov <ikrylov@disroot.org>\n"
 "Language-Team: Russian <https://translate.codeberg.org/projects/data-table-"
 "ru/gettext-C/ru/>\n"
@@ -45,8 +45,8 @@ msgstr ""
 #: assign.c:155
 #, c-format
 msgid ""
-"Column %d has class 'POSIXlt'. Please convert it to POSIXct (using "
-"as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at "
+"Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as."
+"POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at "
 "all because it uses 40 bytes to store one date."
 msgstr ""
 "Столбец №%d имеет класс 'POSIXlt'. Пожалуйста, преобразуйте его в POSIXct (с "
@@ -84,8 +84,8 @@ msgstr ""
 #, c-format
 msgid ""
 "tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't "
-"set the datatable.alloccol option to be very large, please report to "
-"data.table issue tracker including the result of sessionInfo()."
+"set the datatable.alloccol option to be very large, please report to data."
+"table issue tracker including the result of sessionInfo()."
 msgstr ""
 "В результате избыточного выделения памяти tl (%d) превышает l (%d) более чем "
 "на 10 000 элементов. Если вы не задали параметр datatable.alloccol очень "
@@ -122,22 +122,18 @@ msgstr ""
 "его тип - '%s'."
 
 #: assign.c:216
-#, fuzzy, c-format
-#| msgid ""
-#| "getOption('datatable.alloc') is a numeric vector ok but its length is %d. "
-#| "Its length should be 1."
+#, c-format
 msgid ""
 "getOption('datatable.alloccol') is a numeric vector ok but its length is %d. "
 "Its length should be 1."
 msgstr ""
-"getOption('datatable.alloc') - это числовой вектор, но его длина равна %d. "
-"Его длина должна быть равна 1."
+"getOption('datatable.alloccol') - это числовой вектор, но его длина равна "
+"%d. Его длина должна быть равна 1."
 
 #: assign.c:219
-#, fuzzy, c-format
-#| msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
+#, c-format
 msgid "getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."
-msgstr "getOption('datatable.alloc')==%d.Оно должно быть >=0, а не NA."
+msgstr "getOption('datatable.alloccol')==%d.Оно должно быть >=0, а не NA."
 
 #: assign.c:225 between.c:22 between.c:28 frollR.c:97 frollR.c:112 fsort.c:117
 #: gsumm.c:351 gsumm.c:587 gsumm.c:733 gsumm.c:871 gsumm.c:1026 gsumm.c:1118
@@ -175,16 +171,13 @@ msgid "Assigning to all %d rows\n"
 msgstr "Назначение всех %d строк\n"
 
 #: assign.c:304 assign.c:358
-#, fuzzy, c-format
-#| msgid ""
-#| "Coerced i from numeric to integer. Please pass integer for efficiency; "
-#| "e.g., 2L rather than 2"
+#, c-format
 msgid ""
 "Coerced %s from numeric to integer. Passing integer directly may be more "
 "efficient, e.g., 2L rather than 2"
 msgstr ""
-"Принудительное преобразование i из числового в целое. Для повышения "
-"эффективности передавайте целое число; например, 2L, а не 2"
+"Преобразую %s из числового в целое. Для повышения эффективности передавайте "
+"целое число; например, 2L, а не 2"
 
 #: assign.c:307
 #, c-format
@@ -209,10 +202,9 @@ msgid "Assigning to %d row subset of %d rows\n"
 msgstr "Присвоение подмножеству из %d строк (всего %d)\n"
 
 #: assign.c:326
-#, fuzzy, c-format
-#| msgid "Added %d new column%s initialized with all-NA\n"
+#, c-format
 msgid "Added %d new column initialized with all-NA\n"
-msgstr "Добавлено %d новых столбцов%.0s, инициализированных всеми NA\n"
+msgstr "Добавлен %d новый столбец, инициализированный всеми NA\n"
 
 #: assign.c:332
 msgid "length(LHS)==0; no columns to delete or assign RHS to."
@@ -275,10 +267,9 @@ msgstr ""
 #: assign.c:381
 #, c-format
 msgid ""
-"Supplied %d columns to be assigned an empty list (which may be an empty "
-"data.table or data.frame since they are lists too). To delete multiple "
-"columns use NULL instead. To add multiple empty list columns, use "
-"list(list())."
+"Supplied %d columns to be assigned an empty list (which may be an empty data."
+"table or data.frame since they are lists too). To delete multiple columns "
+"use NULL instead. To add multiple empty list columns, use list(list())."
 msgstr ""
 "%d переданным столбцам присваивается пустой список (который может быть "
 "пустой data.table или data.frame, поскольку они тоже являются списками). "
@@ -443,19 +434,15 @@ msgstr ""
 "трекере проблем data.table."
 
 #: assign.c:496
-#, fuzzy, c-format
-#| msgid ""
-#| "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
-#| "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
-#| "length(cols)==%d\n"
+#, c-format
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d ALTREP==%d, but then is being plonked. length(values)==%d; "
 "length(cols)==%d\n"
 msgstr ""
-"В правой части элемент №%d был скопирован, поскольку MAYBE_REFERENCED==%d и "
-"MAYBE_SHARED==%d, но потом присваивается напрямую. length(правая_часть)==%d; "
-"length(левая_часть)==%d\n"
+"В правой части элемент №%d был скопирован, поскольку MAYBE_REFERENCED==%d, "
+"MAYBE_SHARED==%d и ALTREP==%d, но потом присваивается напрямую. "
+"length(правая_часть)==%d; length(левая_часть)==%d\n"
 
 #: assign.c:501
 #, c-format
@@ -769,24 +756,17 @@ msgid "NAbounds must be TRUE or NA"
 msgstr "NAbounds должно быть либо TRUE, либо NA"
 
 #: between.c:35 between.c:37
-#, fuzzy, c-format
-#| msgid ""
-#| "x is not integer64 but lower and/or upper is integer64. Please align "
-#| "classes."
+#, c-format
 msgid "x is integer64 but %s is not. Please align classes."
 msgstr ""
-"x не является integer64, а lower и/или upper - являются. Пожалуйста, "
-"сделайте классы единообразными."
+"x является integer64, а %s - нет. Пожалуйста, сделайте классы единообразными."
 
 #: between.c:40 between.c:42
-#, fuzzy, c-format
-#| msgid ""
-#| "x is not integer64 but lower and/or upper is integer64. Please align "
-#| "classes."
+#, c-format
 msgid "x is not integer64 but %s is. Please align classes."
 msgstr ""
-"x не является integer64, а lower и/или upper - являются. Пожалуйста, "
-"сделайте классы единообразными."
+"x не является integer64, а %s - является. Пожалуйста, сделайте классы "
+"единообразными."
 
 #: between.c:83
 #, c-format
@@ -873,7 +853,7 @@ msgstr "bmerge: заняло %.3f с\n"
 
 #: bmerge.c:417
 msgid "mult='error' and multiple matches during merge"
-msgstr ""
+msgstr "задано mult='error' и в ходе соединения нашлось несколько совпадений"
 
 #: chmatch.c:5
 #, c-format
@@ -978,8 +958,8 @@ msgstr "у .SD не нашлось атрибута row.names"
 #: dogroups.c:135
 #, c-format
 msgid ""
-"row.names of .SD isn't integer length 2 with NA as first item; "
-"i.e., .set_row_names(). [%s %d %d]"
+"row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
+"set_row_names(). [%s %d %d]"
 msgstr ""
 "у .SD атрибут row.names не является целочисленным вектором с NA в качестве "
 "первого элемента; см. .set_row_names(). [%s %d %d]"
@@ -1009,9 +989,9 @@ msgid ""
 "instead (much quicker), or cbind or merge afterwards."
 msgstr ""
 "Элемент №%d для группы %d в j=list(...) должен быть атомарным вектором или "
-"списком. Если Вы пытаетесь сделать что-то вроде "
-"j=list(.SD,newcol=mean(colA)), лучше воспользуйтесь := по группам (это "
-"гораздо быстрее), либо cbind()/merge() в качестве следующего шага."
+"списком. Если Вы пытаетесь сделать что-то вроде j=list(.SD,"
+"newcol=mean(colA)), лучше воспользуйтесь := по группам (это гораздо "
+"быстрее), либо cbind()/merge() в качестве следующего шага."
 
 #: dogroups.c:295
 #, c-format
@@ -1222,24 +1202,24 @@ msgstr "Объекты классов S4, кроме 'nanotime', не подде
 msgid ""
 "Length of 'yes' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
-"Длина 'yes' составляет %<PRId64>, но должна быть либо 1, либо длины 'test' "
-"(%<PRId64>)."
+"Длина 'yes' составляет %<PRId64>, но должна быть либо 1, либо длины "
+"'test' (%<PRId64>)."
 
 #: fifelse.c:32
 #, c-format
 msgid ""
 "Length of 'no' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
-"Длина 'no' составляет %<PRId64>, но должна быть либо 1, либо длины 'test' "
-"(%<PRId64>)."
+"Длина 'no' составляет %<PRId64>, но должна быть либо 1, либо длины "
+"'test' (%<PRId64>)."
 
 #: fifelse.c:34
 #, c-format
 msgid ""
 "Length of 'na' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
-"Длина 'na' составляет %<PRId64>, но должна быть либо 1, либо длины 'test' "
-"(%<PRId64>)."
+"Длина 'na' составляет %<PRId64>, но должна быть либо 1, либо длины "
+"'test' (%<PRId64>)."
 
 #: fifelse.c:52
 #, c-format
@@ -1312,8 +1292,8 @@ msgid ""
 "S4 class objects (except nanotime) are not supported. Please see https://"
 "github.com/Rdatatable/data.table/issues/4131."
 msgstr ""
-"Объекты классов S4 (кроме nanotime) не поддерживаются. См. https://"
-"github.com/Rdatatable/data.table/issues/4131."
+"Объекты классов S4 (кроме nanotime) не поддерживаются. См. https://github."
+"com/Rdatatable/data.table/issues/4131."
 
 #: fifelse.c:238
 #, c-format
@@ -1460,8 +1440,8 @@ msgid ""
 "'measure.vars' is missing. Assigning all columns other than 'id.vars' "
 "columns as 'measure.vars'.\n"
 msgstr ""
-"Аргумент 'measure.vars' не передан. Считаю ими все столбцы, которые не "
-"'id.vars'.\n"
+"Аргумент 'measure.vars' не передан. Считаю ими все столбцы, которые не 'id."
+"vars'.\n"
 
 #: fmelt.c:251
 #, c-format
@@ -1473,8 +1453,8 @@ msgid ""
 "'id.vars' is missing. Assigning all columns other than 'measure.vars' "
 "columns as 'id.vars'.\n"
 msgstr ""
-"Аргумент 'id.vars' не передан. Считаю ими все столбцы, которые не "
-"'measure.vars'.\n"
+"Аргумент 'id.vars' не передан. Считаю ими все столбцы, которые не 'measure."
+"vars'.\n"
 
 #: fmelt.c:263
 #, c-format
@@ -1523,8 +1503,8 @@ msgid ""
 "variable_table attribute of measure.vars should be either NULL or a data "
 "table"
 msgstr ""
-"атрибут measure.vars \"variable_table\" должен быть либо NULL, либо "
-"data.table"
+"атрибут measure.vars \"variable_table\" должен быть либо NULL, либо data."
+"table"
 
 #: fmelt.c:466
 #, c-format
@@ -2032,10 +2012,9 @@ msgid "  Opening file %s\n"
 msgstr "  Открываю файл %s\n"
 
 #: fread.c:1523
-#, fuzzy, c-format
-#| msgid "Column %d of item %d: %s"
+#, c-format
 msgid "Couldn't open file %s: %s"
-msgstr "Столбец %d элемента %d: %s"
+msgstr "Не удалось открыть файл %s: %s"
 
 #: fread.c:1527
 #, c-format
@@ -2045,7 +2024,7 @@ msgstr "Файл открыт, но не могу узнать его разме
 #: fread.c:1531 fread.c:1567
 #, c-format
 msgid "File size [%s] exceeds the address space: %s"
-msgstr ""
+msgstr "Размер файла [%s] превышает размер адресного пространства: %s"
 
 #: fread.c:1534 fread.c:1570
 #, c-format
@@ -2144,21 +2123,20 @@ msgid ""
 "themselves vs %d [\\r]*\\n). This happens with old Mac CSV or when there is "
 "no \\r at all.\n"
 msgstr ""
+"  Буду считать символ \\r сам по себе как конец строки (найдено: %d \\r "
+"самих по себе против %d [\\r]*\\n). Так бывает со старыми CSV с компьютеров "
+"Mac или когда в файле вообще нет \\r.\n"
 
 #: fread.c:1659
-#, fuzzy, c-format
-#| msgid ""
-#| "  \\n has been found in the input and different lines can end with "
-#| "different line endings (e.g. mixed \\n and \\r\\n in one file). This is "
-#| "common and ideal.\n"
+#, c-format
 msgid ""
 "  \\n has been found in the input (counts: %d \\r by themselves vs %d "
 "[\\r]*\\n) and different lines can end with different line endings (e.g. "
 "mixed \\n and \\r\\n in one file). This is common and ideal.\n"
 msgstr ""
-"  \\n был найден во входных данных, и разные строки могут заканчиваться "
-"разными маркерами (например, смесь \\n и \\r\\n в одном файле). Это "
-"нормально.\n"
+"  \\n был найден во входных данных (количества: %d \\r самих по себе против "
+"%d [\\r]*\\n), и разные строки могут заканчиваться разными маркерами "
+"(например, смесь \\n и \\r\\n в одном файле). Это нормально.\n"
 
 #: fread.c:1684
 #, c-format
@@ -2224,27 +2202,23 @@ msgstr ""
 "к регистру: никаких шаблонов, масок или регулярных выражений)"
 
 #: fread.c:1749
-#, fuzzy, c-format
-#| msgid ""
-#| "Found skip='%s' on line %<PRIu64>. Taking this to be header row or first "
-#| "row of data.\n"
+#, c-format
 msgid ""
 "Found skip='%s' on line %d. Taking this to be header row or first row of "
 "data.\n"
 msgstr ""
-"В строке %2$<PRIu64> нашлось skip='%1$s'. Считаю, что это строка заголовка "
-"или первая строка данных.\n"
+"В строке %2$d нашлось skip='%1$s'. Считаю, что это строка заголовка или "
+"первая строка данных.\n"
 
 #: fread.c:1763
-#, fuzzy, c-format
-#| msgid "  Skipped to line %<PRIu64> in the file"
+#, c-format
 msgid "  Skipped to line %d in the file"
-msgstr "  Переход к строке %<PRIu64> в файле"
+msgstr "  Переход к строке %d в файле"
 
 #: fread.c:1766
 #, c-format
 msgid "skip=%<PRId64> but the input only has %d line"
-msgstr ""
+msgstr "skip=%<PRId64>, но во входных данных есть только %d строка"
 
 #: fread.c:1777
 msgid ""
@@ -2282,28 +2256,24 @@ msgid "  Using supplied sep '%s'\n"
 msgstr "  Использую переданный разделитель '%s'\n"
 
 #: fread.c:1867
-#, fuzzy, c-format
-#| msgid "  with %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep=%#02x  with %d fields using quote rule %d\n"
-msgstr "  с %d полями и режимом кавычек %d\n"
+msgstr "  sep=%#02x  с %d полями и режимом кавычек %d\n"
 
 #: fread.c:1868
-#, fuzzy, c-format
-#| msgid "  with %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep='%c'  with %d fields using quote rule %d\n"
-msgstr "  с %d полями и режимом кавычек %d\n"
+msgstr "  sep='%c'  с %d полями и режимом кавычек %d\n"
 
 #: fread.c:1934
-#, fuzzy, c-format
-#| msgid "  with %d lines of %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep=%#02x  with %d lines of %d fields using quote rule %d\n"
-msgstr "  с %d строками по %d полей и режимом кавычек %d\n"
+msgstr "  sep=%#02x  с %d строками по %d полей и режимом кавычек %d\n"
 
 #: fread.c:1935
-#, fuzzy, c-format
-#| msgid "  with %d lines of %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep='%c'  with %d lines of %d fields using quote rule %d\n"
-msgstr "  с %d строками по %d полей и режимом кавычек %d\n"
+msgstr "  sep='%c'  с %d строками по %d полей и режимом кавычек %d\n"
 
 #: fread.c:1943
 msgid ""
@@ -2398,16 +2368,13 @@ msgid "  sep=',' so dec set to '.'\n"
 msgstr "  sep=',' так что считаю dec='.'\n"
 
 #: fread.c:2069
-#, fuzzy, c-format
-#| msgid ""
-#| "  Number of sampling jump points = %d because nrow limit (%<PRIu64>) "
-#| "supplied\n"
+#, c-format
 msgid ""
 "  Number of sampling jump points = %d because nrow limit (%<PRId64>) "
 "supplied\n"
 msgstr ""
 "  Количество точек отбора = %d, потому что передано ограничение на "
-"количество строк (%<PRIu64>)\n"
+"количество строк (%<PRId64>)\n"
 
 #: fread.c:2071
 #, c-format
@@ -2415,16 +2382,13 @@ msgid "  Number of sampling jump points = %d because jump0size==0\n"
 msgstr "  Количество точек отбора = %d, потому что jump0size==0\n"
 
 #: fread.c:2073
-#, fuzzy, c-format
-#| msgid ""
-#| "  Number of sampling jump points = %d because (%<PRIu64> bytes from row 1 "
-#| "to eof) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
+#, c-format
 msgid ""
 "  Number of sampling jump points = %d because (%td bytes from row 1 to "
 "eof) / (2 * %td jump0size) == %td\n"
 msgstr ""
-"  Количество точек отбора = %d, потому что (%<PRIu64> байт от первой строки "
-"до конца файла) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
+"  Количество точек отбора = %d, потому что (%td байт от первой строки до "
+"конца файла) / (2 * %td jump0size) == %td\n"
 
 #: fread.c:2129
 #, c-format
@@ -2557,36 +2521,27 @@ msgid "  Type codes (first row)   : %s  Quote rule %d\n"
 msgstr "  Коды типов (первая строка)   : %s  Режим кавычек %d\n"
 
 #: fread.c:2268
-#, fuzzy, c-format
-#| msgid ""
-#| "  All rows were sampled since file is small so we know nrow=%<PRIu64> "
-#| "exactly\n"
+#, c-format
 msgid ""
 "  All rows were sampled since file is small so we know nrow=%<PRId64> "
 "exactly\n"
 msgstr ""
 "  Рассмотрены все строки, поскольку файл очень мал и мы точно знаем "
-"nrow=%<PRIu64>\n"
+"nrow=%<PRId64>\n"
 
 #: fread.c:2281
-#, fuzzy, c-format
-#| msgid ""
-#| "  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
-#| "points\n"
+#, c-format
 msgid ""
 "  Sampled %<PRId64> rows (handled \\n inside quoted fields) at %d jump "
 "points\n"
 msgstr ""
-"  Рассмотрено %<PRIu64> строк (с учётом \\n внутри полей с кавычками) в %d "
+"  Рассмотрено %<PRId64> строк (с учётом \\n внутри полей с кавычками) в %d "
 "точках выборки\n"
 
 #: fread.c:2282
-#, fuzzy, c-format
-#| msgid ""
-#| "  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
+#, c-format
 msgid "  Bytes from first data row on line %d to the end of last row: %td\n"
-msgstr ""
-"  Байт от начала данных на строке %d до конца последней строки: %<PRIu64>\n"
+msgstr "  Байт от начала данных на строке %d до конца последней строки: %td\n"
 
 #: fread.c:2283
 #, c-format
@@ -2596,28 +2551,23 @@ msgstr ""
 "максимум=%d\n"
 
 #: fread.c:2284
-#, fuzzy, c-format
-#| msgid "  Estimated number of rows: %<PRIu64> / %.2f = %<PRIu64>\n"
+#, c-format
 msgid "  Estimated number of rows: %td / %.2f = %<PRId64>\n"
-msgstr "  Оценка числа строк: %<PRIu64> / %.2f = %<PRIu64>\n"
+msgstr "  Оценка числа строк: %td / %.2f = %<PRId64>\n"
 
 #: fread.c:2285
-#, fuzzy, c-format
-#| msgid ""
-#| "  Initial alloc = %<PRIu64> rows (%<PRIu64> + %d%%) using bytes/"
-#| "max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
+#, c-format
 msgid ""
 "  Initial alloc = %<PRId64> rows (%<PRId64> + %d%%) using bytes/"
 "max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
-"  Начальное выделение памяти = %<PRIu64> строк (%<PRIu64> + %d%%), используя "
+"  Начальное выделение памяти = %<PRId64> строк (%<PRId64> + %d%%), используя "
 "байт/max(среднее-2*σ, min) с ограничением между [1.1*оценка, 2.0*оценка]\n"
 
 #: fread.c:2292
-#, fuzzy, c-format
-#| msgid "  Alloc limited to lower nrows=%<PRIu64> passed in.\n"
+#, c-format
 msgid "  Alloc limited to lower nrows=%<PRId64> passed in.\n"
-msgstr "  Выделение памяти ограничено переданным nrows=%<PRIu64>.\n"
+msgstr "  Выделение памяти ограничено переданным nrows=%<PRId64>.\n"
 
 #: fread.c:2304
 msgid "[08] Assign column names\n"
@@ -2637,10 +2587,9 @@ msgid "  Cancelled by user: userOverride() returned false."
 msgstr "  Отменено пользователем: userOverride() вернула false."
 
 #: fread.c:2376
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for '%s': %s"
+#, c-format
 msgid "Failed to allocate %zu bytes for '%s': %s"
-msgstr "Не удалось выделить %d байт для '%s': %s"
+msgstr "Не удалось выделить %zu байт для '%s': %s"
 
 #: fread.c:2383
 #, c-format
@@ -2664,11 +2613,10 @@ msgid "[10] Allocate memory for the datatable\n"
 msgstr "[10] Выделяю память под data.table\n"
 
 #: fread.c:2407
-#, fuzzy, c-format
-#| msgid "  Allocating %d column slots (%d - %d dropped) with %<PRIu64> rows\n"
+#, c-format
 msgid "  Allocating %d column slots (%d - %d dropped) with %<PRId64> rows\n"
 msgstr ""
-"  Выделяю %d слотов столбцов (%d - %d пропущено) с %<PRIu64> строками\n"
+"  Выделяю %d слотов столбцов (%d - %d пропущено) с %<PRId64> строками\n"
 
 #: fread.c:2462
 #, c-format
@@ -2680,15 +2628,12 @@ msgid "[11] Read the data\n"
 msgstr "[11] Читаю данные\n"
 
 #: fread.c:2713
-#, fuzzy, c-format
-#| msgid ""
-#| "Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row "
-#| "%<PRIu64>\n"
+#, c-format
 msgid ""
 "Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %<PRId64>\n"
 msgstr ""
 "Меняю тип столбца %d%s%.*s%s с '%s' на '%s' из-за <<%.*s>> на строке "
-"%<PRIu64>\n"
+"%<PRId64>\n"
 
 #: fread.c:2839
 #, c-format
@@ -2701,10 +2646,9 @@ msgid "  Dropping %d overallocated columns\n"
 msgstr "  Выбрасываю %d лишних столбцов\n"
 
 #: fread.c:2844
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for '%s'."
+#, c-format
 msgid "Failed to allocate %zu bytes for '%s'."
-msgstr "Не удалось выделить %d байт оперативной памяти под '%s'."
+msgstr "Не удалось выделить %zu байт оперативной памяти под '%s'."
 
 #: fread.c:2857
 #, c-format
@@ -2714,16 +2658,13 @@ msgstr ""
 "Внутренняя ошибка в %s: %s. Пожалуйста, сообщите в трекер ошибок data.table"
 
 #: fread.c:2864
-#, fuzzy, c-format
-#| msgid ""
-#| "  Too few rows allocated. Allocating additional %<PRIu64> rows (now "
-#| "nrows=%<PRIu64>) and continue reading from jump %d\n"
+#, c-format
 msgid ""
 "  Too few rows allocated. Allocating additional %<PRId64> rows (now "
 "nrows=%<PRId64>) and continue reading from jump %d\n"
 msgstr ""
-"  Выделено памяти под слишком мало строк. Выделяю ещё %<PRIu64> строк "
-"(теперь nrows=%<PRIu64>) и продолжаю читать с точки перехода №%d\n"
+"  Выделено памяти под слишком мало строк. Выделяю ещё %<PRId64> строк "
+"(теперь nrows=%<PRId64>) и продолжаю читать с точки перехода №%d\n"
 
 #: fread.c:2871
 #, c-format
@@ -2762,43 +2703,32 @@ msgid "Discarded single-line footer: <<%s>>"
 msgstr "Пропущена завершающая строка после данных: <<%s>>"
 
 #: fread.c:2960
-#, fuzzy, c-format
-#| msgid ""
-#| "Stopped early on line %<PRIu64>. Expected %d fields but found %d. "
-#| "Consider fill=%d or even more based on your knowledge of the input file. "
-#| "Use fill=Inf for reading the whole file for detecting the number of "
-#| "fields. First discarded non-empty line: <<%s>>"
+#, c-format
 msgid ""
 "Stopped early on line %<PRId64>. Expected %d fields but found %d. Consider "
 "fill=%d or even more based on your knowledge of the input file. Use fill=Inf "
 "for reading the whole file for detecting the number of fields. First "
 "discarded non-empty line: <<%s>>"
 msgstr ""
-"Ранняя остановка на строке %<PRIu64>. Ожидалось %d полей, а найдено %d. "
+"Ранняя остановка на строке %<PRId64>. Ожидалось %d полей, а найдено %d. "
 "Попробуйте задать fill=%d или больше, исходя из Ваших знаний о входном "
 "файле. Используйте fill=Inf, чтобы считать весь файл для определения "
 "количества полей. Первая отброшенная непустая строка: <<%s>>"
 
 #: fread.c:2963
-#, fuzzy, c-format
-#| msgid ""
-#| "Stopped early on line %<PRIu64>. Expected %d fields but found %d. "
-#| "Consider fill=TRUE and comment.char=. First discarded non-empty line: "
-#| "<<%s>>"
+#, c-format
 msgid ""
 "Stopped early on line %<PRId64>. Expected %d fields but found %d. Consider "
 "fill=TRUE. First discarded non-empty line: <<%s>>"
 msgstr ""
-"Ранняя остановка на строке %<PRIu64>. Ожидалось %d полей, а найдено %d. "
-"Попробуйте fill=TRUE и comment.char=. Первая отброшенная непустая строка: "
-"<<%s>>"
+"Ранняя остановка на строке %<PRId64>. Ожидалось %d полей, а найдено %d. "
+"Попробуйте fill=TRUE. Первая отброшенная непустая строка: <<%s>>"
 
 #: fread.c:2976
-#, fuzzy, c-format
-#| msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
+#, c-format
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"
 msgstr ""
-"%8.3f с (%3.0f%%) Отображение файла размером %.3f ГБ в виртуальную память\n"
+"%8.3f с (%3.0f%%) Отображение файла размером %.3f ГиБ в виртуальную память\n"
 
 #: fread.c:2979
 #, c-format
@@ -2806,35 +2736,28 @@ msgid " ncol=%d and header detection\n"
 msgstr " ncol=%d и определение заголовка\n"
 
 #: fread.c:2980
-#, fuzzy, c-format
-#| msgid "%8.3fs (%3.0f%%) Column type detection using %<PRIu64> sample rows\n"
+#, c-format
 msgid "%8.3fs (%3.0f%%) Column type detection using %<PRId64> sample rows\n"
 msgstr ""
-"%8.3f с (%3.0f%%) Определение типов столбцов по выборке из %<PRIu64> строк\n"
+"%8.3f с (%3.0f%%) Определение типов столбцов по выборке из %<PRId64> строк\n"
 
 #: fread.c:2982
-#, fuzzy, c-format
-#| msgid ""
-#| "%8.3fs (%3.0f%%) Allocation of %<PRIu64> rows x %d cols (%.3fGB) of which "
-#| "%<PRIu64> (%3.0f%%) rows used\n"
+#, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Allocation of %<PRId64> rows x %d cols (%.3fGiB) of which "
 "%<PRId64> (%3.0f%%) rows used\n"
 msgstr ""
-"%8.3f с (%3.0f%%) Выделение памяти под %<PRIu64> строк * %d столбцов (%.3f "
-"ГБ), из которых использовано %<PRIu64> (%3.0f%%) строк\n"
+"%8.3f с (%3.0f%%) Выделение памяти под %<PRId64> строк * %d столбцов (%.3f "
+"ГиБ), из которых использовано %<PRId64> (%3.0f%%) строк\n"
 
 #: fread.c:2986
-#, fuzzy, c-format
-#| msgid ""
-#| "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d "
-#| "rows) using %d threads\n"
+#, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMiB (each chunk "
 "%<PRId64> rows) using %d threads\n"
 msgstr ""
-"%8.3f с (%3.0f%%) Чтение %d частей (%d перемотано) размером %.3f МБ (по %d "
-"строк) с использованием %d потоков\n"
+"%8.3f с (%3.0f%%) Чтение %d частей (%d перемотано) размером %.3f МиБ (по "
+"%<PRId64> строк) с использованием %d потоков\n"
 
 #: fread.c:2988
 #, c-format
@@ -2956,11 +2879,11 @@ msgstr ""
 #: freadR.c:309
 #, c-format
 msgid ""
-"Column number %d (select[%d]) is negative but should be in the range "
-"[1,ncol=%d]. Consider drop= for column exclusion."
+"Column number %d (select[%d]) is negative but should be in the range [1,"
+"ncol=%d]. Consider drop= for column exclusion."
 msgstr ""
-"Номер столбца %d (select[%d]) отрицательный, но должен быть в диапазоне "
-"[1,ncol=%d]. Чтобы исключить столбцы, используйте drop=."
+"Номер столбца %d (select[%d]) отрицательный, но должен быть в диапазоне [1,"
+"ncol=%d]. Чтобы исключить столбцы, используйте drop=."
 
 #: freadR.c:310
 #, c-format
@@ -3045,126 +2968,109 @@ msgid "%s: align %d, shift answer by %d\n"
 msgstr "%s: выравнивание %d, смещение ответа на %d\n"
 
 #: froll.c:107 frolladaptive.c:75
-#, fuzzy, c-format
-#| msgid "%s: processing algo %u took %.3fs\n"
+#, c-format
 msgid "%s: processing fun %d algo %u took %.3fs\n"
-msgstr "%s: обработка алгоритмом %u заняла %.3f с\n"
+msgstr "%s: обработка функцией %d, алгоритмом %u заняла %.3f с\n"
 
 #: froll.c:173 froll.c:363 froll.c:540 froll.c:747 froll.c:986 froll.c:1153
 #: froll.c:1505
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
+#, c-format
 msgid "%s: running for input length %<PRIu64>, window %d, hasnf %d, narm %d\n"
 msgstr ""
-"%s: работаю для входных данных длины %<PRIu64>, ширина окна %d, hasna=%d, "
+"%s: работаю для входных данных длины %<PRIu64>, ширина окна %d, hasnf=%d, "
 "narm=%d\n"
 
 #: froll.c:176 froll.c:239
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size 0, returning all NaN vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна 0, возвращаю вектор из NaN\n"
 
 #: froll.c:236 froll.c:424 froll.c:636 froll.c:840 froll.c:1072 froll.c:1766
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, "
-#| "narm %d\n"
+#, c-format
 msgid ""
 "%s: running in parallel for input length %<PRIu64>, window %d, hasnf %d, "
 "narm %d\n"
 msgstr ""
 "%s: работаю параллельно для входных данных длины %<PRIu64>, ширина окна %d, "
-"hasna=%d, narm=%d\n"
+"hasnf=%d, narm=%d\n"
 
 #: froll.c:366 froll.c:427
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size 0, returning all 0 vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна 0, возвращаю вектор из нулей\n"
 
 #: froll.c:543 froll.c:639
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size 0, returning all -Inf vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна 0, возвращаю вектор из -Inf\n"
 
 #: froll.c:626
 #, c-format
 msgid "%s: nested window max calculation called %<PRIu64> times\n"
-msgstr ""
+msgstr "%s: вложенное вычисление максимума внутри окна вызвано %<PRIu64> раз\n"
 
 #: froll.c:750 froll.c:843
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size 0, returning all +Inf vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна 0, возвращаю вектор из +Inf\n"
 
 #: froll.c:833
 #, c-format
 msgid "%s: nested window min calculation called %<PRIu64> times\n"
-msgstr ""
+msgstr "%s: вложенное вычисление минимума внутри окна вызвано %<PRIu64> раз\n"
 
 #: froll.c:989 froll.c:1075
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size 0, returning all 1 vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна 0, возвращаю вектор из единиц\n"
 
 #: froll.c:1156 froll.c:1222
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size %d, returning all NA vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна %d, возвращаю вектор из NA\n"
 
 #: froll.c:1209
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: NA (or other non-finite) value(s) are present in input, re-running "
-#| "with extra care for NAs\n"
+#, c-format
 msgid ""
 "%s: non-finite values are present in input, redirecting to frollvarExact "
 "using has.nf=TRUE\n"
 msgstr ""
-"%s: во входных данных найдены NA (или другие не-конечные) значения; запускаю "
-"ещё раз в более осторожном режиме\n"
+"%s: во входных данных найдены не-конечные значения; запускаю "
+"frollvarExact(has.nf=TRUE)\n"
 
 #: froll.c:1219
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
+#, c-format
 msgid ""
 "%s: running %s for input length %<PRIu64>, window %d, hasnf %d, narm %d\n"
 msgstr ""
-"%s: работаю для входных данных длины %<PRIu64>, ширина окна %d, hasna=%d, "
-"narm=%d\n"
+"%s: запускаю %s для входных данных длины %<PRIu64>, ширина окна %d, "
+"hasnf=%d, narm=%d\n"
 
 #: froll.c:1324
 #, c-format
 msgid "%s: calling sqrt(frollvarFast(...))\n"
-msgstr ""
+msgstr "%s: считаю sqrt(frollvarFast(...))\n"
 
 #: froll.c:1335
 #, c-format
 msgid "%s: calling sqrt(frollvarExact(...))\n"
-msgstr ""
+msgstr "%s: считаю sqrt(frollvarExact(...))\n"
 
 #: froll.c:1508 froll.c:1769
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: window width of size 0, returning all NA vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: ширина окна равна 0, возвращаю вектор из NA\n"
 
 #: froll.c:1516
 #, c-format
 msgid "%s: window width of size %d, skip median and use simple loop\n"
 msgstr ""
+"%s: ширина окна равна %d, использую простой цикл вместо расчёта медианы\n"
 
 #: froll.c:1555
 #, c-format
 msgid "%s: NAs detected, fall back to frollmedianExact\n"
-msgstr ""
+msgstr "%s: обнаружены NA, перехожу на frollmedianExact\n"
 
 #: froll.c:1567
 #, c-format
@@ -3172,11 +3078,14 @@ msgid ""
 "%s: nx=%<PRIu64> is not multiple of k=%d, padding with %d elements, new "
 "nx=%<PRIu64>\n"
 msgstr ""
+"%s: nx=%<PRIu64> не является кратным k=%d, дополняю %d элементами, итого "
+"nx=%<PRIu64>\n"
 
 #: froll.c:1628
 #, c-format
 msgid "%s: finding order and initializing links for %d blocks %stook %.3fs\n"
 msgstr ""
+"%s: сортировка и инициализация связей между %d блоками (%s) заняла %.3f с\n"
 
 #: froll.c:1638
 #, c-format
@@ -3185,90 +3094,69 @@ msgid ""
 "uneven window size, length of input a multiple of window size, no NAs in the "
 "input data\n"
 msgstr ""
+"%s: использую алгоритм от Jukka Suomela для нечётного размера окна, кратного "
+"ему входного вектора и без пропусков в данных\n"
 
 #: froll.c:1688
 #, c-format
 msgid "%s: skip rolling for %d padded elements\n"
-msgstr ""
+msgstr "%s: пропускаю расчёт оконной функции для %d дополнительных элементов\n"
 
 #: froll.c:1721
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "%s: rolling took %.3f\n"
-msgstr "%s: заняло %.3f с\n"
+msgstr "%s: расчёт оконной функции занял %.3f с\n"
 
 #: froll.c:1818 frolladaptive.c:992
 #, c-format
 msgid "%s: no NAs detected, redirecting to itself using has.nf=FALSE\n"
-msgstr ""
+msgstr "%s: нет пропусков в данных, использую has.nf=FALSE\n"
 
 #: frollR.c:18
-#, fuzzy
-#| msgid ""
-#| "x must be of type numeric or logical, or a list, data.frame or data.table "
-#| "of such"
 msgid ""
 "'x' must be of type numeric or logical, or a list, data.frame or data.table "
 "of such"
 msgstr ""
-"x должен иметь численным, логическим, списком, либо data.frame или "
-"data.table, состоящей из столбцов таких типов"
+"'x' должен иметь численным, логическим, списком, либо data.frame или data."
+"table, состоящей из столбцов таких типов"
 
 #: frollR.c:31
-#, fuzzy
-#| msgid "n must be integer, list is accepted for adaptive TRUE"
 msgid "'n' must be an integer, list is accepted for adaptive TRUE"
-msgstr "n должно быть целочисленным; для adaptive=TRUE также допустим список n"
+msgstr "'n' должно быть целочисленным; для adaptive=TRUE также допустим список"
 
 #: frollR.c:37
-#, fuzzy
-#| msgid "'x' must be an integer"
 msgid "'n' must be an integer"
-msgstr "'x' должен быть целочисленным вектором"
+msgstr "'n' должен быть целочисленным вектором"
 
 #: frollR.c:44 frollR.c:74
-#, fuzzy
-#| msgid "n must be positive integer values (> 0)"
 msgid "'n' must be non-negative integer values (>= 0)"
-msgstr "n должно быть целочисленным и положительным (> 0)"
+msgstr "'n' должно быть целочисленным и неотрицательным (>= 0)"
 
 #: frollR.c:53 frollR.c:64
-#, fuzzy
-#| msgid "n must be integer vector or list of integer vectors"
 msgid "'n' must be an integer vector or list of integer vectors"
 msgstr ""
-"n должен быть целочисленным вектором или списком целочисленных векторов"
+"'n' должен быть целочисленным вектором или списком целочисленных векторов"
 
 #: frollR.c:94
 msgid "n must be non 0 length"
 msgstr "n должно быть ненулевой длины"
 
 #: frollR.c:115
-#, fuzzy
-#| msgid "hasNA must be TRUE, FALSE or NA"
 msgid "has.nf must be TRUE, FALSE or NA"
-msgstr "hasNA должно быть TRUE, FALSE или NA"
+msgstr "has.nf должно быть TRUE, FALSE или NA"
 
 #: frollR.c:117
-#, fuzzy
-#| msgid ""
-#| "using hasNA FALSE and na.rm TRUE does not make sense, if you know there "
-#| "are NA values use hasNA TRUE, otherwise leave it as default NA"
 msgid ""
 "using has.nf FALSE and na.rm TRUE does not make sense, if you know there are "
 "non-finite values then use has.nf TRUE, otherwise leave it as default NA"
 msgstr ""
-"использование вместе hasNA=FALSE и na.rm=TRUE не имеет смысла; если Вы "
-"знаете, что есть значения NA, используйте hasNA=TRUE, в противном случае "
-"оставьте по умолчанию hasNA=NA"
+"использование вместе has.nf=FALSE и na.rm=TRUE не имеет смысла; если Вы "
+"знаете, что есть не-конечные значения, используйте has.nf=TRUE, в противном "
+"случае оставьте по умолчанию has.nf=NA"
 
 #: frollR.c:130
-#, fuzzy
-#| msgid ""
-#| "using adaptive TRUE and align argument different than 'right' is not "
-#| "implemented"
 msgid "using adaptive TRUE and align 'center' is not implemented"
-msgstr "сочетание adaptive=TRUE и align!='right' пока не реализовано"
+msgstr "сочетание adaptive=TRUE и align='center' пока не реализовано"
 
 #: frollR.c:134
 #, c-format
@@ -3304,22 +3192,18 @@ msgid "fill must be numeric or logical"
 msgstr "'fill' должен быть численным или логическим"
 
 #: frollR.c:199
-#, fuzzy, c-format
-#| msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
+#, c-format
 msgid "%s: computing %d column(s) and %d window(s) in parallel\n"
-msgstr "%s: обработка %d столбца(ов) и %d окна(он) заняла %.3f с\n"
+msgstr "%s: обработка %d столбца(ов) и %d окна(он) параллельно\n"
 
 #: frollR.c:201
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: %d column(s) and %d window(s), not entering parallel execution here "
-#| "because algo='exact' will compute results in parallel\n"
+#, c-format
 msgid ""
 "%s: computing %d column(s) and %d window(s) sequentially because "
 "algo='exact' is already parallelised within each rolling computation\n"
 msgstr ""
-"%s: %d столбец(ов) и %d окно(он); здесь не выполняю параллельно, поскольку "
-"этим займётся algo='exact'\n"
+"%s: обрабатываю %d столбец(ов) и %d окно(он) последовательно, поскольку "
+"algo='exact' уже работает параллельно внутри каждой итерации\n"
 
 #: frollR.c:203
 #, c-format
@@ -3327,18 +3211,17 @@ msgid ""
 "%s: computing %d column(s) and %d window(s) sequentially because "
 "adaptive=TRUE is already parallelised within each rolling computation\n"
 msgstr ""
+"%s: обрабатываю %d столбец(ов) и %d окно(он) последовательно, поскольку "
+"adaptive=TRUE уже работает параллельно внутри каждой итерации\n"
 
 #: frollR.c:205
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: %d column(s) and %d window(s), if product > 1 then entering parallel "
-#| "execution\n"
+#, c-format
 msgid ""
 "%s: computing %d column(s) and %d window(s) sequentially as there is only "
 "single rolling computation\n"
 msgstr ""
-"%s: %d столбец(ов) и %d окно(он); если их произведение > 1, то выполняю "
-"параллельно\n"
+"%s: рассчитываю %d столбец(ов) и %d окно(он) последовательно, поскольку "
+"требуется только одно скользящее вычисление\n"
 
 #: frollR.c:222
 #, c-format
@@ -3347,51 +3230,46 @@ msgstr "%s: обработка %d столбца(ов) и %d окна(он) за
 
 #: frollR.c:234
 msgid "'n' must not have NAs"
-msgstr ""
+msgstr "в 'n' не должно быть пропущенных значений"
 
 #: frollR.c:236
-#, fuzzy
-#| msgid "n must be positive integer values (> 0)"
 msgid "'n' must be positive integer values (>= 1)"
-msgstr "n должно быть целочисленным и положительным (> 0)"
+msgstr "'n' должно быть целочисленным и положительным (>= 1)"
 
 #: frollR.c:241 frollR.c:244
 msgid "index provided to 'x' must: be sorted, have no duplicates, have no NAs"
 msgstr ""
+"переданный в 'x' индекс должен быть отсортирован, без пропусков и дубликатов"
 
 #: frolladaptive.c:32 frolladaptive.c:39 frolladaptive.c:46 frolladaptive.c:53
 #: frolladaptive.c:60 frolladaptive.c:67
 #, c-format
 msgid "%s: algo %u not implemented, fall back to %u\n"
-msgstr ""
+msgstr "%s: алгоритм %u не реализован, использую %u\n"
 
 #: frolladaptive.c:118 frolladaptive.c:341
-#, fuzzy, c-format
-#| msgid "%s: running for input length %<PRIu64>, hasna %d, narm %d\n"
+#, c-format
 msgid "%s: running for input length %<PRIu64>, hasnf %d, narm %d\n"
-msgstr "%s: входные данные длиной %<PRIu64>, hasna=%d, narm=%d\n"
+msgstr "%s: входные данные длиной %<PRIu64>, hasnf=%d, narm=%d\n"
 
 #: frolladaptive.c:216 frolladaptive.c:437 frolladaptive.c:512
 #: frolladaptive.c:587 frolladaptive.c:673 frolladaptive.c:747
 #: frolladaptive.c:929
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running in parallel for input length %<PRIu64>, hasna %d, narm %d\n"
+#, c-format
 msgid "%s: running in parallel for input length %<PRIu64>, hasnf %d, narm %d\n"
 msgstr ""
-"%s: работаю параллельно для входных данных длиной %<PRIu64>, hasna %d, narm "
+"%s: работаю параллельно для входных данных длиной %<PRIu64>, hasnf %d, narm "
 "%d\n"
 
 #: frolladaptive.c:851
 #, c-format
 msgid "%s: calling sqrt(frolladaptivevarExact(...))\n"
-msgstr ""
+msgstr "%s: вычисляю sqrt(frolladaptivevarExact(...))\n"
 
 #: frolladaptive.c:937
-#, fuzzy, c-format
-#| msgid "%s: window width longer than input vector, returning all NA vector\n"
+#, c-format
 msgid "%s: adaptive window width of size 0, returning all NA vector\n"
-msgstr "%s: ширина окна больше входного вектора, возвращаю вектор из NA\n"
+msgstr "%s: адаптивная ширина окна равна 0, возвращаю вектор из NA\n"
 
 #: fsort.c:104
 msgid "Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"
@@ -3417,15 +3295,12 @@ msgid "Cannot yet handle negatives."
 msgstr "Пока не могу справляться с отрицательными числами."
 
 #: fsort.c:194
-#, fuzzy, c-format
-#| msgid ""
-#| "counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
-#| "lastBatchSize=%<PRIu64>)\n"
+#, c-format
 msgid ""
 "counts is %dMiB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
 "lastBatchSize=%<PRIu64>)\n"
 msgstr ""
-"'counts' занимает %d МБ (%d страниц на nBatch=%d, batchSize=%<PRIu64>, "
+"'counts' занимает %d МиБ (%d страниц по nBatch=%d, batchSize=%<PRIu64>, "
 "lastBatchSize=%<PRIu64>)\n"
 
 #: fsort.c:264
@@ -3532,16 +3407,13 @@ msgid "Allocate %zu bytes (%zu MiB) for buffPool\n"
 msgstr "Выделяю %zu байт (%zu МиБ) для 'buffPool'\n"
 
 #: fwrite.c:810
-#, fuzzy, c-format
-#| msgid ""
-#| "Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?"
-#| "fwrite for nThread, buffMB and verbose options."
+#, c-format
 msgid ""
 "Unable to allocate %zu MiB * %d thread buffers; '%d: %s'. Please read ?"
 "fwrite for nThread, buffMB and verbose options."
 msgstr ""
-"Невозможно выделить %zu МБ * %d буферов потоков; '%d: %s'. Пожалуйста, "
-"прочитайте ?fwrite про параметры nThread, buffMB и verbose."
+"Не удалось выделить %zu МиБ * %d буферов потоков; '%d: %s'. Пожалуйста, "
+"прочитайте ?fwrite про параметры 'nThread', 'buffMB' и 'verbose'."
 
 #: fwrite.c:826
 msgid "Can't init stream structure for deflateBound"
@@ -3590,15 +3462,13 @@ msgid "No data rows present (nrow==0)\n"
 msgstr "Нет строк с данными (nrow==0)\n"
 
 #: fwrite.c:1100
-#, fuzzy, c-format
-#| msgid ""
-#| "Written %<PRId64> rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"
+#, c-format
 msgid ""
 "Written %.1f%% of %<PRId64> rows in %d secs using %d thread. "
 "maxBuffUsed=%d%%. ETA %d secs.      "
 msgstr ""
-"Записано %<PRId64> строк за %.3f с с использованием %d поток(ов)%.0s. "
-"MaxBuffUsed=%d%%\n"
+"Записано %.1f%% из %<PRId64> строк за %d с с использованием %d потока. "
+"maxBuffUsed=%d%%. Осталось %d с.      "
 
 #: fwrite.c:1131
 msgid "Failed to write gzip trailer"
@@ -3614,21 +3484,17 @@ msgstr ""
 "коэффициент сжатия=%.1f%%, CRC=%x\n"
 
 #: fwrite.c:1154
-#, fuzzy, c-format
-#| msgid ""
-#| "Written %<PRId64> rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"
+#, c-format
 msgid "Wrote %<PRId64> row in %.3f secs using %d thread. MaxBuffUsed=%d%%\n"
 msgstr ""
-"Записано %<PRId64> строк за %.3f с с использованием %d поток(ов)%.0s. "
+"Записана %<PRId64> строка за %.3f с с использованием %d потока. "
 "MaxBuffUsed=%d%%\n"
 
 #: fwrite.c:1156
-#, fuzzy, c-format
-#| msgid ""
-#| "Written %<PRId64> rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"
+#, c-format
 msgid "Wrote %<PRId64> row in %.3f secs using %d threads. MaxBuffUsed=%d%%\n"
 msgstr ""
-"Записано %<PRId64> строк за %.3f с с использованием %d поток(ов)%.0s. "
+"Записана %<PRId64> строка за %.3f с с использованием %d потоков. "
 "MaxBuffUsed=%d%%\n"
 
 #: fwrite.c:1171
@@ -3640,8 +3506,8 @@ msgstr ""
 
 #: fwrite.c:1173
 msgid ""
-"Please include the full output above and below this message in your "
-"data.table bug report."
+"Please include the full output above and below this message in your data."
+"table bug report."
 msgstr ""
 "Пожалуйста, включите полный вывод выше и ниже этого сообщения в отчет об "
 "ошибке data.table."
@@ -3820,27 +3686,25 @@ msgstr ""
 #: gsumm.c:722
 #, c-format
 msgid ""
-"Type '%s' not supported by GForce mean (gmean). Either add the prefix "
-"base::mean(.) or turn off GForce optimization using "
-"options(datatable.optimize=1)"
+"Type '%s' not supported by GForce mean (gmean). Either add the prefix base::"
+"mean(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
 "Тип '%s' не поддерживается GForce mean() (gmean). Либо добавьте префикс "
-"base::mean(.), либо отключите оптимизацию GForce с помощью "
-"options(datatable.optimize=1)"
+"base::mean(.), либо отключите оптимизацию GForce с помощью options(datatable."
+"optimize=1)"
 
 #: gsumm.c:734
 msgid ""
 "GForce min/max can only be applied to columns, not .SD or similar. To find "
-"min/max of all items in a list such as .SD, either add the prefix "
-"base::min(.SD) or turn off GForce optimization using "
-"options(datatable.optimize=1). More likely, you may be looking for "
-"'DT[,lapply(.SD,min),by=,.SDcols=]'"
+"min/max of all items in a list such as .SD, either add the prefix base::min(."
+"SD) or turn off GForce optimization using options(datatable.optimize=1). "
+"More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 msgstr ""
 "GForce min/max можно применять только к столбцам, но не к .SD и тому "
 "подобным. Чтобы найти min/max для всех элементов в списке, например .SD, "
 "либо добавьте префикс base::min(.SD), либо отключите оптимизацию GForce с "
-"помощью options(datatable.optimize=1). Скорее всего, Вам нужно "
-"'DT[,lapply(.SD,min),by=,.SDcols=]'"
+"помощью options(datatable.optimize=1). Скорее всего, Вам нужно 'DT[,lapply(."
+"SD,min),by=,.SDcols=]'"
 
 #: gsumm.c:846
 msgid "Type 'complex' has no well-defined min/max"
@@ -3849,16 +3713,16 @@ msgstr "Для комплексных чисел нет максимума ил�
 #: gsumm.c:872
 msgid ""
 "GForce median can only be applied to columns, not .SD or similar. To find "
-"median of all items in a list such as .SD, either add the prefix "
-"stats::median(.SD) or turn off GForce optimization using "
-"options(datatable.optimize=1). More likely, you may be looking for "
-"'DT[,lapply(.SD,median),by=,.SDcols=]'"
+"median of all items in a list such as .SD, either add the prefix stats::"
+"median(.SD) or turn off GForce optimization using options(datatable."
+"optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),"
+"by=,.SDcols=]'"
 msgstr ""
 "GForce median можно применять только к столбцам, но не к .SD и тому "
 "подобным. Чтобы найти медиану для всех элементов в списке, например .SD, "
 "либо добавьте префикс stats::median(.SD), либо отключите оптимизацию GForce "
-"с помощью options(datatable.optimize=1). Скорее всего, Вам нужно "
-"'DT[,lapply(.SD,median),by=,.SDcols=]'"
+"с помощью options(datatable.optimize=1). Скорее всего, Вам нужно 'DT[,"
+"lapply(.SD,median),by=,.SDcols=]'"
 
 #: gsumm.c:989
 #, c-format
@@ -3884,8 +3748,8 @@ msgstr ""
 "подобным. Для получения полной ковариационной матрицы всех элементов списка, "
 "например .SD, либо добавьте префикс stats::var(.SD) (или stats::sd(.SD)), "
 "либо отключите оптимизацию GForce с помощью options(datatable.optimize=1). "
-"Если Вам нужны только диагональные элементы, попробуйте "
-"'DT[,lapply(.SD,var),by=,.SDcols=]'."
+"Если Вам нужны только диагональные элементы, попробуйте 'DT[,lapply(.SD,var),"
+"by=,.SDcols=]'."
 
 #: gsumm.c:1121
 msgid ""
@@ -3897,8 +3761,8 @@ msgstr ""
 "GForce prod можно применять только к столбцам, но не к .SD и тому подобным. "
 "Чтобы перемножить все элементы в списке, например .SD, либо добавьте префикс "
 "base::prod(.SD), либо отключите оптимизацию GForce с помощью "
-"options(datatable.optimize=1). Вероятно, Вам нужно "
-"'DT[,lapply(.SD,prod),by=,.SDcols=]'"
+"options(datatable.optimize=1). Вероятно, Вам нужно 'DT[,lapply(.SD,prod),"
+"by=,.SDcols=]'"
 
 #: gsumm.c:1130
 #, c-format
@@ -3929,13 +3793,21 @@ msgstr "x должен быть целочисленным вектором"
 msgid ""
 "The default behavior of week() is changing. Previously ('legacy' mode), week "
 "numbers advanced every 7th day of the year. The new 'sequential' mode "
-"ensures the first week always has 7 days. For example, "
-"as.IDate('2023-01-07') returns week 2 in legacy mode but week 1 in "
-"sequential mode (week 2 starts on '2023-01-08'). To adopt the new behavior "
-"now, set options(datatable.week = 'sequential'). To keep the old results and "
-"silence this warning, set options(datatable.week = 'legacy'). See https://"
-"github.com/Rdatatable/data.table/issues/2611"
+"ensures the first week always has 7 days. For example, as."
+"IDate('2023-01-07') returns week 2 in legacy mode but week 1 in sequential "
+"mode (week 2 starts on '2023-01-08'). To adopt the new behavior now, set "
+"options(datatable.week = 'sequential'). To keep the old results and silence "
+"this warning, set options(datatable.week = 'legacy'). See https://github.com/"
+"Rdatatable/data.table/issues/2611"
 msgstr ""
+"Меняется поведение week() по-умолчанию. Раньше (режим 'legacy') номер недели "
+"увеличивался каждый седьмой день года. Новый (режим 'sequential') режим "
+"гарантирует, что в первой неделе всегда есть 7 дней. Например, "
+"week('2023-01-07') == 2 в режиме 'legacy', но будет 1 в режиме 'sequential'. "
+"Чтобы применить новый режим сейчас, задайте options(datatable.week = "
+"'sequential'). Чтобы воспроизвести старые результаты вычислений и отключить "
+"это предупреждение, задайте options(datatable.week = 'legacy'). См. также: "
+"https://github.com/Rdatatable/data.table/issues/2611"
 
 #: ijoin.c:128
 #, c-format
@@ -3980,8 +3852,8 @@ msgstr ""
 #: init.c:196
 msgid "... failed. Please forward this message to maintainer('data.table')."
 msgstr ""
-"... ошибка. Пожалуйста, перешлите это сообщение по адресу "
-"maintainer('data.table')."
+"... ошибка. Пожалуйста, перешлите это сообщение по адресу maintainer('data."
+"table')."
 
 #: init.c:197
 #, c-format
@@ -4106,17 +3978,14 @@ msgstr ""
 "вектором длины 1"
 
 #: mergelist.c:36
-#, fuzzy, c-format
-#| msgid "l must be a list."
+#, c-format
 msgid "'%s' must be a list"
-msgstr "'I' должно быть списком."
+msgstr "'%s' должно быть списком"
 
 #: mergelist.c:47
-#, fuzzy, c-format
-#| msgid "Item %d of input is not a data.frame, data.table or list"
+#, c-format
 msgid "Element %d of 'l' list is not a data.table."
-msgstr ""
-"Элемент №%d входного аргумента не является data.frame, data.table или списком"
+msgstr "Элемент №%d списка 'l' не является data.table."
 
 #: mergelist.c:56
 #, c-format
@@ -4125,16 +3994,18 @@ msgid ""
 "rows, but l[[%d]] has %d rows which differs from the previous non-zero "
 "number of rows (%d)."
 msgstr ""
+"При copy=FALSE все непустые таблицы в 'l' должны иметь одинаковое количество "
+"строк, но l[[%d]] содержит %d строк, что отличается от предыдущего "
+"ненулевого количества (%d)."
 
 #: mergelist.c:62
 msgid "Recycling rows is not yet implemented."
-msgstr ""
+msgstr "Рециркуляция строк пока не реализована."
 
 #: mergelist.c:92
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "cbindlist: took %.3fs\n"
-msgstr "%s: заняло %.3f с\n"
+msgstr "cbindlist: заняло %.3f с\n"
 
 #: nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
@@ -4155,26 +4026,22 @@ msgstr ""
 "Аргумент 'x' должен быть численным или списком/data.table численных векторов"
 
 #: nafill.c:185
-#, fuzzy
-#| msgid "fill must be a vector of length 1 or a list of length of x"
 msgid ""
 "fill must be a vector of length 1 or a list of length of x. Consider "
 "fcoalesce() to specify element-wise replacements."
 msgstr ""
-"'fill' должен быть вектором длины 1 или списком такой же длины, как 'x'"
+"'fill' должен быть вектором длины 1 или списком такой же длины, как 'x'. "
+"Попробуйте fcoalesce(), чтобы заменять значения поэлементно."
 
 #: nafill.c:187
-#, fuzzy
-#| msgid "fill must be a vector of length 1 or a list of length of x"
 msgid "fill must be a vector of length 1 or a list of length of x."
 msgstr ""
-"'fill' должен быть вектором длины 1 или списком такой же длины, как 'x'"
+"'fill' должен быть вектором длины 1 или списком такой же длины, как 'x'."
 
 #: nafill.c:237
-#, fuzzy, c-format
-#| msgid "%s: processing algo %u took %.3fs\n"
+#, c-format
 msgid "%s: parallel processing of %d column took %.3fs\n"
-msgstr "%s: обработка алгоритмом %u заняла %.3f с\n"
+msgstr "%s: параллельная обработка %d столбца заняла %.3f с\n"
 
 #: negate.c:6
 msgid "not logical or integer vector"
@@ -4187,8 +4054,8 @@ msgid ""
 "characters that are not a digit [0-9]. See ?data.table::setDTthreads."
 msgstr ""
 "Игнорирую неправильное %s==\"%s\", потому что оно не является целым числом "
-">= 1. Удалите все символы, которые не являются цифрами [0-9]. См. ?"
-"data.table::setDTthreads."
+">= 1. Удалите все символы, которые не являются цифрами [0-9]. См. ?data."
+"table::setDTthreads."
 
 #: openmp-utils.c:56
 #, c-format
@@ -4237,9 +4104,9 @@ msgstr "threads= должен быть либо NULL, либо числом >= 0
 #, c-format
 msgid ""
 "Attempting to substitute '%s' element with object of type '%s' but it has to "
-"be 'symbol' type when substituting name of the call argument, functions "
-"'as.name' and 'I' can be used to work out proper substitution, see ?"
-"substitute2 examples."
+"be 'symbol' type when substituting name of the call argument, functions 'as."
+"name' and 'I' can be used to work out proper substitution, see ?substitute2 "
+"examples."
 msgstr ""
 "Попытка подставить вместо имени '%s' объект типа '%s', но в качестве имён "
 "аргументов функций работают только типы 'symbol' и 'character'. Используйте "
@@ -4254,8 +4121,8 @@ msgstr ""
 
 #: rbindlist.c:14
 msgid ""
-"Input to rbindlist must be a list. This list can contain data.tables, "
-"data.frames or plain lists."
+"Input to rbindlist must be a list. This list can contain data.tables, data."
+"frames or plain lists."
 msgstr ""
 "Входной аргумент для rbindlist должен представлять собой список. Этот список "
 "может содержать data.table, data.frame или обычные списки."
@@ -4291,18 +4158,13 @@ msgstr ""
 "составляет %d. \"Повторно используются\" только столбцы длины 1."
 
 #: rbindlist.c:61
-#, fuzzy, c-format
-#| msgid ""
-#| "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill "
-#| "with NA (NULL for list columns), or use.names=FALSE to ignore column "
-#| "names.%s"
+#, c-format
 msgid ""
 "Column %d ['%s'] of item %d is length 0. This (and %d other like it) has "
 "been filled with NA (NULL for list columns) to make each item uniform."
 msgstr ""
-"Столбец %d ['%s'] элемента №%d отсутствует в элементе №%d. Используйте "
-"fill=TRUE для заполнения NA (NULL для столбцов списка), или use.names=FALSE "
-"для игнорирования имен столбцов.%s"
+"Столбец %d ['%s'] элемента №%d был нулевой длины. Он (и %d таких же) был для "
+"единообразия заполнен NA (столбцы-списки были заполнены NULL)."
 
 #: rbindlist.c:66
 #, c-format
@@ -4343,8 +4205,8 @@ msgid ""
 "for options to control this message."
 msgstr ""
 " в целях обратной совместимости use.names='check' (по умолчанию с версии "
-"1.12.2) выдает это сообщение и продолжает работу, как если бы было "
-"use.names=FALSE. О том, как управлять этим сообщением, см. в новости 5 для "
+"1.12.2) выдает это сообщение и продолжает работу, как если бы было use."
+"names=FALSE. О том, как управлять этим сообщением, см. в новости 5 для "
 "версии 1.12.2."
 
 #: rbindlist.c:215
@@ -4360,8 +4222,8 @@ msgstr ""
 #: rbindlist.c:224
 #, c-format
 msgid ""
-"Column %d ['%s'] of item %d appears in position %d in item %d. Set "
-"use.names=TRUE to match by column name, or use.names=FALSE to ignore column "
+"Column %d ['%s'] of item %d appears in position %d in item %d. Set use."
+"names=TRUE to match by column name, or use.names=FALSE to ignore column "
 "names.%s"
 msgstr ""
 "Столбец %d ['%s'] элемента №%d появляется в позиции %d в элементе №%d. "
@@ -4452,13 +4314,12 @@ msgid "Column %d of item %d: %s"
 msgstr "Столбец %d элемента %d: %s"
 
 #: reorder.c:22
-#, fuzzy, c-format
-#| msgid "Item %d of list is type '%s' which isn't yet supported (SIZEOF=%zu)"
+#, c-format
 msgid ""
 "Item %d of list is type '%s' which isn't yet supported (RTYPE_SIZEOF=%zu)"
 msgstr ""
 "Элемент списка №%d имеет тип '%s', который пока не поддерживается "
-"(SIZEOF=%zu)"
+"(RTYPE_SIZEOF=%zu)"
 
 #: reorder.c:24
 #, c-format
@@ -4470,16 +4331,13 @@ msgstr ""
 "Неправильная таблица данных."
 
 #: reorder.c:32
-#, fuzzy, c-format
-#| msgid ""
-#| "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
-#| "supported (SIZEOF=%zu)"
+#, c-format
 msgid ""
 "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
 "supported (RTYPE_SIZEOF=%zu)"
 msgstr ""
 "reorder() принимает векторы, но этот не-VECSXP вектор имеет тип '%s', "
-"который пока не поддерживается (SIZEOF=%zu)"
+"который пока не поддерживается (RTYPE_SIZEOF=%zu)"
 
 #: reorder.c:39
 msgid "order must be an integer vector"
@@ -4492,8 +4350,8 @@ msgid ""
 "The new order must be a strict permutation of 1:n"
 msgstr ""
 "Элемент №%d вектора 'order' (%d) является либо NA, либо находится вне "
-"диапазона [1,%d], либо дублирован. Новый порядок должен быть перестановкой "
-"1:n без повторения"
+"диапазона [1,%d], либо дублирован. Новый порядок должен быть перестановкой 1:"
+"n без повторения"
 
 #: reorder.c:130
 msgid "dt passed to setcolorder has no names"
@@ -4501,8 +4359,8 @@ msgstr "в функции setcolorder у dt нет имён"
 
 #: shift.c:12
 msgid ""
-"shift input must not be matrix or array, consider wrapping it into "
-"data.table() or c()"
+"shift input must not be matrix or array, consider wrapping it into data."
+"table() or c()"
 msgstr ""
 "входной аргумент для shift() не должен быть матрицей или массивом; возможно, "
 "Вам стоит обернуть его в data.table() или c()"
@@ -4512,8 +4370,8 @@ msgstr ""
 msgid ""
 "type '%s' passed to shift(). Must be a vector, list, data.frame or data.table"
 msgstr ""
-"в shift() передан объект типа '%s'. Должен быть вектором, списком, "
-"data.frame или data.table"
+"в shift() передан объект типа '%s'. Должен быть вектором, списком, data."
+"frame или data.table"
 
 #: shift.c:46
 #, c-format
@@ -4521,6 +4379,8 @@ msgid ""
 "Filling %s with %s using shift() is unsupported. Please convert fill to %s "
 "first."
 msgstr ""
+"Заполнение значений типа '%s' значениями типа '%s' с использованием shift() "
+"не поддерживается. Пожалуйста, сначала приведите последние к %s."
 
 #: snprintf.c:193 snprintf.c:196 snprintf.c:199 snprintf.c:202 snprintf.c:205
 #: snprintf.c:208 snprintf.c:211 snprintf.c:214 snprintf.c:217 snprintf.c:221
@@ -4577,14 +4437,14 @@ msgstr "Столбец %d является NULL; неправильная data.t
 #, c-format
 msgid "Column %d ['%s'] is a data.frame or data.table; malformed data.table."
 msgstr ""
-"Столбец %d ['%s'] является data.frame или data.table; неправильная "
-"data.table."
+"Столбец %d ['%s'] является data.frame или data.table; неправильная data."
+"table."
 
 #: subset.c:263
 #, c-format
 msgid ""
-"Column %d ['%s'] is length %d but column 1 is length %d; malformed "
-"data.table."
+"Column %d ['%s'] is length %d but column 1 is length %d; malformed data."
+"table."
 msgstr ""
 "Столбец %d ['%s'] имеет длину %d, но столбец 1 имеет длину %d; неправильная "
 "data.table."
@@ -4593,8 +4453,8 @@ msgstr ""
 #, c-format
 msgid "Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"
 msgstr ""
-"Элемент №%d из 'cols' равен %d, что выходит за пределы диапазона "
-"[1,ncol(x)=%d]"
+"Элемент №%d из 'cols' равен %d, что выходит за пределы диапазона [1,"
+"ncol(x)=%d]"
 
 #: transpose.c:9
 msgid "l must be a list."
@@ -4700,10 +4560,9 @@ msgid "argument specifying columns received duplicate column(s)"
 msgstr "в переданном списке столбцов нашлись дубликаты"
 
 #: utils.c:307
-#, fuzzy, c-format
-#| msgid "Found and copied %d column%s with a shared memory address\n"
+#, c-format
 msgid "Found and copied %d column with a shared memory address\n"
-msgstr "Найдено и скопировано %d столбцов%.0s с общим адресом в памяти\n"
+msgstr "Найден и скопирован %d столбец с общим адресом в памяти\n"
 
 #: utils.c:389
 msgid "'x' is not atomic"
@@ -4733,23 +4592,18 @@ msgid "zlib header files were not found when data.table was compiled"
 msgstr "При компиляции data.table не были найдены заголовочные файлы zlib"
 
 #: utils.c:546
-#, fuzzy
-#| msgid "Item %d of input is not a data.frame, data.table or list"
 msgid "'x' should not be data.frame or data.table."
-msgstr ""
-"Элемент №%d входного аргумента не является data.frame, data.table или списком"
+msgstr "'x' не должен быть data.frame или data.table."
 
 #: utils.c:548
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "%s must be TRUE or FALSE."
-msgstr "%s должно быть TRUE или FALSE"
+msgstr "%s должно быть TRUE или FALSE."
 
 #: utils.c:629
-#, fuzzy, c-format
-#| msgid "Type '%s' is not supported by CJ."
+#, c-format
 msgid "Type '%s' is not supported by frev"
-msgstr "CJ не поддерживает тип '%s'."
+msgstr "frev не поддерживает тип '%s'"
 
 #: vecseq.c:16
 msgid "len must be an integer vector"
@@ -4791,9 +4645,9 @@ msgid ""
 "Join results in %d rows; more than %d = nrow(x)+nrow(i). Check for duplicate "
 "key values in i each of which join to the same group in x over and over "
 "again. If that's ok, try by=.EACHI to run j for each group to avoid the "
-"large allocation. If you are sure you wish to proceed, rerun with "
-"allow.cartesian=TRUE. Otherwise, please search for this error message in the "
-"FAQ, Wiki, Stack Overflow and data.table issue tracker for advice."
+"large allocation. If you are sure you wish to proceed, rerun with allow."
+"cartesian=TRUE. Otherwise, please search for this error message in the FAQ, "
+"Wiki, Stack Overflow and data.table issue tracker for advice."
 msgstr ""
 "Соединение даёт %1$d строк, что больше, чем %2$d = nrow(x)+nrow(i). "
 "Проверьте, нет ли дублирующихся значений ключей в 'i', которые больше одного "
@@ -4811,13 +4665,13 @@ msgstr "Имя атрибута должно быть строкой (векто
 
 #: wrappers.c:16
 msgid ""
-"Internal structure doesn't seem to be a list. Can't set class to be "
-"'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' "
-"methods instead."
+"Internal structure doesn't seem to be a list. Can't set class to be 'data."
+"table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods "
+"instead."
 msgstr ""
-"Внутренняя структура не является списком. Не могу выставить класс "
-"'data.table' или 'data.frame'. Пожалуйста, используйте вместо этого "
-"'as.data.table()' или 'as.data.frame()'."
+"Внутренняя структура не является списком. Не могу выставить класс 'data."
+"table' или 'data.frame'. Пожалуйста, используйте вместо этого 'as.data."
+"table()' или 'as.data.frame()'."
 
 #: wrappers.c:68
 #, c-format
@@ -4846,8 +4700,8 @@ msgstr ""
 #~ "объектов data.table."
 
 #~ msgid ""
-#~ "Coerced j from numeric to integer. Please pass integer for efficiency; "
-#~ "e.g., 2L rather than 2"
+#~ "Coerced j from numeric to integer. Please pass integer for efficiency; e."
+#~ "g., 2L rather than 2"
 #~ msgstr ""
 #~ "Принудительное преобразование j из числового в целое. Для повышения "
 #~ "эффективности передавайте целое число; например, 2L, а не 2"
@@ -4872,16 +4726,16 @@ msgstr ""
 #~ "character column names. To increase consistency in the next release, we "
 #~ "plan to change 'variable' to integer, so users who were relying on this "
 #~ "behavior should change measure.vars=list('col_name') (output variable is "
-#~ "column name now, but will become column index/integer) to "
-#~ "measure.vars='col_name' (variable is column name before and after the "
-#~ "planned change)."
+#~ "column name now, but will become column index/integer) to measure."
+#~ "vars='col_name' (variable is column name before and after the planned "
+#~ "change)."
 #~ msgstr ""
 #~ "measure.vars является списком длины 1. Согласно документации, в этой "
 #~ "ситуации в столбце «variable» должны быть возвращены целочисленные номера "
 #~ "столбцов, однако сейчас функция возвращает имена столбцов текстом. Чтобы "
 #~ "исправить это недоразумение, в будущей версии «variable» станет "
-#~ "целочисленным столбцом. Если Вам нужны имена столбцов, вместо "
-#~ "measure.vars=list('имя_столбца') (что будет возвращать номера столбцов) "
+#~ "целочисленным столбцом. Если Вам нужны имена столбцов, вместо measure."
+#~ "vars=list('имя_столбца') (что будет возвращать номера столбцов) "
 #~ "используйте measure.vars='имя_столбца' (что и сейчас, и в будущем будет "
 #~ "возвращать их имена)."
 
@@ -5070,12 +4924,12 @@ msgstr ""
 #, c-format
 #~ msgid ""
 #~ "\n"
-#~ "args.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d "
-#~ "args.nrow=%<PRId64> args.ncol=%d eolLen=%d\n"
+#~ "args.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args."
+#~ "nrow=%<PRId64> args.ncol=%d eolLen=%d\n"
 #~ msgstr ""
 #~ "\n"
-#~ "args.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d "
-#~ "args.nrow=%<PRId64> args.ncol=%d eolLen=%d\n"
+#~ "args.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args."
+#~ "nrow=%<PRId64> args.ncol=%d eolLen=%d\n"
 
 #, c-format
 #~ msgid "Unable to allocate %zu MiB for header: %s"
@@ -5175,8 +5029,8 @@ msgstr ""
 
 #, c-format
 #~ msgid ""
-#~ "Internal error, please report (including result of sessionInfo()) to "
-#~ "data.table issue tracker: tl (%d) < l (%d) but tl of class is marked."
+#~ "Internal error, please report (including result of sessionInfo()) to data."
+#~ "table issue tracker: tl (%d) < l (%d) but tl of class is marked."
 #~ msgstr ""
 #~ "Внутренняя ошибка; пожалуйста, сообщите (включая результат sessionInfo()) "
 #~ "на трекер проблем data.table: у объекта data.table tl (%d) < l (%d) («but "
@@ -5252,3 +5106,17 @@ msgstr ""
 #, c-format
 #~ msgid "Internal error: copyAsPlain returning ALTREP for type '%s'"
 #~ msgstr "Внутренняя ошибка: copyAsPlain() вернула ALTREP для типа '%s'"
+
+#, c-format
+#~ msgid ""
+#~ "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
+#~ "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
+#~ "length(cols)==%d)\n"
+#~ msgstr ""
+#~ "В правой части элемент №%d был скопирован, поскольку MAYBE_REFERENCED==%d "
+#~ "MAYBE_SHARED==%d, но потом присваивается напрямую. "
+#~ "length(правая_часть)==%d; length(левая_часть)==%d\n"
+
+#, c-format
+#~ msgid "Can't write gzip header error: %d"
+#~ msgstr "Не удалось записать заголовок gzip: %d"
