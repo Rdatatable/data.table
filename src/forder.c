@@ -246,6 +246,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 //   3) no need to maintain o.  Just simply reorder x. No grps or push.
 {
   if (n<=1) return;
+  while (TRUE) {
   int *thiscounts = cradix_counts + radix*256;
   uint8_t lastx = 0;  // the last x is used to test its bin
   for (int i=0; i<n; i++) {
@@ -253,9 +254,9 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[ lastx ]++;
   }
   if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {
-    cradix_r(xsub, n, radix+1);
     thiscounts[lastx] = 0;  // all x same value, the rest must be 0 already, save the memset
-    return;
+    radix++;                // tail recursion eliminated to avoid segfault when prefixes are long
+    continue;
   }
   int itmp = thiscounts[0];
   for (int i=1; i<256; i++) {
@@ -280,6 +281,8 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to do this ready for this memory's reuse
   }
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
+  break;
+  }
 }
 
 static void cradix(SEXP *x, int n)
