@@ -197,23 +197,20 @@ msgstr "Génération du vecteur final de booléens ..."
 
 #: between.R:88 bmerge.R:205 bmerge.R:209 bmerge.R:216 data.table.R:516
 msgid "done in %s"
-msgstr ""
+msgstr "fait dans %s"
 
 #: bmerge.R:21
 msgid "Coercing %s column %s%s to type %s to match type of %s%s."
-msgstr ""
+msgstr "Conversion forcée de la colonne %s %s%s vers le type %s pour correspondre au type de %s%s."
 
 #: bmerge.R:34
-#, fuzzy, c-format
-#| msgid ""
-#| "Attempting roll join on factor column when joining %s to %s. Only "
-#| "integer, double or character columns may be roll joined."
+#, c-format
 msgid ""
 "Attempting roll join on factor column when joining x.%s to i.%s. Only "
 "integer, double or character columns may be roll joined."
 msgstr ""
 "Tentative de jointure par roulement sur une colonne de facteurs lors de la "
-"jointure de %s à %s. Seules les colonnes de nombres entiers, de nombres "
+"jointure de x.%s à i.%s. Seules les colonnes de nombres entiers, de nombres "
 "doubles ou de caractères peuvent être jointes par roulement."
 
 #: bmerge.R:72 bmerge.R:73
@@ -224,11 +221,12 @@ msgstr ""
 
 #: bmerge.R:77
 msgid "Matching %s factor levels to %s factor levels."
-msgstr ""
+msgstr "Correspondance des niveaux de facteurs %s avec ceux de %s."
 
 #: bmerge.R:86
 msgid "Matching character column %s to factor levels in %s."
-msgstr ""
+msgstr "Correspondance de la colonne de caractères %s avec les "
+"niveaux de facteurs de %s."
 
 #: bmerge.R:93
 #, c-format
@@ -241,11 +239,11 @@ msgstr ""
 
 #: bmerge.R:96
 msgid "%s has same type (%s) as %s. No coercion needed."
-msgstr ""
+msgstr "%s a le même type (%s) que %s. Pas de conversion."
 
 #: bmerge.R:102 bmerge.R:106
 msgid "(all-NA)"
-msgstr ""
+msgstr "(tous-NA)"
 
 #: bmerge.R:109
 #, c-format
@@ -254,47 +252,44 @@ msgstr "Types incompatibles pour la jointure : %s (%s) et %s (%s)"
 
 #: bmerge.R:115
 msgid "(which has integer64 representation, e.g. no fractions)"
-msgstr ""
+msgstr "(qui est représenté en integer64, c'est à dire sans fraction)"
 
 #: bmerge.R:117
-#, fuzzy, c-format
-#| msgid ""
-#| "Incompatible join types: %s is type integer64 but %s is type double and "
-#| "contains fractions"
+#, c-format
 msgid ""
 "Incompatible join types: %s is type integer64 but %s is type double and "
 "cannot be coerced to integer64 (e.g. has fractions)"
 msgstr ""
 "Types de jointures incompatibles : %s est de type integer64 mais %s est de "
-"type double et contient des fractions"
+"type double et ne peut pas être converti en integer64 (il contient des fractions)"
 
 #: bmerge.R:137
 msgid "(which contains no fractions)"
-msgstr ""
+msgstr "(qui ne contient pas de fraction)"
 
 #: bmerge.R:149
 msgid "(which contains fractions)"
-msgstr ""
+msgstr "(qui contient des fractions)"
 
 #: bmerge.R:152
 msgid "(for join)"
-msgstr ""
+msgstr "(pour la jointure)"
 
 #: bmerge.R:170
 msgid "on= matches existing key, using key"
-msgstr ""
+msgstr "on= correspond à une clé existante, cette clé est utilisée"
 
 #: bmerge.R:175
 msgid "on= matches existing index, using index"
-msgstr ""
+msgstr "on= correspond à un indice existant, cet indice est utilisé"
 
 #: bmerge.R:180
 msgid "Calculated ad hoc index in %s"
-msgstr ""
+msgstr "Indice calculé correspondant de %s"
 
 #: bmerge.R:191
 msgid "Non-equi join operators detected ..."
-msgstr ""
+msgstr "Opérateurs détectés pour une jointure non-equi ..."
 
 #: bmerge.R:192
 #, c-format
@@ -303,15 +298,15 @@ msgstr "roll n'est pas encore implémenté avec des jointure non-equi."
 
 #: bmerge.R:193
 msgid "forder took ..."
-msgstr ""
+msgstr "forder a pris ..."
 
 #: bmerge.R:202
 msgid "Generating group lengths ..."
-msgstr ""
+msgstr "Génération des longueurs de groupe ..."
 
 #: bmerge.R:207
 msgid "Generating non-equi group ids ..."
-msgstr ""
+msgstr "Génération des id des groupes non-equi ..."
 
 #: bmerge.R:212
 #, c-format
@@ -320,21 +315,23 @@ msgstr "Le nom de colonne '_nqgrp_' est réservé pour les jointures non-equi."
 
 #: bmerge.R:213
 msgid "Recomputing forder with non-equi ids ..."
-msgstr ""
+msgstr "Recalcul de forder avec les id non-equi ..."
 
 #: bmerge.R:222
 msgid "Starting bmerge ..."
-msgstr ""
+msgstr "Début du bmerge ..."
 
 #: bmerge.R:224
 msgid "bmerge done in %s"
-msgstr ""
+msgstr "Fin du bmerge dans %s"
 
 #: cedta.R:77
 msgid ""
 "cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
 "applied:"
 msgstr ""
+"cedta a décidé que '%s' ne reconnaissait pas data.table. " 
+"Voici la pile des appels en appliquant [[1L]] :"
 
 #: data.table.R:55
 #, c-format
@@ -357,6 +354,8 @@ msgid ""
 "Invalid set* operation on a recursive index L[[i]] where i has length %d. "
 "Chain [[ instead."
 msgstr ""
+"Opération set* non valide sur un indice récursif L[[i]] où i a pour longueur %d. "
+"Chaîner [[ à la place."
 
 #: data.table.R:139
 #, c-format
@@ -400,7 +399,7 @@ msgstr ""
 
 #: data.table.R:196 data.table.R:261 data.table.R:351
 msgid "Argument '%s' after substitute: %s"
-msgstr ""
+msgstr "Argument '%s' après substitution : %s"
 
 #: data.table.R:205
 #, c-format
@@ -423,10 +422,9 @@ msgstr ""
 "Cet avertissement deviendra une erreur à l'avenir."
 
 #: data.table.R:222
-#, fuzzy, c-format
-#| msgid "mult argument can only be 'first', 'last' or 'all'"
+#, c-format
 msgid "mult argument can only be 'first', 'last', 'all' or 'error'"
-msgstr "l'argument mult ne peut valoir que 'first', 'last' ou 'all'"
+msgstr "l'argument mult ne peut valoir que 'first', 'last', 'all' ou 'error'"
 
 #: data.table.R:224
 #, c-format
@@ -460,7 +458,7 @@ msgid ""
 "is the same as NULL but please use NULL)"
 msgstr ""
 "nomatch= doit valoir soit NA, soit NULL (ou 0 pour la compatibilité "
-"descendante qui équivaut à NULL, mais utiliser NULL dorénavant)"
+"arrière qui équivaut à NULL, mais utiliser NULL dorénavant)"
 
 #: data.table.R:243
 #, c-format
@@ -553,6 +551,9 @@ msgid ""
 "` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := "
 "tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
 msgstr ""
+"Utilisation de `:=` dans `{}` non autorisée. `:=` doit être la seule expression dans "
+"`{}` quand utilisé dans `j`. Au lieu de : DT[{tmp1 <- ...; tmp2 <- ...; someCol := "
+"tmp1 * tmp2}], utiliser : DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
 
 #: data.table.R:334
 #, c-format
@@ -601,12 +602,7 @@ msgstr ""
 "plus un nom de colonne"
 
 #: data.table.R:433
-#, fuzzy, c-format
-#| msgid ""
-#| "'%s' is not found in calling scope, but it is a column of type %s. If you "
-#| "wish to select rows where that column contains TRUE, or perhaps that "
-#| "column contains row numbers of itself to select, try DT[(col)], "
-#| "DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized"
+#, c-format
 msgid ""
 "'%s' is not found in calling scope, but it is a column of type %s. If you "
 "wish to select rows where that column contains TRUE, or perhaps that column "
@@ -643,13 +639,7 @@ msgstr ""
 "commentaires à FR #657."
 
 #: data.table.R:471
-#, fuzzy, c-format
-#| msgid ""
-#| "When i is a data.table (or character vector), the columns to join by must "
-#| "be specified using 'on=' argument (see ?data.table), by keying x (i.e. "
-#| "sorted, and, marked as sorted, see ?setkey), or by sharing column names "
-#| "between x and i (i.e., a natural join). Keyed joins might have further "
-#| "speed benefits on very large data due to x being sorted in RAM."
+#, c-format
 msgid ""
 "When i is a data.table (or character vector), the columns to join by must be "
 "specified using the 'on=' argument (see ?data.table); by keying x (i.e., x "
@@ -658,13 +648,14 @@ msgid ""
 "join). Keyed joins might have further speed benefits on very large data due "
 "to x being sorted in RAM."
 msgstr ""
-"Lorsque i est une data.table (ou un vecteur de chaînes de caractères), les "
+"Lorsque i est un data.table (ou un vecteur de chaînes de caractères), les "
 "colonnes à joindre doivent être spécifiées à l'aide de l'argument 'on=' "
-"(voir ?data.table), par l'attribution d'une clé à x (c'est-à-dire trié, et, "
-"marqué comme trié, voir ?setkey), ou en partageant les noms des colonnes "
-"entre x et i (c'est-à-dire, une jointure naturelle). Les jointures avec clé "
-"peuvent avoir des avantages supplémentaires en termes de rapidité sur des "
-"données très volumineuses, car x est trié en mémoire vive."
+"(voir ?data.table), par l'attribution d'une clé à x (c'est-à-dire x trié, et, "
+"marqué comme trié, voir ?setkey), ou en utilisant 'on = .NATURAL' pour indiquer "
+"l'utilisation de noms de colonnes partagées entre x et i (c'est-à-dire, une "
+"jointure naturelle). Les jointures avec clé peuvent avoir des avantages "
+"supplémentaires en termes de rapidité sur des données très volumineuses "
+"car x est trié en mémoire vive."
 
 #: data.table.R:479
 #, c-format
@@ -675,19 +666,20 @@ msgstr ""
 
 #: data.table.R:482
 msgid "Joining but 'x' has no key, natural join using all 'x' columns"
-msgstr ""
+msgstr "Jointure mais 'x' n'a pas de clé, jointure naturelle en utilisant "
+"toutes les colonnes 'x'"
 
 #: data.table.R:484
 msgid "Joining but 'x' has no key, natural join using: %s"
-msgstr ""
+msgstr "Jointure mais 'x' n'a pas de clé, jointure naturelle en utilisant : %s"
 
 #: data.table.R:513
 msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
-msgstr ""
+msgstr "non jointure appelée avec 'by=.EACHI'; !i est remplacé par i=setdiff_(x,i) ..."
 
 #: data.table.R:544
 msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
-msgstr ""
+msgstr "Construction de irows pour '!byjoin || nqbyjoin' ..."
 
 #: data.table.R:558 mergelist.R:124
 #, c-format
@@ -696,20 +688,23 @@ msgid ""
 "use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows "
 "explosion."
 msgstr ""
+"Jointure faite de plusieurs à plusieurs. Refaire un contrôle sur la qualité des données, "
+"utiliser mult!='all', ou initialiser l'option 'datatable.join.many' à TRUE "
+"pour permettre l'explosion des lignes."
 
 #: data.table.R:596
 msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
-msgstr ""
+msgstr "Réarranger irows pour 'mult==\"all\" && !allGrp1' ..."
 
 #: data.table.R:608
 msgid "Reordering %d rows after bmerge done in ..."
-msgstr ""
+msgstr "Réarrangement de %d lignes suite à bmerge dans ..."
 
 #: data.table.R:625
 #, c-format
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
 msgstr ""
-"erreur logique. i n'est pas une data.table, mais l'argument 'on' est fourni."
+"erreur logique. i n'est pas un data.table, mais l'argument 'on' est fourni."
 
 #: data.table.R:629
 #, c-format
@@ -741,18 +736,18 @@ msgstr ""
 
 #: data.table.R:669
 msgid "Inverting irows for notjoin done in ..."
-msgstr ""
+msgstr "Inversion de irows pour notjoin faite dans ...""
 
 #: data.table.R:725
 #, c-format
 msgid "`:=` is only supported under with=TRUE, see ?`:=`."
-msgstr ""
+msgstr "`:=` n'est reconnu que si with=TRUE, voir ?`:=`."
 
 #: data.table.R:767
 #, c-format
 msgid "Item %d of j is %d which is outside the column number range [1,ncol=%d]"
 msgstr ""
-"L'élément %d de j vaut %d qui n'est pas dans l'intervalle des index de "
+"L'élément %d de j vaut %d qui n'est pas dans l'intervalle des indices de "
 "colonne [1,ncol=%d]"
 
 #: data.table.R:770
@@ -804,11 +799,12 @@ msgstr "Au moins une valeur de by est vide"
 
 #: data.table.R:860
 msgid "by index '%s' but that index has 0 length. Ignoring."
-msgstr ""
+msgstr "par indice '%s' mais cet indice a pour longueur 0. Ignoré."
 
 #: data.table.R:883
 msgid "i clause present and columns used in by detected, only these subset: %s"
-msgstr ""
+msgstr "la clause i est présente et les colonnes utilisées dans by existent, "
+"uniquement ce sous-ensemble : %s"
 
 #: data.table.R:886
 msgid ""
