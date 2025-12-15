@@ -1,3 +1,4 @@
+Sys.setenv(OMP_THREAD_LIMIT = Sys.getenv("OMP_THREAD_LIMIT", "2"))
 require(data.table)
 
 test.data.table()  # runs the main test suite of 5,000+ tests in /inst/tests/tests.Rraw
