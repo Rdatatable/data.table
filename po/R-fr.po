@@ -811,6 +811,9 @@ msgid ""
 "i clause present but columns used in by not detected. Having to subset all "
 "columns before evaluating 'by': '%s'"
 msgstr ""
+"La clause i est présente mais les colonnes utilisées dans by n'ont pas été trouvées. "
+"Ils faut disposer des sous-ensembles de toutes les colonnes avant d'évaluer "
+"avec 'by': '%s'"
 
 #: data.table.R:908
 #, c-format
@@ -854,6 +857,8 @@ msgid ""
 "by-expression '%s' is not named, and the auto-generated name '%s' clashed "
 "with variable(s) in j. Therefore assigning the entire by-expression as name."
 msgstr ""
+"l'expression by '%s' n'est pas nommée, et le nom auto-généré '%s' est en "
+"conflit avec les variables de j. L'expression by entière est assignée par nom."
 
 #: data.table.R:985
 #, c-format
@@ -908,10 +913,9 @@ msgid ".SDcols missing at the following indices: %s"
 msgstr ".SDcols est absent aux indices suivants : %s"
 
 #: data.table.R:1071
-#, fuzzy, c-format
-#| msgid ".SDcols is a logical vector length %d but there are %d columns"
+#, c-format
 msgid ".SDcols is a logical vector of length %d but there are %d columns"
-msgstr ".SDcols est un vecteur booléens de longueur %d mais il y a %d colonnes"
+msgstr ".SDcols est un vecteur de booléens de longueur %d mais il y a %d colonnes"
 
 #: data.table.R:1077
 #, c-format
@@ -940,10 +944,14 @@ msgid ""
 "important for efficiency.\n"
 "Old ansvars: %s"
 msgstr ""
+"'(m)get' trouvé dans j. ansvars initialisé à toutes les colonnes. Utiliser "
+"à la place .SDcols ou un seul j=eval(macro) . Les deux vont détecter les "
+"colonnes utilisées ce qui est important pour les performances.\n"
+"Ancien ansvars : %s"
 
 #: data.table.R:1118
 msgid "New ansvars: %s"
-msgstr ""
+msgstr "Nouveau ansvars : %s"
 
 #: data.table.R:1127
 #, c-format
@@ -956,7 +964,7 @@ msgstr ""
 
 #: data.table.R:1130
 msgid "Detected that j uses these columns: %s"
-msgstr ""
+msgstr "j utillise les colonnes suivantes : %s"
 
 #: data.table.R:1143
 #, c-format
@@ -1028,6 +1036,9 @@ msgid ""
 "No rows match i. No new columns to add so not evaluating RHS of :=\n"
 "Assigning to 0 row subset of %d rows"
 msgstr ""
+"Aucune ligne ne correspond à i. Aucune nouvelle colonne à ajouter "
+"donc pas d'évaluation du membre de droite de :=\n"
+"Initialisation à 0 sous-ensemble de lignes des %d lignes"
 
 #: data.table.R:1225
 #, fuzzy, c-format
