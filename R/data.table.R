@@ -1611,7 +1611,7 @@ replace_dot_alias = function(e) {
   if (length(xcols)) {
     #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
     #  TODO move down to dogroup.c, too.
-    SDenv$.SDall = .Call(CcopyAsGrowable, .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols), FALSE)  # must be deep copy when largest group is a subset
+    SDenv$.SDall = .Call(CcopyAsGrowable, .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols))  # must be deep copy when largest group is a subset
     if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
     SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
@@ -1884,7 +1884,7 @@ replace_dot_alias = function(e) {
     grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
     jiscols = chmatch(jisvars, names_i)  # integer() if there are no jisvars (usually there aren't, advanced feature)
     xjiscols = chmatch(xjisvars, names_x)
-    SDenv$.xSD = .Call(CcopyAsGrowable, x[min(nrow(i), 1L), xjisvars, with=FALSE], FALSE)
+    SDenv$.xSD = .Call(CcopyAsGrowable, x[min(nrow(i), 1L), xjisvars, with=FALSE])
     if (!missing(on)) o__ = xo else o__ = integer(0L)
   } else {
     groups = byval
