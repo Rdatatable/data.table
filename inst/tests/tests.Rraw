@@ -21839,6 +21839,9 @@ DT[, V1000 := 20:1]
 test(2343.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
 x = c(rep(0, 7e5), 1e6)
 test(2343.2, forderv(list(x)), integer(0))
+# resolve tail recursion on long character vectors with common prefix #7462
+x = paste0(strrep("a", 1e5L), 2:1)
+test(2343.3, forderv(x), INT(2, 1))
 
 # Keep key when new column added before existing key in j
 # Incorrect key can lead to incorrect join result #7364
