@@ -116,16 +116,13 @@ msgid "between has been passed an argument x of type logical"
 msgstr "'between' contient un argument x booléen"
 
 #: between.R:13 between.R:15
-#, fuzzy, c-format
-#| msgid ""
-#| "'between' function the 'x' argument is a POSIX class while '%s' was not, "
-#| "coercion to POSIX failed with: %s"
+#, c-format
 msgid ""
 "The 'x' argument of the 'between' function is POSIXct while '%s' was not, "
 "coercion to POSIXct failed with: %s"
 msgstr ""
-"fonction 'between' l'argument 'x' est une classe POSIX alors que '%s' ne "
-"l'est pas, échec de la conversion automatique en POSIX avec : %s"
+"L'argument 'x' de la fonction 'between' est POSIXct alors que '%s' ne "
+"l'est pas, échec de la conversion automatique en POSIXct avec : %s"
 
 #: between.R:24
 #, c-format
@@ -157,6 +154,8 @@ msgid ""
 "optimised between not available for this data type, fallback to slow R "
 "routine"
 msgstr ""
+"between optimisé non disponible pour ce type de donnée, repli vers la"
+"routine R lente"
 
 #: between.R:44
 #, c-format
@@ -190,11 +189,11 @@ msgstr ""
 
 #: between.R:73
 msgid "forderv(query) took ..."
-msgstr ""
+msgstr "forderv(query) a pris ..."
 
 #: between.R:86
 msgid "Generating final logical vector ..."
-msgstr ""
+msgstr "Génération du vecteur final de booléens ..."
 
 #: between.R:88 bmerge.R:205 bmerge.R:209 bmerge.R:216 data.table.R:516
 msgid "done in %s"
