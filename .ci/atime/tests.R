@@ -286,5 +286,38 @@ test.list <- atime::atime_test_list(
     Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
     Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
 
+    "GForce aggregation (benchmark across # rows)" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(grp = sample.int(10L, N, TRUE), v=rnorm(N), i=sample(N), vna=rnorm(N))
+        DT[1:3, vna := NA_real_]
+      },
+      expr = data.table:::`[.data.table`(DT, j=.(mean(v), sum(v), mean(i), sum(i), mean(vna, na.rm=TRUE), sum(vna, na.rm=TRUE))),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
+    "GForce aggregation (benchmark across # groups)" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(grp = sample.int(1e7, N, TRUE), v=rnorm(1e7), i=sample(1e7), vna=rnorm(N))
+      },
+      expr = data.table:::`[.data.table`(DT, j=.(mean(v), sum(v), mean(i), sum(i), mean(vna, na.rm=TRUE), sum(vna, na.rm=TRUE))),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
+    "Serial value setting with :=" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(i=N:1)
+      },
+      expr = for (ii in seq_len(nrow(DT))) data.table:::`[.data.table`(DT, ii, `:=`(i, ii)),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
+    "Serial value setting with set" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(i=N:1)
+      },
+      expr = for (ii in seq_len(nrow(DT))) data.table::set(DT, ii, "i", ii),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
