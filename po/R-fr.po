@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-12-16 11:13+0100\n"
+"PO-Revision-Date: 2025-12-16 13:26+0100\n"
 "Last-Translator: Christian Wiat <w9204-rs@yahoo.com>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -1221,7 +1221,7 @@ msgstr ""
 
 #: data.table.R:1909
 msgid "Making each group and running j (GForce %s) ..."
-msgstr ""
+msgstr "Création de chaque groupe et exécution de j (GForce %s) ..."
 
 #: data.table.R:2005
 msgid "setkey() after the := with keyby= ..."
@@ -1242,7 +1242,7 @@ msgstr ""
 
 #: data.table.R:2035
 msgid "setkey() afterwards for keyby=.EACHI ..."
-msgstr ""
+msgstr "setkey() après, quand keyby=.EACHI ..."
 
 #: data.table.R:2144
 #, c-format
@@ -2368,7 +2368,7 @@ msgstr "L'argument 'encoding' doit être 'unknown', 'UTF-8' ou 'Latin-1'."
 #: fread.R:34
 #, c-format
 msgid "comment.char= must be a single non-NA character."
-msgstr ""
+msgstr "comment.char= doit être un seul caractère non NA."
 
 #: fread.R:47
 #, c-format
@@ -2710,27 +2710,28 @@ msgstr "n doit avoir une longueur différente de 0"
 #: froll.R:32
 #, c-format
 msgid "'partial' cannot be used together with align='center'"
-msgstr ""
+msgstr "'partial' ne peut pas être utilisé avec align='center'"
 
 #: froll.R:35
 #, c-format
 msgid "'partial' does not support variable length of columns in x"
 msgstr ""
+"'partial' ne prend pas en charge les colonnes de longueur variable dans x"
 
 #: froll.R:37
 #, c-format
 msgid "'partial' does not support variable nrow of data.tables in x"
-msgstr ""
+msgstr "'partial' ne prend pas en charge les nrow de data.table dans x"
 
 #: froll.R:48
 #, c-format
 msgid "n must be an integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "n doit être un entier, une liste est acceptée pour adaptive TRUE"
 
 #: froll.R:50 froll.R:62
 #, c-format
 msgid "n must be an integer vector or a list of integer vectors"
-msgstr ""
+msgstr "n doit être un vecteur d'entiers ou une liste de vecteurs d'entiers"
 
 #: froll.R:52
 msgid ""
@@ -2753,6 +2754,8 @@ msgstr ""
 #, c-format
 msgid "length of vectors in x must match to length of adaptive window in n"
 msgstr ""
+"la longueur des vecteurs dans x doit correspondre à la longueur de la "
+"fenêtre adaptive dans n"
 
 #: froll.R:70
 msgid "partial2adaptive: froll adaptive=TRUE and partial=TRUE trimming n"
@@ -2763,6 +2766,8 @@ msgstr ""
 msgid ""
 "internal error: misuse of make.roll.names, n must be numeric for !adaptive"
 msgstr ""
+"erreur interne : utilisation inappropriée de make.roll.names, n doit être "
+"numérique pour !adaptive"
 
 #: froll.R:92
 #, c-format
@@ -2770,6 +2775,8 @@ msgid ""
 "internal error: misuse of make.roll.names, non-null length 0 n is not "
 "possible for !adaptive"
 msgstr ""
+"erreur interne : utilisation inappropriée de make.roll.names, non null de "
+"longueur 0 n n'est pas autorisé avec !adaptive"
 
 #: froll.R:106
 #, c-format
@@ -2777,11 +2784,14 @@ msgid ""
 "internal error: make.roll.names call should have been escaped in frollapply "
 "during 'unpack atomic input'"
 msgstr ""
+"erreur interne : l'appel à make.roll.names doit être échappé dans frollapply "
+"pendant la décompression atomique de l'entrée"
 
 #: froll.R:110
 #, c-format
 msgid "internal error: make.roll.names generated names of wrong length"
 msgstr ""
+"erreur interne : make.roll.names a généré des noms de mauvaise longueur"
 
 #: froll.R:118
 #, c-format
@@ -2812,25 +2822,25 @@ msgstr "'%s' doit valoir TRUE ou FALSE"
 #: froll.R:157 froll.R:158
 #, c-format
 msgid "hasNA is deprecated, use has.nf instead"
-msgstr ""
+msgstr "hasNA est obsolète, remplacer par has.nf"
 
 #: froll.R:183
 msgid "froll: adaptive=TRUE && align='left' pre-processing for align='right'"
-msgstr ""
+msgstr "froll : adaptive=TRUE && align='left' prétraitement pour align='right'"
 
 #: froll.R:191
 msgid "froll: adaptive=TRUE && align='left' post-processing from align='right'"
-msgstr ""
+msgstr "froll : adaptive=TRUE && align='left' post-traitement de align='right'"
 
 #: frollapply.R:130
 #, c-format
 msgid "'x' is deprecated in frollapply, use 'X' instead"
-msgstr ""
+msgstr "'x' est obsolète dans frollapply, utiliser 'X' à la place"
 
 #: frollapply.R:134
 #, c-format
 msgid "'n' is deprecated in frollapply, use 'N' instead"
-msgstr ""
+msgstr "'n' est obsolète dans frollapply, utiliser 'N' à la place"
 
 #: frollapply.R:138
 #, c-format
@@ -2917,7 +2927,7 @@ msgstr "'N' doit avoir une longueur différente de 0"
 #: frollapply.R:209
 #, c-format
 msgid "'N' must be an integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "'N' doit être un entier, une liste est acceptée pour adaptive TRUE"
 
 #: frollapply.R:211
 #, c-format
@@ -2952,17 +2962,19 @@ msgstr ""
 #: frollapply.R:237 frollapply.R:245
 #, c-format
 msgid "'N' must be an integer vector or list of integer vectors"
-msgstr ""
+msgstr "'N' doit être un vecteur d'entiers ou une liste de vecteurs d'entiers"
 
 #: frollapply.R:257
 #, c-format
 msgid "using adaptive TRUE and align 'center' is not implemented"
 msgstr ""
+"l'utilisation de adaptive TRUE avec align 'center' n'est pas implémentée"
 
 #: frollapply.R:262
 msgid ""
 "frollapply: adaptive=TRUE && align='left' pre-processing for align='right'"
 msgstr ""
+"frollapply : adaptive=TRUE && align='left' pré-traitement pour align='right'"
 
 #: frollapply.R:319
 msgid ""
@@ -3020,7 +3032,7 @@ msgstr ""
 
 #: frollapply.R:332
 msgid "frollapply running on single CPU thread"
-msgstr ""
+msgstr "frollapply s'exécute sur un seul thread du CPU"
 
 #: frollapply.R:348
 msgid ""
@@ -3029,7 +3041,7 @@ msgstr ""
 
 #: frollapply.R:350
 msgid "frollapply running on %d CPU threads"
-msgstr ""
+msgstr "frollapply s'exécute sur %d threads du CPU"
 
 #: frollapply.R:409 frollapply.R:433
 #, c-format
@@ -3050,7 +3062,7 @@ msgstr "conversion automatique de classe pour x : matrix vers data.table"
 
 #: fwrite.R:67
 msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
-msgstr ""
+msgstr "Ajout au fichier existant ce qui initialise bom=FALSE et yaml=FALSE"
 
 #: fwrite.R:80
 #, c-format
@@ -3205,7 +3217,7 @@ msgstr ""
 #: groupingsets.R:92
 #, c-format
 msgid "%s (label: %s; data: %s)"
-msgstr ""
+msgstr "%s (libellé : %s; données : %s)"
 
 #: groupingsets.R:96
 #, c-format
@@ -3218,7 +3230,7 @@ msgstr ""
 #: groupingsets.R:100
 #, c-format
 msgid "(label name: %s; label class[1]: %s)"
-msgstr ""
+msgstr "(nom du libellé : %s; classe du libellé[1] : %s)"
 
 #: groupingsets.R:103
 #, c-format
@@ -3260,13 +3272,15 @@ msgstr ""
 #: groupingsets.R:146
 #, c-format
 msgid "%s (label: %s)"
-msgstr ""
+msgstr "%s (libellé : %s)"
 
 #: groupingsets.R:147
 #, c-format
 msgid ""
 "For the following variables, the 'label' value was already in the data: %s"
 msgstr ""
+"Pour les variables suivantes, la valeur de 'label' était déjà dans les "
+"données : %s"
 
 #: groupingsets.R:154
 #, c-format
@@ -3348,7 +3362,7 @@ msgstr ""
 #: merge.R:39 merge.R:42 merge.R:56 merge.R:59
 #, c-format
 msgid "The following columns listed in `%s` are missing from %s: %s"
-msgstr ""
+msgstr "Les colonnes suivantes listées dans `%s` ne figurent pas dans %s : %s"
 
 #: merge.R:54
 #, c-format
@@ -3383,11 +3397,15 @@ msgid ""
 "'cols' must be non-zero length, non-NA, integer or character columns of 'x' "
 "argument"
 msgstr ""
+"'cols' doit être une liste de longueur différente de zéro, non NA, de "
+"colonnes d'entiers ou de caractères de l'argument 'x'"
 
 #: mergelist.R:98
 #, c-format
 msgid "cross join must be used with zero-length on, mult='all', join.many=TRUE"
 msgstr ""
+"la jointure croisée doit être utilisée en validant zero-length et avec "
+"mult='all', join.many=TRUE"
 
 #: mergelist.R:104
 #, c-format
@@ -3436,6 +3454,8 @@ msgstr "Chaque élément de la liste 'l' doit être un objet data.table"
 #, c-format
 msgid "Tables in 'l' must all have columns, but these entries have 0: %s"
 msgstr ""
+"Les tables dans 'l' doivent toutes avoir des colonnes, mais ces entrées en "
+"ont 0 : %s"
 
 #: mergelist.R:272
 #, c-format
@@ -3454,6 +3474,8 @@ msgid ""
 "'join.many' must be TRUE or FALSE, or a list of such whose length must be "
 "length(l)-1L"
 msgstr ""
+"'join.many' doit valoir TRUE ou FALSE, ou être une liste de ceux-ci et avoir "
+"pour longueur length(l)-1L"
 
 #: mergelist.R:293
 #, c-format
@@ -3461,6 +3483,8 @@ msgid ""
 "'mult' must be one of [error, all, first, last] or NULL, or a list of such "
 "whose length must be length(l)-1L"
 msgstr ""
+"'mult' doit être une valeur parmi [error, all, first, last] ou NULL, ou une "
+"liste de ceux-ci et avoir pour longueur length(l)-1L"
 
 #: mergelist.R:298
 #, c-format
@@ -3468,11 +3492,13 @@ msgid ""
 "'how' must be one of [left, inner, full, right, semi, anti, cross], or a "
 "list of such whose length must be length(l)-1L"
 msgstr ""
+"'how' doit être une valeur parmi [left, inner, full, right, semi, anti, "
+"cross], ou une liste de ceux-ci et avoir pour longueur length(l)-1L"
 
 #: mergelist.R:306
 #, c-format
 msgid "'cols' must be same length as 'l' (%d != %d)"
-msgstr ""
+msgstr "'cols' doit être de la même longueur que 'l' (%d != %d)"
 
 #: mergelist.R:309
 #, c-format
@@ -3480,11 +3506,14 @@ msgid ""
 "'cols' must be a list of non-zero length, non-NA, non-duplicated, character "
 "vectors, or eventually NULLs (all columns)"
 msgstr ""
+"'cols' doit être une liste de longueur différente de zéro, non NA, non "
+"dupliquée, de vecteurs de caractères, ou éventuellesment de valeurs NULL "
+"(toutes les colonnes)"
 
 #: mergelist.R:311
 #, c-format
 msgid "'cols' specify columns not present in corresponding table"
-msgstr ""
+msgstr "'cols' utilise des colonnes absentes dans la table correspondante"
 
 #: mergelist.R:320
 #, c-format
@@ -3492,10 +3521,12 @@ msgid ""
 "'on' must be non-NA, non-duplicated, character vector, or a list of such "
 "which length must be length(l)-1L"
 msgstr ""
+"'on' doit être non NA, non dupliqué, un vecteur de caractères, ou une liste "
+"de ceux-ci et avoir pour longueur length(l)-1L"
 
 #: mergelist.R:343
 msgid "mergelist: merging %d tables, took %.3fs"
-msgstr ""
+msgstr "mergelist : fusion de %d tables, a pris %.3fs"
 
 #: onAttach.R:23
 #, c-format
@@ -3716,7 +3747,7 @@ msgstr "Les classes des colonnes seront supprimées si col.names est 'none'"
 
 #: print.data.table.R:48
 msgid "Key: <%s>"
-msgstr ""
+msgstr "Clé : <%s>"
 
 #: print.data.table.R:58
 msgid "Null %s (0 rows and 0 cols)"
@@ -3724,7 +3755,7 @@ msgstr "Valeur nulle de %s  (0 ligne et 0 colonne)"
 
 #: print.data.table.R:60
 msgid "Empty %s (%d rows and %d cols)"
-msgstr ""
+msgstr "%s est vide (%d ligne et %d colonne)"
 
 #: print.data.table.R:161
 #, c-format
@@ -3784,6 +3815,8 @@ msgstr "l'argument 'env' contient des noms dupliqués"
 msgid ""
 "Must provide at least one column (use `name=`). See ?rowwiseDT for details"
 msgstr ""
+"Une colonne au moins doit être fournie (utiliser `name=`). Voir ?rowwiseDT "
+"pour les détails"
 
 #: rowwiseDT.R:7
 #, c-format
@@ -3793,7 +3826,7 @@ msgstr "Les arguments nommés doivent être vides"
 #: rowwiseDT.R:9
 #, c-format
 msgid "Header must be the first N arguments"
-msgstr ""
+msgstr "L'entête doit être les N premiers arguments"
 
 #: rowwiseDT.R:15
 #, c-format
@@ -3925,12 +3958,12 @@ msgstr ""
 #: setkey.R:194
 #, c-format
 msgid "Mixing '-' with vector decreasing= is not supported."
-msgstr ""
+msgstr "Il n'est pas possible d'utiliser '-' avec decreasing= pour un vecteur."
 
 #: setkey.R:195
 #, c-format
 msgid "decreasing= has length %d applied to sorting %d columns."
-msgstr ""
+msgstr "decreasing= a pour longueur %d appliquée au tri de %d colonnes."
 
 #: setkey.R:211
 #, c-format
@@ -4219,7 +4252,7 @@ msgstr ""
 
 #: test.data.table.R:208
 msgid "Running %d of %d tests matching '%s'"
-msgstr ""
+msgstr "Exécution de %d sur %d tests correspondant à '%s'"
 
 #: test.data.table.R:278
 #, c-format
@@ -4232,6 +4265,8 @@ msgid ""
 "Tests succeeded, but non-test code caused warnings. Search %s for tests "
 "shown above."
 msgstr ""
+"Tests réussis mais du code non testé a émis des avertissements. Rechercher "
+"%s dans les tests affichés ci-dessus."
 
 #: test.data.table.R:316
 #, c-format
@@ -4241,6 +4276,7 @@ msgstr "Différence dans les délais enregistrés : %d versus %d"
 #: test.data.table.R:318
 msgid "10 longest running tests took %ds (%d%% of %ds)"
 msgstr ""
+"Les 10 tests qui s'exécutent le plus longtemps ont pris %ds (%d%% de %ds)"
 
 #: test.data.table.R:324
 msgid "10 largest RAM increases (MiB); see plot for cumulative effect (if any)"
@@ -4248,11 +4284,11 @@ msgstr ""
 
 #: test.data.table.R:334
 msgid "All %d tests (last %.8g) in %s completed ok in %s"
-msgstr ""
+msgstr "Tous les %d tests (derniers %.8g) de %s ont réussi dans %s"
 
 #: test.data.table.R:430
 msgid "Running test id %s"
-msgstr ""
+msgstr "Exécution du test id %s"
 
 #: test.data.table.R:448
 #, c-format
@@ -4290,6 +4326,7 @@ msgstr ""
 #: test.data.table.R:527
 msgid "Output captured before unexpected warning/error/message:"
 msgstr ""
+"Sortie juste avant l'avertissement, l'erreur ou le message non attendu :"
 
 #: test.data.table.R:538
 msgid "Test %s did not produce correct output:"
@@ -4317,11 +4354,11 @@ msgstr "Test %s a généré des sorties alors qu'il n'aurait pas dû :"
 
 #: test.data.table.R:551
 msgid "Expected absent (case insensitive): <<%s>>"
-msgstr ""
+msgstr "Attendu et absent (non sensible à la casse) : <<%s>>"
 
 #: test.data.table.R:554
 msgid "Expected absent (raw): <<%s>>"
-msgstr ""
+msgstr "Attendu et absent (brut) : <<%s>>"
 
 #: test.data.table.R:570
 msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
@@ -4333,11 +4370,11 @@ msgstr "Test %s exécuté sans erreur mais avec échec du contrôle x égale y :
 
 #: test.data.table.R:600
 msgid "First %d of %d (type '%s'):"
-msgstr ""
+msgstr "Premier %d sur %d (type '%s') :"
 
 #: test.data.table.R:605
 msgid "Non-ASCII string detected, raw representation:"
-msgstr ""
+msgstr "Chaîne de caractères non ASCII détectée, représentation brute :"
 
 #: timetaken.R:3
 #, c-format
@@ -4563,8 +4600,8 @@ msgstr[1] "Motifs non trouvés : [%s]"
 #: fread.R:354
 msgid "stringsAsFactors=%s converted %d column: %s\n"
 msgid_plural "stringsAsFactors=%s converted %d columns: %s\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "stringsAsFactors=%s a converti %d colonne : %s\n"
+msgstr[1] "stringsAsFactors=%s a converti %d colonnes : %s\n"
 
 #: merge.R:131
 msgid ""
@@ -4589,8 +4626,8 @@ msgstr[1] ""
 #: merge.R:144
 msgid "%d unnamed argument in '...'"
 msgid_plural "%d unnamed arguments in '...'"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d argument non nommé dans '...'"
+msgstr[1] "%d arguments non nommés dans '...'"
 
 #: merge.R:145
 msgid "%d unknown keyword argument"
@@ -4628,8 +4665,8 @@ msgstr[1] ""
 #: test.data.table.R:298
 msgid "Caught %d warning outside the test() calls:\n"
 msgid_plural "Caught %d warnings outside the test() calls:\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d avertissement détecté en dehors des appels à test() :\n"
+msgstr[1] "%d avertissements détectés en dehors des appels à test() :\n"
 
 #: utils.R:43
 msgid ""
