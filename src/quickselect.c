@@ -73,6 +73,7 @@ double i64quickselect(int64_t *x, int n)
 }
 
 // Floyd-Rivest selection algorithm
+// https://en.wikipedia.org/wiki/Floyd%E2%80%93Rivest_algorithm
 
 #undef FLOYD_RIVEST_BODY
 #define FLOYD_RIVEST_BODY(SWAP, TYPE)                                      \
