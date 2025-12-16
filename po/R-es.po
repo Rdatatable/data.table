@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-02-12 13:35-0300\n"
+"PO-Revision-Date: 2025-12-16 01:20-0300\n"
 "Last-Translator: Ricardo Villalba <rikivillalba@gmail.com>\n"
 "Language-Team: es\n"
 "Language: es\n"
@@ -199,17 +199,14 @@ msgstr ""
 "de %s%s."
 
 #: bmerge.R:34
-#, fuzzy, c-format
-#| msgid ""
-#| "Attempting roll join on factor column when joining %s to %s. Only "
-#| "integer, double or character columns may be roll joined."
+#, c-format
 msgid ""
 "Attempting roll join on factor column when joining x.%s to i.%s. Only "
 "integer, double or character columns may be roll joined."
 msgstr ""
-"Se intentó hacer un roll join en una columna de factor al unir %s con %s. "
-"Sólo se puede hacer roll join en columnas de números enteros, dobles o de "
-"caracteres."
+"Se intentó hacer un roll join en una columna de factor al unir x.%s con i."
+"%s. Sólo se puede hacer roll join en columnas tipo integer, double o "
+"character"
 
 #: bmerge.R:72 bmerge.R:73
 #, c-format
@@ -352,6 +349,8 @@ msgid ""
 "Invalid set* operation on a recursive index L[[i]] where i has length %d. "
 "Chain [[ instead."
 msgstr ""
+"Operación set* no válida en índice recursivo L[[i]] con i de longitud %d. en "
+"su lugar, use [[ en cadena."
 
 #: data.table.R:139
 #, c-format
@@ -417,10 +416,9 @@ msgstr ""
 "se actualizará a error en el futuro."
 
 #: data.table.R:222
-#, fuzzy, c-format
-#| msgid "mult argument can only be 'first', 'last' or 'all'"
+#, c-format
 msgid "mult argument can only be 'first', 'last', 'all' or 'error'"
-msgstr "el argumento múltiple sólo puede ser 'first', 'last' o 'all'"
+msgstr "'mult' sólo puede ser 'first', 'last', 'all', o 'error'"
 
 #: data.table.R:224
 #, c-format
@@ -546,6 +544,10 @@ msgid ""
 "` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := "
 "tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
 msgstr ""
+"Uso no válido de `:=` dentro de `{}`. `:=` debe ser la única expresión "
+"dentro de `{}` cuando se usa en `j`. En lugar de DT[{tmp1 <- ...; tmp2 "
+"<- ...; someCol := tmp1 * tmp2}], utilice: DT[, someCol := {tmp1 <- ...; "
+"tmp2 <- ...; tmp1 * tmp2}]"
 
 #: data.table.R:334
 #, c-format
@@ -629,13 +631,7 @@ msgstr ""
 "data.table si desea esto o agregue sus comentarios al FR #657."
 
 #: data.table.R:471
-#, fuzzy, c-format
-#| msgid ""
-#| "When i is a data.table (or character vector), the columns to join by must "
-#| "be specified using 'on=' argument (see ?data.table), by keying x (i.e. "
-#| "sorted, and, marked as sorted, see ?setkey), or by sharing column names "
-#| "between x and i (i.e., a natural join). Keyed joins might have further "
-#| "speed benefits on very large data due to x being sorted in RAM."
+#, c-format
 msgid ""
 "When i is a data.table (or character vector), the columns to join by must be "
 "specified using the 'on=' argument (see ?data.table); by keying x (i.e., x "
@@ -644,12 +640,13 @@ msgid ""
 "join). Keyed joins might have further speed benefits on very large data due "
 "to x being sorted in RAM."
 msgstr ""
-"Cuando i es una tabla de datos (o un vector de caracteres), las columnas "
-"para unir deben especificarse usando el argumento 'on=' (ver ?data.table), "
-"ingresando x (es decir, ordenadas y marcadas como ordenadas, consulte ?"
-"setkey), o compartiendo nombres de columnas entre xey (es decir, una unión "
-"natural). Las uniones por clave pueden tener mayores beneficios de velocidad "
-"en datos muy grandes debido a que x se ordena en la RAM."
+"Cuando i es una data.table (o un vector de caracteres), las columnas para "
+"unir deben especificarse usando el argumento 'on=' (ver ?data.table); "
+"haciendo de x una clave (p. ej., x está ordenada y marcada como tal, "
+"consulte ?setkey): o usando 'on = .NATURAL' para indicar que se usan las "
+"columnas que comparten nombre en x y i (un 'natural join'). En tablas muy "
+"grandes, las uniones en columnas con clave pueden tener aún más beneficios "
+"en velocidad, debido a que x se ordena en la RAM."
 
 #: data.table.R:479
 #, c-format
@@ -685,6 +682,9 @@ msgid ""
 "use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows "
 "explosion."
 msgstr ""
+"el JOIN ha resultado en una combinación de muchos a muchos. Haga control de "
+"calidad de sus datos, utilice mult!='all', o establezca la opción 'datatable."
+"join.many' en TRUE para permitir 'explosión' de filas."
 
 #: data.table.R:596
 msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
@@ -734,14 +734,14 @@ msgstr "Invertir irows para not-join finalizó en ..."
 #: data.table.R:725
 #, c-format
 msgid "`:=` is only supported under with=TRUE, see ?`:=`."
-msgstr ""
+msgstr "`:=` soportado solamente con with=TRUE, vea ?`:=`."
 
 #: data.table.R:767
 #, c-format
 msgid "Item %d of j is %d which is outside the column number range [1,ncol=%d]"
 msgstr ""
-"El elemento %d de j es %d que está fuera del rango de números de columna "
-"[1,ncol=%d]"
+"El elemento %d de j es %d que está fuera del rango de números de columna [1,"
+"ncol=%d]"
 
 #: data.table.R:770
 #, c-format
@@ -839,10 +839,10 @@ msgid ""
 "toString), whilst taking care to maintain distinctness in the process."
 msgstr ""
 "La columna o expresión %d de 'by' o 'keyby' es de tipo '%s' que no se admite "
-"actualmente. Si tiene un caso de uso convincente, agréguelo a https://"
-"github.com/Rdatatable/data.table/issues/1597. Como solución alternativa, "
-"considere convertir la columna a un tipo admitido, p. by=sapply(list_col, "
-"toString), teniendo cuidado de mantener la distinción en el proceso."
+"actualmente. Si tiene un caso de uso convincente, agréguelo a https://github."
+"com/Rdatatable/data.table/issues/1597. Como solución alternativa, considere "
+"convertir la columna a un tipo admitido, p. by=sapply(list_col, toString), "
+"teniendo cuidado de mantener la distinción en el proceso."
 
 #: data.table.R:951
 msgid ""
@@ -936,8 +936,8 @@ msgid ""
 "important for efficiency.\n"
 "Old ansvars: %s"
 msgstr ""
-"'(m)get' encontrado en j. se usan todas las columnas como ansvar. "
-"Use .SDcols o una sola expresión j=eval(macro) en su lugar. Ambas opciones "
+"'(m)get' encontrado en j. se usan todas las columnas como ansvar. Use ."
+"SDcols o una sola expresión j=eval(macro) en su lugar. Ambas opciones "
 "permiten detectar las columnas utilizadas, importante para mayor "
 "eficiencia.\n"
 "ansvars anterior: %s"
@@ -1010,8 +1010,8 @@ msgid ""
 "LHS of := appears to be column positions but are outside [1,ncol] range. New "
 "columns can only be added by name."
 msgstr ""
-"LHS de := parecen ser posiciones de columna pero están fuera del rango "
-"[1,ncol]. Solo se pueden agregar nuevas columnas por nombre."
+"LHS de := parecen ser posiciones de columna pero están fuera del rango [1,"
+"ncol]. Solo se pueden agregar nuevas columnas por nombre."
 
 #: data.table.R:1193
 #, c-format
@@ -1180,8 +1180,8 @@ msgstr ""
 #: data.table.R:1863
 #, c-format
 msgid ""
-"Unable to optimize call to mean() and could be very slow. You must name "
-"'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
 "'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
 msgstr ""
 "No se puede optimizar la llamada a mean() y podría ser muy lento. Debe "
@@ -1268,11 +1268,11 @@ msgstr "'%s' no es una columna de x"
 #: data.table.R:2171
 #, c-format
 msgid ""
-"as.integer(rownames)==%d which is outside the column number range "
-"[1,ncol=%d]."
+"as.integer(rownames)==%d which is outside the column number range [1,ncol="
+"%d]."
 msgstr ""
-"as.integer(rownames)==%d que está fuera del rango de números de columna "
-"[1,ncol=%d]."
+"as.integer(rownames)==%d que está fuera del rango de números de columna [1,"
+"ncol=%d]."
 
 #: data.table.R:2176
 #, c-format
@@ -1320,9 +1320,9 @@ msgid ""
 "'data.table') or saved to disk using a prior version of data.table?"
 msgstr ""
 "data.table hereda de data.frame (de v1.5), pero este data.table no. ¿Se ha "
-"creado manualmente (por ejemplo, utilizando 'structure' en lugar de "
-"'data.table') o se ha guardado en el disco utilizando una versión anterior "
-"de data.table?"
+"creado manualmente (por ejemplo, utilizando 'structure' en lugar de 'data."
+"table') o se ha guardado en el disco utilizando una versión anterior de data."
+"table?"
 
 #: data.table.R:2366
 #, c-format
@@ -1373,15 +1373,15 @@ msgstr "Se debe proporcionar el argumento 'by' o 'f'"
 #, c-format
 msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
 msgstr ""
-"La columna '.ll.tech.split' está reservada para el procesamiento de "
-"split.data.table"
+"La columna '.ll.tech.split' está reservada para el procesamiento de split."
+"data.table"
 
 #: data.table.R:2534
 #, c-format
 msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
 msgstr ""
-"La columna '.nm.tech.split' está reservada para el procesamiento de "
-"split.data.table"
+"La columna '.nm.tech.split' está reservada para el procesamiento de split."
+"data.table"
 
 #: data.table.R:2535
 #, c-format
@@ -1542,9 +1542,15 @@ msgid ""
 "j, once only and in particular ways. See help(\":=\", \"data.table\"). A "
 "common reason for this error is allocating a new column in `j` and using `<-"
 "` instead of `:=`; e.g., `DT[, new_col <- 1]` should be `DT[, new_col := "
-"1]`. Another is using `:=` in a multi-statement `{...}` block; please use "
-"`:=` as the only statement in `j`."
+"1]`. Another is using `:=` in a multi-statement `{...}` block; please use `:"
+"=` as the only statement in `j`."
 msgstr ""
+"Verifique que is.data.table(DT) == TRUE. De otro modo, `:=` está definido "
+"usarse en 'j', una sola vez y en formas específicas. See help(\":=\", \"data."
+"table\"). Una causa común de este error es asignar una nueva columnaen `j` y "
+"usar `<-` en lugar de `:=`; por ej. `DT[, new_col <- 1]` debería ser `DT[, "
+"new_col := 1]`. Otra es usar `:=` en un bloque `{...}`; por favor, utilice `:"
+"=` como la única expresión en `j`."
 
 #: data.table.R:2925
 #, c-format
@@ -1730,13 +1736,13 @@ msgid ""
 "Git revision is not available. Most likely data.table was installed from "
 "CRAN or local archive.\n"
 "Git revision is available when installing from our repositories 'https://"
-"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/"
-"data.table'."
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"table'."
 msgstr ""
 "Revisión de Git no disponible. Probablmeente instaló data.table desde CRAN o "
 "desde un arcihvo local. La revisión de Git está disponible cuando se instala "
-"data.table desde nuestros repositorios 'https://Rdatatable.gitlab.io/"
-"data.table' y 'https://Rdatatable.github.io/data.table'."
+"data.table desde nuestros repositorios 'https://Rdatatable.gitlab.io/data."
+"table' y 'https://Rdatatable.github.io/data.table'."
 
 #: duplicated.R:7
 #, c-format
@@ -1840,17 +1846,17 @@ msgid ""
 "is used to derive a single representative value for each combination in the "
 "output data.table, for example by summing or averaging (fun.aggregate=sum or "
 "fun.aggregate=mean, respectively). Check the resulting table for values "
-"larger than 1 to see which combinations were not unique. See ?"
-"dcast.data.table for more details."
+"larger than 1 to see which combinations were not unique. See ?dcast.data."
+"table for more details."
 msgstr ""
 "'fun.aggregate' es NULL, pero encontró combinaciones de fila/columna "
 "duplicadas, por lo que se usa length() de manera predeterminada. Es decir, "
 "las variables %s utilizadas en 'formula' no identifican de manera única las "
 "filas en la entrada 'data'. En tales casos, 'fun.aggregate' se utiliza para "
 "derivar un único valor representativo para cada combinación en la tabla de "
-"datos de salida, por ejemplo, sumando o promediando (fun.aggregate=sum o "
-"fun.aggregate=mean, respectivamente). Verifique la tabla resultante para ver "
-"si hay valores mayores que 1 para ver qué combinaciones no fueron únicas. "
+"datos de salida, por ejemplo, sumando o promediando (fun.aggregate=sum o fun."
+"aggregate=mean, respectivamente). Verifique la tabla resultante para ver si "
+"hay valores mayores que 1 para ver qué combinaciones no fueron únicas. "
 "Consulte ?dcast.data.table para obtener más detalles."
 
 #: fcast.R:188
@@ -1871,8 +1877,8 @@ msgid ""
 "redirect to the relevant reshape2 method; please note that reshape2 is "
 "superseded and is no longer actively developed, and this redirection is now "
 "deprecated. To continue using melt methods from reshape2 while both packages "
-"are attached, e.g. melt.list, you can prepend the namespace, i.e. "
-"reshape2::%1$s(%3$s). In the next version, this warning will become an error."
+"are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::"
+"%1$s(%3$s). In the next version, this warning will become an error."
 msgstr ""
 "Al %1$s genérico en data.table se le suministró un %2$s, se intentará "
 "redirigir al método reshape2 relevante; tenga en cuenta que reshape2 ha sido "
@@ -2072,8 +2078,8 @@ msgid ""
 "'value.name' provided in both 'measure.vars' and 'value.name argument'; "
 "value provided in 'measure.vars' is given precedence."
 msgstr ""
-"'value.name' proporcionado tanto en 'measure.vars' como en argumento "
-"'value.name'; el valor proporcionado en 'measure.vars' tiene prioridad."
+"'value.name' proporcionado tanto en 'measure.vars' como en argumento 'value."
+"name'; el valor proporcionado en 'measure.vars' tiene prioridad."
 
 #: fmelt.R:210
 #, c-format
@@ -2148,8 +2154,8 @@ msgstr ""
 #: foverlaps.R:27
 #, c-format
 msgid ""
-"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= "
-"by.x <= length(x)"
+"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by."
+"x <= length(x)"
 msgstr ""
 "Valor numérico no válido para 'by.x'; debería ser un vector con valores 1 <= "
 "by.x <= length(x)"
@@ -2157,8 +2163,8 @@ msgstr ""
 #: foverlaps.R:32
 #, c-format
 msgid ""
-"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= "
-"by.y <= length(y)"
+"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by."
+"y <= length(y)"
 msgstr ""
 "Valor numérico no válido para 'by.y'; debería ser un vector con valores 1 <= "
 "by.y <= length(y)"
@@ -2350,7 +2356,7 @@ msgstr "El argumento 'encoding' debe ser 'unknown', 'UTF-8' o 'Latin-1 '."
 #: fread.R:34
 #, c-format
 msgid "comment.char= must be a single non-NA character."
-msgstr ""
+msgstr "comment.char= debe ser un solo carácter no NA."
 
 #: fread.R:47
 #, c-format
@@ -2405,6 +2411,9 @@ msgid ""
 "External command failed with exit code %d. This can happen when the disk is "
 "full in the temporary directory ('%s'). See ?fread for the tmpdir argument."
 msgstr ""
+"El comando externo falló con código de salida %d. Esto puede suceder cuando "
+"el disco está lleno en el directorio temporal ('%s'). Vea ?fread para el "
+"argumento tmpdir."
 
 #: fread.R:86
 #, c-format
@@ -2445,8 +2454,8 @@ msgid ""
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
 msgstr ""
 "Para leer archivos %s directamente, fread() requiere el paquete 'R.utils' "
-"que no se puede encontrar. Instale 'R.utils' usando "
-"'install.packages('R.utils')'."
+"que no se puede encontrar. Instale 'R.utils' usando 'install.packages('R."
+"utils')'."
 
 #: fread.R:127
 #, c-format
@@ -2454,6 +2463,8 @@ msgid ""
 "Reading compressed files in fread requires R.utils version 2.13.0 or higher. "
 "Please upgrade R.utils."
 msgstr ""
+"Se requiere R.utils versión 2.13.0 o mayor para leer archivos comprimidos "
+"con fread. Actualice R.utils."
 
 #: fread.R:134
 #, c-format
@@ -2463,6 +2474,10 @@ msgid ""
 ". This can happen when the disk is full in the temporary directory ('%s'). "
 "See ?fread for the tmpdir argument."
 msgstr ""
+"R.utils::decompressFile falló al descomprimir archivo '%s':\n"
+"  %s\n"
+". Puede suceder si el disco está lleno en el directorio temporal ('%s'). "
+"Vea ?fread por el argumento tmpdir."
 
 #: fread.R:143
 #, c-format
@@ -2517,8 +2532,8 @@ msgstr ""
 #: fread.R:173
 #, c-format
 msgid ""
-"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with "
-"na.strings=\"\" to turn any number of spaces in string columns into <NA>"
+"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
 msgstr ""
 "%s. Pero strip.white=FALSE. Utilice strip.white=TRUE (predeterminado) junto "
 "con na.strings=\"\" para convertir cualquier número de espacios en columnas "
@@ -2681,67 +2696,72 @@ msgstr ""
 "nombra columnas (nótese que col.names se aplican antes de esto)"
 
 #: froll.R:30
-#, fuzzy, c-format
-#| msgid "class must be length 1"
+#, c-format
 msgid "n must be non 0 length"
-msgstr "la clase debe tener una longitud de 1"
+msgstr "n debe tener una longitud distinta de 0"
 
 #: froll.R:32
 #, c-format
 msgid "'partial' cannot be used together with align='center'"
-msgstr ""
+msgstr "no se puede usar 'partial' junto con align='center'"
 
 #: froll.R:35
 #, c-format
 msgid "'partial' does not support variable length of columns in x"
-msgstr ""
+msgstr "uso de 'partial' con columnas de longitud variable en x no soportado"
 
 #: froll.R:37
 #, c-format
 msgid "'partial' does not support variable nrow of data.tables in x"
-msgstr ""
+msgstr "uso de 'partial' con data.tables de nrow variable en x no soportado"
 
 #: froll.R:48
 #, c-format
 msgid "n must be an integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "n debe ser un entero, se acepta una lista para adaptive=TRUE"
 
 #: froll.R:50 froll.R:62
 #, c-format
 msgid "n must be an integer vector or a list of integer vectors"
-msgstr ""
+msgstr "n debe ser un vector entero o una lista de vectores enteros"
 
 #: froll.R:52
 msgid ""
 "partial2adaptive: froll partial=TRUE trimming n and redirecting to "
 "adaptive=TRUE"
 msgstr ""
+"partial2adaptive: froll partial=TRUE corta en n y redirige a adaptive=TRUE"
 
 #: froll.R:64
 #, c-format
 msgid "adaptive windows provided in n must not to have different lengths"
 msgstr ""
+"ventanas adaptativas provistas en n no deben tener longitudes diferentes"
 
 #: froll.R:66
 #, c-format
 msgid ""
 "length of n argument must be equal to number of observations provided in x"
 msgstr ""
+"la longitud del argumento 'n' debe ser igual al número de observaciones "
+"proporcionadas en 'x'"
 
 #: froll.R:68
 #, c-format
 msgid "length of vectors in x must match to length of adaptive window in n"
 msgstr ""
+"longitud de vectores en x deben coincidir con las de ventana adaptativa en n"
 
 #: froll.R:70
 msgid "partial2adaptive: froll adaptive=TRUE and partial=TRUE trimming n"
-msgstr ""
+msgstr "partial2adaptive: froll adaptive=TRUE y partial=TRUE cortando n"
 
 #: froll.R:86
 #, c-format
 msgid ""
 "internal error: misuse of make.roll.names, n must be numeric for !adaptive"
 msgstr ""
+"error interno: mal uso de make.roll.names, n debe ser numérico para !adaptive"
 
 #: froll.R:92
 #, c-format
@@ -2749,6 +2769,8 @@ msgid ""
 "internal error: misuse of make.roll.names, non-null length 0 n is not "
 "possible for !adaptive"
 msgstr ""
+"error interno: mal uso de make.roll.names, n no nulo de longitud 0 no se "
+"admite para !adaptive"
 
 #: froll.R:106
 #, c-format
@@ -2756,94 +2778,86 @@ msgid ""
 "internal error: make.roll.names call should have been escaped in frollapply "
 "during 'unpack atomic input'"
 msgstr ""
+"error interno: llamado a make.roll.names debería haber sido escapado en "
+"frollapply durante 'unpack atomic input'"
 
 #: froll.R:110
 #, c-format
 msgid "internal error: make.roll.names generated names of wrong length"
-msgstr ""
+msgstr "error interno: make.roll.names generó nombres de longitud errónea"
 
 #: froll.R:118
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'x' must be of a numeric type"
-msgstr "'x' debe ser una lista"
+msgstr "'x' debe ser tipo numérico"
 
 #: froll.R:122 froll.R:127
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'n' must be an integer"
-msgstr "'x' debe ser una lista"
+msgstr "'n' debe ser un entero"
 
 #: froll.R:132
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'n' must be non 0 length"
-msgstr "'x' debe ser una lista"
+msgstr "'n' debe ser de longitud distinta de cero"
 
 #: froll.R:134
-#, fuzzy, c-format
-#| msgid "maxgap and minoverlap arguments are not yet implemented."
+#, c-format
 msgid "'align' other than 'right' has not yet been implemented"
-msgstr "Los argumentos maxgap y minoverlap aún no se han implementado."
+msgstr "'align' con valor diferente a 'right' aún no se ha implementado."
 
 #: froll.R:136 froll.R:138 mergelist.R:61
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'%s' must be TRUE or FALSE"
-msgstr "%s debe ser TRUE o FALSE"
+msgstr "'%s' debe ser TRUE o FALSE"
 
 #: froll.R:157 froll.R:158
 #, c-format
 msgid "hasNA is deprecated, use has.nf instead"
-msgstr ""
+msgstr "hasNA quedó obsoleto, utilice has.nf en su lugar"
 
 #: froll.R:183
 msgid "froll: adaptive=TRUE && align='left' pre-processing for align='right'"
-msgstr ""
+msgstr "froll: adaptive=TRUE && align='left' preproceso para align='right'"
 
 #: froll.R:191
 msgid "froll: adaptive=TRUE && align='left' post-processing from align='right'"
-msgstr ""
+msgstr "froll: adaptive=TRUE && align='left' post-proceso desde align='right'"
 
 #: frollapply.R:130
 #, c-format
 msgid "'x' is deprecated in frollapply, use 'X' instead"
-msgstr ""
+msgstr "'x' quedó obsoleto en frollapply, use 'X' en su lugar"
 
 #: frollapply.R:134
 #, c-format
 msgid "'n' is deprecated in frollapply, use 'N' instead"
-msgstr ""
+msgstr "'n' quedó obsoleto en frollapply, use 'N' en su lugar"
 
 #: frollapply.R:138
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'by.column' must be TRUE or FALSE"
-msgstr "'fromLast' debe ser TRUE o FALSE"
+msgstr "'by.column' debe ser TRUE o FALSE"
 
 #: frollapply.R:140
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'adaptive' must be TRUE or FALSE"
-msgstr "'fromLast' debe ser TRUE o FALSE"
+msgstr "'adaptive' debe ser TRUE o FALSE"
 
 #: frollapply.R:142
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'partial' must be TRUE or FALSE"
-msgstr "'fromLast' debe ser TRUE o FALSE"
+msgstr "'partial' debe ser TRUE o FALSE"
 
 #: frollapply.R:144
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'give.names' must be TRUE or FALSE"
-msgstr "%s debe ser TRUE o FALSE"
+msgstr "give.names' debe ser TRUE o FALSE"
 
 #: frollapply.R:146
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'simplify' must be TRUE or FALSE or a function"
-msgstr "%s debe ser TRUE o FALSE"
+msgstr "'simplify' debe ser TRUE o FALSE, o una función"
 
 #: frollapply.R:170
 #, c-format
@@ -2851,6 +2865,7 @@ msgid ""
 "frollapply by.column=TRUE requires 'X' argument to be atomic or a list of "
 "those"
 msgstr ""
+"frollapply by.column=TRUE requiere que 'X' sea atómico or lista de atómicos"
 
 #: frollapply.R:182
 #, c-format
@@ -2858,6 +2873,8 @@ msgid ""
 "frollapply by.column=FALSE, when provided a list in 'X' then all vectors "
 "must have equal lengths, like data.frame"
 msgstr ""
+"cuando se suministra una lista en 'X' con frollapply by.column=FALSE, todos "
+"los vectores deben tener la misma longitud (como data.frame)"
 
 #: frollapply.R:191
 #, c-format
@@ -2865,14 +2882,19 @@ msgid ""
 "frollapply by.column=FALSE got vectorized input in 'X', list of data.frames/"
 "data.tables, but not all columns of data.frames/data.tables are atomic"
 msgstr ""
+"frollapply by.column=FALSE recibió una entrada vectorizada en 'X', una lista "
+"de data.frames/data.tables, pero no todas las columnas son atómicas"
 
 #: frollapply.R:197
 #, c-format
 msgid ""
 "frollapply by.column=FALSE supports vectorized input in 'X' as a list of "
-"data.frames/data.tables, not a list of lists. Turn nested lists into "
-"data.frames/data.table and retry."
+"data.frames/data.tables, not a list of lists. Turn nested lists into data."
+"frames/data.table and retry."
 msgstr ""
+"frollapply by.column=FALSE soporta entrada vectorizada en 'X' como una lista "
+"de data.frames o data.tables, no como lista de lista. Conviértalas en data."
+"frames o data.tables"
 
 #: frollapply.R:199
 #, c-format
@@ -2883,38 +2905,45 @@ msgid ""
 "vectorized input, passing multiple objects to apply function to, it must be "
 "a list of data.frames/data.tables."
 msgstr ""
+"frollapply by.column=FALSE recibió una lista en 'X', pero no es una lista "
+"válida. Si la intención es suministrar una lista como entrada no "
+"vectorizada, pero un solo objeto sobre el que aplicar la función, entonces "
+"la lista debe consistir sólo en vectores atómicos. Para una entrada "
+"vectorizada que suministra varios objetos sobre los que aplicar la función, "
+"la lista debe contener data.frames o data.tables"
 
 #: frollapply.R:202
 #, c-format
 msgid ""
-"frollapply by.column=FALSE requires 'X' argument to be a data.table/"
-"data.frame or a list of equal length vectors. For vectorized input can be a "
-"list of data.frames/data.tables, but not a list of lists. All columns/"
-"vectors must be atomic."
+"frollapply by.column=FALSE requires 'X' argument to be a data.table/data."
+"frame or a list of equal length vectors. For vectorized input can be a list "
+"of data.frames/data.tables, but not a list of lists. All columns/vectors "
+"must be atomic."
 msgstr ""
+"frollapply by.column=FALSE requiere como argumento 'X' un data.table o data."
+"table o una liste de vectores de igual longitud. Para entrada vectorizada, "
+"puede ser una lista de data.frames o data.tables, pero no una lista de "
+"listas. Todas las columnas/vectores deben ser atómicos."
 
 #: frollapply.R:206
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'N' must be non 0 length"
-msgstr "'x' debe ser una lista"
+msgstr "'N' debe ser de longitud distinta de cero"
 
 #: frollapply.R:209
 #, c-format
 msgid "'N' must be an integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "N debe ser un entero, se acepta una lista para adaptive=TRUE"
 
 #: frollapply.R:211
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'N' must be an integer"
-msgstr "'x' debe ser una lista"
+msgstr "'N' debe ser un entero"
 
 #: frollapply.R:216 frollapply.R:227 frollapply.R:241
-#, fuzzy, c-format
-#| msgid "maxgap must be a non-negative integer value of length 1"
+#, c-format
 msgid "'N' must be non-negative integer values (>= 0)"
-msgstr "maxgap debe ser un valor entero no negativo de longitud 1"
+msgstr "'N' debe ser valor(es) entero(s) no negativo (>=0)"
 
 #: frollapply.R:220
 #, c-format
@@ -2923,6 +2952,10 @@ msgid ""
 "elements; If you want to call rolling function on list having variable "
 "length of elements call it for each field separately"
 msgstr ""
+"la función de ventana adaptativa solo puede procesar 'X' si este tiene la "
+"misma longitud en cada elemento; Si desea llamar a la función de ventana en "
+"una lista que tiene elementos de longitud variable, llámela para cada campo "
+"por separado"
 
 #: frollapply.R:223 frollapply.R:233
 #, c-format
@@ -2930,26 +2963,31 @@ msgid ""
 "length of integer vector(s) provided as list to 'N' argument must be equal "
 "to number of observations provided in 'X'"
 msgstr ""
+"la longitud de los vectores enteros proporcionados como lista para 'N' debe "
+"ser igual al número de observaciones proporcionadas en 'X'"
 
 #: frollapply.R:235
 #, c-format
 msgid "adaptive windows provided in 'N' must not to have different lengths"
 msgstr ""
+"las ventanas adaptativas provistas en 'N' no deben tener longitudes "
+"diferentes"
 
 #: frollapply.R:237 frollapply.R:245
 #, c-format
 msgid "'N' must be an integer vector or list of integer vectors"
-msgstr ""
+msgstr "'N' debe ser un vector entero o una lista de vectores enteros"
 
 #: frollapply.R:257
 #, c-format
 msgid "using adaptive TRUE and align 'center' is not implemented"
-msgstr ""
+msgstr "el uso de adaptive=TRUE y align='center' no está implementado"
 
 #: frollapply.R:262
 msgid ""
 "frollapply: adaptive=TRUE && align='left' pre-processing for align='right'"
 msgstr ""
+"frollapply: adaptive=TRUE && align='left' pre-proceso para align='right'"
 
 #: frollapply.R:319
 msgid ""
@@ -2957,6 +2995,9 @@ msgid ""
 "processes raised an error.\n"
 "%s"
 msgstr ""
+"se produjo un error durante la llamada de frollapply a parallel::mccollect "
+"para recabar los resultados de los procesos bifurcados.\n"
+"%s"
 
 #: frollapply.R:320
 msgid ""
@@ -2964,6 +3005,9 @@ msgid ""
 "warnings should have been suppressed by parallel.\n"
 "%s"
 msgstr ""
+"durante la llamada interna de frollapply a parallel::mccollect se generó una "
+"advertencia. Las advertencias en FUN deberían ser suprimidas por parallel.\n"
+"%s"
 
 #: frollapply.R:322
 msgid ""
@@ -2973,6 +3017,12 @@ msgid ""
 "returned by the your function. Use simplify=FALSE to obtain a list instead.\n"
 "%s"
 msgstr ""
+"frollapply se completó con éxito pero produjo un error cuando se intentaban "
+"simplificar los resultados usando funciones especificadas por el usuario en "
+"'simplify'. Asegúrese de proveer 'fill' de manera que coincida con la forma "
+"y el tipo de los resultados devueltos por la función. Use simplify=FALSE "
+"para obtener una lista en su lugar.\n"
+"%s"
 
 #: frollapply.R:323
 msgid ""
@@ -2982,6 +3032,12 @@ msgid ""
 "returned by the your function. Use simplify=FALSE to obtain a list instead.\n"
 "%s"
 msgstr ""
+"frollapply se completó con éxito pero generó una adverstencia cuando se "
+"intentaban simplificar los resultados usando funciones especificadas por el "
+"usuario en 'simplify'. Asegúrese de proveer 'fill' de manera que coincida "
+"con la forma y el tipo de los resultados devueltos por la función. Use "
+"simplify=FALSE para obtener una lista en su lugar.\n"
+"%s"
 
 #: frollapply.R:325
 msgid ""
@@ -2993,6 +3049,14 @@ msgid ""
 "use case as new issue in our issue tracker.\n"
 "%s"
 msgstr ""
+"frollapply se completó con éxito pero generó un error cuando se intentaban "
+"simplificar los resultados usando la función interna 'simplifylist'. "
+"Asegúrese de proveer 'fill' de manera que coincida con la forma y el tipo de "
+"los resultados devueltos por la función. Use simplify=FALSE para obtener una "
+"lista en su lugar. Si cree que los resultados pueden ser simplificados "
+"automáticamente, puede enviar su caso de uso como un nuevo tema en el "
+"rastreador de problemas.\n"
+"%s"
 
 #: frollapply.R:326
 msgid ""
@@ -3004,19 +3068,29 @@ msgid ""
 "use case as new issue in our issue tracker.\n"
 "%s"
 msgstr ""
+"frollapply se completó con éxito pero generó una advertencia cuando se "
+"intentaban simplificar los resultados usando la función interna "
+"'simplifylist'. Asegúrese de proveer 'fill' de manera que coincida con la "
+"forma y el tipo de los resultados devueltos por la función. Use "
+"simplify=FALSE para obtener una lista en su lugar. Si cree que los "
+"resultados pueden ser simplificados automáticamente, puede enviar su caso de "
+"uso como un nuevo tema en el rastreador de problemas.\n"
+"%s"
 
 #: frollapply.R:332
 msgid "frollapply running on single CPU thread"
-msgstr ""
+msgstr "frollapply ejecutándose en un solo hilo de CPU"
 
 #: frollapply.R:348
 msgid ""
 "frollapply run on %d CPU threads throttled to %d threads, input length %d"
 msgstr ""
+"frollapply ejecutándose en %d hilos de CPU acelerado a %d hilos, longitud de "
+"entrada %d"
 
 #: frollapply.R:350
 msgid "frollapply running on %d CPU threads"
-msgstr ""
+msgstr "frollapply corriendo en %d hilos de CPU"
 
 #: frollapply.R:409 frollapply.R:433
 #, c-format
@@ -3024,6 +3098,8 @@ msgid ""
 "frollapply received an error(s) when evaluating FUN:\n"
 "%s"
 msgstr ""
+"frollapply recibió error(s) al evaluar FUN:\n"
+"%s"
 
 #: fwrite.R:20
 #, c-format
@@ -3276,21 +3352,19 @@ msgstr ""
 "'bit64'."
 
 #: helpers.R:6
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "argument 'sort' must be TRUE or FALSE"
-msgstr "'fromLast' debe ser TRUE o FALSE"
+msgstr "argumento 'sort' debe ser TRUE o FALSE"
 
 #: helpers.R:8
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "argument 'rev' must be TRUE or FALSE"
-msgstr "'fromLast' debe ser TRUE o FALSE"
+msgstr "argumento 'rev' debe ser TRUE o FALSE"
 
 #: helpers.R:17
 #, c-format
 msgid ".selfref.ok expects data.table class object."
-msgstr ""
+msgstr ".selfref.ok esperaba un objeto de clase data.table."
 
 #: last.R:11 last.R:16 last.R:24 last.R:29 last.R:33 last.R:41 last.R:52
 #: last.R:57 last.R:65 last.R:70 last.R:74 last.R:82
@@ -3361,19 +3435,17 @@ msgstr "los nombres de las columnas %s están duplicados en el resultado"
 #: merge.R:146
 #, c-format
 msgid "merge.data.table() received %s and %s, all of which will be ignored: %s"
-msgstr ""
+msgstr "merge.data.table() recibió %s y %s, que serán ignorados: %s"
 
 #: mergelist.R:52
-#, fuzzy, c-format
-#| msgid "'data' must be a data.table"
+#, c-format
 msgid "'x' must be data.table"
-msgstr "'data' debe ser una data.table"
+msgstr "'x' debe ser una data.table"
 
 #: mergelist.R:54
-#, fuzzy, c-format
-#| msgid "cols must be a character vector of column names"
+#, c-format
 msgid "'on' must be character column names of 'x' argument"
-msgstr "cols debe ser un vector de caracteres de nombres de columnas"
+msgstr "'on' debe ser un vector de nombres de columnas de 'x'"
 
 #: mergelist.R:59
 #, c-format
@@ -3381,27 +3453,30 @@ msgid ""
 "'cols' must be non-zero length, non-NA, integer or character columns of 'x' "
 "argument"
 msgstr ""
+"'cols' debe un vector de longitudo > 0 y no NA de nombres o números de "
+"columnas de 'x'"
 
 #: mergelist.R:98
 #, c-format
 msgid "cross join must be used with zero-length on, mult='all', join.many=TRUE"
 msgstr ""
+"cross join debe ser usarse con 'on' de longitud cero, mult='all', join."
+"many=TRUE"
 
 #: mergelist.R:104
-#, fuzzy, c-format
-#| msgid "'names' must be TRUE/FALSE or a character vector."
+#, c-format
 msgid "'on' must be non-zero length character vector"
-msgstr "'names' debe ser TRUE/FALSE o un vector de caracteres."
+msgstr "'on' debe ser un vector de caracteres de longitud > 0."
 
 #: mergelist.R:106
 #, c-format
 msgid "semi and anti joins must be used with mult!='all'"
-msgstr ""
+msgstr "semi y anti joins deben usarse con mult!='all'"
 
 #: mergelist.R:157
 #, c-format
 msgid "'on' is missing and necessary key is not present"
-msgstr ""
+msgstr "'on' faltante y la clave necesaria no está presente."
 
 #: mergelist.R:160 mergelist.R:162
 #, c-format
@@ -3409,38 +3484,32 @@ msgid ""
 "'on' argument specifies columns to join %s that are not present in %s table "
 "%s"
 msgstr ""
+"argumento 'on' especifica columnas para combinar en '%s' que no están "
+"presentes en la tabla %s %s"
 
 #: mergelist.R:206
-#, fuzzy, c-format
-#| msgid ""
-#| "%s has duplicated column name %s. Please remove or rename the duplicate "
-#| "and try again."
-#| msgid_plural ""
-#| "%s has duplicated column names %s. Please remove or rename the duplicates "
-#| "and try again."
+#, c-format
 msgid ""
 "merge result has duplicated column names %s, use 'cols' argument or rename "
 "columns in 'l' tables"
 msgstr ""
-"%s tiene el nombre de columna duplicado %s. Elimine o cambie el nombre "
-"duplicado e inténtelo de nuevo."
+"el resultado de 'merge' tiene nombre(s) de columna duplicado(s) %s. utilice "
+"el argumento 'cols' o renombre las columnas de las tablas provistas en 'l'"
 
 #: mergelist.R:266 mergelist.R:304
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'%s' must be a list"
-msgstr "'x' debe ser una lista"
+msgstr "'%s' debe ser una lista"
 
 #: mergelist.R:268
-#, fuzzy, c-format
-#| msgid "Argument 'x' must be a data.table object"
+#, c-format
 msgid "Every element of 'l' list must be data.table objects"
-msgstr "El argumento 'x' debe ser un objeto data.table"
+msgstr "Cada elemento de la lista 'l' debe ser un objeto data.table"
 
 #: mergelist.R:270
 #, c-format
 msgid "Tables in 'l' must all have columns, but these entries have 0: %s"
-msgstr ""
+msgstr "Las tablas en 'l' deben tener columnas, pero estas tienen 0: %s"
 
 #: mergelist.R:272
 #, c-format
@@ -3448,10 +3517,12 @@ msgid ""
 "Column names in individual 'l' entries must be unique, but these have some "
 "duplicates: %s"
 msgstr ""
+"Nombres de columna en cada entrada de 'l' deben ser únicos, pero estas "
+"tienennombres duplicados: %s"
 
 #: mergelist.R:279
 msgid "mergelist: merging %d table(s), took %.3fs"
-msgstr ""
+msgstr "mergelist: combinar %d tabla(s) tomó %.3fs"
 
 #: mergelist.R:286
 #, c-format
@@ -3459,6 +3530,7 @@ msgid ""
 "'join.many' must be TRUE or FALSE, or a list of such whose length must be "
 "length(l)-1L"
 msgstr ""
+"'join.many' debe ser TRUE/FALSE o lista de TRUE/FALSE de longitud length(l)-1"
 
 #: mergelist.R:293
 #, c-format
@@ -3466,6 +3538,8 @@ msgid ""
 "'mult' must be one of [error, all, first, last] or NULL, or a list of such "
 "whose length must be length(l)-1L"
 msgstr ""
+"'mult' debe ser uno de entre [error, all, first, last], NULL, o una lista de "
+"longitud length(l)-1 conteniendo estos elementos"
 
 #: mergelist.R:298
 #, c-format
@@ -3473,11 +3547,13 @@ msgid ""
 "'how' must be one of [left, inner, full, right, semi, anti, cross], or a "
 "list of such whose length must be length(l)-1L"
 msgstr ""
+"'how' debe ser uno de entre [left, inner, full, right, semi, anti, cross], o "
+"una lista de longitud lenght(l)-1 conteniendo estos elementos"
 
 #: mergelist.R:306
 #, c-format
 msgid "'cols' must be same length as 'l' (%d != %d)"
-msgstr ""
+msgstr "'cols' debe ser de la misma longitud que 'l' (%d != %d)"
 
 #: mergelist.R:309
 #, c-format
@@ -3485,11 +3561,13 @@ msgid ""
 "'cols' must be a list of non-zero length, non-NA, non-duplicated, character "
 "vectors, or eventually NULLs (all columns)"
 msgstr ""
+"'cols' debe ser una lista de vectores de caracteres de longitud no nula, sin "
+"NAs ni duplicados, o eventualmente NULLs (todas las columnas)"
 
 #: mergelist.R:311
 #, c-format
 msgid "'cols' specify columns not present in corresponding table"
-msgstr ""
+msgstr "'cols' especifica columnas no presentes en la tabla correspondiente"
 
 #: mergelist.R:320
 #, c-format
@@ -3497,10 +3575,12 @@ msgid ""
 "'on' must be non-NA, non-duplicated, character vector, or a list of such "
 "which length must be length(l)-1L"
 msgstr ""
+"'on' debe ser vector de caracteres de longitud no nula, sin NAs ni "
+"duplicados, o una lista de longitud lenght(l)-1 conteniendo estos elementos"
 
 #: mergelist.R:343
 msgid "mergelist: merging %d tables, took %.3fs"
-msgstr ""
+msgstr "mergelist: combinar %d tabla(s) tomó %.3fs"
 
 #: onAttach.R:23
 #, c-format
@@ -3548,6 +3628,8 @@ msgid ""
 "You can also try calling Sys.setLanguage('en') prior to reproducing the "
 "error message."
 msgstr ""
+"Puede intentar llamar Sys.setLanguage('en') antes de reproducir el mensaje "
+"de error."
 
 #: onAttach.R:34
 #, c-format
@@ -3586,8 +3668,8 @@ msgid ""
 msgstr ""
 "Esta es una Mac. Lea https://mac.r-project.org/openmp/. Comuníquese con "
 "Apple y pídales ayuda. Consulte r-datatable.com para obtener actualizaciones "
-"y nuestras instrucciones para Mac aquí: https://github.com/Rdatatable/"
-"data.table/wiki/Installation. Después de varios años de muchos informes de "
+"y nuestras instrucciones para Mac aquí: https://github.com/Rdatatable/data."
+"table/wiki/Installation. Después de varios años de muchos informes de "
 "problemas de instalación en Mac, es hora de señalar con cautela que no ha "
 "habido problemas similares en Windows o Linux.\n"
 "**********"
@@ -3602,9 +3684,9 @@ msgid ""
 "**********"
 msgstr ""
 "Esto es %s. Esta advertencia normalmente no debería aparecer en Windows o "
-"Linux donde OpenMP se activa mediante el script de configuración de "
-"data.table pasando -fopenmp al compilador. Si ve esta advertencia en Windows "
-"o Linux, presente un problema en GitHub.\n"
+"Linux donde OpenMP se activa mediante el script de configuración de data."
+"table pasando -fopenmp al compilador. Si ve esta advertencia en Windows o "
+"Linux, presente un problema en GitHub.\n"
 "**********"
 
 #: onLoad.R:5
@@ -3626,8 +3708,8 @@ msgid ""
 "C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. "
 "Once a package is in this mismatch state it may produce wrong results "
 "silently until you next upgrade the package. This mismatch between R and C "
-"code can happen with any package not just data.table. It is just that "
-"data.table has added this check."
+"code can happen with any package not just data.table. It is just that data."
+"table has added this check."
 msgstr ""
 "La versión data_table.%s (%s) no coincide con el paquete (%s). Cierre todas "
 "las sesiones de R para liberar el %s anterior y reinstale data.table en una "
@@ -3722,24 +3804,20 @@ msgid "Key: <%s>"
 msgstr "Clave <%s>"
 
 #: print.data.table.R:58
-#, fuzzy
-#| msgid "Null data.%s (0 rows and 0 cols)"
 msgid "Null %s (0 rows and 0 cols)"
-msgstr "data.%s nula (0 filas y 0 columnas)"
+msgstr "%s nulo (0 filas y 0 columnas)"
 
 #: print.data.table.R:60
-#, fuzzy
-#| msgid "Empty data.%s (%d rows and %d cols)"
 msgid "Empty %s (%d rows and %d cols)"
-msgstr "data.%s vacía (%d filas y %d columnas)"
+msgstr "%s vacía (%d filas y %d columnas)"
 
 #: print.data.table.R:161
 #, c-format
 msgid ""
 "Internal structure doesn't seem to be a list. Possibly corrupt data.table."
 msgstr ""
-"La estructura interna no parece ser una lista. Posiblemente sea una "
-"data.table corrupta."
+"La estructura interna no parece ser una lista. Posiblemente sea una data."
+"table corrupta."
 
 #: programming.R:14 programming.R:40
 #, c-format
@@ -3837,8 +3915,8 @@ msgstr ""
 #, c-format
 msgid ""
 "Setting a physical key on .SD is reserved for possible future use; to modify "
-"the original data's order by group. Try setindex() instead. Or, "
-"set*(copy(.SD)) as a (slow) last resort."
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
 msgstr ""
 "La configuración de una clave física en .SD está reservada para un posible "
 "uso futuro; para modificar el orden de los datos originales por grupo. "
@@ -3875,8 +3953,8 @@ msgstr "algunas columnas no están en la data.table: %s"
 msgid ""
 "x contains a column called '.xi'. Conflicts with internal use by data.table."
 msgstr ""
-"x contiene una columna llamada '.xi'. Conflictos con el uso interno de "
-"data.table."
+"x contiene una columna llamada '.xi'. Conflictos con el uso interno de data."
+"table."
 
 #: setkey.R:57
 #, c-format
@@ -4086,8 +4164,8 @@ msgstr ""
 #, c-format
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr ""
-"Ninguno de los conjuntos de datos debe contener una columna denominada "
-"'.seqn'"
+"Ninguno de los conjuntos de datos debe contener una columna denominada '."
+"seqn'"
 
 #: setops.R:162
 msgid "Datasets have different keys"
@@ -4124,11 +4202,11 @@ msgstr ""
 #: setops.R:197
 #, c-format
 msgid ""
-"Argument 'tolerance' was forced to lowest accepted value "
-"`sqrt(.Machine$double.eps)` from provided %s"
+"Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine"
+"$double.eps)` from provided %s"
 msgstr ""
-"El argumento 'tolerance' fue forzado al valor más bajo aceptado "
-"`sqrt(.Machine$double.eps)` del %s proporcionado"
+"El argumento 'tolerance' fue forzado al valor más bajo aceptado `sqrt(."
+"Machine$double.eps)` del %s proporcionado"
 
 #: setops.R:210
 #, c-format
@@ -4136,8 +4214,8 @@ msgid ""
 "Duplicate rows in datasets, numeric columns and ignore.row.order cannot be "
 "used with non 0 tolerance argument"
 msgstr ""
-"Las filas duplicadas en conjuntos de datos, columnas numéricas e "
-"ignore.row.order no se pueden usar con un argumento tolerance que no sea 0"
+"Las filas duplicadas en conjuntos de datos, columnas numéricas e ignore.row."
+"order no se pueden usar con un argumento tolerance que no sea 0"
 
 #: setops.R:224
 #, c-format
@@ -4178,8 +4256,8 @@ msgid ""
 "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
 "be found and used."
 msgstr ""
-"el script debe terminar con '.Rraw'. Si existe un archivo que termina en "
-"'.Rraw.bz2', se encontrará y se utilizará."
+"el script debe terminar con '.Rraw'. Si existe un archivo que termina en '."
+"Rraw.bz2', se encontrará y se utilizará."
 
 #: test.data.table.R:69
 #, c-format
@@ -4251,6 +4329,8 @@ msgid ""
 "Tests succeeded, but non-test code caused warnings. Search %s for tests "
 "shown above."
 msgstr ""
+"El test finalizó con éxito, pero se generaron advertencias en el código que "
+"no es del test. Busque %s para los tests que se muestran arriba."
 
 #: test.data.table.R:316
 #, c-format
@@ -4262,22 +4342,18 @@ msgid "10 longest running tests took %ds (%d%% of %ds)"
 msgstr "los 10 tests que más tardaron tomaron %ds (%d%% de %ds)"
 
 #: test.data.table.R:324
-#, fuzzy
-#| msgid ""
-#| "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
 msgid "10 largest RAM increases (MiB); see plot for cumulative effect (if any)"
 msgstr ""
-"Los 10 con mayor incremento de RAM (MB). Efecto acumulado en el gráfico"
+"Los 10 con mayor incremento de RAM (MiB). Efecto acumulado en el gráfico (si "
+"existe)"
 
 #: test.data.table.R:334
 msgid "All %d tests (last %.8g) in %s completed ok in %s"
 msgstr "Los %d tests (último %.8g) en %s terminaron correctamente en %s"
 
 #: test.data.table.R:430
-#, fuzzy
-#| msgid "Running test id"
 msgid "Running test id %s"
-msgstr "Ejecutando test id"
+msgstr "Ejecutando test id %s"
 
 #: test.data.table.R:448
 #, c-format
@@ -4501,9 +4577,9 @@ msgid ""
 msgstr ""
 "Algunas columnas son de tipo 'integer64' pero el paquete bit64 no está "
 "instalado. Esas columnas se imprimirán como datos de punto flotante de "
-"aspecto extraño. No es necesario recargar los datos. Simplemente "
-"instale.packages('bit64') para obtener el método de impresión integer64 e "
-"imprimir los datos nuevamente."
+"aspecto extraño. No es necesario recargar los datos. Simplemente instale."
+"packages('bit64') para obtener el método de impresión integer64 e imprimir "
+"los datos nuevamente."
 
 #: xts.R:4
 #, c-format
@@ -4597,7 +4673,9 @@ msgid_plural ""
 "merge.data.table() received %d unnamed arguments in '...' which will be "
 "ignored."
 msgstr[0] ""
+"merge.data.table() recibió %d argumento sin nombre en '...', se ignorará."
 msgstr[1] ""
+"merge.data.table() recibió %d argumentos sin nombre en '...', se ignorarán."
 
 #: merge.R:138
 msgid ""
@@ -4607,21 +4685,23 @@ msgid_plural ""
 "merge.data.table() received %d unknown keyword arguments which will be "
 "ignored: %s"
 msgstr[0] ""
+"merge.data.table() recibió %d argumento de palabra clave desconocido, se "
+"ignorará: %s"
 msgstr[1] ""
+"merge.data.table() recibió %d argumentos de palabra clave desconocidos, se "
+"ignorarán: %s"
 
 #: merge.R:144
 msgid "%d unnamed argument in '...'"
 msgid_plural "%d unnamed arguments in '...'"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d argumento sin nombre en '...'"
+msgstr[1] "%d argumentos sin nombre en '...'"
 
 #: merge.R:145
-#, fuzzy
-#| msgid "Passed %d unknown and unnamed arguments."
 msgid "%d unknown keyword argument"
 msgid_plural "%d unknown keyword arguments"
-msgstr[0] "Se aprobaron %d argumentos desconocidos y sin nombre."
-msgstr[1] "Se aprobaron %d argumentos desconocidos y sin nombre."
+msgstr[0] "%d argumento de palabra clave desconocido"
+msgstr[1] "%d argumentos de palabra clave desconocidos"
 
 #: print.data.table.R:51
 msgid "Index: %s\n"
@@ -4651,8 +4731,8 @@ msgstr[1] "%d errores de %d. Busque en %s los tests números %s. Duración: %s."
 #: test.data.table.R:298
 msgid "Caught %d warning outside the test() calls:\n"
 msgid_plural "Caught %d warnings outside the test() calls:\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d advertencia capturada fuera del test(): llamadas:\n"
+msgstr[1] "%d advertencias capturadas fuera del test(): llamadas:\n"
 
 #: utils.R:43
 msgid ""
@@ -4672,13 +4752,13 @@ msgstr[1] ""
 #~ msgid ""
 #~ "You have wrapped := with {} which is ok but then := must be the only "
 #~ "thing inside {}. You have something else inside {} as well. Consider "
-#~ "placing the {} on the RHS of := instead; e.g. "
-#~ "DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]"
+#~ "placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;"
+#~ "tmpVar2<-...;tmpVar1*tmpVar2}]"
 #~ msgstr ""
 #~ "Ha envuelto := con {} lo cual está bien, solo que := debe ser lo único "
 #~ "dentro de {}. Tiene alguna otra cosa dentro de {}. Considere colocar {} "
-#~ "en el lado derecho de := en su lugar; p. ej. "
-#~ "DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]"
+#~ "en el lado derecho de := en su lugar; p. ej. DT[,someCol:={tmpVar1<-...;"
+#~ "tmpVar2<-...;tmpVar1*tmpVar2}]"
 
 #, c-format
 #~ msgid ""
@@ -4694,8 +4774,8 @@ msgstr[1] ""
 
 #, c-format
 #~ msgid ""
-#~ "Cannot assign to an under-allocated recursively indexed list -- L[[i]]"
-#~ "[,:=] syntax is only valid when i is length 1, but its length is %d"
+#~ "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:"
+#~ "=] syntax is only valid when i is length 1, but its length is %d"
 #~ msgstr ""
 #~ "No se puede asignar a una lista indexada recursiva con  espacio sub-"
 #~ "asignado: la sintaxis L[[i]][,:=] solo es válida cuando i tiene una "
