@@ -549,8 +549,8 @@ msgid ""
 "` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := "
 "tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
 msgstr ""
-"Uso inválido de `:=` inside `{}`. `:=` deve ser a única expressão dentro de "
-"`{}` quando usado em `j`. Em vez de: DT[{tmp1 <- ...; tmp2 <- ...; "
+"Uso inválido de `:=` dentro de `{}`. `:=` deve ser a única expressão dentro "
+"de  `{}` quando usado em `j`. Em vez de: DT[{tmp1 <- ...; tmp2 <- ...; "
 "someCol := tmp1 * tmp2}], use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; "
 "tmp1 * tmp2}]"
 
@@ -2706,7 +2706,7 @@ msgstr "'partial' não suporta nrow variável de data.tables em x"
 #: froll.R:48
 #, c-format
 msgid "n must be an integer, list is accepted for adaptive TRUE"
-msgstr "n deve ser um inteiro, lista é aceita para TRUE adaptativo"
+msgstr "n deve ser um inteiro, lista é aceita para adaptative TRUE"
 
 #: froll.R:50 froll.R:62
 #, c-format
@@ -2718,7 +2718,7 @@ msgid ""
 "partial2adaptive: froll partial=TRUE trimming n and redirecting to "
 "adaptive=TRUE"
 msgstr ""
-"partial2adaptive: partial=TRUE de froll cortando n e redirecionando para "
+"partial2adaptive: partial=TRUE de froll aparando n e redirecionando para "
 "adaptive=TRUE"
 
 #: froll.R:64
@@ -2928,7 +2928,7 @@ msgstr "'N' deve ter comprimento não 0"
 #: frollapply.R:209
 #, c-format
 msgid "'N' must be an integer, list is accepted for adaptive TRUE"
-msgstr "'N' deve ser um inteiro, lista é aceita para TRUE adaptativo"
+msgstr "'N' deve ser um inteiro, lista é aceita para adaptive TRUE"
 
 #: frollapply.R:211
 #, c-format
@@ -2975,7 +2975,7 @@ msgstr "'N' deve ser um vetor de inteiros ou lista de vetores de inteiros"
 #: frollapply.R:257
 #, c-format
 msgid "using adaptive TRUE and align 'center' is not implemented"
-msgstr "usando TRUE adaptativo e align como 'center' não está implementado"
+msgstr "usando adaptative TRUE e align como 'center' não está implementado"
 
 #: frollapply.R:262
 msgid ""
@@ -3014,7 +3014,7 @@ msgid ""
 msgstr ""
 "frollapply foi executado com sucesso, mas levantou um erro ao tentar "
 "simplificar os resultados usando a função especificada pelo usuário no "
-"argumento 'simplify'. Certifique-se de fornecer o argumento 'fill' que "
+"argumento 'simplify'. Certifique-se de fornecer um argumento 'fill' que "
 "corresponda ao tipo e formato dos resultados retornados pela sua função. Use "
 "simplify=FALSE para obter uma lista.\n"
 "%s"
@@ -3029,7 +3029,7 @@ msgid ""
 msgstr ""
 "frollapply foi executado com sucesso, mas levantou um aviso ao tentar "
 "simplificar os resultados usando a função especificada pelo usuário no "
-"argumento 'simplify'. Certifique-se de fornecer o argumento 'fill' que "
+"argumento 'simplify'. Certifique-se de fornecer um argumento 'fill' que "
 "corresponda ao tipo e formato dos resultados retornados pela sua função. Use "
 "simplify=FALSE para obter uma lista.\n"
 "%s"
@@ -3046,7 +3046,7 @@ msgid ""
 msgstr ""
 "frollapply foi concluído com sucesso, mas levantou um erro ao tentar "
 "simplificar os resultados usando nossa função interna 'simplifylist'. "
-"Certifique-se de fornecer o argumento 'fill' que corresponda ao tipo e "
+"Certifique-se de fornecer um argumento 'fill' que corresponda ao tipo e "
 "formato dos resultados retornados pela sua função. Use simplify=FALSE para "
 "obter uma lista. Se você acredita que seus resultados podem ser "
 "simplificados automaticamente, envie seu caso de uso como um novo problema "
@@ -3065,7 +3065,7 @@ msgid ""
 msgstr ""
 "frollapply foi concluído com sucesso, mas levantou um aviso ao tentar "
 "simplificar os resultados usando nossa função interna 'simplifylist'. "
-"Certifique-se de fornecer o argumento 'fill' que corresponda ao tipo e "
+"Certifique-se de fornecer um argumento 'fill' que corresponda ao tipo e "
 "formato dos resultados retornados pela sua função. Use simplify=FALSE para "
 "obter uma lista. Se você acredita que seus resultados podem ser "
 "simplificados automaticamente, envie seu caso de uso como um novo problema "
@@ -3442,8 +3442,8 @@ msgid ""
 "'cols' must be non-zero length, non-NA, integer or character columns of 'x' "
 "argument"
 msgstr ""
-"'cols' deve ter comprimento não-zero, ser não-NA, ser composto de colunas de "
-"inteiros ou caracteres de argumento 'x'"
+"'cols' deve ser colunas de comprimento não-zero, não-NA, inteiros ou "
+"caracteres de argumento 'x'"
 
 #: mergelist.R:98
 #, c-format
@@ -3512,12 +3512,12 @@ msgid ""
 "Column names in individual 'l' entries must be unique, but these have some "
 "duplicates: %s"
 msgstr ""
-"Nomes de colunas em entradas individuais de 'l' devem ser únicos, mas eles "
+"Nomes de colunas em entradas individuais de 'l' devem ser únicos, mas estes "
 "têm algumas duplicatas: %s"
 
 #: mergelist.R:279
 msgid "mergelist: merging %d table(s), took %.3fs"
-msgstr "mergelist: mesclagem de %d tabela(s), levou %.3fs"
+msgstr "mergelist: mesclando %d tabela(s), levou %.3fs"
 
 #: mergelist.R:286
 #, c-format
@@ -3576,7 +3576,7 @@ msgstr ""
 
 #: mergelist.R:343
 msgid "mergelist: merging %d tables, took %.3fs"
-msgstr "mergelist: mesclagem de %d tabelas, levou %.3fs"
+msgstr "mergelist: mesclando %d tabelas, levou %.3fs"
 
 #: onAttach.R:23
 #, c-format
@@ -4346,7 +4346,7 @@ msgstr "Todos os %d testes (último %.8g) em %s concluíram corretamente em %s"
 
 #: test.data.table.R:430
 msgid "Running test id %s"
-msgstr "Executando id de teste %s"
+msgstr "Executando teste de id %s"
 
 #: test.data.table.R:448
 #, c-format
