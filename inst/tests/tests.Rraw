@@ -21265,6 +21265,9 @@ DT[1, V1 := samelevel]
 test(2311.1, nlevels(DT$V1), 1L) # used to be 2
 DT[1, V1 := factor("a", levels = c("a", samelevel))]
 test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+# runs instant without regression but takes ages with #7404
+dt = data.table(id = as.factor(rep(seq_len(1e6), each = 100)), V1 = 1)
+test(2311.3, dt[, base::max(V1, na.rm = TRUE), by = id], dt[, max(V1), by = id])
 
 # avoid translateChar*() in OpenMP threads, #6883
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
