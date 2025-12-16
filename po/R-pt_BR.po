@@ -1406,7 +1406,7 @@ msgid ""
 "x is not a data.table|frame. Shallow copy is a copy of the vector of column "
 "pointers (only), so is only meaningful for data.table|frame"
 msgstr ""
-"x não é um data.table|frame. A cópia rasa é uma cópia do vetor de ponteiros "
+"x não é uma data.table|frame. A cópia rasa é uma cópia do vetor de ponteiros "
 "de coluna (apenas), portanto, só é significativa para data.table|frame"
 
 #: data.table.R:2692
@@ -1429,7 +1429,7 @@ msgstr ""
 #: data.table.R:2742
 #, c-format
 msgid "x is not a data.table or data.frame"
-msgstr "x não é um data.table ou data.frame"
+msgstr "x não é uma data.table ou data.frame"
 
 #: data.table.R:2744
 #, c-format
@@ -2915,7 +2915,7 @@ msgid ""
 "list of data.frames/data.tables, but not a list of lists. All columns/"
 "vectors must be atomic."
 msgstr ""
-"by.column=FALSE de frollapply requer que o argumento 'X' seja um data.table/"
+"by.column=FALSE de frollapply requer que o argumento 'X' seja uma data.table/"
 "data.frame ou uma lista de vetores de comprimento igual. Para entrada "
 "vetorizada isso pode ser uma lista de data.frames/data.tables, mas não uma "
 "lista de listas. Todas colunas e todos vetores devem ser atômicos."
@@ -3167,7 +3167,7 @@ msgstr "Argumento 'j' é obrigatório"
 msgid ""
 "Argument 'x' is a 0-column data.table; no measure to apply grouping over."
 msgstr ""
-"Argumento 'x' é um data.table com 0 colunas; nenhuma medida para aplicar "
+"Argumento 'x' é uma data.table com 0 colunas; nenhuma medida para aplicar "
 "sobre o agrupamento."
 
 #: groupingsets.R:51
@@ -4051,7 +4051,7 @@ msgstr ""
 #: setkey.R:231 setkey.R:257
 #, c-format
 msgid "x must be a data.frame or data.table"
-msgstr "x deve ser uma data.frame ou um data.table"
+msgstr "x deve ser uma data.frame ou uma data.table"
 
 #: setkey.R:259
 #, c-format
