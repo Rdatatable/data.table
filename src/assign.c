@@ -759,9 +759,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       if (needUtf8Coerce) {
         sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
         targetLevels = PROTECT(coerceUtf8IfNeeded(targetLevels)); protecti++;
-        if (sourceIsFactor && R_compute_identical(sourceLevels, targetLevels, 0)) needUtf8Coerce = false;
-      }
-      if (needUtf8Coerce) {
         const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
         const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
