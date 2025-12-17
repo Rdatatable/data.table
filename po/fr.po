@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-12-17 14:09+0100\n"
+"PO-Revision-Date: 2025-12-17 15:00+0100\n"
 "Last-Translator: Christian Wiat <w9204-rs@yahoo.com>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -498,10 +498,9 @@ msgstr ""
 "colonne clé\n"
 
 #: assign.c:682
-#, fuzzy, c-format
-#| msgid "column %d named '%s'"
+#, c-format
 msgid "(column %d named '%s')"
-msgstr "colonne %d nommée '%s'"
+msgstr "(colonne %d nommée '%s')"
 
 #: assign.c:716
 #, c-format
@@ -640,10 +639,9 @@ msgid ""
 msgstr "Conversion sans copie lors de l'affectation de '%s' à '%s' %s.\n"
 
 #: assign.c:886
-#, fuzzy, c-format
-#| msgid "target vector"
+#, c-format
 msgid "(target vector)"
-msgstr "vecteur cible"
+msgstr "(vecteur cible)"
 
 #: assign.c:896 assign.c:897
 #, c-format
@@ -871,7 +869,7 @@ msgstr ""
 #: bmerge.c:209
 #, c-format
 msgid "bmerge: looping bmerge_r took %.3fs\n"
-msgstr ""
+msgstr "bmerge : le rebouclage bmerge_r a pris %.3fs\n"
 
 #: bmerge.c:241
 #, c-format
@@ -1181,28 +1179,22 @@ msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr "Moins de lignes écrites (%d) que de lignes allouées (%d).\n"
 
 #: dogroups.c:505
-#, fuzzy, c-format
-#| msgid ""
-#| "\n"
-#| "  %s took %.3fs for %d groups\n"
+#, c-format
 msgid ""
 "\n"
 "  collecting discontiguous groups took %.3fs for %d groups\n"
 msgstr ""
 "\n"
-"  %s a pris %.3fs pour %d groupes\n"
+"  la collecte des groupes non contigus a pris %.3fs pour %d groupes\n"
 
 #: dogroups.c:506
-#, fuzzy, c-format
-#| msgid ""
-#| "\n"
-#| "  %s took %.3fs for %d groups\n"
+#, c-format
 msgid ""
 "\n"
 "  memcpy contiguous groups took %.3fs for %d groups\n"
 msgstr ""
 "\n"
-"  %s a pris %.3fs pour %d groupes\n"
+"  memcpy des groupes contingus a pris %.3fs pour %d groupes\n"
 
 #: dogroups.c:508
 #, c-format
@@ -1859,16 +1851,14 @@ msgid "x must be type 'double'"
 msgstr "x doit être de type ‘double’ (nombre à virgule flottante)"
 
 #: forder.c:1651
-#, fuzzy
 #| msgid "sort must be TRUE or FALSE"
 msgid "'datatable.use.index' option must be TRUE or FALSE"
-msgstr "sort doit être TRUE ou FALSE"
+msgstr "l'option 'datatable.use.index' doit valoir TRUE ou FALSE"
 
 #: forder.c:1664
-#, fuzzy
 #| msgid "retGrp must be TRUE or FALSE"
 msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
-msgstr "retGrp doit être TRUE ou FALSE"
+msgstr "l'option 'datatable.forder.auto.index' doit valoir TRUE ou FALSE"
 
 #: forder.c:1681
 msgid "DT is NULL"
@@ -2252,7 +2242,7 @@ msgstr ""
 #: fread.c:1698 fread.c:2002
 #, c-format
 msgid "%s. Attempt to copy file in RAM failed."
-msgstr ""
+msgstr "%s. Echec lors de la copie du fichier en RAM."
 
 #: fread.c:1699 fread.c:2003
 #, c-format
@@ -2285,22 +2275,18 @@ msgstr ""
 "ou d'expressions rationnelles)"
 
 #: fread.c:1749
-#, fuzzy, c-format
-#| msgid ""
-#| "Found skip='%s' on line %<PRIu64>. Taking this to be header row or first "
-#| "row of data.\n"
+#, c-format
 msgid ""
 "Found skip='%s' on line %d. Taking this to be header row or first row of "
 "data.\n"
 msgstr ""
-"A trouvé skip='%s' sur la ligne %<PRIu64>. Il s'agit de la ligne d'en-tête "
-"ou de la première ligne de données.\n"
+"Trouvé skip='%s' sur la ligne %d. Estimé être la ligne d'en-tête ou la "
+"première ligne des données.\n"
 
 #: fread.c:1763
-#, fuzzy, c-format
-#| msgid "  Skipped to line %<PRIu64> in the file"
+#, c-format
 msgid "  Skipped to line %d in the file"
-msgstr " A Sauté à la ligne %<PRIu64> dans le fichier"
+msgstr "  Saut à la ligne %d dans le fichier"
 
 #: fread.c:1766
 #, fuzzy, c-format
@@ -2614,16 +2600,12 @@ msgstr ""
 "numériques %s dans la première et unique ligne\n"
 
 #: fread.c:2238
-#, fuzzy
-#| msgid ""
-#| "  'header' determined to be %s because there are%s number fields in the "
-#| "first and only row\n"
 msgid ""
 "  'header' determined to be FALSE because there are number fields in the "
 "first and only row\n"
 msgstr ""
-"  l'en-tête est déterminé comme étant %s parce qu'il y a des champs "
-"numériques %s dans la première et unique ligne\n"
+"  'header' est déterminé comme étant FALSE car il y a des champs numériques "
+"dans la première et seule ligne\n"
 
 #: fread.c:2241
 msgid ""
@@ -2727,10 +2709,9 @@ msgid "  Cancelled by user: userOverride() returned false."
 msgstr "  Annulé par l'utilisateur : userOverride() a retourné false."
 
 #: fread.c:2376
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for '%s': %s"
+#, c-format
 msgid "Failed to allocate %zu bytes for '%s': %s"
-msgstr "Échec de l'allocation de %d octets pour '%s' : %s"
+msgstr "Échec de l'allocation de %zu octets pour '%s' : %s"
 
 #: fread.c:2383
 #, c-format
@@ -2795,10 +2776,9 @@ msgid "  Dropping %d overallocated columns\n"
 msgstr "  Suppression de %d colonnes surallouées\n"
 
 #: fread.c:2844
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for '%s'."
+#, c-format
 msgid "Failed to allocate %zu bytes for '%s'."
-msgstr "Échec de l'allocation de %d octets pour '%s'."
+msgstr "Échec de l'allocation de %zu octets pour '%s'."
 
 #: fread.c:2857
 #, fuzzy, c-format
@@ -3152,10 +3132,9 @@ msgid "%s: align %d, shift answer by %d\n"
 msgstr "%s : aligner %d, décaler la réponse de %d\n"
 
 #: froll.c:107 frolladaptive.c:75
-#, fuzzy, c-format
-#| msgid "%s: processing algo %u took %.3fs\n"
+#, c-format
 msgid "%s: processing fun %d algo %u took %.3fs\n"
-msgstr "%s : le traitement de l'algo %u a pris %.3fs\n"
+msgstr "%s : le traitement de %d algo fun %u a pris %.3fs\n"
 
 #: froll.c:173 froll.c:363 froll.c:540 froll.c:747 froll.c:986 froll.c:1153
 #: froll.c:1505
@@ -3313,10 +3292,9 @@ msgid "%s: skip rolling for %d padded elements\n"
 msgstr "%s : roulement ignoré pour %d éléments complétés\n"
 
 #: froll.c:1721
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "%s: rolling took %.3f\n"
-msgstr "%s : a pris %.3fs\n"
+msgstr "%s : rolling a pris %.3f\n"
 
 #: froll.c:1818 frolladaptive.c:992
 #, c-format
@@ -3342,10 +3320,8 @@ msgid "'n' must be an integer, list is accepted for adaptive TRUE"
 msgstr "n doit être un entier, la liste est acceptée pour adaptative TRUE"
 
 #: frollR.c:37
-#, fuzzy
-#| msgid "'x' must be an integer"
 msgid "'n' must be an integer"
-msgstr "'x' doit être un nombre entier"
+msgstr "'n' doit être un nombre entier"
 
 #: frollR.c:44 frollR.c:74
 #, fuzzy
@@ -3484,7 +3460,7 @@ msgstr ""
 #: frolladaptive.c:60 frolladaptive.c:67
 #, c-format
 msgid "%s: algo %u not implemented, fall back to %u\n"
-msgstr ""
+msgstr "%s : l'algorithme %u n'est pas implémenté, repli sur %u\n"
 
 #: frolladaptive.c:118 frolladaptive.c:341
 #, fuzzy, c-format
@@ -4073,6 +4049,15 @@ msgid ""
 "this warning, set options(datatable.week = 'legacy'). See https://github.com/"
 "Rdatatable/data.table/issues/2611"
 msgstr ""
+"Le comportement par défaut de week() a été modifié. Auparavent, (dans "
+"l'ancien mode), le numéro des semaines avançait chaque 7ième jour de "
+"l'année. Le nouveau mode 'séquenciel' assure que la première semaine a "
+"toujours 7 jours. Par exemple, as.IDate('2023-01-07') renvoie la semaine 2 "
+"dans l'ancien mode et la semaine 1 dans le mode séquenciel (la semaine 2 "
+"commence le '2023-01-08'). Pour  adopter le nouveau comportement maintenant, "
+"faire set options(datatable.week = 'sequential'). Pour conserver les anciens "
+"résultats et masquer cet avertissement, faire set options(datatable.week = "
+"'legacy'). Voir https://github.com/Rdatatable/data.table/issues/2611"
 
 #: ijoin.c:128
 #, c-format
@@ -4184,7 +4169,7 @@ msgid ""
 "before '0'."
 msgstr ""
 "A la différence des cas habituels, en ASCII, le caractère '/' n'est pas "
-"juste avant le '0'"
+"juste avant le '0'."
 
 #: init.c:234
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
@@ -4251,11 +4236,9 @@ msgid "'%s' must be a list"
 msgstr "'%s' doit être une liste"
 
 #: mergelist.c:47
-#, fuzzy, c-format
-#| msgid "Item %d of input is not a data.frame, data.table or list"
+#, c-format
 msgid "Element %d of 'l' list is not a data.table."
-msgstr ""
-"L'élément %d de l'entrée n'est pas un data.frame, data.table ou une liste"
+msgstr "L'élément %d de la liste 'l' n'est pas un data.table."
 
 #: mergelist.c:56
 #, c-format
@@ -4267,13 +4250,12 @@ msgstr ""
 
 #: mergelist.c:62
 msgid "Recycling rows is not yet implemented."
-msgstr ""
+msgstr "Le recyclage des lignes n'est pas encore implémenté."
 
 #: mergelist.c:92
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "cbindlist: took %.3fs\n"
-msgstr "%s : a pris %.3fs\n"
+msgstr "cbindlist : a pris %.3fs\n"
 
 #: nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
@@ -4295,18 +4277,16 @@ msgstr ""
 "numériques"
 
 #: nafill.c:185
-#, fuzzy
-#| msgid "fill must be a vector of length 1 or a list of length of x"
 msgid ""
 "fill must be a vector of length 1 or a list of length of x. Consider "
 "fcoalesce() to specify element-wise replacements."
-msgstr "fill doit être un vecteur de longueur 1 ou une liste de longueur x"
+msgstr ""
+"fill doit être un vecteur de longueur 1 ou une liste de la longueur de x. "
+"Utiliser fcoalesce() pour spécifier les remplacements par élément."
 
 #: nafill.c:187
-#, fuzzy
-#| msgid "fill must be a vector of length 1 or a list of length of x"
 msgid "fill must be a vector of length 1 or a list of length of x."
-msgstr "fill doit être un vecteur de longueur 1 ou une liste de longueur x"
+msgstr "fill doit être un vecteur de longueur 1 ou une liste de longueur x."
 
 #: nafill.c:237
 #, fuzzy, c-format
@@ -4860,11 +4840,9 @@ msgstr ""
 "dupliquée(s)"
 
 #: utils.c:307
-#, fuzzy, c-format
-#| msgid "Found and copied %d column%s with a shared memory address\n"
+#, c-format
 msgid "Found and copied %d column with a shared memory address\n"
-msgstr ""
-"Trouvé et copié la colonne %d %s avec une adresse de mémoire partagée\n"
+msgstr "Trouvé et copié la colonne %d avec une adresse en mémoire partagée\n"
 
 #: utils.c:389
 msgid "'x' is not atomic"
@@ -4904,10 +4882,9 @@ msgstr ""
 "L'élément %d de l'entrée n'est pas un data.frame, data.table ou une liste"
 
 #: utils.c:548
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "%s must be TRUE or FALSE."
-msgstr "%s doit être TRUE ou FALSE"
+msgstr "%s doit valoir TRUE ou FALSE."
 
 #: utils.c:629
 #, c-format
