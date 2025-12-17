@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-12-16 16:52+0100\n"
+"PO-Revision-Date: 2025-12-17 14:09+0100\n"
 "Last-Translator: Christian Wiat <w9204-rs@yahoo.com>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -782,24 +782,16 @@ msgid "NAbounds must be TRUE or NA"
 msgstr "NAbounds doit être TRUE ou NA"
 
 #: between.c:35 between.c:37
-#, fuzzy, c-format
-#| msgid ""
-#| "x is not integer64 but lower and/or upper is integer64. Please align "
-#| "classes."
+#, c-format
 msgid "x is integer64 but %s is not. Please align classes."
 msgstr ""
-"x n'est pas un entier 64 bits mais lower et/ou upper en sont un. Veuillez "
-"uniformiser les classes."
+"x est de type interger64 mais %s ne l'est pas. Veuillez aligner les classes."
 
 #: between.c:40 between.c:42
-#, fuzzy, c-format
-#| msgid ""
-#| "x is not integer64 but lower and/or upper is integer64. Please align "
-#| "classes."
+#, c-format
 msgid "x is not integer64 but %s is. Please align classes."
 msgstr ""
-"x n'est pas un entier 64 bits mais lower et/ou upper en sont un. Veuillez "
-"uniformiser les classes."
+"x n'est pas de type integer64 mais %s l'est. Veuillez aligner les classes."
 
 #: between.c:83
 #, c-format
@@ -1880,7 +1872,7 @@ msgstr "retGrp doit être TRUE ou FALSE"
 
 #: forder.c:1681
 msgid "DT is NULL"
-msgstr ""
+msgstr "DT vaut NULL"
 
 #: forder.c:1697
 msgid "order must be integer"
@@ -2047,10 +2039,9 @@ msgid "  0/1 column will be read as %s\n"
 msgstr "  la colonne 0/1 sera lue comme %s\n"
 
 #: fread.c:1477
-#, fuzzy, c-format
-#| msgid "  0/1 column will be read as %s\n"
+#, c-format
 msgid "  Y/N column will be read as %s\n"
-msgstr "  la colonne 0/1 sera lue comme %s\n"
+msgstr "  la colonne Y/N sera lue comme %s\n"
 
 #: fread.c:1490
 #, c-format
@@ -2099,7 +2090,7 @@ msgstr ""
 #: fread.c:1531 fread.c:1567
 #, c-format
 msgid "File size [%s] exceeds the address space: %s"
-msgstr ""
+msgstr "La taille du fichier [%s] dépasse l'espace d'adressage : %s"
 
 #: fread.c:1534 fread.c:1570
 #, c-format
@@ -2264,10 +2255,9 @@ msgid "%s. Attempt to copy file in RAM failed."
 msgstr ""
 
 #: fread.c:1699 fread.c:2003
-#, fuzzy, c-format
-#| msgid "Unable to allocate %s of contiguous virtual RAM. %s allocation."
+#, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM."
-msgstr "Impossible d'allouer %s de RAM virtuelle contiguë. Allocation de %s."
+msgstr "Impossible d'allouer %s de RAM virtuelle contiguë."
 
 #: fread.c:1703 fread.c:2007
 #, c-format
@@ -2481,26 +2471,28 @@ msgid "  sep=',' so dec set to '.'\n"
 msgstr "  sep=',' donc dec est fixé à '.'\n"
 
 #: fread.c:2069
-#, fuzzy, c-format
-#| msgid "  Number of sampling jump points = %d because "
+#, c-format
 msgid ""
 "  Number of sampling jump points = %d because nrow limit (%<PRId64>) "
 "supplied\n"
-msgstr "  Nombre de points de saut d'échantillonnage = %d car "
+msgstr ""
+"  Nombre de points de saut d'échantillonnage = %d car la limite nrow "
+"(%<PRId64>) a été fournie\n"
 
 #: fread.c:2071
-#, fuzzy, c-format
-#| msgid "  Number of sampling jump points = %d because "
+#, c-format
 msgid "  Number of sampling jump points = %d because jump0size==0\n"
-msgstr "  Nombre de points de saut d'échantillonnage = %d car "
+msgstr "  Nombre de points de saut d'échantillonnage = %d car jump0size==0\n"
 
 #: fread.c:2073
-#, fuzzy, c-format
-#| msgid "  Number of sampling jump points = %d because "
+#, c-format
 msgid ""
 "  Number of sampling jump points = %d because (%td bytes from row 1 to "
 "eof) / (2 * %td jump0size) == %td\n"
-msgstr "  Nombre de points de saut d'échantillonnage = %d car "
+msgstr ""
+"  Nombre de points de saut d'échantillonnage = %d car (%td octets de la "
+"ligne 1 jusqu'à la fin du fichier) / (2 * %td jump0size) == %td\n"
+" \n"
 
 #: fread.c:2129
 #, fuzzy, c-format
@@ -2667,16 +2659,13 @@ msgstr ""
 "savons exactement que nrow=%<PRIu64> \n"
 
 #: fread.c:2281
-#, fuzzy, c-format
-#| msgid ""
-#| "  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
-#| "points\n"
+#, c-format
 msgid ""
 "  Sampled %<PRId64> rows (handled \\n inside quoted fields) at %d jump "
 "points\n"
 msgstr ""
-" %<PRIu64> lignes échantillonnés (traitées à l'intérieur de champs entre "
-"guillemets) aux %d points de saut \n"
+" %<PRId64> lignes échantillonnées (\\n traités à l'intérieur de champs entre "
+"guillemets) aux %d points de saut\n"
 
 #: fread.c:2282
 #, fuzzy, c-format
@@ -3273,12 +3262,12 @@ msgstr ""
 #: froll.c:1324
 #, c-format
 msgid "%s: calling sqrt(frollvarFast(...))\n"
-msgstr ""
+msgstr "%s : appel de sqrt(frollvarFast(...))\n"
 
 #: froll.c:1335
 #, c-format
 msgid "%s: calling sqrt(frollvarExact(...))\n"
-msgstr ""
+msgstr "%s : appel de sqrt(frollvarExact(...))\n"
 
 #: froll.c:1508 froll.c:1769
 #, fuzzy, c-format
@@ -3296,7 +3285,7 @@ msgstr ""
 #: froll.c:1555
 #, c-format
 msgid "%s: NAs detected, fall back to frollmedianExact\n"
-msgstr ""
+msgstr "%s : des NA existent, repli vers frollmedianExact\n"
 
 #: froll.c:1567
 #, c-format
@@ -3321,7 +3310,7 @@ msgstr ""
 #: froll.c:1688
 #, c-format
 msgid "%s: skip rolling for %d padded elements\n"
-msgstr ""
+msgstr "%s : roulement ignoré pour %d éléments complétés\n"
 
 #: froll.c:1721
 #, fuzzy, c-format
@@ -3332,7 +3321,7 @@ msgstr "%s : a pris %.3fs\n"
 #: froll.c:1818 frolladaptive.c:992
 #, c-format
 msgid "%s: no NAs detected, redirecting to itself using has.nf=FALSE\n"
-msgstr ""
+msgstr "%s : pas de NA trouvé, auto-redirection en utilisant has.nf=FALSE\n"
 
 #: frollR.c:18
 #, fuzzy
@@ -3479,7 +3468,7 @@ msgstr "%s : le traitement de %d colonne(s) et de %d fenêtre(s) a pris %.3fs\n"
 
 #: frollR.c:234
 msgid "'n' must not have NAs"
-msgstr ""
+msgstr "'n' ne doit pas contenir de NA"
 
 #: frollR.c:236
 #, fuzzy
@@ -3518,7 +3507,7 @@ msgstr ""
 #: frolladaptive.c:851
 #, c-format
 msgid "%s: calling sqrt(frolladaptivevarExact(...))\n"
-msgstr ""
+msgstr "%s : appel de sqrt(frolladaptivevarExact(...))\n"
 
 #: frolladaptive.c:937
 #, fuzzy, c-format
@@ -3651,12 +3640,11 @@ msgstr ""
 "il de l'espace sur le disque et le chemin d'accès existe-t-il ?"
 
 #: fwrite.c:746
-#, fuzzy, c-format
-#| msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+#, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s)\n"
 msgstr ""
-"Écriture de BOM (indicateur d’ordre des octets) (%s), yaml (%d caractères) "
-"et noms de colonnes (%s) ... "
+"Écriture du BOM (indicateur d’ordre des octets) (%s), du yaml (%d "
+"caractères) et des noms de colonnes (%s)\n"
 
 #: fwrite.c:798
 #, fuzzy, c-format
@@ -3717,12 +3705,12 @@ msgstr ""
 #: fwrite.c:864
 #, c-format
 msgid "Failed to write gzip header. Write returned %d"
-msgstr ""
+msgstr "Echec dans l'écriture de l'entête gzip. Write a renvoyé %d"
 
 #: fwrite.c:939
 #, c-format
 msgid "Failed to compress gzip. compressbuff() returned %d"
-msgstr ""
+msgstr "Echec dans la compression gzip. compressbuff() a renvoyé %d"
 
 #: fwrite.c:940 fwrite.c:963
 #, c-format
@@ -3747,7 +3735,7 @@ msgstr ""
 
 #: fwrite.c:1131
 msgid "Failed to write gzip trailer"
-msgstr ""
+msgstr "Echec dans l'écriture de la fin du fichier gzip"
 
 #: fwrite.c:1150
 #, c-format
@@ -4191,12 +4179,12 @@ msgstr ""
 "double)0.0 %s"
 
 #: init.c:233
-#, fuzzy
-#| msgid "The ascii character '/' is not just before '0'"
 msgid ""
 "Unlike the very common case, e.g. ASCII, the character '/' is not just "
 "before '0'."
-msgstr "Le caractère ascii '/' ne se trouve pas juste avant '0'"
+msgstr ""
+"A la différence des cas habituels, en ASCII, le caractère '/' n'est pas "
+"juste avant le '0'"
 
 #: init.c:234
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
@@ -4205,12 +4193,12 @@ msgstr ""
 "fausse."
 
 #: init.c:235
-#, fuzzy
-#| msgid "The ascii character ':' is not just after '9'"
 msgid ""
 "Unlike the very common case, e.g. ASCII, the character ':' is not just after "
 "'9'."
-msgstr "Le caractère ascii ':' n'est pas juste après '9'"
+msgstr ""
+"A la différence des cas habituels, en ASCII, le caractère ':' n'est pas "
+"juste après le '9'."
 
 #: init.c:236
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
@@ -4258,10 +4246,9 @@ msgid ".Last.updated in namespace is not a length 1 integer"
 msgstr ".Last.value dans l'espace des noms n'est pas un entier de longueur 1"
 
 #: mergelist.c:36
-#, fuzzy, c-format
-#| msgid "l must be a list."
+#, c-format
 msgid "'%s' must be a list"
-msgstr "l doit être une liste."
+msgstr "'%s' doit être une liste"
 
 #: mergelist.c:47
 #, fuzzy, c-format
@@ -4923,10 +4910,9 @@ msgid "%s must be TRUE or FALSE."
 msgstr "%s doit être TRUE ou FALSE"
 
 #: utils.c:629
-#, fuzzy, c-format
-#| msgid "Type '%s' is not supported by CJ."
+#, c-format
 msgid "Type '%s' is not supported by frev"
-msgstr "Le type '%s' n'est pas pris en charge par CJ."
+msgstr "Le type '%s' n'est pas pris en charge par frev"
 
 #: vecseq.c:16
 msgid "len must be an integer vector"
