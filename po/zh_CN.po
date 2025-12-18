@@ -2059,7 +2059,7 @@ msgstr ""
 msgid ""
 "Found skip='%s' on line %d. Taking this to be header row or first row of "
 "data.\n"
-msgstr "在行 %2$%d 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
+msgstr "在行 %2$d 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
 
 #: fread.c:1763
 #, c-format
