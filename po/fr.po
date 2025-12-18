@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-12-18 12:40+0100\n"
+"PO-Revision-Date: 2025-12-18 13:03+0100\n"
 "Last-Translator: Christian Wiat <w9204-rs@yahoo.com>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -132,10 +132,9 @@ msgstr ""
 "est %d. Sa longueur devrait être de 1."
 
 #: assign.c:219
-#, fuzzy, c-format
-#| msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
+#, c-format
 msgid "getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."
-msgstr "getOption('datatable.alloc')==%d. Doit être >=0 et non NA."
+msgstr "getOption('datatable.alloccol')==%d. Doit être >=0 et non NA."
 
 #: assign.c:225 between.c:22 between.c:28 frollR.c:97 frollR.c:112 fsort.c:117
 #: gsumm.c:351 gsumm.c:587 gsumm.c:733 gsumm.c:871 gsumm.c:1026 gsumm.c:1118
@@ -207,10 +206,9 @@ msgid "Assigning to %d row subset of %d rows\n"
 msgstr "Affectation à un sous-ensemble de %d lignes parmi %d lignes\n"
 
 #: assign.c:326
-#, fuzzy, c-format
-#| msgid "Added %d new column%s initialized with all-NA\n"
+#, c-format
 msgid "Added %d new column initialized with all-NA\n"
-msgstr "Ajout de %d nouvelle(s) colonne(s) initialisée%s avec all-NA\n"
+msgstr "Ajout de %d nouvelle(s) colonne(s) initialisée(s) avec all-NA\n"
 
 #: assign.c:332
 msgid "length(LHS)==0; no columns to delete or assign RHS to."
@@ -1157,13 +1155,11 @@ msgid "\n"
 msgstr "\n"
 
 #: dogroups.c:458 dogroups.c:475
-#, fuzzy, c-format
-#| msgid ""
-#| "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
+#, c-format
 msgid ""
 "Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
-"\rTraitement de %d groupes sur %d. %.0f%% terminé. Temps écoulé : %ds. Heure "
+"Traitement de %d groupes sur %d. %.0f%% terminé. Temps écoulé : %ds. Heure "
 "d'arrivée prévue : %ds."
 
 #: dogroups.c:481
@@ -1718,10 +1714,8 @@ msgid "retStats must be TRUE or FALSE"
 msgstr "retStats doit être TRUE ou FALSE"
 
 #: forder.c:519 forder.c:1689
-#, fuzzy
-#| msgid "retStats must be TRUE or FALSE"
 msgid "retStats must be TRUE whenever retGrp is TRUE"
-msgstr "retStats doit être TRUE ou FALSE"
+msgstr "retStats doit valoir TRUE quand retGrp vaut TRUE"
 
 #: forder.c:521 forder.c:1691
 msgid "sort must be TRUE or FALSE"
@@ -1872,52 +1866,60 @@ msgid ""
 "forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
 "all1(ascArg)=%d\n"
 msgstr ""
+"forderReuseSorting : opt n'est pas possible: is.data.table(DT)=%d, "
+"sortGroups=%d, all1(ascArg)=%d\n"
 
 #: forder.c:1730
 #, c-format
 msgid "forderReuseSorting: using key: %s\n"
-msgstr ""
+msgstr "forderReuseSorting : clé utilisée : %s\n"
 
 #: forder.c:1765
 #, c-format
 msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
 msgstr ""
+"forderReuseSorting : indice trouvé mais pas pour retGrp et retStats : %s\n"
 
 #: forder.c:1768
 #, c-format
 msgid "forderReuseSorting: index found but not for retGrp: %s\n"
-msgstr ""
+msgstr "forderReuseSorting : indice trouvé mais pas pour retGrp : %s\n"
 
 #: forder.c:1771
 #, c-format
 msgid "forderReuseSorting: index found but not for retStats: %s\n"
-msgstr ""
+msgstr "forderReuseSorting : indice trouvé mais pas pour retStats : %s\n"
 
 #: forder.c:1778
 #, c-format
 msgid ""
 "forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
 msgstr ""
+"forderReuseSorting : indice trouvé mais na.last=TRUE et aucune statistique "
+"disponible : %s\n"
 
 #: forder.c:1781
 #, c-format
 msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
 msgstr ""
+"forderReuseSorting : indice trouvé mais na.last=TRUE et il y a des NA : %s\n"
 
 #: forder.c:1789
 #, c-format
 msgid "forderReuseSorting: using existing index: %s\n"
-msgstr ""
+msgstr "forderReuseSorting : indice existant utilisé : %s\n"
 
 #: forder.c:1801
 #, c-format
 msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
 msgstr ""
+"forderReuseSorting : initialisation de l'indice (retGrp=%d, retStats=%d) sur "
+"DT : %s\n"
 
 #: forder.c:1805
 #, c-format
 msgid "forderReuseSorting: opt=%d, took %.3fs\n"
-msgstr ""
+msgstr "forderReuseSorting : opt=%d, a pris %.3fs\n"
 
 #: frank.c:17 frank.c:196
 #, c-format
@@ -1982,11 +1984,9 @@ msgstr ""
 "n'est pas autorisé."
 
 #: fread.c:1445 fread.c:1447
-#, fuzzy, c-format
-#| msgid ""
-#| "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
+#, c-format
 msgid "freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."
-msgstr "freadMain : NAstring <<%s>> et logical01=TRUE, ce n'est pas autorisé."
+msgstr "freadMain : NAstring <<%s>> et %s=TRUE, ce n'est pas autorisé."
 
 #: fread.c:1462
 msgid "  No NAstrings provided.\n"
@@ -2220,16 +2220,13 @@ msgstr ""
 "exemple 'echo >> file’ pour éviter ce problème "
 
 #: fread.c:1692
-#, fuzzy, c-format
-#| msgid ""
-#| "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow "
-#| "page to write 0 to the last byte.\n"
+#, c-format
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Copying file "
 "in RAM. %s.\n"
 msgstr ""
-"  Le fichier se termine brusquement par '%c'. La fin de ligne est manquante. "
-"Utilisation d'une page ‘Copy-On-Write’ pour écrire 0 sur le dernier octet.\n"
+"  Le fichier se termine brusquement par '%c'. Le dernier fin de ligne est "
+"absent. Copie du fichier en RAM. %s.\n"
 
 #: fread.c:1698 fread.c:2002
 #, c-format
@@ -2323,30 +2320,29 @@ msgid "  Using supplied sep '%s'\n"
 msgstr "  Utilisation du séparateur fourni '%s'\n"
 
 #: fread.c:1867
-#, fuzzy, c-format
-#| msgid "  with %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep=%#02x  with %d fields using quote rule %d\n"
-msgstr "  avec des champs %d en utilisant la règle des guillemets %d\n"
+msgstr ""
+"  sep=%#02x  avec des %d champs en utilisant la règle des guillemets %d\n"
 
 #: fread.c:1868
-#, fuzzy, c-format
-#| msgid "  with %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep='%c'  with %d fields using quote rule %d\n"
-msgstr "  avec des champs %d en utilisant la règle des guillemets %d\n"
+msgstr "  sep='%c'  avec %d champs en utilisant la règle des guillemets %d\n"
 
 #: fread.c:1934
-#, fuzzy, c-format
-#| msgid "  with %d lines of %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep=%#02x  with %d lines of %d fields using quote rule %d\n"
 msgstr ""
-"  avec %d lignes de %d champs en utilisant la règle des guillemets %d\n"
+"  sep=%#02x  avec %d lignes de %d champs en utilisant la règle des "
+"guillemets %d\n"
 
 #: fread.c:1935
-#, fuzzy, c-format
-#| msgid "  with %d lines of %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep='%c'  with %d lines of %d fields using quote rule %d\n"
 msgstr ""
-"  avec %d lignes de %d champs en utilisant la règle des guillemets %d\n"
+"  sep='%c'  avec %d lignes de %d champs en utilisant la règle des guillemets "
+"%d\n"
 
 #: fread.c:1943
 msgid ""
@@ -2653,10 +2649,9 @@ msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
 msgstr "  Longueur de la ligne : mean=%.2f sd=%.2f min=%d max=%d\n"
 
 #: fread.c:2284
-#, fuzzy, c-format
-#| msgid "  Estimated number of rows: %<PRIu64> / %.2f = %<PRIu64>\n"
+#, c-format
 msgid "  Estimated number of rows: %td / %.2f = %<PRId64>\n"
-msgstr "  Nombre estimé de lignes : %<PRIu64> / %.2f = %<PRIu64>\n"
+msgstr "  Nombre de lignes estimé : %td / %.2f = %<PRId64>\n"
 
 #: fread.c:2285
 #, fuzzy, c-format
@@ -2779,16 +2774,13 @@ msgstr ""
 "data.table"
 
 #: fread.c:2864
-#, fuzzy, c-format
-#| msgid ""
-#| "  Too few rows allocated. Allocating additional %<PRIu64> rows (now nrows="
-#| "%<PRIu64>) and continue reading from jump %d\n"
+#, c-format
 msgid ""
 "  Too few rows allocated. Allocating additional %<PRId64> rows (now nrows="
 "%<PRId64>) and continue reading from jump %d\n"
 msgstr ""
-"  Trop peu de lignes allouées. Allocation de %<PRIu64> lignes "
-"supplémentaires (maintenant nrows=%<PRIu64>) et poursuite de la lecture à "
+"  Trop peu de lignes allouées. Allocation de %<PRId64> lignes "
+"supplémentaires (maintenant nrows=%<PRId64>) et poursuite de la lecture à "
 "partir du saut %d\n"
 
 #: fread.c:2871
@@ -3317,10 +3309,8 @@ msgid "'n' must be non-negative integer values (>= 0)"
 msgstr "'n' doit être un nombre entier positif (>= 0)"
 
 #: frollR.c:53 frollR.c:64
-#, fuzzy
-#| msgid "n must be integer vector or list of integer vectors"
 msgid "'n' must be an integer vector or list of integer vectors"
-msgstr "n doit être un vecteur d’entiers ou une liste de vecteurs d’entiers"
+msgstr "'n' doit être un vecteur d’entiers ou une liste de vecteurs d’entiers"
 
 #: frollR.c:94
 msgid "n must be non 0 length"
@@ -4209,10 +4199,8 @@ msgstr ""
 "l'option verbose doit être de longueur 1 et de type booléen non-NA ou entier"
 
 #: init.c:366
-#, fuzzy
-#| msgid ".Last.value in namespace is not a length 1 integer"
 msgid ".Last.updated in namespace is not a length 1 integer"
-msgstr ".Last.value dans l'espace des noms n'est pas un entier de longueur 1"
+msgstr ".Last.updated dans l'espace de noms n'est pas un entier de longueur 1"
 
 #: mergelist.c:36
 #, c-format
@@ -4582,16 +4570,13 @@ msgstr ""
 "colonne 1 (%d). Objet data.table invalide."
 
 #: reorder.c:32
-#, fuzzy, c-format
-#| msgid ""
-#| "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
-#| "supported (SIZEOF=%zu)"
+#, c-format
 msgid ""
 "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
 "supported (RTYPE_SIZEOF=%zu)"
 msgstr ""
-"reorder accepte les vecteurs mais non-VECSXP est de type '%s' qui n'est pas "
-"encore supporté (SIZEOF=%zu)"
+"reorder accepte les vecteurs mais ce non-VECSXP est de type '%s' qui n'est "
+"pas encore supporté (RTYPE_SIZEOF=%zu)"
 
 #: reorder.c:39
 msgid "order must be an integer vector"
