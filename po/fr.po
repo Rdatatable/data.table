@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
 "POT-Creation-Date: 2025-12-13 17:01+0000\n"
-"PO-Revision-Date: 2025-12-17 15:00+0100\n"
+"PO-Revision-Date: 2025-12-18 12:40+0100\n"
 "Last-Translator: Christian Wiat <w9204-rs@yahoo.com>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -12,13 +12,6 @@ msgstr ""
 "X-Generator: Poedit 2.4.2\n"
 
 #: assign.c:67
-#, fuzzy
-#| msgid ""
-#| ".internal.selfref ptr is NULL. This is expected and normal for a data."
-#| "table loaded from disk. Please remember to always setDT() immediately "
-#| "after loading to prevent unexpected behavior. If this table was not "
-#| "loaded from disk or you've already run setDT(), please report to data."
-#| "table issue tracker.\n"
 msgid ""
 "The data.table internal attributes of this table are invalid. This is "
 "expected and normal for a data.table loaded from disk. Please remember to "
@@ -26,12 +19,12 @@ msgid ""
 "this table was not loaded from disk or you've already run setDT(), please "
 "report to the data.table issue tracker.\n"
 msgstr ""
-".internal.selfref ptr est NULL. Ceci est normal et attendu pour une table de "
-"données chargée depuis le disque. Rappelez-vous de toujours exécuter setDT() "
-"immédiatement après le chargement pour éviter tout comportement inattendu. "
-"Si cette table n'a pas été chargée depuis le disque ou si vous avez déjà "
-"exécuté setDT(), veuillez le signaler dans le gestionnaire de tickets (issue "
-"tracker) de data.table.\n"
+"Les attributs data.table internes de ce tableau ne sont pas valides. Ceci "
+"est attendu et normal avec un data.table chargé à partir du disque. Pensez "
+"toujours à exécuter setDT() immédiatement après le chargement pour éviter "
+"tout comportement inattendu. Si cette table n'a pas été chargée à partir du "
+"disque ou si vous avez déjà exécuté setDT(), veuillez le signaler dans le "
+"gestionnaire de tickets (issue tracker) de data.table.\n"
 
 #: assign.c:138
 #, c-format
@@ -1433,10 +1426,9 @@ msgid "concat: 'vec' must be a character vector"
 msgstr "concat : 'vec' doit être un vecteur de caractères"
 
 #: fmelt.c:67
-#, fuzzy
 #| msgid "concat: 'idx' must be an integer vector of length >= 0"
 msgid "concat: 'idx' must be an integer vector"
-msgstr "concat : 'idx' doit être un vecteur entier de longueur >= 0"
+msgstr "concat : 'idx' doit être un vecteur d'entiers"
 
 #: fmelt.c:137
 #, c-format
@@ -2066,10 +2058,10 @@ msgid "  Opening file %s\n"
 msgstr "  Ouverture du fichier %s\n"
 
 #: fread.c:1523
-#, fuzzy, c-format
+#, c-format
 #| msgid "Column %d of item %d: %s"
 msgid "Couldn't open file %s: %s"
-msgstr "Colonne %d de l'élément %d : %s"
+msgstr "Impossible d'ouvrir le lichier %s: %s"
 
 #: fread.c:1527
 #, c-format
@@ -2255,10 +2247,9 @@ msgid "  File copy in RAM took %.3f seconds.\n"
 msgstr "  La copie du fichier dans la RAM a pris %.3f secondes.\n"
 
 #: fread.c:1705 fread.c:2009
-#, fuzzy, c-format
-#| msgid "  File copy in RAM took %.3f seconds.\n"
+#, c-format
 msgid "Avoidable file copy in RAM took %.3f seconds. %s.\n"
-msgstr "  La copie du fichier dans la RAM a pris %.3f secondes.\n"
+msgstr "La copie évitée en RAM a pris %.3f secondes. %s.\n"
 
 #: fread.c:1737
 msgid "[05] Skipping initial rows if needed\n"
@@ -2542,11 +2533,7 @@ msgstr ""
 "Prendre la ligne précédente comme celle des noms de colonne."
 
 #: fread.c:2204
-#, fuzzy, c-format
-#| msgid ""
-#| " for the first column which is guessed to be row names or an index. Use "
-#| "setnames() afterwards if this guess is not correct, or fix the file write "
-#| "command that created the file to create a valid file."
+#, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added an extra default column name for the first column which is guessed to "
@@ -2554,10 +2541,12 @@ msgid ""
 "correct, or fix the file write command that created the file to create a "
 "valid file.\n"
 msgstr ""
-" pour la première colonne qui est supposée être un nom de ligne ou un "
-"indice. Utilisez setnames() par la suite si cette proposition n'est pas "
-"correcte, ou corrigez la commande d'écriture du fichier qui a créé le "
-"fichier afin de créer un fichier valide."
+"Trouvé %d noms de colonnes mais les données contiennent %d colonnes (le "
+"fichier est non valide). Ajout d'un nom de colonne supplémentaire pour la "
+"première colonne supposée contenir le nom des lignes ou un indice. Utilisez "
+"setnames() par la suite si cette proposition n'est pas correcte, ou corrigez "
+"la commande d'écriture qui a créé le fichier afin de rendre le fichier "
+"valide.\n"
 
 #: fread.c:2207
 #, fuzzy, c-format
@@ -3324,10 +3313,8 @@ msgid "'n' must be an integer"
 msgstr "'n' doit être un nombre entier"
 
 #: frollR.c:44 frollR.c:74
-#, fuzzy
-#| msgid "n must be positive integer values (> 0)"
 msgid "'n' must be non-negative integer values (>= 0)"
-msgstr "n doit être un nombre entier positif (> 0)"
+msgstr "'n' doit être un nombre entier positif (>= 0)"
 
 #: frollR.c:53 frollR.c:64
 #, fuzzy
@@ -3340,10 +3327,9 @@ msgid "n must be non 0 length"
 msgstr "n doit pas être de longueur 0"
 
 #: frollR.c:115
-#, fuzzy
 #| msgid "hasNA must be TRUE, FALSE or NA"
 msgid "has.nf must be TRUE, FALSE or NA"
-msgstr "hasNA doit être TRUE, FALSE ou NA"
+msgstr "has.nf doit valoir TRUE, FALSE ou NA"
 
 #: frollR.c:117
 #, fuzzy
@@ -3651,10 +3637,8 @@ msgstr ""
 "%s'. Veuillez lire ?fwrite pour les options nThread, buffMB et verbose."
 
 #: fwrite.c:826
-#, fuzzy
-#| msgid "Can't allocate gzip stream structure"
 msgid "Can't init stream structure for deflateBound"
-msgstr "Impossible d'allouer une structure de flux gzip"
+msgstr "Impossible d'initialiser une structure de flux pour deflateBound"
 
 #: fwrite.c:831
 #, c-format
@@ -4296,10 +4280,8 @@ msgstr ""
 "%s : le traitement en parallèle de %d colonne(s) a pris %.3f secondes\n"
 
 #: negate.c:6
-#, fuzzy
-#| msgid "%s is not an integer vector"
 msgid "not logical or integer vector"
-msgstr "%s n'est pas un vecteur entier"
+msgstr "n'est pas un vecteur de booléens ni d'entiers"
 
 #: openmp-utils.c:23
 #, c-format
@@ -4875,11 +4857,8 @@ msgstr ""
 "de data.table"
 
 #: utils.c:546
-#, fuzzy
-#| msgid "Item %d of input is not a data.frame, data.table or list"
 msgid "'x' should not be data.frame or data.table."
-msgstr ""
-"L'élément %d de l'entrée n'est pas un data.frame, data.table ou une liste"
+msgstr "'x' ne doit pas être un data.frame ni un data.table."
 
 #: utils.c:548
 #, c-format
