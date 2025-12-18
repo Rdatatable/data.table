@@ -72,7 +72,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
   int nprotect=0;
-  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
+  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   const bool verbose = LOGICAL(verboseArg)[0]==1;
   double tstart=0, tblock[10]={0}; int nblock[10]={0}; // For verbose printing, tstart is updated each block
@@ -135,12 +135,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   R_LockBinding(install(".I"), env);
 
   SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #91 - `:=` did not issue recycling warning during "by"
-  // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
+
+  // override rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
-  for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));  // getAttrib0 basically but that's hidden in attrib.c; #loop_counter_not_local_scope_ok
-  if (s==R_NilValue) error(_("row.names attribute of .SD not found"));
-  rownames = CAR(s);
-  if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
+  SEXP rownames;
+  PROTECT_INDEX rownamesi;
+  PROTECT_WITH_INDEX(rownames = allocVector(INTSXP, 2), &rownamesi); nprotect++;
+  INTEGER(rownames)[0] = NA_INTEGER;
+  INTEGER(rownames)[1] = -maxGrpSize;
+  REPROTECT(rownames = setAttrib(SD, R_RowNamesSymbol, rownames), rownamesi);
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
