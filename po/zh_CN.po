@@ -125,10 +125,9 @@ msgid ""
 msgstr "getOption('datatable.alloc')结果为长度%d的数值向量其长度应该为1"
 
 #: assign.c:219
-#, fuzzy, c-format
-#| msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
+#, c-format
 msgid "getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."
-msgstr "getOption('datatable.alloc')值为%d, 其必须大于等于零且不能为NA"
+msgstr "getOption('datatable.alloccol')值为%d, 其必须大于等于零且不能为NA"
 
 #: assign.c:225 between.c:22 between.c:28 frollR.c:97 frollR.c:112 fsort.c:117
 #: gsumm.c:351 gsumm.c:587 gsumm.c:733 gsumm.c:871 gsumm.c:1026 gsumm.c:1118
@@ -445,10 +444,9 @@ msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr "因为一个键(key)列的更新，缩短索引(index) '%s' 到 '%s'\n"
 
 #: assign.c:682
-#, fuzzy, c-format
-#| msgid "column %d named '%s'"
+#, c-format
 msgid "(column %d named '%s')"
-msgstr "第 %d 列名为 '%s'"
+msgstr "(第 %d 列名为 '%s')"
 
 #: assign.c:716
 #, c-format
@@ -562,10 +560,9 @@ msgid ""
 msgstr "在 %s 中将 '%s' 赋值成 '%s' 时发生了零拷贝强制转换。\n"
 
 #: assign.c:886
-#, fuzzy, c-format
-#| msgid "target vector"
+#, c-format
 msgid "(target vector)"
-msgstr "目标向量"
+msgstr "(目标向量)"
 
 #: assign.c:896 assign.c:897
 #, c-format
@@ -788,10 +785,9 @@ msgid "bmerge: looping bmerge_r took %.3fs\n"
 msgstr ""
 
 #: bmerge.c:241
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "bmerge: took %.3fs\n"
-msgstr "%s: 使用了 %.3fs\n"
+msgstr "bmerge: 使用了 %.3fs\n"
 
 #: bmerge.c:417
 msgid "mult='error' and multiple matches during merge"
@@ -1267,10 +1263,9 @@ msgid ""
 msgstr "#%d 输出的长度必须为 1 或与逻辑判断条件的长度相同。"
 
 #: fifelse.c:407
-#, fuzzy, c-format
-#| msgid "Type '%s' is not supported"
+#, c-format
 msgid "Type '%s' is not supported."
-msgstr "不支持类型 '%s'"
+msgstr "不支持类型 '%s'。"
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
@@ -1682,16 +1677,12 @@ msgid "DT is NULL"
 msgstr ""
 
 #: forder.c:1697
-#, fuzzy
-#| msgid "n must be integer"
 msgid "order must be integer"
-msgstr "n 必须是整数"
+msgstr "order 必须是整数"
 
 #: forder.c:1699
-#, fuzzy
-#| msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
-msgstr "na.last 的参数必须是逻辑值 TRUE, FALSE 或 NA "
+msgstr "reuseSorting 的参数必须是逻辑值 TRUE, FALSE 或 NA "
 
 #: forder.c:1711
 #, c-format
@@ -1801,11 +1792,9 @@ msgid ""
 msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不允许"
 
 #: fread.c:1445 fread.c:1447
-#, fuzzy, c-format
-#| msgid ""
-#| "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
+#, c-format
 msgid "freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."
-msgstr "freadMain: NAstring 为 <<%s>> 同时 logical01=TRUE，不允许这种情况。"
+msgstr "freadMain: NAstring 为 <<%s>> 同时 %s=TRUE，不允许这种情况。"
 
 #: fread.c:1462
 msgid "  No NAstrings provided.\n"
@@ -1840,10 +1829,9 @@ msgid "  0/1 column will be read as %s\n"
 msgstr "  0/1 列被读取为 %s\n"
 
 #: fread.c:1477
-#, fuzzy, c-format
-#| msgid "  0/1 column will be read as %s\n"
+#, c-format
 msgid "  Y/N column will be read as %s\n"
-msgstr "  0/1 列被读取为 %s\n"
+msgstr "  Y/N 列被读取为 %s\n"
 
 #: fread.c:1490
 #, c-format
@@ -2067,20 +2055,16 @@ msgstr ""
 "模式，适配符或正则表达式）"
 
 #: fread.c:1749
-#, fuzzy, c-format
-#| msgid ""
-#| "Found skip='%s' on line %<PRIu64>. Taking this to be header row or first "
-#| "row of data.\n"
+#, c-format
 msgid ""
 "Found skip='%s' on line %d. Taking this to be header row or first row of "
 "data.\n"
-msgstr "在行 %2$<PRIu64> 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
+msgstr "在行 %2$%d 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
 
 #: fread.c:1763
-#, fuzzy, c-format
-#| msgid "  Skipped to line %<PRIu64> in the file"
+#, c-format
 msgid "  Skipped to line %d in the file"
-msgstr "  跳到文件的第 %<PRIu64> 行"
+msgstr "  跳到文件的第 %d 行"
 
 #: fread.c:1766
 #, fuzzy, c-format
@@ -2122,28 +2106,24 @@ msgid "  Using supplied sep '%s'\n"
 msgstr "  使用提供的分隔符 '%s'\n"
 
 #: fread.c:1867
-#, fuzzy, c-format
-#| msgid "  with %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep=%#02x  with %d fields using quote rule %d\n"
-msgstr "  对 %d 个字段使用引用规则 %d\n"
+msgstr "  sep=%#02x  对 %d 个字段使用引用规则 %d\n"
 
 #: fread.c:1868
-#, fuzzy, c-format
-#| msgid "  with %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep='%c'  with %d fields using quote rule %d\n"
-msgstr "  对 %d 个字段使用引用规则 %d\n"
+msgstr "  sep='%c'  对 %d 个字段使用引用规则 %d\n"
 
 #: fread.c:1934
-#, fuzzy, c-format
-#| msgid "  with %d lines of %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep=%#02x  with %d lines of %d fields using quote rule %d\n"
-msgstr "  对 %d 行的 %d 字段使用引用规则 %d\n"
+msgstr "  sep=%#02x  对 %d 行的 %d 字段使用引用规则 %d\n"
 
 #: fread.c:1935
-#, fuzzy, c-format
-#| msgid "  with %d lines of %d fields using quote rule %d\n"
+#, c-format
 msgid "  sep='%c'  with %d lines of %d fields using quote rule %d\n"
-msgstr "  对 %d 行的 %d 字段使用引用规则 %d\n"
+msgstr "  sep='%c'  对 %d 行的 %d 字段使用引用规则 %d\n"
 
 #: fread.c:1943
 msgid ""
@@ -2395,21 +2375,16 @@ msgid ""
 msgstr " 文件太小，全部行均被采样到，所以 nrow=%<PRIu64>\n"
 
 #: fread.c:2281
-#, fuzzy, c-format
-#| msgid ""
-#| "  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
-#| "points\n"
+#, c-format
 msgid ""
 "  Sampled %<PRId64> rows (handled \\n inside quoted fields) at %d jump "
 "points\n"
-msgstr "  已使用了 %2$d个跳点抽样 %1$<PRIu64> 行(处理了字段间的分隔符\\n)\n"
+msgstr "  已使用了 %2$d个跳点抽样 %1$<PRId64> 行(处理了字段间的分隔符\\n)\n"
 
 #: fread.c:2282
-#, fuzzy, c-format
-#| msgid ""
-#| "  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
+#, c-format
 msgid "  Bytes from first data row on line %d to the end of last row: %td\n"
-msgstr " 从第一个数据行(%d)到最后一行的字节: %<PRIu64>\n"
+msgstr " 从第一个数据行(%d)到最后一行的字节: %td\n"
 
 #: fread.c:2283
 #, c-format
@@ -2417,28 +2392,23 @@ msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
 msgstr "文件每行长度的统计量：均值=%.2f，标准差=%.2f，最小值=%d ，最大值=%d\n"
 
 #: fread.c:2284
-#, fuzzy, c-format
-#| msgid "  Estimated number of rows: %<PRIu64> / %.2f = %<PRIu64>\n"
+#, c-format
 msgid "  Estimated number of rows: %td / %.2f = %<PRId64>\n"
-msgstr "估计数据共有 %<PRIu64> / %.2f = %<PRIu64> 行\n"
+msgstr "估计数据共有 %td / %.2f = %<PRId64> 行\n"
 
 #: fread.c:2285
-#, fuzzy, c-format
-#| msgid ""
-#| "  Initial alloc = %<PRIu64> rows (%<PRIu64> + %d%%) using bytes/"
-#| "max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
+#, c-format
 msgid ""
 "  Initial alloc = %<PRId64> rows (%<PRId64> + %d%%) using bytes/"
 "max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
-"为 %<PRIu64> 行 (%<PRIu64> + %d%%)分配初始内存，大小为字节数/"
+"为 %<PRId64> 行 (%<PRId64> + %d%%)分配初始内存，大小为字节数/"
 "max(mean-2*sd,min)，并确保该数值落于区间[1.1*estn, 2.0*estn]中\n"
 
 #: fread.c:2292
-#, fuzzy, c-format
-#| msgid "  Alloc limited to lower nrows=%<PRIu64> passed in.\n"
+#, c-format
 msgid "  Alloc limited to lower nrows=%<PRId64> passed in.\n"
-msgstr "  分配被限制在输入的更小的 nrows=%<PRIu64> 值上。\n"
+msgstr "  分配被限制在输入的更小的 nrows=%<PRId64> 值上。\n"
 
 #: fread.c:2304
 msgid "[08] Assign column names\n"
@@ -2483,10 +2453,9 @@ msgid "[10] Allocate memory for the datatable\n"
 msgstr "[10] 分配内存给 datatable\n"
 
 #: fread.c:2407
-#, fuzzy, c-format
-#| msgid "  Allocating %d column slots (%d - %d dropped) with %<PRIu64> rows\n"
+#, c-format
 msgid "  Allocating %d column slots (%d - %d dropped) with %<PRId64> rows\n"
-msgstr "  正在分配 %d 列位置（%d - %d 已丢弃），%<PRIu64> 行\n"
+msgstr "  正在分配 %d 列位置（%d - %d 已丢弃），%<PRId64> 行\n"
 
 #: fread.c:2462
 #, c-format
@@ -2498,15 +2467,12 @@ msgid "[11] Read the data\n"
 msgstr "[11] 读取数据\n"
 
 #: fread.c:2713
-#, fuzzy, c-format
-#| msgid ""
-#| "Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row "
-#| "%<PRIu64>\n"
+#, c-format
 msgid ""
 "Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %<PRId64>\n"
 msgstr ""
 "第 %d 列 %s%.*s%s 发生了从 '%s' 到 '%s' 的类型转换，原因是由于 <<%.*s>> 出现"
-"在第 %<PRIu64> 行\n"
+"在第 %<PRId64> 行\n"
 
 #: fread.c:2839
 #, c-format
@@ -2532,15 +2498,12 @@ msgid ""
 msgstr "请将此问题汇报给 data.table 问题追踪器。"
 
 #: fread.c:2864
-#, fuzzy, c-format
-#| msgid ""
-#| "  Too few rows allocated. Allocating additional %<PRIu64> rows (now "
-#| "nrows=%<PRIu64>) and continue reading from jump %d\n"
+#, c-format
 msgid ""
 "  Too few rows allocated. Allocating additional %<PRId64> rows (now "
 "nrows=%<PRId64>) and continue reading from jump %d\n"
 msgstr ""
-"  分配的行数太少。正在分配额外的 %<PRIu64> 行（当前 nrows=%<PRIu64>），并从跳"
+"  分配的行数太少。正在分配额外的 %<PRId64> 行（当前 nrows=%<PRId64>），并从跳"
 "跃 %d 继续读取\n"
 
 #: fread.c:2871
@@ -2607,10 +2570,9 @@ msgstr ""
 "fill=TRUE 和 comment.char=。 首个丢弃的非空行：<<%s>>"
 
 #: fread.c:2976
-#, fuzzy, c-format
-#| msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
+#, c-format
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"
-msgstr "%8.3fs (%3.0f%%) 内存映射 %.3fGB 文件\n"
+msgstr "%8.3fs (%3.0f%%) 内存映射 %.3fGiB 文件\n"
 
 #: fread.c:2979
 #, c-format
@@ -2618,33 +2580,26 @@ msgid " ncol=%d and header detection\n"
 msgstr " ncol=%d 和表头检测\n"
 
 #: fread.c:2980
-#, fuzzy, c-format
-#| msgid "%8.3fs (%3.0f%%) Column type detection using %<PRIu64> sample rows\n"
+#, c-format
 msgid "%8.3fs (%3.0f%%) Column type detection using %<PRId64> sample rows\n"
-msgstr "%8.3fs (%3.0f%%) 列类型检测基于 %<PRIu64> 个样本行\n"
+msgstr "%8.3fs (%3.0f%%) 列类型检测基于 %<PRId64> 个样本行\n"
 
 #: fread.c:2982
-#, fuzzy, c-format
-#| msgid ""
-#| "%8.3fs (%3.0f%%) Allocation of %<PRIu64> rows x %d cols (%.3fGB) of which "
-#| "%<PRIu64> (%3.0f%%) rows used\n"
+#, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Allocation of %<PRId64> rows x %d cols (%.3fGiB) of which "
 "%<PRId64> (%3.0f%%) rows used\n"
 msgstr ""
-"%8.3fs (%3.0f%%) %<PRIu64> 行 x %d 列 (%.3fGB) 的分配中已使用 %<PRIu64> "
+"%8.3fs (%3.0f%%) %<PRId64> 行 x %d 列 (%.3fGiB) 的分配中已使用 %<PRId64> "
 "(%3.0f%%) 行\n"
 
 #: fread.c:2986
-#, fuzzy, c-format
-#| msgid ""
-#| "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d "
-#| "rows) using %d threads\n"
+#, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMiB (each chunk "
 "%<PRId64> rows) using %d threads\n"
 msgstr ""
-"%8.3fs (%3.0f%%) 正在读取 %d 个块 (%d 已扫描) of %.3fMB (每个块 %d 行) 使用 "
+"%8.3fs (%3.0f%%) 正在读取 %d 个块 (%d 已扫描) of %.3fMiB (每个块 %<PRId64> 行) 使用 "
 "%d 个线程\n"
 
 #: fread.c:2988
@@ -2849,12 +2804,10 @@ msgstr "%s: 处理算法%u用了%.3fs\n"
 
 #: froll.c:173 froll.c:363 froll.c:540 froll.c:747 froll.c:986 froll.c:1153
 #: froll.c:1505
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
+#, c-format
 msgid "%s: running for input length %<PRIu64>, window %d, hasnf %d, narm %d\n"
 msgstr ""
-"%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasna "
+"%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasnf "
 "%d, narm %d\n"
 
 #: froll.c:176 froll.c:239
@@ -2864,15 +2817,12 @@ msgid "%s: window width of size 0, returning all NaN vector\n"
 msgstr "%s：窗口宽度比输入向量长，返回所有NA向量\n"
 
 #: froll.c:236 froll.c:424 froll.c:636 froll.c:840 froll.c:1072 froll.c:1766
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, "
-#| "narm %d\n"
+#, c-format
 msgid ""
 "%s: running in parallel for input length %<PRIu64>, window %d, hasnf %d, "
 "narm %d\n"
 msgstr ""
-"%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasna "
+"%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasnf "
 "%d, narm %d\n"
 
 #: froll.c:366 froll.c:427
@@ -2998,26 +2948,18 @@ msgid "%s: no NAs detected, redirecting to itself using has.nf=FALSE\n"
 msgstr ""
 
 #: frollR.c:18
-#, fuzzy
-#| msgid ""
-#| "x must be of type numeric or logical, or a list, data.frame or data.table "
-#| "of such"
 msgid ""
 "'x' must be of type numeric or logical, or a list, data.frame or data.table "
 "of such"
-msgstr "x 须为数值型或逻辑型，或由这两种类型组成的列表、数据框或 data.table。"
+msgstr "'x' 须为数值型或逻辑型，或由这两种类型组成的列表、数据框或 data.table。"
 
 #: frollR.c:31
-#, fuzzy
-#| msgid "n must be integer, list is accepted for adaptive TRUE"
 msgid "'n' must be an integer, list is accepted for adaptive TRUE"
-msgstr "n 必须是整数, 或者当adaptive TRUE时也可以是列表"
+msgstr "'n' 必须是整数, 或者当adaptive TRUE时也可以是列表"
 
 #: frollR.c:37
-#, fuzzy
-#| msgid "'x' must be an integer"
 msgid "'n' must be an integer"
-msgstr "'x'必须是整数"
+msgstr "'n'必须是整数"
 
 #: frollR.c:44 frollR.c:74
 #, fuzzy
@@ -3026,20 +2968,16 @@ msgid "'n' must be non-negative integer values (>= 0)"
 msgstr "n 必须是正整数 (> 0)"
 
 #: frollR.c:53 frollR.c:64
-#, fuzzy
-#| msgid "n must be integer vector or list of integer vectors"
 msgid "'n' must be an integer vector or list of integer vectors"
-msgstr "n 必须是整数向量 或者由整数向量组成的列表"
+msgstr "'n' 必须是整数向量 或者由整数向量组成的列表"
 
 #: frollR.c:94
 msgid "n must be non 0 length"
 msgstr "n 必须不是0长度"
 
 #: frollR.c:115
-#, fuzzy
-#| msgid "hasNA must be TRUE, FALSE or NA"
 msgid "has.nf must be TRUE, FALSE or NA"
-msgstr "hasNA 必须是 TRUE, FALSE 或者 NA"
+msgstr "has.nf 必须是 TRUE, FALSE 或者 NA"
 
 #: frollR.c:117
 #, fuzzy
@@ -3135,10 +3073,8 @@ msgid "'n' must not have NAs"
 msgstr ""
 
 #: frollR.c:236
-#, fuzzy
-#| msgid "n must be positive integer values (> 0)"
 msgid "'n' must be positive integer values (>= 1)"
-msgstr "n 必须是正整数 (> 0)"
+msgstr "'n' 必须是正整数 (>= 1)"
 
 #: frollR.c:241 frollR.c:244
 msgid "index provided to 'x' must: be sorted, have no duplicates, have no NAs"
@@ -3151,19 +3087,16 @@ msgid "%s: algo %u not implemented, fall back to %u\n"
 msgstr ""
 
 #: frolladaptive.c:118 frolladaptive.c:341
-#, fuzzy, c-format
-#| msgid "%s: running for input length %<PRIu64>, hasna %d, narm %d\n"
+#, c-format
 msgid "%s: running for input length %<PRIu64>, hasnf %d, narm %d\n"
-msgstr "%s: 正在运行, 输入长度 %<PRIu64>, hasna %d, narm %d\n"
+msgstr "%s: 正在运行, 输入长度 %<PRIu64>, hasnf %d, narm %d\n"
 
 #: frolladaptive.c:216 frolladaptive.c:437 frolladaptive.c:512
 #: frolladaptive.c:587 frolladaptive.c:673 frolladaptive.c:747
 #: frolladaptive.c:929
-#, fuzzy, c-format
-#| msgid ""
-#| "%s: running in parallel for input length %<PRIu64>, hasna %d, narm %d\n"
+#, c-format
 msgid "%s: running in parallel for input length %<PRIu64>, hasnf %d, narm %d\n"
-msgstr "%s: 正在并行运行, 输入长度 %<PRIu64>, hasna %d, narm %d\n"
+msgstr "%s: 正在并行运行, 输入长度 %<PRIu64>, hasnf %d, narm %d\n"
 
 #: frolladaptive.c:851
 #, c-format
@@ -3202,15 +3135,12 @@ msgid "Cannot yet handle negatives."
 msgstr "目前无法处理负值。"
 
 #: fsort.c:194
-#, fuzzy, c-format
-#| msgid ""
-#| "counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
-#| "lastBatchSize=%<PRIu64>)\n"
+#, c-format
 msgid ""
 "counts is %dMiB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
 "lastBatchSize=%<PRIu64>)\n"
 msgstr ""
-"counts为%dMB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, "
+"counts为%dMiB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, "
 "lastBatchSize=%<PRIu64>)\n"
 
 #: fsort.c:264
@@ -3290,10 +3220,9 @@ msgstr ""
 "是否有空间以及路径是否存在？"
 
 #: fwrite.c:746
-#, fuzzy, c-format
-#| msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+#, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s)\n"
-msgstr "正在写入bom (%s), yaml (%d characters) 和 column names (%s) ..."
+msgstr "正在写入bom (%s), yaml (%d characters) 和 column names (%s)\n"
 
 #: fwrite.c:798
 #, fuzzy, c-format
@@ -3313,15 +3242,12 @@ msgid "Allocate %zu bytes (%zu MiB) for buffPool\n"
 msgstr ""
 
 #: fwrite.c:810
-#, fuzzy, c-format
-#| msgid ""
-#| "Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?"
-#| "fwrite for nThread, buffMB and verbose options."
+#, c-format
 msgid ""
 "Unable to allocate %zu MiB * %d thread buffers; '%d: %s'. Please read ?"
 "fwrite for nThread, buffMB and verbose options."
 msgstr ""
-"无法分配 %zu MB * %d 的线程缓存；'%d: %s'。请阅读 ?fwrite 中对 nThread、"
+"无法分配 %zu MiB * %d 的线程缓存；'%d: %s'。请阅读 ?fwrite 中对 nThread、"
 "buffMB 和 verbose 选项的说明。"
 
 #: fwrite.c:826
@@ -3340,15 +3266,12 @@ msgid "Allocate %zu bytes (%zu MiB) for zbuffPool\n"
 msgstr ""
 
 #: fwrite.c:844
-#, fuzzy, c-format
-#| msgid ""
-#| "Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. "
-#| "Please read ?fwrite for nThread, buffMB and verbose options."
+#, c-format
 msgid ""
 "Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please "
 "read ?fwrite for nThread, buffMB and verbose options."
 msgstr ""
-"无法分配 %zu MB * %d 的线程压缩缓存；'%d: %s'。请阅读 ?fwrite 中对 nThread、"
+"无法分配 %zu MiB * %d 的线程压缩缓存；'%d: %s'。请阅读 ?fwrite 中对 nThread、"
 "buffMB 和 verbose 选项的说明。"
 
 #: fwrite.c:864
@@ -3529,10 +3452,9 @@ msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
 msgstr "gather 已支持 INTSXP，REALSXP 和 CPLXSXP，但不支持 '%s'"
 
 #: gsumm.c:344
-#, fuzzy, c-format
-#| msgid "gather took ... "
+#, c-format
 msgid "gather took %.3fs\n"
-msgstr "gather 用了 ..."
+msgstr "gather 用了 %.3fs\n"
 
 #: gsumm.c:354 gsumm.c:585 gsumm.c:736 gsumm.c:874 gsumm.c:1029 gsumm.c:1123
 #, c-format
@@ -3837,16 +3759,13 @@ msgid "verbose option must be length 1 non-NA logical or integer"
 msgstr "verbose 选项必须为一个长度为 1 的非 NA 逻辑值或整数"
 
 #: init.c:366
-#, fuzzy
-#| msgid ".Last.value in namespace is not a length 1 integer"
 msgid ".Last.updated in namespace is not a length 1 integer"
-msgstr "命名空间中，.Last.value 不是一个长度为 1 的整型"
+msgstr "命名空间中，.Last.updated 不是一个长度为 1 的整型"
 
 #: mergelist.c:36
-#, fuzzy, c-format
-#| msgid "l must be a list."
+#, c-format
 msgid "'%s' must be a list"
-msgstr "l 必须是列表"
+msgstr "'%s' 必须是列表"
 
 #: mergelist.c:47
 #, fuzzy, c-format
@@ -3867,10 +3786,9 @@ msgid "Recycling rows is not yet implemented."
 msgstr ""
 
 #: mergelist.c:92
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "cbindlist: took %.3fs\n"
-msgstr "%s: 使用了 %.3fs\n"
+msgstr "cbindlist: 使用了 %.3fs\n"
 
 #: nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
@@ -3896,14 +3814,11 @@ msgid ""
 msgstr "fill 必须是一个长度为 1 的向量或长度为 x 的列表"
 
 #: nafill.c:187
-#, fuzzy
-#| msgid "fill must be a vector of length 1 or a list of length of x"
 msgid "fill must be a vector of length 1 or a list of length of x."
-msgstr "fill 必须是一个长度为 1 的向量或长度为 x 的列表"
+msgstr "fill 必须是一个长度为 1 的向量或长度为 x 的列表."
 
 #: nafill.c:237
-#, fuzzy, c-format
-#| msgid "%s: parallel processing of %d column(s) took %.3fs\n"
+#, c-format
 msgid "%s: parallel processing of %d column took %.3fs\n"
 msgstr "%s : 并行处理 %d 列， 用时 %.3fs\n"
 
@@ -4164,11 +4079,10 @@ msgid "Column %d of item %d: %s"
 msgstr "第 %2$d 项的第 %1$d 列: %3$s"
 
 #: reorder.c:22
-#, fuzzy, c-format
-#| msgid "Item %d of list is type '%s' which isn't yet supported (SIZEOF=%zu)"
+#, c-format
 msgid ""
 "Item %d of list is type '%s' which isn't yet supported (RTYPE_SIZEOF=%zu)"
-msgstr "列表的第 %d 项是 '%s' 类型，其尚不被支持 (SIZEOF=%zu)"
+msgstr "列表的第 %d 项是 '%s' 类型，其尚不被支持 (RTYPE_SIZEOF=%zu)"
 
 #: reorder.c:24
 #, c-format
@@ -4178,16 +4092,13 @@ msgid ""
 msgstr "列 %d 的长度是 %d ，与列 1 (%d) 的长度不同。数据表无效。"
 
 #: reorder.c:32
-#, fuzzy, c-format
-#| msgid ""
-#| "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
-#| "supported (SIZEOF=%zu)"
+#, c-format
 msgid ""
 "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
 "supported (RTYPE_SIZEOF=%zu)"
 msgstr ""
 "重新排序需要输入向量，但输入了 '%s' 类型的非向量对象，目前并不支持 "
-"(SIZEOF=%zu)"
+"(RTYPE_SIZEOF=%zu)"
 
 #: reorder.c:39
 msgid "order must be an integer vector"
@@ -4426,16 +4337,14 @@ msgid "'x' should not be data.frame or data.table."
 msgstr "输入项 %d 不是一个data.frame, data.table 或list"
 
 #: utils.c:548
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "%s must be TRUE or FALSE."
-msgstr "%s 的参数是逻辑值，必须是 TRUE 或 FALSE"
+msgstr "%s 的参数是逻辑值，必须是 TRUE 或 FALSE."
 
 #: utils.c:629
-#, fuzzy, c-format
-#| msgid "Type '%s' is not supported by CJ."
+#, c-format
 msgid "Type '%s' is not supported by frev"
-msgstr "CJ 不支持 '%s' 类型"
+msgstr "frev 不支持 '%s' 类型"
 
 #: vecseq.c:16
 msgid "len must be an integer vector"

@@ -188,15 +188,12 @@ msgid "Coercing %s column %s%s to type %s to match type of %s%s."
 msgstr ""
 
 #: bmerge.R:34
-#, fuzzy, c-format
-#| msgid ""
-#| "Attempting roll join on factor column when joining %s to %s. Only "
-#| "integer, double or character columns may be roll joined."
+#, c-format
 msgid ""
 "Attempting roll join on factor column when joining x.%s to i.%s. Only "
 "integer, double or character columns may be roll joined."
 msgstr ""
-"联接%s与%s时试图滚动联接（roll join）因子类型（factor）的列。但只有整数"
+"联接x.%s与i.%s时试图滚动联接（roll join）因子类型（factor）的列。但只有整数"
 "（integer）、双精度（double）或字符（character）类型的列可以使用滚动联接。"
 
 #: bmerge.R:72 bmerge.R:73
@@ -398,10 +395,9 @@ msgid ""
 msgstr "i 和 j 都缺少的时候忽略其他参数。将来此警告信息将升级为错误信息。"
 
 #: data.table.R:222
-#, fuzzy, c-format
-#| msgid "mult argument can only be 'first', 'last' or 'all'"
+#, c-format
 msgid "mult argument can only be 'first', 'last', 'all' or 'error'"
-msgstr "mult 参数只能赋值为 'first'， 'last' 或 'all'"
+msgstr "mult 参数只能赋值为 'first'， 'last'， 'all'， 或 'error'"
 
 #: data.table.R:224
 #, c-format
@@ -563,12 +559,7 @@ msgid "'%s' is not found in calling scope and it is not a column name either"
 msgstr "'%s' 既不存在于调用环境中，也非列名。"
 
 #: data.table.R:433
-#, fuzzy, c-format
-#| msgid ""
-#| "'%s' is not found in calling scope, but it is a column of type %s. If you "
-#| "wish to select rows where that column contains TRUE, or perhaps that "
-#| "column contains row numbers of itself to select, try DT[(col)], "
-#| "DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized"
+#, c-format
 msgid ""
 "'%s' is not found in calling scope, but it is a column of type %s. If you "
 "wish to select rows where that column contains TRUE, or perhaps that column "
@@ -841,8 +832,7 @@ msgid ".SDcols missing at the following indices: %s"
 msgstr ".SDcols 的如下位置为缺失值：%s"
 
 #: data.table.R:1071
-#, fuzzy, c-format
-#| msgid ".SDcols is a logical vector length %d but there are %d columns"
+#, c-format
 msgid ".SDcols is a logical vector of length %d but there are %d columns"
 msgstr ".SDcols 为长度为 %d 的逻辑向量，但共计只有 %d 列"
 
@@ -1040,8 +1030,7 @@ msgid ""
 msgstr ""
 
 #: data.table.R:1524
-#, fuzzy, c-format
-#| msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
+#, c-format
 msgid "logical error. i is not a data.table, but mult='all' and 'by'=.EACHI"
 msgstr "逻辑错误: i 不是data.table，但 mult='all' 及 'by'=.EACHI"
 
@@ -1598,8 +1587,7 @@ msgid "'fromLast' must be TRUE or FALSE"
 msgstr "'fromLast' 必须为 TRUE 或 FALSE"
 
 #: duplicated.R:105
-#, fuzzy, c-format
-#| msgid "x must be an atomic vector or data.frames/data.tables"
+#, c-format
 msgid "x must be an atomic vector or a data.frame/data.table"
 msgstr "x 必须是原子向量或data.frame/data.table"
 
@@ -2234,11 +2222,7 @@ msgid ""
 msgstr "目前不支持包含多个文件的压缩文件。"
 
 #: fread.R:124
-#, fuzzy, c-format
-#| msgid ""
-#| "To read gz and bz2 files directly, fread() requires 'R.utils' package "
-#| "which cannot be found. Please install 'R.utils' using "
-#| "'install.packages('R.utils')'."
+#, c-format
 msgid ""
 "To read %s files directly, fread() requires 'R.utils' package which cannot "
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
@@ -2567,10 +2551,9 @@ msgid "'align' other than 'right' has not yet been implemented"
 msgstr "maxgap 和 minoverlap 参数还未实现。"
 
 #: froll.R:136 froll.R:138 mergelist.R:61
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'%s' must be TRUE or FALSE"
-msgstr "%s 必须为 TRUE 或 FALSE"
+msgstr "'%s' 必须为 TRUE 或 FALSE"
 
 #: froll.R:157 froll.R:158
 #, c-format
@@ -2596,28 +2579,24 @@ msgid "'n' is deprecated in frollapply, use 'N' instead"
 msgstr ""
 
 #: frollapply.R:138
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'by.column' must be TRUE or FALSE"
-msgstr "'fromLast' 必须为 TRUE 或 FALSE"
+msgstr "'by.column' 必须为 TRUE 或 FALSE"
 
 #: frollapply.R:140
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'adaptive' must be TRUE or FALSE"
-msgstr "'fromLast' 必须为 TRUE 或 FALSE"
+msgstr "'adaptive' 必须为 TRUE 或 FALSE"
 
 #: frollapply.R:142
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
+#, c-format
 msgid "'partial' must be TRUE or FALSE"
-msgstr "'fromLast' 必须为 TRUE 或 FALSE"
+msgstr "'partial' 必须为 TRUE 或 FALSE"
 
 #: frollapply.R:144
-#, fuzzy, c-format
-#| msgid "%s must be TRUE or FALSE"
+#, c-format
 msgid "'give.names' must be TRUE or FALSE"
-msgstr "%s 必须为 TRUE 或 FALSE"
+msgstr "'give.names' 必须为 TRUE 或 FALSE"
 
 #: frollapply.R:146
 #, fuzzy, c-format
@@ -3073,10 +3052,9 @@ msgid "`by.x` and `by.y` must be of same length."
 msgstr "`by.x`和`by.y`必须是相同的长度。"
 
 #: merge.R:34
-#, fuzzy, c-format
-#| msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
+#, c-format
 msgid "Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored."
-msgstr "参数`by`和`by.x/by.y`都提供了值。参数`by`的值会被忽略。"
+msgstr "参数`by`和`by.x`/`by.y`都提供了值。参数`by`的值会被忽略。"
 
 #: merge.R:37
 #, c-format
@@ -3104,10 +3082,9 @@ msgid "merge.data.table() received %s and %s, all of which will be ignored: %s"
 msgstr ""
 
 #: mergelist.R:52
-#, fuzzy, c-format
-#| msgid "'data' must be a data.table"
+#, c-format
 msgid "'x' must be data.table"
-msgstr "'data' 必须是一个 data.table"
+msgstr "'x' 必须是一个 data.table"
 
 #: mergelist.R:54
 #, fuzzy, c-format
@@ -3158,10 +3135,9 @@ msgid ""
 msgstr ""
 
 #: mergelist.R:266 mergelist.R:304
-#, fuzzy, c-format
-#| msgid "'x' must be a list"
+#, c-format
 msgid "'%s' must be a list"
-msgstr "'x' 必须是一个 list"
+msgstr "'%s' 必须是一个 list"
 
 #: mergelist.R:268
 #, fuzzy, c-format
@@ -3257,15 +3233,7 @@ msgid "TRANSLATION CHECK"
 msgstr "翻译检查"
 
 #: onAttach.R:29
-#, fuzzy, c-format
-#| msgid ""
-#| "**********\n"
-#| "Running data.table in English; package support is available in English "
-#| "only. When searching for online help, be sure to also check for the "
-#| "English error message. This can be obtained by looking at the po/R-"
-#| "<locale>.po and po/<locale>.po files in the package source, where the "
-#| "native language and English error messages can be found side-by-side\n"
-#| "**********"
+#, c-format
 msgid ""
 "**********\n"
 "Running data.table in English; package support is available in English only. "
@@ -3278,7 +3246,7 @@ msgstr ""
 "**********\n"
 "用中文执行data.table。软件包只提供英语支持。当在在线搜索帮助时，也要确保检查"
 "英语错误信息。这个可以通过查看软件包源文件中的po/R-zh_CN.po和po/zh_CN.po文件"
-"获得，这个文件可以并排找到母语和英语错误信息。\n"
+"获得，这个文件可以并排找到母语和英语错误信息。%s\n"
 "**********"
 
 #: onAttach.R:30
@@ -4205,15 +4173,11 @@ msgid_plural "  Found %d non-equi groups ...\n"
 msgstr[0] ""
 
 #: data.table.R:745
-#, fuzzy
-#| msgid "column(s) not removed because not found: %s"
 msgid "column not removed because not found: %s"
 msgid_plural "columns not removed because not found: %s"
 msgstr[0] "列未被删除因为不存在：%s"
 
 #: data.table.R:760
-#, fuzzy
-#| msgid "column(s) not found: %s"
 msgid "column not found: %s"
 msgid_plural "columns not found: %s"
 msgstr[0] "列不存在: %s"
@@ -4236,8 +4200,6 @@ msgstr[0] ""
 "筛选后的子集）中所包含行数相同。"
 
 #: fmelt.R:27
-#, fuzzy
-#| msgid "Pattern(s) not found: [%s]"
 msgid "Pattern not found: [%s]"
 msgid_plural "Patterns not found: [%s]"
 msgstr[0] "未找到下列 pattern：[%s]"
@@ -4288,16 +4250,11 @@ msgid_plural "%d variables not shown: %s\n"
 msgstr[0] ""
 
 #: setops.R:46
-#, fuzzy
-#| msgid "unsupported column type(s) found in x or y: %s"
 msgid "unsupported column type found in x or y: %s"
 msgid_plural "unsupported column types found in x or y: %s"
 msgstr[0] "找到不支持的列类型在 x 或 y: %s"
 
 #: test.data.table.R:288
-#, fuzzy
-#| msgid ""
-#| "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s."
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
 msgid_plural ""
 "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
