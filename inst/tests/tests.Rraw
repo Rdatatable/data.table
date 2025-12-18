@@ -21839,6 +21839,9 @@ DT[, V1000 := 20:1]
 test(2343.1, forderv(DT, by=names(DT), sort=FALSE, retGrp=TRUE), forderv(DT, by=c("V1", "V1000"), sort=FALSE, retGrp=TRUE))
 x = c(rep(0, 7e5), 1e6)
 test(2343.2, forderv(list(x)), integer(0))
+# resolve tail recursion on long character vectors with common prefix #7462
+x = paste0(strrep("a", 1e5L), 2:1)
+test(2343.3, forderv(x), INT(2, 1))
 
 # Keep key when new column added before existing key in j
 # Incorrect key can lead to incorrect join result #7364
@@ -21885,3 +21888,11 @@ foo   = function(dt) { dt[,b:=4:6]; return(7:9) }
 DT = data.table(a=1:3)
 test(2349, DT[,c:=outer(DT)], data.table(a=1:3, b=4:6, c=7:9))
 test(2349.1, DT[,c:=foo(DT)], data.table(a=1:3, b=4:6, c=7:9))
+rm(inner, outer, foo, DT)
+
+# exercise rehashing during forder, #6694
+strings = as.character(6145:1)
+DT = data.table(x = strings)
+setorder(DT, x)
+test(2350, DT[["x"]], sort.int(strings, method='radix'))
+rm(DT, strings)

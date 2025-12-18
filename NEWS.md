@@ -338,7 +338,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 19. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
-20. `forderv` could segfault on keys with long runs of identical bytes (e.g., many duplicate columns) because the single-group branch tail-recursed radix-by-radix until the C stack ran out, [#4300](https://github.com/Rdatatable/data.table/issues/4300). This is a major problem since sorting is extensively used in `data.table`. Thanks @quantitative-technologies for the report and @ben-schwen for the fix.
+20. `forderv` could segfault on keys with long runs of identical bytes because the single-group branch tail-recursed radix-by-radix until the C stack ran out. This affected both integer/numeric sorting with many duplicate columns ([#4300](https://github.com/Rdatatable/data.table/issues/4300)) and character sorting with long common prefixes ([#7462](https://github.com/Rdatatable/data.table/issues/7462)). This is a major problem since sorting is extensively used in `data.table`. Thanks @quantitative-technologies and @DavisVaughan for the reports, and @ben-schwen for the fix.
 
 21. `[` now preserves existing key(s) when new columns are added before them, instead of incorrectly setting a new column as key, [#7364](https://github.com/Rdatatable/data.table/issues/7364). Thanks @czeildi for the bug report and the fix.
 
@@ -349,6 +349,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 24. Rolling functions now ensure there is no nested parallelism. It could have happened for vectorized input and `adaptive=TRUE`, [#7352](https://github.com/Rdatatable/data.table/issues/7352). Thanks @jangorecki for the fix.
 
 25. By-group operations on missing rows (e.g. `foo[c(i, NA), bar, by=grp]`) now avoid leaving in data from the previous groups, [#7442](https://github.com/Rdatatable/data.table/issues/7442). Thanks @aitap for the report and the fix.
+
+26. Grouping by a factor with many groups is now fast again, fixing a timing regression introduced in [#6890](https://github.com/Rdatatable/data.table/pull/6890) where UTF-8 coercion and level remapping were performed unnecessarily, [#7404](https://github.com/Rdatatable/data.table/issues/7404). Thanks @ben-schwen for the report and fix.
 
 ### NOTES
 
@@ -376,6 +378,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
 8. Retain important information in the error message about the source of the error when `i=` fails, e.g. pointing to `charToDate()` failing in `DT[date_col == "20250101"]`, [#7444](https://github.com/Rdatatable/data.table/issues/7444). Thanks @jan-swissre for the report and @MichaelChirico for the fix.
+
+9. Internal use of declared non-API R functions `SETLENGTH`, `TRUELENGTH`, `SET_TRUELENGTH`, and `SET_GROWABLE_BIT` has been eliminated. Most usages have been migrated to R's experimental resizable vectors API (thanks to @ltierney, introduced in R 4.6.0, backported for older R versions), [#7451](https://github.com/Rdatatable/data.table/pull/7451). Uses of `TRUELENGTH` for marking seen items during grouping and binding operations (aka free hash table trick) have been replaced with proper hash tables, [#6694](https://github.com/Rdatatable/data.table/pull/6694). The new hash table implementation uses linear probing with power of 2 tables and automatic resizing. Additionally, `chmatch()` now hashes the needle (`x`) instead of the haystack (`table`) when `length(table) >> length(x)`, significantly improving performance for lookups into large tables. We've benchmarked the refactored code and find the performance satisfactory, but please do report any edge case performance regressions we may have missed. Thanks to @aitap, @ben-schwen, @jangorecki and @HughParsonage for implementation and reviews.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 
