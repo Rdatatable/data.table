@@ -16,6 +16,7 @@
 #if R_VERSION < R_Version(4, 5, 0)
 #  define isDataFrame(x) isFrame(x) // #6180
 #  define CLEAR_ATTRIB(x) SET_ATTRIB(x, R_NilValue)
+#  define ANY_ATTRIB(x) (!(isNull(ATTRIB(x))))
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT

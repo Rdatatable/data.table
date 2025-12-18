@@ -22,11 +22,11 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
     internal_error(__func__, "'to' must be integer() already"); // # nocov
   if (isNull(from))
     return;
-  SEXP t = ATTRIB(to), f = ATTRIB(from);
-  if (isNull(t)) // target has no attributes -> overwrite
-    SET_ATTRIB(to, shallow_duplicate(f));
+  if (!ANY_ATTRIB(to)) // target has no attributes -> overwrite
+    SHALLOW_DUPLICATE_ATTRIB(to, from);
   else {
-    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t)); // traverse to end of attributes list of to
+    SEXP t = ATTRIB(to), f = ATTRIB(from);
+    for (; CDR(t) != R_NilValue; t = CDR(t)); // traverse to end of attributes list of to
     SETCDR(t, shallow_duplicate(f));
   }
 }
