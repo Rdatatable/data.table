@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <time.h>
 
+static SEXP attribWalker(SEXP key, SEXP val, void *ctx);
+
 static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
@@ -54,13 +56,16 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
       list_el = VECTOR_ELT(x,i);
       if (anySpecialStatic(list_el, specials))
         return true;
-      for(attribs = ATTRIB(list_el); attribs != R_NilValue; attribs = CDR(attribs)) {
-        if (anySpecialStatic(CAR(attribs), specials))
-          return true;  // #4936
-      }
+      if (R_mapAttrib(list_el, attribWalker, specials))
+        return true;  // #4936
     }
   }
   return false;
+}
+
+static SEXP attribWalker(SEXP key, SEXP val, void *specials) {
+  (void)key;
+  return anySpecialStatic(val, specials) ? R_NilValue : NULL;
 }
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg, SEXP showProgressArg)
