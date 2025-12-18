@@ -672,3 +672,20 @@ void R_resizeVector_(SEXP x, R_xlen_t newlen) {
   SETLENGTH(x, newlen);
 }
 #endif
+
+#ifdef BACKPORT_MAP_ATTRIB
+SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx) {
+  PROTECT_INDEX i;
+  SEXP a = ATTRIB(x);
+  PROTECT_WITH_INDEX(a, &i);
+
+  SEXP ret = NULL;
+  for (; !isNull(a); REPROTECT(a = CDR(a), i)) {
+    ret = fun(TAG(a), CAR(a), ctx);
+    if (ret) break;
+  }
+
+  UNPROTECT(1);
+  return ret;
+}
+#endif

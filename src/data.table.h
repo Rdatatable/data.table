@@ -105,6 +105,11 @@
   }
 # define R_resizeVector(x, newlen) R_resizeVector_(x, newlen)
 #endif
+// TODO(R>=4.6.0): remove the SVN revision check
+#if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89194
+# define BACKPORT_MAP_ATTRIB
+# define R_mapAttrib(x, fun, ctx) R_mapAttrib_(x, fun, ctx)
+#endif
 
 // init.c
 extern SEXP char_integer64;
@@ -344,6 +349,9 @@ NORET void internal_error(const char *call_name, const char *format, ...);
 SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen);
 SEXP R_duplicateAsResizable_(SEXP x);
 void R_resizeVector_(SEXP x, R_xlen_t newlen);
+#endif
+#ifdef BACKPORT_MAP_ATTRIB
+SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx);
 #endif
 
 // types.c
