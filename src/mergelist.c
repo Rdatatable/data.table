@@ -84,7 +84,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
       key = getAttrib(thisx, sym_sorted);
     UNPROTECT(protecti); // thisnames, thisxcol
   }
-  if (isNull(ATTRIB(index)))
+  if (!ANY_ATTRIB(index))
     setAttrib(ans, sym_index, R_NilValue);
   setAttrib(ans, R_NamesSymbol, names);
   setAttrib(ans, sym_sorted, key);
