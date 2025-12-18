@@ -2227,7 +2227,7 @@ msgid ""
 "To read %s files directly, fread() requires 'R.utils' package which cannot "
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
 msgstr ""
-"想要直接读取 gz 和 bz2 文件, fread() 需要 'R.utils' 包.请用 "
+"想要直接读取 %s 文件, fread() 需要 'R.utils' 包.请用 "
 "'install.packages('R.utils')'安装 'R.utils' 包."
 
 #: fread.R:127
