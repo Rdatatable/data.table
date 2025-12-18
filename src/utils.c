@@ -625,7 +625,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
     SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
     nprotect += 2;
     // swipe attributes from x
-    SET_ATTRIB(x, R_NilValue);
+    CLEAR_ATTRIB(x);
     setAttrib(x, R_NamesSymbol, names);
     setAttrib(x, R_ClassSymbol, klass);
     setAttrib(x, R_LevelsSymbol, levels);
