@@ -308,7 +308,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           error(_("RHS of := is NULL during grouped assignment, but it's not possible to delete parts of a column."));
         int vlen = length(RHS);
         if (vlen>1 && vlen!=grpn) {
-          SEXP colname = isNull(VECTOR_ELT(dt, INTEGER(lhs)[j]-1)) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
+          SEXP colname = INTEGER(lhs)[j] > LENGTH(dt) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
           error(_("Supplied %d items to be assigned to group %d of size %d in column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."),vlen,i+1,grpn,CHAR(colname));
           // e.g. in #91 `:=` did not issue recycling warning during grouping. Now it is error not warning.
         }
@@ -316,9 +316,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       int n = LENGTH(VECTOR_ELT(dt, 0));
       for (int j=0; j<length(lhs); ++j) {
         int colj = INTEGER(lhs)[j]-1;
-        target = VECTOR_ELT(dt, colj);
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
-        if (isNull(target)) {
+        if (colj >= LENGTH(dt)) {
           // first time adding to new column
           if (R_maxLength(dt) < colj+1) internal_error(__func__, "Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point"); // # nocov
           target = PROTECT(allocNAVectorLike(RHS, n));
@@ -332,7 +331,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           UNPROTECT(1);
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
-        }
+        } else
+          target = VECTOR_ELT(dt, colj);
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(RHS, specials)) {  // see comments in anySpecialStatic()
           RHS = PROTECT(copyAsPlain(RHS));

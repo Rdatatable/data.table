@@ -352,7 +352,9 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 26. Grouping by a factor with many groups is now fast again, fixing a timing regression introduced in [#6890](https://github.com/Rdatatable/data.table/pull/6890) where UTF-8 coercion and level remapping were performed unnecessarily, [#7404](https://github.com/Rdatatable/data.table/issues/7404). Thanks @ben-schwen for the report and fix.
 
-27. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
+27. `dogroups()` no longer reads beyond the resized end of over-allocated data.table list columns, [#7486](https://github.com/Rdatatable/data.table/issues/7486). While this didn't crash in practice, it is now explicitly checked for in recent R versions (r89198+). Thanks @TimTaylor and @aitap for the report and @aitap for the fix.
+
+28. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
 
 ### NOTES
 
