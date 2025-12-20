@@ -3091,11 +3091,11 @@ rowidv = function(x, cols=seq_along(x), prefix=NULL) {
 }
 
 # FR #686
-rleid = function(..., prefix=NULL) {
-  rleidv(list(...), prefix=prefix)
+rleid = function(..., prefix=NULL,all=FALSE) {
+  rleidv(list(...), prefix=prefix, all=all)
 }
 
-rleidv = function(x, cols=seq_along(x), prefix=NULL) {
+rleidv = function(x, cols=seq_along(x), prefix=NULL, all = FALSE) {
   if (!is.null(prefix) && (!is.character(prefix) || length(prefix) != 1L))
     stopf("'prefix' must be NULL or a character vector of length 1.")
   if (is.atomic(x)) {
@@ -3109,6 +3109,9 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   cols = colnamesInt(x, cols, check_dups=FALSE)
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
+  if (isTRUE(all)) {
+    return(c(x, list(ids)))
+  }
   ids
 }
 
