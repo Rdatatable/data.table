@@ -21896,3 +21896,8 @@ DT = data.table(x = strings)
 setorder(DT, x)
 test(2350, DT[["x"]], sort.int(strings, method='radix'))
 rm(DT, strings)
+
+# do remove columns in freshly unserialized data.tables, #7488
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+test(2351, DT[,carb:=NULL], as.data.table(mtcars)[,carb:=NULL])
+rm(DT)

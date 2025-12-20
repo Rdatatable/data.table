@@ -1191,8 +1191,9 @@ replace_dot_alias = function(e) {
           if (any(m<1L | ncol(x)<m)) stopf("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
         } else
           stopf("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
+        ok<-selfrefok(x, verbose=FALSE)
         if (!anyNA(m)) {
-          # updates by reference to existing columns
+          # updates by reference to existing columns, or deletions
           cols = as.integer(m)
           newnames=NULL
           if (identical(irows, integer())) {
@@ -1221,7 +1222,7 @@ replace_dot_alias = function(e) {
           # don't pass verbose to selfrefok here -- only activated when
           #   ok=-1 which will trigger setalloccol with verbose after
           #   the jval = eval(jsub, ...)
-          if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
+          if (ok==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
             if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
         }
       }
@@ -1395,41 +1396,49 @@ replace_dot_alias = function(e) {
           newnames = setdiff(lhs, names_x)
           m[is.na(m)] = ncol(x) + seq_along(newnames)
           cols = as.integer(m)
-          # ok <- selfrefok above called without verbose -- only activated when
-          #   ok=-1 which will trigger setalloccol with verbose in the next
-          #   branch, which again calls _selfrefok and returns the message then
-          # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
-          if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
-            DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
-            n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
-            # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
-            name = substitute(x)
-            if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-              catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
-              # #1729 -- copying to the wrong environment here can cause some confusion
-              if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
-
-              # Verbosity should not issue warnings, so cat rather than warning.
-              # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
-
-              # TO DO ... comments moved up from C ...
-              # Note that the NAMED(dt)>1 doesn't work because .Call
-              # always sets to 2 (see R-ints), it seems. Work around
-              # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-              # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-              # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
-              # don't mind.
-            }
-            setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
-            if (is.name(name)) {
-              assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (.is_simple_extraction(name)) {
-              .reassign_extracted_table(name, x)
-            } # TO DO: else if env$<- or list$<-
-          }
         }
       } else if (is.numeric(lhs)) {
         lhs = names_x[m]
+      }
+      # ok <- selfrefok above called without verbose -- only activated when
+      #   ok=-1 which will trigger setalloccol with verbose in the next
+      #   branch, which again calls _selfrefok and returns the message then
+      # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
+      if (
+        (
+          !is.null(newnames) || # adding new columns
+          is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null))) # removing columns
+        ) && (
+          (ok<1L) || # unsafe to resize
+          (truelength(x) < ncol(x)+length(newnames)) # not enough space for new columns
+        )
+      ) {
+        DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
+        n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
+        # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
+        name = substitute(x)
+        if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
+          catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
+          # #1729 -- copying to the wrong environment here can cause some confusion
+          if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+
+          # Verbosity should not issue warnings, so cat rather than warning.
+          # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
+
+          # TO DO ... comments moved up from C ...
+          # Note that the NAMED(dt)>1 doesn't work because .Call
+          # always sets to 2 (see R-ints), it seems. Work around
+          # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+          # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+          # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+          # don't mind.
+        }
+        setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+        if (is.name(name)) {
+          assign(as.character(name),x,parent.frame(),inherits=TRUE)
+        } else if (.is_simple_extraction(name)) {
+          .reassign_extracted_table(name, x)
+        } # TO DO: else if env$<- or list$<-
       }
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
