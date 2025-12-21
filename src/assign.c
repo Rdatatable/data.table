@@ -257,21 +257,25 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
 }
 
 struct attrib_name_ctx {
-  hashtab *indexNames;
-  SEXP index, assignedNames;
-  R_xlen_t len;
+  hashtab *indexNames; // stores a 1/0 mark for every CHARSXP index name
+  R_xlen_t indexNamesLen; // how much memory to allocate for the hash?
+  SEXP index; // attr(DT, "index")
+  SEXP assignedNames; // STRSXP vector of variable names just assigned
   bool verbose;
 };
+
+// Mark each CHARSXP attribute name with a 1 inside the hash, or count them to find out the allocation size.
 static SEXP getOneAttribName(SEXP key, SEXP val, void *ctx_) {
   (void)val;
   struct attrib_name_ctx *ctx = ctx_;
   if (ctx->indexNames)
     hash_set(ctx->indexNames, PRINTNAME(key), 1);
   else
-    ctx->len++;
+    ctx->indexNamesLen++;
   return NULL;
 }
 
+// For a given index, find out if it sorts a column that has just been assigned. If so, shorten the index (if an equivalent one doesn't already exist) or remove it altogether.
 static SEXP fixIndexAttrib(SEXP tag, SEXP value, void *ctx_) {
   const struct attrib_name_ctx *ctx = ctx_;
 
@@ -644,7 +648,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (index != R_NilValue) {
     struct attrib_name_ctx ctx = { 0, };
     R_mapAttrib(index, getOneAttribName, &ctx); // how many attributes?
-    hashtab *h = hash_create(ctx.len);
+    hashtab *h = hash_create(ctx.indexNamesLen);
     PROTECT(h->prot);
     ctx.indexNames = h;
     R_mapAttrib(index, getOneAttribName, &ctx); // now remember the names
