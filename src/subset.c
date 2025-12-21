@@ -4,7 +4,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 // Used here by subsetDT() and by dogroups.c
 {
   const int n = length(idx);
-  if (length(ans)!=n) error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);
+  if (length(ans)!=n) internal_error(__func__, "length(ans)==%d n=%d", length(ans), n); // # nocov
 
   const int *restrict idxp = INTEGER(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied
@@ -49,17 +49,17 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 
   switch(TYPEOF(source)) {
   case INTSXP: case LGLSXP: {
-    int *sp = INTEGER(source);
+    const int *sp = INTEGER_RO(source);
     int *ap = INTEGER(ans);
     PARLOOP(NA_INTEGER)
   } break;
   case REALSXP : {
     if (INHERITS(source, char_integer64)) {
-      int64_t *sp = (int64_t *)REAL(source);
+      const int64_t *sp = (int64_t *)REAL_RO(source);
       int64_t *ap = (int64_t *)REAL(ans);
       PARLOOP(INT64_MIN)
     } else {
-      double *sp = REAL(source);
+      const double *sp = REAL_RO(source);
       double *ap = REAL(ans);
       PARLOOP(NA_REAL)
     }
@@ -79,7 +79,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
       for (int i=0; i<n; i++) {                     SET_STRING_ELT(ans, i, sp[idxp[i]-1]); }
     }
   } break;
-  case VECSXP : {
+  case VECSXP: case EXPRSXP: {
     const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
       for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }
@@ -88,26 +88,26 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     }
   } break;
   case CPLXSXP : {
-    Rcomplex *sp = COMPLEX(source);
+    const Rcomplex *sp = COMPLEX_RO(source);
     Rcomplex *ap = COMPLEX(ans);
     PARLOOP(NA_CPLX)
   } break;
   case RAWSXP : {
-    Rbyte *sp = RAW(source);
+    const Rbyte *sp = RAW_RO(source);
     Rbyte *ap = RAW(ans);
     PARLOOP(0)
   } break;
-  default :
-    error(_("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug."), type2char(TYPEOF(source)));  // # nocov
+  default : // # nocov
+    internal_error(__func__, "column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
   }
 }
 
 const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
 // set anyNA for branchless subsetVectorRaw
-// error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
+// error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called earlier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
+  if (!isInteger(idx)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
   int *idxp = INTEGER(idx), n=LENGTH(idx);
@@ -132,12 +132,17 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
   // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
   // allowNAArg is false when nomatch=NULL #3109 #3666
 
-  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
-  if (!isInteger(maxArg) || length(maxArg)!=1) error(_("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton"), type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
-  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error(_("Internal error: allowOverMax must be TRUE/FALSE"));  // # nocov
+  if (!isInteger(idx))
+    internal_error(__func__, "'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1)
+    internal_error(__func__, "'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
+  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL)
+    internal_error(__func__, "allowOverMax must be TRUE/FALSE");  // # nocov
   const int max = INTEGER(maxArg)[0], n=LENGTH(idx);
-  if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
-  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL) error(_("Internal error: allowNAArg must be TRUE/FALSE"));  // # nocov
+  if (max<0)
+    internal_error(__func__, "max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
+  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL)
+    internal_error(__func__, "allowNAArg must be TRUE/FALSE");  // # nocov
   const bool allowNA = LOGICAL(allowNAArg)[0];
 
   const int *idxp = INTEGER(idx);
@@ -210,7 +215,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
-    bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
+    bool *keep = (bool *)R_alloc(max, sizeof(*keep));    // 4 times less memory that INTSXP in src/main/subscript.c
     for (int i=0; i<max; i++) keep[i] = true;
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
@@ -267,11 +272,12 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 *   2) Originally for subsetting vectors in fcast and now the beginnings of [.data.table ported to C
 *   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
 *   4) Could do it other ways but may as well go to C now as we were going to do that anyway
+*
+*  OpenMP is used here to parallelize the loops that perform the subsetting of vectors, with conditional checks and filtering of data. 
 */
-
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -281,17 +287,17 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
-    if (err!=NULL) error("%s", err);
+    if (err!=NULL) error("%s", err); // # notranslate
   }
 
-  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
-  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+  int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
+  SEXP ans = PROTECT(R_allocResizableVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here
 
   // user-defined and superclass attributes get copied as from v1.12.0
   copyMostAttrib(x, ans);
@@ -299,8 +305,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
   // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
 
-  SET_TRUELENGTH(ans, LENGTH(ans));
-  SETLENGTH(ans, LENGTH(cols));
+  R_resizeVector(ans, LENGTH(cols));
   int ansn;
   if (isNull(rows)) {
     ansn = nrow;
@@ -323,9 +328,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
       subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
-  SET_TRUELENGTH(tmp, LENGTH(tmp));
-  SETLENGTH(tmp, LENGTH(cols));
+  SEXP tmp = PROTECT(R_allocResizableVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
+  R_resizeVector(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
   subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
 
@@ -339,7 +343,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chin(key, getAttrib(ans,R_NamesSymbol))); nprotect++;
+    SEXP innames = PROTECT(getAttrib(ans,R_NamesSymbol)); nprotect++;
+    SEXP in = PROTECT(chin(key, innames)); nprotect++;
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0 || !orderedSubset) {
@@ -361,13 +366,12 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
   if (isNull(x))
-    error(_("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column."));      // # nocov
+    internal_error(__func__, "NULL can not be subset. It is invalid for a data.table to contain a NULL column");      // # nocov
   if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
-    error(_("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range"));  // # nocov
+    internal_error(__func__, "idx values negatives, zeros or out-of-range");  // # nocov
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
   subsetVectorRaw(ans, x, idx, anyNA);
   UNPROTECT(nprotect);
   return ans;
 }
-

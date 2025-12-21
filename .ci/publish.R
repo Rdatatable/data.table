@@ -27,7 +27,7 @@ format.bins <- function(ver, bin_ver, cran.home, os.type, pkg, version, repodir)
     plat.path = "windows"
   } else if (os.type=="macosx") {
     ext = "tgz"
-    plat.path = "macosx/el-capitan"
+    plat.path = "macosx/big-sur-arm64"
   } else stop("format.bins only valid for 'windows' or 'macosx' os.type")
   file = sprintf("bin/%s/contrib/%s/%s_%s.%s", plat.path, bin_ver, pkg, version, ext)
   fe = file.exists(file.path(repodir, file))
@@ -163,7 +163,7 @@ r.ver <- function(x) {
   v = tmp[3L]
   if (identical(v, "rel")) "r-release"
   else if (identical(v, "dev")) "r-devel"
-  else if (identical(v, "old")) "r-oldrel"
+  else if (identical(v, "old") || identical(v, "ancient")) "r-oldrel"
   else {
     if (grepl("\\D", v)) stop("third word in test job name must be rel/dev/old or numbers of R version")
     paste0("r-", paste(strsplit(v, "")[[1L]], collapse="."))

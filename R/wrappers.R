@@ -2,20 +2,27 @@
 # Very small (e.g. one line) R functions that just call C.
 # One file wrappers.R to avoid creating lots of small .R files.
 
-fcoalesce   = function(...) .Call(Ccoalesce, list(...), FALSE)
-setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
+fcoalesce   = function(..., nan=NA) .Call(Ccoalesce, list(...), FALSE, nan_is_na(nan))
+setcoalesce = function(..., nan=NA) .Call(Ccoalesce, list(...), TRUE, nan_is_na(nan))
 
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
-fcase   = function(..., default=NA) .Call(CfcaseR, default, parent.frame(), as.list(substitute(list(...)))[-1L])
+fcase   = function(..., default=NA) {
+  # TODO(R>=3.5.0): Use ...length() to avoid the need for suppressWarnings() here
+  default_condition = suppressWarnings(rep(TRUE, length(switch(1L, ...)))) # better than ..1/..elt(1): won't fail for empty fcase()
+  arg_list = as.list(substitute(list(..., default_condition, default)))[-1L]
+  .Call(CfcaseR, parent.frame(), arg_list)
+}
 
-colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
+colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(CcolnamesInt, x, cols, check_dups, skip_absent)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-isRealReallyInt = function(x) .Call(CisRealReallyIntR, x)
-isReallyReal = function(x) .Call(CisReallyReal, x)
+fitsInInt32 = function(x) .Call(CfitsInInt32R, x)
+fitsInInt64 = function(x) .Call(CfitsInInt64R, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
 
 topn = function(x, n, na.last=TRUE, decreasing=FALSE, sorted=FALSE) .Call(Ctopn, x, as.integer(n), na.last, decreasing, sorted)
 quickn = function(x, n, na.last=TRUE, decreasing=FALSE) .Call(Cquickn, x, as.integer(n), na.last, decreasing)
+frev   = function(x) .Call(Cfrev, x, TRUE)
+setfrev = function(x) invisible(.Call(Cfrev, x, FALSE))

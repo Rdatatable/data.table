@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r init, include = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -19,7 +23,6 @@ knitr::opts_chunk$set(
  collapse = TRUE
 )
 ```
-
 
 ## Introduction
 
@@ -49,7 +52,7 @@ The problem with this kind of interface is that we cannot easily parameterize th
 
 ### Example
 
-```{r subset_error, error=TRUE}
+```{r subset_error, error=TRUE, purl=FALSE}
 my_subset = function(data, col, val) {
   subset(data, col == val)
 }
@@ -62,16 +65,16 @@ There are multiple ways to work around this problem.
 
 #### Avoid *lazy evaluation*
 
-The easiest workaround is to avoid *lazy evaluation* in the first place, and fall back to less intuitive, more error-prone approaches like `df[["variable"]]`, etc.
+The easiest workaround is to avoid *lazy evaluation* in the first place, and fall back to less intuitive, more error-prone approaches like `df[["variable"]]`, etc. 
 
 ```{r subset_nolazy}
 my_subset = function(data, col, val) {
-  data[data[[col]] == val, ]
+  data[data[[col]] == val & !is.na(data[[col]]), ]
 }
 my_subset(iris, col = "Species", val = "setosa")
 ```
 
-Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary "logical vector"-based subsetting. It works well for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
+Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary "logical vector"-based subsetting. To align with `subset()`, which also drops NAs, we need to include an additional use of `data[[col]]` to catch that. It works well enough for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
 
 #### Use of `parse` / `eval`
 
@@ -88,7 +91,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, Species, "setosa")
 ```
 
-We have to use `deparse(substitute(...))` to catch the actual names of objects passed to function so we can construct the `subset` function call using those original names. Although ths provides unlimited flexibility with relatively low complexity, **use of `eval(parse(...))` should be avoided**. The main reasons are:
+We have to use `deparse(substitute(...))` to catch the actual names of objects passed to function, so we can construct the `subset` function call using those original names. Although this provides unlimited flexibility with relatively low complexity, **use of `eval(parse(...))` should be avoided**. The main reasons are:
 
 - lack of syntax validation
 - [vulnerability to code injection](https://github.com/Rdatatable/data.table/issues/2655#issuecomment-376781159)
@@ -151,7 +154,7 @@ substitute2(
 )
 ```
 
-We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced.. We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
+We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced. We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
 
 Now, to use substitution inside `[.data.table`, we don't need to call the `substitute2` function. As it is now being used internally, all we have to do is to provide `env` argument, the same way as we've provided it to the `substitute2` function in the example above. Substitution can be applied to the `i`, `j` and `by` (or `keyby`) arguments of the `[.data.table` method. Note that setting the `verbose` argument to `TRUE` can be used to print expressions after substitution is applied. This is very useful for debugging.
 
@@ -199,6 +202,33 @@ DT[filter_col %in% filter_val,
      filter_val = I(c("versicolor", "virginica")),
      by_col =  "Species"
   )]
+```
+
+### Substitute functions
+
+A tiny clarification may be useful on how we can substitute a function name in an expression.
+Note that providing `outer="sqrt"` (string) vs. `outer=sqrt` (symbol) is very different:
+```{r substitute_fun1, result='hide'}
+DT[, outer(Sepal.Length), env = list(outer="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: sqrt(Sepal.Length)
+## DT[, sqrt(Sepal.Length)]
+
+DT[, outer(Sepal.Length), env = list(outer=sqrt), verbose=TRUE]
+#Argument 'j' after substitute: .Primitive("sqrt")(Sepal.Length)
+## DT[, .Primitive("sqrt")(Sepal.Length)]
+```
+And while `.Primitive("sqrt")(Sepal.Length)` still works, it is almost never the desired form.
+
+Even more importantly, if the symbol form is meant to be used, then it can, and should, be used directly in the expression, as there is no need for substitution.
+```{r substitute_fun2, result='hide'}
+DT[, sqrt(Sepal.Length)]
+```
+
+If function name to be substituted needs to be namespace-qualified then namespace and function name can be substituted as any other symbol in the expression:
+```{r substitute_fun3, result='hide', eval=FALSE}
+DT[, ns::fun(Sepal.Length), env = list(ns="base", fun="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: base::sqrt(Sepal.Length)
+## DT[, base::sqrt(Sepal.Length)]
 ```
 
 ### Substitute variables and character values
@@ -288,7 +318,7 @@ DT[, j,  # the same as above but accepts character vector
 
 Now let's try to pass a list of symbols, rather than list call to those symbols. We'll use `I()` to escape automatic _enlist_-ing but, as this will also turn off character to symbol conversion, we also have to use `as.name`.
 
-```{r splice_not, error=TRUE}
+```{r splice_not, error=TRUE, purl=FALSE}
 DT[, j,  # list of symbols
    env = I(list(j = lapply(cols, as.name))),
    verbose = TRUE]
@@ -371,6 +401,42 @@ j = as.call(c(
 ))
 print(j)
 DT[, j, env = list(j = j)]
+```
+
+### Common mistakes
+
+It is important to understand the difference between passing an object and a name that points to an object. See the verbose output of following examples.
+
+```{r obj_vs_objname}
+DT[, fun(Petal.Width), env = list(fun = mean), verbose=TRUE]
+DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
+```
+
+Users will usually want to substitute the function name rather than inserting the actual function body. Therefore, the second approach (passing a character string) is often preferred.
+
+In case of any doubts on the `env` interface functioning, set `verbose = TRUE` to inspect how expressions are resolved internally.
+
+### Use `env` argument from inside another function
+
+It was a design decision that `env` argument will follow _Standard Evaluation_ (SE) rules, i.e., values passed to `env` are evaluated in their original scope as-is. For more info on the topic see [R Language manual: Computing on the language](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Computing-on-the-language)). As a result, **using `env` argument from a function does not require any special handling**. It also means that the `.()` alias for a `list()`, _a la_ `env = .(.col="Petal.Length")`, will not work; use `env = list(.col="Petal.Length")` instead.
+
+```{r env_se}
+fun = function(x, col.mean) {
+  stopifnot(is.character(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean="Petal.Length")
+```
+
+If the outer function itself follows NSE (Non-Standard Evaluation) rules, then it has to resolve language objects the same way as when passing its arguments to any other SE function.
+
+```{r env_nse}
+fun = function(x, col.mean) {
+  col.mean = substitute(col.mean)
+  stopifnot(is.name(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean=Petal.Length)
 ```
 
 ## Retired interfaces

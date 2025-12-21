@@ -17,6 +17,12 @@
 #endif
 
 // Ordered hierarchy of types
+// Each of these corresponds to a parser; they must be ordered "preferentially", i.e., if the same
+//   input could be validly parsed as both types t1 and t2, and we "prefer" type t1, t1 must come
+//   before t2. Most commonly, we prefer types using less storage. For example, characters '1.34'
+//   in a file could be double, complex, or string. We prefer double, which uses only 8 bytes.
+//   Similarly, '1234' could be integer, double, integer64, complex, or string. We prefer integer,
+//   which uses only 4 bytes.
 typedef enum {
   NEG = -1,        // dummy to force signed type; sign bit used for out-of-sample type bump management
   CT_DROP = 0,     // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
@@ -25,6 +31,7 @@ typedef enum {
   CT_BOOL8_U,
   CT_BOOL8_T,
   CT_BOOL8_L,
+  CT_BOOL8_Y,      // Y/N-as-bool
   CT_INT32,        // int32_t
   CT_INT64,        // int64_t
   CT_FLOAT64,      // double (64-bit IEEE 754 float)
@@ -36,8 +43,12 @@ typedef enum {
   NUMTYPE          // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
-extern int8_t typeSize[NUMTYPE];
+#define IS_DEC_TYPE(x) ((x) == CT_FLOAT64 || (x) == CT_FLOAT64_EXT || (x) == CT_ISO8601_TIME) // types where dec matters
+
+// Used to govern when coercion is allowed. We cannot coerce to a "lower" type, unless it has the same typeName.
 extern const char typeName[NUMTYPE][10];
+extern int8_t typeSize[NUMTYPE];
+
 extern const long double pow10lookup[301];
 extern const uint8_t hexdigits[256];
 
@@ -112,6 +123,10 @@ typedef struct freadMainArgs
   // non-ASCII, or different open/closing quotation marks are not supported.
   char quote;
 
+  // Character that marks the beginning of a comment. When '\0', comment
+  // parsing is disabled.
+  char comment;
+
   // Is there a header at the beginning of the file?
   // 0 = no, 1 = yes, -128 = autodetect
   int8_t header;
@@ -124,8 +139,10 @@ typedef struct freadMainArgs
   bool skipEmptyLines;
 
   // If True, then rows are allowed to have variable number of columns, and
-  // all ragged rows will be filled with NAs on the right.
-  bool fill;
+  // all ragged rows will be filled with NAs on the right. Supplying integer
+  // argument > 1 results in setting an upper bound estimate for the number
+  // of columns.
+  int fill;
 
   // If True, then emit progress messages during the parsing.
   bool showProgress;
@@ -145,10 +162,17 @@ typedef struct freadMainArgs
   // will become integer.
   bool logical01;
 
+  // If true, then column of Ns and Ys will be read as logical, otherwise it
+  // will become character.
+  bool logicalYN;
+
   bool keepLeadingZeros;
 
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
+
+  // Integer64 remap
+  colType readInt64As;
 
   char _padding[1];
 
@@ -165,7 +189,7 @@ typedef struct ThreadLocalFreadParsingContext
 {
   // Pointer that serves as a starting point for all offsets within the `lenOff`
   // structs.
-  const char *__restrict__ anchor;
+  const char *restrict anchor;
 
   // Output buffers for values with different alignment requirements. For
   // example all `lenOff` columns, `double` columns and `int64` columns will be
@@ -173,9 +197,9 @@ typedef struct ThreadLocalFreadParsingContext
   // be stored in memory buffer `buff1`.
   // Within each buffer the data is stored in row-major order, i.e. in the same
   // order as in the original CSV file.
-  void *__restrict__ buff8;
-  void *__restrict__ buff4;
-  void *__restrict__ buff1;
+  void *restrict buff8;
+  void *restrict buff4;
+  void *restrict buff1;
 
   // Size (in bytes) for a single row of data within the buffers `buff8`,
   // `buff4` and `buff1` correspondingly.
@@ -347,6 +371,11 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx);
  */
 void setFinalNrow(size_t nrows);
 
+
+/**
+ * Called at the end to delete columns added due to too high user guess for fill.
+ */
+void dropFilledCols(int* dropArg, int ndrop);
 
 /**
  * Free any srtuctures associated with the thread-local parsing context.

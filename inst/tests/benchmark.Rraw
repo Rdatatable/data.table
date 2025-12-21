@@ -24,7 +24,7 @@ test(476, nrow(as.matrix(ans)), 2L*N)
 
 # Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
 N = 1e6
-DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 15MB in dev testing, but test with N=1e7
+DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 15MiB in dev testing, but test with N=1e7
 test(603, system.time(sapply(DT,class))["user.self"] < 0.1)
 
 
@@ -60,7 +60,7 @@ test(647, ans1, ans3)
 # this'll error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
 # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
-test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
+test(648, anyNA(ans1$V1) && !any(is.nan(ans1$V1)))
 # test 649 removed as compared 1.1s to 1.1s
 if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"])
 
@@ -81,20 +81,22 @@ test(655, abs(tt1["user.self"] - tt2["user.self"])<2.0)  # unoptimized tt2 takes
 # Test for optimisation of 'order' to 'forder'.
 set.seed(45L)
 DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
-old = options(datatable.optimize=Inf)
-t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
-t2 = system.time(ans2 <- DT[base_order(x,-y)])[['elapsed']]  # not optimized
-test(1241.1, ans1, ans2)
-if (.devtesting) test(1241.2, t1 < t2+0.1)
-# 0.2 < 3.8 on Matt's laptop seems safe enough to test.
-# Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
-# We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
-options(old)
+local({
+  old = options(datatable.optimize=Inf)
+  on.exit(options(old))
+  t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
+  t2 = system.time(ans2 <- DT[base_order(x,-y)])[['elapsed']]  # not optimized
+  test(1241.1, ans1, ans2)
+  if (.devtesting) test(1241.2, t1 < t2+0.1)
+  # 0.2 < 3.8 on Matt's laptop seems safe enough to test.
+  # Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
+  # We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
+})
 
 
 # fwrite showProgress test 1735. Turned off as too long/big for CRAN.
 if (FALSE) {
-  N = 6e8  # apx 6GB
+  N = 6e8  # apx 6GiB
   DT = data.table(C1=sample(100000,N,replace=TRUE), C2=sample(paste0(LETTERS,LETTERS,LETTERS), N, replace=TRUE))
   gc()
   d = "/dev/shm/"
@@ -188,20 +190,24 @@ DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
 test(301.1, nrow(DT[,sum(B),by=C])==100010)
 
 # Test := by key, and that := to the key by key unsets the key. Make it non-trivial in size too.
-options(datatable.optimize=0L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(637.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(637.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(637.3, key(DT[,a:=99L,by=a]), NULL)
-options(datatable.optimize=2L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(638.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(638.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(638.3, key(DT[,a:=99L,by=a]), NULL)
+local({
+  old = options(datatable.optimize=0L); on.exit(options(old))
+  set.seed(1)
+  DT = data.table(a=sample(1:100, 1e6, replace=TRUE), b=sample(1:1000, 1e6, replace=TRUE), key="a")
+  test(637.1, DT[, m:=sum(b), by=a][1:3], data.table(a=1L, b=c(156L, 808L, 848L), m=DT[J(1), sum(b)], key="a"))
+  test(637.2, key(DT[J(43L), a:=99L]), NULL)
+  setkey(DT, a)
+  test(637.3, key(DT[, a:=99L, by=a]), NULL)
+})
+local({
+  options(datatable.optimize=2L); on.exit(options(old))
+  set.seed(1)
+  DT = data.table(a=sample(1:100, 1e6, replace=TRUE), b=sample(1:1000, 1e6, replace=TRUE), key="a")
+  test(638.1, DT[, m:=sum(b), by=a][1:3], data.table(a=1L, b=c(156L, 808L, 848L), m=DT[J(1), sum(b)], key="a"))
+  test(638.2, key(DT[J(43L), a:=99L]), NULL)
+  setkey(DT,a)
+  test(638.3, key(DT[, a:=99L, by=a]), NULL)
+})
 
 # Test X[Y] slowdown, #2216
 # Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
@@ -230,15 +236,15 @@ DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
 before = gc()["Vcells",2]
 for (i in 1:50) DT[, sum(B), by=A]
 after = gc()["Vcells",2]
-test(1157, after < before+3)  # +3 = 3MB
-# Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
+test(1157, after < before+3)  # +3 = 3MiB
+# Before the patch, Vcells grew dramatically from 6MiB to 60MiB. Now stable at 6MiB. Increase 50 to 1000 and it grew to over 1GiB for this case.
 
 # Similar for when dogroups writes less rows than allocated, #2648.
 DT = data.table(k = 1:50, g = 1:20, val = rnorm(1e4))
 before = gc()["Vcells",2]
 for (i in 1:50) DT[ , unlist(.SD), by = 'k']
 after = gc()["Vcells",2]
-test(1158, after < before+3)  # 177.6MB => 179.2MB. Needs to be +3 now from v1.9.8 with alloccol up from 100 to 1024
+test(1158, after < before+3)  # 177.6MiB => 179.2MiB. Needs to be +3 now from v1.9.8 with alloccol up from 100 to 1024
 
 #  fix DT[TRUE, :=] using too much working memory for i, #1249
 if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not compiled with memory profiling enabled
@@ -309,7 +315,7 @@ unlink(f)
 # test no memory leak, #2191 and #2284
 # These take a few seconds each, and it's important to run these on CRAN to check no leak
 gc(); before = gc()["Vcells","(Mb)"]
-for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
+for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MiB
 gc(); after = gc()["Vcells","(Mb)"]
 test(861, after < before+0.5)   # close to 0.0 difference, but 0.5 for safe margin
 gc(); before = gc()["Vcells","(Mb)"]
@@ -325,7 +331,7 @@ test(863, after < before+0.5)
 
 # fread should use multiple threads on single column input.
 # tests 2 threads; the very reasonable limit on CRAN
-# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
+# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MiB currently)
 if (getDTthreads() == 1L) {
   cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
 } else {
@@ -346,7 +352,7 @@ ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
 test(1035.21, ans, ans)
 
 # gc race with altrep in R-devel May 2018, #2866 & #2767, PR#2882
-# This runs with 2 threads in the test suite on CRAN and AppVeyor etc.
+# This runs with 2 threads in the test suite on CRAN and GHA etc.
 # 2 threads are sufficient to fail before the fix.
 N = 20
 DF = data.frame(a=rnorm(N),
@@ -358,7 +364,7 @@ fff = function(aref) {
   ff = lapply(1:5, function(i) {
     DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
   })
-  return(rbindlist(ff))
+  rbindlist(ff)
 }
 for(i in 1:100) {
   f = fff("a")
@@ -367,7 +373,7 @@ for(i in 1:100) {
 gc()  # extra gc() (i.e. two including the one on next line) seems to reduce `after`
       # from 29.7 to 27.2 (exactly `before`). Keeping the extra gc() as no harm.
 after = sum(gc()[, 2])
-test(1912.1, after < before + 10)  # 10MB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
+test(1912.1, after < before + 10)  # 10MiB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
 #
 before = sum(gc()[, 2])
 fff = function(aref) {
@@ -488,7 +494,7 @@ out = capture.output(print(DT))
 tt = out[grep("V",out)]
 tt = unlist(strsplit(gsub(" ","",tt), "V"))
 test(1982.1, tt[1L], "")
-tt = as.integer(tt[tt!=""])
+tt = as.integer(tt[nzchar(tt)])
 test(1982.2, tt, seq_along(tt))
 
 # fread leak, #3292
@@ -498,5 +504,3 @@ start = gc()["Vcells",2]
 for (i in 1:10) data.table::fread("out.tsv")
 end = gc()["Vcells",2]
 test(, end/start < 1.05)
-
-

@@ -1,5 +1,11 @@
 #include "data.table.h"
 
+/*
+  OpenMP is used here to parallelize:
+   - The loops that check if each element of the vector provided is between 
+     the specified lower and upper bounds, for INTSXP and REALSXP types
+   - The checking and handling of undefined values (such as NaNs)
+*/
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, SEXP checkArg) {
   int nprotect = 0;
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
@@ -23,9 +29,22 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   const bool check = LOGICAL(checkArg)[0];
   const bool verbose = GetVerbose();
 
+  // check before potential coercion which ignores methods, #7164
+  if (INHERITS(x, char_integer64)) {
+    if (!INHERITS(lower, char_integer64))
+      error(_("x is integer64 but %s is not. Please align classes."), "lower"); // e.g. between(int64, character, character)
+    if (!INHERITS(upper, char_integer64))
+      error(_("x is integer64 but %s is not. Please align classes."), "upper"); // e.g. between(int64, character, character)
+  } else {
+    if (INHERITS(lower, char_integer64))
+      error(_("x is not integer64 but %s is. Please align classes."), "lower");
+    if (INHERITS(upper, char_integer64))
+      error(_("x is not integer64 but %s is. Please align classes."), "upper");
+  }
+
   if (isInteger(x)) {
-    if ((isInteger(lower) || isRealReallyInt(lower)) &&
-        (isInteger(upper) || isRealReallyInt(upper))) { // #3517 coerce to num to int when possible
+    if ((isInteger(lower) || fitsInInt32(lower)) &&
+        (isInteger(upper) || fitsInInt32(upper))) { // #3517 coerce to num to int when possible
       if (!isInteger(lower)) {
         lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
       }
@@ -84,8 +103,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
 
   case REALSXP:
     if (INHERITS(x, char_integer64)) {
-      if (!INHERITS(lower, char_integer64) || !INHERITS(upper, char_integer64))
-        error(_("x is integer64 but lower and/or upper are not.")); // e.g. between(int64, character, character)
       const int64_t *lp = (int64_t *)REAL(lower);
       const int64_t *up = (int64_t *)REAL(upper);
       const int64_t *xp = (int64_t *)REAL(x);
@@ -111,8 +128,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       }
       if (verbose) Rprintf(_("between parallel processing of integer64 took %8.3fs\n"), omp_get_wtime()-tic);
     } else {
-      if (INHERITS(lower, char_integer64) || INHERITS(upper, char_integer64))
-        error(_("x is not integer64 but lower and/or upper is integer64. Please align classes."));
       const double *lp = REAL(lower);
       const double *up = REAL(upper);
       const double *xp = REAL(x);
@@ -160,9 +175,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     break;
 
   case STRSXP: {
-    const SEXP *lp = STRING_PTR(lower);
-    const SEXP *up = STRING_PTR(upper);
-    const SEXP *xp = STRING_PTR(x);
+    const SEXP *lp = STRING_PTR_RO(lower);
+    const SEXP *up = STRING_PTR_RO(upper);
+    const SEXP *xp = STRING_PTR_RO(x);
     #define LCMP (strcmp(CHAR(ENC2UTF8(l)),CHAR(ENC2UTF8(elem)))<=-open)
     #define UCMP (strcmp(CHAR(ENC2UTF8(elem)),CHAR(ENC2UTF8(u)))<=-open)
     // TODO if all ascii can be parallel, otherwise ENC2UTF8 could allocate
@@ -186,8 +201,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     }
     if (verbose) Rprintf(_("between non-parallel processing of character took %8.3fs\n"), omp_get_wtime()-tic);
   } break;
-  default:
-    error(_("Internal error: between.c unsupported type '%s' should have been caught at R level"), type2char(TYPEOF(x)));  // # nocov
+  default: // # nocov
+    internal_error(__func__, "unsupported type '%s' should have been caught at R level", type2char(TYPEOF(x)));  // # nocov
   }
   UNPROTECT(nprotect);
   return ans;

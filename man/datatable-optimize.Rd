@@ -21,14 +21,17 @@ of these optimisations. They happen automatically.
 Run the code under the \emph{example} section to get a feel for the performance
 benefits from these optimisations.
 
+Note that for all optimizations involving efficient sorts, the caveat mentioned
+in \code{\link{setorder}} applies -- whenever data.table does the sorting,
+it does so in "C-locale". This has some subtle implications; see Examples.
+
 }
 \details{
 \code{data.table} reads the global option \code{datatable.optimize} to figure
 out what level of optimisation is required. The default value \code{Inf}
 activates \emph{all} available optimisations.
 
-At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")}
->= 1, these are the optimisations:
+For \code{getOption("datatable.optimize") >= 1}, these are the optimisations:
 
 \itemize{
     \item The base function \code{order} is internally replaced with
@@ -48,7 +51,7 @@ At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")}
     is an S3 generic and gets slow with many groups.
 }
 
-At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} >= 2, additional optimisations are implemented on top of the optimisations already shown above.
+For \code{getOption("datatable.optimize") >= 2}, additional optimisations are implemented on top of the optimisations already shown above.
 
 \itemize{
 
@@ -66,7 +69,7 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
     (which can get costly with large number of groups) by implementing it
     specifically for a particular function. As a result, it is extremely fast.
 
-    \item In addition to all the functions above, `.N` is also optimised to
+    \item In addition to all the functions above, \code{.N} is also optimised to
     use GForce, when used separately or when combined with the functions mentioned
     above. Note further that GForce-optimized functions must be used separately,
     i.e., code like \code{DT[ , max(x) - min(x), by=z]} will \emph{not} currently
@@ -77,7 +80,7 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
     discussed above.
 }
 
-At optimisation level \code{>= 3}, i.e., \code{getOption("datatable.optimize")} >= 3, additional optimisations for subsets in i are implemented on top of the optimisations already shown above. Subsetting operations are - if possible - translated into joins to make use of blazing fast binary search using indices and keys. The following queries are optimized:
+For \code{getOption("datatable.optimize") >= 3}, additional optimisations for subsets in i are implemented on top of the optimisations already shown above. Subsetting operations are - if possible - translated into joins to make use of blazing fast binary search using indices and keys. The following queries are optimized:
 
 \itemize{
 
@@ -101,11 +104,13 @@ indices set global option \code{options(datatable.use.index = FALSE)}.
 \seealso{ \code{\link{setNumericRounding}}, \code{\link{getNumericRounding}} }
 \examples{
 \dontrun{
+old = options(datatable.optimize = Inf)
+
 # Generate a big data.table with a relatively many columns
 set.seed(1L)
 DT = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
 setDT(DT)[, id := sample(1e5, 5e6, TRUE)]
-print(object.size(DT), units="Mb") # 400MB, not huge, but will do
+print(object.size(DT), units="MiB") # 400MiB, not huge, but will do
 
 # 'order' optimisation
 options(datatable.optimize = 1L) # optimisation 'on'
@@ -151,6 +156,24 @@ system.time(ans1 <- DT[id == 100L]) # index + binary search subset
 system.time(ans2 <- DT[id == 100L]) # only binary search subset
 system.time(DT[id \%in\% 100:500])    # only binary search subset again
 
+# sensitivity to collate order
+old_lc_collate = Sys.getlocale("LC_COLLATE")
+
+if (old_lc_collate == "C") {
+  Sys.setlocale("LC_COLLATE", "")
+}
+DT = data.table(
+  grp = rep(1:2, each = 4L),
+  var = c("A", "a", "0", "1", "B", "b", "0", "1")
+)
+options(datatable.optimize = Inf)
+DT[, .(max(var), min(var)), by=grp]
+# GForce is deactivated because of the ad-hoc column 'tolower(var)',
+#   through which the result for 'max(var)' may also change
+DT[, .(max(var), min(tolower(var))), by=grp]
+
+Sys.setlocale("LC_COLLATE", old_lc_collate)
+options(old)
 }}
 \keyword{ data }
 
