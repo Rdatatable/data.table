@@ -110,7 +110,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   ans = PROTECT(allocVector(INTSXP, n));
   int *restrict ians = INTEGER(ans);
   int *restrict INDEX = malloc(n*sizeof(int));
-  if(INDEX == NULL) error(_("Internal error: Couldn't allocate memory for heap indices.")); // # nocov
+  if (!INDEX) error(_("Internal error: Couldn't allocate memory for heap indices.")); // # nocov
   for (int i=0; i<n; ++i) INDEX[i] = i;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {          HEAPN(int,      INTEGER,    icmp,   sorted); } break;
