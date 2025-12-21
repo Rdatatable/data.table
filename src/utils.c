@@ -1,3 +1,7 @@
+#ifndef _WIN32
+#  include <sys/wait.h>
+#endif
+
 #include "data.table.h"
 
 bool within_int32_repres(double x) {
@@ -672,3 +676,23 @@ void R_resizeVector_(SEXP x, R_xlen_t newlen) {
   SETLENGTH(x, newlen);
 }
 #endif
+
+// # nocov start
+#ifdef _WIN32
+NORET
+#endif
+SEXP is_direct_child(SEXP pids) {
+#ifdef _WIN32
+  internal_error(__func__, "not implemented on Windows");
+#else
+  int *ppids = INTEGER(pids);
+  R_xlen_t len = xlength(pids);
+  SEXP ret = allocVector(LGLSXP, len);
+  int *pret = LOGICAL(ret);
+  siginfo_t info;
+  for (R_xlen_t i = 0; i < len; ++i)
+    pret[i] = waitid(P_PID, ppids[i], &info, WCONTINUED | WEXITED | WNOHANG | WNOWAIT | WSTOPPED) == 0;
+  return ret;
+#endif
+}
+// # nocov end
