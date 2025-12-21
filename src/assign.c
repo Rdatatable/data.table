@@ -357,7 +357,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // newcolnames : add these columns (if any)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
-  R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
+  R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum;
   SEXP targetcol, nullint, s, colnam, tmp, key, index, a, assignedNames;
   bool verbose=GetVerbose();
   int ndelete=0;  // how many columns are being deleted
