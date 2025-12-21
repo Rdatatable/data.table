@@ -339,7 +339,7 @@ static SEXP fixIndexAttrib(SEXP tag, SEXP value, void *ctx_) {
       // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
       // shortened name already present indicates that index needs to be dropped to avoid duplicate indices.
       setAttrib(index, tag, R_NilValue);
-      hash_set(indexNames, tag, 0);
+      hash_set(indexNames, PRINTNAME(tag), 0);
       if (verbose)
         Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
     }
