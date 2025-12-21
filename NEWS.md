@@ -354,6 +354,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 27. `dogroups()` no longer reads beyond the resized end of over-allocated data.table list columns, [#7486](https://github.com/Rdatatable/data.table/issues/7486). While this didn't crash in practice, it is now explicitly checked for in recent R versions (r89198+). Thanks @TimTaylor and @aitap for the report and @aitap for the fix.
 
+28. `fread()` with `col.names=` now correctly applies `drop=` and `select=` using user-provided column names instead of auto-generated names, [#3459](https://github.com/Rdatatable/data.table/issues/3459). Thanks to @malcook for the report and @ben-schwen for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:

@@ -281,7 +281,8 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     }
   }
   // "use either select= or drop= but not both" was checked earlier in freadR
-  SEXP matchNames = isNull(cNamesSxp) ? colNamesSxp : cNamesSxp;
+  bool hasHeader = ncol > 0 && strcmp(CHAR(STRING_ELT(colNamesSxp, 0)), "V1") != 0;
+  SEXP matchNames = (isNull(cNamesSxp) || hasHeader) ? colNamesSxp : cNamesSxp;
   applyDrop(dropSxp, type, ncol, /*dropSource=*/-1, matchNames);
   if (TYPEOF(colClassesSxp) == VECSXP) {  // not isNewList() because that returns true for NULL
     SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
@@ -326,9 +327,23 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   // override col names if user provided them
   if (!isNull(cNamesSxp)) {
     int ncnames = LENGTH(cNamesSxp);
-    if (ncnames != ncol) STOP(_("Can't assign %d names to a %d-column data.table"), ncnames, ncol);
-    for (int i = 0; i < ncol; i++) {
-      SET_STRING_ELT(colNamesSxp, i, STRING_ELT(cNamesSxp, i));
+    if (hasHeader) {
+      int ndrop = 0;
+      for (int i = 0; i < ncol; i++) if (type[i] == CT_DROP) ndrop++;
+      if (ncnames != (ncol - ndrop)) STOP(_("Can't assign %d names to a %d-column data.table"), ncnames, ncol - ndrop);
+      int *selectRankD = selectRank ? INTEGER(selectRank) : NULL;
+      int cname_idx = 0;
+      for (int i = 0; i < ncol; i++) {
+        if (type[i] != CT_DROP) {
+          const int idx = selectRankD ? (selectRankD[i] - 1) : cname_idx++;
+          SET_STRING_ELT(colNamesSxp, i, STRING_ELT(cNamesSxp, idx));
+        }
+      }
+    } else {
+      if (ncnames != ncol) STOP(_("Can't assign %d names to a %d-column data.table"), ncnames, ncol);
+      for (int i = 0; i < ncol; i++) {
+        SET_STRING_ELT(colNamesSxp, i, STRING_ELT(cNamesSxp, i));
+      }
     }
   }
   colClassesAs = NULL; // any coercions we can't handle here in C are deferred to R (to handle with methods::as) via this attribute
