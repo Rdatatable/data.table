@@ -17,7 +17,7 @@
 
 [//]: # (numfocus-fiscal-sponsor-attribution)
 
-The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+The `data.table` project uses a [custom governance agreement](https://rdatatable.gitlab.io/data.table/GOVERNANCE.html) 
 and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
 a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
 pay for developer time, professional services, travel, workshops, and a variety of other needs.
