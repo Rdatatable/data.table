@@ -64,15 +64,12 @@ static char msg[1001];
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
- * We have to trap on exit anyway to call savetl_end().
  * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
  *     R_Calloc/R_Realloc needs to be R_Free'd, even before error() [R-exts$6.1.2]. An oom within R_Calloc causes a previous R_Calloc to leak so R_Calloc would still needs to be trapped anyway.
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
 static void free_ustr(void) {
-  for(int i=0; i<ustr_n; i++)
-    SET_TRUELENGTH(ustr[i],0);
   free(ustr); ustr=NULL;
   ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
 }
@@ -96,7 +93,6 @@ static void cleanup(void) {
   free_ustr();
   if (key!=NULL) { int i=0; while (key[i]!=NULL) free(key[i++]); }  // ==nradix, other than rare cases e.g. tests 1844.5-6 (#3940), and if a calloc fails
   free(key); key=NULL; nradix=0;
-  savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
 // # nocov start
@@ -246,6 +242,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 //   3) no need to maintain o.  Just simply reorder x. No grps or push.
 {
   if (n<=1) return;
+  while (TRUE) {
   int *thiscounts = cradix_counts + radix*256;
   uint8_t lastx = 0;  // the last x is used to test its bin
   for (int i=0; i<n; i++) {
@@ -253,9 +250,9 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[ lastx ]++;
   }
   if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {
-    cradix_r(xsub, n, radix+1);
     thiscounts[lastx] = 0;  // all x same value, the rest must be 0 already, save the memset
-    return;
+    radix++;                // tail recursion eliminated to avoid segfault when prefixes are long
+    continue;
   }
   int itmp = thiscounts[0];
   for (int i=1; i<256; i++) {
@@ -280,6 +277,8 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to do this ready for this memory's reuse
   }
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
+  break;
+  }
 }
 
 static void cradix(SEXP *x, int n)
@@ -295,15 +294,16 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8, hashtab **marks_)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
   bool anynotascii=false, anynotutf8=false;
   if (ustr_n!=0) internal_error_with_cleanup(__func__, "ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) internal_error_with_cleanup(__func__, "ustr_maxlen isn't 0 when starting range_str");  // # nocov
-  // savetl_init() has already been called at the start of forder
-  #pragma omp parallel for num_threads(getDTthreads(n, true))
+  bool fail = false;
+  hashtab *marks = *marks_;
+  #pragma omp parallel for num_threads(getDTthreads(n, true)) shared(marks, fail)
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
     if (s==NA_STRING) {
@@ -311,12 +311,10 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       na_count++;
       continue;
     }
-    if (TRUELENGTH(s)<0) continue;  // seen this group before
-    #pragma omp critical
-    if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
-      if (TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
-        savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
-      // now save unique SEXP in ustr so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
+    if (hash_lookup(marks,s,0)<0) continue; // seen this group before
+    #pragma omp critical(range_str_write)
+    if (hash_lookup(marks,s,0)>=0) {  // another thread may have set it while I was waiting, so check it again
+      // now save unique SEXP in ustr so we can loop sort uniques when sorting too
       if (ustr_alloc<=ustr_n) {
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KiB (32 pages)
         if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
@@ -324,7 +322,16 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
-      SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
+      hashtab *new_marks = hash_set_shared(marks, s, -ustr_n); // unique in any order is fine. first-appearance order is achieved later in count_group
+      if (new_marks != marks) {
+        if (new_marks) {
+          // Under the OpenMP memory model, if the hash table is expanded, we have to explicitly update the pointer.
+          #pragma omp atomic write
+          marks = new_marks;
+        } else { // longjmp() from a non-main thread not allowed
+          fail = true;
+        }
+      }
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
             !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
@@ -335,6 +342,9 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       }
     }
   }
+  // if the hash table grew, propagate the changes to the caller
+  *marks_ = marks;
+  if (fail) internal_error_with_cleanup(__func__, "failed to grow the 'marks' hash table");
   *out_na_count = na_count;
   *out_anynotascii = anynotascii;
   *out_anynotutf8 = anynotutf8;
@@ -344,39 +354,32 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     return;
   }
   if (anynotutf8) {
+    void *vmax = vmaxget();
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
-    SEXP *ustr3 = malloc(sizeof(*ustr3) * ustr_n);
-    if (!ustr3)
-      STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(SEXP) * ustr_n);
+    SEXP *ustr3 = (SEXP *)R_alloc(sizeof(*ustr3), ustr_n);
+    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(*ustr3) * ustr_n);
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
       SEXP s = ustr3[i];
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (TRUELENGTH(s)>0) savetl(s);
     }
     cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
-    SET_TRUELENGTH(ustr3[0], -1);
+    hash_set(marks, ustr3[0], -1);
     int o = -1;
     for (int i=1; i<ustr_n; i++) {
       if (ustr3[i] == ustr3[i-1]) continue;  // use the same o for duplicates
-      SET_TRUELENGTH(ustr3[i], --o);
+      hash_set(marks, ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
-    int *tl = malloc(sizeof(*tl) * ustr_n);
-    if (!tl) {
-      free(ustr3); // # nocov
-      STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
-    }
+    int *tl = (int *)R_alloc(sizeof(*tl), ustr_n);
     const SEXP *tt = STRING_PTR_RO(ustr2);
-    for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
-    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
-    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
-    free(tl);
-    free(ustr3);
+    for (int i=0; i<ustr_n; i++) tl[i] = hash_lookup(marks, tt[i], 0);   // fetches the o in ustr3 into tl which is ordered by ustr
+    for (int i=0; i<ustr_n; i++) hash_set(marks, ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
+    for (int i=0; i<ustr_n; i++) hash_set(marks, ustr[i], tl[i]); // put back the o into ustr's tl
     UNPROTECT(1);
+    vmaxset(vmax);
     *out_min = 1;
     *out_max = -o;  // could be less than ustr_n if there are duplicates in the utf8s
   } else {
@@ -386,7 +389,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       // that this is always ascending; descending is done in WRITE_KEY using max-this
       cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.
       for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
-        SET_TRUELENGTH(ustr[i], -i-1);
+        hash_set(marks, ustr[i], -i-1);
     }
     // else group appearance order was already saved to tl in the first pass
   }
@@ -551,7 +554,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   #pragma omp parallel for num_threads(getDTthreads(nrow, true))
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
   TEND(1)
-  savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
   int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
@@ -578,6 +580,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
         STOP(_("Item %d of order (ascending/descending) is %d. Must be +1 or -1."), col+1, sortType);
     }
     //Rprintf(_("sortType = %d\n"), sortType);
+    hashtab * marks = NULL; // only used for STRSXP below
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -614,7 +617,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
+      marks = hash_create(4096); // relatively small to allocate, can grow exponentially later
+      PROTECT(marks->prot); n_protect++;
+      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8, &marks);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
@@ -773,7 +778,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
-          elem = -TRUELENGTH(xd[i]);
+          elem = -hash_lookup(marks, xd[i], 0);
         }
         WRITE_KEY
       }}
