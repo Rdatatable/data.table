@@ -354,6 +354,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 27. `dogroups()` no longer reads beyond the resized end of over-allocated data.table list columns, [#7486](https://github.com/Rdatatable/data.table/issues/7486). While this didn't crash in practice, it is now explicitly checked for in recent R versions (r89198+). Thanks @TimTaylor and @aitap for the report and @aitap for the fix.
 
+28. `rbindlist()` now avoids the crash when working with many non-UTF-8 column names, [#7452](https://github.com/Rdatatable/data.table/issues/7452). Thanks @aitap for the report and the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:

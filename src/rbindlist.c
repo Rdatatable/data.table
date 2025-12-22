@@ -68,6 +68,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames==TRUE || usenames==NA_LOGICAL) {
+    // zeroth pass - convert all names to UTF-8
+    SEXP cnl = PROTECT(allocVector(VECSXP, XLENGTH(l)));
+    for (R_xlen_t i = 0; i < XLENGTH(l); ++i) {
+      const SEXP cn = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
+      if (xlength(cn)) SET_VECTOR_ELT(cnl, i, coerceUtf8IfNeeded(cn));
+    }
+    const SEXP *cnlp = SEXPPTR_RO(cnl);
     // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missings after this branch
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
@@ -79,11 +86,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=LENGTH(li);
       if (isNull(li) || !LENGTH(li)) continue;
-      const SEXP cn = getAttrib(li, R_NamesSymbol);
+      const SEXP cn = cnlp[i];
       if (!length(cn)) continue;
       const SEXP *cnp = STRING_PTR_RO(cn);
       for (int j=0; j<thisncol; j++) {
-        SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
+        SEXP s = cnp[j]; // convert different encodings for use.names #5452
         if (hash_lookup(marks, s, 0)<0) continue;  // seen this name before
         nuniq++;
         hash_set(marks, s,-nuniq);
@@ -104,12 +111,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=length(li);
       if (thisncol==0) continue;
-      const SEXP cn = getAttrib(li, R_NamesSymbol);
+      const SEXP cn = cnlp[i];
       if (!length(cn)) continue;
       const SEXP *cnp = STRING_PTR_RO(cn);
       memset(counts, 0, nuniq*sizeof(*counts));
       for (int j=0; j<thisncol; j++) {
-        SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
+        SEXP s = cnp[j]; // convert different encodings for use.names #5452
         counts[ -hash_lookup(marks, s, 0)-1 ]++;
       }
       for (int u=0; u<nuniq; u++) {
@@ -141,14 +148,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=length(li);
       if (thisncol==0) continue;
-      const SEXP cn = getAttrib(li, R_NamesSymbol);
+      const SEXP cn = cnlp[i];
       if (!length(cn)) {
         for (int j=0; j<thisncol; j++) colMapRaw[i*ncol + j] = j;
       } else {
         const SEXP *cnp = STRING_PTR_RO(cn);
         memset(counts, 0, nuniq*sizeof(*counts));
         for (int j=0; j<thisncol; j++) {
-          SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
+          SEXP s = cnp[j]; // convert different encodings for use.names #5452
           int w = -hash_lookup(marks, s, 0)-1;
           int wi = counts[w]++; // how many dups have we seen before of this name within this item
           if (uniqMap[w]==-1) {
@@ -167,8 +174,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
     free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
+    UNPROTECT(2); // cnl, marks
 
-    UNPROTECT(1); // marks
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
     // move it to R's heap so it gets automatically free'd on exit, and on any error between now and the end of rbindlist.
     colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(*colMap));
