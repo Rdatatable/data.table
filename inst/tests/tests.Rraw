@@ -21898,7 +21898,8 @@ rm(DT, strings)
 
 # do remove columns in freshly unserialized data.tables, #7488
 DT = unserialize(serialize(as.data.table(mtcars), NULL))
-test(2351, DT[,carb:=NULL], as.data.table(mtcars)[,carb:=NULL])
+test(2351.1, copy(DT)[,carb:=NULL], as.data.table(mtcars)[,carb:=NULL])
+test(2351.2, set(copy(DT), j="carb", value=NULL), as.data.table(mtcars)[,carb:=NULL])
 rm(DT)
 
 # rbindlist did not protect the temporary UTF-8 strings, #7452
