@@ -1440,6 +1440,14 @@ replace_dot_alias = function(e) {
       } else if (is.numeric(lhs)) {
         lhs = names_x[m]
       }
+      # cater for deleting columns by assigning NULL
+      if ((is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+        name = substitute(x)
+        setalloccol(x, verbose=FALSE)
+        if (is.name(name)) {
+          assign(as.character(name), x, parent.frame(), inherits=TRUE)
+        }
+      }
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
