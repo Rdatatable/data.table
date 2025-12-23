@@ -2848,6 +2848,14 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
+  # If removing columns from a table that's not selfrefok, need to call setalloccol first, #7488
+  if ((is.null(value) || (is.list(value) && any(vapply_1b(value, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+    name = substitute(x)
+    setalloccol(x, verbose=FALSE)
+    if (is.name(name)) {
+      assign(as.character(name), x, parent.frame(), inherits=TRUE)
+    }
+  }
   .Call(Cassign,x,i,j,NULL,value)
   invisible(x)
 }
