@@ -21916,3 +21916,8 @@ DT = suppressMessages(rbindlist(DTl)) # used to crash
 test(2352.1, dim(DT), c(300002L, 1L))
 test(2352.2, DT[[1]], rep(42, nrow(DT)))
 rm(DTn, DTl, DT)
+
+# insert columns by group in freshly unserialized data.tables, #7498
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+test(2353, DT[,foo:=mean(mpg),by=cyl], as.data.table(mtcars)[,foo:=mean(mpg),by=cyl])
+rm(DT)
