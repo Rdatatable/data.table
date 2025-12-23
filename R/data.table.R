@@ -2862,6 +2862,9 @@ set = function(x,i=NULL,j,value)  # low overhead, loopable
     setalloccol(x, verbose=FALSE)
     if (is.name(name)) {
       assign(as.character(name), x, parent.frame(), inherits=TRUE)
+    } else if (is.call(name)) {
+      # handle subexpressions like self$dt, foo[["bar"]], etc. by evaluating the assignment in parent frame
+      eval(call("<-", name, x), parent.frame())
     }
   }
   .Call(Cassign,x,i,j,NULL,value)
