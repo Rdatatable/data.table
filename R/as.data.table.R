@@ -102,8 +102,9 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     lapply(dx, seq_len)
   } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
     dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
+    setattr(dnx, 'names', copy(names(dnx)))
     dnx
-  } else dnx
+  } else copy(dnx)
   setfrev(val)
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", frev(seq_along(val))))
