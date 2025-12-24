@@ -1,5 +1,5 @@
 #ifndef _WIN32
-#  define _POSIX_C_SOURCE 200809L // required for non-POSIX features in is_direct_child e.g. 'siginfo_t'
+#  define _POSIX_C_SOURCE 200809L // required for POSIX (not standard C) features in is_direct_child e.g. 'siginfo_t'
 #  include <sys/wait.h>
 #endif
 
