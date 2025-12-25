@@ -4,6 +4,9 @@
 
 ## data.table [v1.18.99](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (in development)
 
+### BUG FIXES
+
+1. Fixed the compilation failure on FreeBSD due to an `#include` directive missing in v1.18.0, [#7516](https://github.com/rdatatable/data.table/issues/7516). Thanks to @jszhao for the report and @aitap for the fix.
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
