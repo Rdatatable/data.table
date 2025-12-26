@@ -4,6 +4,10 @@
 
 ## data.table [v1.18.99](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (in development)
 
+### BREAKING CHANGE
+
+1. `hasNA` argument to `froll*` functions no longer works. Use `has.nf` instead; see the release note for 1.18.0, item 3 under `BREAKING CHANGE`.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
