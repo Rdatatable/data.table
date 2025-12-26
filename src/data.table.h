@@ -353,6 +353,7 @@ void R_resizeVector_(SEXP x, R_xlen_t newlen);
 #ifdef BACKPORT_MAP_ATTRIB
 SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx);
 #endif
+SEXP is_direct_child(SEXP pids);
 
 // types.c
 char *end(char *start);

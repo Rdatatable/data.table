@@ -1,13 +1,18 @@
 ---
 title: "Importing data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Importing data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
+
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
 
 <style>
 h2 {
@@ -15,9 +20,9 @@ h2 {
 }
 </style>
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 This document is focused on using `data.table` as a dependency in other R packages. If you are interested in using `data.table` C code from a non-R application, or in calling its C functions directly, jump to the [last section](#non-r-api) of this vignette.
 
@@ -41,7 +46,7 @@ The next thing is to define what content of `data.table` your package is using. 
 
 You may also want to use just a subset of `data.table` functions; for example, some packages may simply make use of `data.table`'s high-performance CSV reader and writer, for which you can add `importFrom(data.table, fread, fwrite)` in your `NAMESPACE` file. It is also possible to import all functions from a package _excluding_ particular ones using `import(data.table, except=c(fread, fwrite))`.
 
-Be sure to read also the note about non-standard evaluation in `data.table` in [the section on "undefined globals"](#globals)
+Be sure to read also the note about non-standard evaluation in `data.table` in [the section on "undefined globals"](#globals).
 
 ## Usage
 
@@ -283,3 +288,7 @@ result <- merge(dt, other_dt, by = "x")
 - **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
 - **Cleaner Package Loading**: Your package's dependencies are not attached to the search path, making the loading process cleaner and potentially faster.
 - **Easier Maintenance**: It simplifies maintenance tasks as upstream dependencies' APIs evolve. Depending too much on `Depends` can lead to conflicts and compatibility issues over time.
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```

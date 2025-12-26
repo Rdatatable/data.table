@@ -10,8 +10,7 @@ variables:
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
   _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
   _R_CHECK_TESTS_NLINES_: "0"
-  TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
-             ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
+  TZ: "UTC"  ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
   RUN_ALL_DATATABLE_TESTS: "yes"  ## run optional tests in CI
   R_REL_VERSION:  "4.5" # only raise when RTOOLS for REL is available
@@ -49,9 +48,6 @@ mirror-packages:
   cache:
     paths:
       - bus/$CI_JOB_NAME/cran
-  variables:
-    # TODO(R-ancient>=3.5.0): remove this; let it save PACKAGES.rds in version-3 format
-    R_DEFAULT_SERIALIZE_VERSION: 2
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
@@ -211,7 +207,7 @@ test-lin-dev-clang-cran:
 # stated dependency on R
 test-lin-ancient-cran:
   <<: *test-lin
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.4.0
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.5.0
   variables:
     _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:

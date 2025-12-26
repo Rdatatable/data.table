@@ -114,7 +114,10 @@ if (getRversion() >= "4.0.0") {
   # version of R (and that is checked in .onLoad with error if not).
   export(.rbind.data.table) # only export in R<4.0.0 where it is still used; R-devel now detects it is missing doc, #5600
 }
-if (getRversion() >= "3.6.0") S3method(knitr::knit_print, data.table) # else manual delayed registration from the onLoad hook
+if (getRversion() >= "3.6.0") {
+  S3method(knitr::knit_print, data.table)
+  S3method(xfun::record_print, data.table)
+} # else manual delayed registration from the onLoad hook
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)
