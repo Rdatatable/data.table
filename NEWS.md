@@ -4,6 +4,10 @@
 
 ## data.table [v1.18.99](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (in development)
 
+### BREAKING CHANGE
+
+1. `x` and `n` arguments to `frollapply` functions no longer work. Use `X` and `N` instead, respectively; see the release note for 1.18.0, item 4 under `BREAKING CHANGE`.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
