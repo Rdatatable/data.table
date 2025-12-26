@@ -1,31 +1,19 @@
-msgid ""
-msgstr ""
-"Project-Id-Version: freadR 0.0\n"
-"POT-Creation-Date: 2024-10-10 22:46+0100\n"
-"PO-Revision-Date: 2024-10-10 22:46+0100\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
-"Language: hi\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-
 #: freadR.c:92
 #, c-format
 msgid "freadR.c has been passed a filename: %s\n"
-msgstr ""
+msgstr "freadR.c को एक फाइल (file) नाम पास (pass) किया गया है: %s\n"
 
 #: freadR.c:96
 msgid "freadR.c has been passed the data as text input (not a filename)\n"
-msgstr ""
+msgstr "freadR.c को डेटा (data) पाठ इनपुट (Input) के रूप में पास (pass) किया गया है (फाइल (file) नाम नहीं)\n"
 
 #: freadR.c:114
 msgid "quote= must be a single character, blank \"\", or FALSE"
-msgstr ""
+msgstr "quote= एक सिंगल (single) कैरेक्टर (character), खाली \"\", या False होना चाहिए"
 
 #: freadR.c:167
 msgid "'integer64' must be a single character string"
-msgstr ""
+msgstr "'integer64' एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए"
 
 #: freadR.c:175
 #, c-format
@@ -33,58 +21,66 @@ msgid ""
 "Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or "
 "'numeric'"
 msgstr ""
+"अमान्य मान integer64='%s'। यह 'integer64', 'कैरेक्टर (character)', 'डबल (double)' या "
+"'न्यूमेरिक (numeric)' होना चाहिए"
 
 #: freadR.c:183
 msgid "Use either select= or drop= but not both."
-msgstr ""
+msgstr "या तो select= या drop= का उपयोग करें लेकिन दोनों का नहीं।"
 
 #: freadR.c:186
 msgid ""
 "select= is type list for specifying types in select=, but colClasses= has "
 "been provided as well. Please remove colClasses=."
 msgstr ""
+"select= में types निर्दिष्ट करने के लिए select= का type लिस्ट (list) है, लेकिन colClasses= भी प्रदान किया गया है। कृपया colClasses= हटा दें।" हटा दें।"
 
 #: freadR.c:188
 msgid ""
 "select= is type list but has no names; expecting list(type1=cols1, "
 "type2=cols2, ...)"
 msgstr ""
+"select= type लिस्ट (list) है लेकिन इसका कोई नाम नहीं है; लिस्ट (list)(type1=cols1, "
+"type2=cols2, ...) की अपेक्षा है"
 
 #: freadR.c:195
 msgid ""
 "select= is a named vector specifying the columns to select and their types, "
 "but colClasses= has been provided as well. Please remove colClasses=."
 msgstr ""
+"select= एक नामित वेक्टर (vector) है जो चुनने के लिए कॉलम (column) और उनके types निर्दिष्ट करता है, "
+"लेकिन colClasses= भी प्रदान किया गया है। कृपया colClasses= हटा दें।"
 
 #: freadR.c:203 freadR.c:369
 msgid "colClasses is type list but has no names"
-msgstr ""
+msgstr "colClasses type लिस्ट (list) है लेकिन इसके कोई नाम नहीं हैं"
 
 #: freadR.c:213
 #, c-format
 msgid "encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'"
-msgstr ""
+msgstr "encoding='%s' अमान्य है। 'unknown', 'Latin-1' या 'UTF-8' होना चाहिए"
 
 #: freadR.c:236
 #, c-format
 msgid "Column name '%s' (%s) not found"
-msgstr ""
+msgstr "कॉलम (column) नाम '%s' (%s) नहीं मिला"
 
 #: freadR.c:238
 #, c-format
 msgid "%s is NA"
-msgstr ""
+msgstr "%s NA है"
 
 #: freadR.c:240
 #, c-format
 msgid "%s is %d which is out of range [1,ncol=%d]"
-msgstr ""
+msgstr "%s, %d है जो range [1,ncol=%d] से बाहर है"
 
 #: freadR.c:289
 #, c-format
 msgid ""
 "Column name '%s' not found in column name header (case sensitive), skipping."
 msgstr ""
+"कॉलम (column) नाम '%s' कॉलम (column) नाम हेडर (header) (case sensitive) में नहीं मिला, छोड़ा जा रहा है।"
 
 #: freadR.c:299
 #, c-format
@@ -92,6 +88,8 @@ msgid ""
 "Column number %d (select[%d]) is negative but should be in the range [1,"
 "ncol=%d]. Consider drop= for column exclusion."
 msgstr ""
+"कॉलम (column) संख्या %d (select[%d]) नकारात्मक है लेकिन range [1, "
+"ncol=%d] में होनी चाहिए। कॉलम (column) अपवर्जन के लिए drop= पर विचार करें।"
 
 #: freadR.c:300
 #, c-format
@@ -99,6 +97,8 @@ msgid ""
 "select = 0 (select[%d]) has no meaning. All values of select should be in the "
 "range [1,ncol=%d]."
 msgstr ""
+"select = 0 (select[%d]) का कोई अर्थ नहीं है। select के सभी मानों range [1,ncol=%d] "
+"में होने चाहिए।"
 
 #: freadR.c:301
 #, c-format
@@ -106,11 +106,13 @@ msgid ""
 "Column number %d (select[%d]) is too large for this table, which only has %d "
 "columns."
 msgstr ""
+"कॉलम (column) संख्या %d (select[%d]) इस टेबल के लिए बहुत बड़ी है, जिसमें केवल %d "
+"कॉलम (column) हैं।"
 
 #: freadR.c:302
 #, c-format
 msgid "Column number %d ('%s') has been selected twice by select="
-msgstr ""
+msgstr "कॉलम (column) संख्या %d ('%s') को select= द्वारा दो बार चुना गया है"
 
 #: freadR.c:325
 #, c-format
@@ -120,26 +122,30 @@ msgid ""
 "named vector, list format, or specify types using select= instead of "
 "colClasses=. Please see examples in ?fread."
 msgstr ""
+"colClasses= types का एक अनाम वेक्टर (vector) है, जिसकी लेंथ (length) %d है, लेकिन इनपुट (Input) में %d "
+"कॉलम (column) हैं। कॉलम (column) के सबसेट (subset) के लिए types निर्दिष्ट करने के लिए, आप एक "
+"नामित वेक्टर (vector), लिस्ट (list) फ़ॉर्मेट का उपयोग कर सकते हैं, या colClasses= के बजाय select= का उपयोग करके types निर्दिष्ट कर सकते हैं। "
+"कृपया ?fread में उदाहरण देखें।"
 
 #: freadR.c:367
 #, c-format
 msgid "colClasses is type '%s' but should be list or character"
-msgstr ""
+msgstr "colClasses type '%s' है लेकिन लिस्ट (list) या कैरेक्टर (character) होना चाहिए"
 
 #: freadR.c:391
 #, c-format
 msgid "Column name '%s' (colClasses[[%d]][%d]) not found"
-msgstr ""
+msgstr "कॉलम (column) नाम '%s' (colClasses[[%d]][%d]) नहीं मिला"
 
 #: freadR.c:393
 #, c-format
 msgid "colClasses[[%d]][%d] is NA"
-msgstr ""
+msgstr "colClasses[[%d]][%d] NA है"
 
 #: freadR.c:397
 #, c-format
 msgid "Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"
-msgstr ""
+msgstr "कॉलम (column) संख्या %d (colClasses[[%d]][%d]) range [1,ncol=%d] से बाहर है"
 
 #: freadR.c:401
 #, c-format
@@ -147,8 +153,10 @@ msgid ""
 "Column %d ('%s') appears more than once in colClasses. The second time is "
 "colClasses[[%d]][%d]."
 msgstr ""
+"कॉलम (column) %d ('%s') colClasses में एक से अधिक बार दिखाई देता है। दूसरी बार "
+"colClasses[[%d]][%d] है।"
 
 #: freadR.c:643
 #, c-format
 msgid "Field size is 1 but the field is of type %d\n"
-msgstr ""
+msgstr "फ़ील्ड (field) साइज़ 1 है लेकिन फ़ील्ड (field) type %d है\n"
