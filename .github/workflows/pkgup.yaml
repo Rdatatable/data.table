@@ -58,7 +58,7 @@ jobs:
           Rscript -e 'tools::write_PACKAGES("public/src/contrib", fields="Revision")'
       - name: upload
         if: github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "public"
       - name: deploy
