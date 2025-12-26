@@ -8,6 +8,8 @@
 
 1. {data.table} now depends on R 3.5.0 (2018).
 
+2. pydatatable compatibility layer in `fread()` and `fwrite()` has been removed, [#7069](https://github.com/Rdatatable/data.table/issues/7069). Thanks @badasahog for the report and the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
