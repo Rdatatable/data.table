@@ -437,7 +437,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
     int m = ((x - xi) * 10000000); // 7th digit used to round up if 9
     m += (m % 10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
     m /= 10;
-    int carry = m / 1000000; // Need to know if we rounded up to a whole second
+    const int carry = m / 1000000; // Need to know if we rounded up to a whole second
     m -= carry * 1000000;
     xi += carry;
     if (xi >= 0) {
@@ -1096,9 +1096,10 @@ void fwriteMain(fwriteMainArgs args)
         if (hasPrinted || ETA >= 2) {
           // # nocov start
           if (verbose && !hasPrinted) DTPRINT("\n"); // # notranslate
+          DTPRINT("\r"); // # notranslate
           DTPRINT(Pl_(nth,
-                  "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
-                  "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                  "Written %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                  "Written %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
                   (100.0 * end) / args.nrow, args.nrow, (int)(now - startTime), nth, maxBuffUsedPC, ETA); // # nocov
           // TODO: use progress() as in fread
           nextTime = now + 1;

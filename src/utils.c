@@ -1,3 +1,8 @@
+#ifndef _WIN32
+#  define _POSIX_C_SOURCE 200809L // required for POSIX (not standard C) features in is_direct_child e.g. 'siginfo_t'
+#  include <sys/wait.h>
+#endif
+
 #include "data.table.h"
 
 bool within_int32_repres(double x) {
@@ -267,36 +272,23 @@ void copySharedColumns(SEXP x) {
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
   bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
-  int *savetl = (int *)R_alloc(ncol, sizeof(*savetl));  // on R heap for convenience but could be a calloc
+  hashtab * marks = hash_create(ncol);
+  PROTECT(marks->prot);
   const SEXP *xp = SEXPPTR_RO(x);
-  // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
-  // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
-  for (int i=0; i<ncol; ++i) {
-    const SEXP thiscol = xp[i];
-    savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
-    SET_TRUELENGTH(thiscol, 0);
-  }
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (ALTREP(thiscol) || TRUELENGTH(thiscol)<0) {
+    if (ALTREP(thiscol) || hash_lookup(marks, thiscol, 0)<0) {
       shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
-      // do not copyAsPlain() here yet, as its alloc might fail. Must restore tl first to all columns before attempting any copies.
     } else {
-      shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even it is shared
+      shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even if is shared
                                       // 'shared' means a later column shares an earlier column
-      SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
+      hash_set(marks, thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
                                       // only that the 3rd column is shared with an earlier column, but which one too. Although
                                       // we don't use that information currently, we could do in future.
     }
   }
-  // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
-  for (int i=0; i<ncol; ++i) {
-    if (!shared[i]) SET_TRUELENGTH(xp[i], savetl[i]);
-    //  ^^^^^^^^^^ important because if there are shared columns, the dup will have savetl==0 but we want the first restore to stand
-  }
-  // now that truelength has been restored for all columns, we can finally call copyAsPlain()
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
@@ -309,6 +301,7 @@ void copySharedColumns(SEXP x) {
               nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
+  UNPROTECT(1);
 }
 
 // lock, unlock and islocked at C level :
@@ -659,3 +652,48 @@ void internal_error(const char *call_name, const char *format, ...) {
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
+
+#ifdef BACKPORT_RESIZABLE_API
+SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+  SEXP ret = allocVector(type, maxlen);
+  SET_TRUELENGTH(ret, maxlen);
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+SEXP R_duplicateAsResizable_(SEXP x) {
+  if (ALTREP(x)) internal_error(__func__, "Cannot duplicate an ALTREP object as resizable"); // # nocov
+  SEXP ret = duplicate(x);
+  SET_TRUELENGTH(ret, xlength(ret));
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+void R_resizeVector_(SEXP x, R_xlen_t newlen) {
+  if (!R_isResizable(x))
+    internal_error(__func__, "attempt to resize a non-resizable vector"); // # nocov
+  if (newlen > XTRUELENGTH(x))
+    internal_error(__func__, "newlen=%g exceeds maxlen=%g", (double)newlen, (double)R_maxLength(x)); // # nocov
+  SETLENGTH(x, newlen);
+}
+#endif
+
+// # nocov start
+#ifdef _WIN32
+NORET
+#endif
+SEXP is_direct_child(SEXP pids) {
+#ifdef _WIN32
+  internal_error(__func__, "not implemented on Windows");
+#else
+  int *ppids = INTEGER(pids);
+  R_xlen_t len = xlength(pids);
+  SEXP ret = allocVector(LGLSXP, len);
+  int *pret = LOGICAL(ret);
+  siginfo_t info;
+  for (R_xlen_t i = 0; i < len; ++i)
+    pret[i] = waitid(P_PID, ppids[i], &info, WCONTINUED | WEXITED | WNOHANG | WNOWAIT | WSTOPPED) == 0;
+  return ret;
+#endif
+}
+// # nocov end

@@ -31,6 +31,7 @@ static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
+static char commentChar;
 static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
@@ -188,7 +189,7 @@ bool freadCleanup(void)
   }
   free(mmp_copy); mmp_copy = NULL;
   fileSize = 0;
-  sep = whiteChar = quote = dec = '\0';
+  sep = whiteChar = quote = dec = commentChar = '\0';
   quoteRule = -1;
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
@@ -218,15 +219,16 @@ static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper)
 /**
  * Helper for error and warning messages to extract an input line starting at
  * `*ch` and until an end of line, but no longer than `limit` characters.
- * This function returns the string copied into an internal static buffer. Cannot
- * be called more than twice per single printf() invocation.
- * Parameter `limit` cannot exceed 500.
+ * This function returns the string copied into a caller-allocated buffer (typically on the stack).
+ * Parameter `limit` should not exceed STRLIM_BUF_SIZE-1 (500).
  * The data might contain % characters. Therefore, careful to ensure that if the msg
  * is constructed manually (using say snprintf) that warning(), stop()
  * and Rprintf() are all called as warning(_("%s"), msg) and not warning(msg).
  */
-static const char* strlim(const char *ch, char buf[static 500], size_t limit)
+#define STRLIM_BUF_SIZE 501
+static const char* strlim(const char *ch, char buf[static STRLIM_BUF_SIZE], size_t limit)
 {
+  if (limit >= STRLIM_BUF_SIZE) limit = STRLIM_BUF_SIZE-1;
   char *ch2 = buf;
   for (size_t width = 0; (*ch > '\r' || (*ch != '\0' && *ch != '\r' && *ch != '\n')) && width < limit; width++) {
     *ch2++ = *ch++;
@@ -267,6 +269,22 @@ static inline void skip_white(const char **pch)
 }
 
 /**
+ * Advance `ch` past spaces/NULs until we hit a comment marker or the first
+ * non-whitespace character. Leaves `ch` unchanged if already on content.
+ */
+static inline const char *skip_to_comment_or_nonwhite(const char *ch)
+{
+  while (ch < eof && *ch == '\0') ++ch;
+  if (!stripWhite) return ch;
+
+  while (ch < eof && (*ch == ' ' || *ch == '\t')) {
+    if (*ch == commentChar) break;
+    ++ch;
+  }
+  return ch;
+}
+
+/**
  * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
  * and returns true. Repeated \\r around \n are considered one. At most one \\n will be moved over, though.
  * 1. \\n        Unix
@@ -292,6 +310,32 @@ static inline bool eol(const char **pch)
 }
 
 /**
+ * Walk to the newline sequence terminating the current line and return the pointer to its final
+ * character (or `eof` if none exists).
+ */
+static inline const char *skip_to_eol(const char *ch, const char *eof)
+{
+  while (ch < eof && *ch != '\n' && *ch != '\r')
+    ch++;
+  if (ch < eof) {
+    const char *tmp = ch;
+    if (eol(&tmp)) ch = tmp;
+  }
+  return ch;
+}
+
+/**
+ * Skip past the current line (including its newline sequence) and return the first character of the
+ * next line, or `eof` if none exists.
+ */
+static inline const char *skip_to_nextline(const char *ch, const char *eof)
+{
+  const char *lineEnd = skip_to_eol(ch, eof);
+  if (lineEnd < eof) lineEnd++;
+  return lineEnd;
+}
+
+/**
  * Return True iff `ch` is a valid field terminator character: either a field
  * separator or a newline.
  */
@@ -304,7 +348,12 @@ static inline bool end_of_field(const char *ch)
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
-  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch)));
+  // Comment characters terminate a field immediately and take precedence over separators.
+  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) || (commentChar && *ch == commentChar);
+  if (*ch == sep) return true;
+  if ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) return true;
+  if (!commentChar) return false;
+  return *ch == commentChar;
 }
 
 static inline const char *end_NA_string(const char *start)
@@ -336,8 +385,21 @@ static inline int countfields(const char **pch)
   static void *targets[9];
   targets[8] = (void*) &trash;
   const char *ch = *pch;
-  if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
-  skip_white(&ch);
+  for (;;) {
+    if (ch >= eof) { *pch = ch; return 0; }
+    if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
+    skip_white(&ch);
+    if (commentChar && *ch == commentChar) {
+      const char *next = skip_to_nextline(ch, eof);
+      if (next < eof) {
+        ch = next;
+        continue;  // rescan next line
+      }
+      *pch = next;
+      return 0;
+    }
+    break;
+  }
   if (eol(&ch) || ch == eof) {
     *pch = ch + 1;
     return 0;
@@ -350,6 +412,11 @@ static inline int countfields(const char **pch)
   };
   while (ch < eof) {
     Field(&ctx);
+    if (commentChar && *ch == commentChar) {
+      ch = skip_to_nextline(ch, eof);
+      *pch = ch;
+      return ncol;
+    }
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
     if (sep == ' ' && *ch == sep) {
       while (ch[1] == ' ') ch++;
@@ -378,10 +445,8 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If this doesn't return the true line start, no matter. The previous thread will run-on and
   // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
-  while (*ch != '\n' && *ch != '\r' && (*ch != '\0' || ch < eof)) ch++;
+  ch = skip_to_nextline(ch, eof);
   if (ch == eof) return eof;
-  if (eol(&ch)) // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
-    ch++;       // and then move to first byte of next line
   const char *simpleNext = ch;  // simply the first newline after the jump
   // if a better one can't be found, return this one (simpleNext). This will be the case when
   // fill=TRUE and the jump lands before 5 too-short lines, for example.
@@ -389,8 +454,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   for (int attempts = 0; attempts < 5 && ch < eof; attempts++) {
     const char *ch2 = ch;
     if (countfields(&ch2) == ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
-    while (*ch != '\n' && *ch != '\r' && (*ch != '\0' || ch < eof)) ch++;
-    if (eol(&ch)) ch++;
+    ch = skip_to_nextline(ch, eof);
   }
   return simpleNext;
 }
@@ -1422,6 +1486,7 @@ int freadMain(freadMainArgs _args)
   fill = args.fill;
   dec = args.dec;
   quote = args.quote;
+  commentChar = args.comment;
   if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
   if (args.sep == dec && dec != '\0') STOP(_("sep == dec ('%c') is not allowed"), dec);
   if (quote == dec && dec != '\0') STOP(_("quote == dec ('%c') is not allowed"), dec);
@@ -1564,12 +1629,35 @@ int freadMain(freadMainArgs _args)
   if (verbose) DTPRINT(_("[04] Arrange mmap to be \\0 terminated\n"));
 
   // First, set 'eol_one_r' for use by eol() to know if \r-only line ending is allowed, #2371
+  // Count different line ending types to handle mixed endings (e.g. Mac CSV with mostly \r and final \r\n) #4186
+  int count_r_only = 0;   // \r not followed by \n
+  int count_with_n = 0;   // \n with or without \r
   ch = sof;
-  while (ch < eof && *ch != '\n') ch++;
-  eol_one_r = (ch == eof);
+  const char *sample_end = eof;
+  if ((size_t)(eof - sof) > 100000) sample_end = sof + 100000; // Sample first 100KB or whole file if smaller
+  while (ch < sample_end) {
+    if (*ch == '\r') {
+      // Skip consecutive \r to avoid miscounting \r\r\n as multiple line endings
+      while (ch < sample_end && *ch == '\r') ch++;
+      if (ch < sample_end && *ch == '\n') {
+        count_with_n++;
+        ch++;
+      } else {
+        count_r_only++;
+      }
+    } else if (*ch == '\n') {
+      count_with_n++;
+      ch++;
+    } else {
+      ch++;
+    }
+  }
+  // If file has mostly \r-only line endings, treat \r as line ending
+  eol_one_r = (count_r_only > count_with_n);
   if (verbose) DTPRINT(eol_one_r ?
-    _("  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n") :
-    _("  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"));
+    _("  An \\r by itself will be taken as one line ending (counts: %d \\r by themselves vs %d [\\r]*\\n). This happens with old Mac CSV or when there is no \\r at all.\n") :
+    _("  \\n has been found in the input (counts: %d \\r by themselves vs %d [\\r]*\\n) and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"),
+    count_r_only, count_with_n);
 
   bool lastEOLreplaced = false;
   if (args.filename) {
@@ -1689,7 +1777,7 @@ int freadMain(freadMainArgs _args)
   if (ch >= eof) STOP(_("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace."));
   if (verbose) {
     if (lineStart > ch) DTPRINT(_("  Moved forward to first non-blank line (%d)\n"), row1line);
-    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, (char[500]) {}, 30));
+    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, (char[STRLIM_BUF_SIZE]) {0}, 30));
   }
   ch = pos = lineStart;
   }
@@ -1812,14 +1900,29 @@ int freadMain(freadMainArgs _args)
                 thisBlockStart = lineStart;
               }
             }
-            if ((thisBlockLines > topNumLines && lastncol > 1) ||  // more lines wins even with fewer fields, so long as number of fields >= 2
-                (thisBlockLines == topNumLines &&
-                 lastncol > topNumFields &&                      // when number of lines is tied, choose the sep which separates it into more columns
-                 (quoteRule < QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
-                 (topNumFields <= 1 || sep != ' '))) {
+            bool blockHasQuote = false;
+            if (quote && lastncol == 1) {
+              for (const char *scan = thisBlockStart; scan < ch; scan++) {
+                if (*scan == quote) {
+                  blockHasQuote = true;
+                  break;
+                }
+              }
+            }
+            bool singleColumnCandidate = (lastncol == 1 && thisBlockLines >= 2 && blockHasQuote && quoteRule < QUOTE_RULE_IGNORE_QUOTES);
+            // more contiguous rows than the current best; only allow 1-column wins while we still have no multi-column pick
+            bool betterLines = thisBlockLines > topNumLines && (lastncol > 1 || (singleColumnCandidate && topNumFields <= 1));
+            // first multi-column candidate after only single-column options so far
+            bool promoteOverSingle = (topNumFields <= 1 && lastncol > topNumFields && thisBlockLines >= 2);
+            // more lines wins even with fewer fields, so long as number of fields >= 2
+            bool betterTie = (thisBlockLines == topNumLines &&
+                              lastncol > topNumFields &&                      // when number of lines is tied, choose the sep which separates it into more columns
+                              (quoteRule < QUOTE_RULE_EMBEDDED_QUOTES_NOT_ESCAPED || quoteRule <= topQuoteRule) && // for test 1834 where every line contains a correctly quoted field contain sep
+                              (topNumFields <= 1 || sep != ' '));
+            if (betterLines || promoteOverSingle || betterTie) {
               topNumLines = thisBlockLines;
               topNumFields = lastncol;
-              topSep = sep;
+              topSep = singleColumnCandidate ? 127 : sep;  // treat consistent single-column quoted blocks as single-column input (#7366)
               topQuoteRule = quoteRule;
               firstJumpEnd = ch;
               topStart = thisBlockStart;
@@ -1880,7 +1983,7 @@ int freadMain(freadMainArgs _args)
     if (!fill && tt != ncol) INTERNAL_STOP("first line has field count %d but expecting %d", tt, ncol); // # nocov
     if (verbose) {
       DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
-              tt, row1line, strlim(pos, (char[500]) {}, 30));
+              tt, row1line, strlim(pos, (char[STRLIM_BUF_SIZE]) {0}, 30));
       DTPRINT(_("  Quote rule picked = %d\n"), quoteRule);
       DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill ? "true" : "false", ncol);
     }
@@ -1982,6 +2085,21 @@ int freadMain(freadMainArgs _args)
   for (int jump = 0; jump < nJumps; jump++) {
     if (jump == 0) {
       ch = pos;
+      // Skip leading comment lines before processing header
+      if (commentChar) {
+        while (ch < eof) {
+          const char *lineStart = ch;
+          ch = skip_to_comment_or_nonwhite(ch);
+          if (ch < eof && *ch == commentChar) {
+            ch = skip_to_nextline(ch, eof);
+            row1line++;
+            continue;
+          }
+          ch = lineStart;
+          break;
+        }
+        pos = ch;
+      }
       if (args.header != false) {
         countfields(&ch); // skip first row for type guessing as it's probably column names
         row1line++;
@@ -2072,7 +2190,7 @@ int freadMain(freadMainArgs _args)
     }
   }
 
-  if (args.header == NA_BOOL8 && prevStart != NULL) {
+  if (prevStart != NULL && (args.header == NA_BOOL8 || args.skipNrow >= 0)) {
     // The first data row matches types in the row after that, and user didn't override default auto detection.
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
@@ -2080,7 +2198,7 @@ int freadMain(freadMainArgs _args)
     if (tt == ncol) INTERNAL_STOP("row before first data row has the same number of fields but we're not using it"); // # nocov
     if (ch != pos)  INTERNAL_STOP("ch!=pos after counting fields in the line before the first data row"); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
-    if (tt < ncol) {
+    if (tt < ncol && args.header != false) {
       autoFirstColName = (ncol - tt == 1);
       if (autoFirstColName) {
         DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added an extra default column name for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.\n"),
@@ -2098,7 +2216,7 @@ int freadMain(freadMainArgs _args)
       for (int j = ncol; j < tt; j++) { tmpType[j] = type[j] = type0; }
       ncol = tt;
     }
-    args.header = true;
+    if (args.header == NA_BOOL8) args.header = true;
     pos = prevStart;
     row1line--;
   }
@@ -2186,7 +2304,7 @@ int freadMain(freadMainArgs _args)
     if (verbose) DTPRINT(_("[08] Assign column names\n"));
     
     ch = pos;  // back to start of first row (column names if header==true)
-    
+
     if (args.header == false) {
       colNames = NULL;  // userOverride will assign V1, V2, etc
     } else {
@@ -2206,6 +2324,14 @@ int freadMain(freadMainArgs _args)
         ch++;
         Field(&fctx);  // stores the string length and offset as <uint,uint> in colNames[i]
         ((lenOff**) fctx.targets)[8]++;
+        if (commentChar) {
+          // skip leading whitespace to detect inline comment marker in header row
+          const char *commentPos = skip_to_comment_or_nonwhite(ch);
+          if (commentPos < eof && *commentPos == commentChar) {
+            ch = skip_to_eol(commentPos, eof);
+            break; // stop header parsing after comment
+          }
+        }
         if (*ch != sep) break;
         if (sep == ' ') {
           while (ch[1] == ' ') ch++;
@@ -2376,10 +2502,8 @@ int freadMain(freadMainArgs _args)
         .threadn = me,
         .quoteRule = quoteRule,
         .stopTeam = &stopTeam,
-        #ifndef DTPY
         .nStringCols = nStringCols,
         .nNonStringCols = nNonStringCols
-        #endif
       };
       if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
         stopTeam = true;
@@ -2452,6 +2576,15 @@ int freadMain(freadMainArgs _args)
           tLineStart = tch;  // for error message
           const char *fieldStart = tch;
           int j = 0;
+
+          if (commentChar) {
+            // treat lines whose first non-space character is the comment marker as empty
+            const char *afterWhite = skip_to_comment_or_nonwhite(tLineStart);
+            if (afterWhite < eof && *afterWhite == commentChar) {
+              tch = skip_to_nextline(afterWhite, eof);
+              continue;
+            }
+          }
     
           //*** START HOT ***//
           if (sep != ' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
@@ -2596,6 +2729,13 @@ int freadMain(freadMainArgs _args)
             int8_t thisSize = size[j];
             if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
             j++;
+            if (commentChar) {
+              const char *commentPtr = skip_to_comment_or_nonwhite(tch);
+              if (commentPtr < eof && *commentPtr == commentChar) {
+                tch = skip_to_eol(commentPtr, eof);
+                break;
+              }
+            }
             if (*tch == sep) { tch++; continue; }
             if (fill && (*tch == '\n' || *tch == '\r' || tch == eof) && j < ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
             break;
@@ -2806,26 +2946,26 @@ int freadMain(freadMainArgs _args)
     } else {
       const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
-      while (ch < eof && *ch != '\n' && *ch != '\r') ch++;
+      ch = skip_to_nextline(ch, eof);
       while (ch < eof && isspace(*ch)) ch++;
       if (ch == eof) {
-        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[500]) {}, 500));
+        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[STRLIM_BUF_SIZE]) {0}, 500));
       }
       else {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill > 0) {
           DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
-          DTi + row1line, ncol, tt, tt, strlim(skippedFooter, (char[500]) {}, 500));
+          DTi + row1line, ncol, tt, tt, strlim(skippedFooter, (char[STRLIM_BUF_SIZE]) {0}, 500));
         } else {
           DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
-          DTi + row1line, ncol, tt, strlim(skippedFooter, (char[500]) {}, 500));
+          DTi + row1line, ncol, tt, strlim(skippedFooter, (char[STRLIM_BUF_SIZE]) {0}, 500));
         }
       }
     }
   }
   if (quoteRuleBumpedCh != NULL && quoteRuleBumpedCh < headPos) {
-    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRId64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, (char[500]) {}, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRId64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, (char[STRLIM_BUF_SIZE]) {0}, 500));
   }
 
   if (verbose) {
