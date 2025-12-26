@@ -2031,8 +2031,8 @@ options(datatable.optimize = 2L)
 test(658.1, DT[ , mean(x), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
 test(658.2, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
 test(658.3, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
-tt = capture.output(DT[,list(mean(x),mean(y)),by=list(grp1,grp2),verbose=TRUE])
-test(659, !length(grep("Wrote less rows", tt)))  # first group is one row with this seed. Ensure we treat this as aggregate case rather than allocate too many rows.
+# first group is one row with this seed. Ensure we treat this as aggregate case rather than allocate too many rows.
+test(659, DT[,list(mean(x),mean(y)),by=list(grp1,grp2),verbose=TRUE], notOutput = "Wrote less rows")
 
 # Test .N for logical i subset
 DT = data.table(a=1:10, b=rnorm(10))
@@ -2040,8 +2040,10 @@ test(660, DT[a==8L, .N], 1L)
 
 # Test that growing is sensible in worst case
 DT = data.table(a=rep(1:10,1:10),b=rnorm(55))
-tt = capture.output(DT[,sum(b)*b,by=a,verbose=TRUE])
-test(661, length(grep("growing from",tt))<3)  # was 6 when we simply grew enough for latest result
+test(661, DT[,sum(b)*b,by=a,verbose=TRUE],
+          notOutput = paste(rep("growing from", 3), collapse = ".*"))
+# Need to test that "growing from" is printed less than three times.
+# The number was previously 6 when we simply grew enough for latest result
 
 # Test that adding a new logical column is supported, #2094
 DT=data.table(a=1:3)
@@ -2305,31 +2307,29 @@ test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
 test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
 test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
-if (base::getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
-  # Expand ALTREPS in assign.c, #5400
-  # String conversion gets deferred
-  ## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
-  test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
-  test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
-  # Executing the code inside of test expands the ALTREP so we repeat the code
-  # in order to check the result after a further assignment
-  DT = data.table(a=1:3)
-  DT[, b := as.character(a)]
-  DT[, a := 5L]
-  test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
-  # This function returns an ALTREP wrapper if the input is at least length 64
-  testFun = function(x) {
-    x[FALSE] = 1
-    x
-  }
-  DT = data.table(id=1:64, col1=0, col2=0)
-  test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
-  DT = data.table(id=1:64, col1=0, col2=0)
-  DT[, col1 := testFun(col2)]
-  DT[, col2 := 999]
-  test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
-  rm(testFun)
+# Expand ALTREPS in assign.c, #5400
+# String conversion gets deferred
+## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
+test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
+test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
+# Executing the code inside of test expands the ALTREP so we repeat the code
+# in order to check the result after a further assignment
+DT = data.table(a=1:3)
+DT[, b := as.character(a)]
+DT[, a := 5L]
+test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
+# This function returns an ALTREP wrapper if the input is at least length 64
+testFun = function(x) {
+  x[FALSE] = 1
+  x
 }
+DT = data.table(id=1:64, col1=0, col2=0)
+test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
+DT = data.table(id=1:64, col1=0, col2=0)
+DT[, col1 := testFun(col2)]
+DT[, col2 := 999]
+test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
+rm(testFun)
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key=c('a', 'b'))
@@ -6866,12 +6866,11 @@ test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
 test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # shift incompatible types (e.g. Date and POSIXct)
-# TODO(R>=3.5): use .Date() instead of setting class by hand
-d = structure(0:4, class="Date")
+d = .Date(0:4)
 p = .POSIXct(1:5)
 test(1463.81, shift(d, fill=p[1L]), error="Filling Date with POSIXct .* unsupported.*")
 test(1463.82, shift(p, fill=d[1L]), error="Filling POSIXct with Date .* unsupported.*")
-test(1463.83, shift(d, fill=as.IDate(2000L)), structure(c(2000L, 0:3), class="Date"))
+test(1463.83, shift(d, fill=as.IDate(2000L)), .Date(c(2000L, 0:3)))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -8286,8 +8285,8 @@ test(1579.03, dt[, lapply(.SD, median), keyby=x],
               dt[, lapply(.SD, function(x) median(as.numeric(x))), keyby=x])
 test(1579.04, dt[, lapply(.SD, median, na.rm=TRUE), keyby=x],
               dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), keyby=x])
-ans = capture.output(dt[, lapply(.SD, median), by=x, verbose=TRUE])
-test(1579.05, any(grepl("GForce optimized", ans)), TRUE)
+test(1579.05, dt[, lapply(.SD, median), by=x, verbose=TRUE],
+              output = "GForce optimized")
 
 # testing gforce::ghead and gforce::gtail
 # head(.SD, 1) and tail(.SD, 1) optimisation
@@ -8539,8 +8538,8 @@ if (x1==x2) {
   # NB: x1==x2 is a condition in base R, independent of data.table
   test(1590.12, forderv(    c(x2,x1,x1,x2)), integer())
   # don't test base ... test(1590.13, base::order(c(x2,x1,x1,x2)), 1:4)
-} else {
-  # Windows-1252, #2856
+} else if (identical(l10n_info()$codepage, 1252L)) {
+  # US English ANSI codepage on Windows is CP1252, #2856
   test(1590.14, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))
   # don't test base ... test(1590.15, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))
 }
@@ -9280,11 +9279,9 @@ test(1633.4, dt[, .SD, by=1:nrow(dt)], data.table(nrow=1:nrow(dt), dt)) # make s
 
 # reuse secondary indices
 dt = data.table(x=sample(3, 10, TRUE), y=1:10)
-v1 = capture.output(ans1 <- dt[.(3:2), on="x", verbose=TRUE])
+test(1634.1, dt[.(3:2), on="x", verbose=TRUE], output = "ad hoc")
 setindex(dt, x)
-v2 = capture.output(ans2 <- dt[.(3:2), on="x", verbose=TRUE])
-test(1634.1, any(grepl("ad hoc", v1)), TRUE)
-test(1634.2, any(grepl("existing index", v2)), TRUE)
+test(1634.2, dt[.(3:2), on="x", verbose=TRUE], output = "existing index")
 
 # fread's fill argument detects separator better in complex cases as well, #1573
 # if pasted to the console, these tests won't work. But do work when sourced as these are tabs not spaces in text
@@ -10248,13 +10245,13 @@ options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
 test(1666.01, d[k==1L, verbose=TRUE], d[3L], output="Creating new index 'k'")
 d = data.table(k=3:1)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
-test(1666.02, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # do not create index
+test(1666.02, d[k==1L, verbose=TRUE], notOutput="Creating new index") # do not create index
 d = data.table(k=3:1)
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
-test(1666.03, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0))
+test(1666.03, d[k==1L, verbose=TRUE], notOutput="Creating new index")
 d = data.table(k=3:1)
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
-test(1666.04, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0))
+test(1666.04, d[k==1L, verbose=TRUE], notOutput="Creating new index")
 d = data.table(k=3:1) # subset - index
 setindex(d, k)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
@@ -10262,9 +10259,9 @@ test(1666.05, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with i
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
 test(1666.06, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
-test(1666.07, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # not using existing index
+test(1666.07, d[k==1L, verbose=TRUE], notOutput="Using existing index") # not using existing index
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
-test(1666.08, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0))
+test(1666.08, d[k==1L, verbose=TRUE], notOutput="Using existing index")
 d1 = data.table(k=3:1) # join - no index
 d2 = data.table(k=2:4)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
@@ -10272,9 +10269,9 @@ test(1666.09, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="ad hoc")
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
 test(1666.10, d1[d2, on="k", verbose=TRUE], d1[d2, on="k"], output="ad hoc")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
-test(1666.11, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0)) # not looking for index
+test(1666.11, d1[d2, on="k", verbose=TRUE], notOutput="Looking for existing (secondary) index") # not looking for index
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
-test(1666.12, grep("Looking for existing (secondary) index", capture.output(d1[d2, on="k", verbose=TRUE])), integer(0))
+test(1666.12, d1[d2, on="k", verbose=TRUE], notOutput="Looking for existing (secondary) index")
 d1 = data.table(k=3:1,v1=10:12) # join - index
 d2 = data.table(k=2:4,v2=20:22)
 setindex(d1, k)
@@ -11643,8 +11640,7 @@ test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]",
-             ignore.warning="timedatectl") # R 3.4's Sys.timezone() raises this warning in docker, #4182
+test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]")
 
 # test test's ignore.warning
 test(1765.2, {warning("foo"); 4L}, 4L, ignore.warning="foo")
@@ -11653,8 +11649,7 @@ test(1765.4, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, i
 test(1765.5, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="2", warning=c("foobar1","FOO"))
 
 # print(null.data.table()) should not output NULL as well, #1852
-# use capture.output() in this case rather than output= to ensure NULL is not output
-test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
+test(1766, data.table(NULL), notOutput = "NULL$")
 
 # Bug on subset of 1-row data.table when expr returns a named logical vector #2152
 options(datatable.auto.index=FALSE)
@@ -11888,8 +11883,8 @@ test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be scalar")
 
 # verify print.keys works
 DT1 <- data.table(a = 1:3, key = "a")
-test(1775.1, capture.output(print(DT1, print.keys = TRUE)),
-     c("Key: <a>", "   a", "1: 1", "2: 2", "3: 3"))
+test(1775.1, print(DT1, print.keys = TRUE),
+     output = c("Key: <a>", "   a", "1: 1", "2: 2", "3: 3"))
 DT2 <- data.table(a = 1:3, b = 4:6)
 setindexv(DT2, c("b","a"))
 test(1775.2, print(DT2, print.keys = TRUE),
@@ -13675,7 +13670,7 @@ test(1962.034, setkeyv(DT, c('a', '')),
 setkey(DT, a)
 test(1962.035, {setkeyv(DT, character(0L)); key(DT)}, NULL,
      warning = 'cols is a character vector of zero length')
-test(1962.036, any(grepl('already ordered', capture.output(setkey(DT, a, verbose = TRUE)))))
+test(1962.036, setkey(DT, a, verbose = TRUE), output = 'already ordered')
 setnames(DT, '.xi')
 setkey(DT, NULL)
 test(1962.037, setkey(DT, .xi),
@@ -15156,10 +15151,8 @@ test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just thi
 # also incidentally fixed #2491
 DT = data.table(
   Group = c("A", "A", "B", "B", "C", "C"),
-  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0 # TODO: update to .Date on R 3.5
-                  17456.0360002079, 17440.0230725919, 17451.0572453837), "Date"),
-  Date2 = `class<-`(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
-                  17443.1175238448, 17461.0463715783, 17448.1033968224), "Date")
+  Date1 = .Date(c(17446.0291040738, 17470.0221205444, 17445.0765226481, 17456.0360002079, 17440.0230725919, 17451.0572453837)),
+  Date2 = .Date(c(17459.1561177987, 17451.1086757995, 17449.0820898537, 17443.1175238448, 17461.0463715783, 17448.1033968224))
 )
 DT[ , DiffTime := abs(difftime(Date1, Date2, units = 'days'))]
 test(2042.4, DT[ , round(mean(DiffTime)), by=Group, verbose=TRUE],
@@ -16321,7 +16314,7 @@ test(2094.02, X$TAG, rep(names(x), each = 2))
 
 # use arbitrary column without message when fun.aggregate=length, #2980
 DT = data.table(a=c(3L, 3L, 2L, 9L, 5L, 10L, 3L, 2L, 9L, 8L), b=rep(1:5, 2))
-test(2095, any(grepl('override', capture.output(dcast(DT, a~b, fun.aggregate=length)), fixed=TRUE)), FALSE)
+test(2095, dcast(DT, a~b, fun.aggregate=length), notOutput='override')
 
 # gmean intermediate can overflow integers without warning, #986
 test(2096, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
@@ -16705,10 +16698,10 @@ test(2125.05, print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE),
               "1 variable not shown: \\[d <char>\\]"))
 test(2125.06, print(DT, trunc.cols=TRUE, col.names="none"),
      output=c("^  1: 0 bbbbbbbbbbbbb ccccccccccccc", ".*",
-              "1 variable not shown: \\[d\\]", ""))
+              "1 variable not shown: \\[d\\]$"))
 test(2125.07, print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"),
      output=c("^  1: 0 bbbbbbbbbbbbb", ".*",
-              "2 variables not shown: \\[c, d\\]", ""),
+              "2 variables not shown: \\[c, d\\]$"),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
@@ -19409,8 +19402,7 @@ test(2286,
        x<2, structure(list(1), class = "foo"),
        x<3, structure(list(2), class = "foo"),
        # Force gc() and some allocations which have a good chance at landing in the region that was earlier left unprotected
-       # TODO(R>=3.5.0): no need to branch here for gc(full=TRUE)
-       { if ("full" %in% names(formals(gc))) gc(full = TRUE) else gc(); replicate(10, FALSE); x<4 },
+       { gc(full = TRUE); replicate(10, FALSE); x<4 },
        `attr<-`(list(3), "class", "foo")),
      structure(list(1, 2, 3), class = "foo"))
 
@@ -20814,8 +20806,8 @@ y = data.table(c=1, d=1L)
 test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 test(2297.04, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 # dates
-d_int = `class<-`(1L, "Date") # TODO: update to .Date on R 3.5
-d_dbl = `class<-`(1, "Date")
+d_int = .Date(1L)
+d_dbl = .Date(1)
 x = data.table(a=d_int)
 y = data.table(c=d_int, d=d_dbl)
 test(2297.11, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
@@ -21491,11 +21483,11 @@ test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
 
 #6882 print() output with col.names="none"
 dt = data.table(short = 1:3, verylongcolumnname = 4:6)
-test(2329.1, print(dt, col.names = "none"), output = "1: 1 4\n2: 2 5\n3: 3 6\n")
+test(2329.1, print(dt, col.names = "none"), output = "1: 1 4\n2: 2 5\n3: 3 6$")
 dt = data.table(x = 123456, y = "wide_string")
-test(2329.2, print(dt, col.names = "none"), output = "1: 123456 wide_string\n")
+test(2329.2, print(dt, col.names = "none"), output = "1: 123456 wide_string$")
 dt = data.table(a = NA_integer_, b = NaN)
-test(2329.3, print(dt, col.names = "none"), output = "1: NA NaN\n")
+test(2329.3, print(dt, col.names = "none"), output = "1: NA NaN$")
 
 # Row name extraction from multiple vectors, #7136
 x <- 1:3 
@@ -21652,13 +21644,10 @@ test(2339.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
 test(2339.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
 test(2339.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
 sqrt_elt_sym = function(...) sqrt(...elt(1))
-# TODO(R>=3.5.0): run this unconditionally
-if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
-  test(2339.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
-  test(2339.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
-  test(2339.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
-  test(2339.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
-}
+test(2339.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
+test(2339.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+test(2339.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+test(2339.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
 # edge case of weird, though technically valid, names:
 #  _not_ '..N' style and distinct from '...'
 #  `123`='a'; DT[, ..123] doesn't work, but that's fine & easy to work around
@@ -21897,9 +21886,52 @@ setorder(DT, x)
 test(2350, DT[["x"]], sort.int(strings, method='radix'))
 rm(DT, strings)
 
+# do remove columns in freshly unserialized data.tables, #7488
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+test(2351.1, DT[,carb:=NULL], as.data.table(mtcars)[,carb:=NULL])
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+test(2351.2, set(DT, j="carb", value=NULL), as.data.table(mtcars)[,carb:=NULL])
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+null_in_value <- NULL
+test(2351.3, "cyl" %notin% names(DT[, cyl := null_in_value]))
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+test(2351.4,  ncol(DT[, c("cyl", "mpg") := .(null_in_value, null_in_value)]), ncol(mtcars) - 2L)
+l = list(DT = unserialize(serialize(as.data.table(mtcars), NULL)))
+test(2351.5, set(l$DT, j="carb", value=NULL), as.data.table(mtcars)[,carb:=NULL])
+test(2351.6, "carb" %notin% names(l$DT))
+l = list(DT = unserialize(serialize(as.data.table(mtcars), NULL)))
+test(2351.7, set(l[["DT"]], j="carb", value=NULL), as.data.table(mtcars)[,carb:=NULL])
+test(2351.8, "carb" %notin% names(l$DT))
+rm(DT, l)
+
+# rbindlist did not protect the temporary UTF-8 strings, #7452
+DTn = apply(matrix(as.raw(rep(0xa1:0xff, length.out = 100)), 10), 2, rawToChar)
+Encoding(DTn) = 'latin1' # will need conversion to UTF-8
+DTl = lapply(DTn, function(n) setNames(list(42), n))[c(1, rep(2:length(DTn), length.out = 3e5), 1)]
+DT = suppressMessages(rbindlist(DTl)) # used to crash
+test(2352.1, dim(DT), c(300002L, 1L))
+test(2352.2, DT[[1]], rep(42, nrow(DT)))
+rm(DTn, DTl, DT)
+
+# insert columns by group in freshly unserialized data.tables, #7498
+DT = unserialize(serialize(as.data.table(mtcars), NULL))
+test(2353, DT[,foo:=mean(mpg),by=cyl], as.data.table(mtcars)[,foo:=mean(mpg),by=cyl])
+rm(DT)
+
+# as.data.table.array(x) shouldn't overwrite dimnames(x), #7506
+Xdn = list(foo = letters[1:2], bar = LETTERS[1:3], baz = as.character(1:4))
+X = array(1:24, 2:4, copy(Xdn))
+DT = as.data.table(X)
+test(2354.1, dimnames(X), Xdn)
+Xdn['baz'] = list(NULL)
+dimnames(X) = copy(Xdn)
+DT = as.data.table(X)
+test(2354.2, dimnames(X), Xdn)
+rm(X, Xdn, DT)
+
 # fread dont skip on skip=0, #7463
 txt = 'a1;a2\nb1;b2;b3\nc1;c2;c3'
-test(2351.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
-test(2351.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
-test(2351.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
-test(2351.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))
+test(2355.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
+test(2355.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
+test(2355.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
+test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))

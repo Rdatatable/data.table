@@ -41,8 +41,7 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // we restore the true truelength for when R starts to use vector truelength.
   SEXP attribs, list_el;
   const int n = length(x);
-  // use length() not LENGTH() because LENGTH() on NULL is segfault in R<3.5 where we still define USE_RINTERNALS
-  // (see data.table.h), and isNewList() is true for NULL
+  // use length() not LENGTH() because isNewList() is true for NULL
   if (n==0)
     return false;
   if (isVectorAtomic(x))

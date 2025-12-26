@@ -2,7 +2,17 @@
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-## data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
+## data.table [v1.18.99](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (in development)
+
+### Notes
+
+1. {data.table} now depends on R 3.5.0 (2018).
+
+### BUG FIXES
+
+1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
+
+## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
 ### BREAKING CHANGE
 
@@ -11,6 +21,7 @@
 2. `melt()` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name). This change has been planned since 1.16.0 (25 Aug 2024).
 
 3. Rolling functions `frollmean` and `frollsum` distinguish `Inf`/`-Inf` from `NA` to match the same rules as base R when `algo="fast"` (previously they were considered the same). If your input into those functions has `Inf` or `-Inf` then you will be affected by this change. As a result, the argument that controls the handling of `NA`s has been renamed from `hasNA` to `has.nf` (_has non-finite_). `hasNA` continues to work with a warning, for now.
+
     ```r
     ## before
     frollsum(c(1,2,3,Inf,5,6), 2)
@@ -19,8 +30,10 @@
     ## now
     frollsum(c(1,2,3,Inf,5,6), 2)
     #[1]  NA   3   5 Inf Inf  11
+    ```
 
 4. `frollapply` result is not coerced to numeric anymore. Users' code could possibly break if it depends on forced coercion of input/output to numeric type.
+
     ```r
     ## before
     frollapply(c(F,T,F,F,F,T), 2, any)
@@ -30,6 +43,7 @@
     frollapply(c(F,T,F,F,F,T), 2, any)
     #[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
     ```
+
     Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
 
 5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
@@ -218,6 +232,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     ```
 
 18. New helper `frolladapt` to facilitate applying rolling functions over windows of fixed calendar-time width in irregularly-spaced data sets, thereby bypassing the need to "augment" such data with placeholder rows, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
+
     ```r
     idx = as.Date("2025-09-05") + c(0,4,7,8,9,10,12,13,17)
     dt = data.table(index=idx, value=seq_along(idx))
@@ -354,7 +369,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 27. `dogroups()` no longer reads beyond the resized end of over-allocated data.table list columns, [#7486](https://github.com/Rdatatable/data.table/issues/7486). While this didn't crash in practice, it is now explicitly checked for in recent R versions (r89198+). Thanks @TimTaylor and @aitap for the report and @aitap for the fix.
 
-28. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
+28. `rbindlist()` now avoids the crash when working with many non-UTF-8 column names, [#7452](https://github.com/Rdatatable/data.table/issues/7452). Thanks @aitap for the report and the fix.
 
 ### NOTES
 
