@@ -366,11 +366,10 @@ integration:
     ## Copy assets to site directory
     - mkdir -p ./site/assets/favicon/
     - cp .graphics/favicon/* ./site/assets/favicon/
-    ## Build litedown site
-    - cd site && Rscript -e 'litedown::fuse_site()' && cd ..
-    ## Generate reference pages
+    ## Generate reference pages first (creates reference_index.rds needed by manual.Rmd)
     - Rscript site/generate_reference.R
-    - cd site && Rscript -e 'litedown::fuse("manual.Rmd")' && cd ..
+    ## Build litedown site (now manual.Rmd can use reference_index.rds)
+    - cd site && Rscript -e 'litedown::fuse_site()' && cd ..
     - mkdir -p website
     - cp -r site/*.html website/
     - cp -r site/reference website/ 2>/dev/null || true
