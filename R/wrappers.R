@@ -2,13 +2,13 @@
 # Very small (e.g. one line) R functions that just call C.
 # One file wrappers.R to avoid creating lots of small .R files.
 
-fcoalesce   = function(...) .Call(Ccoalesce, list(...), FALSE)
-setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
+fcoalesce   = function(..., nan=NA) .Call(Ccoalesce, list(...), FALSE, nan_is_na(nan))
+setcoalesce = function(..., nan=NA) .Call(Ccoalesce, list(...), TRUE, nan_is_na(nan))
 
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
 fcase   = function(..., default=NA) {
-  # TODO(R>=3.5.0): Use ...length() to avoid the need for suppressWarnings() here
-  default_condition = suppressWarnings(rep(TRUE, length(switch(1L, ...)))) # better than ..1/..elt(1): won't fail for empty fcase()
+  default_condition = logical()
+  if (...length()) default_condition = rep(TRUE, length(..1))
   arg_list = as.list(substitute(list(..., default_condition, default)))[-1L]
   .Call(CfcaseR, parent.frame(), arg_list)
 }

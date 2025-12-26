@@ -6,10 +6,12 @@
     - The replacement of NAs with non-NA values from subsequent vectors
     - The conditional checks within parallelized loops
 */
-SEXP coalesce(SEXP x, SEXP inplaceArg) {
+SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
   if (TYPEOF(x)!=VECSXP) internal_error(__func__, "input is list(...) at R level"); // # nocov
   if (!IS_TRUE_OR_FALSE(inplaceArg)) internal_error(__func__, "argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
+  if (!IS_TRUE_OR_FALSE(nan_is_na_arg)) internal_error(__func__, "argument 'nan_is_na_arg' must be TRUE or FALSE"); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
+  const bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
   const bool verbose = GetVerbose();
   int nprotect = 0;
   if (length(x)==0 || isNull(VECTOR_ELT(x,0))) return R_NilValue;  // coalesce(NULL, "foo") return NULL even though character type mismatches type NULL
@@ -102,23 +104,44 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     } else {
       double *xP = REAL(first), finalVal=NA_REAL;
       int k=0;
-      for (int j=0; j<nval; ++j) {
-        SEXP item = VECTOR_ELT(x, j+off);
-        if (length(item)==1) {
-          double tt = REAL(item)[0];
-          if (ISNAN(tt)) continue;
-          finalVal = tt;
-          break;
+      if (nan_is_na) {
+        for (int j=0; j<nval; ++j) {
+          SEXP item = VECTOR_ELT(x, j+off);
+          if (length(item)==1) {
+            double tt = REAL(item)[0];
+            if (ISNAN(tt)) continue;
+            finalVal = tt;
+            break;
+          }
+          valP[k++] = REAL_RO(item);
         }
-        valP[k++] = REAL_RO(item);
-      }
-      const bool final = !ISNAN(finalVal);
-      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
-      for (int i=0; i<nrow; ++i) {
-        double val=xP[i];
-        if (!ISNAN(val)) continue;
-        int j=0; while (ISNAN(val) && j<k) val=((double *)valP[j++])[i];
-        if (!ISNAN(val)) xP[i]=val; else if (final) xP[i]=finalVal;
+        const bool final = !ISNAN(finalVal);
+        #pragma omp parallel for num_threads(getDTthreads(nrow, true))
+        for (int i=0; i<nrow; ++i) {
+          double val=xP[i];
+          if (!ISNAN(val)) continue;
+          int j=0; while (ISNAN(val) && j<k) val=((double *)valP[j++])[i];
+          if (!ISNAN(val)) xP[i]=val; else if (final) xP[i]=finalVal;
+        }
+      } else {
+        for (int j=0; j<nval; ++j) {
+          SEXP item = VECTOR_ELT(x, j+off);
+          if (length(item)==1) {
+            double tt = REAL(item)[0];
+            if (ISNA(tt)) continue;
+            finalVal = tt;
+            break;
+          }
+          valP[k++] = REAL_RO(item);
+        }
+        const bool final = !ISNA(finalVal);
+        #pragma omp parallel for num_threads(getDTthreads(nrow, true))
+        for (int i=0; i<nrow; ++i) {
+          double val=xP[i];
+          if (!ISNA(val)) continue;
+          int j=0; while (ISNA(val) && j<k) val=((double *)valP[j++])[i];
+          if (!ISNA(val)) xP[i]=val; else if (final) xP[i]=finalVal;
+        }
       }
     }
   } break;

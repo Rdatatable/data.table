@@ -9,7 +9,7 @@
 }
 
 \usage{
-  \method{subset}{data.table}(x, subset, select, \ldots)
+  \method{subset}{data.table}(x, subset, select, ...)
 }
 
 \arguments{

@@ -32,7 +32,7 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
 }
 
 SEXP cbindlist(SEXP x, SEXP copyArg) {
-  if (!isNewList(x) || isFrame(x))
+  if (!isNewList(x) || isDataFrame(x))
     error(_("'%s' must be a list"), "x");
   bool copy = (bool)LOGICAL(copyArg)[0];
   const bool verbose = GetVerbose();

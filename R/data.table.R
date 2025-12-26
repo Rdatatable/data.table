@@ -97,34 +97,32 @@ replace_dot_alias = function(e) {
 }
 
 .checkTypos = function(err, ref) {
+  err_str <- conditionMessage(err)
   # a slightly wonky workaround so that this still works in non-English sessions, #4989
   # generate this at run time (as opposed to e.g. onAttach) since session language is
   #   technically OK to update (though this should be rare), and since it's low-cost
   #   to do so here because we're about to error anyway.
-  missing_obj_fmt = gsub(
-    "'missing_datatable_variable____'",
+  missing_obj_regex = gsub(
+    "'____missing_datatable_variable____'",
     "'(?<obj_name>[^']+)'",
-    tryCatch(eval(parse(text="missing_datatable_variable____")), error=identity)$message
-    # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
-    # names starting with _ don't parse, so no leading _ in the name
+    # expression() to avoid "no visible binding for global variable" note from R CMD check
+    conditionMessage(tryCatch(eval(quote(`____missing_datatable_variable____`)), error=identity)),
+    fixed=TRUE
   )
-  idx = regexpr(missing_obj_fmt, err$message, perl=TRUE)
-  if (idx > 0L) {
-    start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
-    used = substr(
-      err$message,
-      start,
-      start + attr(idx, "capture.length", exact=TRUE)[ , "obj_name"] - 1L
-    )
-    found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
-    if (length(found)) {
-      stopf("Object '%s' not found. Perhaps you intended %s", used, brackify(found))
-    } else {
-      stopf("Object '%s' not found amongst %s", used, brackify(ref))
-    }
+  idx = regexpr(missing_obj_regex, err_str, perl=TRUE)
+  if (idx == -1L)
+    stop(err) # Pass 'err' to retain call site data (#7444); beware also #6588
+  start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
+  used = substr(
+    err_str,
+    start,
+    start + attr(idx, "capture.length", exact=TRUE)[ , "obj_name"] - 1L
+  )
+  found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
+  if (length(found)) {
+    stopf("Object '%s' not found. Perhaps you intended %s", used, brackify(found))
   } else {
-    # Don't use stopf() directly, since err$message might have '%', #6588
-    stopf("%s", err$message, domain=NA)
+    stopf("Object '%s' not found amongst %s", used, brackify(ref))
   }
 }
 
@@ -266,7 +264,8 @@ replace_dot_alias = function(e) {
   if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
-    av = all.vars(jsub)
+    # exclude '..1' etc. for #5460
+    av = grepv("^[.][.](?:[.]|[0-9]+)$", all.vars(jsub), invert=TRUE)
     all..names = FALSE
     if ((.is_withFALSE_range(jsub, x, root, av)) ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
@@ -314,7 +313,7 @@ replace_dot_alias = function(e) {
         root = root_name(jsub)
       } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
         #2142 -- j can be {} and have length 1
-        stopf("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}]")
+        stopf("Invalid use of `:=` inside `{}`. `:=` must be the only expression inside `{}` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]")
       }
     }
     if (root=="eval" && !any(all.vars(jsub[[2L]]) %chin% names_x)) {
@@ -562,7 +561,7 @@ replace_dot_alias = function(e) {
             }
             irows = vecseq(f__, len__, limit)
           }
-          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
           # Fix for #1092 and #1074
           # TODO: implement better version of "any"/"all"/"which" to avoid
           # unnecessary construction of logical vectors
@@ -1190,11 +1189,11 @@ replace_dot_alias = function(e) {
         } else if (is.numeric(lhs)) {
           m = as.integer(lhs)
           if (any(m<1L | ncol(x)<m)) stopf("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
-          lhs = names_x[m]
         } else
           stopf("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
+        ok<-selfrefok(x, verbose=FALSE)
         if (!anyNA(m)) {
-          # updates by reference to existing columns
+          # updates by reference to existing columns, or deletions
           cols = as.integer(m)
           newnames=NULL
           if (identical(irows, integer())) {
@@ -1215,44 +1214,56 @@ replace_dot_alias = function(e) {
             return(invisible(x))
           }
         } else {
-          # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
+          # Adding new column(s). Allocation for columns and recalculation of target cols moved after the jval = eval(jsub)
+          # in case of error or by-reference modifications to the DT
           newnames=setdiff(lhs, names_x)
           m[is.na(m)] = ncol(x)+seq_along(newnames)
           cols = as.integer(m)
           # don't pass verbose to selfrefok here -- only activated when
-          #   ok=-1 which will trigger setalloccol with verbose in the next
-          #   branch, which again calls _selfrefok and returns the message then
-          if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
+          #   ok=-1 which will trigger setalloccol with verbose in the next branch
+          #   if a change in the number of columns is suspected
+          if (ok==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
             if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
-            # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
-          if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
-            DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
-            n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
-            # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
-            name = substitute(x)
-            if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-              catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
-              # #1729 -- copying to the wrong environment here can cause some confusion
-              if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+        }
+        # ok <- selfrefok above called without verbose -- only activated when
+        #   ok=-1 which will trigger setalloccol with verbose in the next
+        #   branch, which again calls _selfrefok and returns the message then
+        # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
+        if (
+          (
+            !is.null(newnames) || # adding new columns
+            is.null(jsub) || (jsub %iscall% "list" && any(vapply_1b(jsub[-1], is.null))) # removing columns
+          ) && (
+            (ok<1L) || # unsafe to resize
+            (truelength(x) < ncol(x)+length(newnames)) # not enough space for new columns
+          )
+        ) {
+          DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
+          n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
+          # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
+          name = substitute(x)
+          if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
+            catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
+            # #1729 -- copying to the wrong environment here can cause some confusion
+            if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
 
-              # Verbosity should not issue warnings, so cat rather than warning.
-              # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
+            # Verbosity should not issue warnings, so cat rather than warning.
+            # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
 
-              # TO DO ... comments moved up from C ...
-              # Note that the NAMED(dt)>1 doesn't work because .Call
-              # always sets to 2 (see R-ints), it seems. Work around
-              # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-              # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-              # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
-              # don't mind.
-            }
-            setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
-            if (is.name(name)) {
-              assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (.is_simple_extraction(name)) {
-              .reassign_extracted_table(name, x)
-            } # TO DO: else if env$<- or list$<-
+            # TO DO ... comments moved up from C ...
+            # Note that the NAMED(dt)>1 doesn't work because .Call
+            # always sets to 2 (see R-ints), it seems. Work around
+            # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+            # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+            # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+            # don't mind.
           }
+          setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+          if (is.name(name)) {
+            assign(as.character(name),x,parent.frame(),inherits=TRUE)
+          } else if (.is_simple_extraction(name)) {
+            .reassign_extracted_table(name, x)
+          } # TO DO: else if env$<- or list$<-
         }
       }
     }
@@ -1299,8 +1310,8 @@ replace_dot_alias = function(e) {
   SDenv = new.env(parent=parent.frame())
 
   syms = all.vars(jsub)
-  syms = syms[ startsWith(syms, "..") ]
-  syms = syms[ substr(syms, 3L, 3L) != "." ]  # exclude ellipsis
+  syms = syms[startsWith(syms, "..")]
+  syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
   for (sym in syms) {
     if (sym %chin% names_x) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
@@ -1412,6 +1423,31 @@ replace_dot_alias = function(e) {
     }
 
     if (!is.null(lhs)) {
+      # Re-matches characters names in the lhs after jval to account for jsub's that modify the columns of the data.table (#6768)
+      # Replaces numerical lhs with respective names_x
+      if(is.character(lhs)){
+        m = chmatch(lhs, names_x)
+        if(!anyNA(m)) {
+          # updates by reference to existing columns
+          cols = as.integer(m)
+          newnames = NULL
+        } else {
+          # Adding new column(s).
+          newnames = setdiff(lhs, names_x)
+          m[is.na(m)] = ncol(x) + seq_along(newnames)
+          cols = as.integer(m)
+        }
+      } else if (is.numeric(lhs)) {
+        lhs = names_x[m]
+      }
+      # cater for deleting columns by assigning NULL
+      if ((is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+        name = substitute(x)
+        setalloccol(x, verbose=FALSE)
+        if (is.name(name)) {
+          assign(as.character(name), x, parent.frame(), inherits=TRUE)
+        }
+      }
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
@@ -1449,7 +1485,7 @@ replace_dot_alias = function(e) {
         if (SD_only)
           jvnames = jnames = sdvars
         else
-          jnames = as.character(Filter(is.name, jsub)[-1L])
+          jnames = vapply_1c(jsub, function(x) if (is.name(x)) as.character(x) else NA_character_)[-1L]
         key_idx = chmatch(key, jnames)
         missing_keys = which(is.na(key_idx))
         if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
@@ -1592,7 +1628,7 @@ replace_dot_alias = function(e) {
   if (length(xcols)) {
     #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
     #  TODO move down to dogroup.c, too.
-    SDenv$.SDall = .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols)  # must be deep copy when largest group is a subset
+    SDenv$.SDall = .Call(CcopyAsGrowable, .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols))  # must be deep copy when largest group is a subset
     if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
     SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
@@ -1865,7 +1901,7 @@ replace_dot_alias = function(e) {
     grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
     jiscols = chmatch(jisvars, names_i)  # integer() if there are no jisvars (usually there aren't, advanced feature)
     xjiscols = chmatch(xjisvars, names_x)
-    SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE]
+    SDenv$.xSD = .Call(CcopyAsGrowable, x[min(nrow(i), 1L), xjisvars, with=FALSE])
     if (!missing(on)) o__ = xo else o__ = integer(0L)
   } else {
     groups = byval
@@ -2049,8 +2085,9 @@ replace_dot_alias = function(e) {
   if (!.Call(CisOrderedSubset, irows, nrow(x)))
     return(NULL)
 
-  # see #1010. don't set key when i has no key, but irows is ordered and !roll
-  if (roll && length(irows) != 1L)
+  # see #1010. don't set key when i has no key, but irows is ordered and isFALSE(roll)
+  #   NB: roll could still be a string like 'nearest', #7146
+  if (!is.character(roll) && roll && length(irows) != 1L)
     return(NULL)
 
   new_key <- head(x_key, key_length)
@@ -2493,7 +2530,7 @@ Ops.data.table = function(e1, e2 = NULL)
 }
 
 split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TRUE, flatten = TRUE, ..., verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(x)) stopf("x argument must be a data.table")
+  if (!is.data.table(x)) internal_error("x argument to split.data.table must be a data.table") # nocov
   stopifnot(is.logical(drop), is.logical(sorted), is.logical(keep.by),  is.logical(flatten))
   # split data.frame way, using `f` and not `by` argument
   if (!missing(f)) {
@@ -2568,8 +2605,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
-    for (x in ll) .Call(C_unlock, x)
-    lapply(ll, setDT)
+    for (xi in ll) .Call(C_unlock, xi)
+    out = lapply(ll, setDT)
+    # TODO(#2000): just let setDT handle this
+    if (!identical(old_class <- class(x), c("data.table", "data.frame"))) for (xi in out) setattr(xi, "class", old_class)
+    out
     # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
   } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
@@ -2816,6 +2856,17 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
+  # If removing columns from a table that's not selfrefok, need to call setalloccol first, #7488
+  if ((is.null(value) || (is.list(value) && any(vapply_1b(value, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+    name = substitute(x)
+    setalloccol(x, verbose=FALSE)
+    if (is.name(name)) {
+      assign(as.character(name), x, parent.frame(), inherits=TRUE)
+    } else if (is.call(name)) {
+      # handle subexpressions like self$dt, foo[["bar"]], etc. by evaluating the assignment in parent frame
+      eval(call("<-", name, x), parent.frame())
+    }
+  }
   .Call(Cassign,x,i,j,NULL,value)
   invisible(x)
 }
@@ -2882,7 +2933,7 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. Note that namespace-qualification like data.table::`:=`(...) is not supported. See help(":=").', class="dt_invalid_let_error")
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, `:=` is defined for use in j, once only and in particular ways. See help(":=", "data.table"). A common reason for this error is allocating a new column in `j` and using `<-` instead of `:=`; e.g., `DT[, new_col <- 1]` should be `DT[, new_col := 1]`. Another is using `:=` in a multi-statement `{...}` block; please use `:=` as the only statement in `j`.', class="dt_invalid_let_error")
 }
 
 # TODO(#6197): Export these.

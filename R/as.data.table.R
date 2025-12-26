@@ -50,7 +50,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
     # auto-inferred name 'x' is not back-compatible & inconsistent, #7145
     if (ncol(x) == 1L && is.null(colnames(x)))
-      setnames(ans, 'x', 'V1')
+      setnames(ans, 'x', 'V1', skip_absent=TRUE)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
@@ -102,8 +102,9 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     lapply(dx, seq_len)
   } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
     dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
+    setattr(dnx, 'names', copy(names(dnx)))
     dnx
-  } else dnx
+  } else copy(dnx)
   setfrev(val)
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", frev(seq_along(val))))
@@ -162,7 +163,7 @@ as.data.table.list = function(x,
       xi = x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {
       if (!is.data.table(xi)) {
-        if (is.matrix(xi) && NCOL(xi)<=1L && is.null(colnames(xi))) { # 1 column matrix naming #4124
+        if (is.matrix(xi) && NCOL(xi)==1L && is.null(colnames(xi)) && isFALSE(getOption('datatable.old.matrix.autoname'))) { # 1 column matrix naming #4124
           xi = x[[i]] = c(xi)
         } else {
           xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns

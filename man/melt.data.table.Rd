@@ -24,10 +24,10 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
 \item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or pattern-based.
 
   \itemize{
-    \item{ When missing, \code{measure.vars} will become all columns outside \code{id.vars}. }
-    \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
-    \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
-    \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} (regex without capture groups; matching column names are used in the \code{variable.name} output column), or \code{\link{measure}} (regex with capture groups; each capture group becomes an output column). }
+    \item When missing, \code{measure.vars} will become all columns outside \code{id.vars}.
+    \item Vector can be \code{integer} (implying column numbers) or \code{character} (column names).
+    \item \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column.
+    \item Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} (regex without capture groups; matching column names are used in the \code{variable.name} output column), or \code{\link{measure}} (regex with capture groups; each capture group becomes an output column).
   }
 
     For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }

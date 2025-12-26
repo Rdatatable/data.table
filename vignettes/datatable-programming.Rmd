@@ -1,27 +1,21 @@
 ---
 title: "Programming on data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Programming on data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r init, include = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+litedown::reactor(comment = "# ")
 ```
 
 ## Introduction
@@ -202,6 +196,33 @@ DT[filter_col %in% filter_val,
      filter_val = I(c("versicolor", "virginica")),
      by_col =  "Species"
   )]
+```
+
+### Substitute functions
+
+A tiny clarification may be useful on how we can substitute a function name in an expression.
+Note that providing `outer="sqrt"` (string) vs. `outer=sqrt` (symbol) is very different:
+```{r substitute_fun1, result='hide'}
+DT[, outer(Sepal.Length), env = list(outer="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: sqrt(Sepal.Length)
+## DT[, sqrt(Sepal.Length)]
+
+DT[, outer(Sepal.Length), env = list(outer=sqrt), verbose=TRUE]
+#Argument 'j' after substitute: .Primitive("sqrt")(Sepal.Length)
+## DT[, .Primitive("sqrt")(Sepal.Length)]
+```
+And while `.Primitive("sqrt")(Sepal.Length)` still works, it is almost never the desired form.
+
+Even more importantly, if the symbol form is meant to be used, then it can, and should, be used directly in the expression, as there is no need for substitution.
+```{r substitute_fun2, result='hide'}
+DT[, sqrt(Sepal.Length)]
+```
+
+If function name to be substituted needs to be namespace-qualified then namespace and function name can be substituted as any other symbol in the expression:
+```{r substitute_fun3, result='hide', eval=FALSE}
+DT[, ns::fun(Sepal.Length), env = list(ns="base", fun="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: base::sqrt(Sepal.Length)
+## DT[, base::sqrt(Sepal.Length)]
 ```
 
 ### Substitute variables and character values

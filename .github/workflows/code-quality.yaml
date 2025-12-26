@@ -2,11 +2,44 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
 name: code-quality
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      r:  ${{ steps.filter.outputs.r }}
+      c:  ${{ steps.filter.outputs.c }}
+      po: ${{ steps.filter.outputs.po }}
+      md: ${{ steps.filter.outputs.md }}
+      rd: ${{ steps.filter.outputs.rd }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # ensure diff against base is available for PRs
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            r:
+              - '**/*.R'
+              - '**/*.Rmd'
+            c:
+              - '**/*.c'
+              - '**/*.h'
+            po:
+              - 'po/**/*.po'
+            md:
+              - '**/*.md'
+              - '**/*.Rmd'
+            rd:
+              - 'man/**/*.Rd'
+
   lint-r:
+    needs: changes
+    if: needs.changes.outputs.r == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -31,6 +64,8 @@ jobs:
           LINTR_ERROR_ON_LINT: true
           R_LINTR_LINTER_FILE: .ci/.lintr
   lint-c:
+    needs: changes
+    if: needs.changes.outputs.c == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +77,8 @@ jobs:
         run: |
           Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
   lint-po:
+    needs: changes
+    if: needs.changes.outputs.po == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +92,8 @@ jobs:
         run: |
           Rscript .ci/lint.R .ci/linters/po po '[.]po$'
   lint-md:
+    needs: changes
+    if: needs.changes.outputs.md == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +101,8 @@ jobs:
       - name: Lint
         run: Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
   lint-rd:
+    needs: changes
+    if: needs.changes.outputs.rd == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
