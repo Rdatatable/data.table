@@ -64,7 +64,7 @@ base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","v
             }
             for (algo in algos) {
               num <<- num + num.step
-              test(num,
+              test(num, ignore.warning="no non-missing arguments",
                    rollfun(x, n, FUN=fun, fill=fill, na.rm=na.rm, partial=partial),
                    froll(fun, x, n, fill=fill, na.rm=na.rm, algo=algo, partial=partial, has.nf=has.nf),
                    context=sprintf("fun=%s\tna.rm=$s\tfill=%s\tpartial=%s\thas.nf=%s\talgo=%s", fun, na.rm, fill, partial, has.nf, algo))
