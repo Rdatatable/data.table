@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r init, include = FALSE}
 require(data.table)
@@ -372,6 +372,42 @@ j = as.call(c(
 ))
 print(j)
 DT[, j, env = list(j = j)]
+```
+
+### Erreurs habituelles
+
+Il est important de comprendre la différence entre le fait de passer un objet et passer un nom qui pointe vers un objet. Activez la sortie verbeuse dans les exemples suivants.
+
+```{r obj_vs_objname}
+DT[, fun(Petal.Width), env = list(fun = mean), verbose=TRUE]
+DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
+```
+
+Les utilisateurs voudront habituellement substituer le nom de la fonction plutôt qu'insérer le contenu actuel de la fonction. C'est pourquoi la seonde approche est souvent préférée (celle où l'on passe une chaîne de caractères).
+
+En cas de doute sur le fonctionnement de l'interface `env` , utilisez `verbose = TRUE` pour voir comment les expressions sont résolues en interne.
+
+### Utiliser l'argument `env` à l'intérieur d'une autre fonction
+
+Ce fut une décision d'architecture que l'argument `env` devait suivre les règles _Standard Evaluation_ (SE) , c'est à dire que les valeurs passées à `env` soient évaluées dans leur contexte original telles quelles. Vous trouverez des informations complémentaires sur le sujet dans le [Manuel du langage R, section Computing on the language](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Computing-on-the-language)). Il en résulte que l'**utilisation de l'argument `env` à partir d'une fonction ne nécessite pas de traitement particulier**. Cela signifie aussi que l'alias `.()` pour une `list()`, _a la_ `env = .(.col="Petal.Length")`, ne fonctionnera pas; utiliser à la place `env = list(.col="Petal.Length")`.
+
+```{r env_se}
+fun = function(x, col.mean) {
+  stopifnot(is.character(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean="Petal.Length")
+```
+
+Si la fonction la plus externe suit elle-même les règles NSE (Non-Standard Evaluation), alors elle doit résoudre les objets du langage de la même manière que si elle passait ses arguments à tout autre fonction SE.
+
+```{r env_nse}
+fun = function(x, col.mean) {
+  col.mean = substitute(col.mean)
+  stopifnot(is.name(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean=Petal.Length)
 ```
 
 ## Interfaces supprimées

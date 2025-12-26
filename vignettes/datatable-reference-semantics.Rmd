@@ -363,6 +363,31 @@ However we could improve this functionality further by *shallow* copying instead
     ## DT_n doesn't get updated
     DT_n
     ```
+### c) Selecting columns: `$` / `[[...]]` vs `[, col]`
+
+When you extract a single column as a vector, there is a subtle but important difference between standard R methods ($ and [[...]]) and data.table's j expression. DT$col and DT[['col']] may return a reference to the column, while DT[, col] always returns a copy.
+
+A short example:
+```{r}
+DT = data.table(a = 1:3)
+
+# three ways to get the column
+x_ref = DT$a        # may be a reference
+y_cpy = DT[, a]     # always a copy
+z_cpy = copy(DT$a)  # forced copy
+
+# modify DT by reference
+DT[, a := a + 10L]
+
+# observe results
+x_ref   # may show 11 12 13
+y_cpy   # 1 2 3
+z_cpy   # 1 2 3
+```
+
+To select a single column as a vector, remember:
+- `DT[, mycol]` is safer as it always returns a new, independent copy.
+- `DT$mycol` is fast but may return a reference. Use `copy(DT$mycol)` to guarantee independence.
 
 ## Summary
 

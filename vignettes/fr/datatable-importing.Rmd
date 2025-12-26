@@ -17,7 +17,7 @@ h2 {
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 Ce document se concentre sur l'utilisation de `data.table` comme dépendance dans d'autres packages R. Si vous souhaitez utiliser le code C de `data.table` à partir d'une application non-R, ou appeler directement ses fonctions C, passez à la [dernière section](#non-r-API) de cette vignette.
 
@@ -75,7 +75,7 @@ dt2 = aggr(dt)
 stopifnot(nrow(dt2) < 100)
 ```
 
-Lorsque vous testez votre package, vous pouvez utiliser `R CMD check --no-stop-on-test-error`, qui continuera après une erreur et exécutera tous vos tests (au lieu de s'arrêter à la première ligne de script qui a échoué).
+Lorsque vous testez votre package, vous pouvez utiliser `R CMD check --no-stop-on-test-error`, qui continuera après une erreur et exécutera tous vos tests (au lieu de s'arrêter à la première ligne du script qui a échoué).
 
 ## Tester en utilisant `testthat`
 

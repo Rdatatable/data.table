@@ -11,7 +11,7 @@ vignette: >
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -101,7 +101,7 @@ Vous pouvez aussi convertir des objets existants en une `data.table` en utilisan
     getOption("datatable.print.nrows")
     ```
 
-* `data.table` ne définit ni n'utilise jamais de *nom de ligne*. Nous verrons pourquoi dans la vignette *"Sous-ensemble basé sur des clés et recherche binaire rapide"*.
+* `data.table` ne définit ni n'utilise jamais de *nom de ligne*. Nous verrons pourquoi dans la [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html).
 
 ### b) Forme générale - dans quel sens la 'data.table' est-elle *étendue* ? {#enhanced-1b}
 
@@ -479,7 +479,7 @@ ans
 
 **Clés :** actuellement `keyby` en fait un peu plus que *simplement trier*. Il *définit une clé* également après le tri en initialisant un `attribute` appelé `sorted`.
 
-Nous en apprendrons plus au sujet des `clés` dans la vignette *Clés et sous-ensembles basés sur la recherche binaire rapide*; pour l'instant, tout ce que vous devez savoir est que vous pouvez utiliser `keyby` pour trier automatiquement le résultat selon les colonnes spécifiées dans `by`.
+Nous en apprendrons plus au sujet des `clés` dans la [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html); pour l'instant, tout ce que vous devez savoir est que vous pouvez utiliser `keyby` pour trier automatiquement le résultat selon les colonnes spécifiées dans `by`.
 
 ### c) Chaînage
 
@@ -643,6 +643,31 @@ DT[, print(list(c(a,b))), by = ID] # (2)
 
 Dans (1), pour chaque groupe, un vecteur est renvoyé, de longueur = 6,4,2 ici. Néanmoins, (2) renvoie une liste de longueur 1 pour chaque groupe, dont chaque premier élément contient des vecteurs de longueur 6,4,2. C'est pourquoi, (1) a pour longueur totale `6+4+2 =`r 6+4+2``, alors que (2) renvoie `1+1+1=`r 1+1+1``.
 
+La flexibilité de j nous permet de ranger toute liste d'objets comme un élément de data.table. Par exemple lorsque des modèles statistiques sont adaptés aux groupes, ils peuvent être placés dans un data.table. Le code est concis et facile à comprendre.
+
+```{r}
+## les vols long courrier couvrent-ils les retards au départ davantage que les vols à courte distance ?
+## la couverture varie-t-elle selon les mois ?
+flights[, `:=`(makeup = dep_delay - arr_delay)]
+
+makeup.models <- flights[, .(fit = list(lm(makeup ~ distance))), by = .(month)]
+makeup.models[, .(coefdist = coef(fit[[1]])[2], rsq = summary(fit[[1]])$r.squared), by = .(month)]
+```
+
+Avec les data.frames il nous faut un code plus complexe pour obtenir le même résultat.
+
+```{r}
+setDF(flights)
+flights.split <- split(flights, f = flights$month)
+makeup.models.list <- lapply(flights.split, function(df) c(month = df$month[1], fit = list(lm(makeup ~ distance, data = df))))
+makeup.models.df <- do.call(rbind, makeup.models.list)
+data.frame(t(sapply(
+  makeup.models.df[, "fit"],
+  function(model) c(coefdist = coef(model)[2L], rsq =  summary(model)$r.squared)
+)))
+setDT(flights)
+```
+
 ## Résumé
 
 La forme générale de la syntaxe de `data.table` est :
@@ -659,7 +684,7 @@ Jusqu'ici nous avons vu que,
 
 * Nous pouvons également trier un `data.table` en utilisant `order()`, qui utilise en interne l’algorithme de tri rapide de data.table pour de meilleures performances.
 
-Nous pouvons faire beaucoup plus dans `i` en créant une `data.table` avec clés, ce qui permet de réaliser rapidement les sous-ensembles et les jointures. Nous verrons cela dans les vignettes *"Clés et sous-ensembles basés sur la recherche binaire rapide"* et *"Jointures et jointures liées au temps"*.
+Nous pouvons faire beaucoup plus dans `i` en créant une `data.table` avec clés, ce qui permet de réaliser rapidement les sous-ensembles et les jointures. Nous verrons cela dans les [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) et [`vignette("datatable-joins", package="data.table")`](datatable-joins.html).
 
 #### En utilisant `j` :
 
@@ -693,7 +718,7 @@ Nous pouvons faire beaucoup plus dans `i` en créant une `data.table` avec clés
 
 Tant que `j` renvoie un objet `list`, chaque élément de la liste va devenir une colonne du `data.table` résultant.
 
-Nous verrons dans la vignette suivante comment *ajouter / mettre à jour / supprimer* des colonnes *par référence* et comment les combiner avec `i` et `by` .
+Nous verrons dans la prochaine [(`vignette("datatable-reference-semantics", package="data.table")`)](datatable-reference-semantics.html) comment *ajouter / mettre à jour / supprimer* des colonnes *par référence* et comment les combiner avec `i` et `by` .
 
 ***
 

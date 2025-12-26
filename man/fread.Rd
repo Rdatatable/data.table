@@ -17,7 +17,7 @@ skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64", "integer64"),
 col.names,
 check.names=FALSE, encoding="unknown",
-strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
+strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="",
 key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
@@ -56,6 +56,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC"
   \item{strip.white}{ Logical, default \code{TRUE}, in which case leading and trailing whitespace is stripped from unquoted \code{"character"} fields. \code{"numeric"} fields are always stripped of leading and trailing whitespace.}
   \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. If \code{fill=Inf} then the whole file is read for detecting the number of columns. }
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
+  \item{comment.char}{Character vector of length one containing a single character of an empty string. Any text after the comment character in a line is ignored, including skipping comment-only lines. Use \code{""} to turn off the interpretation of comments altogether.}
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }

@@ -422,6 +422,10 @@ DT[, list(MySum=sum(v),
           MyMax=max(v)),
     by=.(x, y\%\%2)]                    # by 2 expressions
 
+# programmatic query with env=
+DT[, .(funvar = fun(var)), by=grp_var,
+   env = list(fun="sum", var="a", funvar="sum_a_by_x", grp_var="x")]
+
 DT[, .(a = .(a), b = .(b)), by=x]     # list columns
 DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
 DT[, sum(v), by=x][V1<20]             # compound query

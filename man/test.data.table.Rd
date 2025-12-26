@@ -10,7 +10,7 @@ test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
                 showProgress = interactive() && !silent,
                 testPattern = NULL,
                 memtest = Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0),
-                memtest.id = NULL)
+                memtest.id = NULL, optional = FALSE)
 }
 \arguments{
 \item{script}{ Run arbitrary R test script. }
@@ -21,6 +21,7 @@ test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
 \item{testPattern}{ When present, a regular expression tested against the number of each test for inclusion. Useful for running only a small portion of a large test script. }
 \item{memtest}{ Measure and report memory usage of tests (1:gc before ps, 2:gc after ps) rather than time taken (0) by default. Intended for and tested on Linux. See PR #5515 for more details. }
 \item{memtest.id}{ An id for which to print memory usage for every sub id. May be a range of ids. }
+\item{optional}{ If \code{TRUE}, the test will only run when the environment variable \code{RUN_ALL_DATATABLE_TESTS} is set to \code{"yes"}. This allows certain optional tests to be skipped on CRAN but run in development or CI environments. }
 }
 \details{
   Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
