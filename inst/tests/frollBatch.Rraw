@@ -243,7 +243,7 @@ afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","v
               for (algo in algos) {
                 num <<- num + num.step
                 test(num, ignore.warning = "no non-missing arguments",
-                     arollfun(fun, x, n, fill=fill, na.rm=.na.rm, align=align, partial=partial),
+                     arollfun(fun, x, n, fill=fill, na.rm=na.rm, align=align, partial=partial),
                      froll(fun, x, n, fill=fill, na.rm=na.rm, algo=algo, adaptive=TRUE, align=align, has.nf=has.nf, partial=partial),
                      context=sprintf("fun=%s\talign=%s\tna.rm=$s\tfill=%s\tpartial=%s\thas.nf=%s\talgo=%s", fun, align, na.rm, fill, partial, has.nf, algo))
               }
