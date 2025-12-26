@@ -825,8 +825,8 @@ test(6000.190, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE
 test(6000.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
-test(6000.199, frollmean(1:2, 1, hasNA=TRUE), c(1,2), warning="hasNA is deprecated, use has.nf instead")
-test(6000.1991, frollmean(1:2, 1, has.nf=FALSE, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
+test(6000.199, frollmean(1:2, 1, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
+# 6000.1991 tested supplying has.nf and hasNA, no longer makes sense
 
 ## frollsum
 x = 1:6/2
