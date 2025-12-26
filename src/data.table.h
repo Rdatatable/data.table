@@ -343,6 +343,7 @@ SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen);
 SEXP R_duplicateAsResizable_(SEXP x);
 void R_resizeVector_(SEXP x, R_xlen_t newlen);
 #endif
+SEXP is_direct_child(SEXP pids);
 
 // types.c
 char *end(char *start);
