@@ -2307,31 +2307,29 @@ test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
 test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
 test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
-if (base::getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
-  # Expand ALTREPS in assign.c, #5400
-  # String conversion gets deferred
-  ## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
-  test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
-  test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
-  # Executing the code inside of test expands the ALTREP so we repeat the code
-  # in order to check the result after a further assignment
-  DT = data.table(a=1:3)
-  DT[, b := as.character(a)]
-  DT[, a := 5L]
-  test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
-  # This function returns an ALTREP wrapper if the input is at least length 64
-  testFun = function(x) {
-    x[FALSE] = 1
-    x
-  }
-  DT = data.table(id=1:64, col1=0, col2=0)
-  test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
-  DT = data.table(id=1:64, col1=0, col2=0)
-  DT[, col1 := testFun(col2)]
-  DT[, col2 := 999]
-  test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
-  rm(testFun)
+# Expand ALTREPS in assign.c, #5400
+# String conversion gets deferred
+## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
+test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
+test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
+# Executing the code inside of test expands the ALTREP so we repeat the code
+# in order to check the result after a further assignment
+DT = data.table(a=1:3)
+DT[, b := as.character(a)]
+DT[, a := 5L]
+test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
+# This function returns an ALTREP wrapper if the input is at least length 64
+testFun = function(x) {
+  x[FALSE] = 1
+  x
 }
+DT = data.table(id=1:64, col1=0, col2=0)
+test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
+DT = data.table(id=1:64, col1=0, col2=0)
+DT[, col1 := testFun(col2)]
+DT[, col2 := 999]
+test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
+rm(testFun)
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key=c('a', 'b'))
@@ -6868,12 +6866,11 @@ test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
 test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # shift incompatible types (e.g. Date and POSIXct)
-# TODO(R>=3.5): use .Date() instead of setting class by hand
-d = structure(0:4, class="Date")
+d = .Date(0:4)
 p = .POSIXct(1:5)
 test(1463.81, shift(d, fill=p[1L]), error="Filling Date with POSIXct .* unsupported.*")
 test(1463.82, shift(p, fill=d[1L]), error="Filling POSIXct with Date .* unsupported.*")
-test(1463.83, shift(d, fill=as.IDate(2000L)), structure(c(2000L, 0:3), class="Date"))
+test(1463.83, shift(d, fill=as.IDate(2000L)), .Date(c(2000L, 0:3)))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -11643,8 +11640,7 @@ test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]",
-             ignore.warning="timedatectl") # R 3.4's Sys.timezone() raises this warning in docker, #4182
+test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]")
 
 # test test's ignore.warning
 test(1765.2, {warning("foo"); 4L}, 4L, ignore.warning="foo")
@@ -15155,10 +15151,8 @@ test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just thi
 # also incidentally fixed #2491
 DT = data.table(
   Group = c("A", "A", "B", "B", "C", "C"),
-  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0 # TODO: update to .Date on R 3.5
-                  17456.0360002079, 17440.0230725919, 17451.0572453837), "Date"),
-  Date2 = `class<-`(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
-                  17443.1175238448, 17461.0463715783, 17448.1033968224), "Date")
+  Date1 = .Date(c(17446.0291040738, 17470.0221205444, 17445.0765226481, 17456.0360002079, 17440.0230725919, 17451.0572453837)),
+  Date2 = .Date(c(17459.1561177987, 17451.1086757995, 17449.0820898537, 17443.1175238448, 17461.0463715783, 17448.1033968224))
 )
 DT[ , DiffTime := abs(difftime(Date1, Date2, units = 'days'))]
 test(2042.4, DT[ , round(mean(DiffTime)), by=Group, verbose=TRUE],
@@ -19408,8 +19402,7 @@ test(2286,
        x<2, structure(list(1), class = "foo"),
        x<3, structure(list(2), class = "foo"),
        # Force gc() and some allocations which have a good chance at landing in the region that was earlier left unprotected
-       # TODO(R>=3.5.0): no need to branch here for gc(full=TRUE)
-       { if ("full" %in% names(formals(gc))) gc(full = TRUE) else gc(); replicate(10, FALSE); x<4 },
+       { gc(full = TRUE); replicate(10, FALSE); x<4 },
        `attr<-`(list(3), "class", "foo")),
      structure(list(1, 2, 3), class = "foo"))
 
@@ -20813,8 +20806,8 @@ y = data.table(c=1, d=1L)
 test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 test(2297.04, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 # dates
-d_int = `class<-`(1L, "Date") # TODO: update to .Date on R 3.5
-d_dbl = `class<-`(1, "Date")
+d_int = .Date(1L)
+d_dbl = .Date(1)
 x = data.table(a=d_int)
 y = data.table(c=d_int, d=d_dbl)
 test(2297.11, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
@@ -21651,13 +21644,10 @@ test(2339.02, lapply(DT, sqrt_dot_sym), list(a=1.0))
 test(2339.03, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
 test(2339.04, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
 sqrt_elt_sym = function(...) sqrt(...elt(1))
-# TODO(R>=3.5.0): run this unconditionally
-if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
-  test(2339.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
-  test(2339.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
-  test(2339.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
-  test(2339.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
-}
+test(2339.05, lapply(DT, sqrt_elt_sym), list(a=1.0))
+test(2339.06, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+test(2339.07, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+test(2339.08, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
 # edge case of weird, though technically valid, names:
 #  _not_ '..N' style and distinct from '...'
 #  `123`='a'; DT[, ..123] doesn't work, but that's fine & easy to work around

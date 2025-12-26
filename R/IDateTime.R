@@ -124,9 +124,7 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
   if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
-    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
-    # i) ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
-    # ii) .Date was newly exposed in R some time after 3.4.4
+    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
   }
   ans = as.integer(unclass(e1) - unclass(e2))
   if (inherits(e2, "Date")) {
