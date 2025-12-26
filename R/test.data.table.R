@@ -1,6 +1,12 @@
 test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent, testPattern=NULL,
-                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0L), memtest.id=NULL) {
-  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
+                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0L), memtest.id=NULL, optional=FALSE) {
+  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress), isTRUEorFALSE(optional))
+
+  # Skip optional tests unless RUN_ALL_DATATABLE_TESTS is set
+  if (optional && Sys.getenv("RUN_ALL_DATATABLE_TESTS") != "yes") {
+    return(invisible(TRUE))
+  }
+
   memtest = as.integer(memtest)
   stopifnot(length(memtest)==1L, memtest %in% 0:2)
   memtest.id = as.integer(memtest.id)
@@ -124,6 +130,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
+  assign("nskip", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
@@ -205,7 +212,30 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   # nocov end
 
-  err = try(sys.source(fn, envir=env), silent=silent)
+  env$warnings = list()
+  err = try(
+    withCallingHandlers(
+      sys.source(fn, envir=env),
+      warning=function(w) {
+        # nocov start
+        if (!silent && showProgress) print(w)
+        env$warnings = c(env$warnings, list(list(
+          "after test"=env$prevtest, warning=conditionMessage(w),
+          calls=paste(
+            vapply_1c(sys.calls(), function(call) {
+              if (is.name(call[[1]])) {
+                as.character(call[[1]])
+              } else "..."
+            }),
+            collapse=" -> "
+          )
+        )))
+        invokeRestart("muffleWarning")
+        # nocov end
+      }
+    ),
+    silent=silent
+  )
 
   options(oldOptions)
   for (i in oldEnv) {
@@ -253,6 +283,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   nfail = env$nfail
   ntest = env$ntest
+  nskip = env$nskip
   if (nfail > 0L) {
     # nocov start
     stopf(
@@ -260,6 +291,21 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
       nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at), domain=NA
     )
     # important to stopf() here, so that 'R CMD check' fails
+    # nocov end
+  }
+  if (length(env$warnings)) {
+    # nocov start
+    warnings = rbindlist(env$warnings)
+    catf(
+      ngettext(nrow(warnings),
+        "Caught %d warning outside the test() calls:\n",
+        "Caught %d warnings outside the test() calls:\n"
+      ),
+      nrow(warnings),
+      domain=NA
+    )
+    print(warnings, nrows = nrow(warnings))
+    stopf("Tests succeeded, but non-test code caused warnings. Search %s for tests shown above.", names(fn))
     # nocov end
   }
 
@@ -287,6 +333,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
+  if (foreign && nskip > 0L) catf("Skipped %d tests for translated messages. ", nskip) # nocov
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
   ans = nfail==0L
   attr(ans, "timings") = timings  # as attr to not upset callers who expect a TRUE/FALSE result
@@ -368,6 +415,7 @@ test = function(num, x, y=TRUE,
     memtest.id = get("memtest.id", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
+    nskip = get("nskip", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
     # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
@@ -410,6 +458,11 @@ test = function(num, x, y=TRUE,
     length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters
     length(tryCatch(grep(x, y, ignore.case=ignore.case), error=function(e)NULL))  # otherwise try x as regexp
   }
+  if (foreign && .test.data.table && (
+    length(error) || length(warning) || length(message) || length(output) ||
+    length(notOutput) || length(ignore.warning)
+  ))
+    assign("nskip", nskip+1L, parent.frame(), inherits=TRUE) # nocov
 
   xsub = substitute(x)
   ysub = substitute(y)
@@ -437,7 +490,11 @@ test = function(num, x, y=TRUE,
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
-    out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+    out = if (xsub %iscall% "print") {
+      capture.output(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler)))
+    } else {
+      capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+    }
   }
   if (!is.null(options)) {
     # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP

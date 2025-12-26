@@ -61,6 +61,7 @@ SEXP freadR(
   SEXP NAstringsArg,
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
+  SEXP commentCharArg,
   SEXP fillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
@@ -158,6 +159,8 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  const char *commentStr = CHAR(STRING_ELT(commentCharArg, 0));
+  args.comment = strlen(commentStr) == 0 ? '\0' : commentStr[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0] < 1)
@@ -262,18 +265,16 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N] != 1) internal_error(__func__, "typeSize[CT_BOOL8_N] != 1"); // # nocov
   if (typeSize[CT_STRING] != 8) internal_error(__func__, "typeSize[CT_STRING] != 8"); // # nocov
-  colNamesSxp = R_NilValue;
-  SET_VECTOR_ELT(RCHK, 1, colNamesSxp = allocVector(STRSXP, ncol));
+  colNamesSxp = R_allocResizableVector(STRSXP, ncol);
+  SET_VECTOR_ELT(RCHK, 1, colNamesSxp);
   for (int i = 0; i < ncol; i++) {
-    SEXP elem;
     if (colNames == NULL || colNames[i].len <= 0) {
       char buff[12];
       snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
-      elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
+      SET_STRING_ELT(colNamesSxp, i, mkChar(buff));  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
-      elem = mkCharLenCE(anchor + colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
+      SET_STRING_ELT(colNamesSxp, i, mkCharLenCE(anchor + colNames[i].off, colNames[i].len, ienc));  // no PROTECT as passed immediately to SET_STRING_ELT
     }
-    SET_STRING_ELT(colNamesSxp, i, elem);
   }
   // "use either select= or drop= but not both" was checked earlier in freadR
   applyDrop(dropSxp, type, ncol, /*dropSource=*/-1);
@@ -451,7 +452,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    SET_VECTOR_ELT(RCHK, 0, DT = allocVector(VECSXP, ncol - ndrop));
+    DT = R_allocResizableVector(VECSXP, ncol - ndrop);
+    SET_VECTOR_ELT(RCHK, 0, DT);
     if (ndrop == 0) {
       setAttrib(DT, R_NamesSymbol, colNamesSxp);  // colNames mkChar'd in userOverride step
       if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
@@ -511,8 +513,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     const bool typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
     const bool nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow) : growVector(col, allocNrow); // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
-      
+      SEXP thiscol = typeChanged ? R_allocResizableVector(typeSxp[type[i]], allocNrow) : growVector(col, allocNrow); // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
+
       SET_VECTOR_ELT(DT, resi, thiscol);
       if (type[i] == CT_INT64) {
         SEXP tt = PROTECT(ScalarString(char_integer64));
@@ -533,7 +535,6 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
-      SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += RTYPE_SIZEOF(thiscol) * allocNrow;
     }
     resi++;
@@ -550,9 +551,7 @@ void setFinalNrow(size_t nrow)
       return;
     const int ncol = LENGTH(DT);
     for (int i = 0; i < ncol; i++) {
-      SETLENGTH(VECTOR_ELT(DT, i), nrow);
-      SET_TRUELENGTH(VECTOR_ELT(DT, i), dtnrows);
-      SET_GROWABLE_BIT(VECTOR_ELT(DT, i));  // #3292
+      R_resizeVector(VECTOR_ELT(DT, i), nrow);
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
@@ -566,24 +565,13 @@ void dropFilledCols(int* dropArg, int ndelete)
     SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
     SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
   }
-  SETLENGTH(DT, ndt - ndelete);
-  SETLENGTH(colNamesSxp, ndt - ndelete);
+  R_resizeVector(DT, ndt - ndelete);
+  R_resizeVector(colNamesSxp, ndt - ndelete);
+  setAttrib(DT, R_NamesSymbol, colNamesSxp);  // reinstall after resize
 }
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 {
-  const void *buff8 = ctx->buff8;
-  const void *buff4 = ctx->buff4;
-  const void *buff1 = ctx->buff1;
-  const char *anchor = ctx->anchor;
-  const size_t nRows = ctx->nRows;
-  const size_t DTi = ctx->DTi;
-  const size_t rowSize8 = ctx->rowSize8;
-  const size_t rowSize4 = ctx->rowSize4;
-  const size_t rowSize1 = ctx->rowSize1;
-  const int nStringCols = ctx->nStringCols;
-  const int nNonStringCols = ctx->nNonStringCols;
-
   // Do all the string columns first so as to minimize and concentrate the time inside the single critical.
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
@@ -591,25 +579,25 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   // locals passed in on stack so openmp knows that no synchronization is required
 
   // the byte position of this column in the first row of the row-major buffer
-  if (nStringCols) {
+  if (ctx->nStringCols) {
     #pragma omp critical
     {
       int off8 = 0;
-      const int cnt8 = rowSize8 / 8;
-      const lenOff *buff8_lenoffs = (const lenOff*)buff8;
-      for (int j = 0, resj = -1, done = 0; done < nStringCols && j < ncol; j++) {
+      const int cnt8 = ctx->rowSize8 / 8;
+      const lenOff *buff8_lenoffs = (const lenOff*)ctx->buff8;
+      for (int j = 0, resj = -1, done = 0; done < ctx->nStringCols && j < ncol; j++) {
         if (type[j] == CT_DROP) continue;
         resj++;
         if (type[j] == CT_STRING) {
           SEXP dest = VECTOR_ELT(DT, resj);
           const lenOff *source = buff8_lenoffs + off8;
-          for (int i = 0; i < nRows; i++) {
+          for (int i = 0; i < ctx->nRows; i++) {
             int strLen = source->len;
             if (strLen <= 0) {
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-              if (strLen < 0) SET_STRING_ELT(dest, DTi + i, NA_STRING); // else leave the "" in place that was initialized by allocVector()
+              if (strLen < 0) SET_STRING_ELT(dest, ctx->DTi + i, NA_STRING); // else leave the "" in place that was initialized by allocVector()
             } else {
-              const char *str = anchor + source->off;
+              const char *str = ctx->anchor + source->off;
               int c = 0;
               while (c < strLen && str[c]) c++;
               if (c < strLen) {
@@ -621,7 +609,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
                 }
                 strLen = last - str;
               }
-              SET_STRING_ELT(dest, DTi + i, mkCharLenCE(str, strLen, ienc));
+              SET_STRING_ELT(dest, ctx->DTi + i, mkCharLenCE(str, strLen, ienc));
             }
             source += cnt8;
           }
@@ -634,41 +622,41 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   }
 
   int off1 = 0, off4 = 0, off8 = 0;
-  for (int j = 0, resj = 0, done = 0; done < nNonStringCols && j < ncol; j++) {
+  for (int j = 0, resj = 0, done = 0; done < ctx->nNonStringCols && j < ncol; j++) {
     if (type[j] == CT_DROP) continue;
     
     if (type[j] != CT_STRING && type[j] > 0) {
       switch(size[j])
       {
       case 8: {
-        double *dest = REAL(VECTOR_ELT(DT, resj)) + DTi;
-        const char *src8 = (const char*)buff8 + off8;
-        for (int i = 0; i < nRows; i++) {
+        double *dest = REAL(VECTOR_ELT(DT, resj)) + ctx->DTi;
+        const char *src8 = (const char*)ctx->buff8 + off8;
+        for (int i = 0; i < ctx->nRows; i++) {
           *dest = *(double*)src8;
-          src8 += rowSize8;
+          src8 += ctx->rowSize8;
           dest++;
         }
         break;
       }
       case 4: {
-        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + DTi;
-        const char *src4 = (const char*)buff4 + off4;
+        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + ctx->DTi;
+        const char *src4 = (const char*)ctx->buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
-        for (int i = 0; i < nRows; i++) {
+        for (int i = 0; i < ctx->nRows; i++) {
           *dest = *(int*)src4;
-          src4 += rowSize4;
+          src4 += ctx->rowSize4;
           dest++;
         }
         break;
       }
       case 1: {
         if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
-        const char *src1 = (const char*)buff1 + off1;
-        for (int i = 0; i < nRows; i++) {
+        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + ctx->DTi;
+        const char *src1 = (const char*)ctx->buff1 + off1;
+        for (int i = 0; i < ctx->nRows; i++) {
           const int8_t v = *(int8_t*)src1;
           *dest = (v == INT8_MIN ? NA_INTEGER : v);
-          src1 += rowSize1;
+          src1 += ctx->rowSize1;
           dest++;
         }
         break;

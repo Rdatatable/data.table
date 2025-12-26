@@ -13,7 +13,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
-           encoding = "") {
+           encoding = "",
+           forceDecimal = FALSE) {
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
@@ -44,14 +45,14 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || identical(sep, "")),
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
-    dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
+    `dec and sep must be distinct whenever both might be needed` = (!NROW(x) || NCOL(x) <= 1L || dec != sep),  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
     length(compressLevel) == 1L && 0L <= compressLevel && compressLevel <= 9L,
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
-    isTRUEorFALSE(bom),
+    isTRUEorFALSE(bom), isTRUEorFALSE(forceDecimal),
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024L,
@@ -122,7 +123,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)
+        showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding, forceDecimal)
   invisible()
 }
 

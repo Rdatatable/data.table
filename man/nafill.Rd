@@ -10,15 +10,15 @@
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-nafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA)
-setnafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x))
+nafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA)
+setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x))
 }
 \arguments{
-  \item{x}{ vector, list, data.frame or data.table of numeric columns. }
-  \item{type}{ character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
-  \item{fill}{ numeric or integer, value to be used to fill. }
-  \item{nan}{ (numeric \code{x} only) Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement? }
-  \item{cols}{ numeric or character vector specifying columns to be updated. }
+  \item{x}{ Vector, list, data.frame or data.table of numeric columns. }
+  \item{type}{ Character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
+  \item{fill}{ Numeric value to be used to replace missing observations. See examples. }
+  \item{nan}{ Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement. See Examples. }
+  \item{cols}{ Numeric or character vector specifying columns to be updated. }
 }
 \details{
   Only \emph{double} and \emph{integer} data types are currently supported.
@@ -33,6 +33,14 @@ x = 1:10
 x[c(1:2, 5:6, 9:10)] = NA
 nafill(x, "locf")
 
+x = c(1, NA, NaN, 3, NaN, NA, 4)
+nafill(x, "locf")
+nafill(x, "locf", nan=NaN)
+
+# fill= applies to any leftover NA
+nafill(c(NA, x), "locf")
+nafill(c(NA, x), "locf", fill=0)
+
 dt = data.table(v1=x, v2=shift(x)/2, v3=shift(x, -1L)/2)
 nafill(dt, "nocb")
 
@@ -40,6 +48,6 @@ setnafill(dt, "locf", cols=c("v2","v3"))
 dt
 }
 \seealso{
-  \code{\link{shift}}, \code{\link{data.table}}
+  \code{\link{shift}}, \code{\link{data.table}}, \code{\link{fcoalesce}}
 }
 \keyword{ data }

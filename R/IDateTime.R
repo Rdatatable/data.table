@@ -91,6 +91,8 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
           years = ISOdate(year(x), 1L, 1L)))
 }
 
+chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
+
 #Adapted from `+.Date`
 `+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
@@ -115,19 +117,22 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (storage.mode(e1) != "integer")
     internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stopf("unary - is not defined for \"IDate\" objects")
+    stopf('unary - is not defined for "IDate" objects')
   if (inherits(e2, "difftime"))
     internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
-    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
-    # i) ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
-    # ii) .Date was newly exposed in R some time after 3.4.4
+    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
+  if (inherits(e2, "Date")) {
+    setattr(ans, "class", "difftime")
+    setattr(ans, "units", "days")
+  } else {
+    setattr(ans, "class", c("IDate", "Date"))
+  }
   ans
 }
 

@@ -90,7 +90,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
 /*
   OpenMP is being used here to parallelize the loop that fills missing values
     over columns of the input data. This includes handling different data types
-    and applying the designated filling method to each column in parallel. 
+    and applying the designated filling method to each column in parallel.
 */
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
@@ -230,7 +230,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  ansMsg(vans, nx, verbose, __func__);
+  ansGetMsgs(vans, nx, verbose, __func__);
 
   if (verbose)
     Rprintf(Pl_(nx,

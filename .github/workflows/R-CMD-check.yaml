@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 
 name: R-CMD-check
 
@@ -36,6 +37,7 @@ jobs:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       RSPM: ${{ matrix.config.rspm }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      _R_CHECK_RD_CHECKRD_MINLEVEL_: -Inf
 
     steps:
       - uses: actions/checkout@v4

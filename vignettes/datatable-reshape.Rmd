@@ -1,26 +1,21 @@
 ---
 title: "Efficient reshaping using data.tables"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Efficient reshaping using data.tables}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+library(data.table)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -28,7 +23,7 @@ This vignette discusses the default usage of reshaping functions `melt` (wide to
 
 ***
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(width = 100L)
 ```
 
@@ -143,11 +138,11 @@ However, there are situations we might run into where the desired operation is n
 
 ```{r}
 s2 <- "family_id age_mother name_child1 name_child2 name_child3 gender_child1 gender_child2 gender_child3
-         1         30         Ben        Anna          NA             1             2            NA
-         2         27         Tom          NA          NA             2            NA            NA
-         3         26         Lia         Sam         Amy             2             2             1
-         4         32         Max         Zoe         Joe             1             1             1
-         5         29         Dan         Eva          NA             2             1            NA"
+1         30         Ben        Anna          NA             1             2            NA
+2         27         Tom          NA          NA             2            NA            NA
+3         26         Lia         Sam         Amy             2             2             1
+4         32         Max         Zoe         Joe             1             1             1
+5         29         Dan         Eva          NA             2             1            NA"
 DT <- fread(s2)
 DT
 ## 1 = female, 2 = male
@@ -279,7 +274,7 @@ melt(who, measure.vars = measure(
 
 When using the `pattern` argument, it must be a Perl-compatible
 regular expression containing the same number of capture groups
-(parenthesized sub-expressions) as the number other arguments (group
+(parenthesized sub-expressions) as the number of other arguments (group
 names). The code below shows how to use a more complex regex with five
 groups, two numeric output columns, and an anonymous type conversion
 function,
