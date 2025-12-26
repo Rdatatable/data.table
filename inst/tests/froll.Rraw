@@ -1944,9 +1944,9 @@ test(6010.542, frollapply(1:2, 2, sum, adaptive=NA), error="must be TRUE or FALS
 test(6010.543, frollapply(1:2, 2, sum, partial=NA), error="must be TRUE or FALSE")
 test(6010.544, frollapply(1:2, 2, sum, give.names=NA), error="must be TRUE or FALSE")
 test(6010.545, frollapply(1:2, 2, sum, simplify=NA), error="must be TRUE or FALSE or a function")
-test(6010.561, frollapply(x=1:2, N=2, FUN=sum), c(NA,3L), warning="'x' is deprecated in frollapply, use 'X' instead")
-test(6010.562, frollapply(X=1:2, n=2, FUN=sum), c(NA,3L), warning="'n' is deprecated in frollapply, use 'N' instead")
-test(6010.563, frollapply(x=1:2, n=2, FUN=sum), c(NA,3L), warning=c("'x' is deprecated in frollapply, use 'X' instead","'n' is deprecated in frollapply, use 'N' instead"))
+test(6010.561, frollapply(x=1:2, N=2, FUN=sum), error="'x' is deprecated in frollapply, use 'X' instead")
+test(6010.562, frollapply(X=1:2, n=2, FUN=sum), error="'n' is deprecated in frollapply, use 'N' instead")
+# 6010.563 tested both x= and n= resulting in 2 warnings, but with errors, that's not very useful.
 test(6010.564, frollapply(1:2, c("a","a"), length, adaptive=TRUE), error="'N' must be an integer vector or list of integer vectors")
 test(6010.565, frollapply(1:2, list(c("a","a")), length, adaptive=TRUE), error="'N' must be an integer vector or list of integer vectors")
 test(6010.566, frollapply(1:2, 2, length, by.column=FALSE), error="frollapply by.column=FALSE requires 'X' argument to be")
