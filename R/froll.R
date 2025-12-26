@@ -152,12 +152,7 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
 
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
-  if (!missing(hasNA)) {
-    if (!is.na(has.nf))
-      stopf("hasNA is deprecated, use has.nf instead")
-    warningf("hasNA is deprecated, use has.nf instead")
-    has.nf = hasNA
-  } # remove check on next major release
+  if (!missing(hasNA)) stopf("hasNA is deprecated, use has.nf instead")
   algo = match.arg(algo)
   align = match.arg(align)
   if (isTRUE(give.names)) {
