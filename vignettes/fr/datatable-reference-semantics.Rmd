@@ -5,7 +5,7 @@ output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Sémantique de référence}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 

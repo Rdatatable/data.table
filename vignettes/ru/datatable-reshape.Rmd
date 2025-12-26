@@ -5,7 +5,7 @@ output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Быстрое изменение формы данных с помощью data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -19,13 +19,10 @@ litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
-<<<<<<< HEAD
 ```{r, echo=FALSE, file='../_translation_links.R'}
 ```
 `{r} .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
-=======
->>>>>>> master
 В этом руководстве рассматривается стандартное использование функций
 изменения формы данных `melt` (из широкой в длинную) и `dcast` (из длинной в
 широкую) для класса *data.table*, а также **новые расширенные возможности**
