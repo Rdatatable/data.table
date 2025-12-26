@@ -11,7 +11,7 @@ vignette: >
 
 ```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`{r} .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r init, include = FALSE}
 require(data.table)
