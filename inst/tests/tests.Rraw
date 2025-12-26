@@ -21370,9 +21370,14 @@ colnames(M) = c('A', '')
 test(2321.26, as.data.table(M), data.table(A=1:3, V2=4:6))
 test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, V2=4:6))
 
-# also respect old auto-naming rules by default (to be deprecated)
-test(2321.28, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
-test(2321.29, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
+local({
+  old = options(datatable.old.matrix.autoname=TRUE)
+  on.exit(options(old))
+
+  # also respect old auto-naming rules by default (to be deprecated)
+  test(2321.28, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
+  test(2321.29, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
+})
 # also test behavior with a 0-column matrix
 M = cbind(1:3)
 test(2321.30, data.table(M[, 0L]), data.table(NULL))
