@@ -1,0 +1,83 @@
+---
+title: "Function Reference"
+---
+
+```{r, echo=FALSE, results='asis'}
+# Load the reference index
+ref_info = readRDS("reference_index.rds")
+
+# Print function list
+cat("<div class='reference-index'>\n")
+
+for (info in ref_info) {
+  # Create a link to the individual page
+  link = sprintf("reference/%s.html", info$name)
+
+  # Format aliases as function names
+  if (length(info$aliases) > 0) {
+    formatted_aliases = sapply(info$aliases, function(alias) {
+      # Don't add () to operators and special symbols:
+      if (grepl("^[%:.[]|<-$|^\\.\\.?$|^\\.$|^\\.\\.\\.$", alias)) {
+        sprintf("<code>%s</code>", alias)
+      } else {
+        sprintf("<code>%s()</code>", alias)
+      }
+    })
+    alias_text = paste(formatted_aliases, collapse = " ")
+  } else {
+    alias_text = sprintf("<code>%s</code>", info$name)
+  }
+
+  cat(sprintf('<div class="ref-item">\n  <h3><a href="%s">%s</a></h3>\n  <p>%s</p>\n</div>\n\n', link, alias_text, info$title))
+}
+
+cat("</div>\n")
+```
+
+<style>
+.reference-index {
+  max-width: 100%;
+}
+
+.reference-index .lead {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: #6c757d;
+}
+
+.ref-item {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.ref-item:last-child {
+  border-bottom: none;
+}
+
+.ref-item h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.ref-item h3 a {
+  text-decoration: none;
+  color: #0d6efd;
+}
+
+.ref-item h3 a:hover {
+  text-decoration: underline;
+}
+
+.ref-item h3 code {
+  font-size: 1rem;
+  background-color: #f8f9fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+}
+
+.ref-item p {
+  margin-bottom: 0;
+  color: #6c757d;
+}
+</style>

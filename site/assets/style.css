@@ -1,0 +1,159 @@
+/* data.table website styles */
+
+:root {
+  --dt-toc-width: 320px;
+}
+
+body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  color: #212529;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+/* Layout */
+.frontmatter,
+.body {
+  max-width: 1320px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 clamp(1.5rem, 3vw, 4rem) !important;
+}
+
+.frontmatter {
+  padding-top: 1.5rem;
+}
+
+.external-link::after {
+  content: "ext";
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+/* Code blocks */
+pre {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+code {
+  background-color: #f8f9fa;
+  padding: 0.2rem 0.35rem;
+  border-radius: 3px;
+  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* TOC sidebar */
+#TOC {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 1rem;
+  margin: 1rem 0 2rem 0;
+}
+
+#TOC ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+#TOC a {
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 1200px) {
+  .body:has(#TOC) {
+    display: grid;
+    grid-template-columns: 1fr var(--dt-toc-width);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  #TOC {
+    grid-column: 2;
+    grid-row: 1 / 999;
+    position: sticky;
+    top: 5rem;
+    margin: 0;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+  }
+
+  .body:has(#TOC) > *:not(#TOC) {
+    grid-column: 1;
+  }
+}
+
+@media (min-width: 1400px) {
+  .frontmatter,
+  .body {
+    padding: 0 3rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .frontmatter,
+  .body {
+    padding: 0 5rem;
+  }
+}
+
+/* Dark mode styles */
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-bs-theme="dark"] body {
+  background-color: #212529;
+  color: #dee2e6;
+}
+
+[data-bs-theme="dark"] .navbar {
+  background-color: #343a40 !important;
+  border-bottom-color: #495057 !important;
+}
+
+[data-bs-theme="dark"] code {
+  background-color: #2d3238;
+  color: #e9ecef;
+}
+
+[data-bs-theme="dark"] pre {
+  background-color: #2d3238;
+  border-color: #495057;
+}
+
+[data-bs-theme="dark"] #TOC {
+  background-color: #2d3238;
+  border-color: #495057;
+}
+
+[data-bs-theme="dark"] #TOC a {
+  color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .ref-item {
+  border-bottom-color: #495057;
+}
+
+[data-bs-theme="dark"] .ref-item h3 code {
+  background-color: #2d3238;
+}
+
+[data-bs-theme="dark"] table td,
+[data-bs-theme="dark"] table th {
+  border-color: #495057;
+}

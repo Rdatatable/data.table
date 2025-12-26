@@ -22,7 +22,7 @@ home:
 navbar:
   structure:
     left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference, cheatsheet]
-    right: [search, github, lightswitch]
+    right: [search, github]
   components:
     home:
       icon: fas fa-home fa-lg

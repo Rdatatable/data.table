@@ -363,8 +363,19 @@ integration:
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
-    - mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ ## copy favicons
-    - Rscript -e 'pkgdown::build_site(override=list(destination="./website"))'
+    ## Copy assets to site directory
+    - mkdir -p ./site/assets/favicon/
+    - cp .graphics/favicon/* ./site/assets/favicon/
+    - cp pkgdown/assets/*.pdf ./site/assets/
+    ## Build litedown site
+    - cd site && Rscript -e 'litedown::fuse_site()' && cd ..
+    ## Generate reference pages
+    - Rscript site/generate_reference.R
+    - cd site && Rscript -e 'litedown::fuse("manual.Rmd")' && cd ..
+    - mkdir -p website
+    - cp -r site/*.html website/
+    - cp -r site/reference website/ 2>/dev/null || true
+    - cp -r site/assets website/
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     ## list of available test-* jobs dynamically based on bus/test-* directories
@@ -436,8 +447,14 @@ integration:
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
-    ## pkgdown merge
-    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
+    ## Add backwards compatibility redirects
+    - mkdir -p website/news website/reference website/articles
+    - echo '<script>location.replace("../news.html")</script>' > website/news/index.html
+    - echo '<script>location.replace("../manual.html")</script>' > website/reference/index.html
+    ## Symlink vignettes from library to articles (pkgdown convention)
+    - ln -s library/data.table/doc website/articles || cp -r bus/integration/cran/library/data.table/doc/* website/articles/ 2>/dev/null || true
+    ## litedown merge
+    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by litedown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from litedown artifacts"; message(msg); q("no")'
     - mv website/* bus/integration/cran/
     ## add plausible.io stats
     - find bus/integration/cran -type f -iname "*.html" | xargs sed -i 's!<head>!<head><script defer data-domain="rdatatable.gitlab.io/data.table" src="https://plausible.io/js/script.js"></script>!g'
