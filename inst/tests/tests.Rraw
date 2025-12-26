@@ -21928,3 +21928,10 @@ dimnames(X) = copy(Xdn)
 DT = as.data.table(X)
 test(2354.2, dimnames(X), Xdn)
 rm(X, Xdn, DT)
+
+# fread dont skip on skip=0, #7463
+txt = 'a1;a2\nb1;b2;b3\nc1;c2;c3'
+test(2355.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
+test(2355.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
+test(2355.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
+test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))
