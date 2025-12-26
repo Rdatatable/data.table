@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r echo=FALSE, file='../_translation_links.R'}
+```
+`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -19,10 +23,6 @@ knitr::opts_chunk$set(
  collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
-
-```{r echo=FALSE, file='../_translation_links.R'}
-```
-`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 В этом руководстве рассматривается стандартное использование функций
 изменения формы данных `melt` (из широкой в длинную) и `dcast` (из длинной в
@@ -175,20 +175,20 @@ dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.va
 простым способом. Например, рассмотрим `data.table`, показанную ниже:
 
 ```{r}
-s2 <- "family_id age_mother dob_child1 dob_child2 dob_child3 gender_child1 gender_child2 gender_child3
-1         30 1998-11-26 2000-01-29         NA             1             2            NA
-2         27 1996-06-22         NA         NA             2            NA            NA
-3         26 2002-07-11 2004-04-05 2007-09-02             2             2             1
-4         32 2004-10-10 2009-08-27 2012-07-21             1             1             1
-5         29 2000-12-05 2005-02-28         NA             2             1            NA"
+s2 <- "family_id age_mother name_child1 name_child2 name_child3 gender_child1 gender_child2 gender_child3
+1         30         Ben        Anna          NA             1             2            NA
+2         27         Tom          NA          NA             2            NA            NA
+3         26         Lia         Sam         Amy             2             2             1
+4         32         Max         Zoe         Joe             1             1             1
+5         29         Dan         Eva          NA             2             1            NA"
 DT <- fread(s2)
 DT
 ## 1 = female, 2 = male
 ```
 
-Предположим, Вы хотите объединить (`melt`) все столбцы `dob` вместе, а также
-столбцы `gender` вместе. Используя описанные выше функции, можно сделать
-примерно следующее:
+Предположим, Вы хотите объединить (`melt`) все столбцы `name` вместе, а
+также столбцы `gender` вместе. Используя описанные выше функции, можно
+сделать примерно следующее:
 
 ```{r}
 DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
@@ -196,15 +196,14 @@ DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
 
-str(DT.c1) ## столбец gender теперь класса IDate!
+str(DT.c1) ## столбец gender теперь класса character!
 ```
 
 #### Проблемы
 
-1. Мы хотели объединить все столбцы типа `dob` и `gender`
-   соответственно. Вместо этого мы объединяем их *все*, а затем снова
-   разделяем. Думаю, легко заметить, что это довольно запутанный путь (и
-   неэффективный).
+1. Мы хотели объединить все столбцы типа `name` и `gender` попарно. Вместо
+   этого мы объединяем их *все*, а затем снова разделяем. Думаю, легко
+   заметить, что это довольно запутанный путь (и неэффективный).
 
     В качестве аналогии представьте, что у вас есть шкаф с четырьмя полками для одежды, и вы хотите сложить одежду с полок 1 и 2 вместе (в 1), а также 3 и 4 вместе (в 3). Мы делаем примерно следующее: объединяем всю одежду в одну кучу, а затем рассовываем ее обратно по полкам 1 и 3!
 
@@ -239,9 +238,9 @@ str(DT.c1) ## столбец gender теперь класса IDate!
 вместе.
 
 ```{r}
-colA = paste0("dob_child", 1:3)
+colA = paste0("name_child", 1:3)
 colB = paste0("gender_child", 1:3)
-DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("name", "gender"))
 DT.m2
 
 str(DT.m2) ## тип столбца сохранён
@@ -259,7 +258,7 @@ str(DT.m2) ## тип столбца сохранён
 `patterns()`. Приведенную выше операцию можно переписать так:
 
 ```{r}
-DT.m2 = melt(DT, measure.vars = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure = patterns("^name", "^gender"), value.name = c("name", "gender"))
 DT.m2
 ```
 
@@ -365,7 +364,7 @@ melt(who, measure.vars = measure(
 
 ```{r}
 ## новая функция 'dcast' - несколько value.vars
-DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("dob", "gender"))
+DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("name", "gender"))
 DT.c2
 ```
 

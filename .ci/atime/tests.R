@@ -286,5 +286,19 @@ test.list <- atime::atime_test_list(
     Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
     Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
 
-    tests=extra.test.list)
+  # Regression introduced in #7404 (grouped by factor).
+  "DT[by] max regression fixed in #7480" = atime::atime_test(
+    N = as.integer(10^seq(3, 5, by=0.5)),
+    setup = {
+      dt = data.table(
+        id = as.factor(rep(seq_len(N), each = 100L)),
+        V1 = 1L
+      )
+    },
+    expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id),
+    Before = "476de7e3",
+    Regression = "6f49bf1",
+    Fixed = "b6ad1a4",
+    seconds.limit = 1),
+  tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

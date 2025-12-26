@@ -259,7 +259,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   } else leftadaptive = FALSE
   if (leftadaptive) {
     if (verbose)
-      cat("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+      catf("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
     if (by.column) {
       X = lapply(X, rev)
     } else {
@@ -329,7 +329,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   DTths0 = getDTthreads(FALSE)
   use.fork0 = .Platform$OS.type!="windows" && DTths0 > 1L
   if (verbose && !use.fork0)
-    cat("frollapply running on single CPU thread\n")
+    catf("frollapply running on single CPU thread\n")
   ans = vector("list", nx*nn)
   ## vectorized x
 
@@ -395,11 +395,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             interrupt = function(e) {
               # nocov start
               suspendInterrupts({
-                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
-                parallel::mccollect(jobs, wait = FALSE)
+                lapply(jobs[.Call(Cis_direct_child, jobs)], function(pid) try(tools::pskill(pid), silent = TRUE))
+                parallel::mccollect(jobs)
               })
-              invokeRestart("abort") ## raise SIGINT
               # nocov end
+              # Let the interrupt continue without invoking restarts
             }
           )
           ## check for any errors in FUN, warnings are silently ignored

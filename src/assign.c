@@ -755,35 +755,26 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
       SEXP sourceLevels = source;  // character source
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
-      sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
-      if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
-        const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+      bool needUtf8Coerce = !sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0);
+      if (needUtf8Coerce) {
+        sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
         targetLevels = PROTECT(coerceUtf8IfNeeded(targetLevels)); protecti++;
+        const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
         const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
-        savetl_init();
+        hashtab * marks = hash_create((size_t)nTargetLevels + nSourceLevels);
+        PROTECT(marks->prot); protecti++;
         for (int k=0; k<nTargetLevels; ++k) {
           const SEXP s = targetLevelsD[k];
-          const int tl = TRUELENGTH(s);
-          if (tl>0) {
-            savetl(s);
-          } else if (tl<0) {
-            // # nocov start
-            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
-            savetl_end();                                  // then restore R's own usage (if any)
-            internal_error(__func__, "levels of target are either not unique or have truelength<0"); // # nocov
-            // # nocov end
-          }
-          SET_TRUELENGTH(s, -k-1);
+          hash_set(marks, s, -k-1);
         }
         int nAdd = 0;
         for (int k=0; k<nSourceLevels; ++k) {
           const SEXP s = sourceLevelsD[k];
-          const int tl = TRUELENGTH(s);
+          const int tl = hash_lookup(marks, s, 0);
           if (tl>=0) {
             if (!sourceIsFactor && s==NA_STRING) continue; // don't create NA factor level when assigning character to factor; test 2117
-            if (tl>0) savetl(s);
-            SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+            hash_set(marks, s, -nTargetLevels-(++nAdd));
           } // else, when sourceIsString, it's normal for there to be duplicates here
         }
         const int nSource = length(source);
@@ -792,45 +783,36 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const int *sourceD = INTEGER(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const int val = sourceD[i];
-            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
+            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks, sourceLevelsD[val-1], 0); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
           const SEXP *sourceD = STRING_PTR_RO(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const SEXP val = sourceD[i];
-            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
+            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -hash_lookup(marks, val, 0);
           }
         }
         source = newSource;
-        for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
+        for (int k=0; k<nTargetLevels; ++k) hash_set(marks, targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
-          // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-          SEXP *temp = malloc(sizeof(*temp) * nAdd);
-          if (!temp) {
-            // # nocov start
-            for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
-            savetl_end();
-            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
-            // # nocov end
-          }
+          void *vmax = vmaxget();
+          SEXP *temp = (SEXP *)R_alloc(nAdd, sizeof(*temp));
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
             SEXP s = sourceLevelsD[k];
-            int tl = TRUELENGTH(s);
+            int tl = hash_lookup(marks, s, 0);
             if (tl) {  // tl negative here
               if (tl != -nTargetLevels-thisAdd-1) internal_error(__func__, "extra level check sum failed"); // # nocov
               temp[thisAdd++] = s;
-              SET_TRUELENGTH(s,0);
+              hash_set(marks, s, 0);
             }
           }
-          savetl_end();
           setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
           for (int k=0; k<nAdd; ++k) {
             SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
           }
-          free(temp);
+          vmaxset(vmax);
         } else {
           // all source levels were already in target levels, but not with the same integers; we're done
-          savetl_end();
         }
         // now continue, but with the mapped integers in the (new) source
       }
@@ -1203,62 +1185,6 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
-}
-
-static SEXP *saveds=NULL;
-static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
-
-void savetl_init(void) {
-  if (nsaved || nalloc || saveds || savedtl) {
-    internal_error(__func__, "savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
-  }
-  nsaved = 0;
-  nalloc = 100;
-  saveds = malloc(sizeof(*saveds) * nalloc);
-  savedtl = malloc(sizeof(*savedtl) * nalloc);
-  if (!saveds || !savedtl) {
-    free(saveds); free(savedtl);                                            // # nocov
-    savetl_end();                                                           // # nocov
-    error(_("Failed to allocate initial %d items in savetl_init"), nalloc); // # nocov
-  }
-}
-
-void savetl(SEXP s)
-{
-  if (nsaved==nalloc) {
-    if (nalloc==INT_MAX) {
-      savetl_end();                                                                                                     // # nocov
-      internal_error(__func__, "reached maximum %d items for savetl", nalloc); // # nocov
-    }
-    nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
-    char *tmp = realloc(saveds, sizeof(SEXP)*nalloc);
-    if (tmp==NULL) {
-      // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
-      savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
-      error(_("Failed to realloc saveds to %d items in savetl"), nalloc);   // # nocov
-    }
-    saveds = (SEXP *)tmp;
-    tmp = realloc(savedtl, sizeof(R_len_t)*nalloc);
-    if (tmp==NULL) {
-      savetl_end();                                                      // # nocov
-      error(_("Failed to realloc savedtl to %d items in savetl"), nalloc);  // # nocov
-    }
-    savedtl = (R_len_t *)tmp;
-  }
-  saveds[nsaved] = s;
-  savedtl[nsaved] = TRUELENGTH(s);
-  nsaved++;
-}
-
-void savetl_end(void) {
-  // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
-  // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
-  for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
-  free(saveds);  // possible free(NULL) which is safe no-op
-  saveds = NULL;
-  free(savedtl);
-  savedtl = NULL;
-  nsaved = nalloc = 0;
 }
 
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)

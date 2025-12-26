@@ -164,7 +164,6 @@ SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n, const bool listNA);
-void savetl_init(void), savetl(SEXP s), savetl_end(void);
 int checkOverAlloc(SEXP x);
 
 // forder.c
@@ -344,6 +343,7 @@ SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen);
 SEXP R_duplicateAsResizable_(SEXP x);
 void R_resizeVector_(SEXP x, R_xlen_t newlen);
 #endif
+SEXP is_direct_child(SEXP pids);
 
 // types.c
 char *end(char *start);
@@ -363,6 +363,23 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
+
+// hash.c
+typedef struct {
+  SEXP prot; // make sure to PROTECT() while the table is in use
+} hashtab;
+// Allocate, initialise, and return a pointer to the new hash table.
+// n is the maximal number of elements that will be inserted.
+// May raise an R error if an allocation fails or a size is out of bounds.
+hashtab * hash_create(size_t n);
+// Inserts a new key-value pair into the hash, or overwrites an existing value.
+// Will grow the table in a thread-unsafe manner if needed.
+// Don't try to insert a null pointer, nothing good will come out of it.
+void hash_set(hashtab *, SEXP key, R_xlen_t value);
+// Same as hash_set, but returns the new hash table pointer, which the caller may assign atomically in a thread-safe manner.
+hashtab *hash_set_shared(hashtab *, SEXP key, R_xlen_t value);
+// Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
+R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
 
 // mergelist.c
 SEXP cbindlist(SEXP x, SEXP copyArg);
