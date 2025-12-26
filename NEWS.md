@@ -6,7 +6,9 @@
 
 ### BREAKING CHANGE
 
-1. `x` and `n` arguments to `frollapply` functions no longer work. Use `X` and `N` instead, respectively; see the release note for 1.18.0, item 4 under `BREAKING CHANGE`.
+1. `hasNA` argument to `froll*` functions no longer works. Use `has.nf` instead; see the release note for 1.18.0, item 3 under `BREAKING CHANGE`.
+
+2. `x` and `n` arguments to `frollapply` functions no longer work. Use `X` and `N` instead, respectively; see the release note for 1.18.0, item 4 under `BREAKING CHANGE`.
 
 ### Notes
 

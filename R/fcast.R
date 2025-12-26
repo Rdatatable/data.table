@@ -185,8 +185,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     maybe_err = function(list.of.columns) {
       if (!all(lengths(list.of.columns) == 1L)) {
-        msg = gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
-        stop(msg, domain=NA, call. = FALSE)
+        stopf("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
       }
       list.of.columns
     }
