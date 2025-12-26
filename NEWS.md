@@ -4,6 +4,10 @@
 
 ## data.table [v1.18.99](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (in development)
 
+### BREAKING CHANGES
+
+1. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

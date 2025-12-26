@@ -21329,15 +21329,10 @@ if (test_R.utils) local({
 })
 
 # Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
-local({
-  old = options(datatable.old.matrix.autoname=FALSE)
-  on.exit(options(old))
-
-  test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
-  test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
-  test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
-  test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
-})
+test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
 ## but respect named column vectors
 test(2321.05, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
 test(2321.06, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
@@ -21383,21 +21378,16 @@ M = cbind(1:3)
 test(2321.30, data.table(M[, 0L]), data.table(NULL))
 test(2321.31, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
 
-local({
-  old = options(datatable.old.matrix.autoname=FALSE)
-  on.exit(options(old))
-  
-  test(2321.32, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
-  # particularly buggy old behavior: can easily result in duplicate names
-  test(2321.33, names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
-  M = cbind(1:3)
-  test(2321.34, data.table(M[, 0L]), data.table(NULL))
-  test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+test(2321.32, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
+# particularly buggy old behavior: can easily result in duplicate names
+test(2321.33, names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
+M = cbind(1:3)
+test(2321.34, data.table(M[, 0L]), data.table(NULL))
+test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
 
-  # a more subtle version of this as expressed in #5367
-  DT <- data.table(Counts=c(10, 20), Severity=c(1, 2))
-  test(2321.36, names(DT[,.(New_name = Severity %*% Counts)]), "New_name")
-})
+# a more subtle version of this as expressed in #5367
+DT <- data.table(Counts=c(10, 20), Severity=c(1, 2))
+test(2321.36, names(DT[,.(New_name = Severity %*% Counts)]), "New_name")
 
 # New fctr() helper: like factor() but retaining order by default #4837
 test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))
