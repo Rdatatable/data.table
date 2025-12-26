@@ -351,10 +351,10 @@ test-mac-old:
 # merging package tarballs and binaries into single R repository
 # rendering documentation
 # setting up CRAN-like structure
-# generating pkgdown website
+# generating litedown website
 integration:
   stage: integration
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-pkgdown
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-litedown
   tags:
     - saas-linux-medium-amd64
   only:
@@ -362,11 +362,10 @@ integration:
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-clang-san","test-lin-dev-gcc-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
-    - *install-deps ## markdown pkg not present in r-pkgdown image
+    - *install-deps ## markdown pkg not present in r-litedown image
     ## Copy assets to site directory
     - mkdir -p ./site/assets/favicon/
     - cp .graphics/favicon/* ./site/assets/favicon/
-    - cp pkgdown/assets/*.pdf ./site/assets/
     ## Build litedown site
     - cd site && Rscript -e 'litedown::fuse_site()' && cd ..
     ## Generate reference pages
@@ -464,7 +463,6 @@ integration:
 # R repository
 # test jobs summaries
 # html documentation of all packages in repo
-# pkgdown website
 pages:
   stage: deploy
   environment: production
