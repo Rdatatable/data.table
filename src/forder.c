@@ -695,7 +695,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     if (isReal) { min2--; max2++; }  // -Inf and +Inf  in min-1 and max+1 spots respectively
 
     const uint64_t naval = ((nalast==1) == asc) ? max+1+isReal*2 : min-1-isReal*2;
-    const uint64_t nanval = ((1) == asc) ? max+2 : min-2;  // only used when isReal
+    const uint64_t nanval = ((nalast==1) == asc) ? max+2 : min-2;  // only used when isReal
     // Rprintf(_("asc=%d  min2=%"PRIu64"  max2=%"PRIu64"  naval==%"PRIu64"  nanval==%"PRIu64"\n"), asc, min2, max2, naval, nanval);
 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
