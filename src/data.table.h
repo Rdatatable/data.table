@@ -183,6 +183,9 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
 const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out);
 
+// deleterows.c
+SEXP deleteRows(SEXP dt, SEXP rows_to_delete);
+
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
 
@@ -321,7 +324,7 @@ SEXP fitsInInt64R(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
-SEXP copyAsPlain(SEXP x);
+SEXP copyAsPlain(SEXP x, bool resizable);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
 SEXP unlock(SEXP x);

@@ -100,7 +100,7 @@ SEXP expandAltRep(SEXP x)
   for (int i=0; i<LENGTH(x); i++) {
     SEXP col = VECTOR_ELT(x,i);
     if (ALTREP(col)) {
-      SET_VECTOR_ELT(x, i, copyAsPlain(col));
+      SET_VECTOR_ELT(x, i, copyAsPlain(col, false));
     }
   }
   return R_NilValue;

@@ -208,7 +208,7 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
-SEXP copyAsPlain(SEXP x) {
+SEXP copyAsPlain(SEXP x, bool resizable) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
   //      .Internal(inspect(x[[5]]))
@@ -227,7 +227,7 @@ SEXP copyAsPlain(SEXP x) {
     return duplicate(x);
   }
   const int64_t n = XLENGTH(x);
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  SEXP ans = resizable ? PROTECT(R_allocResizableVector(TYPEOF(x), n)) : PROTECT(allocVector(TYPEOF(x), n));
   // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
     internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
@@ -258,7 +258,7 @@ SEXP copyAsPlain(SEXP x) {
   } break;
   case VECSXP: {
     const SEXP *xp=SEXPPTR_RO(x);
-    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
+    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i], resizable));
   } break;
   default:                                                                                           // # nocov
     internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
@@ -292,7 +292,7 @@ void copySharedColumns(SEXP x) {
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
-        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
+        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i], false));
     }
     if (GetVerbose())
       Rprintf(Pl_(nShared,
