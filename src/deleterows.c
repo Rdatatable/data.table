@@ -184,14 +184,12 @@ static void compactVectorRaw(SEXP col, const int *dest, const int *keep,
       break;
     }
     case STRSXP: {
-      // Sequential for strings due to write barrier
       for (int i = 0; i < old_nrow; i++) {
         if (keep[i]) SET_STRING_ELT(col, dest[i], STRING_ELT(col, i));
       }
       break;
     }
     case VECSXP: {
-      // Sequential for lists due to write barrier
       for (int i = 0; i < old_nrow; i++) {
         if (keep[i]) SET_VECTOR_ELT(col, dest[i], VECTOR_ELT(col, i));
       }
