@@ -29,6 +29,16 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     stopf("Argument 'id' must be a logical scalar.")
   if (missing(j))
     stopf("Argument 'j' is required")
+  
+  if (missing(.SDcols)) {
+    .SDcols = NULL
+  } else {
+    sub.result = substitute(.SDcols)
+    if (is.call(sub.result)) {
+      .SDcols = eval_with_cols(sub.result, names(x))
+    }
+  }
+
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
   keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
