@@ -13,22 +13,22 @@ msgstr ""
 #: froll.c:23 froll.c:232 froll.c:416
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
-msgstr ""
+msgstr "%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर (vector) लौटा रहा है\n"
 
 #: froll.c:41 froll.c:249 froll.c:465
 #, c-format
 msgid "%s: align %d, shift answer by %d\n"
-msgstr ""
+msgstr "%s: संरेखित %d, उत्तर को %d से स्थानांतरित करें\n"
 
 #: froll.c:48 froll.c:256
 #, c-format
 msgid "%s: processing algo %u took %.3fs\n"
-msgstr ""
+msgstr "%s: एल्गोरिदम %u के संसाधन में %.3fs का समय लगा\n"
 
 #: froll.c:57 froll.c:260
 #, c-format
 msgid "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
-msgstr ""
+msgstr "%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए चल रहा है\n"
 
 #: froll.c:77 froll.c:87 froll.c:178 froll.c:280 froll.c:290 froll.c:371
 #, c-format
@@ -36,6 +36,7 @@ msgid ""
 "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
 "input, use default hasNA=NA to avoid this warning"
 msgstr ""
+"%s: hasNA=FALSE का उपयोग किया गया है लेकिन इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, इस चेतावनी (warning) से बचने के लिए डिफ़ॉल्ट (default) hasNA=NA का उपयोग करें"
 
 #: froll.c:80 froll.c:182 froll.c:283 froll.c:375
 #, c-format
@@ -43,6 +44,7 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, re-running with "
 "extra care for NAs\n"
 msgstr ""
+"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, NAs के लिए अतिरिक्त सावधानी के साथ पुन: निष्पादन किया जा रहा है\n"
 
 #: froll.c:90 froll.c:293
 #, c-format
@@ -50,6 +52,7 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
 "attempt and run with extra care for NAs\n"
 msgstr ""
+"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, गैर-NA प्रयास को छोड़ें और NAs के लिए अतिरिक्त सावधानी के साथ चलाएं\n"
 
 #: froll.c:146 froll.c:344
 #, c-format
@@ -57,6 +60,7 @@ msgid ""
 "%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, narm "
 "%d\n"
 msgstr ""
+"%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए समानांतर में चल रहा है\n"
 
 #: froll.c:184 froll.c:377
 #, c-format
@@ -64,11 +68,12 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
 "so in 'exact' implementation NAs were handled already, no need to re-run\n"
 msgstr ""
+"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, na.rm FALSE था इसलिए 'यथातथ्य' कार्यान्वयन में NAs को पहले ही संभाल लिया गया था, पुन: निष्पादन की आवश्यकता नहीं है\n"
 
 #: froll.c:433
 #, c-format
 msgid "%s: results from provided FUN are not length 1"
-msgstr ""
+msgstr "%s: प्रदान किए गए FUN के परिणाम की लेंथ (length) 1 नहीं है"
 
 #: froll.c:440
 #, c-format
@@ -76,13 +81,14 @@ msgid ""
 "%s: results from provided FUN are not of type double, coercion from integer "
 "or logical will be applied on each iteration\n"
 msgstr ""
+"%s: प्रदान किए गए FUN के परिणाम डबल (double) type के नहीं हैं, प्रत्येक पुनरावृत्ति पर इंटीजर (integer) या लॉजिकल (logical) से ज़बरदस्ती परिवर्तन लागू किया जाएगा\n"
 
 #: froll.c:443
 #, c-format
 msgid "%s: results from provided FUN are not of type double"
-msgstr ""
+msgstr "%s: प्रदान किए गए FUN के परिणाम डबल (double) type के नहीं हैं"
 
 #: froll.c:472
 #, c-format
 msgid "%s: took %.3fs\n"
-msgstr ""
+msgstr "%s: इसमें %.3fs का समय लगा\n"
