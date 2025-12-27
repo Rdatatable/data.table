@@ -22006,7 +22006,7 @@ test(2356.22, copy(dt)[c(3L, 1L, 3L, 1L), .ROW := NULL], dt[c(2,4,5)])
 if (test_bit64) {
   dt = data.table(a=1:5, b=as.integer64(11:15))
   test(2356.23, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
-  test(2356.24, copy(dt)[.I, .ROW := NULL], data.table(a=integer(0), b=integer64(0)))
+  test(2356.24, copy(dt)[1:5, .ROW := NULL], data.table(a=integer(0), b=integer64(0)))
 }
 # Date/IDate/ITime columns
 dt = data.table(a=1:5, d=as.Date("2024-01-01") + 0:4, t=as.ITime(paste0(10:14, ":00:00")), dt=as.POSIXct("2024-01-01 12:00:00") + 3600*0:4)
