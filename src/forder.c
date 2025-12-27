@@ -1170,58 +1170,69 @@ void radix_r(const int from, const int to, int radix) {
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
   TEND(16)
-  #pragma omp parallel num_threads(getDTthreads(nBatch, false))
+  bool otmp_ktmp_failed_to_allocate = false;
+  // 200805 supported || reduction
+#if defined(_OPENMP) && _OPENMP >= 200805
+  #pragma omp parallel num_threads(getDTthreads(nBatch, false)) reduction(|| : otmp_ktmp_failed_to_allocate)
+#endif
   {
     int     *my_otmp = malloc(sizeof(*my_otmp) * batchSize); // thread-private write
     uint8_t *my_ktmp = malloc(sizeof(*my_ktmp) * batchSize * n_rem);
     if (!my_otmp || !my_ktmp) {
       free(my_otmp); free(my_ktmp);
-      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize));
+      otmp_ktmp_failed_to_allocate = true;
     }
-    // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
-    #pragma omp for
-    for (int batch=0; batch<nBatch; batch++) {
-      const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is a multiple of batchSize
-      const int my_from = from + batch*batchSize;
-      uint16_t *restrict      my_counts = counts + batch*256;
-      uint8_t  *restrict      my_ugrp   = ugrps  + batch*256;
-      int                     my_ngrp   = 0;
-      bool                    my_skip   = true;
-      const uint8_t *restrict my_key    = key[radix] + my_from;
-      const uint8_t *restrict byte = my_key;
-      for (int i=0; i<my_n; i++, byte++) {
-        if (++my_counts[*byte]==1) {   // always true first time when i==0
-          my_ugrp[my_ngrp++] = *byte;
-        } else if (my_skip && byte[0]!=byte[-1]) {   // include 'my_skip &&' to save != comparison after it's realized this batch is not grouped
-          my_skip=false;
-        }
-      }
-      ngrps[batch] = my_ngrp;  // write once to this shared cache line
-      if (!my_skip) {
-        skip = false;          // naked write to this shared byte is ok because false is only value written
-        // gather this batch's anso and remaining keys. If we sorting too, urgrp is sorted later for that. Here we want to benefit from skip within batch
-        // as much as possible which is a good chance since batchSize is relatively small (65535)
-        for (int i=0, sum=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]=sum; sum+=tmp; } // cumulate counts of this batch
-        const int *restrict osub = anso+my_from;
-        byte = my_key;
+    if (!otmp_ktmp_failed_to_allocate) {
+      // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
+      #if defined(_OPENMP) && _OPENMP >= 200805
+      #pragma omp for
+      #endif
+      for (int batch=0; batch<nBatch; batch++) {
+        const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is a multiple of batchSize
+        const int my_from = from + batch*batchSize;
+        uint16_t *restrict      my_counts = counts + batch*256;
+        uint8_t  *restrict      my_ugrp   = ugrps  + batch*256;
+        int                     my_ngrp   = 0;
+        bool                    my_skip   = true;
+        const uint8_t *restrict my_key    = key[radix] + my_from;
+        const uint8_t *restrict byte = my_key;
         for (int i=0; i<my_n; i++, byte++) {
-          int dest = my_counts[*byte]++;
-          my_otmp[dest] = *osub++;  // wastefully copies out 1:n when radix==0, but do not optimize as unlikely worth code complexity. my_otmp is not large, for example. Use first TEND() to decide.
-          for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = key[radix+1+r][my_from+i];   // reorder remaining keys
+          if (++my_counts[*byte]==1) {   // always true first time when i==0
+            my_ugrp[my_ngrp++] = *byte;
+          } else if (my_skip && byte[0]!=byte[-1]) {   // include 'my_skip &&' to save != comparison after it's realized this batch is not grouped
+            my_skip=false;
+          }
         }
-        // or could do multiple passes through my_key like in the my_n<=65535 approach above. Test which is better depending on if TEND() points here.
+        ngrps[batch] = my_ngrp;  // write once to this shared cache line
+        if (!my_skip) {
+          skip = false;          // naked write to this shared byte is ok because false is only value written
+          // gather this batch's anso and remaining keys. If we sorting too, urgrp is sorted later for that. Here we want to benefit from skip within batch
+          // as much as possible which is a good chance since batchSize is relatively small (65535)
+          for (int i=0, sum=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]=sum; sum+=tmp; } // cumulate counts of this batch
+          const int *restrict osub = anso+my_from;
+          byte = my_key;
+          for (int i=0; i<my_n; i++, byte++) {
+            int dest = my_counts[*byte]++;
+            my_otmp[dest] = *osub++;  // wastefully copies out 1:n when radix==0, but do not optimize as unlikely worth code complexity. my_otmp is not large, for example. Use first TEND() to decide.
+            for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = key[radix+1+r][my_from+i];   // reorder remaining keys
+          }
+          // or could do multiple passes through my_key like in the my_n<=65535 approach above. Test which is better depending on if TEND() points here.
 
-        // we haven't completed all batches, so we don't know where these groups should place yet
-        // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
-        memcpy(anso+my_from, my_otmp, my_n*sizeof(*anso));
-        for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+my_from, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
+          // we haven't completed all batches, so we don't know where these groups should place yet
+          // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
+          memcpy(anso+my_from, my_otmp, my_n*sizeof(*anso));
+          for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+my_from, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
 
-        // revert cumulate back to counts ready for vertical cumulate
-        for (int i=0, last=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]-=last; last=tmp; }
+          // revert cumulate back to counts ready for vertical cumulate
+          for (int i=0, last=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]-=last; last=tmp; }
+        }
       }
     }
     free(my_otmp);
     free(my_ktmp);
+  }
+  if (otmp_ktmp_failed_to_allocate) {
+    STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(int) + sizeof(uint8_t)) * batchSize));
   }
   TEND(17 + notFirst*3)  // 3 timings in this section: 17,18,19 first main split; 20,21,22 thereon
 
