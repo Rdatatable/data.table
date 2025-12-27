@@ -2702,11 +2702,11 @@ for (ne in seq_along(eols)) {
   # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
   num_major = nr/100 + nc/1000 + ne/10000
   # if (isTRUE(all.equal(testIDtail, 0.4103))) browser()
-  test(894+num_major+0.00001, fread(f,na.strings=""), headDT)
-  cat(eol,file=f,append=TRUE)                     # now a normal file properly ending with final \n
-  test(894+num_major+0.00002, fread(f,na.strings=""), headDT)
-  cat(eol,file=f,append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
-  test(894+num_major+0.00003, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
+  test(894 + num_major + 0.00001, fread(f, na.strings=""), headDT, context=sprintf("nr=%d, nc=%d, ne=%d [I]", nr, nc, ne))
+  cat(eol, file=f, append=TRUE)                     # now a normal file properly ending with final \n
+  test(894 + num_major + 0.00002, fread(f, na.strings=""), headDT, context=sprintf("nr=%d, nc=%d, ne=%d [II]", nr, nc, ne))
+  cat(eol, file=f, append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
+  test(894 + num_major + 0.00003, fread(f, na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT, context=sprintf("nr=%d, nc=%d, ne=%d [III]", nr, nc, ne))
   unlink(f)
 }}}
 if (test_bit64) {
@@ -4477,13 +4477,13 @@ old_rounding = getNumericRounding()
 DT = data.table(A=c(1,2,-Inf,+Inf,3,-1.1,NaN,NA,3.14,NaN,2.8,NA), B=1:12, key="A")
 for (i in 0:1) {  # tests 1207 & 1208
   setNumericRounding(if (i==0L) 0L else 2L)
-  test(1207+i+0.1, DT[.(c(NA_real_,Inf)),B], INT(8,12,4))
-  test(1207+i+0.2, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
-  test(1207+i+0.3, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
-  test(1207+i+0.4, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
-  test(1207+i+0.5, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4))
-  test(1207+i+0.6, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
-  test(1207+i+0.7, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
+  test(1207 + i + 0.1, DT[.(c(NA_real_,Inf)), B], INT(8, 12, 4), context=sprintf("setNumericRounding(%d) [I]", 2*i))
+  test(1207 + i + 0.2, DT[.(c(Inf,NA_real_)), B], INT(4, 8, 12), context=sprintf("setNumericRounding(%d) [II]", 2*i))
+  test(1207 + i + 0.3, DT[.(c(NaN,NA_real_)), B], INT(7, 10, 8, 12), context=sprintf("setNumericRounding(%d) [III]", 2*i))
+  test(1207 + i + 0.4, DT[.(c(NA_real_,NaN)), B], INT(8, 12, 7, 10), context=sprintf("setNumericRounding(%d) [IV]", 2*i))
+  test(1207 + i + 0.5, DT[, sum(B), by=A]$V1, INT(20, 17, 3, 6, 1, 2, 11, 5, 9, 4), context=sprintf("setNumericRounding(%d) [V]", 2*i))
+  test(1207 + i + 0.6, DT[, sum(B), by=list(g=abs(trunc(A)))], data.table(g=c(NA, NaN, Inf, 1, 2, 3), V1=INT(20, 17, 7, 7, 13, 14)), context=sprintf("setNumericRounding(%d) [VI]", 2*i))
+  test(1207 + i + 0.7, DT[, sum(B), keyby=list(g=abs(trunc(A)))], data.table(g=c(NA, NaN, 1, 2, 3, Inf), V1=INT(20, 17, 7, 13, 14, 7), key="g"), context=sprintf("setNumericRounding(%d) [VII]", 2*i))
   # test(1207+i+0.8, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 }
 setNumericRounding(old_rounding)
@@ -4552,7 +4552,7 @@ seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 test_no = 0L
 oldnfail = nfail
 for (nvars in seq_along(names(DT))) {
-  signs = expand.grid(replicate(nvars, c(-1L,1L), simplify=FALSE))
+  signs = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
   combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
       test_no <<- test_no + 1L
@@ -4570,7 +4570,7 @@ for (nvars in seq_along(names(DT))) {
           }
         })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)), context=sprintf("signs[%d, ]==%s", i, paste(unlist(signs[i, ]), collapse=",")))
     }
     integer()
   })
@@ -4694,10 +4694,10 @@ for (i in seq_along(names(DT))) {
   cc = combn(names(DT), i)
   apply(cc, 2L, function(jj) {
     test_no <<- test_no + 1L # first without key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
     test_no <<- test_no + 1L
     setkeyv(DT, jj) # with key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
   })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4717,10 +4717,10 @@ for (i in seq_along(names(DT))) {
   cc = combn(names(DT), i)
   apply(cc, 2L, function(jj) {
     test_no <<- test_no + 1L # first without key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
     test_no <<- test_no + 1L
     setkeyv(DT, jj) # with key
-    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE), context=sprintf("jj=%s", paste(jj, collapse=",")))
   })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4816,22 +4816,23 @@ for (i in seq_along(names(DT))) {
         as.name("base_order"),
         method = "radix",
         lapply(seq_along(x), function(j) {
+          x_nm = as.name(x[j])
           if (y[j] == 1L)
-            as.name(x[j])
+            x_nm
           else {
             if (is.character(DT[[x[j]]]))
-              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
+              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), x_nm))))
             else
-              as.call(list(as.name("-"), as.name(x[j])))
+              as.call(list(as.name("-"), x_nm))
           }
         })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
     })
     dim(tmp)=NULL
     list(tmp)
@@ -4957,12 +4958,12 @@ setNumericRounding(old_rounding)
 # http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
 old_rounding = getNumericRounding()
 test_no = 0L
-for (dround in c(0,2)) {
+for (dround in c(0, 2)) {
   setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
-  for (i in c(-30:-1,1:30)) {
-    DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
+  for (i in c(-30:-1, 1:30)) {
+    DT = data.table(c(1 * (10^i), 2, 9999, -1, 0, 1))
     test_no = test_no + 1L
-    test(1278.0 + test_no*0.001, nrow(DT[, .N, by=V1]), 6L)
+    test(1278.0 + test_no*0.001, nrow(DT[, .N, by=V1]), 6L, context=sprintf("dround=%d, i=%d", dround, i))
   }
 }
 setNumericRounding(old_rounding)
@@ -5796,9 +5797,9 @@ for (i in seq_along(dt)) {
       r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
 
       test_no = test_no + 1L
-      test(1368.0 + test_no*0.0001, r1, r3)
+      test(1368.0 + test_no*0.0001, r1, r3, context=sprintf("i=%d, j=%s, k=%s [asc]", i, j, k))
       test_no = test_no + 1L
-      test(1368.0 + test_no*0.0001, r2, r4)
+      test(1368.0 + test_no*0.0001, r2, r4, context=sprintf("i=%d, j=%s, k=%s [desc]", i, j, k))
     }
   }
 }
@@ -5828,9 +5829,9 @@ for (i in seq_along(dt)) {
     r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
 
     test_no = test_no + 1L
-    test(1369.0 + test_no*0.0001, r1, r3)
+    test(1369.0 + test_no*0.0001, r1, r3, context=sprintf("i=%d, k=%s [asc]", i, k))
     test_no = test_no + 1L
-    test(1369.0 + test_no*0.0001, r2, r4)
+    test(1369.0 + test_no*0.0001, r2, r4, context=sprintf("i=%d, k=%s [desc]", i, k))
   }
 }
 
@@ -5853,13 +5854,13 @@ for (i in seq_along(dt)) {
     ans1 = is_na(dt[cols])
     ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
     test_no <<- test_no + 1L
-    test(1370.0 + test_no*0.0001, ans1, ans2)
+    test(1370.0 + test_no*0.0001, ans1, ans2, context=sprintf("cols=%s [is_na]", paste(cols, collapse=",")))
 
     # update: tests for any_na
     test_no <<- test_no + 1L
-    test(1370.0 + test_no*0.0001, any_na(dt[cols]), TRUE)
+    test(1370.0 + test_no*0.0001, any_na(dt[cols]), context=sprintf("cols=%s [any_na]", paste(cols, collapse=",")))
     test_no <<- test_no + 1L
-    test(1370.0 + test_no*0.0001, any_na(ans[cols]), FALSE)
+    test(1370.0 + test_no*0.0001, !any_na(ans[cols]), context=sprintf("cols=%s [!any_na]", paste(cols, collapse=",")))
     TRUE
   })
 }
@@ -5986,7 +5987,7 @@ for (run in seq_len(times)) {
       # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
       idx = paste(type, mult, run, sep="_")
       # ans[[idx]] contains fo(gr(i), gr(x), type=type, select=mult)
-      test(1372.0 + test_no*0.01, thisans, ans[[idx]])
+      test(1372.0 + test_no*0.01, thisans, ans[[idx]], context=sprintf("run=%d, type=%s, mult=%s", run, type, mult))
       this = this+1L
     }
   }
@@ -6212,7 +6213,7 @@ for (i in seq_along(DT)) {
     ans1 = na.omit(DT, cols=cols)
     ans2 = DT[stats::complete.cases(DT[, cols, with=FALSE])]
     test_no <<- test_no + 1L
-    test(1394.0 + test_no*0.001, ans1, ans2)
+    test(1394.0 + test_no*0.001, ans1, ans2, context=sprintf("cols=%s", paste(cols, collapse=",")))
     0L
   })
 }
@@ -6581,7 +6582,7 @@ bys <- c("groupCol", "sortedGroupCol", character(0))
 test_no <- 1438.0000
 if (.Machine$sizeof.pointer>4) {  # temporarily disabled for 32bit, #2767
 
-for(t in seq_len(nrow(all))){
+for (t in seq_len(nrow(all))) {
   ## test the query with missing j
   thisQuery <- all$query[t]
   options("datatable.optimize" = 3L)
@@ -6589,24 +6590,24 @@ for(t in seq_len(nrow(all))){
   options("datatable.optimize" = 2L)
   ansRef <- DT[eval(parse(text = thisQuery))]
   test_no <- test_no + 1L
-  test(1438.0 + test_no*0.0001, ansOpt, ansRef)
+  test(1438.0 + test_no*0.0001, ansOpt, ansRef, context=sprintf("t=%d [I]", t))
   ## repeat the test with 'which = TRUE'
   options("datatable.optimize" = 3L)
   ansOpt <- DT[eval(parse(text = thisQuery)), which = TRUE]
   options("datatable.optimize" = 2L)
   ansRef <- DT[eval(parse(text = thisQuery)), which = TRUE]
   test_no <- test_no + 1L
-  test(1438.0 + test_no*0.0001, ansOpt, ansRef)
+  test(1438.0 + test_no*0.0001, ansOpt, ansRef, context=sprintf("t=%d [II]", t))
   ## repeat the test with the j queries
-  for(thisJquery in jQueries) {
+  for (thisJquery in jQueries) {
     ## do it with and without existing "by"
-    for(thisBy in bys){
+    for (thisBy in bys) {
       options("datatable.optimize" = 3L)
       ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
       options("datatable.optimize" = 2L)
       ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
       test_no <- test_no + 1L
-      test(1438.0 + test_no*0.0001, ansOpt, ansRef)
+      test(1438.0 + test_no*0.0001, ansOpt, ansRef, context=sprintf("t=%d, thisJquery=%s, thisBy=%s", t, thisJquery, thisBy))
     }
   }
 }
@@ -6904,12 +6905,12 @@ test(1466.2, as.data.table(as.data.frame(x)), as.data.table(x)) # posix type
 # fix for #1001, #1002 and #759
 # When adding a column, even if i results in no rows, the RHS needs to evaluate so we can know the
 # column type to create. Always create the column for consistency that does not depend on the data in i
-for (bool in c(FALSE,TRUE)) {
+for (bool in c(FALSE, TRUE)) {
   options(datatable.auto.index=bool)
   DT = data.table(a=1:2)
-  test(1467.01 + bool*0.03, copy(DT)[a==3, b:=notExist+1], error="notExist")
-  test(1467.02 + bool*0.03, copy(DT)[a==3, b:=a+5L], data.table(a=1:2, b=NA_integer_))
-  test(1467.03 + bool*0.03, copy(DT)[a==3, b:=a+5], data.table(a=1:2, b=NA_real_))
+  test(1467.01 + bool*0.03, copy(DT)[a==3, b:=notExist+1], error="notExist", context=sprintf("bool=%s [I]", bool))
+  test(1467.02 + bool*0.03, copy(DT)[a==3, b:=a+5L], data.table(a=1:2, b=NA_integer_), context=sprintf("bool=%s [II]", bool))
+  test(1467.03 + bool*0.03, copy(DT)[a==3, b:=a+5], data.table(a=1:2, b=NA_real_), context=sprintf("bool=%s [III]", bool))
 }
 test(1467.07, getOption("datatable.auto.index"))  # ensure to leave TRUE
 
@@ -7612,7 +7613,7 @@ dt = data.table(x=1:5, y=6:10)
 test(1536, duplicated(dt, incomparables=TRUE), error = base_messages$not_yet_used('incomparables != FALSE'))
 
 # test for covering melt 100%
-test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
+test(1537, names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
 
 # test for tables()
 test(1538.1, tables(), output="Total:")
@@ -7917,20 +7918,20 @@ DT = data.table(int = 1:K,
                  bool = sample( c(TRUE, FALSE), K, replace = TRUE))
 
 DT_NA = DT
-for (j in seq_len( ncol(DT) )) {
+for (j in seq_len(ncol(DT))) {
   set(x = DT_NA, i = j, j = j, value = NA)
 }
 
-for(k in seq_along(nastrings)) {
+for (k in seq_along(nastrings)) {
   dt0 = copy(DT)
-  for (j in seq_len( ncol(DT) )) {
+  for (j in seq_len(ncol(DT))) {
     set(x = dt0, i = NULL, j = j, value = as.character(dt0[[j]]))
     set(x = dt0, i = j, j = j, value = nastrings[[k]])
   }
   str = do.call(paste, c(dt0, collapse="\n", sep=","))
   str = paste(paste(names(dt0), collapse=","), str, sep="\n")
   DT_fread = fread(str, na.strings = nastrings, verbose = FALSE)
-  test(1550 + k * 0.1, DT_fread, DT_NA)
+  test(1550 + k * 0.1, DT_fread, DT_NA, context=sprintf("nastrings=%s", nastrings[k]))
 }
 
 # FR #568
@@ -9878,11 +9879,10 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   for (i in seq_along(runcmb)) {
     thiscols = runcmb[[i]]
     thisops = runops[[i]]
-    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste0(thiscols,collapse=","), "]\t thisops = [", paste0(thisops,collapse=","), "]\t ", sep="")
     ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
     ans2 = check(x, y, thiscols, thisops, mult=mult)
     test_no = test_no + .001
-    test(test_no, ans1, ans2) # nolint: dt_test_literal_linter.
+    test(test_no, ans1, ans2, context=sprintf("k = %d\ti = %d\tthiscols = [%s]\tthisops = [%s]", k, i, paste(thiscols, collapse=","), paste(thisops, collapse=",")))
   }
   gc()  # no longer needed but left in place just in case, no harm
 }
@@ -11383,9 +11383,12 @@ test(1750.07, # 0 length `by`, must also use `sets=list()`, so 0L rows result
 # for any single value from dataset there should be always be the same aggregate result on any level of grouping
 # changed from all(sapply()) to for() to save ram, #5517
 for (i in seq_len(nrow(dt))) {
-  test(1750.08+i/10000, uniqueN(
-    groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
-    by=c("amount","value")) == 1L)
+  test(1750.08 + i/10000,
+       uniqueN(
+         groupingsets(dt[i], j = lapply(.SD, sum), by = c("color", "year", "status"), sets=list(c("color", "year", "status"), "year", "status", character())),
+         by=c("amount", "value")),
+       1L,
+       context=sprintf("dt[%d]", i))
 }
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
@@ -11630,7 +11633,7 @@ test(1762, DT[ , {}], NULL)
 # rbindlist empty items segfault, #2019
 x = list(list(a = 1), list(), list(a = 2))
 ans = data.table(id=c(1L,3L),a=c(1,2))
-for (i in 1:100) test(1763+i/1000, rbindlist(x, idcol="id"), ans)
+for (i in 1:100) test(1763+i/1000, rbindlist(x, idcol="id"), ans, context=sprintf("i=%d", i))
 
 # as.ITime(character(0)) used to fail, #2032
 test(1764.1, format(as.ITime(character(0))), character(0))
@@ -12003,8 +12006,8 @@ for (mul in c(16, 128, 512, 1024, 2048)) {
   cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
   close(ff)
   DT = data.table(V1=rep(1234L, mul), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=4L)
-  test(1801 + log2(mul)/100 + 0.001, file.info(f)$size, mul*32)
-  test(1801 + log2(mul)/100 + 0.002, fread(f), DT)
+  test(1801 + log2(mul)/100 + 0.001, file.info(f)$size, mul*32, context=sprintf("mul=%d [file size]", mul))
+  test(1801 + log2(mul)/100 + 0.002, fread(f), DT, context=sprintf("mul=%d [fread]", mul))
 }
 # Test without the newline
 ff = file(f<-tempfile(), open="wb")
@@ -12458,7 +12461,7 @@ DTs = list(                                      # passed fread(fwrite(DT))==DT 
 f = tempfile()
 for (i in seq_along(DTs)) {
   fwrite(DTs[[i]], file=f)
-  test(1857.0 + i/100, fread(f), DTs[[i]])
+  test(1857.0 + i/100, fread(f), DTs[[i]], context=sprintf("%d", i))
 }
 unlink(f)
 
@@ -12638,7 +12641,7 @@ test(1871.13, fread("A\n100\n200", verbose=TRUE), data.table(A=c(100L,200L)), ou
 test(1871.14, fread("col1, col2, col3\n1, 2, 3\n3, 5, 6\n7, 8, 9\n\nsome text to ignore", nrows = 3L), data.table(col1=INT(1,3,7), col2=INT(2,5,8), col3=INT(3,6,9)))  # from #1671 (no warning expected)
 for (i in 100:1) {
   lines <- paste(c(rep("2,3,4",i), "2,3"), collapse='\n')
-  test(1871.2 + (100-i)/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L))
+  test(1871.2 + (100-i)/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L), context=sprintf("i=%d", i))
 }
 
 # miscellaneous missing tests uncovered by CodeCov difference in the process of PR #2573
@@ -13098,7 +13101,7 @@ test(1913.10, all(names(M) %in% union(names(M), names(m))))
 test_no = 0L
 for (name in names(m)) {
   test_no = test_no + 1L
-  test(1913.11 + test_no*0.0001, M[[name]], m[[name]])
+  test(1913.11 + test_no*0.0001, M[[name]], m[[name]], context=sprintf("name=%s", name))
 }
 #
 # Original example that smoked out the bug
@@ -13116,7 +13119,7 @@ test(1913.13, all(names(M) %in% union(names(M), names(m))))
 test_no = 0L
 for (name in names(m)) {
   test_no = test_no + 1L
-  test(1913.14 + test_no*0.0001, M[[name]], m[[name]])
+  test(1913.14 + test_no*0.0001, M[[name]], m[[name]], context=sprintf("name=%s", name))
 }
 #
 # simple subset maintains keys
@@ -13154,7 +13157,7 @@ test(1913.23, is.null(key(t2)))  # transforming a key column nukes the key
 test_no = 0L
 for (col in c('b', 'c')) {
   test_no = test_no + 1L
-  test(1913.24 + test_no*0.0001, t2[[col]], dt[[col]])  # mutating-key-transform maintains other columns
+  test(1913.24 + test_no*0.0001, t2[[col]], dt[[col]], context=sprintf("col=%s", col))  # mutating-key-transform maintains other columns
 }
 
 # Test 1914 of S4 compatibility was moved to S4.Rraw for #3808
@@ -13527,7 +13530,7 @@ eols = c("\n", "\r\n", "\r", "\n\r")
 for (i in 1:4) {
   eol = eols[i]
   src = paste(c("A", "B", "...", ",,,,,", "c1,c2,c3", "1,2,3"), collapse=eol)
-  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L))
+  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L), context=sprintf("i=%d", i))
 }
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
@@ -14890,17 +14893,17 @@ f = tempfile()
 for (nNUL in 0:3) {
   writeBin(c(charToRaw("a=b\nA  B  C\n1  3  5\n"), rep(as.raw(0), nNUL), charToRaw("2  4  6\n")), con=f)
   num_major = (1+nNUL)/10
-  test(2025 + num_major + .01, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
-  test(2025 + num_major + .02, fread(f), ans)  # auto detect skip and header works too
+  test(2025 + num_major + .01, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6), context=sprintf("nNul=%d [I]", nNul))
+  test(2025 + num_major + .02, fread(f), ans, context=sprintf("nNul=%d [II]", nNul))  # auto detect skip and header works too
   writeBin(c(charToRaw("a=b\nA,B,C\n1,3,5\n"), rep(as.raw(0), nNUL), charToRaw("2,4,6\n")), con=f)
-  test(2025 + num_major + .03, fread(f, skip=1, header=TRUE), ans)
-  test(2025 + num_major + .04, fread(f), ans)
+  test(2025 + num_major + .03, fread(f, skip=1, header=TRUE), ans, context=sprintf("nNul=%d [III]", nNul))
+  test(2025 + num_major + .04, fread(f), ans, context=sprintf("nNul=%d [IV]", nNul))
   writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A  B  C\n1  3  5\n2  4  6\n")), con=f)
-  test(2025 + num_major + .05, fread(f, skip=1, header=TRUE), ans)
-  test(2025 + num_major + .06, fread(f), ans)
+  test(2025 + num_major + .05, fread(f, skip=1, header=TRUE), ans, context=sprintf("nNul=%d [V]", nNul))
+  test(2025 + num_major + .06, fread(f), ans, context=sprintf("nNul=%d [VI]", nNul))
   writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A,B,C\n1,3,5\n2,4,6\n")), con=f)
-  test(2025 + num_major + .07, fread(f, skip=1, header=TRUE), ans)
-  test(2025 + num_major + .08, fread(f), ans)
+  test(2025 + num_major + .07, fread(f, skip=1, header=TRUE), ans, context=sprintf("nNul=%d [VII]", nNul))
+  test(2025 + num_major + .08, fread(f), ans, context=sprintf("nNul=%d [VIII]", nNul))
 }
 makeNul = function(str){ tt=charToRaw(str); tt[tt==42L]=as.raw(0); writeBin(tt, con=f)}  # "*" (42) represents NUL
 makeNul("A,B,C\n1,foo,5\n2,*bar**,6\n")
@@ -17168,8 +17171,8 @@ DT = data.table(A=INT(1,1,2,3,3,4,5,5,6,7),
                 B=lapply(1:10, function(x) structure(rnorm(90), foo=c(42,12,36))))
 for (i in 0:4) test(2155+i/10,
   { gctorture2(step=20); ans=DT[, .(attr(B[[1L]],"foo")[1L]), by=A]; gctorture2(step=0); gc(); ans },
-  data.table(A=1:7, V1=42)
-)
+  data.table(A=1:7, V1=42),
+  context=sprintf("i=%d", i))
 
 # dogroups.c eval(j) could create list columns containing altrep references to the specials, #4759
 # thanks to revdep testing of 1.13.2 where package tstools revealed this via ts() creating ALTREP, #4758
@@ -17815,27 +17818,36 @@ test(2210.26, DT[-c(1L,0L), nomatch=0], data.table(x=2:4), warning="Please use n
 # NA in i would segfault gforce, #1994
 DT = data.table(a=1L, b=2, c="a", grp=1L)
 i = c(1L,NA,NA,NA)   # 3 NA to trigger segfault in var (min 3 obs) otherwise just c(1L,NA) is enough to trigger the others
-funs = c("sum","mean","var","sd","median","prod","min","max","`[`","first","last","head","tail")
+funs = list(
+  supports_na_rm = list(
+    no_character = c("sum", "mean", "var", "sd", "median", "prod"),
+    supports_character = c("min", "max")),
+  needs_index = c("`[`", "first", "last", "head", "tail")
+)
+n_numeric_only = length(funs$supports_na_rm$no_character)
+n_supporting_na_rm = sum(lengths(funs$supports_na_rm))
+funs = unlist(funs)
 EVAL = function(...) {
   e = paste0(...)
-  # cat(e,"\n")  # uncomment to check the queries tested
   eval(parse(text=e))
 }
 testnum = 0L
-for (col in c("a","b","c")) {
+for (col in c("a", "b", "c")) {
   testnum = testnum + 100L
   for (fi in seq_along(funs)) {
-    if (col=="c" && fi<=6L) next  # first 6 funs don't support type character
+    if (col == "c" && fi <= n_numeric_only) next
     f = funs[fi]
     testnum = testnum + 1L
     test(2211.0 + testnum*0.001,
-         EVAL("DT[i,   ",f,"(",col, if(fi>8L)", 1L","), by=grp]"),  # segfault before when NA in i
-         EVAL("DT[i][, ",f,"(",col, if(fi>8L)", 1L","), by=grp]"))  # ok before by taking DT[i] subset first
-    if (fi<=8L) {
+         EVAL("DT[i,   ",f,"(",col, if(fi > n_supporting_na_rm)", 1L","), by=grp]"),  # segfault before when NA in i
+         EVAL("DT[i][, ",f,"(",col, if(fi > n_supporting_na_rm)", 1L","), by=grp]"),  # ok before by taking DT[i] subset first
+         context=sprintf("col=%s, f=%s", col, f))
+    if (fi <= n_supporting_na_rm) {
       testnum = testnum + 1L
       test(2211.0 + testnum*0.001,
            EVAL("DT[i,   ",f,"(",col,", na.rm=TRUE), by=grp]"),
-           EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"))
+           EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"),
+           context=sprintf("col=%s, f=%s [na.rm=TRUE]", col, f))
     }
   }
 }
@@ -17953,31 +17965,31 @@ for (f1 in funs) {
   DT = data.table(x=f1(1:4), g=g)
   for (f2 in funs) {
     testnum = testnum + 1L
-    test(2218.0 + testnum*0.001, DT[, shift(x)],               f1(c(NA, 1:3)))
+    test(2218.0 + testnum*0.001, DT[, shift(x)], f1(c(NA, 1:3)), context=sprintf("f1=%s, f2=%s, ungrouped, no fill", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
-    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
-    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
+    w = if (identical(f2, as.character) && !identical(f1, as.character)) "Coercing.*character.*to match the type of target vector"
+    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(NA))], f1(c(NA, 1:3)), warning=w, context=sprintf("f1=%s, f2=%s, ungrouped, fill=NA", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
-    if (identical(f1,as.character) && identical(f2,as.complex)) {
+    if (identical(f1, as.character) && identical(f2, as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0")],   f1(0:3))
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0")], f1(0:3), context="f1=as.character, f2=as.complex, ungrouped")
     } else {
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w, context=sprintf("f1=%s, f2=%s, ungrouped, fill=0", deparse(f1), deparse(f2)))
     }
 
     testnum = testnum + 1L
-    test(2218.0 + testnum*0.001, DT[, shift(x), by=g],               data.table(g=g, V1=f1(c(NA, 1, NA, 3))))
+    test(2218.0 + testnum*0.001, DT[, shift(x), by=g], data.table(g=g, V1=f1(c(NA, 1, NA, 3))), context=sprintf("f1=%s, f2=%s, grouped, no fill", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
     w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
     f = f2(NA)
-    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g],  data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w)
+    test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w, context=sprintf("f1=%s, f2=%s, grouped, fill=NA", deparse(f1), deparse(f2)))
     testnum = testnum + 1L
-    if (identical(f1,as.character) && identical(f2,as.complex)) {
+    if (identical(f1, as.character) && identical(f2, as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0"), by=g],   data.table(g=g, V1=f1(c(0,1,0,3))))
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill="0"), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), context="f1=as.character, f2=as.complex, grouped")
     } else {
       f = f2(0)
-      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), warning=w)
+      test(2218.0 + testnum*0.001, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), warning=w, context=sprintf("f1=%s, f2=%s, grouped, fill=0", deparse(f1), deparse(f2)))
     }
   }
 }
@@ -17994,9 +18006,9 @@ funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
 testnum = 0L
 for (fun in funs) {
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE")
+  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
+  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun), context=sprintf("fun=%s [factor]", fun))
 }
 testnum = testnum + 1L
 test(2220.0 + testnum*0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
@@ -18033,13 +18045,14 @@ if (test_bit64) {
 }
 i = 1L
 for (col in names(DT)[-1]) {
-  for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
-    for (type in c('lag','lead','shift','cyclic')) {
+  for (n in list(1, 5, -1, -5, c(1, 2), c(-1, 1))) {
+    for (type in c('lag', 'lead', 'shift', 'cyclic')) {
       # fill is tested by group in tests 2218.*; see comments in #5205
       # sapply(sapply()) changed to for(for(for())) to save 29MiB, #5517
       test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
            EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
-           ans[[i]])
+           ans[[i]],
+           context=sprintf("col=%s, n=%s, type=%s", col, paste(n, collapse=","), type))
       i = i+1L
     }
   }
@@ -18298,18 +18311,18 @@ test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=I
 set.seed(10)
 n = 100
 a = data.table(id1=1:n, id2=sample(1:900,n,replace=TRUE), flag=sample(c(0,0,0,1),n,replace=TRUE))
-for (opt in c(0,Inf)) {
+for (opt in c(0, Inf)) {
   options(datatable.optimize=opt)
   out = if (opt) "GForce.*gsum" else "GForce FALSE"
   B = copy(a)
   A = a[sample(seq_len(nrow(a)), nrow(a))] # shuffle
   num_bump = (opt>0)/100
-  test(2233.39+num_bump+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)  # y=A dummy just to test output=
+  test(2233.39+num_bump+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out, context=sprintf("optimize=%s [I]", format(opt)))  # y=A dummy just to test output=
   setorder(A, id1)
-  test(2233.39+num_bump+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)
-  test(2233.39+num_bump+0.003, any(A[,t1!=t2]), FALSE)
-  test(2233.39+num_bump+0.004, any(A[, length(unique(t1))>1, by=id2]$V1), FALSE)
-  test(2233.39+num_bump+0.005, any(A[, length(unique(t2))>1, by=id2]$V1), FALSE)
+  test(2233.39+num_bump+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out, context=sprintf("optimize=%s [II]", format(opt)))
+  test(2233.39+num_bump+0.003, !any(A[,t1!=t2]))
+  test(2233.39+num_bump+0.004, !any(A[, length(unique(t1))>1, by=id2]$V1), context=sprintf("optimize=%s [III]", format(opt)))
+  test(2233.39+num_bump+0.005, !any(A[, length(unique(t2))>1, by=id2]$V1), context=sprintf("optimize=%s [IV]", format(opt)))
 }
 # test from #5337
 n=4; k=2
@@ -19295,61 +19308,80 @@ names(sdlist) <- sdnames
 for (opt in c(0, 1, 2)) {
   test(2283 + opt/10 + 0.001, options=c(datatable.optimize=opt),
        names(M[, c(m=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(m=sdlist))))
+       c("cyl", names(c(m=sdlist))),
+       context=sprintf("optimize=%s [I]", format(opt)))
   test(2283 + opt/10 + 0.002, options=c(datatable.optimize=opt),
        names(M[, c(Mpg=list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "Mpg", sdnames))
+       c("cyl", "Mpg", sdnames),
+       context=sprintf("optimize=%s [II]", format(opt)))
   test(2283 + opt/10 + 0.003, options=c(datatable.optimize=opt),
        names(M[, c(Mpg=list(mpg), m=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "Mpg", names(c(m=sdlist))))
+       c("cyl", "Mpg", names(c(m=sdlist))),
+       context=sprintf("optimize=%s [III]", format(opt)))
   test(2283 + opt/10 + 0.004, options=c(datatable.optimize=opt),
        names(M[, c(mpg=list(mpg), mpg=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "mpg", names(c(mpg=sdlist))))
+       c("cyl", "mpg", names(c(mpg=sdlist))),
+       context=sprintf("optimize=%s [IV]", format(opt)))
   test(2283 + opt/10 + 0.005, options=c(datatable.optimize=opt),
        names(M[, c(list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "V1", sdnames))
+       c("cyl", "V1", sdnames),
+       context=sprintf("optimize=%s [V]", format(opt)))
   test(2283 + opt/10 + 0.006, options=c(datatable.optimize=opt),
        names(M[, c(lapply(.SD, mean), list(mpg)), by="cyl"]),
-       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)))
+       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)),
+       context=sprintf("optimize=%s [VI]", format(opt)))
   test(2283 + opt/10 + 0.007, options=c(datatable.optimize=opt),
        names(M[, c(lapply(.SD, mean), lapply(.SD, sum)), by="cyl"]),
-       c("cyl", sdnames, sdnames))
+       c("cyl", sdnames, sdnames),
+       context=sprintf("optimize=%s [VII]", format(opt)))
   test(2283 + opt/10 + 0.008, options=c(datatable.optimize=opt),
        names(M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", names(c(mean=sdlist, sum=sdlist))))
+       c("cyl", names(c(mean=sdlist, sum=sdlist))),
+       context=sprintf("optimize=%s [VIII]", format(opt)))
   test(2283 + opt/10 + 0.009, options=c(datatable.optimize=opt),
        names(M[, c(lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", sdnames, names(c(sum=sdlist))) )
+       c("cyl", sdnames, names(c(sum=sdlist))) ,
+       context=sprintf("optimize=%s [IX]", format(opt)))
   test(2283 + opt/10 + 0.010, options=c(datatable.optimize=opt),
        names(M[, c(" "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", names(c(" "=sdlist, "."=sdlist))))
+       c("cyl", names(c(" "=sdlist, "."=sdlist))),
+       context=sprintf("optimize=%s [X]", format(opt)))
   test(2283 + opt/10 + 0.011, options=c(datatable.optimize=opt),
        names(M[, c(A=list(a=mpg, b=hp), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(a=0, b=0))), sdnames))
+       c("cyl", names(c(A=list(a=0, b=0))), sdnames),
+       context=sprintf("optimize=%s [XI]", format(opt)))
   test(2283 + opt/10 + 0.012, options=c(datatable.optimize=opt),
        names(M[, c(A=list(mpg, hp), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0, 0))), sdnames))
+       c("cyl", names(c(A=list(0, 0))), sdnames),
+       context=sprintf("optimize=%s [XII]", format(opt)))
   test(2283 + opt/10 + 0.013, options=c(datatable.optimize=opt),
        names(M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0, b=0, 0))), sdnames))
+       c("cyl", names(c(A=list(0, b=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XIII]", format(opt)))
   test(2283 + opt/10 + 0.014, options=c(datatable.optimize=opt),
        names(M[, c(A=list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0))), sdnames))
+       c("cyl", names(c(A=list(0))), sdnames),
+       context=sprintf("optimize=%s [XIV]", format(opt)))
   test(2283 + opt/10 + 0.015, options=c(datatable.optimize=opt),
        names(M[, c(" "=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames))
+       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XV]", format(opt)))
   test(2283 + opt/10 + 0.016, options=c(datatable.optimize=opt),
        names(M[, c("."=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames))
+       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XVI]", format(opt)))
   test(2283 + opt/10 + 0.017, options=c(datatable.optimize=opt),
        names(M[, c(list(mpg, b=hp), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "b", "vs", "am"))
+       c("cyl", "V1", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XVII]", format(opt)))
   test(2283 + opt/10 + 0.018, options=c(datatable.optimize=opt),
        names(M[, c(list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "b", "vs", "am"))
+       c("cyl", "V1", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XVIII]", format(opt)))
   test(2283 + opt/10 + 0.019, options=c(datatable.optimize=opt),
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "V2", "b", "vs", "am"))
+       c("cyl", "V1", "V2", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XIX]", format(opt)))
 }
 
 # Confusing behavior with DT[, min(var):max(var)] #2069
@@ -21329,15 +21361,10 @@ if (test_R.utils) local({
 })
 
 # Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
-local({
-  old = options(datatable.old.matrix.autoname=FALSE)
-  on.exit(options(old))
-
-  test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
-  test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
-  test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
-  test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
-})
+test(2321.01, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2321.02, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2321.03, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+test(2321.04, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
 ## but respect named column vectors
 test(2321.05, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
 test(2321.06, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
@@ -21376,28 +21403,25 @@ test(2321.26, as.data.table(M), data.table(A=1:3, V2=4:6))
 test(2321.27, as.data.table(M, keep.rownames='id'), data.table(id=c('a', 'b', 'c'), A=1:3, V2=4:6))
 
 # also respect old auto-naming rules by default (to be deprecated)
-test(2321.28, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
-test(2321.29, names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
+test(2321.28, options=c(datatable.old.matrix.autoname=TRUE),
+     names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V1", "c", "V4"))
+test(2321.29, options=c(datatable.old.matrix.autoname=TRUE),
+     names(data.table(cbind(1), cbind(2))), c("V1", "V1"))
 # also test behavior with a 0-column matrix
 M = cbind(1:3)
 test(2321.30, data.table(M[, 0L]), data.table(NULL))
 test(2321.31, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
 
-local({
-  old = options(datatable.old.matrix.autoname=FALSE)
-  on.exit(options(old))
-  
-  test(2321.32, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
-  # particularly buggy old behavior: can easily result in duplicate names
-  test(2321.33, names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
-  M = cbind(1:3)
-  test(2321.34, data.table(M[, 0L]), data.table(NULL))
-  test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
+test(2321.32, names(data.table(a=1, cbind(2), c=3, 4)), c("a", "V2", "c", "V4"))
+# particularly buggy old behavior: can easily result in duplicate names
+test(2321.33, names(data.table(cbind(1), cbind(2))), c("V1", "V2"))
+M = cbind(1:3)
+test(2321.34, data.table(M[, 0L]), data.table(NULL))
+test(2321.35, data.table(a=1:3, M[, 0L]), data.table(a=1:3))
 
-  # a more subtle version of this as expressed in #5367
-  DT <- data.table(Counts=c(10, 20), Severity=c(1, 2))
-  test(2321.36, names(DT[,.(New_name = Severity %*% Counts)]), "New_name")
-})
+# a more subtle version of this as expressed in #5367
+DT <- data.table(Counts=c(10, 20), Severity=c(1, 2))
+test(2321.36, names(DT[,.(New_name = Severity %*% Counts)]), "New_name")
 
 # New fctr() helper: like factor() but retaining order by default #4837
 test(2322.01, levels(fctr(c("b","a","c"))), c("b","a","c"))

@@ -1,27 +1,21 @@
 ---
 title: "Introduction to data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Introduction to data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+library(data.table)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -47,7 +41,7 @@ In this vignette, we will use [NYC-flights14](https://raw.githubusercontent.com/
 
 We can use `data.table`'s fast-and-friendly file reader `fread` to load `flights` directly as follows:
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(width = 100L)
 ```
 
@@ -641,7 +635,11 @@ DT[, print(c(a,b)), by = ID] # (1)
 DT[, print(list(c(a,b))), by = ID] # (2)
 ```
 
-In (1), for each group, a vector is returned, with length = 6,4,2 here. However, (2) returns a list of length 1 for each group, with its first element holding vectors of length 6,4,2. Therefore, (1) results in a length of ` 6+4+2 = `r 6+4+2``, whereas (2) returns `1+1+1=`r 1+1+1``.
+```{r, echo = FALSE}
+p = function(x) paste0('<code>', paste(deparse(substitute(x)), collapse = ' '), ' = ', x, '</code>')
+```
+
+In (1), for each group, a vector is returned, with length = 6,4,2 here. However, (2) returns a list of length 1 for each group, with its first element holding vectors of length 6,4,2. Therefore, (1) results in a length of `{r} p(6+4+2)`, whereas (2) returns `{r} p(1+1+1)`.
 
 Flexibility of j allows us to store any list object as an element of data.table.  For example, when statistical models are fit to groups, these models can be stored in a data.table.  Code is concise and easy to understand.
 

@@ -1,26 +1,21 @@
 ---
 title: "Keys and fast binary search based subset"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Keys and fast binary search based subset}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+library(data.table)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -32,7 +27,7 @@ This vignette is aimed at those who are already familiar with *data.table* synta
 
 We will use the same `flights` data as in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette.
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(width = 100L)
 ```
 
@@ -446,7 +441,7 @@ dim(ans2)
 identical(ans1$val, ans2$val)
 ```
 
-* The speed-up is **~`r round(t1[3]/max(t2[3], .001))`x**!
+* The speed-up is **~`{r} round(t1[3]/max(t2[3], .001))`x**!
 
 ### b) Why does keying a *data.table* result in blazing fast subsets?
 

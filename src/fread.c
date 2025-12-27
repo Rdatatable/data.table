@@ -2502,10 +2502,8 @@ int freadMain(freadMainArgs _args)
         .threadn = me,
         .quoteRule = quoteRule,
         .stopTeam = &stopTeam,
-        #ifndef DTPY
         .nStringCols = nStringCols,
         .nNonStringCols = nNonStringCols
-        #endif
       };
       if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
         stopTeam = true;
