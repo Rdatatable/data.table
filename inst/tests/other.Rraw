@@ -182,6 +182,9 @@ if (loaded[["knitr"]]) {
   # Which is fine and works thanks to cedta().
   DT = data.table(x=1, y=2)
   test(11, kable(DT), output="x.*y.*1.*2")
+  invisible(knit(testDir("knitr.Rmd"), quiet=TRUE))
+  cat(readLines("knitr.md"), sep="\n")
+  invisible(file.remove("knitr.md"))
 }
 
 if (loaded[["parallel"]]) {
