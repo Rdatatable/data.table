@@ -21967,4 +21967,4 @@ DT = structure(list(a = 1, b = 2), class = c("data.table", "data.frame"))
 test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
-test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i)}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]})
+test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
