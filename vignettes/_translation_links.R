@@ -1,15 +1,8 @@
 # build a link list of alternative languages (may be character(0))
 # idea is to look like 'Other languages: en | fr | de'
 .write.translation.links <- function(fmt) {
-    # Check if we're in a litedown context
-    input_file = litedown::get_context("input")
-    if (is.null(input_file) || !is.character(input_file) || length(input_file) == 0) {
-      # Not in litedown context (e.g., being rendered by rmarkdown/pkgdown)
-      return("")
-    }
-
     url = "https://rdatatable.gitlab.io/data.table/articles"
-    path = dirname(input_file)
+    path = dirname(litedown::get_context("input"))
     if (basename(path) == "vignettes") {
       lang = "en"
     } else {
@@ -18,7 +11,7 @@
     }
     translation = dir(path,
       recursive = TRUE,
-      pattern = glob2rx(input_file)
+      pattern = glob2rx(litedown::get_context("input"))
     )
     transl_lang = ifelse(dirname(translation) == ".", "en", dirname(translation))
     block = if (!all(transl_lang == lang)) {
