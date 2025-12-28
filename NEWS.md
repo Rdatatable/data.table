@@ -14,7 +14,7 @@
 
 ### NEW FEATURES
 
-1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
+1. `nafill()`, `setnafill()` extended to work on logical and factor vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
 
 ### Notes
 

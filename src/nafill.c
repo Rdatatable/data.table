@@ -113,7 +113,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (obj_scalar) {
     if (binplace)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
-    else if (!isReal(obj) && !isInteger(obj) && !isLogical(obj))
+    else if (!isReal(obj) && TYPEOF(obj) != INTSXP && !isLogical(obj))
       error(_("'x' argument must be logical/numeric type, or list/data.table of logical/numeric types"));
     SEXP obj1 = obj;
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
@@ -124,7 +124,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   int *icols = INTEGER(ricols);
   for (int i=0; i<length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-    if (!isReal(this_col) && !isInteger(this_col) && !isLogical(this_col))
+    if (!isReal(this_col) && TYPEOF(this_col) != INTSXP && !isLogical(this_col))
       error(_("'x' argument must be logical/numeric type, or list/data.table of logical/numeric types"));
     SET_VECTOR_ELT(x, i, this_col);
   }

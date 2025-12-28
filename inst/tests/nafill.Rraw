@@ -333,6 +333,23 @@ test(12.08, nafill(x, fill=NA_integer_), x)
 test(12.09, nafill(x, fill=NA_real_), x)
 test(12.10, nafill(x, fill=NaN), x)
 
+## factor input
+x = rep(NA_character_, 10L)
+x[c(3:4, 7:8)] = c("a", "b", "a", "c")
+x = as.factor(x)
+test(13.01, nafill(x, "locf"), replace(replace(x, 5:6, "b"), 9:10, "c"))
+test(13.02, nafill(x, "nocb"), replace(x, c(1:2, 5:6), "a"))
+test(13.03, nafill(x, fill="a"), x_fill_a <- replace(x, c(1:2, 5:6, 9:10), "a"))
+test(13.04, nafill(x, fill=1L), x_fill_a)
+test(13.05, nafill(x, fill=1.0), x_fill_a)
+test(13.06, nafill(x, fill=factor("a")), x_fill_a)
+test(13.07, nafill(x, fill=factor("a", levels=levels(x))), x_fill_a)
+test(13.08, nafill(x, fill=factor("a", levels=c("a", "b"))), x_fill_a)
+test(13.09, nafill(x, fill=factor("a", levels=c("a", "d"))), x_fill_a)
+test(13.10, nafill(x, fill=NA), x)
+test(13.11, nafill(x, fill=NA_integer_), x)
+test(13.12, nafill(x, fill=NA_character_), x)
+
 ## logical
 ## character
 ## factor
