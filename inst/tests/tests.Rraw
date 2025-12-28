@@ -22048,3 +22048,7 @@ dt = data.table(a=1:10, b=letters[1:10])
 test(2356.42, copy(dt)[a>2, .ROW := NULL][b=="a"], data.table(a=1L, b="a"))
 test(2356.43, copy(dt)[a %% 2 == 0, .ROW := NULL], dt[a %% 2 != 0])
 test(2356.44, copy(dt)[!(a < 5 & b != "d"), .ROW := NULL], dt[1:3])
+# make columns resizable
+dt = data.table(a=1:3)
+test(2356.91, truelength(dt$a), 0L)
+test(2356.92, {setallocrow(dt); truelength(dt$a)}, 3L)

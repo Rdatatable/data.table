@@ -2734,6 +2734,10 @@ selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
   .Call(Cselfrefokwrapper,DT,verbose)
 }
 
+setallocrow = function(DT) {
+  .Call(Csetallocrow, DT)
+}
+
 truelength = function(x) .Call(Ctruelength,x)
 # deliberately no "truelength<-" method.  setalloccol is the mechanism for that.
 # settruelength() no longer need (and so removed) now that data.table depends on R 2.14.0

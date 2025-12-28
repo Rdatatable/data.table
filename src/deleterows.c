@@ -3,6 +3,29 @@
 static void computePrefixSum(const int *keep, int *dest, R_xlen_t n, int nthreads);
 static void compactVectorRaw(SEXP col, const int *dest, const int *keep, R_xlen_t new_nrow, R_xlen_t old_nrow);
 
+// Helper function to make columns resizable for delete by reference
+SEXP setallocrow(SEXP dt) {
+  if (!INHERITS(dt, char_datatable))
+    error(_("input to setallocrow is not a data.table"));
+
+  if (!xlength(dt)) return dt; // zero-column data.table
+
+  for (R_xlen_t i = 0; i < length(dt); i++) {
+    SEXP col = VECTOR_ELT(dt, i);
+    if (!isVector(col))
+      error("Cannot make non-vector column %lld resizable", (long long)(i + 1));
+
+    if (ALTREP(col)) SET_VECTOR_ELT(dt, i, copyAsPlain(col, true));
+
+    if (!R_isResizable(col)) {
+      SEXP newcol = R_duplicateAsResizable(col);
+      SET_VECTOR_ELT(dt, i, newcol);
+    }
+  }
+
+  return dt;
+}
+
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   if (!isNewList(dt))
     error("Internal error: deleteRows received non-list dt"); // #nocov
@@ -67,9 +90,6 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   // Clear key and indices
   setAttrib(dt, install("sorted"), R_NilValue);
   setAttrib(dt, install("index"), R_NilValue);
-
-  // Update .internal.selfref to record the new address
-  setselfref(dt);
 
   UNPROTECT(nprotect);
   return dt;
