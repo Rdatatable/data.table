@@ -23,10 +23,8 @@ vignette: >
 
 ```{r, echo=FALSE, results='asis', file='_translation_links.R', i18n_msg='Translations of this document are available in: %s'}
 ```
-
-```{r, echo = FALSE, message = FALSE}
-library(data.table)
-litedown::reactor(comment = "# ")
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 .old.th = setDTthreads(1)
 ```
 

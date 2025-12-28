@@ -73,7 +73,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
     internal_error(__func__, "status, nx, nk must be integer"); // # nocov
   int protecti = 0;
   const bool verbose = GetVerbose();
-  int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];
+  int istatus = INTEGER_RO(status)[0], nx = INTEGER_RO(x)[0], nk = INTEGER_RO(k)[0];
 
   // TODO below chunk into allocAnsList helper - not easy for variable length of inner vectors
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;

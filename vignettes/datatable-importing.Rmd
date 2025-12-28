@@ -1,6 +1,10 @@
 ---
 title: "Importing data.table"
+<<<<<<< HEAD
 date: !r Sys.Date()
+=======
+date: "`{r} Sys.Date()`"
+>>>>>>> master
 output:
   litedown::html_format
 vignette: >
@@ -20,8 +24,14 @@ h2 {
 }
 </style>
 
+<<<<<<< HEAD
 ```{r, echo=FALSE, results='asis', file='_translation_links.R', i18n_msg='Translations of this document are available in: %s'}
 ```
+=======
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+>>>>>>> master
 
 This document is focused on using `data.table` as a dependency in other R packages. If you are interested in using `data.table` C code from a non-R application, or in calling its C functions directly, jump to the [last section](#non-r-api) of this vignette.
 

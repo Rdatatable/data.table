@@ -8,7 +8,7 @@ output:
       number_sections: true
 vignette: >
   %\VignetteIndexEntry{Utiliser .SD pour l’analyse de données}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 

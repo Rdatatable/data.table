@@ -130,8 +130,6 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
   }
   if (!length(n))
     stopf("'n' must be non 0 length")
-  if (anyNA(n))
-    stopf("'n' must not have NAs")
   if (!identical(align, "right"))
     stopf("'align' other than 'right' has not yet been implemented")
   if (!isTRUEorFALSE(partial))
@@ -154,12 +152,7 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
 
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
-  if (!missing(hasNA)) {
-    if (!is.na(has.nf))
-      stopf("hasNA is deprecated, use has.nf instead")
-    warningf("hasNA is deprecated, use has.nf instead")
-    has.nf = hasNA
-  } # remove check on next major release
+  if (!missing(hasNA)) stopf("hasNA is deprecated, use has.nf instead")
   algo = match.arg(algo)
   align = match.arg(align)
   if (isTRUE(give.names)) {
@@ -208,4 +201,19 @@ frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left
 }
 frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
   froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
+}
+frollmin = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
+  froll(fun="min", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
+}
+frollprod = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
+  froll(fun="prod", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
+}
+frollmedian = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
+  froll(fun="median", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
+}
+frollvar = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
+  froll(fun="var", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
+}
+frollsd = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA) {
+  froll(fun="sd", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
 }

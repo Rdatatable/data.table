@@ -99,13 +99,13 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
 
   SEXP k = PROTECT(coerceK(kobj, badaptive)); protecti++;
   int nk = length(k);
-  int *ik = NULL; int **lk = NULL;
+  const int *ik = NULL; const int **lk = NULL;
   if (!badaptive) {
-    ik = INTEGER(k);
+    ik = INTEGER_RO(k);
   } else {
-    lk = (int**)R_alloc(nk, sizeof(int*));
+    lk = (const int **)R_alloc(nk, sizeof(*lk));
     for (int j=0; j<nk; j++)
-      lk[j] = INTEGER(VECTOR_ELT(k, j));
+      lk[j] = INTEGER_RO(VECTOR_ELT(k, j));
   }
 
   if (!IS_TRUE_OR_FALSE(narm))
@@ -133,8 +133,8 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(*dans));         // answer columns as array of ans_t struct
-  double** dx = (double**)R_alloc(nx, sizeof(*dx));         // pointers to source columns
-  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(*inx));     // to not recalculate `length(x[[i]])` we store it in extra array
+  const double** dx = (const double**)R_alloc(nx, sizeof(*dx));  // pointers to source columns
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(*inx));         // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -147,7 +147,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
       dans[i*nk+j] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i*nk+j)), .status=0, .message={"\0","\0","\0","\0"} });
     }
-    dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
+    dx[i] = REAL_RO(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
   rollfun_t rfun = MEAN; // adding fun needs to be here and data.table.h, initialize to keep compiler happy
@@ -157,6 +157,16 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     rfun = SUM;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "max")) {
     rfun = MAX;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "min")) {
+    rfun = MIN;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "prod")) {
+    rfun = PROD;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "median")) {
+    rfun = MEDIAN;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "var")) {
+    rfun = VAR;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sd")) {
+    rfun = SD;
   } else {
     internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "fun", "rolling"); // # nocov
   }
@@ -183,17 +193,23 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   else
     internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "algo", "rolling"); // # nocov
 
+  bool par = nx*nk>1 && ialgo==0 && !badaptive; // for algo=exact and !badaptive we parallelize inside
   if (verbose) {
-    if (ialgo==0)
-      Rprintf(_("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n"), __func__, nx, nk);
-    else if (ialgo==1)
-      Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
+    if (par) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) in parallel\n"), __func__, nx, nk);
+    } else if (ialgo==1) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because algo='exact' is already parallelised within each rolling computation\n"), __func__, nx, nk);
+    } else if (badaptive) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because adaptive=TRUE is already parallelised within each rolling computation\n"), __func__, nx, nk);
+    } else if (nx*nk==1) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially as there is only single rolling computation\n"), __func__, nx, nk);
+    }
   }
-  #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
+  #pragma omp parallel for if (par) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       if (!badaptive) {
-        frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ik[j], ialign, dfill, bnarm, ihasnf, verbose);
+        frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ik[j], ialign, dfill, bnarm, ihasnf, verbose, /*par=*/!par); // par tells medianFast if it can use openmp so we avoid nested parallelism
       } else {
         frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], lk[j], dfill, bnarm, ihasnf, verbose);
       }
@@ -214,6 +230,8 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
 
   bool p = LOGICAL(partial)[0];
   int n = INTEGER(kobj)[0];
+  if (n == NA_INTEGER)
+    error(_("'n' must not have NAs"));
   if (n < 1L)
     error(_("'n' must be positive integer values (>= 1)"));
   const int *x = INTEGER_RO(xobj);
@@ -237,7 +255,7 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
     int lhs = x[i], rhs = x[j];
     int an = i-j+1;                 // window we are currently looking at in this iteration
     if (an > n) {
-      error(_("internal error: an > n, should not increment i in the first place")); // # nocov
+      internal_error(__func__, "an > n, should not increment i in the first place"); // # nocov
     } else if (an == n) {           // an is same size as n, so we either have no gaps or will need to shrink an by j++
       if (lhs == rhs+n-1) {         // no gaps - or a n gaps and a n dups?
         ians[i] = n;                // could skip if pre-fill
@@ -246,7 +264,7 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
       } else if (lhs > rhs+n-1) {   // need to shrink an
         j++;
       } else {
-        error(_("internal error: not sorted, should be been detected by now")); // # nocov
+        internal_error(__func__, "not sorted, should be been detected by now"); // # nocov
       }
     } else if (an < n) {            // there are some gaps
       if (lhs == rhs+n-1) {         // gap and rhs matches the bound, so increment i and j

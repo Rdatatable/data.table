@@ -5,7 +5,7 @@ output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Extraire des sous-ensemble avec les clés et la recherche binaire rapide}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 

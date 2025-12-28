@@ -5,7 +5,7 @@ output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Restructurer efficacement avec les data.tables}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 

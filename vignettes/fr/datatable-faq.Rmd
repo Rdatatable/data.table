@@ -8,7 +8,7 @@ output:
       number_sections: true
 vignette: >
   %\VignetteIndexEntry{Foire aux questions de data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 

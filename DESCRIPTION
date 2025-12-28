@@ -1,7 +1,7 @@
 Package: data.table
-Version: 1.17.99
+Version: 1.18.99
 Title: Extension of `data.frame`
-Depends: R (>= 3.4.0)
+Depends: R (>= 3.5.0)
 Imports: methods
 Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), R.utils, xts, zoo (>= 1.8-1), yaml, litedown
 Enhances: knitr, xfun
@@ -105,5 +105,6 @@ Authors@R: c(
   person("Reino", "Bruner",        role="ctb"),
   person(given="@badasahog",       role="ctb", comment="GitHub user"),
   person("Vinit", "Thakur",        role="ctb"),
-  person("Mukul", "Kumar",         role="ctb")
+  person("Mukul", "Kumar",         role="ctb"),
+  person("Ildikó", "Czeller",      role="ctb")
   )
