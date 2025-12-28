@@ -29,7 +29,6 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     stopf("Argument 'id' must be a logical scalar.")
   if (missing(j))
     stopf("Argument 'j' is required")
-  
   #implementing NSE in cube
   jj = substitute(j)
   usesSD = any(all.vars(jj) == ".SD")
