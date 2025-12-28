@@ -4,9 +4,9 @@ static void computePrefixSum(const int *keep, int *dest, R_xlen_t n, int nthread
 static void compactVectorRaw(SEXP col, const int *dest, const int *keep, R_xlen_t new_nrow, R_xlen_t old_nrow);
 
 // Helper function to make columns resizable for delete by reference
-SEXP setallocrow(SEXP dt) {
+SEXP allocrow(SEXP dt) {
   if (!INHERITS(dt, char_datatable))
-    error(_("input to setallocrow is not a data.table"));
+    error(_("input to allocrow is not a data.table"));
 
   if (!xlength(dt)) return dt; // zero-column data.table
 

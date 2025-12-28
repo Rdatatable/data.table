@@ -185,7 +185,7 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
 
 // deleterows.c
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete);
-SEXP setallocrow(SEXP dt);
+SEXP allocrow(SEXP dt);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);

@@ -2735,7 +2735,7 @@ selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
 }
 
 setallocrow = function(DT) {
-  .Call(Csetallocrow, DT)
+  .Call(Callocrow, DT)
 }
 
 truelength = function(x) .Call(Ctruelength,x)
