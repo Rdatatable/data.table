@@ -218,8 +218,17 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   if (!binplace) {
     for (R_len_t i=0; i<nx; i++) {
-      if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
-        copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
+      SEXP xi = VECTOR_ELT(x, i);
+      if (!isNull(ATTRIB(xi))) {
+        copyMostAttrib(xi, VECTOR_ELT(ans, i));
+        if (itype == 0 && hasFill && isFactor(xi)) {
+          SEXP fillLev = PROTECT(getAttrib(VECTOR_ELT(fill, i), R_LevelsSymbol));
+          if (!R_compute_identical(PROTECT(getAttrib(xi, R_LevelsSymbol)), fillLev, 0)) {
+            setAttrib(VECTOR_ELT(ans, i), R_LevelsSymbol, fillLev);
+          }
+          UNPROTECT(2);
+        }
+      }
     }
     SEXP obj_names = getAttrib(obj, R_NamesSymbol); // copy names
     if (!isNull(obj_names)) {
