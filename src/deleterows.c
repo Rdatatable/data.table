@@ -1,7 +1,7 @@
 #include "data.table.h"
 
-static void computePrefixSum(const int *keep, int *dest, int n, int nthreads);
-static void compactVectorRaw(SEXP col, const int *dest, const int *keep, int new_nrow, int old_nrow);
+static void computePrefixSum(const int *keep, int *dest, R_xlen_t n, int nthreads);
+static void compactVectorRaw(SEXP col, const int *dest, const int *keep, R_xlen_t new_nrow, R_xlen_t old_nrow);
 
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   if (!isNewList(dt))
@@ -9,7 +9,7 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   if (!xlength(dt)) return dt; // zero-column data.tabl
   for (R_xlen_t i = 0; i < length(dt); i++) {
     SEXP col = VECTOR_ELT(dt, i);
-    if (!isVector(col)) error("Cannot delete rows by reference from non-vector column %ld", i + 1);
+    if (!isVector(col)) error("Cannot delete rows by reference from non-vector column %lld", (long long)(i + 1));
     if (ALTREP(col)) SET_VECTOR_ELT(dt, i, copyAsPlain(col, true));
   }
 
@@ -26,15 +26,15 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   const R_xlen_t n = length(rows_to_delete);
   for (R_xlen_t i = 0; i < old_nrow; i++) keep[i] = 1;
   int *idx = INTEGER(rows_to_delete);
-  for (int j = 0; j < n; j++) {
+  for (R_xlen_t j = 0; j < n; j++) {
     if (idx[j] == NA_INTEGER) continue;
     // should be checked from irows in [
-    if (idx[j] < 1 || idx[j] > old_nrow) internal_error(__func__, "Row index %d out of range [1, %ld]", idx[j], old_nrow); //# nocov
+    if (idx[j] < 1 || idx[j] > old_nrow) internal_error(__func__, "Row index %d out of range [1, %lld]", idx[j], (long long)old_nrow); //# nocov
     keep[idx[j] - 1] = 0;
   }
 
-  int new_nrow = 0;
-  for (int i = 0; i < old_nrow; i++) new_nrow += keep[i];
+  R_xlen_t new_nrow = 0;
+  for (R_xlen_t i = 0; i < old_nrow; i++) new_nrow += keep[i];
   if (new_nrow == old_nrow) return dt;
 
   int *dest = (int *)R_alloc(old_nrow, sizeof(int));
@@ -42,7 +42,7 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   computePrefixSum(keep, dest, old_nrow, nthreads);
 
   // Compact each column
-  for (int j = 0; j < ncol; j++) {
+  for (R_xlen_t j = 0; j < ncol; j++) {
     SEXP col = VECTOR_ELT(dt, j);
     if (!R_isResizable(col)) {
       // catered for ALTREP above
@@ -60,7 +60,7 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
     // create them from scratch like in dogroups or subset to avoid R internal issues
     SEXP rn = PROTECT(allocVector(INTSXP, 2)); nprotect++;
     INTEGER(rn)[0] = NA_INTEGER;
-    INTEGER(rn)[1] = -new_nrow;
+    INTEGER(rn)[1] = -(int)new_nrow;
     setAttrib(dt, R_RowNamesSymbol, rn);
   }
 
@@ -77,11 +77,11 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
 
 // Parallel prefix sum (exclusive scan)
 // Two-pass algorithm: first count per thread, then scan, then local prefix sum
-static void computePrefixSum(const int *keep, int *dest, int n, int nthreads) {
+static void computePrefixSum(const int *keep, int *dest, R_xlen_t n, int nthreads) {
   if (nthreads == 1 || n < 10000) {
     // Sequential version
     int sum = 0;
-    for (int i = 0; i < n; i++) {
+    for (R_xlen_t i = 0; i < n; i++) {
       dest[i] = sum;
       sum += keep[i];
     }
@@ -95,12 +95,12 @@ static void computePrefixSum(const int *keep, int *dest, int n, int nthreads) {
   #pragma omp parallel num_threads(nthreads)
   {
     const int tid = omp_get_thread_num();
-    const int chunk_size = (n + nthreads - 1) / nthreads;
-    const int start = tid * chunk_size;
-    const int end = (start + chunk_size > n) ? n : start + chunk_size;
+    const R_xlen_t chunk_size = (n + nthreads - 1) / nthreads;
+    const R_xlen_t start = tid * chunk_size;
+    const R_xlen_t end = (start + chunk_size > n) ? n : start + chunk_size;
 
     int local_count = 0;
-    for (int i = start; i < end; i++) {
+    for (R_xlen_t i = start; i < end; i++) {
       local_count += keep[i];
     }
     thread_counts[tid] = local_count;
@@ -117,12 +117,12 @@ static void computePrefixSum(const int *keep, int *dest, int n, int nthreads) {
   #pragma omp parallel num_threads(nthreads)
   {
     const int tid = omp_get_thread_num();
-    const int chunk_size = (n + nthreads - 1) / nthreads;
-    const int start = tid * chunk_size;
-    const int end = (start + chunk_size > n) ? n : start + chunk_size;
+    const R_xlen_t chunk_size = (n + nthreads - 1) / nthreads;
+    const R_xlen_t start = tid * chunk_size;
+    const R_xlen_t end = (start + chunk_size > n) ? n : start + chunk_size;
 
     int local_sum = thread_offsets[tid];
-    for (int i = start; i < end; i++) {
+    for (R_xlen_t i = start; i < end; i++) {
       dest[i] = local_sum;
       local_sum += keep[i];
     }
@@ -131,13 +131,13 @@ static void computePrefixSum(const int *keep, int *dest, int n, int nthreads) {
 
 #define COMPACT(CTYPE, ACCESSOR) {                                     \
   CTYPE *p = ACCESSOR(col);                                            \
-  int i = 0;                                                           \
+  R_xlen_t i = 0;                                                      \
   while (i < old_nrow) {                                               \
     if (!keep[i]) {                                                    \
       i++;                                                             \
       continue;                                                        \
     }                                                                  \
-    int run_start = i;                                                 \
+    R_xlen_t run_start = i;                                            \
     int target_idx = dest[i];                                          \
     while (i < old_nrow && keep[i]) i++;                               \
     size_t run_len = i - run_start;                                    \
@@ -150,7 +150,7 @@ static void computePrefixSum(const int *keep, int *dest, int n, int nthreads) {
 
 // Type-specific stream compaction
 static void compactVectorRaw(SEXP col, const int *dest, const int *keep,
-                             int new_nrow, int old_nrow) {
+                             R_xlen_t new_nrow, R_xlen_t old_nrow) {
   switch(TYPEOF(col)) {
     case INTSXP:
     case LGLSXP: {
@@ -170,13 +170,13 @@ static void compactVectorRaw(SEXP col, const int *dest, const int *keep,
       break;
     }
     case STRSXP: {
-      for (int i = 0; i < old_nrow; i++) {
+      for (R_xlen_t i = 0; i < old_nrow; i++) {
         if (keep[i]) SET_STRING_ELT(col, dest[i], STRING_ELT(col, i));
       }
       break;
     }
     case VECSXP: {
-      for (int i = 0; i < old_nrow; i++) {
+      for (R_xlen_t i = 0; i < old_nrow; i++) {
         if (keep[i]) SET_VECTOR_ELT(col, dest[i], VECTOR_ELT(col, i));
       }
       break;
