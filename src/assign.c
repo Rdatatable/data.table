@@ -446,7 +446,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (length(newcolnames)) {
     if (!R_isResizable(dt)) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
     tl = R_maxLength(dt);
-    int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+    int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
     // perform re-overallocation since DT has too less columns #1831 #4100
     if (tl < oldncol+LENGTH(newcolnames)) {
       // use MAX to mitigate case where data is loaded from disk (readRDS()/load()) or constructed manually (e.g. using structure())
