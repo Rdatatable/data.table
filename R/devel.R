@@ -17,7 +17,7 @@ dcf.repo = function(pkg, repo, field, type) {
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 
-update_dev_pkg = function(pkg="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
+update_dev_pkg = function(pkg="data.table", repo="https://rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
   # this works for any package, not just data.table
   # perform package upgrade when new Revision present
   stopifnot(is.character(pkg), length(pkg)==1L, !is.na(pkg),
@@ -50,7 +50,7 @@ update_dev_pkg = function(pkg="data.table", repo="https://Rdatatable.gitlab.io/d
 .git = function(quiet=FALSE, lib.loc=NULL) {
   ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table", lib.loc=lib.loc, mustWork=TRUE), fields="Revision")[, "Revision"])
   if (!quiet && is.na(ans))
-    catf("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
+    catf("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
   ans
 }
 
