@@ -32,6 +32,7 @@ static colType readInt64As = CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
 static SEXP colClassesSxp;
+static SEXP cNamesSxp;
 static bool selectColClasses = false;
 cetype_t ienc = CE_NATIVE;
 static SEXP RCHK;
@@ -77,7 +78,8 @@ SEXP freadR(
   SEXP integer64Arg,
   SEXP encodingArg,
   SEXP keepLeadingZerosArgs,
-  SEXP noTZasUTC
+  SEXP noTZasUTC,
+  SEXP colNamesArg
 )
 {
   verbose = LOGICAL(verboseArg)[0];
@@ -185,6 +187,8 @@ SEXP freadR(
   args.readInt64As = readInt64As;
 
   colClassesSxp = colClassesArg;
+  if (!isNull(colNamesArg) && !isString(colNamesArg)) error(_("'col.names' must be NULL or a character vector"));
+  cNamesSxp = colNamesArg;
 
   selectSxp = selectArg;
   dropSxp = dropArg;
@@ -231,10 +235,10 @@ SEXP freadR(
   return DT;
 }
 
-static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
+static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource, SEXP matchNames)
 {
   if (!length(items)) return;
-  const SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP));
+  const SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, matchNames, NA_INTEGER) : coerceVector(items, INTSXP));
   const int* const itemsD = INTEGER(itemsInt);
   const int n = LENGTH(itemsInt);
   for (int j = 0; j < n; j++) {
@@ -277,13 +281,15 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     }
   }
   // "use either select= or drop= but not both" was checked earlier in freadR
-  applyDrop(dropSxp, type, ncol, /*dropSource=*/-1);
+  bool hasHeader = ncol > 0 && strcmp(CHAR(STRING_ELT(colNamesSxp, 0)), "V1") != 0;
+  SEXP matchNames = (isNull(cNamesSxp) || hasHeader) ? colNamesSxp : cNamesSxp;
+  applyDrop(dropSxp, type, ncol, /*dropSource=*/-1, matchNames);
   if (TYPEOF(colClassesSxp) == VECSXP) {  // not isNewList() because that returns true for NULL
     SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
     for (int i = 0; i < LENGTH(colClassesSxp); i++) {
       if (STRING_ELT(listNames, i) == char_NULL) {
         SEXP items = VECTOR_ELT(colClassesSxp, i);
-        applyDrop(items, type, ncol, /*dropSource=*/i);
+        applyDrop(items, type, ncol, /*dropSource=*/i, matchNames);
       }
     }
     UNPROTECT(1);  // listNames
@@ -294,7 +300,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (length(selectSxp)) {
     const int n = length(selectSxp);
     if (isString(selectSxp)) {
-      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
+      selectInts = INTEGER(PROTECT(chmatch(selectSxp, matchNames, NA_INTEGER))); nprotect++;
       for (int i = 0; i < n; i++) if (selectInts[i] == NA_INTEGER)
         DTWARN(_("Column name '%s' not found in column name header (case sensitive), skipping."), CHAR(STRING_ELT(selectSxp, i)));
     } else {
@@ -316,6 +322,28 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     for (int i = 0; i < ncol; i++) {
       if (type[i] < 0) type[i] *= -1;
       else type[i] = CT_DROP;
+    }
+  }
+  // override col names if user provided them
+  if (!isNull(cNamesSxp)) {
+    int ncnames = LENGTH(cNamesSxp);
+    if (hasHeader) {
+      int ndrop = 0;
+      for (int i = 0; i < ncol; i++) if (type[i] == CT_DROP) ndrop++;
+      if (ncnames != (ncol - ndrop)) STOP(_("Can't assign %d names to a %d-column data.table"), ncnames, ncol - ndrop);
+      int *selectRankD = selectRank ? INTEGER(selectRank) : NULL;
+      int cname_idx = 0;
+      for (int i = 0; i < ncol; i++) {
+        if (type[i] != CT_DROP) {
+          const int idx = selectRankD ? (selectRankD[i] - 1) : cname_idx++;
+          SET_STRING_ELT(colNamesSxp, i, STRING_ELT(cNamesSxp, idx));
+        }
+      }
+    } else {
+      if (ncnames != ncol) STOP(_("Can't assign %d names to a %d-column data.table"), ncnames, ncol);
+      for (int i = 0; i < ncol; i++) {
+        SET_STRING_ELT(colNamesSxp, i, STRING_ELT(cNamesSxp, i));
+      }
     }
   }
   colClassesAs = NULL; // any coercions we can't handle here in C are deferred to R (to handle with methods::as) via this attribute

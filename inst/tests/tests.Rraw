@@ -8072,7 +8072,7 @@ test(1557.1, names(fread(str)), c("V1", "V2")) # autonamed
 test(1557.2, names(fread(str, col.names=letters[1:2])), letters[1:2])
 test(1557.3, names(fread(str, col.names=letters[1])), error="Can't assign 1 names to")
 test(1557.4, names(fread(str, col.names=letters[1:3])), error="Can't assign 3 names to")
-test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
+test(1557.5, names(fread(str, col.names=1:2)), error="'col.names' must be")
 
 # Fix for #773
 f = testDir("issue_773_fread.txt")
@@ -21959,3 +21959,13 @@ test(2355.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 
 test(2355.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
 test(2355.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
 test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))
+
+# drop works with user override colnames #3459
+DT = data.table(a=c(1L, 4L), c=c(3L, 6L))
+test(2356.1, fread("a,b,c\n1,2,3\n4,5,6", drop='b'), DT)
+test(2356.2, fread(col.names=c("a","b","c"),"1,2,3\n4,5,6", drop='b'), DT)
+test(2356.3, fread(col.names=c("a","b","c"),"1,2,3\n4,5,6", drop=2), DT)
+test(2356.4, fread(col.names=c("a","b","c"),"1,2,3\n4,5,6", colClasses=c(b="NULL")), DT)
+test(2356.5, fread(col.names=c("a","b","c"),"1,2,3\n4,5,6", select=c('a','c')), DT)
+test(2356.6, fread(col.names=c("a","b","c"),"1,2,3\n4,5,6", select=c(1,3)), DT)
+rm(DT)
