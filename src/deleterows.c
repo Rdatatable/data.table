@@ -5,7 +5,7 @@ static void compactVectorRaw(SEXP col, const int *dest, const int *keep, int new
 
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   if (!isNewList(dt))
-    error("Internal error: deleteRows received non-list dt"); // nocov
+    error("Internal error: deleteRows received non-list dt"); // #nocov
   if (!xlength(dt)) return dt; // zero-column data.tabl
   for (R_xlen_t i = 0; i < length(dt); i++) {
     SEXP col = VECTOR_ELT(dt, i);
@@ -19,33 +19,19 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
 
   if (old_nrow == 0) return dt;
 
+  if (!isInteger(rows_to_delete) && !isLogical(rows_to_delete))
+    internal_error(__func__, "rows_to_delete must be logical, integer, or numeric"); // #nocov
+
   int *keep = (int *)R_alloc(old_nrow, sizeof(int));
   const R_xlen_t n = length(rows_to_delete);
   for (R_xlen_t i = 0; i < old_nrow; i++) keep[i] = 1;
-  switch(TYPEOF(rows_to_delete)) {
-    case LGLSXP: {
-      // should be checked from irows in [
-      if (n != old_nrow) internal_error(__func__, "Logical vector length(rows_to_delete) %ld != nrow(DT) %ld", n, old_nrow); // nocov
-      int *del = LOGICAL(rows_to_delete);
-      for (int i = 0; i < old_nrow; i++) {
-        if (del[i] == true) keep[i] = 0;
-      }
-      break;
-    }
-    case INTSXP: {
-      int *idx = INTEGER(rows_to_delete);
-      for (int j = 0; j < n; j++) {
-        if (idx[j] == NA_INTEGER) continue;
-        // should be checked from irows in [
-        if (idx[j] < 1 || idx[j] > old_nrow) internal_error(__func__, "Row index %d out of range [1, %ld]", idx[j], old_nrow); // nocov
-        keep[idx[j] - 1] = 0;
-      }
-      break;
-    }
-    default:
-      // should be checked from irows in [
-      internal_error(__func__, "rows_to_delete must be logical, integer, or numeric"); // nocov
-    }
+  int *idx = INTEGER(rows_to_delete);
+  for (int j = 0; j < n; j++) {
+    if (idx[j] == NA_INTEGER) continue;
+    // should be checked from irows in [
+    if (idx[j] < 1 || idx[j] > old_nrow) internal_error(__func__, "Row index %d out of range [1, %ld]", idx[j], old_nrow); //# nocov
+    keep[idx[j] - 1] = 0;
+  }
 
   int new_nrow = 0;
   for (int i = 0; i < old_nrow; i++) new_nrow += keep[i];
