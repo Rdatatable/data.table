@@ -5,7 +5,7 @@ output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Fast Read and Fast Write}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -15,12 +15,7 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 

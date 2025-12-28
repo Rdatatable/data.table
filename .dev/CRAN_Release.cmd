@@ -224,23 +224,23 @@ system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m +
 
 
 ###############################################
-#  R 3.4.0 (stated dependency)
+#  R 3.5.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.4.0.tar.gz
-tar xvf R-3.4.0.tar.gz
-cd R-3.4.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.5.0.tar.gz
+tar xvf R-3.5.0.tar.gz
+cd R-3.5.0
 CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
-alias R340=~/build/R-3.4.0/bin/R
+alias R350=~/build/R-3.5.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R340 CMD INSTALL ./data.table_1.18.99.tar.gz
-R340
+R350 CMD INSTALL ./data.table_1.18.99.tar.gz
+R350
 require(data.table)
 test.data.table(script="*.Rraw")
 
@@ -323,7 +323,7 @@ Rdevel-strict-[gcc|clang] CMD check data.table_1.16.99.tar.gz
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "knitr", "markdown"),
+install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "litedown"),
                  Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
