@@ -78,7 +78,7 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
 // Parallel prefix sum (exclusive scan)
 // Two-pass algorithm: first count per thread, then scan, then local prefix sum
 static void computePrefixSum(const int *keep, int *dest, R_xlen_t n, int nthreads) {
-  if (nthreads == 1 || n < 10000) {
+  if (nthreads == 1) {
     // Sequential version
     int sum = 0;
     for (R_xlen_t i = 0; i < n; i++) {
