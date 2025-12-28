@@ -9,12 +9,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r, echo = FALSE, message = FALSE}
-require(data.table)
-litedown::reactor(comment = "# ")
-.old.th = setDTthreads(1)
-```
-
 ```{r, echo=FALSE, results='asis', file='../_translation_links.R', i18n_msg='Данное руководство также доступно на следующих языках: %s'}
 ```
 
