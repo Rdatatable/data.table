@@ -2857,7 +2857,8 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
   # If removing columns from a table that's not selfrefok, need to call setalloccol first, #7488
-  if ((is.null(value) || (is.list(value) && any(vapply_1b(value, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+  if (((is.null(value) || (is.list(value) && any(vapply_1b(value, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) ||
+    truelength(x) <= length(x)) { # automatically allocate more space when tl <= ncol (either full or loaded from disk)
     name = substitute(x)
     setalloccol(x, verbose=FALSE)
     if (is.name(name)) {

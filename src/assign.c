@@ -264,7 +264,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // newcolnames : add these columns (if any)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
-  R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
+  R_len_t numToDo, targetlen, vlen, oldncol, tl, coln, protecti=0, newcolnum, indexLength;
   SEXP targetcol, nullint, s, colnam, tmp, key, index, a, assignedNames, indexNames;
   bool verbose=GetVerbose();
   int ndelete=0;  // how many columns are being deleted
@@ -445,21 +445,23 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
     if (!R_isResizable(dt)) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
-    oldtncol = R_maxLength(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
-
-    if (oldtncol<oldncol) {
-      internal_error(__func__, "oldtncol(%d) < oldncol(%d)", oldtncol, oldncol); // # nocov
+    tl = R_maxLength(dt);
+    int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+    // perform re-overallocation since DT has too less columns #1831 #4100
+    if (tl < oldncol+LENGTH(newcolnames)) {
+      // use MAX to mitigate case where data is loaded from disk (readRDS()/load()) or constructed manually (e.g. using structure())
+      dt = shallow(dt,R_NilValue, MAX(oldncol-tl, 0) + oldncol + length(newcolnames) + overAlloc);
+      tl = TRUELENGTH(dt);
+      names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
     }
-    if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
-    if (oldtncol < oldncol+LENGTH(newcolnames))
-      internal_error(__func__, "input dt has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
+    if (tl>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."), tl, oldncol);
     if (!selfrefnamesok(dt,verbose))
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
-    else if (R_maxLength(names) != oldtncol)
+    else if (R_maxLength(names) != tl)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
-      internal_error(__func__, "selfrefnames is ok but maxLength(names) [%lld] != maxLength(dt) [%d]", (long long)R_maxLength(names), oldtncol);  // # nocov
+      internal_error(__func__, "selfrefnames is ok but maxLength(names) [%lld] != maxLength(dt) [%d]", (long long)R_maxLength(names), tl);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
     R_resizeVector(dt, oldncol+LENGTH(newcolnames));
