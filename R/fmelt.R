@@ -195,6 +195,16 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
       }
     }
   }
+
+# GSoC Fix for #6512
+  if (is.character(measure.vars)) {
+    invalid_vars <- setdiff(measure.vars, names(data))
+    if (length(invalid_vars)) {
+      stopf("One or more values in 'measure.vars' is invalid; please fix by removing [%s]",
+            toString(invalid_vars))
+    }
+  }
+
   if (is.list(measure.vars)) {
     meas.nm = names(measure.vars)
     if (is.null(meas.nm)) {

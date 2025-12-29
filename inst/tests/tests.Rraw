@@ -21959,3 +21959,8 @@ test(2355.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 
 test(2355.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
 test(2355.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
 test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))
+
+# Test for issue #6512: Informative error message for missing measure.vars
+DT = data.table(x1=1, x2=2)
+test(2356.1, melt(DT, measure.vars=c("x1", "z1")), 
+     error="One or more values in 'measure.vars' is invalid; please fix by removing [z1]")

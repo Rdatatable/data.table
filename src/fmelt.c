@@ -179,7 +179,7 @@ bool is_default_measure(SEXP vec) {
 // maybe unlist, then unique, then set_diff.
 SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   SEXP int_vec = PROTECT(isNewList(int_or_list) ? unlist_(int_or_list) : int_or_list);
-  SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE)); 
+  SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE));
   int n_unique_cols = 0;
   for (int i=0; i<length(int_vec); ++i) {
     int col_number = INTEGER(int_vec)[i];
@@ -193,7 +193,7 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
       }
     } else if (!LOGICAL(is_duplicated)[i]) n_unique_cols++;
   }
-  SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols)); 
+  SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols));
   int unique_i = 0;
   for (int i=0; i<length(is_duplicated); ++i) {
     if (!LOGICAL(is_duplicated)[i]) {
