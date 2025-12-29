@@ -15,12 +15,14 @@ setalloccol(DT,
 alloc.col(DT,
     n = getOption("datatable.alloccol"),        # default: 1024L
     verbose = getOption("datatable.verbose"))   # default: FALSE
-setallocrow(DT)
+setallocrow(DT, n = 0L)
 }
 \arguments{
 \item{x}{ Any type of vector, including \code{data.table} which is a \code{list} vector of column pointers. }
 \item{DT}{ A \code{data.table}. }
-\item{n}{ The number of spare column pointer slots to ensure are available. If \code{DT} is a 1,000 column \code{data.table} with 24 spare slots remaining, \code{n=1024L} means grow the 24 spare slots to be 1024. \code{truelength(DT)} will then be 2024 in this example. }
+\item{n}{ For \code{setalloccol} and \code{alloc.col}: the number of spare column pointer slots to ensure are available. If \code{DT} is a 1,000 column \code{data.table} with 24 spare slots remaining, \code{n=1024L} means grow the 24 spare slots to be 1024. \code{truelength(DT)} will then be 2024 in this example.
+
+  For \code{setallocrow}: the number of rows to over-allocate. If \code{n > 0}, allocates capacity for current rows plus \code{n} additional rows. If \code{n == 0} (default), shrinks columns to exact current size to free excess memory. }
 \item{verbose}{ Output status and information. }
 }
 \details{
@@ -37,10 +39,11 @@ setallocrow(DT)
 
     Please note: over-allocation of the column pointer vector is not for efficiency \emph{per se}; it is so that \code{:=} can add columns by reference without a shallow copy.
 
-    \code{setallocrow} is a utility function that prepares columns for fast row operations (delete or insert (not implemented yet)) by reference. 
+    \code{setallocrow} is a utility function that prepares columns for fast row operations (delete or insert (not implemented yet)) by reference and manages row capacity.
     Before deleting or inserting rows by reference, columns must be resizable.
-    \code{setallocrow} ensures all columns are in a resizable state by converting ALTREP columns to materialized form and duplicating
-    non-resizable columns as resizable vectors. This operation modifies \code{DT} by reference.
+    \code{setallocrow} ensures all columns are in the appropriate state by converting ALTREP columns to materialized form and reallocating
+    columns to have the target capacity. When \code{n > 0}, columns are over-allocated with extra capacity for future row additions.
+    When \code{n == 0}, columns are shrunk to exact size to free unused memory. This operation modifies \code{DT} by reference.
 }
 \value{
     \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is just the list vector of column

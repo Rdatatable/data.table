@@ -4,39 +4,51 @@ static void computePrefixSum(const int *keep, int *dest, R_xlen_t n, int nthread
 static void compactVectorRaw(SEXP col, const int *dest, const int *keep, R_xlen_t new_nrow, R_xlen_t old_nrow);
 
 // Helper function to make columns resizable for delete by reference
-SEXP allocrow(SEXP dt) {
+SEXP allocrow(SEXP dt, R_xlen_t n) {
   if (!INHERITS(dt, char_datatable))
     error(_("input to allocrow is not a data.table"));
+
+  if (n < 0)
+    error(_("n must be non-negative in allocrow"));
 
   if (!xlength(dt)) return dt; // zero-column data.table
 
   const bool verbose = GetVerbose();
-  int n = 0;
+  int n_modified = 0;
 
   for (R_xlen_t i = 0; i < length(dt); i++) {
     SEXP col = VECTOR_ELT(dt, i);
     if (!isVector(col))
       error("Cannot make non-vector column %lld resizable", (long long)(i + 1));
 
-    if (ALTREP(col)) {
-      SET_VECTOR_ELT(dt, i, copyAsPlain(col, true));
-      n++;
-    }
-    if (!R_isResizable(col)) {
-      SEXP newcol = R_duplicateAsResizable(col);
+    const R_xlen_t currentLength = length(col);
+    const R_xlen_t currentCapacity = R_isResizable(col) ? R_maxLength(col) : currentLength;
+    const R_xlen_t targetCapacity = currentLength + n;
+
+    // Only reallocate if not resizable, or capacity differs from target
+    if (!R_isResizable(col) || currentCapacity != targetCapacity) {
+      SEXP newcol = PROTECT(copyAsPlain(col, n));
       SET_VECTOR_ELT(dt, i, newcol);
-      n++;
+      UNPROTECT(1);
+      n_modified++;
     }
   }
 
   if (verbose) {
-    if (n > 0) {
-      Rprintf(Pl_(n, 
-        "Made %d column resizable\n", 
-        "Made %d columns resizable\n"),
-      n);
+    if (n_modified > 0) {
+      if (n > 0) {
+        Rprintf(Pl_(n_modified,
+          "Modified %d column (overallocated %lld rows)\n",
+          "Modified %d columns (overallocated %lld rows)\n"),
+          n_modified, (long long)n);
+      } else {
+        Rprintf(Pl_(n_modified,
+          "Modified %d column (shrunk to exact size)\n",
+          "Modified %d columns (shrunk to exact size)\n"),
+          n_modified);
+      }
     } else {
-      Rprintf(_("allocrow had no effect since all columns were already resizable\n"));
+      Rprintf(_("allocrow had no effect, all columns already at target size\n"));
     }
   }
 
@@ -46,12 +58,7 @@ SEXP allocrow(SEXP dt) {
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   if (!isNewList(dt))
     error("Internal error: deleteRows received non-list dt"); // #nocov
-  if (!xlength(dt)) return dt; // zero-column data.tabl
-  for (R_xlen_t i = 0; i < length(dt); i++) {
-    SEXP col = VECTOR_ELT(dt, i);
-    if (!isVector(col)) error("Cannot delete rows by reference from non-vector column %lld", (long long)(i + 1));
-    if (ALTREP(col)) SET_VECTOR_ELT(dt, i, copyAsPlain(col, true));
-  }
+  if (!xlength(dt)) return dt; // zero-column data.table
 
   const R_xlen_t ncol = length(dt);
   const R_xlen_t old_nrow = length(VECTOR_ELT(dt, 0));
@@ -86,7 +93,7 @@ SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
     SEXP col = VECTOR_ELT(dt, j);
     if (!R_isResizable(col)) {
       // catered for ALTREP above
-      SEXP newcol = R_duplicateAsResizable(col);
+      SEXP newcol = PROTECT(copyAsPlain(col, 0)); nprotect++;
       SET_VECTOR_ELT(dt, j, newcol);
       col = newcol;
     }

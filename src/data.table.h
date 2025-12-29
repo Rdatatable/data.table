@@ -185,7 +185,7 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
 
 // deleterows.c
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete);
-SEXP allocrow(SEXP dt);
+SEXP allocrow(SEXP dt, R_xlen_t n);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
@@ -325,7 +325,7 @@ SEXP fitsInInt64R(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
-SEXP copyAsPlain(SEXP x, bool resizable);
+SEXP copyAsPlain(SEXP x, R_xlen_t overalloc);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
 SEXP unlock(SEXP x);
@@ -398,6 +398,7 @@ SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
 SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
+SEXP allocrowwrapper(SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
 SEXP setcharvec(SEXP, SEXP, SEXP);
