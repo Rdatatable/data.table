@@ -1736,13 +1736,13 @@ msgid ""
 "Git revision is not available. Most likely data.table was installed from "
 "CRAN or local archive.\n"
 "Git revision is available when installing from our repositories 'https://"
-"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"rdatatable.gitlab.io/data.table' and 'https://rdatatable.github.io/data."
 "table'."
 msgstr ""
 "Revisión de Git no disponible. Probablmeente instaló data.table desde CRAN o "
 "desde un arcihvo local. La revisión de Git está disponible cuando se instala "
-"data.table desde nuestros repositorios 'https://Rdatatable.gitlab.io/data."
-"table' y 'https://Rdatatable.github.io/data.table'."
+"data.table desde nuestros repositorios 'https://rdatatable.gitlab.io/data."
+"table' y 'https://rdatatable.github.io/data.table'."
 
 #: duplicated.R:7
 #, c-format
