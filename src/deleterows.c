@@ -10,16 +10,33 @@ SEXP allocrow(SEXP dt) {
 
   if (!xlength(dt)) return dt; // zero-column data.table
 
+  const bool verbose = GetVerbose();
+  int n = 0;
+
   for (R_xlen_t i = 0; i < length(dt); i++) {
     SEXP col = VECTOR_ELT(dt, i);
     if (!isVector(col))
       error("Cannot make non-vector column %lld resizable", (long long)(i + 1));
 
-    if (ALTREP(col)) SET_VECTOR_ELT(dt, i, copyAsPlain(col, true));
-
+    if (ALTREP(col)) {
+      SET_VECTOR_ELT(dt, i, copyAsPlain(col, true));
+      n++;
+    }
     if (!R_isResizable(col)) {
       SEXP newcol = R_duplicateAsResizable(col);
       SET_VECTOR_ELT(dt, i, newcol);
+      n++;
+    }
+  }
+
+  if (verbose) {
+    if (n > 0) {
+      Rprintf(Pl_(n, 
+        "Made %d column resizable\n", 
+        "Made %d columns resizable\n"),
+      n);
+    } else {
+      Rprintf(_("allocrow had no effect since all columns were already resizable\n"));
     }
   }
 
