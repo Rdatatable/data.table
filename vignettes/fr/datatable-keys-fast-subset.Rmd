@@ -86,7 +86,7 @@ autrement dit, les noms de lignes sont plus ou moins *un indice* des lignes d'un
 
 2. Et les noms de ligne doivent être *uniques*.
 
-    ```{r eval = FALSE}
+    ```r
     rownames(DF) = sample(LETTERS[1:5], 10, TRUE)
     
     # Warning: non-unique values when setting 'row.names': 'C', 'D'
@@ -170,13 +170,13 @@ flights[.("JFK")]
 
 * Pour une clé sur une seule colonne de type *caractère*, vous pouvez omettre la notation `.()` et utiliser les valeurs directement lors de l'extraction du sous-ensemble, comme si vous faisiez un sous-ensemble avec les noms de lignes dans un *data.frames*.
 
-    ```{r eval = FALSE}
+    ```r
     flights["JFK"] ## identique à flights[.("JFK")]
     ```
 
 * Nous pouvons extraire autant de valeurs que nécessaire 
 
-    ```{r eval = FALSE}
+    ```r
     flights[c("JFK", "LGA")] ## same as flights[.(c("JFK", "LGA"))]
     ```
     
@@ -265,7 +265,7 @@ flights[.("LGA", "TPA"), .(arr_delay)]
 
 * Nous aurions également pu renvoyer le résultat en utilisant `with = FALSE`.
 
-    ```{r eval = FALSE}
+    ```r
     flights[.("LGA", "TPA"), "arr_delay", with = FALSE]
     ```
 
@@ -384,14 +384,14 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
 
 Nous avons vu jusqu'à présent comment définir et utiliser des clés pour extraire des sous-ensembles. Mais quel est l'avantage ? Par exemple, au lieu de faire :
 
-```{r eval = FALSE}
+```r
 # clé par origin,dest columns
 flights[.("JFK", "MIA")]
 ```
 
 nous aurions pu faire :
 
-```{r eval = FALSE}
+```r
 flights[origin == "JFK" & dest == "MIA"]
 ```
 
@@ -399,7 +399,7 @@ Un avantage évident est d'avoir une syntaxe plus courte. Mais plus encore, *ext
 
 Au fil du temps, `data.table` bénéficie de nouvelles optimisations et actuellement, obtenir un sous-ensemble basé sur cette méthode applique automatiquement la *recherche binaire*. Afin d'utiliser la méthode lente par *balayage vectoriel*, la clé doit être supprimée.
 
-```{r eval = FALSE}
+```r
 setkey(flights, NULL)
 flights[origin == "JFK" & dest == "MIA"]
 ```

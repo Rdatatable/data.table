@@ -101,7 +101,7 @@ You can also convert existing objects to a `data.table` using `setDT()` (for `da
 
 In contrast to a `data.frame`, you can do *a lot more* than just subsetting rows and selecting columns within the frame of a `data.table`, i.e., within `[ ... ]` (NB: we might also refer to writing things inside `DT[...]` as "querying `DT`", as an analogy or in relevance to SQL). To understand it we will have to first look at the *general form* of the `data.table` syntax, as shown below:
 
-```{r eval = FALSE}
+```r
 DT[i, j, by]
 
 ##   R:                 i                 j        by
@@ -356,7 +356,7 @@ DF[with(DF, x > 1), ]
 
 * We can also *deselect* columns using `-` or `!`. For example:
 
-    ```{r eval = FALSE}
+    ```r
     ## not run
 
     # returns all columns except arr_delay and dep_delay
@@ -367,7 +367,7 @@ DF[with(DF, x > 1), ]
 
 * From `v1.9.5+`, we can also select by specifying start and end column names, e.g., `year:day` to select the first three columns.
 
-    ```{r eval = FALSE}
+    ```r
     ## not run
 
     # returns year,month and day
@@ -507,7 +507,7 @@ head(ans, 10)
 
 * Or you can also chain them vertically:
 
-    ```{r eval = FALSE}
+    ```r
     DT[ ...
        ][ ...
          ][ ...
@@ -670,7 +670,7 @@ setDT(flights)
 
 The general form of `data.table` syntax is:
 
-```{r eval = FALSE}
+```r
 DT[i, j, by]
 ```
 
