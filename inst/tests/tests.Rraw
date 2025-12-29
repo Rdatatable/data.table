@@ -21966,6 +21966,6 @@ local({
   DT = data.table(a = 1L, b = 2L)
   fwrite(DT, f)
 
-  test(2355.1, fread(f), DT)
-  test(2355.2, fread(paste0("file://", f)), DT)
+  test(2356.1, fread(f), DT)
+  test(2356.2, fread(paste0("file://", f)), DT)
 })
