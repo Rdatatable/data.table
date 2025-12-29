@@ -158,14 +158,14 @@ To use this capacity, we have 2 equivalent alternatives:
 
 - Wrapping the related columns in the base R `list` function.
 
-```{r, eval=FALSE}
+```r
 Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
 - Wrapping the related columns in the `list` alias `.`.
 
-```{r, eval=FALSE}
+```r
 Products[ProductReceived,
          on = .(id = product_id)]
 ```
