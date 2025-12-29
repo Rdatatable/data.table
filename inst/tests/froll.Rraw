@@ -11,7 +11,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
 exact_NaN = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
 if (!exact_NaN) {
-  cat("\n**** Skipping 7 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
+  cat("\n**** Skipping 8 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
   # for Matt when he runs valgrind it is 53, but 64 when running regular R
   # froll.c uses long double and appears to require full long double accuracy in the algo='exact'
 }
