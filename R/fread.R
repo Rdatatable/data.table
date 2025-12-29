@@ -353,6 +353,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   ans
 }
 
+# nocov start. Covered only in other.Rraw
 .read_yaml_header = function(f, skip, verbose) {
   # create connection to stream header lines from file:
   #   https://stackoverflow.com/questions/9871307
@@ -388,6 +389,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(names(yaml_header)))
   yaml_header
 }
+# nocov end.
 
 known_signatures = list(
   zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
