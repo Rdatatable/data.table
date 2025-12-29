@@ -21963,7 +21963,7 @@ test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"),
 # fread works on file:// URIs with spaces, #7550
 local({
   f = tempfile("with spaces"); on.exit(unlink(f))
-  DT = data.table(a = 1, b = 2)
+  DT = data.table(a = 1L, b = 2L)
   fwrite(DT, f)
 
   test(2355.1, fread(f), DT)
