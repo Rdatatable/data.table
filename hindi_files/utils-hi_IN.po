@@ -19,77 +19,78 @@ msgstr ""
 #: utils.c:85
 #, c-format
 msgid "Unsupported type '%s' passed to allNA()"
-msgstr ""
+msgstr "असमर्थित type '%s' को allNA() में पास (passed) किया गया"
 
 #: utils.c:105
 msgid "'x' argument must be data.table compatible"
-msgstr ""
+msgstr "'x' आर्ग्युमेंट (argument) data.table संगत होना चाहिए"
 
 #: utils.c:107 utils.c:109
 #, c-format
 msgid "%s must be TRUE or FALSE"
-msgstr ""
+msgstr "%s TRUE या FALSE होना चाहिए"
 
 #: utils.c:129
 msgid ""
 "argument specifying columns is type 'double' and one or more items in it are "
 "not whole integers"
 msgstr ""
+"कॉलम्स (columns) निर्दिष्ट करने वाला आर्ग्युमेंट (argument) double type का है और इसमें एक या अधिक आइटम (item) पूर्णांक नहीं हैं"
 
 #: utils.c:135
 #, c-format
 msgid "argument specifying columns received non-existing column(s): cols[%d]=%d"
-msgstr ""
+msgstr "कॉलम्स (columns) निर्दिष्ट करने वाले आर्ग्युमेंट (argument) को गैर-मौजूद कॉलम्स (columns) प्राप्त हुए: cols[%d]=%d"
 
 #: utils.c:142
 msgid "'x' argument data.table has no names"
-msgstr ""
+msgstr "'x' आर्ग्युमेंट (argument) data.table का कोई नाम नहीं है"
 
 #: utils.c:148
 #, c-format
 msgid ""
 "argument specifying columns received non-existing column(s): cols[%d]='%s'"
-msgstr ""
+msgstr "कॉलम्स (columns) निर्दिष्ट करने वाले आर्ग्युमेंट (argument) को गैर-मौजूद कॉलम्स (columns) प्राप्त हुए: cols[%d]='%s'"
 
 #: utils.c:152
 msgid "argument specifying columns must be character or numeric"
-msgstr ""
+msgstr "कॉलम्स (columns) निर्दिष्ट करने वाला आर्ग्युमेंट (argument) कैरेक्टर (character) या न्यूमेरिक (numeric) होना चाहिए"
 
 #: utils.c:155
 msgid "argument specifying columns received duplicate column(s)"
-msgstr ""
+msgstr "कॉलम्स (columns) निर्दिष्ट करने वाले आर्ग्युमेंट (argument) को डुप्लिकेट कॉलम्स (columns) प्राप्त हुए"
 
 #: utils.c:373
 msgid "'x' is not atomic"
-msgstr ""
+msgstr "'x' एटॉमिक (atomic) नहीं है"
 
 #: utils.c:375
 msgid "'x' must not be matrix or array"
-msgstr ""
+msgstr "'x' मैट्रिक्स (matrix) या एरे (array) नहीं होना चाहिए"
 
 #: utils.c:377
 msgid "input must not be matrix or array"
-msgstr ""
+msgstr "इनपुट (input) मैट्रिक्स (matrix) या एरे (array) नहीं होना चाहिए"
 
 #: utils.c:381
 #, c-format
 msgid "copy=false and input already of expected type and class %s[%s]\n"
-msgstr ""
+msgstr "copy=false और इनपुट (input) पहले से ही अपेक्षित type और क्लास (class) %s[%s] का है\n"
 
 #: utils.c:388
 #, c-format
 msgid "Coercing %s[%s] into %s[%s]\n"
-msgstr ""
+msgstr "%s[%s] को %s[%s] में ज़बरदस्ती बदला जा रहा है\n"
 
 #: utils.c:404
 #, c-format
 msgid "zlib header files were not found when data.table was compiled"
-msgstr ""
+msgstr "जब data.table को संकलित किया गया था तब zlib हेडर (header) फाइलें नहीं मिली थीं"
 
 #: utils.c:450
 msgid "Internal error in"
-msgstr ""
+msgstr "इसमें आंतरिक त्रुटि"
 
 #: utils.c:450
 msgid "Please report to the data.table issues tracker."
-msgstr ""
+msgstr "कृपया data.table इश्यू ट्रैकर पर रिपोर्ट करें।"
