@@ -1449,8 +1449,8 @@ test(6001.728, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=
 test(6001.729, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
 test(6001.730, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA,NA))
 y = c(1e8+2.980232e-8, 1e8, 1e8, 1e8) # CLAMP0 test
-if (exact_NaN) test(6001.731, frollvar(y, 3)[4L], 0)
-test(6001.732, frollsd(y, 3)[4L], 0)
+test(6001.731, frollvar(y, 3)[4L], 0)
+if (exact_NaN) test(6001.732, frollsd(y, 3)[4L], 0)
 test(6001.733, frollvar(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
 test(6001.734, frollsd(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
 test(6001.740, frollvar(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.25,NA), c(NA,NA,0.25,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # ensure no nested parallelism in rolling functions #7352
