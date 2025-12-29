@@ -1,6 +1,12 @@
+# Hindi translations for R package.
+# Copyright (C) 2024 The R Core Team
+# This file is distributed under the same license as the R package.
+# Automatically generated, 2024.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: utils 0.0\n"
+"Project-Id-Version: R 0.0\n"
+"Report-Msgid-Bugs-To: bugs.r-project.org\n"
 "POT-Creation-Date: 2024-10-10 22:46+0100\n"
 "PO-Revision-Date: 2024-10-10 22:46+0100\n"
 "Last-Translator: Automatically generated\n"
@@ -10,131 +16,80 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: utils.c:30
+#: utils.c:85
 #, c-format
-msgid "package '%s' not found"
-msgstr "पैकेज (package) '%s' नहीं मिला"
+msgid "Unsupported type '%s' passed to allNA()"
+msgstr ""
 
-#: utils.c:33
+#: utils.c:105
+msgid "'x' argument must be data.table compatible"
+msgstr ""
+
+#: utils.c:107 utils.c:109
 #, c-format
-msgid "namespace '%s' is not available and has not been loaded"
-msgstr "namespace '%s' उपलब्ध नहीं है और लोड नहीं किया गया है"
+msgid "%s must be TRUE or FALSE"
+msgstr ""
 
-#: utils.c:37
+#: utils.c:129
+msgid ""
+"argument specifying columns is type 'double' and one or more items in it are "
+"not whole integers"
+msgstr ""
+
+#: utils.c:135
 #, c-format
-msgid "package '%s' (version '%s' is required) is not available"
-msgstr "पैकेज (package) '%s' (वर्ज़न (version) '%s' आवश्यक है) उपलब्ध नहीं है"
+msgid "argument specifying columns received non-existing column(s): cols[%d]=%d"
+msgstr ""
 
-#: utils.c:41
+#: utils.c:142
+msgid "'x' argument data.table has no names"
+msgstr ""
+
+#: utils.c:148
 #, c-format
 msgid ""
-"package '%s' (version '%s' is required) is available but version '%s' is "
-"currently installed"
+"argument specifying columns received non-existing column(s): cols[%d]='%s'"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) '%s' आवश्यक है) उपलब्ध है लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है"
 
-#: utils.c:45
-#, c-format
-msgid "package '%s' (version >= '%s' is required) is not available"
-msgstr "पैकेज (package) '%s' (वर्ज़न (version) >= '%s' आवश्यक है) उपलब्ध नहीं है"
-
-#: utils.c:49
-#, c-format
-msgid ""
-"package '%s' (version >= '%s' is required) is available but version '%s' is "
-"currently installed"
+#: utils.c:152
+msgid "argument specifying columns must be character or numeric"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' आवश्यक है) उपलब्ध है लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है"
 
-#: utils.c:53
-#, c-format
-msgid ""
-"package '%s' (version >= '%s' is required) is already loaded, but version "
-"'%s' is currently installed"
+#: utils.c:155
+msgid "argument specifying columns received duplicate column(s)"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' आवश्यक है) पहले से लोड किया हुआ है, लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है"
 
-#: utils.c:57
-#, c-format
-msgid ""
-"package '%s' (version '%s' is required) is already loaded, but version '%s' "
-"is currently installed"
+#: utils.c:373
+msgid "'x' is not atomic"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) '%s' आवश्यक है) पहले से लोड किया हुआ है, लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है"
 
-#: utils.c:60
-#, c-format
-msgid "package '%s' is already loaded, use that instead"
-msgstr "पैकेज (package) '%s' पहले से लोड किया हुआ है, इसके बजाय उसका उपयोग करें"
-
-#: utils.c:63
-#, c-format
-msgid ""
-"package '%s' (version >= '%s' is needed) is available, loading it now ...\n"
+#: utils.c:375
+msgid "'x' must not be matrix or array"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' आवश्यक है) उपलब्ध है, इसे अब लोड (load) किया जा रहा है ...\n"
 
-#: utils.c:66
-#, c-format
-msgid "package '%s' is available, loading it now ...\n"
-msgstr "पैकेज (package) '%s' उपलब्ध है, इसे अब लोड (loading) किया जा रहा है ...\n"
-
-#: utils.c:69
-#, c-format
-msgid ""
-"package '%s' (version >= '%s' is needed) failed to load. Please install "
-"package '%s' (version >= '%s').\n"
+#: utils.c:377
+msgid "input must not be matrix or array"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' आवश्यक है) लोड होने में विफल रहा। कृपया पैकेज (package) '%s' (वर्ज़न (version) >= '%s') इंस्टॉल (installed) करें।\n"
 
-#: utils.c:72
+#: utils.c:381
 #, c-format
-msgid "package '%s' failed to load. Please install it.\n"
-msgstr "पैकेज (package) '%s' लोड (load) होने में विफल रहा। कृपया इसे इंस्टॉल (install) करें।\n"
-
-#: utils.c:75
-#, c-format
-msgid "package '%s' (version >= '%s' is suggested) is not available"
-msgstr "पैकेज (package) '%s' (वर्ज़न (version) >= '%s' सुझावित है) उपलब्ध नहीं है"
-
-#: utils.c:78
-#, c-format
-msgid ""
-"package '%s' (version >= '%s' is suggested) is available but version '%s' is "
-"currently installed"
+msgid "copy=false and input already of expected type and class %s[%s]\n"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' सुझावित है) उपलब्ध है लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है"
 
-#: utils.c:81
+#: utils.c:388
 #, c-format
-msgid ""
-"package '%s' (version >= '%s' is suggested) is already loaded, but version "
-"'%s' is currently installed"
+msgid "Coercing %s[%s] into %s[%s]\n"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' सुझावित है) पहले से लोड किया हुआ है, लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है"
 
-#: utils.c:84
+#: utils.c:404
 #, c-format
-msgid "trying to load package '%s' (version >= '%s') ...\n"
-msgstr "पैकेज (package) '%s' (वर्ज़न (version) >= '%s') को लोड करने का प्रयास किया जा रहा है ...\n"
-
-#: utils.c:87
-#, c-format
-msgid "trying to load package '%s' ...\n"
-msgstr "पैकेज (package) '%s' को लोड (load) करने का प्रयास किया जा रहा है ...\n"
-
-#: utils.c:91
-#, c-format
-msgid ""
-"package '%s' (version >= '%s' is required) is already loaded, but version "
-"'%s' is currently installed. It's too late to use version >= '%s' now."
+msgid "zlib header files were not found when data.table was compiled"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) >= '%s' आवश्यक है) पहले से लोड किया हुआ है, लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है। अब वर्ज़न (version) >= '%s' का उपयोग करने में बहुत देर हो चुकी है।"
 
-#: utils.c:95
-#, c-format
-msgid ""
-"package '%s' (version '%s' is required) is already loaded, but version '%s' "
-"is currently installed. It's too late to use version '%s' now."
+#: utils.c:450
+msgid "Internal error in"
 msgstr ""
-"पैकेज (package) '%s' (वर्ज़न (version) '%s' आवश्यक है) पहले से लोड किया हुआ है, लेकिन वर्तमान में वर्ज़न (version) '%s' इंस्टॉल (installed) किया गया है। अब वर्ज़न (version) '%s' का उपयोग करने में बहुत देर हो चुकी है।"
+
+#: utils.c:450
+msgid "Please report to the data.table issues tracker."
+msgstr ""
