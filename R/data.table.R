@@ -11,7 +11,7 @@ methods::setPackageName("data.table",.global)
 #   (1) add to man/special-symbols.Rd
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
-.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
+.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = .ROW = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
@@ -1181,6 +1181,21 @@ replace_dot_alias = function(e) {
           }
           names(jsub)=""
           jsub[[1L]]=as.name("list")
+        }
+
+        # Check for .ROW := NULL pattern (delete rows by reference)
+        if ((is.character(lhs) && length(lhs)==1L && lhs==".ROW") ||
+            (is.name(lhs) && identical(lhs, quote(.ROW)))) {
+          if (is.null(jsub) || identical(jsub, quote(NULL))) {
+            if (is.null(irows))
+              stopf(".ROW := NULL requires i= condition to specify rows to delete")
+            if (!missingby)
+              stopf(".ROW := NULL with 'by' or 'keyby' is not supported yet")
+            .Call(CdeleteRows, x, irows)
+            return(suppPrint(x))
+          } else {
+            stopf(".ROW can only be used with := NULL to delete rows")
+          }
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
@@ -2717,6 +2732,10 @@ setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbos
 
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
   .Call(Cselfrefokwrapper,DT,verbose)
+}
+
+setallocrow = function(DT, n=0L) {
+  invisible(.Call(Callocrowwrapper, DT, as.integer(n)))
 }
 
 truelength = function(x) .Call(Ctruelength,x)

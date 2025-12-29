@@ -208,7 +208,7 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
-SEXP copyAsPlain(SEXP x) {
+SEXP copyAsPlain(SEXP x, R_xlen_t overalloc) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
   //      .Internal(inspect(x[[5]]))
@@ -217,6 +217,10 @@ SEXP copyAsPlain(SEXP x) {
   // For non-ALTREP this should do the same as R's duplicate().
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
+  //
+  // overalloc: additional rows to allocate beyond current length
+  //   == -1: non-resizable vector (exact size)
+  //   >= 0: resizable vector with capacity = length(x) + overalloc
 
   if (isNull(x)) {
     // deal with up front because isNewList(R_NilValue) is true
@@ -227,7 +231,14 @@ SEXP copyAsPlain(SEXP x) {
     return duplicate(x);
   }
   const int64_t n = XLENGTH(x);
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  SEXP ans;
+  if (overalloc == -1) {
+    ans = PROTECT(allocVector(TYPEOF(x), n));
+  } else {
+    const R_xlen_t capacity = n + overalloc;
+    ans = PROTECT(R_allocResizableVector(TYPEOF(x), capacity));
+    R_resizeVector(ans, n);
+  }
   // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
     internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
@@ -258,7 +269,7 @@ SEXP copyAsPlain(SEXP x) {
   } break;
   case VECSXP: {
     const SEXP *xp=SEXPPTR_RO(x);
-    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
+    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i], overalloc));
   } break;
   default:                                                                                           // # nocov
     internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
@@ -292,7 +303,7 @@ void copySharedColumns(SEXP x) {
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
-        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
+        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i], -1));
     }
     if (GetVerbose())
       Rprintf(Pl_(nShared,
