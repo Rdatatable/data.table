@@ -17700,7 +17700,7 @@ test(2194.4, endsWithAny(letters, 'e'), error="Internal error.*types or lengths 
 test(2194.5, endsWithAny(NA_character_, 'a'), FALSE)
 test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or lengths incorrect")
 # file used in encoding tests
-needed_chars = "\u0105\u017E\u016B\u012F\u0173\u0117\u0161\u0119"
+needed_chars = c("\u0105", "\u017E", "\u016B", "\u012F", "\u0173", "\u0117", "\u0161", "\u0119")
 txt = parse(text='readLines(testDir("issue_563_fread.txt"))')
 test(2194.7, requires_utf8=needed_chars, endsWithAny(eval(txt), 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
 test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
