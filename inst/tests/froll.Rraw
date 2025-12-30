@@ -2084,7 +2084,8 @@ if (use.fork) {
   test(6010.772, .selfref.ok(ans[[2L]]))
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
   test(6010.773, !.selfref.ok(ans[[2L]][[1L]]))
-  test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
+  # deactivated by #5443
+  # test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
   ans = lapply(ans, lapply, setDT)
   test(6010.774, .selfref.ok(ans[[2L]][[1L]])) ## fix after
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=function(x) lapply(x, lapply, setDT))
