@@ -1,57 +1,117 @@
+all_atomic = function(x) all(vapply_1b(x, is.atomic, use.names=FALSE))
+all_data.frame = function(x) all(vapply_1b(x, is.data.frame, use.names=FALSE))
+all_list = function(x) all(vapply_1b(x, is.list, use.names=FALSE))
+all_types = function(x) vapply_1c(x, typeof, use.names=FALSE)
+all_names = function(x) lapply(x, names)
+len_unq = function(x) length(unique(x))
+any_NA_neg = function(x) anyNA(x) || any(x < 0L)
+any_NA_names = function(x) anyNA(names(x))
+all_NULL_names = function(x) all(vapply_1b(x, function(y) is.null(names(y)), use.names=FALSE))
+equal.lengths = function(x) len_unq(lengths(x)) <= 1L
+equal.nrows = function(x) len_unq(lapply(x, nrow)) <= 1L
+equal.dims = function(x) len_unq(lapply(x, dim)) <= 1L
+equal.types = function(x) len_unq(all_types(x)) <= 1L
+equal.names = function(x) len_unq(all_names(x)) <= 1L
+
 ## ansmask is to handle leading values from fill to match type of the ans
 simplifylist = function(x, fill, ansmask) {
-  all.t = vapply_1c(x, typeof, use.names=FALSE)
+  all.t = all_types(x)
   all.ut = unique(all.t)
   if (length(all.ut) > 1L) {
-    ans.t = vapply_1c(x[ansmask], typeof, use.names=FALSE)
-    ans.ut = unique(ans.t)
-    ## ans postprocessing to match types
-    if ((length(ans.ut) == 2L) && all(ans.ut %in% c("double","integer","logical"))) { ## align numeric and integer when function is not type stable: median #7313
-      if ("double" %in% ans.ut) {
-        if ("integer" %in% ans.ut)
-          x[ansmask & all.t=="integer"] = lapply(x[ansmask & all.t=="integer"], as.numeric) ## coerce integer to double
-        if ("logical" %in% ans.ut)
-          x[ansmask & all.t=="logical"] = lapply(x[ansmask & all.t=="logical"], as.numeric) ## coerce logical to double
-        ans.ut = "double"
-      } else if ("integer" %in% ans.ut) {
-        if ("logical" %in% ans.ut)
-          x[ansmask & all.t=="logical"] = lapply(x[ansmask & all.t=="logical"], as.integer) ## coerce logical to integer
-        else
-          internal_error("simplifylist aligning return types, at that place there should have been some logical types in the answer") # nocov
-        ans.ut = "integer"
-      }
+    ans.ut = unique(all_types(x[ansmask]))
+    ## coerce int to double when varies within answer results: median #7313
+    if (
+      length(ans.ut) == 2L &&                   ## simplifylist(list(NA, 1, 1L, TRUE), NA, ansmask=c(F,T,T,T))
+      all(c("double","integer") %in% ans.ut) && ## simplifylist(list(NA, 1, TRUE), NA, ansmask=c(F,T,T))
+      equal.lengths(x[ansmask])                 ## simplifylist(list(NA, 1, 1:2), NA, ansmask=c(F,T,T))
+    ) {
+      x[ansmask & all.t=="integer"] = lapply(x[ansmask & all.t=="integer"], as.numeric) ## coerce integer to double
+      ans.ut = "double"
     }
-    ## file postprocessing to match types
-    if (length(ans.ut) == 1L && equal.lengths(x[ansmask])) {
-      if (identical(fill, NA)) { ## different typeof of ans and default fill=NA and lengths of ans equal
-        filli = which(!ansmask)
-        ans1 = x[[which.first(ansmask)]] ## first ans from full window
-        x[filli] = rep_len(list(ans1[NA]), length(filli)) ## this will make NA of matching type to ans1 and recycle for all filli
-        all.ut = ans.ut
-      } else if (typeof(fill) != ans.ut && all(c(typeof(fill), ans.ut) %in% c("double","integer","logical"))) { ## fill=-2, ans=1L
-        filli = which(!ansmask)
-        cast = switch(ans.ut, double = as.numeric, integer = as.integer, logical = as.logical)
-        x[filli] = rep_len(list(cast(fill)), length(filli))
-        all.ut = ans.ut
+    ## coerce fill to answers type and length
+    if (
+      length(ans.ut) == 1L &&      ## simplifylist(list(NA, 1, TRUE), NA, ansmask=c(F,T,T))
+      equal.lengths(x[ansmask]) && ## simplifylist(list(NA, 1L, 1:2), NA, ansmask=c(F,T,T))
+      is.atomic(fill)              ## simplifylist(list(list(NA), list(1), list(2)), list(NA), ansmask=c(F,T,T))
+    ) {
+      fill.t = typeof(fill)
+      ans1 = x[[which.first(ansmask)]] ## first ans from full window, all ans same type by now
+      ## coerce fill to type
+      if (identical(fill, NA)) {
+        if (ans.ut == "list") {
+          fill = lapply(ans1, `[`, NA) ## we want list(NA) rather than list(NULL), this also propagates names
+        } else {
+          fill = setNames(ans1[NA], names(ans1))
+        }
+        fill.t = ans.ut
+      } else if (
+        fill.t != ans.ut &&                  ## simplifylist(list(-1, 1, 2), -1, ansmask=c(F,T,T))
+        fill.t %in% c("double","integer") && ## simplifylist(list(NULL, 1, 2), NULL, ansmask=c(F,T,T))
+        ans.ut %in% c("double","integer")    ## simplifylist(list(1, "a", "b"), 1, ansmask=c(F,T,T))
+      ) { ## fill=-2, ans=1L
+        if (fill.t == "integer" && ans.ut == "double") {
+          fill = as.double(fill)
+        } else if (fill.t == "double" && ans.ut == "integer") {
+          fill = as.integer(fill)
+        } else {
+          internal_error("coerce fill type reached a branch of unexpected fill type and answer type") # nocov
+        }
+        fill.t = ans.ut
+      }
+      ## name fill if all ans have same names
+      if (
+        ans.ut != "list" &&
+        length(fill) == length(ans1) &&
+        is.null(names(fill)) &&
+        !is.null(names(ans1)) &&                                             ## simplifylist(list(NA, c(1,2), c(1,2)), NA, ansmask=c(F,T,T))
+        len_unq(vapply_1b(x[ansmask], any_NA_names, use.names=FALSE)) <= 1L && ## simplifylist(list(NA, c(a=1,b=2), setNames(c(1, 2), c(NA,"b"))), NA, ansmask=c(F,T,T))
+        equal.names(x[ansmask])                                              ## simplifylist(list(NA, c(a=1,b=2), c(x=1,y=2)), NA, ansmask=c(F,T,T))
+      ) {
+        fill = setNames(fill, names(ans1))
+      }
+      ## recycle fill
+      filli = which(!ansmask)
+      x[filli] = rep_len(list(fill), length(filli))
+    }
+    all.ut = unique(all_types(x))
+  }
+  if (
+    !is.null(names(fill)) &&
+    all_NULL_names(x[ansmask]) &&
+    equal.lengths(x)
+  ) {
+    nm = names(fill)
+    x[ansmask] = lapply(x[ansmask], `names<-`, nm)
+  }
+  if (length(all.ut) == 1L) {
+    if (all.ut %in% c("integer","logical","double","complex","character","raw")) {
+      if (identical(unique(lengths(x)), 1L)) { ## all length 1
+        return(unlist(x, recursive=FALSE, use.names=FALSE))
+      } else if (
+        equal.lengths(x) &&
+        equal.names(x)
+      ) { ## length 2+ and equal
+        return(rbindlist(lapply(x, as.list)))
+      }
+    } else if (identical(all.ut,"list")) {
+      if (
+        all_data.frame(x) && ## simplifylist(list(NA, list(a=1L, b=2L), data.table(a=1L, b=2L)), NA, ansmask=c(F,T,T))
+        equal.dims(x) &&     ## simplifylist(list(NA, data.table(a=1L, b=2L), data.table(a=1L)), NA, ansmask=c(F,T,T))
+        equal.types(x) &&    ## simplifylist(list(NA, data.table(a=1L, b=2L), data.table(a=1L, b="b")), NA, ansmask=c(F,T,T))
+        equal.names(x)       ## simplifylist(list(NA, data.table(a=1L, b=2L), data.table(x=1L, y=2L)), NA, ansmask=c(F,T,T))
+      ) {
+        return(rbindlist(x))
+      } else if (
+        equal.lengths(x) &&
+        len_unq(lapply(x, lengths, use.names=FALSE)) <= 1L && ## nested lengths
+        len_unq(lapply(lapply(x, unlist, recursive=FALSE, use.names=FALSE), typeof)) <= 1L &&
+        equal.names(x)
+      ) { ## same length lists: list(list(1:2, 1:2), list(2:3, 2:3))
+        return(rbindlist(x))  ## simplifylist(list(NA, list(1:2, 1:2), list(2:3, 2:3)), NA, ansmask=c(F,T,T))
       }
     }
   }
-  all.ut = unique(vapply_1c(x, typeof, use.names=FALSE))
-  if ((length(all.ut) == 1L) && all(all.ut %in% c("integer","logical","double","complex","character","raw"))) {
-    if (identical(unique(lengths(x)), 1L)) { ## length 1
-      return(unlist(x, recursive=FALSE, use.names=FALSE))
-    } else if (equal.lengths(x)) { ## length 2+ and equal
-      return(rbindlist(lapply(x, as.list)))
-    }
-  } else if (identical(all.ut, "list")) {
-    if (all_data.frame(x)) ## list(data.table(...), data.table(...))
-      return(rbindlist(x))
-    if (equal.lengths(x)) ## same length lists: list(list(1:2, 1:2), list(2:3, 2:3))
-      return(rbindlist(x))
-  }
-  ## not simplified, return as is
-  # not length stable
-  # not type stable
+  ## not simplified, return as is, see #7317
   # NULL, closure, special, builtin, environment, S4, ...
   x
 }
@@ -65,21 +125,12 @@ fixselfref = function(x) {
   x
 }
 
-all_atomic = function(x) all(vapply_1b(x, is.atomic, use.names=FALSE))
-all_data.frame = function(x) all(vapply_1b(x, is.data.frame, use.names=FALSE))
-all_list = function(x) all(vapply_1b(x, is.list, use.names=FALSE))
-equal.lengths = function(x) length(unique(lengths(x))) <= 1L
-equal.nrows = function(x) length(unique(vapply(x, nrow, 0L))) <= 1L
-anyNAneg = function(x) anyNA(x) || any(x < 0L)
-
 frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE, give.names=FALSE, simplify=TRUE, x, n) {
   if (!missing(x)) {
-    warningf("'x' is deprecated in frollapply, use 'X' instead")
-    X = x
+    stopf("'x' is deprecated in frollapply, use 'X' instead")
   }
   if (!missing(n)) {
-    warningf("'n' is deprecated in frollapply, use 'N' instead")
-    N = n
+    stopf("'n' is deprecated in frollapply, use 'N' instead")
   }
   if (!isTRUEorFALSE(by.column))
     stopf("'by.column' must be TRUE or FALSE")
@@ -159,7 +210,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     nnam = names(N) ## used for give.names
     if (!is.integer(N))
       N = as.integer(N)
-    if (anyNAneg(N))
+    if (any_NA_neg(N))
       stopf("'N' must be non-negative integer values (>= 0)")
     nn = length(N) ## top level loop for vectorized n
   } else {
@@ -170,7 +221,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         stopf("length of integer vector(s) provided as list to 'N' argument must be equal to number of observations provided in 'X'")
       if (!is.integer(N))
         N = as.integer(N)
-      if (anyNAneg(N))
+      if (any_NA_neg(N))
         stopf("'N' must be non-negative integer values (>= 0)")
       nn = 1L
       N = list(N)
@@ -184,7 +235,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
         stopf("'N' must be an integer vector or list of integer vectors")
       if (!all(vapply_1b(N, is.integer, use.names=FALSE)))
         N = lapply(N, as.integer)
-      if (any(vapply_1b(N, anyNAneg, use.names=FALSE)))
+      if (any(vapply_1b(N, any_NA_neg, use.names=FALSE)))
         stopf("'N' must be non-negative integer values (>= 0)")
       nn = length(N)
       nnam = names(N)
@@ -206,7 +257,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   } else leftadaptive = FALSE
   if (leftadaptive) {
     if (verbose)
-      cat("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+      catf("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
     if (by.column) {
       X = lapply(X, rev)
     } else {
@@ -244,38 +295,22 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       tight = function(i, dest, src, n) FUN(.Call(CmemcpyDT, dest, src, i, n), ...)
     }
   } else {
-    #has.growable = base::getRversion() >= "3.4.0"
-    ## this is now always TRUE
-    ## we keep this branch, it may be useful when getting rid of SET_GROWABLE_BIT and SETLENGTH #6180
-    has.growable = TRUE
-    cpy = if (has.growable) function(x) .Call(Csetgrowable, copy(x)) else copy
+    cpy = function(x) .Call(CcopyAsGrowable, x)
     ansMask = function(len, n) {
       mask = seq_len(len) >= n
       mask[is.na(mask)] = FALSE ## test 6010.206
       mask
     }
     if (by.column) {
-      allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE))]
-      if (has.growable) {
-        tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...) # CmemcpyVectoradaptive handles k[i]==0
-      } else {
-        tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(src[(i-n[i]+1L):i], ...)} # nocov
-      }
+      allocWindow = function(x, n) cpy(x[seq_len(max(n, na.rm=TRUE))])
+      tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...) # CmemcpyVectoradaptive handles k[i]==0
     } else {
       if (!list.df) {
-        allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE)), , drop=FALSE]
+        allocWindow = function(x, n) cpy(x[seq_len(max(n, na.rm=TRUE)), , drop=FALSE])
       } else {
-        allocWindow = function(x, n) lapply(x, `[`, seq_len(max(n)))
+        allocWindow = function(x, n) cpy(lapply(x, `[`, seq_len(max(n))))
       }
-      if (has.growable) {
-        tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...) # CmemcpyDTadaptive handles k[i]==0
-      } else {
-        if (!list.df) { # nocov
-          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...)} # nocov
-        } else {
-          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(lapply(src, `[`, (i-n[i]+1L):i), ...)} # nocov
-        }
-      }
+      tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...) # CmemcpyDTadaptive handles k[i]==0
     }
   }
   ## prepare templates for errors and warnings
@@ -292,7 +327,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   DTths0 = getDTthreads(FALSE)
   use.fork0 = .Platform$OS.type!="windows" && DTths0 > 1L
   if (verbose && !use.fork0)
-    cat("frollapply running on single CPU thread\n")
+    catf("frollapply running on single CPU thread\n")
   ans = vector("list", nx*nn)
   ## vectorized x
 
@@ -358,11 +393,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             interrupt = function(e) {
               # nocov start
               suspendInterrupts({
-                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
-                parallel::mccollect(jobs, wait = FALSE)
+                lapply(jobs[.Call(Cis_direct_child, jobs)], function(pid) try(tools::pskill(pid), silent = TRUE))
+                parallel::mccollect(jobs)
               })
-              invokeRestart("abort") ## raise SIGINT
               # nocov end
+              # Let the interrupt continue without invoking restarts
             }
           )
           ## check for any errors in FUN, warnings are silently ignored

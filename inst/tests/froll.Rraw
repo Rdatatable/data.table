@@ -306,7 +306,7 @@ test(6000.067, ans2, expected)
 options(datatable.verbose=TRUE)
 test(6000.0671, frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 4, hasnf 0, narm 0",
   "frollmeanFast: non-finite values are present in input, skip non-finite unaware attempt and run with extra care for NFs straighaway",
@@ -315,7 +315,7 @@ test(6000.0671, frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5,
 ))
 test(6000.0672, frollmean(c(1:2,NA,4:10), 4, has.nf=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 4, hasnf -1, narm 0",
   "frollmeanFast: non-finite values are present in input, skip non-finite unaware attempt and run with extra care for NFs straighaway",
@@ -324,7 +324,7 @@ test(6000.0672, frollmean(c(1:2,NA,4:10), 4, has.nf=FALSE), c(rep(NA_real_, 6), 
 ), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.0673, frollmean(c(1:2,NA,4:10), 2, has.nf=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 2, hasnf -1, narm 0",
   "frollmeanFast: non-finite values are present in input, re-running with extra care for NFs",
@@ -333,7 +333,7 @@ test(6000.0673, frollmean(c(1:2,NA,4:10), 2, has.nf=FALSE), c(NA, 1.5, NA, NA, 4
 ), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.0674, frollmean(c(1:2,NA,4:10), 4, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollmeanFast: running for input length 10, window 4, hasnf 0, narm 0",
   "frollmeanFast: non-finite values are present in input, skip non-finite unaware attempt and run with extra care for NFs straighaway",
   "frollfun: align 0, shift answer by -2",
@@ -434,7 +434,7 @@ test(6000.1195, frollmean(1:5, 2, na.rm=TRUE, has.nf=FALSE), error="using has.nf
 options(datatable.verbose=TRUE)
 test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frolladaptivemeanExact: running in parallel for input length 6, hasnf 0, narm 1",
   "frolladaptivemeanExact: non-finite values are present in input, re-running with extra care for NFs",
@@ -444,7 +444,7 @@ test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRU
 #### exact na.rm=TRUE verbose=TRUE
 test(6000.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 6, window 2, hasnf 0, narm 1",
   "frollmeanExact: non-finite values are present in input, re-running with extra care for NFs",
@@ -674,14 +674,14 @@ n = 3
 options(datatable.verbose=TRUE)
 test(6000.171, frollmean(x, n), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.172, frollmean(list(x, x+1), n), output=c(
   "frollfunR: allocating memory for results 2x1",
-  "frollfunR: 2 column.*1 window.*",
+  "frollfunR: .*in parallel.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 0 took.*",
@@ -691,7 +691,7 @@ test(6000.172, frollmean(list(x, x+1), n), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.173, frollmean(x, c(n, n+1)), output=c(
   "frollfunR: allocating memory for results 1x2",
-  "frollfunR: 1 column.*2 window.*",
+  "frollfunR: .*in parallel.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 0 took.*",
@@ -701,7 +701,7 @@ test(6000.173, frollmean(x, c(n, n+1)), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.174, frollmean(list(x, x+1), c(n, n+1)), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column.*2 window.*",
+  "frollfunR: .*in parallel.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 0 took.*",
@@ -717,14 +717,14 @@ test(6000.174, frollmean(list(x, x+1), c(n, n+1)), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.175, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.176, frollmean(x, n, align="center"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: align 0, shift answer by -1",
@@ -732,7 +732,7 @@ test(6000.176, frollmean(x, n, align="center"), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.177, frollmean(x, n, align="left"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: align -1, shift answer by -2",
@@ -741,14 +741,14 @@ test(6000.177, frollmean(x, n, align="left"), output=c(
 nn = c(1:4,2:3,1:4)
 test(6000.178, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially because adaptive.*",
   "frollfunR: 1:",
   "frolladaptivemeanFast: running for input length 10, hasnf 0, narm 0",
   "frolladaptivefun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.179, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frolladaptivemeanExact: running in parallel for input length 10, hasnf 0, narm 0",
   "frolladaptivefun: processing fun 0 algo 1 took.*",
@@ -757,7 +757,7 @@ test(6000.179, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
 x[8] = NA
 test(6000.180, frollmean(x, n), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially.*single rolling computation.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasnf 0, narm 0",
   "frollmeanFast: non-finite values are present in input, re-running with extra care for NFs",
@@ -765,7 +765,7 @@ test(6000.180, frollmean(x, n), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollmeanExact: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run",
@@ -773,7 +773,7 @@ test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*sequentially because adaptive.*",
   "frollfunR: 1:",
   "frolladaptivemeanFast: running for input length 10, hasnf 0, narm 0",
   "frolladaptivemeanFast: non-finite values are present in input, re-running with extra care for NFs",
@@ -781,7 +781,7 @@ test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frolladaptivemeanExact: running in parallel for input length 10, hasnf 0, narm 0",
   "frolladaptivemeanExact: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run",
@@ -791,7 +791,7 @@ test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
 d = as.data.table(list(1:10/2, 10:1/4))
 test(6000.184, frollmean(d[,1], 3, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 1 took.*",
@@ -799,7 +799,7 @@ test(6000.184, frollmean(d[,1], 3, algo="exact"), output=c(
 ))
 test(6000.185, frollmean(d, 3:4, algo="exact"), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column.*2 window.*",
+  "frollfunR: .*sequentially.*algo='exact'.*already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 1 took.*",
@@ -825,8 +825,8 @@ test(6000.190, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE
 test(6000.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
-test(6000.199, frollmean(1:2, 1, hasNA=TRUE), c(1,2), warning="hasNA is deprecated, use has.nf instead")
-test(6000.1991, frollmean(1:2, 1, has.nf=FALSE, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
+test(6000.199, frollmean(1:2, 1, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
+# 6000.1991 tested supplying has.nf and hasNA, no longer makes sense
 
 ## frollsum
 x = 1:6/2
@@ -1202,8 +1202,8 @@ test(6000.931, frollprod(1:3, 2), c(NA, 2, 6), output="frollprodFast: running fo
 test(6000.932, frollprod(1:3, 2, align="left"), c(2, 6, NA), output="frollfun: align")
 test(6000.933, frollprod(c(1,2,NA), 2), c(NA, 2, NA), output="non-finite values are present in input, re-running with extra care for NFs")
 test(6000.934, frollprod(c(NA,2,3), 2), c(NA, NA, 6), output="non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway")
-test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="frolladaptiveprodFast: running for input length")
-test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="algo 0 not implemented, fall back to 1")
+test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run")
 options(datatable.verbose=FALSE)
 # floating point overflow
 test(6000.941, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 5), c(NA,NA,NA,NA,Inf))
@@ -1222,6 +1222,15 @@ test(6000.953, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(5, 5), algo="
 test(6000.954, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,Inf))
 test(6000.955, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(5, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,NA,-Inf))
 test(6000.956, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,-Inf))
+# rolling product and numerical stability #7349
+test(6000.9601, frollprod(c(2,2,0,2,2), 2), c(NA,4,0,0,4))
+test(6000.9602, frollprod(c(2,2,0,-2,2), 2), c(NA,4,0,0,-4))
+test(6000.9603, frollprod(c(2,2,0,-2,-2), 2), c(NA,4,0,0,4))
+test(6000.9604, frollprod(c(2,2,0,Inf,2), 2), c(NA,4,0,NaN,Inf))
+test(6000.9605, frollprod(c(2,2,0,-Inf,2), 2), c(NA,4,0,NaN,-Inf))
+test(6000.9606, frollprod(c(2,2,0,-Inf,-2), 2), c(NA,4,0,NaN,Inf))
+test(6000.9607, frollprod(c(0,2,2,2,2), 2), c(NA,0,4,4,4))
+test(6000.9608, frollprod(c(2,0,2,2,2), 2), c(NA,0,0,4,4))
 
 # n==0, k==0, k[i]==0
 test(6001.111, frollmean(1:3, 0), c(NaN,NaN,NaN), options=c("datatable.verbose"=TRUE), output="window width of size 0")
@@ -1245,14 +1254,17 @@ test(6001.181, frollapply(FUN=mean, 1:3, 0), c(NaN,NaN,NaN))
 test(6001.182, frollapply(FUN=mean, 1:3, 0, fill=99), c(NaN,NaN,NaN))
 test(6001.183, frollapply(FUN=mean, c(1:2,NA), 0), c(NaN,NaN,NaN))
 test(6001.184, frollapply(FUN=mean, c(1:2,NA), 0, na.rm=TRUE), c(NaN,NaN,NaN))
+test(6001.185, frollapply(FUN=mean, c(FALSE, TRUE, TRUE), 0), c(NaN,NaN,NaN))
 test(6001.1910, frollapply(FUN=mean, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NaN,2.5))
 test(6001.1911, frollapply(FUN=mean, adaptive=TRUE, list(1:3,2:4), c(2,0,2)), list(c(NA, NaN, 2.5), c(NA, NaN, 3.5)))
 test(6001.1912, frollapply(FUN=mean, adaptive=TRUE, 1:3, list(c(2,0,2), c(0,2,0))), list(c(NA,NaN,2.5), c(NaN,1.5,NaN)))
 test(6001.1913, frollapply(FUN=mean, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,NaN,2.5), c(NaN,1.5,NaN), c(NA,NaN,3.5), c(NaN,2.5,NaN)))
+test(6001.1915, frollapply(FUN=mean, adaptive=TRUE, c(FALSE, TRUE, TRUE), c(2,0,2)), c(NA,NaN,1))
 test(6001.192, frollapply(FUN=mean, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NaN,2.5))
 test(6001.193, frollapply(FUN=mean, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,NaN,NA))
 test(6001.194, frollapply(FUN=mean, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,NaN,2))
 test(6001.195, frollapply(FUN=mean, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,NaN,2))
+test(6001.196, frollapply(FUN=mean, adaptive=TRUE, c(FALSE, TRUE, TRUE), c(2,0,2), fill=99), c(99,NaN,1))
 
 test(6001.211, frollsum(1:3, 0), c(0,0,0), options=c("datatable.verbose"=TRUE), output="window width of size 0")
 test(6001.212, frollsum(1:3, 0, fill=99), c(0,0,0))
@@ -1275,14 +1287,20 @@ test(6001.281, frollapply(FUN=sum, as.numeric(1:3), 0), c(0,0,0))
 test(6001.282, frollapply(FUN=sum, as.numeric(1:3), 0, fill=99), c(0,0,0))
 test(6001.283, frollapply(FUN=sum, c(1:2,NA_real_), 0), c(0,0,0))
 test(6001.284, frollapply(FUN=sum, c(1:2,NA_real_), 0, na.rm=TRUE), c(0,0,0))
+test(6001.285, frollapply(FUN=sum, c(FALSE, TRUE, TRUE), 0), c(0L,0L,0L))
+test(6001.286, frollapply(FUN=sum, 1:3, 0), c(0L,0L,0L))
 test(6001.2910, frollapply(FUN=sum, adaptive=TRUE, as.numeric(1:3), c(2,0,2)), c(NA,0,5))
 test(6001.2911, frollapply(FUN=sum, adaptive=TRUE, list(as.numeric(1:3), as.numeric(2:4)), c(2,0,2)), list(c(NA,0,5), c(NA,0,7)))
 test(6001.2912, frollapply(FUN=sum, adaptive=TRUE, as.numeric(1:3), list(c(2,0,2), c(0,2,0))), list(c(NA,0,5), c(0,3,0)))
 test(6001.2913, frollapply(FUN=sum, adaptive=TRUE, list(as.numeric(1:3), as.numeric(2:4)), list(c(2,0,2), c(0,2,0))), list(c(NA,0,5), c(0,3,0), c(NA,0,7), c(0,5,0)))
+test(6001.2914, frollapply(FUN=sum, adaptive=TRUE, c(FALSE, TRUE, TRUE), c(2,0,2)), c(NA,0L,2L))
+test(6001.2915, frollapply(FUN=sum, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,0L,5L))
 test(6001.292, frollapply(FUN=sum, adaptive=TRUE, as.numeric(1:3), c(2,0,2), fill=99), c(99,0,5))
 test(6001.293, frollapply(FUN=sum, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2)), c(NA,0,NA))
 test(6001.294, frollapply(FUN=sum, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE), c(NA,0,2))
 test(6001.295, frollapply(FUN=sum, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,0,2))
+test(6001.296, frollapply(FUN=sum, adaptive=TRUE, c(FALSE, TRUE, TRUE), c(2,0,2), fill=1L), c(1L,0L,2L))
+test(6001.297, frollapply(FUN=sum, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99L,0L,5L))
 
 test(6001.311, frollmax(1:3, 0), c(-Inf,-Inf,-Inf), options=c("datatable.verbose"=TRUE), output="window width of size 0")
 test(6001.312, frollmax(1:3, 0, fill=99), c(-Inf,-Inf,-Inf))
@@ -1373,6 +1391,247 @@ test(6001.592, frollapply(FUN=prod, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99
 test(6001.593, frollapply(FUN=prod, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,1,NA))
 test(6001.594, frollapply(FUN=prod, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,1,2))
 test(6001.595, frollapply(FUN=prod, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,1,2))
+
+test(6001.611, frollmedian(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.612, frollmedian(1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.613, frollmedian(c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.614, frollmedian(c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.615, frollmedian(1:3, 0, algo="exact"), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.616, frollmedian(c(1:2,NA), 0, algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.617, frollmedian(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.621, frollmedian(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA_real_,2.5))
+test(6001.6211, frollmedian(adaptive=TRUE, 1:3, c(2,0,2), has.nf=TRUE), c(NA,NA_real_,2.5), options=c("datatable.verbose"=TRUE), output="no NAs detected, redirecting to itself using")
+test(6001.6212, frollmedian(adaptive=TRUE, 1:3, c(0,0,0)), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="adaptive window width of size 0")
+test(6001.622, frollmedian(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA_real_,2.5))
+test(6001.623, frollmedian(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,NA_real_,NA))
+test(6001.624, frollmedian(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,NA_real_,2))
+test(6001.625, frollmedian(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,NA_real_,2.5))
+test(6001.626, frollmedian(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,NA_real_,2.5))
+test(6001.627, frollmedian(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA,NA_real_,NA))
+test(6001.628, frollmedian(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA,NA_real_,2))
+test(6001.629, frollmedian(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(1,NA_real_,2))
+test(6001.630, frollmedian(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA_real_,2))
+test(6001.681, frollapply(FUN=median, c(1,2,3), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.6811, frollapply(FUN=median, 1:3, 0), c(NA_integer_,NA_integer_,NA_integer_))
+test(6001.682, frollapply(FUN=median, c(1,2,3), 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.683, frollapply(FUN=median, c(1,2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.684, frollapply(FUN=median, c(1,2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.6910, frollapply(FUN=median, adaptive=TRUE, c(1,2,3), c(2,0,2)), c(NA,NA_real_,2.5))
+test(6001.6911, frollapply(FUN=median, adaptive=TRUE, list(c(1,2,3),c(2,3,4)), c(2,0,2)), list(c(NA, NA_real_, 2.5), c(NA, NA_real_, 3.5)))
+test(6001.6912, frollapply(FUN=median, adaptive=TRUE, c(1,2,3), list(c(2,0,2), c(0,2,0))), list(c(NA,NA_real_,2.5), c(NA_real_,1.5,NA_real_)))
+test(6001.6913, frollapply(FUN=median, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,NA_real_,2.5), c(NA_real_,1.5,NA_real_), c(NA,NA_real_,3.5), c(NA_real_,2.5,NA_real_))) ## simplifylist
+test(6001.692, frollapply(FUN=median, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA_real_,2.5)) ## simplifylist
+test(6001.6921, frollapply(FUN=median, adaptive=TRUE, c(1L,2L,4L), c(2,0,2), fill=99L), c(99,NA_real_,3)) ## fill coerced to results type
+test(6001.6922, frollapply(FUN=median, adaptive=TRUE, c(1L,2L,3L), c(2,0,2), fill=99), c(99,NA_real_,2.5)) ## simplifylist handle non-type stable output for median(1:3) median(1:2)
+test(6001.693, frollapply(FUN=median, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA,NA_integer_,NA))
+test(6001.694, frollapply(FUN=median, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA,NA_integer_,2L))
+test(6001.695, frollapply(FUN=median, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(1,NA_real_,2))
+
+test(6001.711, frollvar(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.712, frollvar(1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.713, frollvar(c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.714, frollvar(c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.715, frollvar(1:3, 0, algo="exact"), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.716, frollvar(c(1:2,NA), 0, algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.717, frollvar(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.718, frollvar(c(1:2,NA), 2), c(NA,0.5,NA), options=c("datatable.verbose"=TRUE), output="redirecting to frollvarExact")
+test(6001.721, frollvar(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,0.5), options=c("datatable.verbose"=TRUE), output="not implemented, fall back to")
+test(6001.722, frollvar(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,0.5))
+test(6001.723, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.724, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.7241, frollvar(adaptive=TRUE, c(1:2,NA), c(2,2,2), has.nf=FALSE), c(NA_real_,0.5,NA_real_), warning="used but non-finite values are present in input")
+test(6001.7242, frollvar(adaptive=TRUE, c(1:2,NA), c(2,2,2)), c(NA_real_,0.5,NA_real_), options=c("datatable.verbose"=TRUE), output="propagates NFs properply, no need to re-run")
+test(6001.7243, frollvar(adaptive=TRUE, c(1:2,NA), c(2,2,2), na.rm=TRUE), c(NA_real_,0.5,NA_real_), options=c("datatable.verbose"=TRUE), output="re-running with extra care for NFs")
+test(6001.725, frollvar(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,NA,0.5))
+test(6001.726, frollvar(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,NA,0.5))
+test(6001.727, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.728, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.729, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.730, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA,NA))
+y = c(1e8+2.980232e-8, 1e8, 1e8, 1e8) # CLAMP0 test
+test(6001.731, frollvar(y, 3)[4L], 0)
+test(6001.732, frollsd(y, 3)[4L], 0)
+test(6001.733, frollvar(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
+test(6001.734, frollsd(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
+test(6001.740, frollvar(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.25,NA), c(NA,NA,0.25,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # ensure no nested parallelism in rolling functions #7352
+test(6001.741, frollsd(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.5,NA), c(NA,NA,0.5,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+test(6001.742, frollvar(c(1.5,2.5,2,1.5), c(3,3)), list(c(NA,NA,0.25,0.25), c(NA,NA,0.25,0.25)), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # no NA - no fallback to exact
+test(6001.743, frollsd(c(1.5,2.5,2,1.5), c(3,3)), list(c(NA,NA,0.5,0.5), c(NA,NA,0.5,0.5)), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+test(6001.744, frollvar(c(1.5,2.5,2,NA), 3), c(NA,NA,0.25,NA), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # not vectorized - no outer parallelism
+test(6001.745, frollsd(c(1.5,2.5,2,NA), 3), c(NA,NA,0.5,NA), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+test(6001.750, frollvar(c(1.5,2.5,2,1.5), rep(3,4), adaptive=TRUE), c(NA,NA,0.25,0.25), output="sequentially because adaptive=TRUE is already parallelised within each rolling computation", options=c(datatable.verbose=TRUE)) # adaptive also disables outer parallelism
+test(6001.781, frollapply(FUN=var, 1:3, 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.782, frollapply(FUN=var, 1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.783, frollapply(FUN=var, c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.784, frollapply(FUN=var, c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.7910, frollapply(FUN=var, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,0.5))
+test(6001.7911, frollapply(FUN=var, adaptive=TRUE, list(1:3,2:4), c(2,0,2)), list(c(NA,NA,0.5), c(NA,NA,0.5)))
+test(6001.7912, frollapply(FUN=var, adaptive=TRUE, 1:3, list(c(2,0,2), c(0,2,0))), list(c(NA,NA,0.5), c(NA,0.5,NA)))
+test(6001.7913, frollapply(FUN=var, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,NA,0.5), c(NA,0.5,NA), c(NA,NA,0.5), c(NA,0.5,NA)))
+test(6001.792, frollapply(FUN=var, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,0.5))
+test(6001.793, frollapply(FUN=var, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.794, frollapply(FUN=var, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.795, frollapply(FUN=var, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+
+test(6001.810, frollsd(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="frollsdFast: calling sqrt(frollvarFast(...))")
+test(6001.811, frollsd(1:3, 0), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.812, frollsd(1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.813, frollsd(c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.814, frollsd(c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.815, frollsd(1:3, 0, algo="exact"), c(NA_real_,NA_real_,NA_real_), options=c("datatable.verbose"=TRUE), output="window width of size 0")
+test(6001.816, frollsd(c(1:2,NA), 0, algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.817, frollsd(c(1:2,NA), 0, algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.818, frollsd(c(1:2,NA), 2), c(NA,sqrt(0.5),NA), options=c("datatable.verbose"=TRUE), output="redirecting to frollvarExact")
+test(6001.8191, frollsd(1:3, 2, fill=99), c(99,sqrt(0.5),sqrt(0.5)))
+test(6001.8192, frollsd(1:3, 2, fill=99, algo="exact"), c(99,sqrt(0.5),sqrt(0.5)))
+test(6001.8193, frollsd(c(1:2,NA), 2, has.nf=FALSE), c(NA,sqrt(0.5),NA), warning="used but non-finite values are present in input")
+test(6001.8194, frollsd(c(NA,2:3), 2, has.nf=FALSE), c(NA,NA,sqrt(0.5)), warning="used but non-finite values are present in input")
+test(6001.8195, frollsd(c(NA,2:3), 2), c(NA,NA,sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="skip non-finite inaware attempt and run with extra care")
+test(6001.8196, frollsd(c(NA,2:3), 2, has.nf=FALSE, algo="exact"), c(NA,NA,sqrt(0.5)), warning="used but non-finite values are present in input")
+test(6001.8197, frollsd(c(NA,2:3), 2, algo="exact", na.rm=TRUE), c(NA,NA,sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="re-running with extra care for NF")
+test(6001.8201, frollsd(adaptive=TRUE, 1:3, c(2,2,2)), c(NA,sqrt(0.5),sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6001.8202, frollsd(adaptive=TRUE, 1:3, c(2,2,2)), c(NA,sqrt(0.5),sqrt(0.5)), options=c("datatable.verbose"=TRUE), output="frolladaptivesdExact: calling sqrt(frolladaptivevarExact(...))")
+test(6001.821, frollsd(adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,sqrt(0.5)))
+test(6001.822, frollsd(adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,sqrt(0.5)))
+test(6001.823, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.824, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.825, frollsd(adaptive=TRUE, 1:3, c(2,0,2), algo="exact"), c(NA,NA,sqrt(0.5)))
+test(6001.826, frollsd(adaptive=TRUE, 1:3, c(2,0,2), fill=99, algo="exact"), c(99,NA,sqrt(0.5)))
+test(6001.827, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA_real_,NA_real_,NA_real_))
+test(6001.828, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.829, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.830, frollsd(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA,NA))
+test(6001.881, frollapply(FUN=sd, 1:3, 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.882, frollapply(FUN=sd, 1:3, 0, fill=99), c(NA_real_,NA_real_,NA_real_))
+test(6001.883, frollapply(FUN=sd, c(1:2,NA), 0), c(NA_real_,NA_real_,NA_real_))
+test(6001.884, frollapply(FUN=sd, c(1:2,NA), 0, na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.8910, frollapply(FUN=sd, adaptive=TRUE, 1:3, c(2,0,2)), c(NA,NA,sqrt(0.5)))
+test(6001.8911, frollapply(FUN=sd, adaptive=TRUE, list(1:3,2:4), c(2,0,2)), list(c(NA,NA,sqrt(0.5)), c(NA,NA,sqrt(0.5))))
+test(6001.8912, frollapply(FUN=sd, adaptive=TRUE, 1:3, list(c(2,0,2), c(0,2,0))), list(c(NA,NA,sqrt(0.5)), c(NA,sqrt(0.5),NA)))
+test(6001.8913, frollapply(FUN=sd, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2), c(0,2,0))), list(c(NA,NA,sqrt(0.5)), c(NA,sqrt(0.5),NA), c(NA,NA,sqrt(0.5)), c(NA,sqrt(0.5),NA)))
+test(6001.892, frollapply(FUN=sd, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA,sqrt(0.5)))
+test(6001.893, frollapply(FUN=sd, adaptive=TRUE, c(1:2,NA), c(2,0,2)), c(NA_real_,NA_real_,NA_real_))
+test(6001.894, frollapply(FUN=sd, adaptive=TRUE, c(1:2,NA), c(2,0,2), na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
+test(6001.895, frollapply(FUN=sd, adaptive=TRUE, c(1:2,NA_real_), c(2,0,2), na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
+
+# frollmedian
+rollmedian = function(x, k, na.rm=FALSE) {
+  ans = rep(NA_real_, length(x))
+  for (i in k:length(x)) ans[i] = median(x[(i-k+1L):(i)], na.rm=na.rm)
+  ans
+} ## used for dput
+options(datatable.verbose=TRUE)
+x = c(5, 1, 2, 2.5, 1.5, 4, 4.5, 0.5, 3.5, 3) ## escape for n < 3
+test(6004.001, frollmedian(x, 1), c(5, 1, 2, 2.5, 1.5, 4, 4.5, 0.5, 3.5, 3), output="window width of size 1, skip median and use simple loop")
+test(6004.002, frollmedian(x, 2), c(NA, 3, 1.5, 2.25, 2, 2.75, 4.25, 2.5, 2, 3.25), output="window width of size 2, skip median and use simple loop")
+x = c(5, 1, NA, 2.5, 1.5, 4, NA, NA, 3.5, 3)
+test(6004.003, frollmedian(x, 1), c(5, 1, NA, 2.5, 1.5, 4, NA, NA, 3.5, 3), output="window width of size 1, skip median and use simple loop")
+test(6004.004, frollmedian(x, 2), c(NA, 3, NA, NA, 2, 2.75, NA, NA, NA, 3.25), output="window width of size 2, skip median and use simple loop")
+test(6004.005, frollmedian(x, 1, na.rm=TRUE), c(5, 1, NA, 2.5, 1.5, 4, NA, NA, 3.5, 3), output="window width of size 1, skip median and use simple loop")
+test(6004.006, frollmedian(x, 2, na.rm=TRUE), c(NA, 3, 1, 2.5, 2, 2.75, 4, NA, 3.5, 3.25), output="window width of size 2, skip median and use simple loop")
+x = c(5, 1, Inf, 2.5, 1.5, 4, Inf, -Inf, 3.5, 3)
+test(6004.007, frollmedian(x, 1), c(5, 1, Inf, 2.5, 1.5, 4, Inf, -Inf, 3.5, 3), output="window width of size 1, skip median and use simple loop")
+test(6004.008, frollmedian(x, 2), c(NA, 3, Inf, Inf, 2, 2.75, Inf, NaN, -Inf, 3.25), output="window width of size 2, skip median and use simple loop")
+test(6004.011, frollmedian(1:9, 3), as.double(c(NA,NA,2:8)), output="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data")
+test(6004.012, frollmedian(1:10, 3), as.double(c(NA,NA,2:9)), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data", output="padding with 2 elements")
+test(6004.013, frollmedian(1:8, 4), c(NA, NA, NA, 2.5, 3.5, 4.5, 5.5, 6.5), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data")
+test(6004.014, frollmedian(c(NA,2:9), 3), as.double(c(NA,NA,NA,3:8)), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data", output="NAs detected")
+test(6004.015, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="NAs detected, fall back to frollmedianExact\nfrollmedianExact: running in parallel for input length 6, window 3, hasnf 1, narm 0")
+test(6004.016, frollmedian(c(1,2,3,4,5,6), 3), c(NA, NA, 2, 3, 4, 5), output="sequentially as there is only single rolling computation.*finding order and initializing links for 2 blocks in parallel took")
+test(6004.017, frollmedian(c(1,2,3,4,5,6), c(3,3)), list(c(NA, NA, 2, 3, 4, 5), c(NA, NA, 2, 3, 4, 5)), output="in parallel.*finding order and initializing links for 2 blocks sequentially took", notOutput="finding order and initializing links for 2 blocks in parallel took")
+options(datatable.verbose=FALSE)
+test(6004.021, frollmedian(c(1,2,3,4,NA,6), 3, has.nf=FALSE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6004.022, frollmedian(c(1,2,3,4,NA,6), 3, algo="exact", has.nf=FALSE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6004.023, frollmedian(c(1,2,3,4,NA,6), rep(3, 6), has.nf=FALSE, adaptive=TRUE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6004.024, frollmedian(c(1,2,3,4,NA,6), rep(3, 6), algo="exact", has.nf=FALSE, adaptive=TRUE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6004.025, frollmedian(1:3, 2, has.nf=TRUE, algo="exact"), c(NA,1.5,2.5), options=c("datatable.verbose"=TRUE), output="no NAs detected, redirecting to itself using")
+# codecov
+test(6004.0261, frollmedian(9:1, 3), c(NA, NA, 8, 7, 6, 5, 4, 3, 2))
+test(6004.0262, frollmedian(rep(2,8), 4), c(NA, NA, NA, 2, 2, 2, 2, 2))
+
+x = 1:6/2
+test(6004.031, frollmedian(x, 3), c(NA,NA,1,1.5,2,2.5))
+test(6004.032, frollmedian(x, c(2L, 2L, 3L, 4L, 2L, 3L), adaptive=TRUE), c(NA, 0.75, 1, 1.25, 2.25, 2.5))
+options(datatable.verbose=TRUE)
+test(6004.033, frollmedian(1:3, 2), c(NA, 1.5, 2.5), output="frollmedianFast: running for input length")
+test(6004.034, frollmedian(1:3, c(2,2,2), adaptive=TRUE), c(NA, 1.5, 2.5), output="frolladaptivemedianExact: running in parallel")
+options(datatable.verbose=FALSE)
+test(6004.035, frollmedian(rep(NA_real_, 9), 3), rep(NA_real_, 9))
+test(6004.036, frollmedian(rep(NA_real_, 10), 3), rep(NA_real_, 10))
+test(6004.037, frollmedian(rep(NA_real_, 10), 4), rep(NA_real_, 10))
+test(6004.038, frollmedian(rep(NA_real_, 12), 4), rep(NA_real_, 12))
+d = as.data.table(list(1:6/2, 3:8/4))
+test(6004.039, frollmedian(d, 3:4), list(c(NA, NA, 1, 1.5, 2, 2.5), c(NA, NA, NA, 1.25, 1.75, 2.25), c(NA, NA, 1, 1.25, 1.5, 1.75), c(NA, NA, NA, 1.125, 1.375, 1.625)))
+
+x = c(1,2,3,4,NA,6)
+k = 3
+test(6004.101, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA))
+test(6004.102, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 5))
+test(6004.103, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, 2, 3, NA, NA))
+test(6004.104, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, 2, 3, 3.5, 5))
+x = c(1,2,3,4,NA,NA,6)
+k = 3
+test(6004.105, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA))
+test(6004.106, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, 6))
+test(6004.107, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, 2, 3, NA, NA, NA))
+test(6004.108, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, 2, 3, 3.5, 4, 6))
+x = c(1,2,3,4,NA,6)
+k = 4
+test(6004.109, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA))
+test(6004.110, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 4))
+test(6004.111, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, NA, 2.5, NA, NA))
+test(6004.112, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, NA, 2.5, 3, 4))
+x = c(1,2,3,4,NA,NA,6)
+k = 4
+test(6004.113, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA))
+test(6004.114, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 5))
+test(6004.115, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, NA, 2.5, NA, NA, NA))
+test(6004.116, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, NA, 2.5, 3, 3.5, 5))
+x = c(1,2,3,4,NA,NA,NA,NA,6)
+k = 3
+test(6004.117, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA, NA, NA))
+test(6004.118, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, NA, NA, 6))
+test(6004.119, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, 2, 3, NA, NA, NA, NA, NA))
+test(6004.120, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, 2, 3, 3.5, 4, NA, NA, 6))
+k = 4
+test(6004.121, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA, NA, NA))
+test(6004.122, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 4, NA, 6))
+test(6004.123, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, NA, 2.5, NA, NA, NA, NA, NA))
+test(6004.124, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, NA, 2.5, 3, 3.5, 4, NA, 6))
+x = rep(NA_real_,10)
+k = 3
+test(6004.125, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
+test(6004.126, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+test(6004.127, frollmedian(x, k, na.rm=FALSE, algo="exact"), rep(NA_real_,10))
+test(6004.128, frollmedian(x, k, na.rm=TRUE, algo="exact"), rep(NA_real_,10))
+k = 4
+test(6004.129, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
+test(6004.130, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+test(6004.131, frollmedian(x, k, na.rm=FALSE, algo="exact"), rep(NA_real_,10))
+test(6004.132, frollmedian(x, k, na.rm=TRUE, algo="exact"), rep(NA_real_,10))
+
+## bigger sets for uneven k vs stats::runmed Turlach
+runmedr = function(x, k) {
+  ans = stats::runmed(x, k, algorithm="Turlach")
+  h = (k-1L)/2L
+  n = length(x)
+  c(rep(NA_real_, k-1L), ans[-c(1:h, (n-h+1L):n)])
+}
+set.seed(108)
+x = rnorm(1e4)
+n = 11
+test(6004.951, frollmedian(x, n), runmedr(x, n))
+n = 101
+test(6004.952, frollmedian(x, n), runmedr(x, n))
+n = 1001
+test(6004.953, frollmedian(x, n), runmedr(x, n))
+x = rnorm(1e5)
+n = 101
+test(6004.954, frollmedian(x, n), runmedr(x, n))
+n = 1001
+test(6004.955, frollmedian(x, n), runmedr(x, n))
+#n = 10001 ## too long
+#test(6004.956, frollmedian(x, n), runmedr(x, n))
 
 ## partial
 x = 1:6/2
@@ -1580,9 +1839,9 @@ test(6010.103, frollapply(c(1,2,1,1,1,2,3,2), 3, uniqueN), c(NA,NA,2L,2L,1L,2L,3
 test(6010.104, frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE))
 f = function(x) {
   n = length(x) # double type will be returned only for first iteration
-  if (n==x[n]) 1 else NA # NA logical coerced properly
+  if (n==x[n]) 1 else NA
 }
-test(6010.105, frollapply(1:5, 3, f), c(NA,NA,1,NA,NA))
+test(6010.105, frollapply(1:5, 3, f), list(NA,NA,1,NA,NA)) ## this demands user to write type aware NA inside FUN, which is mentioned as recommendation in ?frollapply
 
 ## partial
 x = 1:6/2
@@ -1685,9 +1944,9 @@ test(6010.542, frollapply(1:2, 2, sum, adaptive=NA), error="must be TRUE or FALS
 test(6010.543, frollapply(1:2, 2, sum, partial=NA), error="must be TRUE or FALSE")
 test(6010.544, frollapply(1:2, 2, sum, give.names=NA), error="must be TRUE or FALSE")
 test(6010.545, frollapply(1:2, 2, sum, simplify=NA), error="must be TRUE or FALSE or a function")
-test(6010.561, frollapply(x=1:2, N=2, FUN=sum), c(NA,3L), warning="'x' is deprecated in frollapply, use 'X' instead")
-test(6010.562, frollapply(X=1:2, n=2, FUN=sum), c(NA,3L), warning="'n' is deprecated in frollapply, use 'N' instead")
-test(6010.563, frollapply(x=1:2, n=2, FUN=sum), c(NA,3L), warning=c("'x' is deprecated in frollapply, use 'X' instead","'n' is deprecated in frollapply, use 'N' instead"))
+test(6010.561, frollapply(x=1:2, N=2, FUN=sum), error="'x' is deprecated in frollapply, use 'X' instead")
+test(6010.562, frollapply(X=1:2, n=2, FUN=sum), error="'n' is deprecated in frollapply, use 'N' instead")
+# 6010.563 tested both x= and n= resulting in 2 warnings, but with errors, that's not very useful.
 test(6010.564, frollapply(1:2, c("a","a"), length, adaptive=TRUE), error="'N' must be an integer vector or list of integer vectors")
 test(6010.565, frollapply(1:2, list(c("a","a")), length, adaptive=TRUE), error="'N' must be an integer vector or list of integer vectors")
 test(6010.566, frollapply(1:2, 2, length, by.column=FALSE), error="frollapply by.column=FALSE requires 'X' argument to be")
@@ -1737,8 +1996,15 @@ test(6010.621, as.data.table(iris)[, "flow" := frollapply(.(Sepal.Length, Sepal.
 test(6010.622, as.data.table(iris)[, "flow" := frollapply(data.frame(Sepal.Length, Sepal.Width), 2L, flow, by.column=FALSE), by = Species]$flow[idx], ans)
 test(6010.623, as.data.table(iris)[, "flow" := unlist(lapply(split(data.frame(Sepal.Length, Sepal.Width), Species), frollapply, 2L, flow, by.column=FALSE))]$flow[idx], ans)
 f = function(l) as.list(range(l[[1L]])-range(l[[2L]]))
-test(6010.624, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), data.table(V1=c(NA,-3L,-2L,0L,1L), V2=c(NA,-3L,-2L,0L,1L)))
-test(6010.625, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), data.table(V1=c(-3L,-1L,2L,NA,NA), V2=c(-3L,-1L,2L,NA,NA)))
+test(6010.624, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), list(list(NA, NA), list(-3L, -3L), list(-2L, -2L), list(0L, 0L), list(1L, 1L)))
+test(6010.6241, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE), data.table(V1=c(NA,-3L,-2L,0L,1L), V2=c(NA,-3L,-2L,0L,1L)))
+f = function(l) range(l[[1L]])-range(l[[2L]])
+test(6010.6242, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, adaptive=TRUE, by.column=FALSE), data.table(V1=c(NA,-3L,-2L,0L,1L), V2=c(NA,-3L,-2L,0L,1L)))
+f = function(l) as.list(range(l[[1L]])-range(l[[2L]]))
+test(6010.625, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE, fill=list(NA,NA)), list(list(-3L, -3L), list(-1L, -1L), list(2L, 2L), list(NA, NA), list(NA, NA)))
+test(6010.6251, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE), data.table(V1 = c(-3L, -1L, 2L, NA, NA), V2 = c(-3L, -1L, 2L, NA, NA)))
+f = function(l) range(l[[1L]])-range(l[[2L]])
+test(6010.6252, frollapply(list(1:5, 5:1), c(2,2,3,3,4), f, align="left", adaptive=TRUE, by.column=FALSE), data.table(V1=c(-3L,-1L,2L,NA,NA), V2=c(-3L,-1L,2L,NA,NA)))
 #### list of df/lists
 x = list(data.table(x=1:2, y=2:3), data.table(z=3:5))
 test(6010.631, frollapply(x, 2, tail, 1, by.column=FALSE, fill=data.table(), simplify=function(x) rbindlist(x, fill=TRUE)), list(data.table(x=2L, y=3L), data.table(z=4:5)))
@@ -1773,7 +2039,14 @@ test(6010.705, frollapply(1:5, 2, range, simplify=FALSE), list(NA,1:2,2:3,3:4,4:
 test(6010.706, frollapply(1:5, 2, range, fill=c(NA_integer_,NA_integer_)), data.table(V1=c(NA,1:4), V2=c(NA,2:5)))
 test(6010.707, frollapply(1:5, 2, range, fill=c(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
 test(6010.708, frollapply(1:5, 2, range, fill=c(min=NA_integer_, max=NA_integer_), simplify=function(x) rbindlist(lapply(x, as.list))), data.table(min=c(NA,1:4), max=c(NA,2:5)))
-test(6010.709, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7091, frollapply(1:5, 2, function(x) as.list(range(x))), data.table(c(NA,1:4), c(NA,2:5)))
+test(6010.7092, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7093, frollapply(1:5, 2, function(x) as.list(setNames(range(x), c("min","max")))), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7094, frollapply(1:5, 2, function(x) as.list(setNames(range(x), c("v1","v2"))), fill=list(min=NA_integer_, max=NA_integer_)), list(list(min = NA_integer_, max = NA_integer_), list(v1 = 1L, v2 = 2L), list(v1 = 2L, v2 = 3L), list(v1 = 3L, v2 = 4L), list(v1 = 4L, v2 = 5L)))
+test(6010.7095, frollapply(1:5, 2, function(x) range(x)), data.table(c(NA,1:4), c(NA,2:5)))
+test(6010.7096, frollapply(1:5, 2, function(x) range(x), fill=c(min=NA_integer_, max=NA_integer_)), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7097, frollapply(1:5, 2, function(x) setNames(range(x), c("min","max"))), data.table(min=c(NA,1:4), max=c(NA,2:5)))
+test(6010.7098, frollapply(1:5, 2, function(x) setNames(range(x), c("v1","v2")), fill=c(min=NA_integer_, max=NA_integer_)), list(c(min = NA_integer_, max = NA_integer_), c(v1=1L, v2=2L), c(v1=2L, v2=3L), c(v1=3L, v2=4L), c(v1=4L, v2=5L)))
 test(6010.710, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(min=NA_integer_, max=NA_integer_), simplify=rbindlist), data.table(min=c(NA,1:4), max=c(NA,2:5)))
 test(6010.711, frollapply(1:5, 2, function(x) as.list(range(x)), fill=list(NA_integer_, NA_integer_), simplify=FALSE), list(list(NA_integer_, NA_integer_), as.list(1:2), as.list(2:3), as.list(3:4), as.list(4:5)))
 test(6010.712, as.null(frollapply(1:3, 1, function(x) if (x==1L) sum else if (x==2L) mean else `[`, simplify=TRUE)), NULL) ## as.null as we are only interested in codecov here
@@ -1783,41 +2056,45 @@ test(6010.751, frollapply(FUN=median, adaptive=TRUE, list(1:3,2:4), list(c(2,0,2
 test(6010.752, frollapply(FUN=median, adaptive=TRUE, 1:3, c(2,0,2), fill=99), c(99,NA_real_,2.5))
 test(6010.753, frollapply(FUN=median, adaptive=TRUE, c(1L,2L,4L), c(2,0,2), fill=99L), c(99,NA_real_,3))
 test(6010.754, frollapply(FUN=median, adaptive=TRUE, c(1L,2L,3L), c(2,0,2), fill=99), c(99,NA_real_,2.5))
-test(6010.755, frollapply(1:2, 1, function(i) if (i==1L) 1L else FALSE), c(1L,0L))
-test(6010.756, frollapply(1:3, 2, fill=9, function(i) if (i[1L]==1L) 1L else FALSE), c(9L,1L,0L)) ## matches fun answer
-test(6010.757, frollapply(1:3, 2, fill=9L, function(i) if (i[1L]==1L) 1 else FALSE), c(9,1,0)) ## matches fun answer
-test(6010.758, frollapply(1:3, 2, fill=0, function(i) TRUE), c(FALSE,TRUE,TRUE)) ## matches fun answer
+test(6010.755, frollapply(1:2, 1, function(i) if (i==1L) 1L else NA), list(1L,NA))
+test(6010.756, frollapply(1:3, 2, fill=9, function(i) if (i[1L]==1L) 1L else NA), list(9,1L,NA))
+test(6010.757, frollapply(1:3, 2, fill=9, function(i) if (i[1L]==1L) 1L else 2L), c(9L,1L,2L)) ## matches fun answer
+test(6010.758, frollapply(1:3, 2, fill=9L, function(i) if (i[1L]==1L) 1 else FALSE), list(9L,1,FALSE))
+test(6010.759, frollapply(1:3, 2, fill=0, function(i) TRUE), list(0,TRUE,TRUE))
+test(6010.760, frollapply(1:3, 2, function(x) c(a=x), fill=0), list(0L, c(a1=1L,a2=2L), c(a1=2L,a2=3L)))
+test(6010.7601, frollapply(1:3, 2, function(x) c(a=x), fill=c(0,0)), data.table(a1=0:2, a2=c(0L,2:3)))
 
 #### mutlithreading throttle caveats from manual: copy, fixing .internal.selfref
 use.fork = .Platform$OS.type!="windows" && getDTthreads()>1L
 if (use.fork) {
-  setDTthreads(throttle=1) ## disable throttle
   old = setDTthreads(1)
   test(6010.761, frollapply(c(1, 9), N=1L, FUN=identity), c(9,9)) ## unexpected
   test(6010.762, frollapply(c(1, 9), N=1L, FUN=list), data.table(V1=c(9,9))) ## unexpected
-  setDTthreads(2)
+  setDTthreads(2, throttle=1) ## disable throttle
   test(6010.763, frollapply(c(1, 9), N=1L, FUN=identity), c(1,9)) ## good only because threads >= input
   test(6010.764, frollapply(c(1, 5, 9), N=1L, FUN=identity), c(5,5,9)) ## unexpected again
-  is.ok = function(x) {stopifnot(is.data.table(x)); capture.output(print(attr(x, ".internal.selfref", TRUE)))!="<pointer: (nil)>"}
+  ans = frollapply(1:2, 2, data.table)
+  is.ok = function(x) {stopifnot(is.data.table(x)); out=capture.output(print(attr(x, ".internal.selfref", TRUE))); out!="<pointer: (nil)>" && out!="<pointer: 0x0>"}
+  test(6010.769, .selfref.ok(ans)) ## frollapply will fix DT in most cases
   ans = frollapply(1:2, 2, data.table, simplify=FALSE) ## default: fill=NA
-  test(6010.770, is.ok(ans[[2L]])) ## frollapply detected DT and fixed
-  ans = frollapply(1:2, 2, data.table, fill=data.table(NA)) ## fill type match
-  test(6010.771, is.ok(ans)) ## simplify=TRUE did run rbindlist, but frollapply fixed anyway
-  ans = frollapply(1:2, 2, data.table, fill=data.table(NA), simplify=FALSE)
-  test(6010.772, is.ok(ans[[2L]]))
+  test(6010.770, .selfref.ok(ans[[2L]])) ## frollapply detected DT and fixed
+  ans = frollapply(1:2, 2, data.table, fill=data.table(c(NA,NA))) ## fill size match
+  test(6010.771, .selfref.ok(ans)) ## simplify=TRUE did run rbindlist, but frollapply fixed anyway
+  ans = frollapply(1:2, 2, data.table, fill=data.table(NA)) ## fill size not match, no rbindlist, but frollapply fixed anyway
+  test(6010.772, .selfref.ok(ans[[2L]]))
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
-  test(6010.773, !is.ok(ans[[2L]][[1L]]))
+  test(6010.773, !.selfref.ok(ans[[2L]][[1L]]))
   test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
   ans = lapply(ans, lapply, setDT)
-  test(6010.774, is.ok(ans[[2L]][[1L]])) ## fix after
+  test(6010.774, .selfref.ok(ans[[2L]][[1L]])) ## fix after
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=function(x) lapply(x, lapply, setDT))
-  test(6010.775, is.ok(ans[[2L]][[1L]])) ## fix inside frollapply via simplify
+  test(6010.775, .selfref.ok(ans[[2L]][[1L]])) ## fix inside frollapply via simplify
   f = function(x) (if (x[1L]==1L) data.frame else data.table)(x) ## automatic fix may not work for a non-type stable function
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=FALSE)
-  test(6010.776, !is.ok(ans[[3L]]))
+  test(6010.776, !.selfref.ok(ans[[3L]]))
   ans = frollapply(1:3, 2, f, fill=data.table(NA), simplify=function(x) lapply(x, function(y) if (is.data.table(y)) setDT(y) else y))
-  test(6010.777, is.ok(ans[[3L]])) ## fix inside frollapply via simplify
-  setDTthreads(throttle=1024) ## re-enable throttle
+  test(6010.777, .selfref.ok(ans[[3L]])) ## fix inside frollapply via simplify
+  setDTthreads(old, throttle=1024) ## re-enable throttle
 }
 
 ## partial adaptive
@@ -2036,273 +2313,3 @@ test(6015.907, frolladapt(c(1L,3L,2L), 2L), error="be sorted, have no duplicates
 test(6015.908, frolladapt(c(1L,2L,2L), 2L), error="be sorted, have no duplicates, have no NAs")
 test(6015.909, frolladapt(c(1L,2L,NA_integer_), 2L), error="be sorted, have no duplicates, have no NAs") ## loop that checks for sorted will detect NAs as well, except for first element
 test(6015.910, frolladapt(c(NA_integer_,1L,2L), 2L), error="be sorted, have no duplicates, have no NAs") ## first NA is detected by extra check
-
-## batch validation
-set.seed(108)
-makeNA = function(x, ratio=0.1, nf=FALSE) {
-  n = as.integer(length(x) * ratio)
-  id = sample(length(x), n)
-  if (!nf) {
-    x[id] = NA
-  } else {
-    x[id[1:(n/4)]] = NA
-    x[id[(n/4+1):(n/2)]] = NaN
-    x[id[(n/2+1):(3*n/4)]] = -Inf
-    x[id[(3*n/4+1):n]] = +Inf
-  }
-  x
-}
-## against base to verify exactness of non-finite values, not handled in zoo
-rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=FALSE) {
-  ans = rep(fill, nx<-length(x))
-  f = match.fun(FUN)
-  if (nf.rm) x[is.infinite(x)] = NA_real_
-  for (i in seq_along(x)) {
-    ans[i] = if (n==0)
-      f(x[integer()], na.rm=na.rm)
-    else if (i >= n)
-      f(x[(i-n+1L):i], na.rm=na.rm)
-    else if (partial)
-      f(x[max((i-n+1), 1L):i], na.rm=na.rm)
-    else
-      as.double(fill)
-  }
-  ans
-}
-base_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
-  num.step = 0.001
-  for (fun in funs) {
-    for (na.rm in c(FALSE, TRUE)) {
-      for (fill in c(NA_real_, 0)) {
-        for (partial in c(FALSE,TRUE)) {
-          for (has.nf in c(NA,TRUE,FALSE)) {
-            if (identical(has.nf, FALSE)) {
-              if (na.rm)
-                next ## errors "not make sense"
-              if (any(!is.finite(x)))
-                next ## do not test warnings (mean, sum) or incorrect expect results (max)
-            }
-            for (algo in algos) {
-              num <<- num + num.step
-              eval(substitute( # so we can have values displayed in output/log rather than variables
-                test(.num, ignore.warning="no non-missing arguments",
-                     rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, partial=.partial),
-                     froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
-                list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
-              ))
-            }
-          }
-          num <<- num + num.step
-          eval(substitute( # so we can have values displayed in output/log rather than variables
-            test(.num, ignore.warning="no non-missing arguments",
-                 frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, partial=.partial),
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, partial=.partial)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .partial=partial)
-          ))
-        }
-      }
-    }
-  }
-}
-num = 7001.0
-## random NA non-finite
-x = makeNA(rnorm(1e3), nf=TRUE); n = 50
-base_compare(x, n)
-x = makeNA(rnorm(1e3+1), nf=TRUE); n = 50
-base_compare(x, n)
-x = makeNA(rnorm(1e3), nf=TRUE); n = 51
-base_compare(x, n)
-x = makeNA(rnorm(1e3+1), nf=TRUE); n = 51
-base_compare(x, n)
-x = makeNA(rnorm(1e3), nf=TRUE); n = 0
-base_compare(x, n)
-
-#### against zoo
-if (requireNamespace("zoo", quietly=TRUE)) {
-  drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
-    num.step = 0.0001
-    #### fun, align, na.rm, fill, algo, partial
-    for (fun in funs) {
-      for (align in c("right","center","left")) {
-        for (na.rm in c(FALSE, TRUE)) {
-          for (fill in c(NA_real_, 0)) {
-            for (partial in c(FALSE,TRUE)) {
-              if (partial && align=="center")
-                next ## not implemented
-              for (has.nf in c(NA,TRUE,FALSE)) {
-                if (identical(has.nf, FALSE)) {
-                  if (na.rm)
-                    next ## errors "not make sense"
-                  if (any(!is.finite(x)))
-                    next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
-                }
-                for (algo in algos) {
-                  num <<- num + num.step
-                  eval(substitute( # so we can have values displayed in output/log rather than variables
-                    test(.num, ignore.warning="no non-missing arguments",
-                         drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
-                         froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
-                    list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
-                  ))
-                }
-              }
-              num <<- num + num.step
-              eval(substitute( # so we can have values displayed in output/log rather than variables
-                test(.num, ignore.warning="no non-missing arguments",
-                     frollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
-                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, partial=.partial)),
-                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .partial=partial)
-              ))
-            }
-          }
-        }
-      }
-    }
-  }
-  num = 7002.0
-  ## no NA
-  x = rnorm(1e3); n = 50 # x even, n even
-  zoo_compare(x, n)
-  x = rnorm(1e3+1); n = 50 # x odd, n even
-  zoo_compare(x, n)
-  x = rnorm(1e3); n = 51 # x even, n odd
-  zoo_compare(x, n)
-  x = rnorm(1e3+1); n = 51 # x odd, n odd
-  zoo_compare(x, n)
-  ## leading and trailing NAs
-  x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = 50
-  zoo_compare(x, n)
-  x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = 50
-  zoo_compare(x, n)
-  x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = 51
-  zoo_compare(x, n)
-  x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = 51
-  zoo_compare(x, n)
-  ## random NA
-  x = makeNA(rnorm(1e3)); n = 50
-  zoo_compare(x, n)
-  x = makeNA(rnorm(1e3+1)); n = 50
-  zoo_compare(x, n)
-  x = makeNA(rnorm(1e3)); n = 51
-  zoo_compare(x, n)
-  x = makeNA(rnorm(1e3+1)); n = 51
-  zoo_compare(x, n)
-}
-#### adaptive moving average compare
-arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf.rm=FALSE, partial=FALSE) {
-  # adaptive moving average in R
-  stopifnot((nx<-length(x))==length(n))
-  align = match.arg(align)
-  ans = rep(fill, nx)
-  if (nf.rm) x[is.infinite(x)] = NA_real_
-  f = match.fun(FUN)
-  if (align=="right") {
-    for (i in seq_along(x)) {
-      if (n[i] == 0)
-        ans[i] = f(x[integer()], na.rm=na.rm)
-      else if (i >= n[i])
-        ans[i] = f(x[(i-n[i]+1L):i], na.rm=na.rm)
-      else if (partial)
-        ans[i] = f(x[1L:i], na.rm=na.rm)
-    }
-  } else {
-    for (i in seq_along(x)) {
-      if (n[i] == 0)
-        ans[i] = f(x[integer()], na.rm=na.rm)
-      else if (i <= nx-n[i]+1)
-        ans[i] = f(x[i:(i+n[i]-1L)], na.rm=na.rm)
-      else if (partial)
-        ans[i] = f(x[i:length(x)], na.rm=na.rm)
-    }
-  }
-  ans
-}
-afun_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
-  num.step = 0.0001
-  #### fun, align, na.rm, fill, algo
-  for (fun in funs) {
-    for (align in c("right","left")) {
-      for (na.rm in c(FALSE, TRUE)) {
-        for (fill in c(NA_real_, 0)) {
-          for (partial in c(FALSE, TRUE)) {
-            for (has.nf in c(NA, TRUE, FALSE)) {
-              if (identical(has.nf, FALSE)) {
-                if (na.rm) {
-                  next
-                } ## errors "not make sense"
-                if (any(!is.finite(x))) {
-                  next
-                } ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
-              }
-              for (algo in algos) {
-                num <<- num + num.step
-                eval(substitute(
-                  test(.num,
-                    ignore.warning = "no non-missing arguments",
-                    arollfun(.fun, x, n, fill = .fill, na.rm = .na.rm, align = .align, partial=.partial),
-                    froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf, partial=.partial)
-                  ),
-                  list(.num = num, .fun = fun, .fill = fill, .na.rm = na.rm, .algo = algo, .align = align, .partial=partial, .has.nf = has.nf)
-                ))
-              }
-            }
-          }
-          num <<- num + num.step
-          eval(substitute(
-            test(.num, ignore.warning="no non-missing arguments",
-              frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align),
-              froll(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .align=align)
-          ))
-        }
-      }
-    }
-  }
-}
-num = 7003.0
-#### no NA
-x = rnorm(1e3); n = sample(50, length(x), TRUE) # x even, n even
-afun_compare(x, n)
-x = rnorm(1e3+1); n = sample(50, length(x), TRUE) # x odd, n even
-afun_compare(x, n)
-x = rnorm(1e3); n = sample(51, length(x), TRUE) # x even, n odd
-afun_compare(x, n)
-x = rnorm(1e3+1); n = sample(51, length(x), TRUE) # x odd, n odd
-afun_compare(x, n)
-x = rnorm(1e3); n = sample(0:49, length(x), TRUE) # x even, n even
-afun_compare(x, n)
-#### leading and trailing NAs
-x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(50, length(x), TRUE)
-afun_compare(x, n)
-x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(50, length(x), TRUE)
-afun_compare(x, n)
-x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(51, length(x), TRUE)
-afun_compare(x, n)
-x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(51, length(x), TRUE)
-afun_compare(x, n)
-x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(0:49, length(x), TRUE)
-afun_compare(x, n)
-#### random NA
-x = makeNA(rnorm(1e3)); n = sample(50, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3+1)); n = sample(50, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3)); n = sample(51, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3)); n = sample(0:49, length(x), TRUE)
-afun_compare(x, n)
-#### random NA non-finites
-x = makeNA(rnorm(1e3), nf=TRUE); n = sample(50, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(50, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3), nf=TRUE); n = sample(51, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(51, length(x), TRUE)
-afun_compare(x, n)
-x = makeNA(rnorm(1e3), nf=TRUE); n = sample(0:49, length(x), TRUE)
-afun_compare(x, n)
-rm(num)

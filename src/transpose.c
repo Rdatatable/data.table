@@ -9,18 +9,18 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     error(_("l must be a list."));
   if (!length(l))
     return(copyAsPlain(l));
-  if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0] == NA_LOGICAL)
+  if (!isLogical(ignoreArg) || LOGICAL_RO(ignoreArg)[0] == NA_LOGICAL)
     error(_("ignore.empty should be logical TRUE/FALSE."));
-  bool ignore = LOGICAL(ignoreArg)[0];
+  const bool ignore = LOGICAL_RO(ignoreArg)[0];
   if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg) == 1)))
     error(_("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input"));
-  bool rn = !isNull(keepNamesArg);
+  const bool rn = !isNull(keepNamesArg);
   if (length(fill) != 1)
     error(_("fill must be a length 1 vector, such as the default NA"));
-  R_len_t ln = LENGTH(l);
+  const R_len_t ln = LENGTH(l);
   if (!IS_TRUE_OR_FALSE(listColsArg))
     error(_("list.cols should be logical TRUE/FALSE."));
-  bool listCol = LOGICAL(listColsArg)[0];
+  const bool listCol = LOGICAL_RO(listColsArg)[0];
 
   // preprocessing
   int maxlen = 0, zerolen = 0;
@@ -39,7 +39,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   if (listCol) maxtype = VECSXP; // need to keep preprocessing for zerolen
   fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
   SEXP ans = PROTECT(allocVector(VECSXP, maxlen + rn)); nprotect++;
-  int anslen = (ignore) ? (ln - zerolen) : ln;
+  const int anslen = (ignore) ? (ln - zerolen) : ln;
   if (rn) {
     SEXP tt;
     SET_VECTOR_ELT(ans, 0, tt = allocVector(STRSXP, anslen));
@@ -61,22 +61,22 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case LGLSXP: {
-      const int *ili = LOGICAL(li);
-      const int ifill = LOGICAL(fill)[0];
+      const int *ili = LOGICAL_RO(li);
+      const int ifill = LOGICAL_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         LOGICAL(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
       }
     } break;
     case INTSXP: {
-      const int *ili = INTEGER(li);
-      const int ifill = INTEGER(fill)[0];
+      const int *ili = INTEGER_RO(li);
+      const int ifill = INTEGER_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         INTEGER(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
       }
     } break;
     case REALSXP: {
-      const double *dli = REAL(li);
-      const double dfill = REAL(fill)[0];
+      const double *dli = REAL_RO(li);
+      const double dfill = REAL_RO(fill)[0];
       for (int j = 0; j < maxlen; j++) {
         REAL(ansp[j + rn])[k] = j < len ? dli[j] : dfill;
       }
