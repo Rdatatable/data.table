@@ -18699,7 +18699,7 @@ ja_ichi = "\u4E00"
 ja_ni = "\u4E8C"
 ja_ko = "\u3053"
 ja_n = "\u3093"
-nc = paste0(accented_a, ja_ichi, ja_ni, ja_ko, ja_n)
+nc = c(accented_a, ja_ichi, ja_ni, ja_ko, ja_n)
 dots = "..."
 clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
 # Tests for combining character latin a and acute accent, single row
