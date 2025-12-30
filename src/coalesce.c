@@ -48,7 +48,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg)
   const int nrow = length(first);
 
   /* ------------------------------------------------------------
-     DATE / IDATE NORMALIZATION (CORRECT)
+     DATE / IDATE NORMALIZATION
      ------------------------------------------------------------ */
 
   bool any_date_like =
@@ -61,21 +61,21 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg)
   }
 
   if (any_date_like) {
-    /* Normalize FIRST to Date + REAL */
+    /* Output contract: Date with REAL storage */
     if (!INHERITS(first, char_Date) || TYPEOF(first) != REALSXP) {
       first = PROTECT(coerceVector(first, REALSXP));
-      setAttrib(first, R_ClassSymbol, PROTECT(mkString("Date")));
-      nprotect += 2;
+      setAttrib(first, R_ClassSymbol, char_Date);
+      nprotect++;
     }
 
-    /* Normalize ALL items to Date + REAL */
+    /* Normalize all inputs to Date + REAL */
     for (int i = 0; i < nval; ++i) {
       SEXP item = VECTOR_ELT(x, i + off);
       if (!INHERITS(item, char_Date) || TYPEOF(item) != REALSXP) {
         SEXP tmp = PROTECT(coerceVector(item, REALSXP));
-        setAttrib(tmp, R_ClassSymbol, PROTECT(mkString("Date")));
+        setAttrib(tmp, R_ClassSymbol, char_Date);
         SET_VECTOR_ELT(x, i + off, tmp);
-        nprotect += 2;
+        nprotect++;
       }
     }
   }
@@ -95,7 +95,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg)
           nprotect++;
         }
       } else {
-        error(_("Item %d is type %s but first item is type %s."),
+        error(_("Item %d is type %s but first item is type %s. Please coerce."),
               i + 2, type2char(TYPEOF(item)), type2char(TYPEOF(first)));
       }
     }
@@ -121,91 +121,104 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg)
   const void **valP = (const void **)R_alloc(nval, sizeof(*valP));
 
   /* ------------------------------------------------------------
-     COALESCING
+     COALESCING (SCALAR-SAFE, NO UB)
      ------------------------------------------------------------ */
 
   switch (TYPEOF(first)) {
 
   case LGLSXP:
   case INTSXP: {
-    int *xP = INTEGER(first), k = 0, finalVal = NA_INTEGER;
+    int *xP = INTEGER(first);
+    int finalVal = NA_INTEGER;
+    bool hasFinal = false;
+    int k = 0;
 
     for (int j = 0; j < nval; ++j) {
       SEXP item = VECTOR_ELT(x, j + off);
       if (length(item) == 1) {
         int v = INTEGER(item)[0];
-        if (v != NA_INTEGER) { finalVal = v; break; }
+        if (v != NA_INTEGER && !hasFinal) {
+          finalVal = v;
+          hasFinal = true;
+        }
+      } else {
+        valP[k++] = INTEGER_RO(item);
       }
-      valP[k++] = INTEGER_RO(item);
     }
-
-    const bool final = finalVal != NA_INTEGER;
 
 #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i = 0; i < nrow; ++i) {
       if (xP[i] != NA_INTEGER) continue;
-      int v = NA_INTEGER, j = 0;
-      while (v == NA_INTEGER && j < k)
-        v = ((int *)valP[j++])[i];
+
+      int v = NA_INTEGER;
+      for (int j = 0; j < k && v == NA_INTEGER; ++j)
+        v = ((int *)valP[j])[i];
+
       if (v != NA_INTEGER) xP[i] = v;
-      else if (final) xP[i] = finalVal;
+      else if (hasFinal)  xP[i] = finalVal;
     }
   } break;
 
   case REALSXP: {
-    double *xP = REAL(first), finalVal = NA_REAL;
+    double *xP = REAL(first);
+    double finalVal = NA_REAL;
+    bool hasFinal = false;
     int k = 0;
 
     for (int j = 0; j < nval; ++j) {
       SEXP item = VECTOR_ELT(x, j + off);
       if (length(item) == 1) {
         double v = REAL(item)[0];
-        if (!ISNA(v) && (!nan_is_na || !ISNAN(v))) {
+        if (!ISNA(v) && (!nan_is_na || !ISNAN(v)) && !hasFinal) {
           finalVal = v;
-          break;
+          hasFinal = true;
         }
+      } else {
+        valP[k++] = REAL_RO(item);
       }
-      valP[k++] = REAL_RO(item);
     }
-
-    const bool final = !ISNA(finalVal) && (!nan_is_na || !ISNAN(finalVal));
 
 #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i = 0; i < nrow; ++i) {
       double v = xP[i];
       if (!ISNA(v) && (!nan_is_na || !ISNAN(v))) continue;
-      int j = 0;
-      while ((ISNA(v) || (nan_is_na && ISNAN(v))) && j < k)
-        v = ((double *)valP[j++])[i];
+
+      for (int j = 0; j < k && (ISNA(v) || (nan_is_na && ISNAN(v))); ++j)
+        v = ((double *)valP[j])[i];
+
       if (!ISNA(v) && (!nan_is_na || !ISNAN(v))) xP[i] = v;
-      else if (final) xP[i] = finalVal;
+      else if (hasFinal) xP[i] = finalVal;
     }
   } break;
 
   case STRSXP: {
     const SEXP *xP = STRING_PTR_RO(first);
     SEXP finalVal = NA_STRING;
+    bool hasFinal = false;
     int k = 0;
 
     for (int j = 0; j < nval; ++j) {
       SEXP item = VECTOR_ELT(x, j + off);
-      if (length(item) == 1 && STRING_ELT(item, 0) != NA_STRING) {
-        finalVal = STRING_ELT(item, 0);
-        break;
+      if (length(item) == 1) {
+        SEXP v = STRING_ELT(item, 0);
+        if (v != NA_STRING && !hasFinal) {
+          finalVal = v;
+          hasFinal = true;
+        }
+      } else {
+        valP[k++] = STRING_PTR_RO(item);
       }
-      valP[k++] = STRING_PTR_RO(item);
     }
-
-    const bool final = finalVal != NA_STRING;
 
     for (int i = 0; i < nrow; ++i) {
       if (xP[i] != NA_STRING) continue;
+
       SEXP v = NA_STRING;
-      int j = 0;
-      while (v == NA_STRING && j < k)
-        v = ((SEXP *)valP[j++])[i];
+      for (int j = 0; j < k && v == NA_STRING; ++j)
+        v = ((SEXP *)valP[j])[i];
+
       if (v != NA_STRING) SET_STRING_ELT(first, i, v);
-      else if (final) SET_STRING_ELT(first, i, finalVal);
+      else if (hasFinal)  SET_STRING_ELT(first, i, finalVal);
     }
   } break;
 
