@@ -1,4 +1,6 @@
 Package: data.table
+Author: Data.Table Maintainers
+Maintainer: Aksh Kaushik <aksh.heisenberg@gmail.com>
 Version: 1.18.99
 Title: Extension of `data.frame`
 Depends: R (>= 3.5.0)
