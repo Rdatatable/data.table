@@ -2977,7 +2977,7 @@ test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
 test(991.1, unique(dt, by=4), error="received non-existing column*.*4")
-test(991.2, unique(dt, by=c(1,3.1)), error="is type 'double' and one or more items in it are not whole integers")
+test(991.2, unique(dt, by=c(1,3.1)), error="In setkey, argument specifying columns is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
 test(991.4, unique(dt, by=c('C','D','E')), error="received non-existing column*.*D")
 
@@ -21962,9 +21962,13 @@ test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"),
 
 # re-overallocate in set if quota is reached #496 #1831 #4100
 DT = data.table()
-test(2356.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i); ncol(DT)}, 10L)
+test(2356.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j=paste0("V",i), value=i); DT}, data.table(V1=1L,V2=2L,V3=3L,V4=4L,V5=5L,V6=6L,V7=7L,V8=8L,V9=9L,V10=10L))
 DT = structure(list(a = 1, b = 2), class = c("data.table", "data.frame"))
 test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
-test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
+test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j=paste0("V",i), value=i); for (i in seq(10L)) DT2[, (paste0("V",i)):=i]; fsetdiff(DT, DT2)}, data.table(V1=integer(),V2=integer(),V3=integer(),V4=integer(),V5=integer(),V6=integer(),V7=integer(),V8=integer(),V9=integer(),V10=integer()))
+
+# Test for context-aware error messages (Issue #5039)
+test(2357, data.table:::colnamesInt(data.table(a=1), "missing", context="test_context"), 
+     error="In test_context, argument specifying columns received non-existing column(s): cols[1]='missing'")

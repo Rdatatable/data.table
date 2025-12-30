@@ -26,9 +26,9 @@ onkeys = function(x, y) {
 
 # column index selection helper
 someCols = function(x, cols, drop=character(), keep=character(), retain.order=FALSE) {
-  keep = colnamesInt(x, keep)
-  drop = colnamesInt(x, drop)
-  cols = colnamesInt(x, cols)
+  keep = colnamesInt(x, keep, check_dups=FALSE, skip_absent=FALSE, context="merge(keep=)")
+  drop = colnamesInt(x, drop, check_dups=FALSE, skip_absent=FALSE, context="merge(drop=)")
+  cols = colnamesInt(x, cols, check_dups=FALSE, skip_absent=FALSE, context="merge(cols=)")
   ans = union(keep, setdiff(cols, drop))
   if (!retain.order) return(ans)
   sort(ans)
@@ -104,8 +104,8 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
       stopf("'on' must be non-zero length character vector")
     if (mult == "all" && (how == "semi" || how == "anti"))
       stopf("semi and anti joins must be used with mult!='all'")
-    icols = colnamesInt(i, on, check_dups=TRUE)
-    xcols = colnamesInt(x, on, check_dups=TRUE)
+    icols = colnamesInt(i, on, check_dups=TRUE, skip_absent=FALSE, context="merge 'i' table columns")
+    xcols = colnamesInt(x, on, check_dups=TRUE, skip_absent=FALSE, context="merge 'x' table columns")
     ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=rep.int(1L, length(on)), verbose=verbose)
     if (void) { ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
       return(invisible(NULL))
@@ -338,7 +338,7 @@ mergelist_impl_ = function(l, on, cols, how, mult, join.many, copy) {
   }
   out.mem = vapply_1c(out, address)
   if (copy)
-    .Call(CcopyCols, out, colnamesInt(out, names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
+    .Call(CcopyCols, out, colnamesInt(out, names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))], check_dups=FALSE, skip_absent=FALSE, context="merge column copy"))
   if (verbose)
     catf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]] - p)
   out

@@ -149,7 +149,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE,
     by = NULL
   } else {
     if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
-    by = colnamesInt(x, by, check_dups=FALSE)
+    by = colnamesInt(x, by, check_dups=FALSE, skip_absent=FALSE, context="setkey")
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
   .Call(CforderReuseSorting, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE

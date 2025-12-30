@@ -116,13 +116,18 @@ SEXP allNAR(SEXP x) {
  *   optionally (check_dups) check for no duplicates
  *   optionally (skip_absent) skip (return 0) for numbers outside the range or not naming extant columns
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent, SEXP context) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("%s must be TRUE or FALSE"), "check_dups");
   if (!IS_TRUE_OR_FALSE(skip_absent))
     error(_("%s must be TRUE or FALSE"), "skip_absent");
+  const char *ctx = "unknown";
+  if (context != R_NilValue && isString(context) && length(context) > 0) {
+    ctx = CHAR(STRING_ELT(context, 0));
+  }
+
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -142,13 +147,13 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
         ricols = cols;
     } else if (isReal(cols)) {
       if (!fitsInInt32(cols))
-        error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
+  error(_("In %s, argument specifying columns is type 'double' and one or more items in it are not whole integers"), ctx);
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; ++i) {
       if ((!bskip_absent && icols[i]>nx) || (icols[i]<1))
-        error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+  error(_("In %s, argument specifying columns received non-existing column(s): cols[%d]=%d"), ctx, i+1, icols[i]);// handles NAs also
       else if(bskip_absent && icols[i]>nx)
         icols[i] = 0L;
     }
@@ -161,14 +166,14 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     if (!bskip_absent) {
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
-          error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+  error(_("In %s, argument specifying columns received non-existing column(s): cols[%d]='%s'"), ctx, i+1, CHAR(STRING_ELT(cols, i)));// handles NAs also
       }
     }
   } else {
-    error(_("argument specifying columns must be character or numeric"));
-  }
+  error(_("In %s, argument specifying columns must be character or numeric"), ctx);
+}
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
-    error(_("argument specifying columns received duplicate column(s)"));
+  error(_("In %s, argument specifying columns received duplicate column(s)"), ctx);
   UNPROTECT(protecti);
   return ricols;
 }
