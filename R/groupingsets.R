@@ -29,15 +29,12 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     stopf("Argument 'id' must be a logical scalar.")
   if (missing(j))
     stopf("Argument 'j' is required")
-
   # Implementing NSE in cube
   jj = substitute(j)
   bysub = substitute(by)
   names_x = names(x)
-  
   allbyvars = intersect(all.vars(bysub), names_x)
   usesSD = any(all.vars(jj) == ".SD")
-  
   if (usesSD) {
     if (missing(.SDcols)) {
       ansvars = sdvars = setdiff(unique(names_x), union(by, allbyvars))
@@ -55,9 +52,9 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
         .SDcols = eval(sub.result, parent.frame())
       }
       if (is.character(.SDcols)) {
-        if (!all(idx = .SDcols %chin% names_x))
-          stopf("Some items of .SDcols are not column names: %s", 
-                paste(.SDcols[!idx], collapse = ", "))
+        idx = .SDcols %chin% names_x
+        if (any(!idx))
+          stopf("Some items of .SDcols are not column names: %s", toString(.SDcols[!idx]))
         ansvars = sdvars = .SDcols
         ansvals = match(ansvars, names_x)
       } else if (is.numeric(.SDcols)) {
@@ -65,8 +62,7 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
         ansvars = sdvars = names_x[ansvals]
       } else if (is.logical(.SDcols)) {
         if (length(.SDcols) != length(names_x))
-          stopf(".SDcols is a logical vector of length %d but there are %d columns",
-                length(.SDcols), length(names_x))
+          stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(names_x))
         ansvals = which(.SDcols)
         ansvars = sdvars = names_x[ansvals]
       } else {
@@ -76,7 +72,6 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   } else {
     .SDcols = NULL
   }
-  
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
   keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
