@@ -1,0 +1,13 @@
+* using log directory ‘/Users/tanishaojha/Desktop/Code-folder/data.table/..Rcheck’
+* using R version 4.5.1 (2025-06-13)
+* using platform: aarch64-apple-darwin20
+* R was compiled by
+    Apple clang version 16.0.0 (clang-1600.0.26.6)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Sequoia 15.5
+* using session charset: UTF-8
+* checking for file ‘./DESCRIPTION’ ... ERROR
+Required fields missing or empty:
+  ‘Author’ ‘Maintainer’
+* DONE
+Status: 1 ERROR

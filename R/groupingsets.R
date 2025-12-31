@@ -29,26 +29,54 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     stopf("Argument 'id' must be a logical scalar.")
   if (missing(j))
     stopf("Argument 'j' is required")
-  #implementing NSE in cube
+
+  # Implementing NSE in cube
   jj = substitute(j)
+  bysub = substitute(by)
+  names_x = names(x)
+  
+  allbyvars = intersect(all.vars(bysub), names_x)
   usesSD = any(all.vars(jj) == ".SD")
+  
   if (usesSD) {
     if (missing(.SDcols)) {
-      .SDcols = names(x)[vapply(x, is.numeric, logical(1L))]
+      ansvars = sdvars = setdiff(unique(names_x), union(by, allbyvars))
+      ansvals = match(ansvars, names_x)
     } else {
       sub.result = substitute(.SDcols)
       if (is.call(sub.result)) {
-        #.SDcols = eval_with_cols(sub.result, names(x))
-        check_var = eval_with_cols(sub.result, names(x))
-        if (!is.null(check_var)) {
-          .SDcols = eval_with_cols(sub.result, names(x))
+        call_name = as.character(sub.result[[1L]])
+        if (call_name %in% c("patterns", "is.numeric", "is.character", "is.factor")) {
+          .SDcols = eval_with_cols(sub.result, names_x)
+        } else {
+          .SDcols = eval(sub.result, parent.frame())
         }
+      } else {
+        .SDcols = eval(sub.result, parent.frame())
+      }
+      if (is.character(.SDcols)) {
+        if (!all(idx = .SDcols %chin% names_x))
+          stopf("Some items of .SDcols are not column names: %s", 
+                paste(.SDcols[!idx], collapse = ", "))
+        ansvars = sdvars = .SDcols
+        ansvals = match(ansvars, names_x)
+      } else if (is.numeric(.SDcols)) {
+        ansvals = as.integer(.SDcols)
+        ansvars = sdvars = names_x[ansvals]
+      } else if (is.logical(.SDcols)) {
+        if (length(.SDcols) != length(names_x))
+          stopf(".SDcols is a logical vector of length %d but there are %d columns",
+                length(.SDcols), length(names_x))
+        ansvals = which(.SDcols)
+        ansvars = sdvars = names_x[ansvals]
+      } else {
+        stopf(".SDcols must be character, numeric, or logical")
       }
     }
   } else {
     .SDcols = NULL
   }
-
+  
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
   keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
