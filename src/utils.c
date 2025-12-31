@@ -1,5 +1,8 @@
 #ifndef _WIN32
-#  define _POSIX_C_SOURCE 200809L // required for POSIX (not standard C) features in is_direct_child e.g. 'siginfo_t'
+#  if !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE < 200809L
+#    undef _POSIX_C_SOURCE
+#    define _POSIX_C_SOURCE 200809L // required for POSIX (not standard C) features in is_direct_child e.g. 'siginfo_t'
+#  endif
 #  include <signal.h> // siginfo_t
 #  include <sys/wait.h> // waitid
 #endif
