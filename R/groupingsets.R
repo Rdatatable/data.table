@@ -53,7 +53,7 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
       }
       if (is.character(.SDcols)) {
         idx = .SDcols %chin% names_x
-        if (any(!idx))
+        if (!all(idx))
           stopf("Some items of .SDcols are not column names: %s", toString(.SDcols[!idx]))
         ansvars = sdvars = .SDcols
         ansvals = match(ansvars, names_x)
