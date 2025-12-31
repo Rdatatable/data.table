@@ -31,7 +31,7 @@ test(1.06, nafill(x, fill=NA), x)
 test(1.07, nafill(x, fill=NA_real_), x)
 test(1.08, nafill(x, fill=Inf), x, warning="precision lost")
 test(1.09, nafill(x, fill=NaN), x)
-y = x/2
+y = x/2 # double input
 test(1.11, nafill(y, "locf"), c(NA,NA,3,4,4,4,7,8,8,8)/2)
 test(1.12, nafill(y, "nocb"), c(3,3,3,4,7,7,7,8,NA,NA)/2)
 test(1.13, nafill(y, fill=0L), c(0,0,3,4,0,0,7,8,0,0)/2)
@@ -112,8 +112,8 @@ x = 1:10
 test(3.01, nafill(x, "locf", fill=0L), x)
 test(3.02, setnafill(list(copy(x)), "locf", fill=0L), list(x))
 test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
-test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
-test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
+test(3.04, nafill(letters[1:5], fill=0), error="must be logical/numeric type, or list/data.table")
+test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be logical/numeric type, or list/data.table")
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1.*fcoalesce")
 test(3.07, nafill(x, "locf", fill=1:2), error="fill must be a vector of length 1.*x\\.$")
 test(3.08, nafill(x, fill="asd"), x, warning=c("Coercing.*character.*integer","NAs introduced by coercion"))
@@ -320,6 +320,19 @@ test(11.08, coerceAs(a, 1L), error="must not be matrix or array")
 test(11.09, coerceAs(1L, a), error="must not be matrix or array")
 
 # nafill, setnafill for character, factor and other types #3992
+## logical input
+x = c(NA, NA, TRUE, FALSE, NA, NA, FALSE, TRUE, NA, NA)
+test(12.01, nafill(x, "locf"), c(NA, NA, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE))
+test(12.02, nafill(x, "nocb"), c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, NA, NA))
+test(12.03, nafill(x, fill=TRUE), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE))
+test(12.04, nafill(x, fill=0L), c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE))
+test(12.05, nafill(x, fill=5.0), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE), warning="double.*taken as TRUE")
+test(12.06, nafill(x, fill=Inf), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE), warning="double.*taken as TRUE")
+test(12.07, nafill(x, fill=NA), x)
+test(12.08, nafill(x, fill=NA_integer_), x)
+test(12.09, nafill(x, fill=NA_real_), x)
+test(12.10, nafill(x, fill=NaN), x)
+
 ## logical
 ## character
 ## factor

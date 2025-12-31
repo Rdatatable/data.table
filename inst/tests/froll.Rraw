@@ -825,8 +825,8 @@ test(6000.190, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE
 test(6000.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
-test(6000.199, frollmean(1:2, 1, hasNA=TRUE), c(1,2), warning="hasNA is deprecated, use has.nf instead")
-test(6000.1991, frollmean(1:2, 1, has.nf=FALSE, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
+test(6000.199, frollmean(1:2, 1, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
+# 6000.1991 tested supplying has.nf and hasNA, no longer makes sense
 
 ## frollsum
 x = 1:6/2
@@ -1944,9 +1944,9 @@ test(6010.542, frollapply(1:2, 2, sum, adaptive=NA), error="must be TRUE or FALS
 test(6010.543, frollapply(1:2, 2, sum, partial=NA), error="must be TRUE or FALSE")
 test(6010.544, frollapply(1:2, 2, sum, give.names=NA), error="must be TRUE or FALSE")
 test(6010.545, frollapply(1:2, 2, sum, simplify=NA), error="must be TRUE or FALSE or a function")
-test(6010.561, frollapply(x=1:2, N=2, FUN=sum), c(NA,3L), warning="'x' is deprecated in frollapply, use 'X' instead")
-test(6010.562, frollapply(X=1:2, n=2, FUN=sum), c(NA,3L), warning="'n' is deprecated in frollapply, use 'N' instead")
-test(6010.563, frollapply(x=1:2, n=2, FUN=sum), c(NA,3L), warning=c("'x' is deprecated in frollapply, use 'X' instead","'n' is deprecated in frollapply, use 'N' instead"))
+test(6010.561, frollapply(x=1:2, N=2, FUN=sum), error="'x' is deprecated in frollapply, use 'X' instead")
+test(6010.562, frollapply(X=1:2, n=2, FUN=sum), error="'n' is deprecated in frollapply, use 'N' instead")
+# 6010.563 tested both x= and n= resulting in 2 warnings, but with errors, that's not very useful.
 test(6010.564, frollapply(1:2, c("a","a"), length, adaptive=TRUE), error="'N' must be an integer vector or list of integer vectors")
 test(6010.565, frollapply(1:2, list(c("a","a")), length, adaptive=TRUE), error="'N' must be an integer vector or list of integer vectors")
 test(6010.566, frollapply(1:2, 2, length, by.column=FALSE), error="frollapply by.column=FALSE requires 'X' argument to be")
@@ -2084,7 +2084,8 @@ if (use.fork) {
   test(6010.772, .selfref.ok(ans[[2L]]))
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=FALSE)
   test(6010.773, !.selfref.ok(ans[[2L]][[1L]]))
-  test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
+  # deactivated by #5443
+  # test(6010.7731, set(ans[[2L]][[1L]],, "newcol", 1L), error="data.table has either been loaded from disk")
   ans = lapply(ans, lapply, setDT)
   test(6010.774, .selfref.ok(ans[[2L]][[1L]])) ## fix after
   ans = frollapply(1:2, 2, function(x) list(data.table(x)), fill=list(data.table(NA)), simplify=function(x) lapply(x, lapply, setDT))
