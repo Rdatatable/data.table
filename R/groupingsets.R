@@ -29,7 +29,7 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     stopf("Argument 'id' must be a logical scalar.")
   if (missing(j))
     stopf("Argument 'j' is required")
-  # Implementing NSE in cube
+# Implementing NSE in cube
   jj = substitute(j)
   bysub = substitute(by)
   names_x = names(x)
@@ -41,13 +41,8 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
       ansvals = match(ansvars, names_x)
     } else {
       sub.result = substitute(.SDcols)
-      if (is.call(sub.result)) {
-        call_name = as.character(sub.result[[1L]])
-        if (call_name %in% c("patterns", "is.numeric", "is.character", "is.factor")) {
-          .SDcols = eval_with_cols(sub.result, names_x)
-        } else {
-          .SDcols = eval(sub.result, parent.frame())
-        }
+      if (is.call(sub.result) && as.character(sub.result[[1L]]) == "patterns") {
+        .SDcols = eval_with_cols(sub.result, names_x)
       } else {
         .SDcols = eval(sub.result, parent.frame())
       }
