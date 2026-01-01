@@ -11503,6 +11503,31 @@ test(1750.34,
                            character(0)),
                id = TRUE)
 )
+test(1750.35,
+  cube(dt, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols=patterns("value")),
+  groupingsets(dt, j = lapply(.SD, sum), by = c("color","year","status"), .SDcols = "value", 
+                sets = list(c("color","year","status"),
+                            c("color","year"),
+                            c("color","status"),
+                            "color",
+                            c("year","status"),
+                            "year",
+                            "status",
+                            character(0)),
+                id = TRUE)
+)
+test(1750.36,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("value", "BADCOL")),
+  error = "Some items of \\.SDcols are not column names"
+)
+test(1750.37,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(TRUE, FALSE)),
+  error = "\\.SDcols is a logical vector of length"
+)
+test(1750.38,
+  cube(dt, j = sum(value), by = "year", .SDcols = "value", id = TRUE),
+  cube(dt, j = sum(value), by = "year", id = TRUE)
+)
 # grouping sets with integer64
 if (test_bit64) {
   set.seed(26)
