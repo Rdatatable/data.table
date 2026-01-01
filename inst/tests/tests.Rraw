@@ -20607,6 +20607,7 @@ test(2294.59,
               VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date(NA), VDate),
               VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate(NA), VIDate),
               VNumA, VNumB, Count, Y_Sum)])
+
 # 60. label is a scalar with class not matching any variable in 'by'.
 test(2294.60,
      groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
@@ -21968,3 +21969,19 @@ test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.tab
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
 test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
+
+# fcoalesce Date and IDate mixing, #7463
+test(2357.1, fcoalesce(as.Date("2026-01-01"), as.IDate("2026-01-02")), as.Date("2026-01-01"))
+test(2357.2, fcoalesce(as.IDate("2026-01-02"), as.Date("2026-01-01")), as.double(as.IDate("2026-01-02")),
+     class=c("IDate", "Date")) # promoted to double
+test(2357.3, fcoalesce(1L, 2.0), 1.0)
+test(2357.4, fcoalesce(2.0, 1L), 2.0)
+test(2357.5, {
+  r = c(NA_real_, 2.0)
+  setcoalesce(r, 1L)
+  r
+}, c(1.0, 2.0))
+test(2357.6, {
+  i = c(NA_integer_, 2L)
+  setcoalesce(i, 1.0)
+}, error="In-place coalesce cannot promote integer to double")
