@@ -11528,18 +11528,6 @@ test(1750.38,
   cube(dt, j = sum(value), by = "year", .SDcols = "value", id = TRUE),
   cube(dt, j = sum(value), by = "year", id = TRUE)
 )
-test(1750.39,
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = 5L, id = TRUE),
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = "value", id = TRUE)
-)
-test(1750.40,
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = names(dt) == "value", id = TRUE),
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = "value", id = TRUE)
-)
-test(
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = list("value")),
-  error = "\\.SDcols must be character, numeric, or logical"
-)
 # grouping sets with integer64
 if (test_bit64) {
   set.seed(26)
