@@ -1,3 +1,0 @@
-CPPFLAGS += -I/opt/homebrew/opt/gettext/include
-LDFLAGS  += -L/opt/homebrew/opt/gettext/lib
-
