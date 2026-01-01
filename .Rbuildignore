@@ -17,6 +17,7 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.jj$
 ^\.vscode$
 ^\.zed$
 ^\.lintr$
