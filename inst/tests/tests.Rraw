@@ -13801,7 +13801,7 @@ setDF(DT)
 test(1962.085, dcast.data.table(DT), error = 'must be a data.table')
 setDT(DT)
 test(1962.086, dcast(DT, a ~ a, drop = NA),
-     error = "'drop' must be TRUE or FALSE")
+     error = "'drop' must be logical vector with no missing entries")
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
 test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
      error = 'Columns specified in formula can not be of type list')
