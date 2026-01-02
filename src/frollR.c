@@ -94,7 +94,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     error(_("n must be non 0 length"));
 
   if (!IS_TRUE_OR_FALSE(adaptive))
-    error(_("%s must be TRUE or FALSE"), "adaptive");
+    error(_("'%s' must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 
   SEXP k = PROTECT(coerceK(kobj, badaptive)); protecti++;
@@ -109,7 +109,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   }
 
   if (!IS_TRUE_OR_FALSE(narm))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
 
   if (!isLogical(hasnf) || length(hasnf)!=1)
     error(_("has.nf must be TRUE, FALSE or NA"));

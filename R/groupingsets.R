@@ -4,7 +4,7 @@ rollup = function(x, ...) {
 rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
+    stopf("'%s' must be a data.table", "x", class="dt_invalid_input_error")
   if (!is.character(by))
     stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
@@ -22,7 +22,7 @@ cube = function(x, ...) {
 cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
+    stopf("'%s' must be a data.table", "x", class="dt_invalid_input_error")
   if (!is.character(by))
     stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
@@ -44,7 +44,7 @@ groupingsets = function(x, ...) {
 groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, enclos = parent.frame(), ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stopf("Argument 'x' must be a data.table object")
+    stopf("'%s' must be a data.table", "x")
   if (ncol(x) < 1L)
     stopf("Argument 'x' is a 0-column data.table; no measure to apply grouping over.")
   if (anyDuplicated(names(x)) > 0L)

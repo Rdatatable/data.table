@@ -423,9 +423,9 @@ test(6000.118, frollmean(1:5, as.factor("a")), error="'n' must be an integer")
 #### is.list(n)
 test(6000.119, frollmean(1:5, list(1:5)), error="'n' must be an integer, list is accepted for adaptive TRUE")
 #### adaptive=NA
-test(6000.1192, frollmean(1:5, 2, adaptive=NA), error="adaptive must be TRUE or FALSE")
+test(6000.1192, frollmean(1:5, 2, adaptive=NA), error="'adaptive' must be TRUE or FALSE")
 #### na.rm=NA
-test(6000.1193, frollmean(1:5, 2, na.rm=NA), error="na.rm must be TRUE or FALSE")
+test(6000.1193, frollmean(1:5, 2, na.rm=NA), error="'na.rm' must be TRUE or FALSE")
 #### has.nf=1
 test(6000.1194, frollmean(1:5, 2, has.nf=1), error="has.nf must be TRUE, FALSE or NA")
 #### has.nf=FALSE na.rm=TRUE
