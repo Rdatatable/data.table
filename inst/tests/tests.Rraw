@@ -15628,8 +15628,8 @@ test(2060.202, fcoalesce(fkt), fkt)
 test(2060.203, fcoalesce(bool, 1L), error='Item 2 is type integer but the first item is type logical. Please coerce before coalescing')
 test(2060.204, fcoalesce(bool, NA_integer_), error='Item 2 is type integer but the first item is type logical.')
 test(2060.205, fcoalesce(fkt, 1L), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor')
-test(2060.206, fcoalesce(num, 3L), error='Item 2 is type integer but the first item is type double')
-test(2060.207, fcoalesce(int, 3), error='Item 2 is type double but the first item is type integer')
+test(2060.206, fcoalesce(num, 3L), num_val)
+test(2060.207, fcoalesce(int, 3), num_val)
 test(2060.208, fcoalesce(fkt, 'b'), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor.')
 test(2060.209, fcoalesce(str, factor('b')), error='Item 2 is a factor but item 1 is not a factor. When factors are involved, all items must be factor')
 test(2060.212, fcoalesce(list(1), list(2)), error="The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.")
@@ -15653,7 +15653,7 @@ if (test_bit64) {
   test(2060.302, as.character(fcoalesce(int64, as.integer64(NA), as.integer64(3))), as.character(int64_val))
   test(2060.303, as.character(fcoalesce(int64, as.integer64(rep(3, 4L)))), as.character(int64_val))
   test(2060.304, fcoalesce(int64, 1), error='Item 2 has a different class than item 1')
-  test(2060.305, fcoalesce(int64, 1L), error = 'Item 2 is type integer but the first item is type double')
+  test(2060.305, fcoalesce(int64, 1L), error = 'Item 2 has a different class than item 1.')
 }
 # 2060.401-405 tested nanotime moved to other.Rraw 23, #5516
 # setcoalesce
@@ -21972,8 +21972,10 @@ test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = 
 
 # fcoalesce Date and IDate mixing, #7463
 test(2357.1, fcoalesce(as.Date("2026-01-01"), as.IDate("2026-01-02")), as.Date("2026-01-01"))
-test(2357.2, fcoalesce(as.IDate("2026-01-02"), as.Date("2026-01-01")), as.double(as.IDate("2026-01-02")),
-     class=c("IDate", "Date")) # promoted to double
+test(2357.2, {
+  res = fcoalesce(as.IDate("2026-01-02"), as.Date("2026-01-01"))
+  list(res, class(res))
+}, list(as.double(as.IDate("2026-01-02")), c("IDate", "Date"))) # promoted to double
 test(2357.3, fcoalesce(1L, 2.0), 1.0)
 test(2357.4, fcoalesce(2.0, 1L), 2.0)
 test(2357.5, {
