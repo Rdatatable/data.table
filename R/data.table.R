@@ -2854,10 +2854,20 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   invisible(x)
 }
 
+.set_needs_alloccol = function(x, value) {
+  # automatically allocate more space when tl <= ncol (either full or loaded from disk)
+  if (truelength(x) <= length(x)) return(TRUE)
+  if (selfrefok(x, verbose=FALSE) >= 1L) return(FALSE)
+  # value can be NULL or list with NULLs inside
+  if (is.null(value)) return(TRUE)
+  if (!is.list(value)) return(FALSE)
+  any(vapply_1b(value, is.null))
+}
+
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
   # If removing columns from a table that's not selfrefok, need to call setalloccol first, #7488
-  if ((is.null(value) || (is.list(value) && any(vapply_1b(value, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+  if (.set_needs_alloccol(x, value)) {
     name = substitute(x)
     setalloccol(x, verbose=FALSE)
     if (is.name(name)) {

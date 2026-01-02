@@ -101,7 +101,7 @@ Vous pouvez aussi convertir des objets existants en une `data.table` en utilisan
 
 Par rapport à un `data.frame`, vous pouvez  faire *beaucoup plus de choses* qu'extraire des lignes et sélectionner des colonnes dans la structure d'une `data.table`, par exemple, avec `[ ... ]` (Notez bien : nous pourrions aussi faire référence à écrire quelque chose dans `DT[...]` comme "interroger `DT`", par analogie ou similairement à SQL). Pour le comprendre il faut d'abord que nous regardions la *forme générale* de la syntaxe `data.table`, comme indiqué ci-dessous :
 
-```{r eval = FALSE}
+```r
 DT[i, j, by]
 
 ##   R:                 i                 j        by
@@ -356,7 +356,7 @@ DF[with(DF, x > 1), ]
 
 * Nous pouvons également *désélectionner* des colonnes en utilisant `-` ou `!`. Par exemple :
 
-    ```{r eval = FALSE}
+    ```r
     ## pas d'exécution
     
     # renvoie toutes les colonnes sauf arr_delay et dep_delay
@@ -367,7 +367,7 @@ DF[with(DF, x > 1), ]
 
 * A partir de la `v1.9.5+`, on peut aussi sélectionner en spécifiant les noms des colonnes de début et de fin, par exemple, `year:day` pour sélectionner les trois premières colonnes.
 
-    ```{r eval = FALSE}
+    ```r
     ## pas d'exécution
     
     # renvoie year,month et day
@@ -507,7 +507,7 @@ head(ans, 10)
 
 * Vous pouvez également les enchaîner verticalement :
 
-    ```{r eval = FALSE}
+    ```r
     DT[ ...
        ][ ...
          ][ ...
@@ -666,7 +666,7 @@ setDT(flights)
 
 La forme générale de la syntaxe de `data.table` est :
 
-```{r eval = FALSE}
+```r
 DT[i, j, by]
 ```
 
