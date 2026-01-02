@@ -107,6 +107,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
       Rprintf(_("coalesce copied first item (inplace=FALSE)\n"));
   }
   const void **valP = (const void **)R_alloc(nval, sizeof(*valP));
+  memset(valP, 0, nval * sizeof(*valP));
   switch (TYPEOF(first)) {
   case LGLSXP:
   case INTSXP: {
@@ -169,23 +170,20 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
       }
     } else {
       double *xP = REAL(first), finalVal = NA_REAL;
-      int k = 0;
+      bool *is_real = (bool *)R_alloc(nval, sizeof(bool));
       if (nan_is_na) {
         for (int j = 0; j < nval; ++j) {
           SEXP item = VECTOR_ELT(x, j + off);
+          is_real[j] = (TYPEOF(item) == REALSXP);
           if (length(item) == 1) {
-            double tt;
-            if (TYPEOF(item) == REALSXP)
-              tt = REAL(item)[0];
-            else
-              tt = (double)INTEGER(item)[0];
+            double tt = is_real[j] ? REAL(item)[0] : (double)INTEGER(item)[0];
             if (ISNAN(tt))
               continue;
             finalVal = tt;
             break;
           }
-          valP[j] =
-              (TYPEOF(item) == REALSXP) ? REAL_RO(item) : (const void *)item;
+          valP[j] = is_real[j] ? (const void *)REAL_RO(item)
+                               : (const void *)INTEGER_RO(item);
         }
         const bool final = !ISNAN(finalVal);
 #pragma omp parallel for num_threads(getDTthreads(nrow, true))
@@ -194,13 +192,12 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
           if (!ISNAN(val))
             continue;
           for (int j = 0; j < nval; ++j) {
-            SEXP item = VECTOR_ELT(x, j + off);
-            if (length(item) == 1)
+            if (!valP[j])
               continue;
-            if (TYPEOF(item) == REALSXP)
+            if (is_real[j])
               val = ((const double *)valP[j])[i];
             else
-              val = (double)INTEGER(item)[i];
+              val = (double)((const int *)valP[j])[i];
             if (!ISNAN(val))
               break;
           }
@@ -212,19 +209,16 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
       } else {
         for (int j = 0; j < nval; ++j) {
           SEXP item = VECTOR_ELT(x, j + off);
+          is_real[j] = (TYPEOF(item) == REALSXP);
           if (length(item) == 1) {
-            double tt;
-            if (TYPEOF(item) == REALSXP)
-              tt = REAL(item)[0];
-            else
-              tt = (double)INTEGER(item)[0];
+            double tt = is_real[j] ? REAL(item)[0] : (double)INTEGER(item)[0];
             if (ISNA(tt))
               continue;
             finalVal = tt;
             break;
           }
-          valP[j] =
-              (TYPEOF(item) == REALSXP) ? REAL_RO(item) : (const void *)item;
+          valP[j] = is_real[j] ? (const void *)REAL_RO(item)
+                               : (const void *)INTEGER_RO(item);
         }
         const bool final = !ISNA(finalVal);
 #pragma omp parallel for num_threads(getDTthreads(nrow, true))
@@ -233,13 +227,12 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
           if (!ISNA(val))
             continue;
           for (int j = 0; j < nval; ++j) {
-            SEXP item = VECTOR_ELT(x, j + off);
-            if (length(item) == 1)
+            if (!valP[j])
               continue;
-            if (TYPEOF(item) == REALSXP)
+            if (is_real[j])
               val = ((const double *)valP[j])[i];
             else
-              val = (double)INTEGER(item)[i];
+              val = (double)((const int *)valP[j])[i];
             if (!ISNA(val))
               break;
           }
