@@ -28,6 +28,8 @@
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
 
+2. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#1831](https://github.com/Rdatatable/data.table/issues/1831) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to @zachokeeffe and @tyner for the report and @ben-schwen for the fix.
+
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
 ### BREAKING CHANGE

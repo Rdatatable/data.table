@@ -14797,7 +14797,7 @@ test(2016.1, name, "DT")
 test(2016.2, DT, data.table(a=1:3))
 test(2016.3, DT[2,a:=4L], data.table(a=INT(1,4,3)))        # no error for := when existing column
 test(2016.4, set(DT,3L,1L,5L), data.table(a=INT(1,4,5)))   # no error for set() when existing column
-test(2016.5, set(DT,2L,"newCol",5L), error="either been loaded from disk.*or constructed manually.*Please run setDT.*setalloccol.*on it first")   # just set()
+test(2016.5, set(DT,2L,"newCol",5L), data.table(a=INT(1,4,5), newCol=INT(NA,5L,NA)))   # works since set overallocates #4100
 test(2016.6, DT[2,newCol:=6L], data.table(a=INT(1,4,5), newCol=INT(NA,6L,NA)))  # := ok (it changes DT in caller)
 unlink(tt)
 
@@ -19478,7 +19478,7 @@ test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in
 df = data.frame(a=1:3)
 setDT(df)
 attr(df, "att") = 1
-test(2291.1, set(df, NULL, "new", "new"), error="either been loaded from disk.*or constructed manually.*Please run setDT.*setalloccol.*on it first")
+test(2291.1, set(df, NULL, "new", "new"), setattr(data.table(a=1:3, new="new"), "att", 1)) # fixed when calling setalloccol before set #4100
 
 # ns-qualified bysub error, #6493
 DT = data.table(a = 1)
@@ -21959,3 +21959,12 @@ test(2355.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 
 test(2355.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
 test(2355.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
 test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))
+
+# re-overallocate in set if quota is reached #496 #1831 #4100
+DT = data.table()
+test(2356.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i); ncol(DT)}, 10L)
+DT = structure(list(a = 1, b = 2), class = c("data.table", "data.frame"))
+test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
+# ensure := and set are consistent if they need to overallocate
+DT = data.table(); DT2 = data.table()
+test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
