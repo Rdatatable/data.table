@@ -141,7 +141,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   if (!isTRUEorFALSE(give.names))
     stopf("'%s' must be TRUE or FALSE", "give.names")
   if (!isTRUEorFALSE(simplify) && !is.function(simplify))
-    stopf("'%s' must be TRUE or FALSE or a function")
+    stopf("'%s' must be TRUE or FALSE or a function", "simplify")
 
   align = match.arg(align)
   FUN = match.fun(FUN)
