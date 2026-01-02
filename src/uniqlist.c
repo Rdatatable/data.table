@@ -355,7 +355,7 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)
