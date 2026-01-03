@@ -1040,15 +1040,15 @@ replace_dot_alias = function(e) {
           if (try_processSDcols) {
               sdcols_result = tryCatch({
                       .processSDcols(
-                        SDcols_sub = colsub, 
-                        SDcols_missing = FALSE, 
-                        x = x, 
-                        jsub = jsub, 
-                        by = union(bynames, allbyvars), 
+                        SDcols_sub = colsub,
+                        SDcols_missing = FALSE,
+                        x = x,
+                        jsub = jsub,
+                        by = union(bynames, allbyvars),
                         enclos = parent.frame()
                       )
                     }, error = function(e) {
-                      NULL 
+                      NULL
                     })
               if (!is.null(sdcols_result)) {
                 ansvars = sdvars = sdcols_result$ansvars
