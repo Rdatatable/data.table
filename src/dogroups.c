@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-static SEXP attribWalker(SEXP key, SEXP val, void *ctx);
+static SEXP anySpecialAttribute(SEXP key, SEXP val, void *ctx);
 
 static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
@@ -55,14 +55,14 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
       list_el = VECTOR_ELT(x,i);
       if (anySpecialStatic(list_el, specials))
         return true;
-      if (R_mapAttrib(list_el, attribWalker, specials))
+      if (R_mapAttrib(list_el, anySpecialAttribute, specials))
         return true;  // #4936
     }
   }
   return false;
 }
 
-static SEXP attribWalker(SEXP key, SEXP val, void *specials) {
+static SEXP anySpecialAttribute(SEXP key, SEXP val, void *specials) {
   (void)key;
   return anySpecialStatic(val, specials) ? R_NilValue : NULL;
 }

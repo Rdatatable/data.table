@@ -257,7 +257,7 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
 }
 
 struct attrib_name_ctx {
-  hashtab *indexNames; // stores a 1/0 mark for every CHARSXP index name
+  hashtab *indexNames; // stores a 1 for every CHARSXP index name in use, 0 for removed
   R_xlen_t indexNamesLen; // how much memory to allocate for the hash?
   SEXP index; // attr(DT, "index")
   SEXP assignedNames; // STRSXP vector of variable names just assigned
