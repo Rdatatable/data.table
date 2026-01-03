@@ -686,7 +686,8 @@ SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx)
 
   SEXP ret = NULL;
   for (; !isNull(a); REPROTECT(a = CDR(a), i)) {
-    ret = fun(TAG(a), CAR(a), ctx);
+    ret = fun(PROTECT(TAG(a)), PROTECT(CAR(a)), ctx);
+    UNPROTECT(2);
     if (ret) break;
   }
 
