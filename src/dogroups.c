@@ -67,6 +67,12 @@ static SEXP attribWalker(SEXP key, SEXP val, void *specials) {
   return anySpecialStatic(val, specials) ? R_NilValue : NULL;
 }
 
+static SEXP findRowNames(SEXP key, SEXP val, void *data) {
+  (void)data;
+  if (key == R_RowNamesSymbol) return val;
+  return NULL;
+}
+
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg, SEXP showProgressArg)
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
@@ -137,12 +143,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   // override rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
-  SEXP rownames;
-  PROTECT_INDEX rownamesi;
-  PROTECT_WITH_INDEX(rownames = allocVector(INTSXP, 2), &rownamesi); nprotect++;
-  INTEGER(rownames)[0] = NA_INTEGER;
-  INTEGER(rownames)[1] = -maxGrpSize;
-  REPROTECT(rownames = setAttrib(SD, R_RowNamesSymbol, rownames), rownamesi);
+  SEXP rownames = R_mapAttrib(SD, findRowNames, NULL);
+  if (rownames == NULL) error(_("row.names attribute of .SD not found"));
+  if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
