@@ -1036,56 +1036,80 @@ replace_dot_alias = function(e) {
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
           # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
           # NB: _unary_ '-', not _binary_ '-' (#5826). Test for '!' length-2 should be redundant but low-cost & keeps code concise.
-          if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
-            negate_sdcols = TRUE
-            colsub = colsub[[2L]]
-          } else negate_sdcols = FALSE
-          # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
-          while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
-          if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
-            # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
-            .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
-          } else {
-            if (colsub %iscall% 'patterns') {
-              patterns_list_or_vector = eval_with_cols(colsub, names_x)
-              .SDcols = if (is.list(patterns_list_or_vector)) {
-                # each pattern gives a new filter condition, intersect the end result
-                Reduce(intersect, patterns_list_or_vector)
+          try_processSDcols = !(colsub %iscall% c("!", "-") && length(colsub) == 2L) && !(colsub %iscall% ':') && !(colsub %iscall% 'patterns')
+          if (try_processSDcols) {
+            tryCatch({
+              sdcols_result = .processSDcols(
+                SDcols_sub = colsub, 
+                SDcols_missing = FALSE, 
+                x = x, 
+                jsub = jsub, 
+                by = union(bynames, allbyvars), 
+                enclos = parent.frame()
+              )
+              if (!is.null(sdcols_result)) {
+                ansvars = sdvars = sdcols_result$ansvars
+                ansvals = sdcols_result$ansvals
               } else {
-                patterns_list_or_vector
+                try_processSDcols = FALSE
               }
+            }, error = function(e) {
+              try_processSDcols <<- FALSE 
+            })
+          }
+          if (!try_processSDcols) {
+
+            if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
+              negate_sdcols = TRUE
+              colsub = colsub[[2L]]
+            } else negate_sdcols = FALSE
+            # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
+            while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
+            if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
+              # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
+              .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
             } else {
-              .SDcols = eval(colsub, parent.frame(), parent.frame())
-              # allow filtering via function in .SDcols, #3950
-              if (is.function(.SDcols)) {
-                .SDcols = lapply(x, .SDcols)
-                if (any(idx <- lengths(.SDcols) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
-                  stopf("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: %s", brackify(names(x)[idx]))
-                .SDcols = unlist(.SDcols, use.names = FALSE)
+              if (colsub %iscall% 'patterns') {
+                patterns_list_or_vector = eval_with_cols(colsub, names_x)
+                .SDcols = if (is.list(patterns_list_or_vector)) {
+                  # each pattern gives a new filter condition, intersect the end result
+                  Reduce(intersect, patterns_list_or_vector)
+                } else {
+                  patterns_list_or_vector
+                }
+              } else {
+                .SDcols = eval(colsub, parent.frame(), parent.frame())
+                # allow filtering via function in .SDcols, #3950
+                if (is.function(.SDcols)) {
+                  .SDcols = lapply(x, .SDcols)
+                  if (any(idx <- lengths(.SDcols) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
+                    stopf("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: %s", brackify(names(x)[idx]))
+                  .SDcols = unlist(.SDcols, use.names = FALSE)
+                }
               }
             }
-          }
-          if (anyNA(.SDcols))
-            stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
-          if (is.logical(.SDcols)) {
-            if (length(.SDcols)!=length(x)) stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(x))
-            ansvals = which_(.SDcols, !negate_sdcols)
-            ansvars = sdvars = names_x[ansvals]
-          } else if (is.numeric(.SDcols)) {
-            .SDcols = as.integer(.SDcols)
-            # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-            if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
-            if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
-              stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
-            ansvars = sdvars = if (negate_sdcols) dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
-            ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
-          } else {
-            if (!is.character(.SDcols)) stopf(".SDcols should be column numbers or names")
-            if (!all(idx <- .SDcols %chin% names_x))
-              stopf("Some items of .SDcols are not column names: %s", brackify(.SDcols[!idx]))
-            ansvars = sdvars = if (negate_sdcols) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
-            # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
-            ansvals = chmatch(ansvars, names_x)
+            if (anyNA(.SDcols))
+              stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
+            if (is.logical(.SDcols)) {
+              if (length(.SDcols)!=length(x)) stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(x))
+              ansvals = which_(.SDcols, !negate_sdcols)
+              ansvars = sdvars = names_x[ansvals]
+            } else if (is.numeric(.SDcols)) {
+              .SDcols = as.integer(.SDcols)
+              # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
+              if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
+              if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
+                stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
+              ansvars = sdvars = if (negate_sdcols) dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
+              ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
+            } else {
+              if (!is.character(.SDcols)) stopf(".SDcols should be column numbers or names")
+              if (!all(idx <- .SDcols %chin% names_x))
+                stopf("Some items of .SDcols are not column names: %s", brackify(.SDcols[!idx]))
+              ansvars = sdvars = if (negate_sdcols) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
+              # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
+              ansvals = chmatch(ansvars, names_x)
+            }
           }
         }
         # fix for long standing FR/bug, #495 and #484

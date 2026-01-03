@@ -36,6 +36,8 @@ rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   } else {
     .SDcols = eval(sub.result, enclos)
   }
+  if (anyNA(.SDcols))
+    stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
   if (is.character(.SDcols)) {
     idx = .SDcols %chin% names_x
     if (!all(idx))

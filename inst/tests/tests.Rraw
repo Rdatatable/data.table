@@ -11468,6 +11468,11 @@ sets = local({
   by=c("color","year","status")
   lapply(length(by):0, function(i) by[0:i])
 })
+test(1750.25,   
+  cube(copy(dt), j = lapply(.SD, mean), by = "color", .SDcols = 4, id=TRUE),   
+  groupingsets(dt, j = lapply(.SD, mean), by = "color", .SDcols = "amount",
+               sets = list("color", character(0)), id = TRUE)
+)
 test(1750.31,
   rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
   groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
