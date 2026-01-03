@@ -3595,8 +3595,8 @@ local(if (utf8_check("\u00E4")) {
 eval(parse(text='  # eval(parse()) defers parsing to runtime; see utf8_check description
   DT = data.table(pas = c(1:5, NA, 6:10), good = c(1:10, NA))
   setnames(DT, "pas", "p\u00E4s")
-  test(1092, requires_utf8="\u00E4", eval(parse(text="DT[is.na(p\u00E4s), p\u00E4s := 99L]")), data.table("p\u00E4s" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
-  test(1093, requires_utf8="\u00E4", eval(parse(text="DT[, p\u00E4s := 34L]")), data.table("p\u00E4s" = 34L, good=c(1:10,NA)))
+  test(1092, DT[is.na(p\u00E4s), p\u00E4s := 99L], data.table("p\u00E4s" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
+  test(1093, DT[, p\u00E4s := 34L], data.table("p\u00E4s" = 34L, good=c(1:10,NA)))
 '))
 } else cat("Tests 1092+1093 skipped because required UTF-8 symbols cannot be represented in native encoding.\n"))
 
