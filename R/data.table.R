@@ -1038,24 +1038,25 @@ replace_dot_alias = function(e) {
           # NB: _unary_ '-', not _binary_ '-' (#5826). Test for '!' length-2 should be redundant but low-cost & keeps code concise.
           try_processSDcols = !(colsub %iscall% c("!", "-") && length(colsub) == 2L) && !(colsub %iscall% ':') && !(colsub %iscall% 'patterns')
           if (try_processSDcols) {
-            tryCatch({
-              sdcols_result = .processSDcols(
-                SDcols_sub = colsub, 
-                SDcols_missing = FALSE, 
-                x = x, 
-                jsub = jsub, 
-                by = union(bynames, allbyvars), 
-                enclos = parent.frame()
-              )
+              sdcols_result = tryCatch({
+                      .processSDcols(
+                        SDcols_sub = colsub, 
+                        SDcols_missing = FALSE, 
+                        x = x, 
+                        jsub = jsub, 
+                        by = union(bynames, allbyvars), 
+                        enclos = parent.frame()
+                      )
+                    }, error = function(e) {
+                      NULL 
+                    })
               if (!is.null(sdcols_result)) {
                 ansvars = sdvars = sdcols_result$ansvars
                 ansvals = sdcols_result$ansvals
+                try_processSDcols = TRUE
               } else {
                 try_processSDcols = FALSE
               }
-            }, error = function(e) {
-              try_processSDcols <<- FALSE
-            })
           }
           if (!try_processSDcols) {
             if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
