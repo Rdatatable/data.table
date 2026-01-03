@@ -126,7 +126,7 @@ detect_openmp () {
     else
       HOMEBREW_PREFIX=/usr/local
     fi
-    test -e "${HOMEBREW_PREFIX}/opt/libomp" ] \
+    test -e "${HOMEBREW_PREFIX}/opt/libomp" \
     && test_openmp_variant \
       "-I${HOMEBREW_PREFIX}/opt/libomp/include -Xclang -fopenmp" \
       "-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp" \
