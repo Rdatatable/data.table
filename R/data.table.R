@@ -1054,11 +1054,10 @@ replace_dot_alias = function(e) {
                 try_processSDcols = FALSE
               }
             }, error = function(e) {
-              try_processSDcols <<- FALSE 
+              try_processSDcols <<- FALSE
             })
           }
           if (!try_processSDcols) {
-
             if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
               negate_sdcols = TRUE
               colsub = colsub[[2L]]
