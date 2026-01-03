@@ -3592,7 +3592,7 @@ if (utf8_check(c(x1,x2))) {
 # for completness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
 
 local(if (utf8_check("\u00E4")) {
-eval(parse(text='
+eval(parse(text='  # eval(parse()) defers parsing to runtime; see utf8_check description
   DT = data.table(pas = c(1:5, NA, 6:10), good = c(1:10, NA))
   setnames(DT, "pas", "p\u00E4s")
   test(1092, requires_utf8="\u00E4", eval(parse(text="DT[is.na(p\u00E4s), p\u00E4s := 99L]")), data.table("p\u00E4s" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
@@ -4645,7 +4645,7 @@ test(1229.1, DT[forderv(DT, -1)], error="non-existing column")
 test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
 # umlaut in column names (red herring I think, but testing anyway
 local(if (utf8_check("\u00e4\u00f6\u00fc")) {
-  eval(parse(text = '
+  eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
     sentEx = data.table(abend = c(1, 1, 0, 0, 2),
                       aber = c(0, 1, 0, 0, 0),
                       "\u00FCber" = c(1, 0, 0, 0, 0),
@@ -20908,7 +20908,7 @@ local(if (utf8_check("\u00e4\u00f6\u00fc")) {
   x = data.table(a = 1, b = 2, c = 3)
   y = data.table(x = 4, y = 5, z = 6)
   # a-umlaut, o-umlaut, u-umlaut
-  eval(parse(text = '
+  eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
     setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
     setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
     test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))

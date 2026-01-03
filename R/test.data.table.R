@@ -370,6 +370,11 @@ gc_mem = function() {
   # nocov end
 }
 
+# Check if UTF-8 symbols can be represented in native encoding
+# R's parser requires symbol names (PRINTNAME in LANGSXP) to be in native encoding. In non-UTF-8
+# locales, parsing Unicode escapes like \u00FC fails with a warning and substitutes <U+00FC>.
+# Tests using requires_utf8 are skipped when UTF-8 cannot be represented. Using eval(parse(text=...))
+# defers parsing to runtime, allowing the encoding check to run first and avoid source() warnings.
 utf8_check = function(test_str) identical(test_str, enc2native(test_str))
 
 test = function(num, x, y=TRUE,
