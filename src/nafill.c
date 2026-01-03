@@ -218,7 +218,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   if (!binplace) {
     for (R_len_t i=0; i<nx; i++) {
-      if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
+      if (ANY_ATTRIB(VECTOR_ELT(x, i)))
         copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
     }
     SEXP obj_names = getAttrib(obj, R_NamesSymbol); // copy names
