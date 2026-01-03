@@ -135,13 +135,15 @@ detect_openmp () {
       "-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp" \
     && return
 
-    if "${CC}" --version | grep -q 'Apple clang 17'; then
-      test -e /usr/local/lib/libomp.dylib \
-      && test_openmp_variant "-Xclang -fopenmp" "/usr/local/lib/libomp.dylib" \
-      && return
-      echo "*** All OpenMP runtime tests failed and you're running Apple clang 17."
-      echo "*** Do you need a new OpenMP runtime from <https://mac.r-project.org/openmp/>?"
+    if test -e /usr/local/lib/libomp.dylib \
+      && test_openmp_variant "-Xclang -fopenmp" "/usr/local/lib/libomp.dylib"; then
+      echo "*** Using the OpenMP runtime from /usr/local/lib/libomp.dylib."
+      echo "*** Please be careful when mixing the result with CRAN binaries."
+      return
     fi
+
+    echo "*** All OpenMP tests failed and you're running macOS."
+    echo "*** Do you need an OpenMP runtime from <https://mac.r-project.org/openmp/>?"
     ;;
   esac
 
