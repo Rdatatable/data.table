@@ -41,7 +41,7 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // with PR#4164 started to copy input list columns too much. Hence PR#4655 in v1.13.2 moved that copy here just where it is needed.
   // Currently the marker is negative truelength. These specials are protected by us here and before we release them
   // we restore the true truelength for when R starts to use vector truelength.
-  SEXP attribs, list_el;
+  SEXP list_el;
   const int n = length(x);
   // use length() not LENGTH() because isNewList() is true for NULL
   if (n==0)
