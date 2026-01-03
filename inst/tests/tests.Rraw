@@ -3571,20 +3571,24 @@ test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
 test(1087, class(DT$last.x1), "ITime")
 
 # chmatch on 'unknown' encoding (e.g. as.character(as.symbol("\u00E4")) )falling back to match, #2538 and #4818
+local({
 x1 = c("al\u00E4", "ala", "\u00E4allc", "coep")
 x2 = c("ala", "al\u00E4")
-tstc = function(y) unlist(lapply(y, function(x) as.character(as.name(x))), use.names=FALSE)
-test(1088.1, requires_utf8="\u00E4", chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
-test(1088.2, requires_utf8="\u00E4", x1 %chin% x2, x1 %in% x2)
-# change x1 to symbol to character
-test(1089.1, requires_utf8="\u00E4", chmatch(tstc(x1), x2), match(tstc(x1), x2)) # should fallback to match in "x"
-test(1089.2, requires_utf8="\u00E4", tstc(x1) %chin% x2, tstc(x1) %in% x2) # should fallback to match in "x"
-# change x2 to symbol to character
-test(1090.1, requires_utf8="\u00E4", chmatch(x1,tstc(x2)), match(x1, tstc(x2))) # should fallback to match in "table"
-test(1090.2, requires_utf8="\u00E4", x1 %chin% tstc(x2), x1 %in% tstc(x2))
-# both are symbols to characters
-test(1091.1, requires_utf8="\u00E4", chmatch(tstc(x1), tstc(x2)), match(tstc(x1), tstc(x2))) # should fallback to "match" in "x" as well.
-test(1091.2, requires_utf8="\u00E4", tstc(x1) %chin% tstc(x2), tstc(x1) %in% tstc(x2))
+if (utf8_check(c(x1,x2))) {
+  tstc = function(y) unlist(lapply(y, function(x) as.character(as.name(x))), use.names=FALSE)
+  test(1088.1, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
+  test(1088.2, x1 %chin% x2, x1 %in% x2)
+  # change x1 to symbol to character
+  test(1089.1, chmatch(tstc(x1), x2), match(tstc(x1), x2)) # should fallback to match in "x"
+  test(1089.2, tstc(x1) %chin% x2, tstc(x1) %in% x2) # should fallback to match in "x"
+  # change x2 to symbol to character
+  test(1090.1, chmatch(x1,tstc(x2)), match(x1, tstc(x2))) # should fallback to match in "table"
+  test(1090.2, x1 %chin% tstc(x2), x1 %in% tstc(x2))
+  # both are symbols to characters
+  test(1091.1, chmatch(tstc(x1), tstc(x2)), match(tstc(x1), tstc(x2))) # should fallback to "match" in "x" as well.
+  test(1091.2, tstc(x1) %chin% tstc(x2), tstc(x1) %in% tstc(x2))
+} else cat("Tests 1088-1091 skipped because required UTF-8 symbols cannot be represented in native encoding.\n")
+})
 # for completness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
 
 local(if (utf8_check("\u00E4")) {
