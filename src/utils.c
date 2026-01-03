@@ -678,7 +678,7 @@ void R_resizeVector_(SEXP x, R_xlen_t newlen) {
 }
 #endif
 
-#ifdef BACKPORT_MAP_ATTRIB
+#ifdef BACKPORT_ATTRIB_API
 SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx) {
   PROTECT_INDEX i;
   SEXP a = ATTRIB(x);
@@ -694,7 +694,22 @@ SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx)
   UNPROTECT(1);
   return ret;
 }
+
+R_xlen_t R_getAttribCount_(SEXP x) {
+  R_xlen_t ret = xlength(ATTRIB(x));
+  switch (TYPEOF(x)) {
+  case LISTSXP:
+  case LANGSXP:
+  case DOTSXP:
+    for (; x != R_NilValue; x = CDR(x))
+      if (TAG(x) != R_NilValue)
+        // at least one non-empty TAG means it also has 'names'
+        return ret + 1;
+  }
+  return ret;
+}
 #endif
+
 // # nocov start
 #ifdef _WIN32
 NORET

@@ -258,20 +258,16 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
 
 struct attrib_name_ctx {
   hashtab *indexNames; // stores a 1 for every CHARSXP index name in use, 0 for removed
-  R_xlen_t indexNamesLen; // how much memory to allocate for the hash?
   SEXP index; // attr(DT, "index")
   SEXP assignedNames; // STRSXP vector of variable names just assigned
   bool verbose;
 };
 
-// Mark each CHARSXP attribute name with a 1 inside the hash, or count them to find out the allocation size.
+// Mark each CHARSXP attribute name with a 1 inside the hash.
 static SEXP getOneAttribName(SEXP key, SEXP val, void *ctx_) {
   (void)val;
   struct attrib_name_ctx *ctx = ctx_;
-  if (ctx->indexNames)
-    hash_set(ctx->indexNames, PRINTNAME(key), 1);
-  else
-    ctx->indexNamesLen++;
+  hash_set(ctx->indexNames, PRINTNAME(key), 1);
   return NULL;
 }
 
@@ -647,11 +643,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   index = getAttrib(dt, install("index"));
   if (index != R_NilValue) {
     struct attrib_name_ctx ctx = { 0, };
-    R_mapAttrib(index, getOneAttribName, &ctx); // how many attributes?
-    hashtab *h = hash_create(ctx.indexNamesLen);
+    hashtab *h = hash_create(R_getAttribCount(index));
     PROTECT(h->prot);
     ctx.indexNames = h;
-    R_mapAttrib(index, getOneAttribName, &ctx); // now remember the names
+    R_mapAttrib(index, getOneAttribName, &ctx); // remember the names
     ctx.index = index;
     ctx.assignedNames = assignedNames;
     ctx.verbose = verbose;
