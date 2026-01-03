@@ -4351,8 +4351,8 @@ x <- character(0)
 test(1163, last(x), character(0))
 
 # Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
-a<-c("a","\u00E4","\u00DF","z")
-au<-iconv(a,"UTF8","latin1")
+a = c("a","\u00E4","\u00DF","z")
+au = iconv(a,"UTF8","latin1")
 test(1164.1, requires_utf8=c("\u00E4", "\u00DF"), chmatch(a, au), match(a, au))
 
 # Bug fix for #73 - segfault when rbindlist on empty data.tables
@@ -4640,7 +4640,7 @@ test(1228.5, class(DT), class(DT[a>1, sum(b), by=a]))
 test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 
 # savetl_init error after error, in v1.9.2, thanks Arun
-DT <- data.table(x=1:5, y=10:6)
+DT = data.table(x=1:5, y=10:6)
 test(1229.1, DT[forderv(DT, -1)], error="non-existing column")
 test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
 # umlaut in column names (red herring I think, but testing anyway
