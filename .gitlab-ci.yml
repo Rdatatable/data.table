@@ -114,8 +114,8 @@ test-lin-rel:
     _R_CHECK_RD_CHECKRD_MINLEVEL_: "-Inf"
   script:
     - *install-deps
-    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' >> ~/.R/Makevars
     - echo '_R_CHECK_COMPILATION_FLAGS_KNOWN_=-Wvla' >> ~/.Renviron
     - |
         res1=0; R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
@@ -135,8 +135,8 @@ test-lin-rel-vanilla:
   variables:
     _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
   script:
-    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' >> ~/.R/Makevars
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## R-release on Linux
@@ -152,8 +152,8 @@ test-lin-rel-cran:
     _R_CHECK_PKG_SIZES_THRESHOLD_: "10"        ## MiB 'checking installed package size' NOTE increased due to po
   script:
     - *install-deps
-    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' >> ~/.R/Makevars
     - |
         res1=0; R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
         res2=0; Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (non-API) but ", shQuote(l))' || res2=$?
@@ -173,8 +173,8 @@ test-lin-dev-gcc-strict-cran:
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 -D_POSIX_C_SOURCE=200809L' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 -D_POSIX_C_SOURCE=200809L' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' >> ~/.R/Makevars
     - *install-deps
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
@@ -195,8 +195,8 @@ test-lin-dev-clang-cran:
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE"
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2 --std=c99' >> ~/.R/Makevars
     - *install-deps
     - clang-tidy -extra-arg=-I/usr/local/lib/R/include -checks='readability-inconsistent-declaration-parameter' src/*.c -- -std=c99
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
