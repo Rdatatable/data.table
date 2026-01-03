@@ -18752,7 +18752,7 @@ if (utf8_check(nc)) {
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
 } else {
   cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
-})
+}})
 
 # allow 1-D matrix in j for consistency, #783
 DT=data.table(a = rep(1:2, 3), b = 1:6)
