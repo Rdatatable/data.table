@@ -1,0 +1,31 @@
+---
+title: ""
+---
+
+```{r setup, include=FALSE}
+pkg_name = litedown:::detect_pkg()
+pkg_dir = find.package(pkg_name)
+```
+
+```{r, results='asis', echo=FALSE}
+# Read README.md from repository root (one directory up from site/)
+readme_file = normalizePath(file.path('..', 'README.md'), mustWork = FALSE)
+if (file.exists(readme_file)) {
+  readme = readLines(readme_file, warn = FALSE)
+  cat(readme, sep = '\n')
+} else {
+  cat('README.md not found.\n')
+}
+```
+
+## Links
+
+- [CRAN-like website](web/packages/data.table/index.html)
+- [CRAN-like checks](web/checks/check_results_data.table.html)
+- [Community blog](https://rdatatable-community.github.io/The-Raft/)
+
+## Citation
+
+```{r, echo=FALSE, results='asis'}
+litedown::pkg_citation(pkg_name)
+```
