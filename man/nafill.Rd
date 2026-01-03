@@ -37,6 +37,11 @@ x = c(1, NA, NaN, 3, NaN, NA, 4)
 nafill(x, "locf")
 nafill(x, "locf", nan=NaN)
 
+# works for factors
+x = gl(3, 2, 10)
+is.na(x) = 1:2
+nafill(x, "nocb")
+
 # fill= applies to any leftover NA
 nafill(c(NA, x), "locf")
 nafill(c(NA, x), "locf", fill=0)
