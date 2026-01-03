@@ -21,7 +21,7 @@ rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   names_x = names(x)
   bysub = substitute(by)
   allbyvars = intersect(all.vars(bysub), names_x)
-  usesSD = any(all.vars(jsub) == ".SD")
+  usesSD = ".SD" %chin% all.vars(jsub)
   if (!usesSD) {
     return(NULL)
   }
@@ -31,7 +31,7 @@ rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     return(list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals))
   }
   sub.result = SDcols_sub
-  if (is.call(sub.result) && as.character(sub.result[[1L]]) == "patterns") {
+  if (sub.result %iscall% "patterns") {
     .SDcols = eval_with_cols(sub.result, names_x)
   } else {
     .SDcols = eval(sub.result, enclos)

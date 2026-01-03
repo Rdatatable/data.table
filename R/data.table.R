@@ -1044,7 +1044,7 @@ replace_dot_alias = function(e) {
                         SDcols_missing = FALSE,
                         x = x,
                         jsub = jsub,
-                        by = union(bynames, allbyvars),
+                        by = substitute(by),
                         enclos = parent.frame()
                       )
                     }, error = function(e) {
