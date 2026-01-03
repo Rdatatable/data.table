@@ -73,6 +73,9 @@ fi
 # Specifically use schedule(dynamic) to distinguish incompatibilities in OpenMP runtime on macOS, #7318
 
 cat <<EOF > test-omp.c
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 void test_openmp(int * result) {
  int sum = 0;
 #ifdef _OPENMP
