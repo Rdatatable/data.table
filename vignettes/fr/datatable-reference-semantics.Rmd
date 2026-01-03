@@ -62,7 +62,7 @@ DF
 
 Quand nous faisions :
 
-```{r eval = FALSE}
+```r
 DF$c <- 18:13 # (1) -- remplacer toute une colonne
 # ou
 DF$c[DF$ID == "b"] <- 15:13 # (2) -- sous-assignation dans la colonne 'c'
@@ -90,7 +90,7 @@ Il peut être utilisé dans `j` de deux façons :
 
 (a) La forme `LHS := RHS` (côté gauche := côté droit)
 
-```{r eval = FALSE}
+```r
 DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
 
 # lorsque vous n'avez qu'une seule colonne à assigner
@@ -100,7 +100,7 @@ DT[, colA := valA]
 
 (b) La forme fonctionnelle
 
-```{r eval = FALSE}
+```r
 DT[, `:=`(colA = valA, # valA est assigné à colA
           colB = valB, # valB est assigné à colB
           ...
@@ -211,7 +211,7 @@ head(flights)
 
 * Lorsqu'il n'y a qu'une seule colonne à supprimer, nous pouvons omettre le `c()` et les guillemets doubles et simplement utiliser le nom de la colonne *sans guillemets*, pour plus de commodité. C'est-à-dire :
 
-    ```{r eval = FALSE}
+    ```r
     flights[, delay := NULL]
     ```
     
