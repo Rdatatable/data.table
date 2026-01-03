@@ -119,7 +119,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(obj, 0, obj1);
   }
-  SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+  // Step 1: Create and protect the source string
+  SEXP context_str = PROTECT(mkString("nafill")); protecti++;
+
+  // Step 2: Call colnamesInt using that string and protect the result
+  SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE), ScalarLogical(FALSE), context_str));
+  protecti++;
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
   int *icols = INTEGER(ricols);
   for (int i=0; i<length(ricols); i++) {

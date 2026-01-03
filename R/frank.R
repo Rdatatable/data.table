@@ -18,7 +18,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     cols = 1L
     x = as_list(x)
   } else {
-    cols = colnamesInt(x, cols, check_dups=TRUE)
+    cols = colnamesInt(x, cols, check_dups=TRUE, skip_absent=FALSE, context="frank")
     if (!length(cols))
       stopf("x is a list, 'cols' can not be 0-length")
   }

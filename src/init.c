@@ -129,7 +129,7 @@ static const R_CallMethodDef callMethods[] = {
     {"CfrollfunR", (DL_FUNC)&frollfunR, -1},
     {"CdllVersion", (DL_FUNC)&dllVersion, -1},
     {"CnafillR", (DL_FUNC)&nafillR, -1},
-    {"CcolnamesInt", (DL_FUNC)&colnamesInt, -1},
+    {"CcolnamesInt", (DL_FUNC)&colnamesInt, 5},
     {"CinitLastUpdated", (DL_FUNC)&initLastUpdated, -1},
     {"Ccj", (DL_FUNC)&cj, -1},
     {"Ccoalesce", (DL_FUNC)&coalesce, -1},
