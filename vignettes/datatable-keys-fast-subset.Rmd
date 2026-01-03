@@ -83,7 +83,7 @@ i.e., row names are more or less *an index* to rows of a *data.frame*. However,
 
 2. And row names should be *unique*.
 
-    ```{r eval = FALSE}
+    ```r
     rownames(DF) = sample(LETTERS[1:5], 10, TRUE)
     # Warning: non-unique values when setting 'row.names': 'C', 'D'
     # Error in `.rowNamesDF<-`(x, value = value): duplicate 'row.names' are not allowed
@@ -166,13 +166,13 @@ flights[.("JFK")]
 
 * On single column key of *character* type, you can drop the `.()` notation and use the values directly when subsetting, like subset using row names on *data.frames*.
 
-    ```{r eval = FALSE}
+    ```r
     flights["JFK"]              ## same as flights[.("JFK")]
     ```
 
 * We can subset any amount of values as required
 
-    ```{r eval = FALSE}
+    ```r
     flights[c("JFK", "LGA")]    ## same as flights[.(c("JFK", "LGA"))]
     ```
 
@@ -261,7 +261,7 @@ flights[.("LGA", "TPA"), .(arr_delay)]
 
 * We could have returned the result by using `with = FALSE` as well.
 
-    ```{r eval = FALSE}
+    ```r
     flights[.("LGA", "TPA"), "arr_delay", with = FALSE]
     ```
 
@@ -380,14 +380,14 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
 
 We have seen so far how we can set and use keys to subset. But what's the advantage? For example, instead of doing:
 
-```{r eval = FALSE}
+```r
 # key by origin,dest columns
 flights[.("JFK", "MIA")]
 ```
 
 we could have done:
 
-```{r eval = FALSE}
+```r
 flights[origin == "JFK" & dest == "MIA"]
 ```
 
@@ -396,7 +396,7 @@ One advantage very likely is shorter syntax. But even more than that, *binary se
 As the time goes `data.table` gets new optimization and currently the latter call is automatically optimized to use *binary search*.  
 To use slow *vector scan* key needs to be removed.  
 
-```{r eval = FALSE}
+```r
 setkey(flights, NULL)
 flights[origin == "JFK" & dest == "MIA"]
 ```
