@@ -46,7 +46,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 
 # in a helper to promote readability
 # NB: put the most common and recommended cases first for speed
-.cedta_impl_ <- function(ns, n) {
+.cedta_impl_ = function(ns, n) {
   if (!isNamespace(ns)) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
     return(TRUE)
@@ -59,7 +59,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 
   if (isTRUE(ns$.datatable.aware)) return(TRUE) # nocov
 
-  sc <- sys.calls()
+  sc = sys.calls()
   if (nsname == "utils") {
     if (exists("debugger.look", parent.frame(n+1L))) return(TRUE) # nocov
 
