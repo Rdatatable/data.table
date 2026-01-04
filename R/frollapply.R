@@ -127,12 +127,10 @@ fixselfref = function(x) {
 
 frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE, give.names=FALSE, simplify=TRUE, x, n) {
   if (!missing(x)) {
-    warningf("'x' is deprecated in frollapply, use 'X' instead")
-    X = x
+    stopf("'x' is deprecated in frollapply, use 'X' instead")
   }
   if (!missing(n)) {
-    warningf("'n' is deprecated in frollapply, use 'N' instead")
-    N = n
+    stopf("'n' is deprecated in frollapply, use 'N' instead")
   }
   if (!isTRUEorFALSE(by.column))
     stopf("'by.column' must be TRUE or FALSE")
@@ -259,7 +257,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   } else leftadaptive = FALSE
   if (leftadaptive) {
     if (verbose)
-      cat("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+      catf("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
     if (by.column) {
       X = lapply(X, rev)
     } else {
@@ -297,38 +295,22 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       tight = function(i, dest, src, n) FUN(.Call(CmemcpyDT, dest, src, i, n), ...)
     }
   } else {
-    #has.growable = base::getRversion() >= "3.4.0"
-    ## this is now always TRUE
-    ## we keep this branch, it may be useful when getting rid of SET_GROWABLE_BIT and SETLENGTH #6180
-    has.growable = TRUE
-    cpy = if (has.growable) function(x) .Call(Csetgrowable, copy(x)) else copy
+    cpy = function(x) .Call(CcopyAsGrowable, x)
     ansMask = function(len, n) {
       mask = seq_len(len) >= n
       mask[is.na(mask)] = FALSE ## test 6010.206
       mask
     }
     if (by.column) {
-      allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE))]
-      if (has.growable) {
-        tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...) # CmemcpyVectoradaptive handles k[i]==0
-      } else {
-        tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(src[(i-n[i]+1L):i], ...)} # nocov
-      }
+      allocWindow = function(x, n) cpy(x[seq_len(max(n, na.rm=TRUE))])
+      tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...) # CmemcpyVectoradaptive handles k[i]==0
     } else {
       if (!list.df) {
-        allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE)), , drop=FALSE]
+        allocWindow = function(x, n) cpy(x[seq_len(max(n, na.rm=TRUE)), , drop=FALSE])
       } else {
-        allocWindow = function(x, n) lapply(x, `[`, seq_len(max(n)))
+        allocWindow = function(x, n) cpy(lapply(x, `[`, seq_len(max(n))))
       }
-      if (has.growable) {
-        tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...) # CmemcpyDTadaptive handles k[i]==0
-      } else {
-        if (!list.df) { # nocov
-          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(src[(i-n[i]+1L):i, , drop=FALSE], ...)} # nocov
-        } else {
-          tight = function(i, dest, src, n) {stopf("internal error: has.growable should be TRUE, implement support for n==0"); FUN(lapply(src, `[`, (i-n[i]+1L):i), ...)} # nocov
-        }
-      }
+      tight = function(i, dest, src, n) FUN(.Call(CmemcpyDTadaptive, dest, src, i, n), ...) # CmemcpyDTadaptive handles k[i]==0
     }
   }
   ## prepare templates for errors and warnings
@@ -345,7 +327,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   DTths0 = getDTthreads(FALSE)
   use.fork0 = .Platform$OS.type!="windows" && DTths0 > 1L
   if (verbose && !use.fork0)
-    cat("frollapply running on single CPU thread\n")
+    catf("frollapply running on single CPU thread\n")
   ans = vector("list", nx*nn)
   ## vectorized x
 
@@ -411,11 +393,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             interrupt = function(e) {
               # nocov start
               suspendInterrupts({
-                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
-                parallel::mccollect(jobs, wait = FALSE)
+                lapply(jobs[.Call(Cis_direct_child, jobs)], function(pid) try(tools::pskill(pid), silent = TRUE))
+                parallel::mccollect(jobs)
               })
-              invokeRestart("abort") ## raise SIGINT
               # nocov end
+              # Let the interrupt continue without invoking restarts
             }
           )
           ## check for any errors in FUN, warnings are silently ignored

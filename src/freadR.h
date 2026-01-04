@@ -7,15 +7,13 @@
 #include <Rinternals.h>
 #include "po.h"
 
-#define FREAD_MAIN_ARGS_EXTRA_FIELDS \
-  bool oldNoDateTime; \
-  bool connectionSpillActive; \
-  double connectionSpillSeconds; \
-  double connectionSpillBytes;
+bool oldNoDateTime;
+bool connectionSpillActive;
+double connectionSpillSeconds; 
+double connectionSpillBytes;
 
-#define FREAD_PUSH_BUFFERS_EXTRA_FIELDS \
-  int nStringCols; \
-  int nNonStringCols;
+int nStringCols;
+int nNonStringCols;
 
 // Before error() [or warning() with options(warn=2)] call freadCleanup() to close mmp and fix :
 //   http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
