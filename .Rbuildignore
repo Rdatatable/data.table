@@ -17,8 +17,10 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.jj$
 ^\.vscode$
 ^\.zed$
+^\.lintr$
 
 ^\.gitlab-ci\.yml$
 

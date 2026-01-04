@@ -1,13 +1,18 @@
 ---
 title: "Использование data.table в других пакетах"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Использование data.table в других пакетах}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
+
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
 
 <style>
 h2 {
@@ -15,9 +20,9 @@ h2 {
 }
 </style>
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
+`{r} .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 Этот документ рассказывает об использовании `data.table` в качестве
 зависимости в других R-пакетах. Если вас интересует использование C-кода
@@ -472,3 +477,7 @@ result <- merge(dt, other_dt, by = "x")
 - **Упрощение обслуживания**: Это упрощает задачи обслуживания по мере
   развития API Ваших зависимостей. Слишком сильная зависимость от `Depends`
   может со временем привести к конфликтам и проблемам совместимости.
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```

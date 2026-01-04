@@ -37,7 +37,7 @@ SEXP fastmean(SEXP args)
     tmp = CADDR(args);
     if (!isLogical(tmp) || LENGTH(tmp)!=1 || LOGICAL(tmp)[0]==NA_LOGICAL)
       error(_("%s should be TRUE or FALSE"), "narm");  // # nocov ; [.data.table should construct the .External call correctly
-    narm=LOGICAL(tmp)[0];
+    narm=LOGICAL_RO(tmp)[0];
   }
   PROTECT(ans = allocNAVector(REALSXP, 1));
   copyMostAttrib(x, ans);
@@ -50,8 +50,8 @@ SEXP fastmean(SEXP args)
     case LGLSXP:
     case INTSXP:
       for (int i=0; i<l; ++i) {
-        if(INTEGER(x)[i] == NA_INTEGER) continue;
-        s += INTEGER(x)[i];   // no under/overflow here, s is long double not integer
+        if(INTEGER_RO(x)[i] == NA_INTEGER) continue;
+        s += INTEGER_RO(x)[i];   // no under/overflow here, s is long double not integer
         n++;
       }
       if (n>0)
@@ -61,8 +61,8 @@ SEXP fastmean(SEXP args)
       break;
     case REALSXP:
       for (int i=0; i<l; ++i) {
-        if(ISNAN(REAL(x)[i])) continue;  // TO DO: could drop this line and let NA propagate?
-        s += REAL(x)[i];
+        if(ISNAN(REAL_RO(x)[i])) continue;  // TO DO: could drop this line and let NA propagate?
+        s += REAL_RO(x)[i];
         n++;
       }
       if (n==0) {
@@ -72,8 +72,8 @@ SEXP fastmean(SEXP args)
       s /= n;
       if(R_FINITE((double)s)) {
         for (int i=0; i<l; ++i) {
-          if(ISNAN(REAL(x)[i])) continue;
-          t += (REAL(x)[i] - s);
+          if(ISNAN(REAL_RO(x)[i])) continue;
+          t += (REAL_RO(x)[i] - s);
         }
         s += t/n;
       }
@@ -87,21 +87,21 @@ SEXP fastmean(SEXP args)
     case LGLSXP:
     case INTSXP:
       for (int i=0; i<l; ++i) {
-        if(INTEGER(x)[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
-        s += INTEGER(x)[i];
+        if(INTEGER_RO(x)[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
+        s += INTEGER_RO(x)[i];
       }
       REAL(ans)[0] = (double) (s/l);
       break;
     case REALSXP:
       for (int i=0; i<l; ++i) {
-        if(ISNAN(REAL(x)[i])) {UNPROTECT(1); return(ans);}
-        s += REAL(x)[i];
+        if(ISNAN(REAL_RO(x)[i])) {UNPROTECT(1); return(ans);}
+        s += REAL_RO(x)[i];
       }
       s /= l;
       if(R_FINITE((double)s)) {
         for (int i=0; i<l; ++i) {
           // no NA if got this far
-          t += (REAL(x)[i] - s);
+          t += (REAL_RO(x)[i] - s);
         }
         s += t/LENGTH(x);
       }

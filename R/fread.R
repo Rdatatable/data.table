@@ -2,7 +2,7 @@ fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
-col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
+col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="", key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
@@ -30,6 +30,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  if (!is.character(comment.char) || length(comment.char) != 1L || is.na(comment.char) || nchar(comment.char) > 1L) {
+    stopf("comment.char= must be a single non-NA character.")
+  }
   fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
@@ -60,7 +63,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       # input is data itself containing at least one \n or \r
     } else if (startsWith(input, " ")) {
       stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
-    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
+    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(gsub("^file://", "", input))) {  # file name or path containing spaces is not a command. file.exists() doesn't understand file:// (#7550)
       cmd = input
       if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
         messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
@@ -119,6 +122,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
+      # not worth doing a behavior test here, so just use getRversion().
+      if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
+        stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
       FUN = if (w<=2L || gzsig) gzfile else bzfile
       decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
@@ -176,39 +182,8 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     call_args = names(match.call())
     if (is.character(skip))
       warningf("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
-    # create connection to stream header lines from file:
-    #   https://stackoverflow.com/questions/9871307
-    f = base::file(input, 'r')
-    first_line = readLines(f, n=1L)
-    n_read = 1L
-    yaml_border_re = '^#?---'
-    if (!grepl(yaml_border_re, first_line)) {
-      close(f)
-      stopf(
-        'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
-        substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
-      )
-    }
-
-    yaml_comment_re = '^#'
-    yaml_string = character(0L)
-    repeat {
-      this_line = readLines(f, n=1L)
-      n_read = n_read + 1L
-      if (!length(this_line)){
-        close(f)
-        stopf('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching the regex "%s". Please double check the input file is a valid csvy.', yaml_border_re)
-      }
-      if (grepl(yaml_border_re, this_line)) break
-      if (grepl(yaml_comment_re, this_line))
-        this_line = sub(yaml_comment_re, '', this_line)
-      yaml_string = paste(yaml_string, this_line, sep='\n')
-    }
-    close(f) # when #561 is implemented, no need to close f.
-
-    yaml_header = yaml::yaml.load(yaml_string)
+    yaml_header = .read_yaml_header(input, skip, verbose)
     yaml_names = names(yaml_header)
-    if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) messagef("User-supplied 'header' will override that found in metadata.")
@@ -286,7 +261,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     if (identical(tt,"") || is_utc(tt)) # empty TZ env variable ("") means UTC in C library, unlike R; _unset_ TZ means local
       tz="UTC"
   }
-  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
+  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,comment.char,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
@@ -377,6 +352,44 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   }
   ans
 }
+
+# nocov start. Covered only in other.Rraw
+.read_yaml_header = function(f, skip, verbose) {
+  # create connection to stream header lines from file:
+  #   https://stackoverflow.com/questions/9871307
+  con = base::file(f, 'r')
+  # NB: close() won't be right if 'f' itself can be a file connection (#561)
+  on.exit(close(con))
+
+  first_line = readLines(con, n=1L)
+  n_read = 1L
+  yaml_border_re = '^#?---'
+  if (!grepl(yaml_border_re, first_line)) {
+    stopf(
+      'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
+      substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
+    )
+  }
+
+  yaml_comment_re = '^#'
+  yaml_string = character(0L)
+  repeat {
+    this_line = readLines(con, n=1L)
+    n_read = n_read + 1L
+    if (!length(this_line)){
+      stopf('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching the regex "%s". Please double check the input file is a valid csvy.', yaml_border_re)
+    }
+    if (grepl(yaml_border_re, this_line)) break
+    if (grepl(yaml_comment_re, this_line))
+      this_line = sub(yaml_comment_re, '', this_line)
+    yaml_string = paste(yaml_string, this_line, sep='\n')
+  }
+
+  yaml_header = yaml::yaml.load(yaml_string)
+  if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(names(yaml_header)))
+  yaml_header
+}
+# nocov end.
 
 known_signatures = list(
   zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
