@@ -85,14 +85,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
   SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
   SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
-<<<<<<< HEAD
-  
+
   int updateTime = INTEGER(showProgressArg)[0];
   const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
-=======
-
-  const bool showProgress = LOGICAL(showProgressArg)[0]==1 && ngrp > 1; // showProgress only if more than 1 group
->>>>>>> master
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
   double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before printing progress
 
