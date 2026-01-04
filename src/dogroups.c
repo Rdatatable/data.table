@@ -143,7 +143,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   // override rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
-  SEXP rownames = R_mapAttrib(SD, findRowNames, NULL);
+  SEXP rownames = PROTECT(R_mapAttrib(SD, findRowNames, NULL)); nprotect++;
   if (rownames == NULL) error(_("row.names attribute of .SD not found"));
   if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
 
