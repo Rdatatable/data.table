@@ -7,7 +7,6 @@
 #include <Rinternals.h>
 #include "po.h"
 
-bool oldNoDateTime;
 bool connectionSpillActive;
 double connectionSpillSeconds; 
 double connectionSpillBytes;
