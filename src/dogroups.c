@@ -452,17 +452,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // could potentially refactor to use fread's progress() function, however we would lose some information in favor of simplicity.
     double now;
     if (showProgress && (now=wallclock())>=nextTime) {
+      // # nocov start. Requires long-running test case
       double avgTimePerGroup = (now-startTime)/(i+1);
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
-        // # nocov start. Requires long-running test case
         if (verbose && !hasPrinted) Rprintf(_("\n"));
         Rprintf("\r"); // # notranslate. \r is not internationalizable
         Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
-        // # nocov end
       }
       nextTime = now+updateTime;
       hasPrinted = true;
+      // # nocov end
     }
     ansloc += maxn;
     if (firstalloc) {
