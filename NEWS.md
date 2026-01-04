@@ -16,7 +16,7 @@
 
 1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
 
-2. `showProgress` argument and `options("datatable.showProgress")` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
+2. `[,showProgress` and `options(datatable.showProgress)` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
 
 ### Notes
 
