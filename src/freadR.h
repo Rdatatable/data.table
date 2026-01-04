@@ -12,9 +12,6 @@ bool connectionSpillActive;
 double connectionSpillSeconds; 
 double connectionSpillBytes;
 
-int nStringCols;
-int nNonStringCols;
-
 // Before error() [or warning() with options(warn=2)] call freadCleanup() to close mmp and fix :
 //   http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
 // However, msg has to be manually constructed first (rather than simply leaving construction to snprintf inside warning()
