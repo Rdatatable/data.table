@@ -1577,7 +1577,7 @@ msgid ""
 "Git revision is not available. Most likely data.table was installed from "
 "CRAN or local archive.\n"
 "Git revision is available when installing from our repositories 'https://"
-"rdatatable.gitlab.io/data.table' and 'https://rdatatable.github.io/"
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/"
 "data.table'."
 msgstr ""
 
