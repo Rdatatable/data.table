@@ -174,6 +174,11 @@ typedef struct freadMainArgs
   // Any additional implementation-specific parameters.
   bool oldNoDateTime;
 
+  // Connection spill tracking
+  bool connectionSpillActive;
+  double connectionSpillSeconds;
+  double connectionSpillBytes;
+
 } freadMainArgs;
 
 
