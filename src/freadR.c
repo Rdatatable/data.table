@@ -1,6 +1,8 @@
 #include "fread.h"
 #include "freadR.h"
 #include "data.table.h"
+#include <R_ext/Connections.h>
+#include <errno.h>
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
@@ -28,6 +30,7 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 static int  typeSxp[NUT]       = { NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP    };
 static char typeRName[NUT][10] = { "NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"   };
 static int  typeEnum[NUT]      = { CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_BOOL8_Y, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING };
+
 static colType readInt64As = CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -77,7 +80,8 @@ SEXP freadR(
   SEXP integer64Arg,
   SEXP encodingArg,
   SEXP keepLeadingZerosArgs,
-  SEXP noTZasUTC
+  SEXP noTZasUTC,
+  SEXP connectionSpillArg
 )
 {
   verbose = LOGICAL(verboseArg)[0];
@@ -170,6 +174,19 @@ SEXP freadR(
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
   args.noTZasUTC = LOGICAL(noTZasUTC)[0];
+  args.connectionSpillActive = false;
+  args.connectionSpillSeconds = 0.0;
+  args.connectionSpillBytes = 0.0;
+  if (!isNull(connectionSpillArg)) {
+    if (!isReal(connectionSpillArg) || LENGTH(connectionSpillArg) != 2)
+      internal_error(__func__, "connectionSpillArg must be length-2 real vector"); // # nocov
+    const double *spill = REAL(connectionSpillArg);
+    args.connectionSpillSeconds = spill[0];
+    args.connectionSpillBytes = spill[1];
+    if (!R_FINITE(args.connectionSpillSeconds) || args.connectionSpillSeconds < 0) args.connectionSpillSeconds = 0.0;
+    if (!R_FINITE(args.connectionSpillBytes) || args.connectionSpillBytes < 0) args.connectionSpillBytes = 0.0;
+    args.connectionSpillActive = true;
+  }
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg) != 1) error(_("'integer64' must be a single character string"));
@@ -722,6 +739,111 @@ void progress(int p, int eta)
   }
 }
 // # nocov end
+
+#if R_CONNECTIONS_VERSION == 1
+typedef struct {
+  Rconnection con;
+  const char *filepath;
+  size_t row_limit;
+  FILE *outfile;
+  char *buffer;
+} SpillState;
+
+static void spill_cleanup(void *data)
+{
+  SpillState *state = (SpillState *)data;
+  if (!state) return;
+  free(state->buffer); // free(NULL) is safe no-op
+  if (state->outfile) {
+    fclose(state->outfile);
+  }
+}
+
+static SEXP do_spill(void *data)
+{
+  SpillState *state = (SpillState *)data;
+  const size_t chunk_size = 256 * 1024; // TODO tune chunk size
+
+  state->outfile = fopen(state->filepath, "wb");
+  if (state->outfile == NULL) {
+    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), state->filepath, strerror(errno)); // # nocov
+  }
+
+  state->buffer = malloc(chunk_size);
+  if (!state->buffer) {
+    STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
+  }
+  const bool limit_rows = state->row_limit > 0;
+  size_t total_read = 0;
+  size_t nrows_seen = 0;
+
+  while (true) {
+    size_t nread = R_ReadConnection(state->con, state->buffer, chunk_size);
+    if (nread == 0) {
+      break; // EOF
+    }
+
+    size_t bytes_to_write = nread;
+    if (limit_rows && nrows_seen < state->row_limit) {
+      for (size_t i = 0; i < nread; i++) {
+        if (state->buffer[i] == '\n') {
+          nrows_seen++;
+          if (nrows_seen >= state->row_limit) {
+            bytes_to_write = i + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    size_t nwritten = fwrite(state->buffer, 1, bytes_to_write, state->outfile);
+    if (nwritten != bytes_to_write) {
+      STOP(_("spillConnectionToFile: write error %s (wrote %zu of %zu bytes)"), strerror(errno), nwritten, bytes_to_write); // # nocov
+    }
+    total_read += bytes_to_write;
+
+    if (limit_rows && nrows_seen >= state->row_limit) {
+      break;
+    }
+  }
+
+  return ScalarReal((double)total_read);
+}
+#endif // R_CONNECTIONS_VERSION == 1
+
+// Spill connection contents to a tempfile so R-level fread can treat it like a filename
+SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit) {
+#if R_CONNECTIONS_VERSION == 1
+  if (!isString(tempfile_path) || LENGTH(tempfile_path) != 1) {
+    INTERNAL_STOP(_("spillConnectionToFile: tempfile_path must be a single string")); // # nocov
+  }
+
+  if (!isReal(nrows_limit) || LENGTH(nrows_limit) != 1) {
+    INTERNAL_STOP(_("spillConnectionToFile: nrows_limit must be a single numeric value")); // # nocov
+  }
+
+  SpillState state = {
+    .con = R_GetConnection(connection),
+    .filepath = translateChar(STRING_ELT(tempfile_path, 0)),
+    .row_limit = 0,
+    .outfile = NULL,
+    .buffer = NULL
+  };
+
+  const double nrows_max = REAL_RO(nrows_limit)[0];
+  if (R_FINITE(nrows_max) && nrows_max >= 0.0) {
+    if (nrows_max > SIZE_MAX)
+      STOP(_("spillConnectionToFile: nrows_limit (%g) must fit into a native-size unsigned integer (<= %zu)"), nrows_max, (size_t)SIZE_MAX); // # nocov
+    state.row_limit = (size_t)nrows_max;
+    if (state.row_limit == 0) state.row_limit = 100;  // read at least 100 rows if nrows==0
+    state.row_limit++; // cater for potential header row
+  }
+
+  return R_ExecWithCleanup(do_spill, &state, spill_cleanup, &state);
+#else // R_CONNECTIONS_VERSION != 1
+  INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", R_CONNECTIONS_VERSION)); // # nocov
+#endif
+}
 
 void halt__(bool warn, const char *format, ...)
 {

@@ -2738,11 +2738,13 @@ if (test_bit64) {
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
 if (test_R.utils) {
   f = testDir("ch11b.dat.bz2")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
-  test(900.1, fread(f, logical01=FALSE), as.data.table(read.table(f)))
+  test(900.1, DT<-fread(f, logical01=FALSE), as.data.table(read.table(f)))
+  test(900.15, fread(file(f), logical01=FALSE), DT)
   test(900.2, fread(f, logical01=TRUE), as.data.table(read.table(f))[,V5:=as.logical(V5)])
 
   f = testDir("1206FUT.txt.bz2")    # a CRLF line ending file (DOS)
   test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
+  test(901.15, fread(file(f), strip.white=FALSE), DT)
   test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)),strip.white=TRUE)))
 }
 
@@ -6656,8 +6658,10 @@ if (test_bit64 && test_R.utils) {
     ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
     JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
   )
-  test(1449.1, fread(testDir("quoted_multiline.csv.bz2"))[c(1L, 43:44), c(1L, 22:24)], DT)
-  test(1449.2, fread(testDir("quoted_multiline.csv.bz2"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
+  f = testDir("quoted_multiline.csv.bz2")
+  test(1449.1, fread(f)[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.15, fread(file(f))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(f, integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
 }
 
 # Fix for #927
@@ -21978,3 +21982,17 @@ local({
   test(2357.1, fread(f), DT)
   test(2357.2, fread(paste0("file://", f)), DT)
 })
+
+# fread supports connections #561
+f = testDir("russellCRLF.csv")
+test(2358.1, fread(file=file(f, "r"), verbose=TRUE), fread(f), output="Spill connection to tempfile")
+test(2358.2, fread(file(f, "r"), nrows=0L), fread(f, nrows=0L))
+test(2358.3, fread(file(f, "r"), nrows=5), fread(f, nrows=5))
+test(2358.4, fread(file(f, "r"), nrows=5, header=FALSE), fread(f, nrows=5, header=FALSE))
+# test with open connection consuming part of the connection before fread
+con = file(f, "rb")
+test(2358.5, {readLines(con, n=3); fread(con)}, fread(f, skip=3L))
+close(con)
+file.create(f <- tempfile())
+test(2358.6, fread(file(f)), data.table(), warning="Connection has size 0.")
+unlink(f)

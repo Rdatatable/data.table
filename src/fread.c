@@ -1576,9 +1576,16 @@ int freadMain(freadMainArgs _args)
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
     #endif
-      int nbit = 8 * sizeof(char*); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
-           nbit <= 32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
+      // # nocov start
+      int nbit = 8 * sizeof(char*);
+      if (nrowLimit < INT64_MAX) {
+        STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. Since you specified nrows=%"PRId64", try wrapping the file in a connection: fread(file('filename'), nrows=%"PRId64")."),
+             filesize_to_str(fileSize), nbit, nrowLimit, nrowLimit);
+      } else {
+        STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
+             nbit <= 32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available"));
+      }
+      // # nocov end
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
@@ -2970,7 +2977,10 @@ int freadMain(freadMainArgs _args)
 
   if (verbose) {
     DTPRINT("=============================\n"); // # notranslate
+    tTot = tTot + (args.connectionSpillActive ? args.connectionSpillSeconds : 0.0);
     if (tTot < 0.000001) tTot = 0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
+    if (args.connectionSpillActive)
+      DTPRINT(_("%8.3fs (%3.0f%%) Spill connection to tempfile (%.3fGiB)\n"), args.connectionSpillSeconds, 100.0 * args.connectionSpillSeconds / tTot, args.connectionSpillBytes / (1024.0 * 1024.0 * 1024.0));
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout - tMap, 100.0 * (tLayout - tMap) / tTot);
       DTPRINT(sep == '\t' ? "'\\t'" : (sep == '\n' ? "'\\n'" : "'%c'"), sep); // # notranslate

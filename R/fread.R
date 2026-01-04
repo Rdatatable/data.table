@@ -1,3 +1,39 @@
+# nocov start
+# S3 generic that returns a function to open connections in binary mode
+binary_reopener = function(con, ...) {
+  UseMethod("binary_reopener")
+}
+
+binary_reopener.default = function(con, ...) {
+  con_class = class1(con)
+  stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
+}
+
+binary_reopener.file = function(con, ...) {
+  function(description) file(description, "rb", ...)
+}
+
+binary_reopener.gzfile = function(con, ...) {
+  function(description) gzfile(description, "rb", ...)
+}
+
+binary_reopener.bzfile = function(con, ...) {
+  function(description) bzfile(description, "rb", ...)
+}
+
+binary_reopener.url = function(con, ...) {
+  function(description) url(description, "rb", ...)
+}
+
+binary_reopener.unz = function(con, ...) {
+  function(description) unz(description, "rb", ...)
+}
+
+binary_reopener.pipe = function(con, ...) {
+  function(description) pipe(description, "rb", ...)
+}
+# nocov end
+
 fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
@@ -55,7 +91,16 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       input = text
     }
   }
-  else if (is.null(cmd)) {
+  # Check if input is a connection and read it into memory
+  input_is_con = FALSE
+  if (!missing(input) && inherits(input, "connection")) {
+    input_is_con = TRUE
+  } else if (!is.null(file) && inherits(file, "connection")) {
+    input = file
+    input_is_con = TRUE
+    file = NULL
+  }
+  if (!input_is_con && is.null(cmd) && is.null(text)) {
     if (!is.character(input) || length(input)!=1L) {
       stopf("input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
     }
@@ -79,6 +124,51 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     if (status != 0) {
       stopf("External command failed with exit code %d. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", status, tmpdir)
     }
+    file = tmpFile
+  }
+  connection_spill_info = NULL
+  if (input_is_con) {
+    if (verbose) {
+      catf("[00] Spill connection to tempfile\n  Connection class: %s\n  Reading connection into a temporary file... ", toString(class(input)))
+      flush.console()
+    }
+    spill_started.at = proc.time()
+    con_open = isOpen(input)
+
+    needs_reopen = FALSE
+    if (con_open) {
+      con_summary = summary(input)
+      binary_modes = c("rb", "r+b")
+      if (!con_summary$mode %chin% binary_modes) needs_reopen = TRUE
+    }
+
+    close_con = NULL
+
+    if (needs_reopen) {
+      close(input)
+      input = binary_reopener(input)(con_summary$description)
+      close_con = input
+    } else if (!con_open) {
+      open(input, "rb")
+      close_con = input
+    }
+    if (!is.null(close_con)) on.exit(close(close_con), add=TRUE)
+    tmpFile = tempfile(tmpdir=tmpdir)
+    on.exit(unlink(tmpFile), add=TRUE)
+    bytes_copied = .Call(CspillConnectionToFile, input, tmpFile, as.numeric(nrows))
+    spill_elapsed = (proc.time() - spill_started.at)[["elapsed"]]
+
+    if (bytes_copied == 0) {
+      warningf("Connection has size 0. Returning a NULL %s.", if (data.table) 'data.table' else 'data.frame')
+      return(if (data.table) data.table(NULL) else data.frame(NULL))
+    }
+
+    if (verbose) {
+      catf("done in %s\n", timetaken(spill_started.at))
+      flush.console()
+    }
+    connection_spill_info = c(spill_elapsed, bytes_copied)
+    input = tmpFile
     file = tmpFile
   }
   if (!is.null(file)) {
@@ -262,7 +352,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       tz="UTC"
   }
   ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,comment.char,
-              fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
+              fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC",connection_spill_info)
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
   require_bit64_if_needed(ans)
