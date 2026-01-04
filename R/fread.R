@@ -63,7 +63,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       # input is data itself containing at least one \n or \r
     } else if (startsWith(input, " ")) {
       stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
-    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
+    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(gsub("^file://", "", input))) {  # file name or path containing spaces is not a command. file.exists() doesn't understand file:// (#7550)
       cmd = input
       if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
         messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
