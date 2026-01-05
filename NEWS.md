@@ -16,6 +16,8 @@
 
 1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
 
+2. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `list_search=TRUE`, with `list_len_threshold` to avoid scanning extremely long lists, [#2606](https://github.com/Rdatatable/data.table/issues/2606).
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

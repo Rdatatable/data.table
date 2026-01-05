@@ -21978,3 +21978,19 @@ local({
   test(2357.1, fread(f), DT)
   test(2357.2, fread(paste0("file://", f)), DT)
 })
+
+#2606 tables() list_search finds nested data.tables in lists
+xenv2 = new.env()
+xenv2$L = list(
+  data.table(a = 1L),
+  data.table(a = 1:2)
+)
+test(2358.1,
+  tables(env = xenv2, silent = TRUE, list_search = TRUE)[, .(NAME, NROW, NCOL)],
+  data.table(NAME = c("L[[1]]", "L[[2]]"), NROW = c(1L, 2L), NCOL = c(1L, 1L))
+)
+test(2358.2,
+  nrow(tables(env = xenv2, silent = TRUE, list_search = TRUE, list_len_threshold = 1L)),
+  0L
+)
+rm(xenv2)
