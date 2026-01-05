@@ -24,6 +24,8 @@
 
 3. Vignettes are now built using `litedown` instead of `knitr`, [#6394](https://github.com/Rdatatable/data.table/issues/6394). Thanks @jangorecki for the suggestion and @ben-schwen and @aitap for the implementation.
 
+4. `fread` now prints a message by default when creating one or more integer64 columns, warning that this type sometimes give unexpected results like in case of as.matrix(). The message can be suppressed with the new argument `no.integer64.message=TRUE`. To avoid integer64 columns, we can use options(datatable.integer64='numeric'). Thanks to @stefanfritsch, @mattdowle for the suggestion. [#3611](https://github.com/Rdatatable/data.table/issues/3611)
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

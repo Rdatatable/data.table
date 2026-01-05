@@ -21978,3 +21978,12 @@ local({
   test(2357.1, fread(f), DT)
   test(2357.2, fread(paste0("file://", f)), DT)
 })
+#3611 fread integer64 message
+test(2358.1,
+  suppressMessages(fread("a\n1\n2\n", colClasses = "integer64")),
+  data.table(a = as.integer64(c(1,2)))
+)
+test(2358.2,
+  suppressMessages(fread("a\n1\n2\n", colClasses = "integer64", no.integer64.message = TRUE)),
+  data.table(a = as.integer64(c(1,2)))
+)
