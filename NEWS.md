@@ -32,6 +32,8 @@
 
 3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
 
+4. Grouping operations with constant `list()` expressions in `j` are now optimized to avoid per-group allocation overhead, [#712](https://github.com/Rdatatable/data.table/issues/712). Thanks @macrakis for the report and @ben-schwen for the fix.
+
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
 ### BREAKING CHANGE

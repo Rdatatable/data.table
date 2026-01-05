@@ -1653,6 +1653,14 @@ replace_dot_alias = function(e) {
   if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && jsub %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     oldjsub = jsub
+
+    # Optimization: unwrap constant list() expressions to avoid per-group allocation
+    # e.g., list(1) -> 1, where the value is a simple atomic constant
+    if (jsub %iscall% "list" && length(jsub) == 2L && !is.null(jsub[[2L]]) && !is.call(jsub[[2L]]) && is_constantish(jsub[[2L]])) {
+      jsub = jsub[[2L]]
+      if (verbose) catf("Optimized j from list(constant) to bare constant\n")
+    }
+
     funi = 1L # Fix for #985
     # converted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
     .massageSD = function(jsub) {
