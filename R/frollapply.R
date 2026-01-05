@@ -127,12 +127,10 @@ fixselfref = function(x) {
 
 frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE, give.names=FALSE, simplify=TRUE, x, n) {
   if (!missing(x)) {
-    warningf("'x' is deprecated in frollapply, use 'X' instead")
-    X = x
+    stopf("'x' is deprecated in frollapply, use 'X' instead")
   }
   if (!missing(n)) {
-    warningf("'n' is deprecated in frollapply, use 'N' instead")
-    N = n
+    stopf("'n' is deprecated in frollapply, use 'N' instead")
   }
   if (!isTRUEorFALSE(by.column))
     stopf("'by.column' must be TRUE or FALSE")
@@ -395,11 +393,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             interrupt = function(e) {
               # nocov start
               suspendInterrupts({
-                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
-                parallel::mccollect(jobs, wait = FALSE)
+                lapply(jobs[.Call(Cis_direct_child, jobs)], function(pid) try(tools::pskill(pid), silent = TRUE))
+                parallel::mccollect(jobs)
               })
-              invokeRestart("abort") ## raise SIGINT
               # nocov end
+              # Let the interrupt continue without invoking restarts
             }
           )
           ## check for any errors in FUN, warnings are silently ignored
