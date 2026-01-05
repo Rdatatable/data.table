@@ -87,6 +87,11 @@ void test_openmp(int * result) {
 EOF
 
 test_openmp_variant () {
+  # Observed in GitHub Actions: if test_openmp_variant is too fast to compile the next object file,
+  # Make (invoked by R CMD SHLIB) will not consider the previous shared object old enough and won't
+  # link it anew. --preclean only removes the object files; remove the target as well.
+  "${R_HOME}"/bin/Rscript -e 'unlink(paste0("test-omp", .Platform$dynlib.ext))'
+
   cflags="${PKG_CFLAGS:+${PKG_CFLAGS} }$1"
   libs="${PKG_LIBS:+${PKG_LIBS} }$2"
   printf "%s" "* checking if OpenMP works with CFLAGS='$cflags' LIBS='$libs'... "
