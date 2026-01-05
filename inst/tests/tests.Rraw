@@ -21968,3 +21968,13 @@ test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.tab
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
 test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
+
+# fread works on file:// URIs with spaces, #7550
+local({
+  f = tempfile("with spaces"); on.exit(unlink(f))
+  DT = data.table(a = 1L, b = 2L)
+  fwrite(DT, f)
+
+  test(2357.1, fread(f), DT)
+  test(2357.2, fread(paste0("file://", f)), DT)
+})
