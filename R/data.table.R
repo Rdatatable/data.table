@@ -518,7 +518,7 @@ replace_dot_alias = function(e) {
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
       i = .shallow(i, retain.key = TRUE)
-      ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
+      ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose, notjoin=notjoin)
       if (mult == "error") mult = "all" ## error should have been raised inside bmerge() call above already, if it wasn't continue as mult="all"
       xo = ans$xo ## to make it available for further use.
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
