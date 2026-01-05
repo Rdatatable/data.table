@@ -22037,11 +22037,11 @@ xenv2$L = list(
   data.table(a = 1L),
   data.table(a = 1:2)
 )
-test(2358.1,
+test(2360.1,
   tables(env = xenv2, silent = TRUE, list_search = TRUE)[, .(NAME, NROW, NCOL)],
   data.table(NAME = c("L[[1]]", "L[[2]]"), NROW = c(1L, 2L), NCOL = c(1L, 1L))
 )
-test(2358.2,
+test(2360.2,
   nrow(tables(env = xenv2, silent = TRUE, list_search = TRUE, list_len_threshold = 1L)),
   0L
 )
