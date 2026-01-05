@@ -390,58 +390,77 @@ names(sdlist) <- sdnames
 opts = 0:2
 test(2283 + 0.01, optimize=opts,
        names(M[, c(m=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(m=sdlist))))
+       c("cyl", names(c(m=sdlist))),
+       context=sprintf("optimize=%s [I]", format(opt)))
 test(2283 + 0.02, optimize=opts,
        names(M[, c(Mpg=list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "Mpg", sdnames))
+       c("cyl", "Mpg", sdnames),
+       context=sprintf("optimize=%s [II]", format(opt)))
 test(2283 + 0.03, optimize=opts,
        names(M[, c(Mpg=list(mpg), m=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "Mpg", names(c(m=sdlist))))
+       c("cyl", "Mpg", names(c(m=sdlist))),
+       context=sprintf("optimize=%s [III]", format(opt)))
 test(2283 + 0.04, optimize=opts,
        names(M[, c(mpg=list(mpg), mpg=lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "mpg", names(c(mpg=sdlist))))
+       c("cyl", "mpg", names(c(mpg=sdlist))),
+       context=sprintf("optimize=%s [IV]", format(opt)))
 test(2283 + 0.05, optimize=opts,
        names(M[, c(list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", "V1", sdnames))
+       c("cyl", "V1", sdnames),
+       context=sprintf("optimize=%s [V]", format(opt)))
 test(2283 + 0.06, optimize=opts,
        names(M[, c(lapply(.SD, mean), list(mpg)), by="cyl"]),
-       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)))
+       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)),
+       context=sprintf("optimize=%s [VI]", format(opt)))
 test(2283 + 0.07, optimize=opts,
        names(M[, c(lapply(.SD, mean), lapply(.SD, sum)), by="cyl"]),
-       c("cyl", sdnames, sdnames))
+       c("cyl", sdnames, sdnames),
+       context=sprintf("optimize=%s [VII]", format(opt)))
 test(2283 + 0.08, optimize=opts,
        names(M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", names(c(mean=sdlist, sum=sdlist))))
+       c("cyl", names(c(mean=sdlist, sum=sdlist))),
+       context=sprintf("optimize=%s [VIII]", format(opt)))
 test(2283 + 0.09, optimize=opts,
        names(M[, c(lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", sdnames, names(c(sum=sdlist))) )
+       c("cyl", sdnames, names(c(sum=sdlist))),
+       context=sprintf("optimize=%s [IX]", format(opt)))
 test(2283 + 0.10, optimize=opts,
        names(M[, c(" "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]),
-       c("cyl", names(c(" "=sdlist, "."=sdlist))))
+       c("cyl", names(c(" "=sdlist, "."=sdlist))),
+       context=sprintf("optimize=%s [X]", format(opt)))
 test(2283 + 0.11, optimize=opts,
        names(M[, c(A=list(a=mpg, b=hp), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(a=0, b=0))), sdnames))
+       c("cyl", names(c(A=list(a=0, b=0))), sdnames),
+       context=sprintf("optimize=%s [XI]", format(opt)))
 test(2283 + 0.12, optimize=opts,
        names(M[, c(A=list(mpg, hp), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0, 0))), sdnames))
+       c("cyl", names(c(A=list(0, 0))), sdnames),
+       context=sprintf("optimize=%s [XII]", format(opt)))
 test(2283 + 0.13, optimize=opts,
        names(M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0, b=0, 0))), sdnames))
+       c("cyl", names(c(A=list(0, b=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XIII]", format(opt)))
 test(2283 + 0.14, optimize=opts,
        names(M[, c(A=list(mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(A=list(0))), sdnames))
+       c("cyl", names(c(A=list(0))), sdnames),
+       context=sprintf("optimize=%s [XIV]", format(opt)))
 test(2283 + 0.15, optimize=opts,
        names(M[, c(" "=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames))
+       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XV]", format(opt)))
 test(2283 + 0.16, optimize=opts,
        names(M[, c("."=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
-       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames))
+       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames),
+       context=sprintf("optimize=%s [XVI]", format(opt)))
 test(2283 + 0.17, optimize=opts,
        names(M[, c(list(mpg, b=hp), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "b", "vs", "am"))
+       c("cyl", "V1", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XVII]", format(opt)))
 test(2283 + 0.18, optimize=opts,
        names(M[, c(list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "b", "vs", "am"))
+       c("cyl", "V1", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XVIII]", format(opt)))
 test(2283 + 0.19, optimize=opts,
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
-       c("cyl", "V1", "V2", "b", "vs", "am"))
+       c("cyl", "V1", "V2", "b", "vs", "am"),
+       context=sprintf("optimize=%s [XIX]", format(opt)))
