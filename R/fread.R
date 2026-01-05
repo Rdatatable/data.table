@@ -7,8 +7,8 @@ showProgress=getOption("datatable.showProgress",interactive()), data.table=getOp
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, tmpdir=tempdir(), tz="UTC",
-no.integer64.message=getOption("datatable.integer64.message", FALSE))
+yaml=FALSE, tmpdir=tempdir(), tz="UTC", no.integer64.message=FALSE
+)
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stopf("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -273,7 +273,7 @@ no.integer64.message=getOption("datatable.integer64.message", FALSE))
   # integer64 message on create - instead of warning
   if (!isTRUE(no.integer64.message) &&
       identical(integer64, "integer64") &&
-      any(vapply(ans, function(x) inherits(x, "integer64"), logical(1L)))) {
+      any(vapply(ans, inherits, logical(1L), what = "integer64"))) {
     message(
       "fread: Creating one or more integer64 columns. 
       See ?fread and ?bit64::integer64.

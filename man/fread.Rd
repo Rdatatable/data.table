@@ -26,10 +26,7 @@ logical01=getOption("datatable.logical01", FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
 yaml=FALSE, tmpdir=tempdir(), tz="UTC",
-no.integer64.message=getOption("datatable.integer64.message", FALSE)
-  \item{no.integer64.message}{ Logical. If FALSE (default), fread will print a message when creating one or more integer64 columns, warning that this type is not fully supported in base R (e.g., as.matrix() will not work as expected). To suppress the message, set this argument to TRUE or use \code{options(datatable.integer64.message=TRUE)}. To avoid integer64 columns entirely, use \code{options(datatable.integer64='numeric')}. }
-\bold{integer64 columns:}
-If fread creates integer64 columns, it prints a message by default to inform the user.
+no.integer64.message=FALSE
 )
 }
 \arguments{
