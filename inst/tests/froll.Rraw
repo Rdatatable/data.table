@@ -11,7 +11,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
 exact_NaN = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
 if (!exact_NaN) {
-  cat("\n**** Skipping 7 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
+  cat("\n**** Skipping 8 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
   # for Matt when he runs valgrind it is 53, but 64 when running regular R
   # froll.c uses long double and appears to require full long double accuracy in the algo='exact'
 }
@@ -1448,9 +1448,12 @@ test(6001.727, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact"), c(NA_
 test(6001.728, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE), c(NA_real_,NA_real_,NA_real_))
 test(6001.729, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), algo="exact", na.rm=TRUE, partial=TRUE), c(NA_real_,NA_real_,NA_real_))
 test(6001.730, frollvar(adaptive=TRUE, c(1:2,NA), c(2,0,2), fill=99, algo="exact", na.rm=TRUE), c(99,NA,NA))
-y = c(1e8+2.980232e-8, 1e8, 1e8, 1e8) # CLAMP0 test
-test(6001.731, frollvar(y, 3)[4L], 0)
-test(6001.732, frollsd(y, 3)[4L], 0)
+# numerical stability: we need to guarantee frollvar(x, n) >= 0 for all x, n
+#   the exact epsilon here is a bit implementation-dependent (as in #7546), but what's
+#   crucial is the output is never negative (or NaN after sqrt() for frollsd).
+y = c(1e8+2.980232e-8, 1e8, 1e8, 1e8)
+test(6001.731, between(frollvar(y, 3)[4L], 0, 1e-7))
+test(6001.732, between(frollsd(y, 3)[4L], 0, 1e-7))
 test(6001.733, frollvar(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
 test(6001.734, frollsd(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
 test(6001.740, frollvar(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.25,NA), c(NA,NA,0.25,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # ensure no nested parallelism in rolling functions #7352
