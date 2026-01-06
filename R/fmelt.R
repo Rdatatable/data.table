@@ -197,16 +197,16 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
   }
 
 # Fix for #6512: check for invalid measure.vars
-  check.vars = if (is.list(measure.vars)) unlist(measure.vars) else measure.vars
+check.vars = if (is.list(measure.vars)) unlist(measure.vars) else measure.vars
 
-  if (is.character(check.vars)) {
-    check.vars = check.vars[!is.na(check.vars)]
-    invalid_vars = setdiff(check.vars, names(data))
-    if (length(invalid_vars)) {
-      stopf("One or more values in 'measure.vars' is invalid; please fix by removing %s",
-            brackify(invalid_vars))
-    }
+if (is.character(check.vars)) {
+  check.vars = check.vars[!is.na(check.vars)]
+  invalid_vars = setdiff(check.vars, names(data))
+  if (length(invalid_vars)) {
+    stopf("One or more values in 'measure.vars' is invalid; please fix by removing %s",
+          brackify(invalid_vars))
   }
+}
 
   if (is.list(measure.vars)) {
     meas.nm = names(measure.vars)
