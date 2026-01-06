@@ -198,7 +198,7 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
 
 # Fix for #6512: check for invalid measure.vars
   check.vars = if (is.list(measure.vars)) unlist(measure.vars) else measure.vars
-  
+
   if (is.character(check.vars)) {
     # Exclude NAs (valid in measure() calls) to prevent regression in test 2183
     check.vars = check.vars[!is.na(check.vars)]
