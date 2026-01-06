@@ -123,7 +123,7 @@ indices(flights)
 
 Consider the case where you would like to perform a fast key based subset on `origin` column for the value "JFK". We'd do this as:
 
-```{r, eval = FALSE}
+```r
 ## not run
 setkey(flights, origin)
 flights["JFK"] # or flights[.("JFK")]
@@ -145,7 +145,7 @@ Unless our task involves repeated subsetting on the same column, fast key based 
 
 Now if we would like to repeat the same operation but on `dest` column instead, for the value "LAX", then we have to `setkey()`, *again*.
 
-```{r, eval = FALSE}
+```r
 ## not run
 setkey(flights, dest)
 flights["LAX"]

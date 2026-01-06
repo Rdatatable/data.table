@@ -157,14 +157,14 @@ Pour utiliser cette possibilité, nous avons a disposition les alternatives suiv
 
 - Inclure les colonnes associées dans la fonction R de base `list` .
 
-```{r, eval=FALSE}
+```r
 Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
 - Inclure les colonnes associées dans l'alias `.` de `list`.
 
-```{r, eval=FALSE}
+```r
 Products[ProductReceived,
          on = .(id = product_id)]
 ```
