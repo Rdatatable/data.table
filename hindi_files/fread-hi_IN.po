@@ -68,53 +68,54 @@ msgstr "  कोई भी NAstrings संख्या की तरह नह
 
 #: fread.c:1352
 #, c-format
-msgid "  skip num lines = %<PRId64>\n"
-msgstr ""
+msgid "  skip num lines = %<PRId64>\n"
+msgstr "  छोड़ी गई लाइनों की संख्या = %<PRId64>\n"
 
 #: fread.c:1353
 #, c-format
-msgid "  skip to string = <<%s>>\n"
-msgstr ""
+msgid "  skip to string = <<%s>>\n"
+msgstr "  स्ट्रिंग (string) तक छोड़ें = <<%s>>\n"
 
 #: fread.c:1354
 #, c-format
-msgid "  show progress = %d\n"
-msgstr ""
+msgid "  show progress = %d\n"
+msgstr "  प्रगति दिखाएं = %d\n"
 
 #: fread.c:1355
 #, c-format
-msgid "  0/1 column will be read as %s\n"
-msgstr ""
+msgid "  0/1 column will be read as %s\n"
+msgstr "  0/1 कॉलम (column) को %s के रूप में पढ़ा जाएगा\n"
 
 #: fread.c:1367
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
-msgstr ""
+msgstr "sep == quote ('%c') की अनुमति नहीं है"
 
 #: fread.c:1368
 #, c-format
 msgid "sep == dec ('%c') is not allowed"
-msgstr ""
+msgstr "sep == dec ('%c') की अनुमति नहीं है"
 
 #: fread.c:1369
 #, c-format
 msgid "quote == dec ('%c') is not allowed"
-msgstr ""
+msgstr "quote == dec ('%c') की अनुमति नहीं है"
 
 #: fread.c:1386
 msgid "[02] Opening the file\n"
-msgstr ""
+msgstr "[02] फाइल (file) खोली जा रही है\n"
 
 #: fread.c:1389
 msgid ""
-"  `input` argument is provided rather than a file name, interpreting as raw "
+"  `input` argument is provided rather than a file name, interpreting as raw "
 "text to read\n"
 msgstr ""
+"  फाइल (file) नाम के बजाय `input` आर्ग्युमेंट (argument) प्रदान किया गया है, इसे पढ़ने के लिए रॉ (raw) टेक्स्ट के रूप में व्याख्या की जा रही है\n"
 
 #: fread.c:1396
 #, c-format
-msgid "  Opening file %s\n"
-msgstr ""
+msgid "  Opening file %s\n"
+msgstr "  फाइल (file) %s खोली जा रही है\n"
 
 #: fread.c:1400 fread.c:1429
 #, c-format
