@@ -147,6 +147,50 @@ replace_dot_alias = function(e) {
   }
 }
 
+# Helper function to process SDcols
+.processSDcols = function(SDcols_sub, SDcols_missing, x, jsub, by, enclos = parent.frame()) {
+  names_x = names(x)
+  bysub = substitute(by)
+  allbyvars = intersect(all.vars(bysub), names_x)
+  usesSD = ".SD" %chin% all.vars(jsub)
+  if (!usesSD) {
+    return(NULL)
+  }
+  if (SDcols_missing) {
+    ansvars = sdvars = setdiff(unique(names_x), union(by, allbyvars))
+    ansvals = match(ansvars, names_x)
+    return(list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals))
+  }
+  sub.result = SDcols_sub
+  if (sub.result %iscall% "patterns") {
+    .SDcols = eval_with_cols(sub.result, names_x)
+  } else {
+    .SDcols = eval(sub.result, enclos)
+  }
+  if (anyNA(.SDcols))
+    stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
+  if (is.character(.SDcols)) {
+    idx = .SDcols %chin% names_x
+    if (!all(idx))
+      stopf("Some items of .SDcols are not column names: %s", toString(.SDcols[!idx]))
+    ansvars = sdvars = .SDcols
+    ansvals = match(ansvars, names_x)
+  } else if (is.numeric(.SDcols)) {
+      ansvals = as.integer(.SDcols)
+    if (any(ansvals < 1L | ansvals > length(names_x)))
+      stopf(".SDcols contains indices out of bounds")
+    ansvars = sdvars = names_x[ansvals]
+  } else if (is.logical(.SDcols)) {
+    if (length(.SDcols) != length(names_x))
+      stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(names_x))
+    ansvals = which(.SDcols)
+    ansvars = sdvars = names_x[ansvals]
+  } else {
+    stopf(".SDcols must be character, numeric, or logical")
+  }
+  list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals)
+}
+
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
