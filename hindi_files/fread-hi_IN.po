@@ -13,32 +13,33 @@ msgstr ""
 #: fread.c:154
 #, c-format
 msgid "System error %lu unmapping view of file\n"
-msgstr ""
+msgstr "फाइल (file) के दृश्य की अनमैपिंग (unmapping) में सिस्टम (system) एरर (error) %lu\n"
 
 #: fread.c:157
 #, c-format
 msgid "System errno %d unmapping file: %s\n"
-msgstr ""
+msgstr "फाइल (file) अनमैपिंग (unmapping) में सिस्टम (system) errno %d: %s\n"
 
 #: fread.c:1291
 msgid ""
 "Previous fread() session was not cleaned up properly. Cleaned up ok at the "
 "beginning of this fread() call.\n"
 msgstr ""
+"पिछला fread() सेशन (session) ठीक से साफ़ नहीं किया गया था। इस fread() कॉल (call) की शुरुआत में इसे ठीक से साफ़ किया गया।\n"
 
 #: fread.c:1294
 msgid "[01] Check arguments\n"
-msgstr ""
+msgstr "[01] आर्गुमेंट्स (arguments) जांचें\n"
 
 #: fread.c:1301
 #, c-format
-msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
-msgstr ""
+msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
+msgstr "  %d थ्रेड्स (threads) का उपयोग किया जा रहा है (omp_get_max_threads()=%d, nth=%d)\n"
 
 #: fread.c:1323
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
-msgstr ""
+msgstr "freadMain: NAstring <<%s>> की शुरुआत या अंत में whitespace है"
 
 #: fread.c:1327
 #, c-format
@@ -46,23 +47,24 @@ msgid ""
 "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
 "permitted."
 msgstr ""
+"freadMain: NAstring <<%s>> को बूलियन (boolean) type के रूप में पहचाना गया है, इसकी अनुमति नहीं है।"
 
 #: fread.c:1329
 #, c-format
 msgid "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
-msgstr ""
+msgstr "freadMain: NAstring <<%s>> और logical01=TRUE, इसकी अनुमति नहीं है।"
 
 #: fread.c:1341
-msgid "  No NAstrings provided.\n"
-msgstr ""
+msgid "  No NAstrings provided.\n"
+msgstr "  कोई NAstrings प्रदान नहीं किया गया।\n"
 
 #: fread.c:1348
-msgid "  One or more of the NAstrings looks like a number.\n"
-msgstr ""
+msgid "  One or more of the NAstrings looks like a number.\n"
+msgstr "  एक या अधिक NAstrings संख्या की तरह दिखते हैं।\n"
 
 #: fread.c:1350
-msgid "  None of the NAstrings look like numbers.\n"
-msgstr ""
+msgid "  None of the NAstrings look like numbers.\n"
+msgstr "  कोई भी NAstrings संख्या की तरह नहीं दिखता है।\n"
 
 #: fread.c:1352
 #, c-format
