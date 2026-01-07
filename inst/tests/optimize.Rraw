@@ -392,8 +392,11 @@ dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer")
 opt = c(0,Inf)
 out = c("GForce FALSE", "GForce optimized j to")
 test(2263.1,optimize=opt, options=list(datatable.verbose=TRUE), dt[, .N, b], data.table(b=dt$b, N=1L),               output=out)
+# test 2263.1 subsumes 2263.1 and 2263.4 for different optimization levels
 test(2263.2,optimize=opt, options=list(datatable.verbose=TRUE), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L),  output=out)
+# test 2263.2 subsumes 2263.2 and 2263.5 for different optimization levels
 test(2263.3,optimize=opt, options=list(datatable.verbose=TRUE), names(attributes(dt[, .N, b]$b)), c("class", "att"), output=out)
+# test 2263.3 subsumes 2263.3 and 2263.6 for different optimization levels
 
 # named arguments of c() in j get prepended to lapply(.SD, FUN) #2311
 M <- as.data.table(mtcars)

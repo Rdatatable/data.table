@@ -17773,6 +17773,7 @@ n=4; k=2
 mm = data.table(a = rep(1:k,n), b=seq_len(n*k), d=rep(1:n,k))
 ans = copy(mm)[, e:=INT(NA,8,NA,12,NA,8,NA,12)]
 test(2233.41,optimize=opt, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output=c("GForce FALSE", "GForce.*gsum"))
+# test 2233.41 subsumes 2231.41 and 2231.42 for different optimization levels
 # test from #5345
 set.seed(1)
 DT = data.table(
@@ -17791,6 +17792,7 @@ test(2233.43,optimize=c(0,Inf), options = list(datatable.verbose=TRUE),
           ][, sum_v1_id :=sum(v1),       by=c("id")],
   ans,
   output=c("GForce FALSE", "GForce.*gsum"))
+# test 2233.43 subsumes 2231.43 and 2231.44 for different optimization levels
 # optimized := with gforce functions that can return lists #5403
 DT = data.table(grp=1:2, x=1:4)
 out = "Making each group and running j (GForce TRUE)"
@@ -17936,7 +17938,9 @@ j=1L
 opt = c(1L,2L)
 out = c("GForce FALSE", "GForce TRUE")
 test(2243.41,optimize=opt, options=c(datatable.verbose=TRUE), dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
+# test 2243.41 subsumes 2243.41 and 2243.51 for different optimization levels
 test(2243.42,optimize=opt, options=c(datatable.verbose=TRUE), dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
+# test 2243.42 subsumes 2243.42 and 2243.52 for different optimization levels
 test(2243.53,optimize=opt, options=c(datatable.verbose=TRUE), dt[, .I[1], x]$V1, c(1L, 3L), output=out)
 test(2243.54,optimize=opt, options=c(datatable.verbose=TRUE), dt[, .I[j], x]$V1, c(1L, 3L), output=out)
 test(2243.55,optimize=opt, options=c(datatable.verbose=TRUE), dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
