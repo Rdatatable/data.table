@@ -90,6 +90,7 @@ out = c('GForce FALSE', 'GForce FALSE', 'GForce TRUE', 'GForce TRUE')
 # v1.9.7 treats wrapped {} better, so this is now optimized
 test(865,optimize=opt, DT[,{list(name1=sum(v),name2=sum(w))},by=c('a', 'b'),verbose=TRUE], output=out)
 test(867,optimize=opt, names(DT[,list(name1=sum(v),name2=sum(w)),by=c('a', 'b')]), c("a", "b", "name1", "name2"))  # list names extracted here
+# 866 was testing an intermediate step; 868 was testing equality between optimization levels
 
 # tests of gsum and gmean with NA
 DT = data.table(x=rep(c("a","b","c","d"),each=3), y=c(1L,3L,6L), v=as.numeric(1:12))
