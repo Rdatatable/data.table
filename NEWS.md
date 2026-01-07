@@ -21,8 +21,8 @@
     This rewrite also introduces several new optimizations:
       - Enables Map in addition to lapply optimizations (e.g., `Map(fun, .SD)` -> `list(fun(col1), fun(col2), ...)`) [#5336](https://github.com/Rdatatable/data.table/issues/5336)
       - lapply optimization works without .SD (e.g., `lapply(list(col1, col2), fun)` -> `list(fun(col1), fun(col2))` [#5032](https://github.com/Rdatatable/data.table/issues/5032)
-      - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))`) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
-      - Arithmetic operation support in GForce (e.g., `max(x) - min(x)`) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
+      - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))` will use GForce, saving the need to coerce `x` in a setup step) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
+      - Arithmetic operation support in GForce (e.g., `max(x) - min(x)` will use GForce on both `max(x)` and `min(x)`, saving the need to do the subtraction in a follow-up step) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
 
 ### Notes
 
