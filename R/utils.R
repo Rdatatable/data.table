@@ -1,3 +1,4 @@
+if (getRversion() >= "2.15.1") utils::globalVariables(c("n_read"))
 # all non-exported / unused internal (utility) functions
 
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
