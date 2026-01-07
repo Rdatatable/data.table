@@ -1,5 +1,5 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, verbose=getOption("datatable.verbose", FALSE), ...) {
   if (!sort %in% c(TRUE, FALSE))
     stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
@@ -93,12 +93,15 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     x = x[xind]
     y = y[yind]
   }
-  dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+  dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian, verbose=verbose]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
-    if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
+    if (length(missingyidx)) {
+      if (verbose) catf("Adding %d unmatched rows from y\n", length(missingyidx))
+      dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
+    }
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(nm_y, by.y)
