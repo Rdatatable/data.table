@@ -21978,3 +21978,27 @@ local({
   test(2357.1, fread(f), DT)
   test(2357.2, fread(paste0("file://", f)), DT)
 })
+
+#7571 issue for na.rm on int64
+if (test_bit64) local({
+  # integer64 + GForce grouped sum with na.rm = FALSE
+  # Example 1 from issue: ids 1:8, 9, 9; three leading NAs then 4:10
+  dt_short = data.table(
+    id = c(1:8, 9, 9),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2358.1,
+    dt_short[, sum(value, na.rm = FALSE), by = id][, V1],
+    as.integer64(c(NA, NA, NA, 4:8, 19))
+  )
+
+  # Example 2 from issue: ids in pairs, same values; checks multi-row groups
+  dt_short2 = data.table(
+    id = rep(1:5, each = 2L),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2358.1,
+    dt_short2[, sum(value, na.rm = FALSE), by = id][, V1],
+    as.integer64(c(NA, NA, 11, 15, 19))
+  )
+})
