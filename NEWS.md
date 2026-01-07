@@ -32,7 +32,7 @@
 
 3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
 
-4. - Fixed a bug in GForce grouped sum for `integer64` columns where `sum(value, na.rm = FALSE)` when consecutive NA values are present in the same partition but different group. In that case only the first group was handled ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report, @MichaelChirico for reproducible examples, and @manmita for the fix.
+4. `sum(<int64 column>)` by group is correct with GFoce activated ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report and @manmita for the fix. The issue was caused by a faulty early `break` that spilled between groups.
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
