@@ -6262,6 +6262,7 @@ test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized sub
 test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
 ## optimize option level 3 is required to get optimized subsetting
 test(1437.21,optimize=c(2,Inf), DT[x == 2, verbose = TRUE], output = c("^   x y", "Optimized subsetting"))
+# test 1437.21 subsumes 1437.21 and 1437.22
 ## NaN on right hand side is treated correctly. NA on right hand side is not reaching .prepareFastSubset, so not tested here
 DT <- data.table(x = c(1L:10L, NA_integer_, NA_integer_), y = c(1:10, NA_real_, NaN))
 test(1437.23, DT[y == NaN], DT[0])
@@ -8767,6 +8768,7 @@ test(1629.10,optimize=c(1L,2L), dt[, max(.SD)*sum(v1), by=grp, .SDcols=v2:v3], a
 test(1629.11,optimize=c(1L,2L), dt[, lapply(.SD, function(x) weighted.mean(x, w=v2)), .SDcols=c("v1","v3"), by=grp],
          dt[, .(v1=weighted.mean(v1,w=v2), v3=weighted.mean(v3, w=v2)), by=grp])
 test(1629.12,optimize=c(1L,Inf), dt[, c(v1=max(v1), lapply(.SD, base::min)), by=grp, .SDcols=v2:v3], dt[, .(v1=max(v1), v2=min(v2), v3=min(v3)), by=grp])
+# test 1629.12 subsumes 1629.12 and 1629.13 for testing both levels
 # gforce
 # even more complex, shouldn't run any optimisation
 dt[, v4 := v1/2]
@@ -13621,6 +13623,7 @@ test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot f
 
 ### [.data.table verbosity & non-equi-join tests
 test(1967.69,optimize=0L, x[order(a), .N, verbose = TRUE], output='[1] 5', notOutput='forder.c')
+# test 1967.69 subsumes 1967.69 and 1967.70
 test(1967.71,optimize=1L, x[order(a), .N, verbose = TRUE], 5L,
      output = "forder.c received 5 rows and 1 column")
 setkey(x)
@@ -13780,6 +13783,7 @@ test(1980, names(data.table(x)), "x")
 DT = data.table( id = 1:5 , val = letters[1:5] )
 test(1981.1,optimize=c(0L, Inf), DT[, new_col := shift(val, "lead")],      error=base_messages$stopifnot("is.numeric(n)"))
 test(1981.2,optimize=c(0L, Inf), DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
+# tests 1981.1 and 1981.2 subsume 1981.1, 1981.2, 1981.3 and 1981.4 for testing different levels
 
 # 1982 moved to benchmark.Rraw, #5517
 
@@ -14696,6 +14700,7 @@ DT = data.table(x=INT(1,1,1,2,2), y=1:5)
 z = 1:5
 opt = c(Inf,1L,0L)
 test(2043.1,optimize=opt, DT[, list(mean(z), mean(y)), by=x], data.table(x=1:2, V1=c(3,3), V2=c(2.0,4.5)))
+# test 2043.1 subsumes 2043.1, 2043.2 and 2043.3 for testing different levels
 test(2043.4,optimize=opt, DT[, list(sd(z), sd(y)), by=x], data.table(x=1:2, V1=sd(z), V2=c(sd(1:3), sd(4:5))))
 z = 1:4
 test(2043.5,optimize=opt, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5,2.5), V2=c(2.0,4.5)))  # was length error about z

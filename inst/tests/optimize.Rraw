@@ -182,8 +182,9 @@ test(1313.30,optimize=2L,   DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:7, V1
 
 # Fix for #1251, DT[, .N, by=a] and DT[, .(.N), by=a] uses GForce now
 dt = data.table(a=sample(3,20,TRUE), b=1:10)
-test(1565.1,optimize=c(0,1,Inf), dt[, .N, by=a, verbose=TRUE], 
+test(1565, optimize=c(0,1,Inf), dt[, .N, by=a, verbose=TRUE],
   output=c("All optimizations are turned off", "lapply optimization is on, j unchanged", "GForce optimized j to"))
+# test 1565 subsumes 1565.1, 1565.2 and 1565.3 for testing all levels
 
 # gforce optimisations
 dt = data.table(x  = sample(letters, 300, TRUE),
@@ -261,13 +262,17 @@ test(1581.01,optimize=opt, ans1 <- dt[x %in% letters[15:20],
                               lapply(.SD, median, na.rm=TRUE)
                           ), by=x, verbose=TRUE],
   output = out)
-
+# test 1581.01 subsumes 1581.01, 1581.02 and 1581.03 for testing all levels
 # subsets in 'i' for head and tail
 test(1581.04,optimize=opt, dt[x %in% letters[15:20], head(.SD,1), by=x, verbose=TRUE], output=out)
+# test 1581.04 subsumes 1581.04, 1581.05 and 1581.06 for testing all levels
 test(1581.07,optimize=opt, dt[x %in% letters[15:20], tail(.SD,1), by=x, verbose=TRUE], output=out)
+# test 1581.07 subsumes 1581.07, 1581.08 and 1581.09 for testing all levels
 test(1581.10,optimize=opt, dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE], output=out)
+# test 1581.10 subsumes 1581.10, 1581.11 and 1581.12 for testing all levels
 # #3209 g[[
 test(1581.13,optimize=opt, dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE], output=out)
+# test 1581.13 subsumes 1581.13, 1581.14 and 1581.15 for testing all levels
 # also, block for non-atomic input, #4159
 dt = data.table(a=1:3)
 dt[ , l := .(list(1, 2, 3))]
@@ -374,6 +379,7 @@ test(2231.20,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
 test(2231.21,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output=out)
 test(2231.22,optimize=opt, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output=out)
+# tests 2231.31-2231.52 were subsumed in 2231.01-2231.22 for testing different optimization levels
 # let wrongly named arguments get lost in ellipsis #5543
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
 test(2231.61,optimize=opt, DT[, weighted.mean(x, w),        g, verbose=TRUE], data.table(g=1L, V1=3.45+1/300), output=out)
