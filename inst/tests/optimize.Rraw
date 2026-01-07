@@ -62,6 +62,7 @@ out = c('GForce FALSE', 'GForce FALSE' ,'GForce TRUE')
 test(656.1,optimize=opt, DT[ , mean(x), by=grp1, verbose=TRUE],                output=out)
 test(656.2,optimize=opt, DT[ , list(mean(x)), by=grp1, verbose=TRUE],          output=out)
 test(656.3,optimize=opt, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output=out)
+# 657-658 were for levels 1,2, resp.
 
 # Test := keyby does setkey, #2065
 DT = data.table(x=1:2, y=1:6)
