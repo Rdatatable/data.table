@@ -3892,6 +3892,7 @@ test(1133.4, DT[, new := c(1L,2L), by=x], error="Supplied 2 items to be assigned
 test(1133.5, DT, data.table(x=INT(1,1,1,1,1,2,2), new=99L))
 test(1133.6, DT[, new := rep(-.GRP, .N), by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(-1,-1,-1,-1,-1,-2,-2)))
 test(1133.7,optimize=c(0L, 2L), DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,5,5,5,5,2,2)))
+# test 1133.7 subsumes 1133.7 and 1133.75 for testing both levels
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
@@ -3996,6 +3997,7 @@ DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.1
 test(1143.3, DT[, list(lx=x[.N]), by=x], data.table(x=DT$x, lx=DT$x))
 test(1143.4,optimize=c(0L, 2L), copy(DT)[,`:=`(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
 test(1143.5,optimize=c(0L, 2L), copy(DT)[, let(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
+# tests 1143.4 and 1143.5 subsume 1143.4, 1143.5, 1143.6 and 1143.7 for testing both levels
 
 # FR #2356 - retain names of named vector as column with keep.rownames=TRUE
 x <- 1:5
