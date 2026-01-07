@@ -339,7 +339,6 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     #   user  system elapsed
     #  0.028   0.000   0.005
     ```
-
     20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
 
 ### BUG FIXES
