@@ -120,55 +120,56 @@ msgstr "  फाइल (file) %s खोली जा रही है\n"
 #: fread.c:1400 fread.c:1429
 #, c-format
 msgid "File not found: %s"
-msgstr ""
+msgstr "फाइल (file) नहीं मिली: %s"
 
 #: fread.c:1404
 #, c-format
 msgid "Opened file ok but couldn't obtain its size: %s"
-msgstr ""
+msgstr "फाइल (file) ठीक से खुल गई लेकिन इसका आकार प्राप्त नहीं किया जा सका: %s"
 
 #: fread.c:1407 fread.c:1439
 #, c-format
 msgid "File is empty: %s"
-msgstr ""
+msgstr "फाइल (file) खाली है: %s"
 
 #: fread.c:1408 fread.c:1440
 #, c-format
-msgid "  File opened, size = %s.\n"
-msgstr ""
+msgid "  File opened, size = %s.\n"
+msgstr "  फाइल (file) खुल गई, आकार = %s.\n"
 
 #: fread.c:1435
 #, c-format
 msgid "Unable to open file after %d attempts (error %lu): %s"
-msgstr ""
+msgstr "%d प्रयासों के बाद फाइल (file) खोलने में असमर्थ (एरर (error) %lu): %s"
 
 #: fread.c:1437
 #, c-format
 msgid "GetFileSizeEx failed (returned 0) on file: %s"
-msgstr ""
+msgstr "फाइल (file) पर GetFileSizeEx विफल रहा (0 वापस किया): %s"
 
 #: fread.c:1442
 #, c-format
 msgid "This is Windows, CreateFileMapping returned error %lu for file %s"
-msgstr ""
+msgstr "यह Windows है, फाइल (file) %s के लिए CreateFileMapping ने एरर (error) %lu वापस किया"
 
 #: fread.c:1449
 #, c-format
 msgid ""
 "Opened %s file ok but could not memory map it. This is a %dbit process. %s."
 msgstr ""
+"%s फाइल (file) ठीक से खुल गई लेकिन इसे मेमोरी (memory) मैप (map) नहीं किया जा सका। यह एक %dbit प्रोसेस (process) है। %s."
 
 #: fread.c:1450
 msgid "Please upgrade to 64bit"
-msgstr ""
+msgstr "कृपया 64bit पर उन्नत करें"
 
 #: fread.c:1450
 msgid "There is probably not enough contiguous virtual memory available"
-msgstr ""
+msgstr "शायद पर्याप्त सन्निहित आभासी मेमोरी (memory) उपलब्ध नहीं है"
 
 #: fread.c:1453
-msgid "  Memory mapped ok\n"
-msgstr ""
+msgid "  Memory mapped ok\n"
+msgstr "  मेमोरी (memory) मैपिंग (mapping) ठीक से हो गई\n"
 
 #: fread.c:1472
 msgid "[03] Detect and skip BOM\n"
