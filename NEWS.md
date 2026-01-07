@@ -16,6 +16,14 @@
 
 1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
 
+2. GForce and lapply optimization detection has been refactored to use modular optimization paths and an AST (Abstract Syntax Tree) walker for improved maintainability and extensibility. The new architecture separates optimization detection into distinct, composable phases. This makes future optimization enhancements a lot easier. Thanks to @grantmcdermott, @jangorecki, @MichaelChirico, and @HughParsonage for the suggestions and @ben-schwen for the implementation.
+
+    This rewrite also introduces several new optimizations:
+      - Enables Map in addition to lapply optimizations (e.g., `Map(fun, .SD)` -> `list(fun(col1), fun(col2), ...)`) [#5336](https://github.com/Rdatatable/data.table/issues/5336)
+      - lapply optimization works without .SD (e.g., `lapply(list(col1, col2), fun)` -> `list(fun(col1), fun(col2))` [#5032](https://github.com/Rdatatable/data.table/issues/5032)
+      - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))`) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
+      - Arithmetic operation support in GForce (e.g., `max(x) - min(x)`) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
@@ -333,14 +341,6 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     ```
 
 20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
-
-21. GForce and lapply optimization detection has been refactored to use modular optimization paths and an AST (Abstract Syntax Tree) walker for improved maintainability and extensibility. The new architecture separates optimization detection into distinct, composable phases. This makes future optimization enhancements a lot easier. Thanks to @grantmcdermott, @jangorecki, @MichaelChirico, and @HughParsonage for the suggestions and @ben-schwen for the implementation.
-
-    This rewrite also introduces several new optimizations:
-      - Enables Map in addition to lapply optimizations (e.g., `Map(fun, .SD)` -> `list(fun(col1), fun(col2), ...)`) [#5336](https://github.com/Rdatatable/data.table/issues/5336)
-      - lapply optimization works without .SD (e.g., `lapply(list(col1, col2), fun)` -> `list(fun(col1), fun(col2))` [#5032](https://github.com/Rdatatable/data.table/issues/5032)
-      - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))`) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
-      - Arithmetic operation support in GForce (e.g., `max(x) - min(x)`) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
 
 ### BUG FIXES
 
