@@ -30,6 +30,7 @@ test(611.4,optimize=c(0L, 2L), DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=
 test(613,optimize=c(0L, 2L), DT[J(2),w:=8.3]$w, rep(c(NA,8.3,NA),each=3))
 test(614,optimize=c(0L, 2L), DT[J(3),x:=9L]$x, rep(c(NA_integer_,NA_integer_,9L),each=3))
 test(615,optimize=c(0L, 2L), DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each=3))
+# 616, 617 removed in #5245
 
 # Empty i clause, #2034. Thanks to Chris for testing, tests from him. Plus changes from #759
 ans = copy(DT)[,r:=NA_real_]
