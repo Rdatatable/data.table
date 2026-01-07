@@ -49,6 +49,7 @@ test(622,optimize=c(0L, 2L), copy(DT)[J("bb"), x:="foo",nomatch=0], DT, warning=
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
 test(623,optimize=c(0L, 2L), copy(DT)[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
+# test 623 subsumes 623.1 and 623.2 for testing both levels
 
 # Setup for test 656.x - gforce tests
 set.seed(9)
