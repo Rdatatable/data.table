@@ -21987,7 +21987,7 @@ if (test_bit64) local({
     id = c(1:8, 9, 9),
     value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
   )
-  test(2358.1,
+  test(2358.1, options=c(datatable.optimize=2L),
     dt_short[, sum(value, na.rm = FALSE), by = id]$V1,
     as.integer64(c(NA, NA, NA, 4:8, 19))
   )
@@ -21997,7 +21997,7 @@ if (test_bit64) local({
     id = rep(1:5, each = 2L),
     value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
   )
-  test(2358.2,
+  test(2358.2, options=c(datatable.optimize=2L),
     dt_short2[, sum(value, na.rm = FALSE), by = id]$V1,
     as.integer64(c(NA, NA, 11, 15, 19))
   )
