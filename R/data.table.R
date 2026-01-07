@@ -3402,6 +3402,11 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 .gforce_ops = c("+", "-", "*", "/", "^", "%%", "%/%")
 
+.unwrap_conversions = function(expr) {
+  while (.is_type_conversion(expr) && length(expr) >= 2L) expr = expr[[2L]]
+  expr
+}
+
 .gforce_ok = function(q, x, envir=parent.frame(2L)) {
   if (is.N(q)) return(TRUE) # For #334
   if (!is.call(q)) return(is.numeric(q)) # plain columns are not gforce-able since they might not aggregate (see test 104.1)
@@ -3409,8 +3414,8 @@ is_constantish = function(q, check_singleton=FALSE) {
 
   q1 = .get_gcall(q)
   if (!is.null(q1)) {
-    q2 = if (.is_type_conversion(q[[2L]]) && is.symbol(q[[2L]][[2L]])) q[[2L]][[2L]] else q[[2L]]
-    if (!q2 %chin% names(x) && q2 != ".I") return(FALSE)  # 875
+    q2 = .unwrap_conversions(q[[2L]])
+    if (!is.symbol(q2) || (!q2 %chin% names(x) && q2 != ".I")) return(FALSE)
     if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]) &&
         !(is.symbol(q[[3L]]) && q[[3L]] %chin% names(x)))) return(TRUE)
     return(switch(as.character(q1),
