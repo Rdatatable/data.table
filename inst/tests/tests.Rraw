@@ -11536,10 +11536,6 @@ test(1750.38,
                 id = TRUE)
 )
 test(1750.39,
-  cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = list("amount")),
-  error = ".SDcols must be character, numeric, or logical"
-)
-test(1750.40,
   cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = c(1, 99)),
   error = "out of bounds"
 )

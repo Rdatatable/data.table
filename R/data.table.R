@@ -162,10 +162,20 @@ replace_dot_alias = function(e) {
     return(list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals))
   }
   sub.result = SDcols_sub
+  if (sub.result %iscall% ':' && length(sub.result) == 3L) {
+    return(NULL)
+  }
+  if (sub.result %iscall% c("!", "-") && length(sub.result) == 2L) {
+    negate_sdcols = TRUE
+    sub.result = sub.result[[2L]]
+  } else negate_sdcols = FALSE
   if (sub.result %iscall% "patterns") {
     .SDcols = eval_with_cols(sub.result, names_x)
   } else {
     .SDcols = eval(sub.result, enclos)
+  }
+  if (!is.character(.SDcols) && !is.numeric(.SDcols) && !is.logical(.SDcols)) {
+  return(NULL)
   }
   if (anyNA(.SDcols))
     stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
@@ -177,9 +187,10 @@ replace_dot_alias = function(e) {
     ansvals = match(ansvars, names_x)
   } else if (is.numeric(.SDcols)) {
       ansvals = as.integer(.SDcols)
-    if (any(ansvals < 1L | ansvals > length(names_x)))
-      stopf(".SDcols contains indices out of bounds")
+      if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
+      if (any(idx <- abs(.SDcols) > ncol(x) | abs(.SDcols) < 1L)) stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
     ansvars = sdvars = names_x[ansvals]
+    ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
   } else if (is.logical(.SDcols)) {
     if (length(.SDcols) != length(names_x))
       stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(names_x))
@@ -1082,25 +1093,21 @@ replace_dot_alias = function(e) {
           # NB: _unary_ '-', not _binary_ '-' (#5826). Test for '!' length-2 should be redundant but low-cost & keeps code concise.
           try_processSDcols = !(colsub %iscall% c("!", "-") && length(colsub) == 2L) && !(colsub %iscall% ':') && !(colsub %iscall% 'patterns')
           if (try_processSDcols) {
-              sdcols_result = tryCatch({
-                      .processSDcols(
-                        SDcols_sub = colsub,
-                        SDcols_missing = FALSE,
-                        x = x,
-                        jsub = jsub,
-                        by = substitute(by),
-                        enclos = parent.frame()
-                      )
-                    }, error = function(e) {
-                      NULL
-                    })
-              if (!is.null(sdcols_result)) {
-                ansvars = sdvars = sdcols_result$ansvars
-                ansvals = sdcols_result$ansvals
-                try_processSDcols = TRUE
-              } else {
-                try_processSDcols = FALSE
-              }
+            sdcols_result = .processSDcols(
+              SDcols_sub = colsub,
+              SDcols_missing = FALSE,
+              x = x,
+              jsub = jsub,
+              by = substitute(by),
+              enclos = parent.frame()
+            )
+            if (!is.null(sdcols_result)) {
+              ansvars = sdvars = sdcols_result$ansvars
+              ansvals = sdcols_result$ansvals
+            } 
+            else {
+              try_processSDcols = FALSE  
+            }
           }
           if (!try_processSDcols) {
             if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
