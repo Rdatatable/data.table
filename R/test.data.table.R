@@ -376,10 +376,10 @@ test = function(num, x, y=TRUE,
   # if optimization is provided, test across multiple optimization levels
   if (!is.null(optimize)) {
     if (!is.numeric(optimize) || length(optimize) < 1L || anyNA(optimize) || any(optimize < 0L))
-      stopf("optimize must be numeric, length >= 1, non-NA, and >= 0; got: %s", optimize)
+      stopf("optimize must be numeric, length >= 1, non-NA, and >= 0; got: %s", optimize) # nocov
     cl = match.call()
     if ("datatable.optimize" %in% names(cl$options))
-      stopf("Trying to set optimization level through both options= and optimize=")
+      stopf("Trying to set optimization level through both options= and optimize=") # nocov
     cl$optimize = NULL  # Remove optimization levels from the recursive call
 
     # Check if y was explicitly provided (not just the default)
