@@ -40,6 +40,7 @@ test(618.3,optimize=c(0L, 2L), copy(DT)[NA,r:=sum(b)],    ans)
 test(618.4,optimize=c(0L, 2L), copy(DT)[0,r:=sum(b)],     ans)
 test(618.5,optimize=c(0L, 2L), copy(DT)[NULL,r:=sum(b)],  null.data.table())
 # test 619 was level 2 of 618
+# test 620 was removed in #5245
 
 DT = data.table(x=letters, key="x")
 test(621,optimize=c(0L, 2L), copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
