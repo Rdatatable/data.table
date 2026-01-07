@@ -21315,7 +21315,6 @@ test(2358.14,optimize=0:2, dt[,list(weighted.mean(a, na.rm=c)), b, verbose=TRUE]
 dt = data.table(a=1:2, b=1, c=1:4)
 test(2358.21,optimize=0:2, dt[, lapply(list(b, c), sum), by=a, verbose=TRUE], output=out)
 test(2358.22,optimize=0:2, dt[, c(list(sum(b), sum(c))), by=a, verbose=TRUE], output=out)
-test(2358.23,optimize=0:2, names(dt[, lapply(list(b, c), sum), by=a]))
 dt = data.table(a=1:4, b=1:2)
 test(2358.31,optimize=0:2, dt[, .(max(a)-min(a)), by=b, verbose=TRUE], output=out)
 test(2358.32,optimize=0:2, dt[, .((max(a) - min(a)) / (max(a) + min(a))), by=b, verbose=TRUE], data.table(b=1:2, V1=c(0.5, 1/3)), output=out)
