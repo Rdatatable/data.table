@@ -197,6 +197,7 @@ test(637.1, optimize=opt, copy(DT)[, m:=sum(b), by=a][1:3], data.table(a=1L, b=c
 test(637.2, optimize=opt, key(copy(DT)[J(43L), a:=99L]), NULL)
 setkey(DT, a)
 test(637.3, optimize=opt, key(copy(DT)[, a:=99L, by=a]), NULL)
+# test 637 subsumes 637 and 638 for different optimization levels
 
 # Test X[Y] slowdown, #2216
 # Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
