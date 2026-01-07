@@ -5146,7 +5146,7 @@ DT = data.table(a=1:3,b=6:1)
 test(1312, DT[,setkey(.SD),by=a], error="Setting a physical key on .SD is reserved for possible future use")
 # was warning "Already keyed by this key but had invalid row order" due to the key not being cleared after the previous group.  A solution could have been to put back the original key on populating .SD for each group.  But instead we reserve it for future use and push the user towards doing it a different more efficient way (see Arun's speedups in the datatable-help thread).
 
-# test 1313 moved to optimze.Rraw
+# test 1313 moved to optimize.Rraw
 
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
