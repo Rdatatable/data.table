@@ -1104,9 +1104,9 @@ replace_dot_alias = function(e) {
             if (!is.null(sdcols_result)) {
               ansvars = sdvars = sdcols_result$ansvars
               ansvals = sdcols_result$ansvals
-            } 
+            }
             else {
-              try_processSDcols = FALSE  
+              try_processSDcols = FALSE
             }
           }
           if (!try_processSDcols) {
