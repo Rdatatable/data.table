@@ -104,6 +104,7 @@ test(1184.1,optimize=opt, DT[, sum(v), by=x, verbose=TRUE], output=out)
 test(1184.2,optimize=1L, DT[, mean(v), by=x, verbose=TRUE], output="(GForce FALSE)")
 test(1185.2,optimize=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], 
   output=c("All optimizations.*off", "Old mean.*changed j", "GForce optimized j to"))
+# 1186 was 1184.1 for active GForce
 test(1187.1,optimize=c(0L, 1L, 2L), DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
 MyVar = TRUE
