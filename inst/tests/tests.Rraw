@@ -21938,3 +21938,55 @@ dimnames(X) = copy(Xdn)
 DT = as.data.table(X)
 test(2354.2, dimnames(X), Xdn)
 rm(X, Xdn, DT)
+
+#7571 issue for na.rm on int64
+if (test_bit64) local({
+  # integer64 + GForce grouped sum with na.rm = FALSE
+  # Example 1 from issue: ids 1:8, 9, 9; three leading NAs then 4:10
+  dt_short = data.table(
+    id = c(1:8, 9, 9),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2355.1, options=c(datatable.optimize=2L),
+    dt_short[, sum(value, na.rm = FALSE), by = id]$V1,
+    as.integer64(c(NA, NA, NA, 4:8, 19))
+  )
+
+  # Example 2 from issue: ids in pairs, same values; checks multi-row groups
+  dt_short2 = data.table(
+    id = rep(1:5, each = 2L),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2355.2, options=c(datatable.optimize=2L),
+    dt_short2[, sum(value, na.rm = FALSE), by = id]$V1,
+    as.integer64(c(NA, NA, 11, 15, 19))
+  )
+
+  # Test mean for integer64 with NA
+  dt_mean = data.table(
+    id = c(1,1,2,2,3,3),
+    value = as.integer64(c(NA, NA, NA, 20000000, 5, 3))
+  )
+  test(2355.3, options=c(datatable.optimize=2L),
+    dt_mean[, mean(value, na.rm=FALSE), by = id]$V1,
+    c(NA, NA, 4)
+  )
+
+  # GForce sum vs base::sum for integer64
+  DT = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce = DT[, .(gforce_sum = sum(value)), by=id]
+  base = DT[, .(true_sum = base::sum(value)), by=id]
+  merged = merge(gforce, base, by="id", all=TRUE)
+  test(2355.4, options=c(datatable.optimize=2L),
+    merged$gforce_sum, merged$true_sum
+  )
+
+  # GForce mean vs base::mean for integer64
+  DTm = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce_m = DTm[, .(gforce_mean = mean(value)), by=id]
+  base_m = DTm[, .(true_mean = base::mean(value)), by=id]
+  merged_m = merge(gforce_m, base_m, by="id", all=TRUE)
+  test(2355.5, options=c(datatable.optimize=2L),
+    merged$gforce_mean, merged$true_mean
+  )
+})
