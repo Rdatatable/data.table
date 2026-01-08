@@ -243,15 +243,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       result_rows = sum(ans$lens)
     }
 
-    join_desc = character(0L)
-    for (a in seq_along(icols)) {
-      xname = names(x)[xcols[a]]
-      iname = names(i)[icols[a]]
-      op_symbol = if (length(ops)) c("==", "<=", "<", ">=", ">")[ops[a]] else "=="
-      join_desc = c(join_desc, sprintf("%s %s %s", xname, op_symbol, iname))
-    }
-
-    join_str = paste(join_desc, collapse=", ")
+    op_symbols = if (length(ops)) c("==", "<=", "<", ">=", ">")[ops] else strrep("==", length(icols))
+    join_str = toString(sprintf("%s %s %s", names(x)[xcols], op_symbols, names(i)[icols]))
     num_width = max(vapply_1i(list(nrow_x, nrow_i, matched_i, result_rows, join_str), nchar))
     label_width = 16L
     line_width = label_width + num_width

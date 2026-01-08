@@ -21987,7 +21987,7 @@ test(2358.2, nrow(y[x, on = "A", verbose=TRUE]), 6L, output="result rows: \\s+6\
 test(2358.3, nrow(y[x, on = "A", nomatch=NULL, verbose=TRUE]), 3L, output="result rows: \\s+3\n")
 test(2358.4, nrow(x[!y, on = "A", verbose=TRUE]), 3L, output="result rows: \\s+3\n")
 test(2358.5, nrow(y[y, on = "A", allow.cartesian=TRUE, verbose=TRUE]), 5L, output="result rows: \\s+5\n")
-test(2358.6, nrow(merge(x, y, by="A", verbose=TRUE)), 3L, output="result rows: \\s+3\n")
+test(2358.6, options=c(datatable.verbose=TRUE), nrow(merge(x, y, by="A")), 3L, output="result rows: \\s+3\n")
 x = data.table(id = c("A", "A", "A", "B", "B"), date = as.IDate(c("2010-01-01", "2012-01-01", "2014-01-01", "2010-01-01", "2012-01-01")))
 y = data.table(id = c("A", "B"), date = as.IDate(c("2013-01-01", "2013-01-01")))
 test(2358.7, nrow(x[y, on = .(id, date <= date), verbose=TRUE]), 4L, output="join columns: id == id, date <= date.*result rows: \\s+4\n")
