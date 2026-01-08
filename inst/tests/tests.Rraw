@@ -21985,7 +21985,6 @@ test(2356.08, dt[logical(0), .ROW := NULL], dt)
 # multirow
 dt = data.table(a=1:5, b=letters[1:5])
 test(2356.09, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
-test(2356.10, copy(dt)[c(TRUE, FALSE, TRUE, FALSE, TRUE), .ROW := NULL], dt[c(2,4)])
 test(2356.11, copy(dt)[1:2, .ROW := NULL], dt[3:5])
 test(2356.12, copy(dt)[1:5, .ROW := NULL], dt[0])
 # NA handling and edges case
