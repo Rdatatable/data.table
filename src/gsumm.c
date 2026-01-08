@@ -502,13 +502,13 @@ SEXP gsum(SEXP x, SEXP narmArg)
               const int64_t *my_gx = gx + b*batchSize + pos;
               const uint16_t *my_low = low + b*batchSize + pos;
               for (int i=0; i<howMany; i++) {
-                const int64_t elem = my_gx[i];
-                if (elem!=INT64_MIN) {
-                  _ans[my_low[i]] += elem;
-                } else {
-                  _ans[my_low[i]] = INT64_MIN;
-                  break;
+                if (_ans[my_low[i]] == INT64_MIN) continue;
+                const int64_t b = my_gx[i];
+                if (b == INT64_MIN) {
+                  if (!narm) _ans[my_low[i]] = INT64_MIN;
+                  continue;
                 }
+                _ans[my_low[i]] += b;
               }
             }
           }
