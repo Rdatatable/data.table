@@ -22005,21 +22005,28 @@ if (test_bit64) local({
   # Test mean for integer64 with NA
   dt_mean = data.table(
     id = c(1,1,2,2,3,3),
-    value = as.integer64(c(NA, 10, NA, NA, 5, NA))
+    value = as.integer64(c(NA, NA, NA, 20000000, 5, 3))
   )
   test(2358.3, options=c(datatable.optimize=2L),
-    dt_mean[, mean(value), by = id]$V1,
-    c(10, NA, 5)
+    dt_mean[, mean(value, na.rm=FALSE), by = id]$V1,
+    c(NA, NA, 4)
   )
 
-  # Randomized test: GForce sum vs base::sum for integer64
-  set.seed(7571)
+  # GForce sum vs base::sum for integer64
   DT = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
   gforce = DT[, .(gforce_sum = sum(value)), by=id]
   base = DT[, .(true_sum = base::sum(value)), by=id]
   merged = merge(gforce, base, by="id", all=TRUE)
   test(2358.4, options=c(datatable.optimize=2L),
-    all(merged$gforce_sum == merged$true_sum | (is.na(merged$gforce_sum) & is.na(merged$true_sum))),
-    TRUE
+    merged$gforce_sum, merged$true_sum
+  )
+
+  # GForce mean vs base::mean for integer64
+  DTm = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce_m = DTm[, .(gforce_mean = mean(value)), by=id]
+  base_m = DTm[, .(true_mean = base::mean(value)), by=id]
+  merged_m = merge(gforce_m, base_m, by="id", all=TRUE)
+  test(2358.5, options=c(datatable.optimize=2L),
+    merged$gforce_mean, merged$true_mean
   )
 })
