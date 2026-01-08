@@ -36,7 +36,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
   drop = NULL, on = NULL, env = NULL, 
-  showProgress = as.integer(getOption("datatable.showProgress", interactive())))
+  showProgress = getOption("datatable.showProgress", interactive()))
 }
 \arguments{
     \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
