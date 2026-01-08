@@ -35,6 +35,7 @@
 3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
 
 4. `sum(<int64 column>)` by group is correct with missing entries and GForce activated ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report and @manmita for the fix. The issue was caused by a faulty early `break` that spilled between groups, and resulted in silently incorrect results!
+
 5. `fread(text=)` could segfault when reading text input ending with a `\x1a` (ASCII SUB) character after a long line,  [#7407](https://github.com/Rdatatable/data.table/issues/7407)which is solved by adding check for `\x1A` at `end_of_field`. Thanks @aitap for the report and @manmita for the fix.  
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
