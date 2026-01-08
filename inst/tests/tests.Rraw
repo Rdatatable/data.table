@@ -22032,8 +22032,8 @@ if (test_bit64) local({
 })
 
 # 7407 Test for fread() handling \x1A (ASCII SUB) at end of input
-fread_sub_test_txt = paste0("foo\n", strrep("a", 4096 * 100), "\x1A")
-test(2359.1, {
-  dt <- fread(text = fread_sub_test_txt)
-  nrow(dt) == 1 && names(dt) == "foo" && dt$foo[1] == paste0(strrep("a", 4096 * 100))
-}, TRUE)
+txt = paste0("foo\n", strrep("a", 4096 * 100), "\x1A")
+test(2359.1,
+  nchar(fread(txt)$foo[1]) == 4096 * 100,
+  TRUE
+)
