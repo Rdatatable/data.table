@@ -19,7 +19,7 @@ SEXP allocrow(SEXP dt, R_xlen_t n) {
   for (R_xlen_t i = 0; i < length(dt); i++) {
     SEXP col = VECTOR_ELT(dt, i);
     if (!isVector(col))
-      error("Cannot make non-vector column %lld resizable", (long long)(i + 1));
+      error(_("Cannot make non-vector column %lld resizable"), (long long)(i + 1));
 
     const R_xlen_t currentLength = length(col);
     const R_xlen_t currentCapacity = R_isResizable(col) ? R_maxLength(col) : currentLength;
