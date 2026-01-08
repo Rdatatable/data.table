@@ -21978,3 +21978,10 @@ local({
   test(2357.1, fread(f), DT)
   test(2357.2, fread(paste0("file://", f)), DT)
 })
+
+# dt[, j=list(var), by] is slower than dt[, j=var, by], #712
+dt = data.table(x=rep(1:3, 2L), y=1L)
+test(2358.1, dt[, .(1), by=x, verbose=TRUE], dt[, 1, by=x], output="lapply optimization changed j from")
+dt = data.table(x=1:5, key="x")
+test(2358.2, dt[dt, list(1), by=.EACHI, verbose=TRUE], dt[dt, 1, by=.EACHI], output="lapply optimization changed j from")
+test(2358.3, dt[dt, list(x), by=.EACHI, verbose=TRUE], dt[dt, x, by=.EACHI], output="lapply optimization changed j from")
