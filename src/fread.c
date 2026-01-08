@@ -350,7 +350,7 @@ static inline bool end_of_field(const char *ch)
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
   // Comment characters terminate a field immediately and take precedence over separators.
   if (*ch == sep) return true;
-  if (ch == eof) return true;  // Check eof first to avoid reading past #7407
+  if (ch == eof) return true;
   if ((uint8_t)*ch <= 13 && eol(&ch)) return true;
   if (!commentChar) return false;
   return *ch == commentChar;
