@@ -181,7 +181,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
   \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
 
-  \item{showProgress}{ \code{TRUE} shows progress indicator with estimated time to completion for lengthy "by" operations. }
+  \item{showProgress}{ \code{TRUE} (default when \code{interactive()}) shows a progress indicator with estimated time to completion for lengthy "by" operations, updating every 3 seconds. An integer value controls the update interval in seconds (minimum 3). \code{FALSE} disables the progress indicator. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
