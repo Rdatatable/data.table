@@ -1186,16 +1186,14 @@ replace_dot_alias = function(e) {
         # Check for .ROW := NULL pattern (delete rows by reference)
         if ((is.character(lhs) && length(lhs)==1L && lhs==".ROW") ||
             (is.name(lhs) && identical(lhs, quote(.ROW)))) {
-          if (is.null(jsub) || identical(jsub, quote(NULL))) {
-            if (is.null(irows))
-              stopf(".ROW := NULL requires i= condition to specify rows to delete")
-            if (!missingby)
-              stopf(".ROW := NULL with 'by' or 'keyby' is not supported yet")
-            .Call(CdeleteRows, x, irows)
-            return(suppPrint(x))
-          } else {
+          if (!is.null(jsub) && !identical(jsub, quote(NULL)))
             stopf(".ROW can only be used with := NULL to delete rows")
-          }
+          if (is.null(irows))
+            stopf(".ROW := NULL requires i= condition to specify rows to delete")
+          if (!missingby)
+            stopf(".ROW := NULL with 'by' or 'keyby' is not supported yet")
+          .Call(CdeleteRows, x, irows)
+          return(suppPrint(x))
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
