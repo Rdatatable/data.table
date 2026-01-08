@@ -16,7 +16,7 @@
 
 1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
 
-2. Joins (`y[x, on=]` or `merge(x, y, ...)`) now display join statistics with `verbose=TRUE`, showing row counts, matched rows, and join columns used, [#4677](https://github.com/Rdatatable/data.table/issues/4677). Thanks @thorek1 and @grantmcdermott for the suggestion and @ben-schwen for the implementation.
+2. Joins (`y[x, on=]` or `merge(x, y, ...)`) now display join statistics with `options(datatable.verbose=TRUE)`, showing row counts, matched rows, and join columns used, [#4677](https://github.com/Rdatatable/data.table/issues/4677). Thanks @thorek1 and @grantmcdermott for the suggestion and @ben-schwen for the implementation.
 
 ### Notes
 
