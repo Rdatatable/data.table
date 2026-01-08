@@ -89,7 +89,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   int updateTime = INTEGER(showProgressArg)[0];
   const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
-  double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before printing progress
+  double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before starting to print progress
 
   hashtab * specials = hash_create(3 + ngrpcols + xlength(SDall)); // .I, .N, .GRP plus columns of .BY plus SDall
   PROTECT(specials->prot); nprotect++;
