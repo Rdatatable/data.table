@@ -39,7 +39,7 @@ setallocrow(DT, n = 0L)
 
     Please note: over-allocation of the column pointer vector is not for efficiency \emph{per se}; it is so that \code{:=} can add columns by reference without a shallow copy.
 
-    \code{setallocrow} is a utility function that prepares columns for fast row operations (delete or insert (not implemented yet)) by reference and manages row capacity.
+    \code{setallocrow} is a utility function that prepares columns for fast row operations (delete or insert) by reference and manages row capacity. (Note that 'insert' by reference is not yet implemented)
     Before deleting or inserting rows by reference, columns must be resizable.
     \code{setallocrow} ensures all columns are in the appropriate state by converting ALTREP columns to materialized form and reallocating
     columns to have the target capacity. When \code{n > 0}, columns are over-allocated with extra capacity for future row additions.
