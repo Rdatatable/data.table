@@ -246,9 +246,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     op_symbols = if (length(ops)) c("==", "<=", "<", ">=", ">")[ops] else strrep("==", length(icols))
     join_str = toString(sprintf("%s %s %s", names(x)[xcols], op_symbols, names(i)[icols]))
     num_width = max(vapply_1i(list(nrow_x, nrow_i, matched_i, result_rows, join_str), nchar))
-    label_width = 16L
-    line_width = label_width + num_width
-    separator = strrep("-", line_width - 2L)
+    # nchar("rows in x:    ") == 14L
+    separator = strrep("-", 14L + num_width)
 
     catf("Join summary:\n")
     catf("  rows in x:    %*d\n", num_width, nrow_x)
