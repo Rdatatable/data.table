@@ -3,9 +3,5 @@ title: "News"
 ---
 
 ```{r, echo=FALSE, results='asis'}
-cat(litedown::raw_text('<nav id="TOC" class="dt-toc"></nav>'))
-```
-
-```{r, echo=FALSE, results='asis'}
 litedown::pkg_news(recent = 0, number_sections = FALSE)
 ```

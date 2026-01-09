@@ -1,9 +1,5 @@
 /* data.table website styles */
 
-:root {
-  --dt-toc-width: 320px;
-}
-
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
   line-height: 1.6;
@@ -52,49 +48,6 @@ code {
 pre code {
   background-color: transparent;
   padding: 0;
-}
-
-/* TOC sidebar */
-#TOC {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 1rem;
-  margin: 1rem 0 2rem 0;
-}
-
-#TOC ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
-}
-
-#TOC a {
-  color: #495057;
-  font-size: 0.9rem;
-}
-
-@media (min-width: 1200px) {
-  .body:has(#TOC) {
-    display: grid;
-    grid-template-columns: 1fr var(--dt-toc-width);
-    gap: 2rem;
-    align-items: start;
-  }
-
-  #TOC {
-    grid-column: 2;
-    grid-row: 1 / 999;
-    position: sticky;
-    top: 5rem;
-    margin: 0;
-    max-height: calc(100vh - 6rem);
-    overflow-y: auto;
-  }
-
-  .body:has(#TOC) > *:not(#TOC) {
-    grid-column: 1;
-  }
 }
 
 @media (min-width: 1400px) {
