@@ -454,37 +454,37 @@ replace_dot_alias = function(e) {
 
 # Old mean() optimization fallback when GForce is not used
 .optimize_mean = function(jsub, SDenv, verbose, GForce) {
-  if (!GForce && !is.name(jsub)) {
-    # Still do the old speedup for mean, for now
-    nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
-    oldjsub = jsub
-    if (jsub %iscall% "list") {
-      # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been is.N() and/or the for-looped if()
-      # jsub[[1]]=="list" so the first item of todo will always be FALSE
-      todo = sapply(jsub, `%iscall%`, 'mean')
-      if (any(todo)) {
-        w = which(todo)
-        jsub[w] = lapply(jsub[w], .optmean)
-      }
-    } else if (jsub %iscall% "mean") {
-      jsub = .optmean(jsub)
+  if (GForce || is.name(jsub)) return(jsub) 
+
+  # Still do the old speedup for mean, for now
+  nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
+  oldjsub = jsub
+  if (jsub %iscall% "list") {
+    # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been is.N() and/or the for-looped if()
+    # jsub[[1]]=="list" so the first item of todo will always be FALSE
+    todo = sapply(jsub, `%iscall%`, 'mean')
+    if (any(todo)) {
+      w = which(todo)
+      jsub[w] = lapply(jsub[w], .optmean)
     }
-    if (nomeanopt) {
-      warningf("Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized.", immediate.=TRUE)
-    }
-    if (verbose) {
-      if (!identical(oldjsub, jsub))
-        catf("Old mean optimization changed j from '%s' to '%s'\n", deparse(oldjsub), deparse(jsub, width.cutoff=200L, nlines=1L))
-      else
-        catf("Old mean optimization is on, left j unchanged.\n")
-    }
-    assign("Cfastmean", Cfastmean, SDenv)
-    # Old comments still here for now ...
-    # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still slow.
-    # Maybe change to :
-    #     assign("mean", fastmean, SDenv)  # neater than the hard work above, but slower
-    # when fastmean can do trim.
+  } else if (jsub %iscall% "mean") {
+    jsub = .optmean(jsub)
   }
+  if (nomeanopt) {
+    warningf("Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized.", immediate.=TRUE)
+  }
+  if (verbose) {
+    if (!identical(oldjsub, jsub))
+      catf("Old mean optimization changed j from '%s' to '%s'\n", deparse(oldjsub), deparse(jsub, width.cutoff=200L, nlines=1L))
+    else
+      catf("Old mean optimization is on, left j unchanged.\n")
+  }
+  assign("Cfastmean", Cfastmean, SDenv)
+  # Old comments still here for now ...
+  # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still slow.
+  # Maybe change to :
+  #     assign("mean", fastmean, SDenv)  # neater than the hard work above, but slower
+  # when fastmean can do trim.
 
   jsub
 }
