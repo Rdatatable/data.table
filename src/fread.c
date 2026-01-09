@@ -349,9 +349,9 @@ static inline bool end_of_field(const char *ch)
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
   // Comment characters terminate a field immediately and take precedence over separators.
-  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) || (commentChar && *ch == commentChar);
   if (*ch == sep) return true;
-  if ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) return true;
+  if (ch == eof) return true;
+  if ((uint8_t)*ch <= 13 && eol(&ch)) return true;
   if (!commentChar) return false;
   return *ch == commentChar;
 }
