@@ -97,9 +97,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
   SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
 
-  const bool showProgress = LOGICAL(showProgressArg)[0]==1 && ngrp > 1; // showProgress only if more than 1 group
+  int updateTime = INTEGER(showProgressArg)[0];
+  const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
-  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
+  double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before starting to print progress
 
   hashtab * specials = hash_create(3 + ngrpcols + xlength(SDall)); // .I, .N, .GRP plus columns of .BY plus SDall
   PROTECT(specials->prot); nprotect++;
@@ -462,17 +463,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // could potentially refactor to use fread's progress() function, however we would lose some information in favor of simplicity.
     double now;
     if (showProgress && (now=wallclock())>=nextTime) {
+      // # nocov start. Requires long-running test case
       double avgTimePerGroup = (now-startTime)/(i+1);
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
-        // # nocov start. Requires long-running test case
         if (verbose && !hasPrinted) Rprintf(_("\n"));
         Rprintf("\r"); // # notranslate. \r is not internationalizable
         Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
-        // # nocov end
       }
-      nextTime = now+1;
+      nextTime = now+updateTime;
       hasPrinted = true;
+      // # nocov end
     }
     ansloc += maxn;
     if (firstalloc) {

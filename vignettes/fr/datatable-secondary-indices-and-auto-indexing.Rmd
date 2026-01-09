@@ -123,7 +123,7 @@ indices(flights)
 
 Considérons le cas où vous voudriez effectuer un sous-ensemble basé sur une clé rapide sur la colonne `origin` pour la valeur "JFK". Nous ferions cela comme suit :
 
-```{r, eval = FALSE}
+```r
 ## pas exécuté
 setkey(flights, origin)
 flights["JFK"] # or flights[.("JFK")]
@@ -145,7 +145,7 @@ Le calcul de l'ordre n'est pas la partie qui prend le plus de temps, puisque dat
 
 Maintenant, si nous voulons répéter la même opération mais sur la colonne `dest` à la place, pour la valeur "LAX", alors nous devons utiliser `setkey()`, *une fois de plus*.
 
-```{r, eval = FALSE}
+```r
 ## pas exécuté
 setkey(flights, dest)
 flights["LAX"]
