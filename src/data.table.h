@@ -14,6 +14,7 @@
 #  define LOGICAL_RO LOGICAL
 #endif
 #if R_VERSION < R_Version(4, 5, 0)
+#  define R_getVar(x, env, inherits) findVar(x, env)
 #  define isDataFrame(x) isFrame(x) // #6180
 #  define CLEAR_ATTRIB(x) SET_ATTRIB(x, R_NilValue)
 #  define ANY_ATTRIB(x) (!(isNull(ATTRIB(x))))
