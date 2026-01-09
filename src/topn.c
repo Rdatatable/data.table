@@ -113,12 +113,12 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   if (!INDEX) error(_("Internal error: Couldn't allocate memory for heap indices.")); // # nocov
   for (int i=0; i<n; ++i) INDEX[i] = i;
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP: {          HEAPN(int,      INTEGER,    icmp,   sorted); } break;
+  case LGLSXP: case INTSXP: {          HEAPN(int,      INTEGER_RO,    icmp,   sorted); } break;
   case REALSXP: {
-    if (INHERITS(x, char_integer64)) { HEAPN(int64_t,  REAL,       i64cmp, sorted); }
-    else {                             HEAPN(double,   REAL,       dcmp,   sorted); } break; }
-  case CPLXSXP: {                      HEAPN(Rcomplex, COMPLEX,    ccmp,   sorted); } break;
-  case STRSXP: {                       HEAPN(SEXP,     STRING_PTR, scmp,   sorted); } break;
+    if (INHERITS(x, char_integer64)) { HEAPN(int64_t,  REAL_RO,       i64cmp, sorted); }
+    else {                             HEAPN(double,   REAL_RO,       dcmp,   sorted); } break; }
+  case CPLXSXP: {                      HEAPN(Rcomplex, COMPLEX_RO,    ccmp,   sorted); } break;
+  case STRSXP: {                       HEAPN(SEXP,     STRING_PTR_RO, scmp,   sorted); } break;
   default:
     free(INDEX); error(_("Type '%s' not supported by topn."), type2char(TYPEOF(x)));
   }
