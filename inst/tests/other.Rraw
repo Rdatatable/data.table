@@ -258,6 +258,7 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   test(16.01, fread(f), DT)
   ## should be the same, but with yaml_metadata attribute
   test(16.02, fread(f, yaml = TRUE), DT_yaml)
+  test(16.025, fread(f, yaml = TRUE, skip = 0L), DT_yaml)
   ## testing verbose messaging
   test(16.03, fread(f, yaml = TRUE, verbose = TRUE),
        DT_yaml, output = 'Processed.*YAML metadata.*')
