@@ -491,6 +491,15 @@ replace_dot_alias = function(e) {
 
 # attempts to optimize j expressions using lapply, GForce, and mean optimizations
 .attempt_optimize = function(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, envir) {
+  if (getOption("datatable.optimize") < 1L) {
+    if (verbose) catf("All optimizations are turned off\n")
+    return(list(GForce=FALSE, jsub=jsub, jvnames=jvnames))
+  }
+  if (!(is.call(jsub) || (is.name(jsub) && jsub %chin% c(".SD", ".N")))) {
+    if (verbose) catf("Optimization is on but left j unchanged (single plain symbol): '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
+    return(list(GForce=FALSE, jsub=jsub, jvnames=jvnames))
+  }
+
   # Step 1: Apply lapply(.SD) optimization
   lapply_result = .optimize_lapply(jsub, jvnames, sdvars, SDenv, verbose, envir)
   jsub = lapply_result$jsub
@@ -2010,18 +2019,10 @@ replace_dot_alias = function(e) {
   lockBinding(".NGRP", SDenv)
 
   # Determine GForce-optimized query
-  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && jsub %chin% c(".SD", ".N"))) ) {
-    gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, parent.frame())
-    GForce = gforce_result$GForce
-    jsub = gforce_result$jsub
-    jvnames = gforce_result$jvnames
-  } else {
-    GForce = FALSE
-    if (verbose) {
-      if (getOption("datatable.optimize")<1L) catf("All optimizations are turned off\n")
-      else catf("Optimization is on but left j unchanged (single plain symbol): '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
-    }
-  }
+  gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, parent.frame())
+  GForce = gforce_result$GForce
+  jsub = gforce_result$jsub
+  jvnames = gforce_result$jvnames
   if (byjoin) {
     groups = i
     grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
