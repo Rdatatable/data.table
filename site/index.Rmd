@@ -27,5 +27,5 @@ if (file.exists(readme_file)) {
 ## Citation
 
 ```{r, echo=FALSE, results='asis'}
-litedown::pkg_citation(pkg_name)
+suppressWarnings(litedown::pkg_citation(pkg_name))
 ```
