@@ -120,9 +120,9 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error(_("%s must be TRUE or FALSE"), "check_dups");
+    error(_("'%s' must be TRUE or FALSE"), "check_dups");
   if (!IS_TRUE_OR_FALSE(skip_absent))
-    error(_("%s must be TRUE or FALSE"), "skip_absent");
+    error(_("'%s' must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -538,7 +538,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!IS_TRUE_OR_FALSE(copyArg))
-    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
+    error(_("'%s' must be TRUE or FALSE."), "copy"); // # nocov
   bool copy = LOGICAL(copyArg)[0];
   R_xlen_t n = xlength(x);
   int nprotect = 0;

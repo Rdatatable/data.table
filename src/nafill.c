@@ -105,7 +105,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   bool binplace = LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error(_("%s must be TRUE or FALSE"), "nan_is_na"); // # nocov
+    error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;

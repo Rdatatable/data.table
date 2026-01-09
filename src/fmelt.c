@@ -787,12 +787,12 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   Rboolean narm=FALSE, verbose=FALSE;
 
   if (!isNewList(DT)) error(_("Input is not of type VECSXP, expected a data.table, data.frame or list"));
-  if (!isLogical(valfactor)) error(_("Argument 'value.factor' should be logical TRUE/FALSE"));
-  if (!isLogical(varfactor)) error(_("Argument 'variable.factor' should be logical TRUE/FALSE"));
-  if (!isLogical(narmArg)) error(_("Argument 'na.rm' should be logical TRUE/FALSE."));
-  if (!isString(varnames)) error(_("Argument 'variable.name' must be a character vector"));
-  if (!isString(valnames)) error(_("Argument 'value.name' must be a character vector"));
-  if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+  if (!IS_TRUE_OR_FALSE(valfactor)) error(_("'%s' must be TRUE or FALSE"), "value.factor");
+  if (!IS_TRUE_OR_FALSE(varfactor)) error(_("'%s' must be TRUE or FALSE"), "variable.factor");
+  if (!IS_TRUE_OR_FALSE(narmArg)) error(_("'%s' must be TRUE or FALSE"), "na.rm");
+  if (!isString(varnames)) error(_("'%s' must be a character vector"), "variable.name");
+  if (!isString(valnames)) error(_("'%s' must be a character vector"), "value.name");
+  if (!IS_TRUE_OR_FALSE(verboseArg)) error(_("'%s' must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {
