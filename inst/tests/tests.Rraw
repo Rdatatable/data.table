@@ -22034,7 +22034,4 @@ if (test_bit64) local({
 
 # 7407 Test for fread() handling \x1A (ASCII SUB) at end of input
 txt = paste0("foo\n", strrep("a", 4096 * 100), "\x1A")
-test(2359.1,
-  nchar(fread(txt)$foo[1]) == 4096 * 100,
-  TRUE
-)
+test(2359.1, nchar(fread(txt)$foo), 409600L)
