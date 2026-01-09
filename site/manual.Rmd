@@ -1,13 +1,19 @@
 ---
-title: "Function Reference"
+title: "Package index"
 ---
+
+## All functions
 
 ```{r, echo=FALSE, results='asis'}
 # Load the reference index
 ref_info = readRDS("reference_index.rds")
 
-# Print function list
-cat("<div class='reference-index'>\n")
+format_alias = function(alias, link) {
+  is_simple_name = grepl("^[A-Za-z][A-Za-z0-9._]*$", alias)
+  alias_text = gsub("<([^>]+)>", "<i>&lt;\\1&gt;</i>", alias)
+  if (is_simple_name) alias_text = paste0(alias_text, "()")
+  sprintf("<code><a href=\"%s\">%s</a></code>", link, alias_text)
+}
 
 for (info in ref_info) {
   # Create a link to the individual page
@@ -15,21 +21,12 @@ for (info in ref_info) {
 
   # Format aliases as function names
   if (length(info$aliases) > 0) {
-    formatted_aliases = sapply(info$aliases, function(alias) {
-      # Don't add () to operators and special symbols:
-      if (grepl("^[%:.[]|<-$|^\\.\\.?$|^\\.$|^\\.\\.\\.$", alias)) {
-        sprintf("<code>%s</code>", alias)
-      } else {
-        sprintf("<code>%s()</code>", alias)
-      }
-    })
+    formatted_aliases = vapply(info$aliases, function(alias) format_alias(alias, link), character(1))
     alias_text = paste(formatted_aliases, collapse = " ")
   } else {
-    alias_text = sprintf("<code>%s</code>", info$name)
+    alias_text = format_alias(info$name, link)
   }
 
-  cat(sprintf('<div class="ref-item">\n  <h3><a href="%s">%s</a></h3>\n  <p>%s</p>\n</div>\n\n', link, alias_text, info$title))
+  cat(sprintf("<dl><dt>\n\n  %s\n\n</dt>\n<dd>%s</dd>\n</dl>\n", alias_text, info$title))
 }
-
-cat("</div>\n")
 ```
