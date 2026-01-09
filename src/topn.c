@@ -85,7 +85,6 @@ static inline bool ccmp(const Rcomplex *x, int i, int j, bool min, bool nalast) 
       ians[i] = INDEX[i]+1;                               \
     }                                                     \
   }                                                       \
-  free(INDEX);                                            \
 }
 
 SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
@@ -109,8 +108,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   int k, len;
   ans = PROTECT(allocVector(INTSXP, n));
   int *restrict ians = INTEGER(ans);
-  int *restrict INDEX = malloc(n*sizeof(int));
-  if (!INDEX) error(_("Internal error: Couldn't allocate memory for heap indices.")); // # nocov
+  int *restrict INDEX = (int *)R_alloc(n, sizeof(int));
   for (int i=0; i<n; ++i) INDEX[i] = i;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {          HEAPN(int,      INTEGER_RO,    icmp,   sorted); } break;
@@ -120,7 +118,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   case CPLXSXP: {                      HEAPN(Rcomplex, COMPLEX_RO,    ccmp,   sorted); } break;
   case STRSXP: {                       HEAPN(SEXP,     STRING_PTR_RO, scmp,   sorted); } break;
   default:
-    free(INDEX); error(_("Type '%s' not supported by topn."), type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by topn."), type2char(TYPEOF(x)));
   }
   UNPROTECT(1);
   return(ans);
