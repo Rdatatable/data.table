@@ -22065,7 +22065,7 @@ for (i in seq.int(x)) {
   }
 }
 test(2359.79, topn(as.raw(1), 1), error="Type 'raw' not supported by topn.")
-test(2359.80, topn(1L, 2L), 1L, warning="n should be smaller or equal than length(x) but provided n=2 and length(x)=1.\n  Coercing n to length(x).")
+test(2359.80, topn(1L, 2L), 1L, warning="n should be smaller or equal than length(x) but provided n=2 and length(x)=1.\n  Clamping n to length(x).")
 test(2359.81, topn(1L, -1L), error="topn(x,n) only implemented for n > 0.")
 if (test_bit64) {
   x=as.integer64(c(-5, 5, 0, NA, -5, 5, 1e18, NA, 5, 1e-18))
