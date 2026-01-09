@@ -47,12 +47,12 @@ rm -rf ./data.table.Rcheck
 
 checkbashisms ./configure  # for portability; e.g. Solaris 10 running Bourne shell; #3964
 
-# Ensure no non-ASCII, other than in README.md is ok
+# Ensure no non-ASCII, other than in README.md DESCRIPTION vignettes *.yml and *.po are ok 
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
+grep -RI --exclude-dir=".git" --exclude-dir="vignettes" --exclude="*.yml" --exclude="*.md" --exclude="*.po" --exclude="*~" --exclude="DESCRIPTION" --color='auto' -P -n "[\x80-\xFF]" ./
 
 # Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
+# grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
@@ -80,14 +80,14 @@ grep "Rprintf" ./src/init.c
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'.
 # See https://github.com/Rdatatable/data.table/issues/1351
 grep "nearest *=" ./src/*.c  # none
-grep "class *=" ./src/*.c    # quite a few but none global
+grep "class *=" ./src/*.c    # only one
 
 # ensure no use of z_const from zconf.h; #3939
 grep "z_const" ./src/*.[hc]  # none other than the comment
 
 # No undefined type punning of the form:  *(long long *)&REAL(column)[i]
 # Failed clang 3.9.1 -O3 due to this, I think.
-grep "&REAL" ./src/*.c
+grep "&REAL" ./src/*.c  # one instance in init.c
 
 # No [UN]PROTECT_PTR, #3232
 grep "PROTECT_PTR" ./src/*.c
@@ -107,13 +107,13 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -Enr "\bifelse" R
 
 # use substr() instead of substring(), #4447
-grep -Fnr "substring" R
+grep -Fnr "substring" R  # one instance in test.data.table.R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
-grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
+grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"  # only in froll.Rraw
 
 # No tryCatch in *.Rraw -- tryCatch should be handled only in test() itself to avoid silently missed warnings/errors/output
-grep -Fn "tryCatch" ./inst/tests/*.Rraw
+grep -Fn "tryCatch" ./inst/tests/*.Rraw  # only one outside of test() ./inst/tests/tests.Rraw:21594
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
@@ -168,8 +168,8 @@ R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 # avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
 # Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
-R CMD check data.table_1.16.99.tar.gz --as-cran
-R CMD INSTALL data.table_1.16.99.tar.gz --html
+R CMD check data.table_1.18.99.tar.gz --as-cran
+R CMD INSTALL data.table_1.18.99.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
@@ -193,9 +193,9 @@ q("no")
 
 # User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
 # Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
-PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.16.99.tar.gz
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.18.99.tar.gz
 # Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
-PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.16.99.tar.gz
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.18.99.tar.gz
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
@@ -224,23 +224,23 @@ system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m +
 
 
 ###############################################
-#  R 3.4.0 (stated dependency)
+#  R 3.5.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.4.0.tar.gz
-tar xvf R-3.4.0.tar.gz
-cd R-3.4.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.5.0.tar.gz
+tar xvf R-3.5.0.tar.gz
+cd R-3.5.0
 CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
-alias R340=~/build/R-3.4.0/bin/R
+alias R350=~/build/R-3.5.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R340 CMD INSTALL ./data.table_1.16.99.tar.gz
-R340
+R350 CMD INSTALL ./data.table_1.18.99.tar.gz
+R350
 require(data.table)
 test.data.table(script="*.Rraw")
 
@@ -251,7 +251,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.16.99.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.18.99.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -259,7 +259,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.16.99.tar.gz
+R CMD check data.table_1.18.99.tar.gz
 
 
 #####################################################
@@ -323,7 +323,7 @@ Rdevel-strict-[gcc|clang] CMD check data.table_1.16.99.tar.gz
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "knitr", "markdown"),
+install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "litedown"),
                  Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
@@ -568,7 +568,7 @@ du -k inst/tests                # 0.75MiB after
 R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 Rdevel -q -e "packageVersion('xml2')"   # ensure installed
-Rdevel CMD check data.table_1.17.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
+Rdevel CMD check data.table_1.18.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 
 #
@@ -596,12 +596,12 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # 0. Start a new branch `cran-x.y.0` with the code as submitted to CRAN
 #    - Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
 #    - The branch should have one commit with precisely these 4 files being edited
-# 1. Follow up with a commit with this consistent commit message like: "1.17.0 on CRAN. Bump to 1.17.99" to this branch bumping to the next dev version
+# 1. Follow up with a commit with this consistent commit message like: "1.18.0 on CRAN. Bump to 1.18.99" to this branch bumping to the next dev version
 #    - Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
 #    - Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 #    - Bump minor version in dllVersion() in init.c
 #    - Bump 3 minor version numbers in Makefile
-#    - Search and replace this .dev/CRAN_Release.cmd to update 1.16.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
+#    - Search and replace this .dev/CRAN_Release.cmd to update 1.17.99 to 1.18.99 inc below, 1.17.0 to 1.18.0
 #    - Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
 # 2. Ideally, no PRs are reviewed while a CRAN submission is pending. Any reviews that do happen MUST target this branch, NOT master!
 # 3. Once the submission lands on CRAN, merge this branch WITHOUT SQUASHING!

@@ -64,21 +64,17 @@ base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","v
             }
             for (algo in algos) {
               num <<- num + num.step
-              eval(substitute( # so we can have values displayed in output/log rather than variables
-                test(.num, ignore.warning="no non-missing arguments",
-                     rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, partial=.partial),
-                     froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
-                list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
-              ))
+              test(num, ignore.warning="no non-missing arguments",
+                   rollfun(x, n, FUN=fun, fill=fill, na.rm=na.rm, partial=partial),
+                   froll(fun, x, n, fill=fill, na.rm=na.rm, algo=algo, partial=partial, has.nf=has.nf),
+                   context=sprintf("fun=%s\tna.rm=$s\tfill=%s\tpartial=%s\thas.nf=%s\talgo=%s", fun, na.rm, fill, partial, has.nf, algo))
             }
           }
           num <<- num + num.step
-          eval(substitute( # so we can have values displayed in output/log rather than variables
-            test(.num, ignore.warning="no non-missing arguments",
-                 frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, partial=.partial),
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, partial=.partial)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .partial=partial)
-          ))
+          test(num, ignore.warning="no non-missing arguments",
+               frollapply(x, n, FUN=match.fun(fun), fill=fill, na.rm=na.rm, partial=partial),
+               froll(fun, x, n, fill=fill, na.rm=na.rm, partial=partial),
+               context=sprintf("fun=%s\tna.rm=$s\tfill=%s\tpartial=%s", fun, na.rm, fill, partial))
         }
       }
     }
@@ -152,21 +148,17 @@ if (requireNamespace("zoo", quietly=TRUE)) {
                 }
                 for (algo in algos) {
                   num <<- num + num.step
-                  eval(substitute( # so we can have values displayed in output/log rather than variables
-                    test(.num, ignore.warning="no non-missing arguments",
-                         drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
-                         froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
-                    list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
-                  ))
+                  test(num, ignore.warning="no non-missing arguments",
+                       drollapply(x, n, FUN=fun, fill=fill, align=align, na.rm=na.rm, partial=partial),
+                       froll(fun, x, n, align=align, fill=fill, na.rm=na.rm, algo=algo, partial=partial, has.nf=has.nf),
+                       context=sprintf("fun=%s\talign=%s\tna.rm=$s\tfill=%s\tpartial=%s\thas.nf=%s\talgo=%s", fun, align, na.rm, fill, partial, has.nf, algo))
                 }
               }
               num <<- num + num.step
-              eval(substitute( # so we can have values displayed in output/log rather than variables
-                test(.num, ignore.warning="no non-missing arguments",
-                     frollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
-                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, partial=.partial)),
-                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .partial=partial)
-              ))
+              test(num, ignore.warning="no non-missing arguments",
+                   frollapply(x, n, FUN=fun, fill=fill, align=align, na.rm=na.rm, partial=partial),
+                   froll(fun, x, n, align=align, fill=fill, na.rm=na.rm, partial=partial),
+                   context=sprintf("fun=%s\talign=%s\tna.rm=$s\tfill=%s\tpartial=%s", fun, align, na.rm, fill, partial))
             }
           }
         }
@@ -250,24 +242,18 @@ afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median","v
               }
               for (algo in algos) {
                 num <<- num + num.step
-                eval(substitute(
-                  test(.num,
-                    ignore.warning = "no non-missing arguments",
-                    arollfun(.fun, x, n, fill = .fill, na.rm = .na.rm, align = .align, partial=.partial),
-                    froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf, partial=.partial)
-                  ),
-                  list(.num = num, .fun = fun, .fill = fill, .na.rm = na.rm, .algo = algo, .align = align, .partial=partial, .has.nf = has.nf)
-                ))
+                test(num, ignore.warning = "no non-missing arguments",
+                     arollfun(fun, x, n, fill=fill, na.rm=na.rm, align=align, partial=partial),
+                     froll(fun, x, n, fill=fill, na.rm=na.rm, algo=algo, adaptive=TRUE, align=align, has.nf=has.nf, partial=partial),
+                     context=sprintf("fun=%s\talign=%s\tna.rm=$s\tfill=%s\tpartial=%s\thas.nf=%s\talgo=%s", fun, align, na.rm, fill, partial, has.nf, algo))
               }
             }
           }
           num <<- num + num.step
-          eval(substitute(
-            test(.num, ignore.warning="no non-missing arguments",
-              frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align),
-              froll(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .align=align)
-          ))
+          test(num, ignore.warning="no non-missing arguments",
+               frollapply(x, n, FUN=match.fun(fun), fill=fill, na.rm=na.rm, adaptive=TRUE, align=align),
+               froll(fun, x, n, fill=fill, na.rm=na.rm, adaptive=TRUE, align=align),
+               context=sprintf("fun=%s\talign=%s\tna.rm=$s\tfill=%s", fun, align, na.rm, fill))
         }
       }
     }

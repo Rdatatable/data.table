@@ -127,23 +127,21 @@ fixselfref = function(x) {
 
 frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE, give.names=FALSE, simplify=TRUE, x, n) {
   if (!missing(x)) {
-    warningf("'x' is deprecated in frollapply, use 'X' instead")
-    X = x
+    stopf("'x' is deprecated in frollapply, use 'X' instead")
   }
   if (!missing(n)) {
-    warningf("'n' is deprecated in frollapply, use 'N' instead")
-    N = n
+    stopf("'n' is deprecated in frollapply, use 'N' instead")
   }
   if (!isTRUEorFALSE(by.column))
-    stopf("'by.column' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "by.column")
   if (!isTRUEorFALSE(adaptive))
-    stopf("'adaptive' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "adaptive")
   if (!isTRUEorFALSE(partial))
-    stopf("'partial' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "partial")
   if (!isTRUEorFALSE(give.names))
-    stopf("'give.names' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "give.names")
   if (!isTRUEorFALSE(simplify) && !is.function(simplify))
-    stopf("'simplify' must be TRUE or FALSE or a function")
+    stopf("'%s' must be TRUE or FALSE or a function", "simplify")
 
   align = match.arg(align)
   FUN = match.fun(FUN)
@@ -395,11 +393,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
             interrupt = function(e) {
               # nocov start
               suspendInterrupts({
-                lapply(jobs, function(pid) try(tools::pskill(pid), silent = TRUE))
-                parallel::mccollect(jobs, wait = FALSE)
+                lapply(jobs[.Call(Cis_direct_child, jobs)], function(pid) try(tools::pskill(pid), silent = TRUE))
+                parallel::mccollect(jobs)
               })
-              invokeRestart("abort") ## raise SIGINT
               # nocov end
+              # Let the interrupt continue without invoking restarts
             }
           )
           ## check for any errors in FUN, warnings are silently ignored

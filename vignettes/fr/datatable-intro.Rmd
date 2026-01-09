@@ -1,27 +1,21 @@
 ---
 title: "Introduction à data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Introduction à data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
+`{r} .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -47,7 +41,7 @@ Dans cette vignette, nous utiliseront les données [NYC-flights14](https://raw.g
 
 Vous pouvez utiliser le lecteur de fichiers rapide et convivial 'fread' de 'data.table' pour charger 'flights' ditectement ainsi :
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(width = 100L)
 ```
 
@@ -107,7 +101,7 @@ Vous pouvez aussi convertir des objets existants en une `data.table` en utilisan
 
 Par rapport à un `data.frame`, vous pouvez  faire *beaucoup plus de choses* qu'extraire des lignes et sélectionner des colonnes dans la structure d'une `data.table`, par exemple, avec `[ ... ]` (Notez bien : nous pourrions aussi faire référence à écrire quelque chose dans `DT[...]` comme "interroger `DT`", par analogie ou similairement à SQL). Pour le comprendre il faut d'abord que nous regardions la *forme générale* de la syntaxe `data.table`, comme indiqué ci-dessous :
 
-```{r eval = FALSE}
+```r
 DT[i, j, by]
 
 ##   R:                 i                 j        by
@@ -362,7 +356,7 @@ DF[with(DF, x > 1), ]
 
 * Nous pouvons également *désélectionner* des colonnes en utilisant `-` ou `!`. Par exemple :
 
-    ```{r eval = FALSE}
+    ```r
     ## pas d'exécution
     
     # renvoie toutes les colonnes sauf arr_delay et dep_delay
@@ -373,7 +367,7 @@ DF[with(DF, x > 1), ]
 
 * A partir de la `v1.9.5+`, on peut aussi sélectionner en spécifiant les noms des colonnes de début et de fin, par exemple, `year:day` pour sélectionner les trois premières colonnes.
 
-    ```{r eval = FALSE}
+    ```r
     ## pas d'exécution
     
     # renvoie year,month et day
@@ -513,7 +507,7 @@ head(ans, 10)
 
 * Vous pouvez également les enchaîner verticalement :
 
-    ```{r eval = FALSE}
+    ```r
     DT[ ...
        ][ ...
          ][ ...
@@ -672,7 +666,7 @@ setDT(flights)
 
 La forme générale de la syntaxe de `data.table` est :
 
-```{r eval = FALSE}
+```r
 DT[i, j, by]
 ```
 

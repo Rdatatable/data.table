@@ -130,6 +130,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
+  assign("nskip", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
@@ -282,6 +283,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   nfail = env$nfail
   ntest = env$ntest
+  nskip = env$nskip
   if (nfail > 0L) {
     # nocov start
     stopf(
@@ -331,6 +333,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
+  if (foreign && nskip > 0L) catf("Skipped %d tests for translated messages. ", nskip) # nocov
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
   ans = nfail==0L
   attr(ans, "timings") = timings  # as attr to not upset callers who expect a TRUE/FALSE result
@@ -367,7 +370,10 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+test = function(num, x, y=TRUE,
+                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
+                options=NULL, env=NULL,
+                context=NULL) {
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
@@ -409,6 +415,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     memtest.id = get("memtest.id", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
+    nskip = get("nskip", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
     # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
@@ -451,6 +458,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters
     length(tryCatch(grep(x, y, ignore.case=ignore.case), error=function(e)NULL))  # otherwise try x as regexp
   }
+  if (foreign && .test.data.table && (
+    length(error) || length(warning) || length(message) || length(output) ||
+    length(notOutput) || length(ignore.warning)
+  ))
+    assign("nskip", nskip+1L, parent.frame(), inherits=TRUE) # nocov
 
   xsub = substitute(x)
   ysub = substitute(y)
@@ -478,7 +490,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
-    out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+    out = if (xsub %iscall% "print") {
+      capture.output(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler)))
+    } else {
+      capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+    }
   }
   if (!is.null(options)) {
     # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
@@ -613,6 +629,9 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
     }
     # nocov end
+  }
+  if (fail && !is.null(context)) {
+    catf("Test context: %s\n", context) # nocov
   }
   if (fail && .test.data.table && num>0.0) {
     # nocov start

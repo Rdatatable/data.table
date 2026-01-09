@@ -1,3 +1,8 @@
+#ifndef _WIN32
+#  define _POSIX_C_SOURCE 200809L // required for POSIX (not standard C) features in is_direct_child e.g. 'siginfo_t'
+#  include <sys/wait.h>
+#endif
+
 #include "data.table.h"
 
 bool within_int32_repres(double x) {
@@ -115,9 +120,9 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error(_("%s must be TRUE or FALSE"), "check_dups");
+    error(_("'%s' must be TRUE or FALSE"), "check_dups");
   if (!IS_TRUE_OR_FALSE(skip_absent))
-    error(_("%s must be TRUE or FALSE"), "skip_absent");
+    error(_("'%s' must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -533,7 +538,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!IS_TRUE_OR_FALSE(copyArg))
-    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
+    error(_("'%s' must be TRUE or FALSE."), "copy"); // # nocov
   bool copy = LOGICAL(copyArg)[0];
   R_xlen_t n = xlength(x);
   int nprotect = 0;
@@ -625,7 +630,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
     SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
     nprotect += 2;
     // swipe attributes from x
-    SET_ATTRIB(x, R_NilValue);
+    CLEAR_ATTRIB(x);
     setAttrib(x, R_NamesSymbol, names);
     setAttrib(x, R_ClassSymbol, klass);
     setAttrib(x, R_LevelsSymbol, levels);
@@ -672,3 +677,40 @@ void R_resizeVector_(SEXP x, R_xlen_t newlen) {
   SETLENGTH(x, newlen);
 }
 #endif
+
+#ifdef BACKPORT_MAP_ATTRIB
+SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx) {
+  PROTECT_INDEX i;
+  SEXP a = ATTRIB(x);
+  PROTECT_WITH_INDEX(a, &i);
+
+  SEXP ret = NULL;
+  for (; !isNull(a); REPROTECT(a = CDR(a), i)) {
+    ret = fun(PROTECT(TAG(a)), PROTECT(CAR(a)), ctx);
+    UNPROTECT(2);
+    if (ret) break;
+  }
+
+  UNPROTECT(1);
+  return ret;
+}
+#endif
+// # nocov start
+#ifdef _WIN32
+NORET
+#endif
+SEXP is_direct_child(SEXP pids) {
+#ifdef _WIN32
+  internal_error(__func__, "not implemented on Windows");
+#else
+  int *ppids = INTEGER(pids);
+  R_xlen_t len = xlength(pids);
+  SEXP ret = allocVector(LGLSXP, len);
+  int *pret = LOGICAL(ret);
+  siginfo_t info;
+  for (R_xlen_t i = 0; i < len; ++i)
+    pret[i] = waitid(P_PID, ppids[i], &info, WCONTINUED | WEXITED | WNOHANG | WNOWAIT | WSTOPPED) == 0;
+  return ret;
+#endif
+}
+// # nocov end
