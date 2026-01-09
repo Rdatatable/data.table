@@ -78,7 +78,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
   int nprotect=0;
-  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, s, RHS, target, source;
+  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   const bool verbose = LOGICAL(verboseArg)[0]==1;
   double tstart=0, tblock[10]={0}; int nblock[10]={0}; // For verbose printing, tstart is updated each block

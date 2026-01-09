@@ -362,10 +362,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum;
-  SEXP targetcol, nullint, s, colnam, tmp, key, index, a, assignedNames;
+  SEXP targetcol, nullint, colnam, tmp, key, index, assignedNames;
   bool verbose=GetVerbose();
   int ndelete=0;  // how many columns are being deleted
-  const char *c1, *tc1, *tc2;
   int *buf;
   if (isNull(dt)) error(_("assign has been passed a NULL dt"));
   if (TYPEOF(dt) != VECSXP) error(_("dt passed to assign isn't type VECSXP"));
