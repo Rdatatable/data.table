@@ -94,8 +94,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   ngrpcols = length(grpcols);
   nrowgroups = length(VECTOR_ELT(groups,0));
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
-  SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
-  SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
+  SEXP SDall = PROTECT(R_getVar(install(".SDall"), env, false)); nprotect++;  // PROTECT for rchk
+  SEXP SD = PROTECT(R_getVar(install(".SD"), env, false)); nprotect++;
 
   int updateTime = INTEGER(showProgressArg)[0];
   const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
@@ -125,12 +125,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]", length(bynames), length(groups), length(grpcols)); // # notranslate
   // TO DO: check this check above.
 
-  N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
+  N =   PROTECT(R_getVar(install(".N"), env, false));   nprotect++; // PROTECT for rchk
   hash_set(specials, N, -1);  // marker for anySpecialStatic(); see its comments
-  GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
+  GRP = PROTECT(R_getVar(install(".GRP"), env, false)); nprotect++;
   hash_set(specials, GRP, -1);  // marker for anySpecialStatic(); see its comments
-  iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
-  xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
+  iSD = PROTECT(R_getVar(install(".iSD"), env, false)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
+  xSD = PROTECT(R_getVar(install(".xSD"), env, false)); nprotect++;
   R_len_t maxGrpSize = 0;
   const int *ilens = INTEGER(lens), n=LENGTH(lens);
   for (R_len_t i=0; i<n; ++i) {
