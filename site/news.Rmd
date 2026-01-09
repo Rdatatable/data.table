@@ -3,5 +3,5 @@ title: "News"
 ---
 
 ```{r, echo=FALSE, results='asis'}
-litedown::pkg_news(recent = 0, number_sections = FALSE)
+litedown::pkg_news()
 ```

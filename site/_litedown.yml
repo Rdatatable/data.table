@@ -15,6 +15,4 @@ output:
       include_after: '<footer style="text-align: center; margin-top: 4rem; padding: 2rem 0; border-top: 1px solid #dee2e6;"><p>Developed by Tyson Barrett, Matt Dowle, Arun Srinivasan, Jan Gorecki, Michael Chirico, Toby Hocking, Benjamin Schwendinger and Ivan Krylov</p><p>Site built with <a href="https://yihui.org/litedown/">litedown</a></p></footer>'
     options:
       toc: false
-      number_sections: false
-      embed_resources: false
 ---
