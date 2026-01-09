@@ -182,7 +182,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     call_args = names(match.call())
     if (is.character(skip))
       warningf("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
-    yaml_header = .read_yaml_header(input, skip, verbose)
+    yaml_res = .read_yaml_header(input, skip, verbose)
+    yaml_header = yaml_res$yaml_header
+    n_read = yaml_res$n_read
     yaml_names = names(yaml_header)
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
@@ -387,7 +389,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
   yaml_header = yaml::yaml.load(yaml_string)
   if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(names(yaml_header)))
-  yaml_header
+  list(yaml_header = yaml_header, n_read = n_read)
 }
 # nocov end.
 
