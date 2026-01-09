@@ -1,5 +1,5 @@
 ---
-title: ""
+title: "data.table"
 ---
 
 ```{r setup, include=FALSE}
@@ -11,7 +11,7 @@ pkg_dir = find.package(pkg_name)
 # Read README.md from repository root (one directory up from site/)
 readme_file = normalizePath(file.path('..', 'README.md'), mustWork = FALSE)
 if (file.exists(readme_file)) {
-  readme = readLines(readme_file, warn = FALSE)
+  readme = tail(readLines(readme_file, warn = FALSE), -2) # Skip first 3 lines (title)
   cat(readme, sep = '\n')
 } else {
   cat('README.md not found.\n')

@@ -1,5 +1,5 @@
 ---
-title: "Package index"
+title: "Manual"
 ---
 
 ## All functions

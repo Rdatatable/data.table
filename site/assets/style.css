@@ -22,6 +22,11 @@ body {
   padding-top: 1.5rem;
 }
 
+.frontmatter .title,
+.frontmatter .title h1 {
+  text-align: left;
+}
+
 .external-link::after {
   content: "ext";
   font-size: 0.75rem;
