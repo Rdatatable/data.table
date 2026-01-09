@@ -337,7 +337,26 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     #   user  system elapsed
     #  0.028   0.000   0.005
     ```
-    20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
+
+20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
+
+21. New function `topn(x,n)` [#3804](https://github.com/Rdatatable/data.table/issues/3804). It returns the indices of the `n` smallest/largest values of a vector `x`. Previously, one had to use `order(x)[1:n]` which produced a full sorting of `x`. Usage of `topn` is advised for large vectors where sorting takes long time. Thanks to Michael Chirico for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    set.seed(123)
+    x = rnorm(1e8)
+    bm = bench::mark(check=FALSE, min_iterations=10,
+       topn(x, 5L, sorted=TRUE),
+       topn(x, 5L, sorted=FALSE),
+       order(x)[1:5] 
+    )
+    setDT(bm)[, .(expression, min, median, lapply(time, max), mem_alloc)]
+    #                     expression          min       median     V4     mem_alloc
+    #                   <bench_expr> <bench_time> <bench_time> <list> <bench_bytes>
+    # 1:  topn(x, 5L, sorted = TRUE)     151.65ms     155.21ms  171ms            0B
+    # 2: topn(x, 5L, sorted = FALSE)     151.59ms     158.77ms  176ms            0B
+    # 3:               order(x)[1:5]        2.69s        2.77s  2.84s         381MB
+    ```
 
 ### BUG FIXES
 

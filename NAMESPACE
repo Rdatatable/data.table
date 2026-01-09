@@ -220,6 +220,8 @@ S3method(format_list_item, data.frame)
 
 export(fdroplevels, setdroplevels)
 S3method(droplevels, data.table)
+
+export(topn)
 export(frev)
 export(.selfref.ok)
 

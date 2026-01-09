@@ -375,6 +375,10 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
 
+// topn.c
+SEXP topn(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP quickn(SEXP, SEXP, SEXP, SEXP);
+
 // hash.c
 typedef struct {
   SEXP prot; // make sure to PROTECT() while the table is in use

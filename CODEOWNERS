@@ -87,3 +87,7 @@
 # C code tricks
 /src/chmatch.c @aitap
 /src/fread.c @aitap
+
+# ordering
+/src/topn.c @ben-schwen
+/man/topn.Rd @ben-schwen
