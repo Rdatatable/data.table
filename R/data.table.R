@@ -2008,7 +2008,7 @@ replace_dot_alias = function(e) {
   SDenv$.NGRP = length(f__)
   lockBinding(".NGRP", SDenv)
 
-  # Call extracted GForce optimization function
+  # Determine GForce-optimized query
   if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && jsub %chin% c(".SD", ".N"))) ) {
     gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, parent.frame())
     GForce = gforce_result$GForce
