@@ -454,7 +454,7 @@ replace_dot_alias = function(e) {
 
 # Old mean() optimization fallback when GForce is not used
 .optimize_mean = function(jsub, SDenv, verbose, GForce) {
-  if (GForce || is.name(jsub)) return(jsub) 
+  if (GForce || is.name(jsub)) return(jsub)
 
   # Still do the old speedup for mean, for now
   nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
