@@ -14,19 +14,9 @@
 
 ### NEW FEATURES
 
-1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
+1. `nafill()`, `setnafill()` extended to work on logical and factor vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
 
 2. `[,showProgress=]` and `options(datatable.showProgress)` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency; `TRUE` uses the default 3-second interval, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
-
-### Notes
-
-1. {data.table} now depends on R 3.5.0 (2018).
-
-2. pydatatable compatibility layer in `fread()` and `fwrite()` has been removed, [#7069](https://github.com/Rdatatable/data.table/issues/7069). Thanks @badasahog for the report and the PR.
-
-3. Vignettes are now built using `litedown` instead of `knitr`, [#6394](https://github.com/Rdatatable/data.table/issues/6394). Thanks @jangorecki for the suggestion and @ben-schwen and @aitap for the implementation.
-
-4. Removed use of non-API macros `ATTRIB`, `SET_ATTRIB`, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here.
 
 ### BUG FIXES
 
@@ -37,6 +27,16 @@
 3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
 
 4. `sum(<int64 column>)` by group is correct with missing entries and GForce activated ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report and @manmita for the fix. The issue was caused by a faulty early `break` that spilled between groups, and resulted in silently incorrect results!
+
+### Notes
+
+1. {data.table} now depends on R 3.5.0 (2018).
+
+2. pydatatable compatibility layer in `fread()` and `fwrite()` has been removed, [#7069](https://github.com/Rdatatable/data.table/issues/7069). Thanks @badasahog for the report and the PR.
+
+3. Vignettes are now built using `litedown` instead of `knitr`, [#6394](https://github.com/Rdatatable/data.table/issues/6394). Thanks @jangorecki for the suggestion and @ben-schwen and @aitap for the implementation.
+
+4. Removed use of non-API `ATTRIB`, `SET_ATTRIB`, and `findVar` [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here, and @MichaelChirico for the easy fix to replace `findVar` with `R_getVar`.
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 

@@ -180,7 +180,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   R_len_t l, tl;
   if (isNull(dt)) error(_("alloccol has been passed a NULL dt"));
-  if (TYPEOF(dt) != VECSXP) error(_("dt passed to alloccol isn't type VECSXP"));
+  if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "alloccol");
   klass = getAttrib(dt, R_ClassSymbol);
   if (isNull(klass)) error(_("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker."));
   l = LENGTH(dt);
@@ -222,7 +222,7 @@ int checkOverAlloc(SEXP x)
 
 SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
   if (!IS_TRUE_OR_FALSE(verbose))
-    error(_("%s must be TRUE or FALSE"), "verbose");
+    error(_("'%s' must be TRUE or FALSE"), "verbose");
   int overAlloc = checkOverAlloc(overAllocArg);
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
@@ -368,7 +368,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   const char *c1, *tc1, *tc2;
   int *buf;
   if (isNull(dt)) error(_("assign has been passed a NULL dt"));
-  if (TYPEOF(dt) != VECSXP) error(_("dt passed to assign isn't type VECSXP"));
+  if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "assign");
   if (islocked(dt))
     error(_(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported."));
 
@@ -1211,9 +1211,9 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 {
   int w;
-  if (!isString(x)) error(_("x must be a character vector"));
+  if (!isString(x)) error(_("'%s' must be a character vector"), "x");
   if (!isInteger(which)) error(_("'which' must be an integer vector"));
-  if (!isString(newx)) error(_("'new' must be a character vector"));
+  if (!isString(newx)) error(_("'%s' must be a character vector"), "new");
   if (LENGTH(newx)!=LENGTH(which)) error(_("'new' is length %d. Should be the same as length of 'which' (%d)"),LENGTH(newx),LENGTH(which));
   for (int i=0; i<LENGTH(which); i++) {
     w = INTEGER(which)[i];
