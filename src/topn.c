@@ -97,7 +97,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   const int xlen = LENGTH(x);
   int n = INTEGER(nArg)[0];
   if (n > xlen) {
-    warning(_("n should be smaller or equal than length(x) but provided n=%d and length(x)=%d.\n  Coercing n to length(x)."), n, xlen);
+    warning(_("n should be smaller or equal than length(x) but provided n=%d and length(x)=%d.\n  Clamping n to length(x)."), n, xlen);
     n = xlen;
   }
 
@@ -175,6 +175,10 @@ SEXP quickn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
 
   const int xlen = LENGTH(x);
   int n = INTEGER(nArg)[0];
+  if (n > xlen) {
+    warning(_("n should be smaller or equal than length(x) but provided n=%d and length(x)=%d.\n  Clamping n to length(x)."), n, xlen);
+    n = xlen;
+  }
   x = PROTECT(duplicate(x));
 
   const bool min = LOGICAL(ascArg)[0];
