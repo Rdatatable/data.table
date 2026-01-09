@@ -244,7 +244,7 @@ replace_dot_alias = function(e) {
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stopf("j must be provided when with=FALSE")
-  if (!missing(by) && !isTRUEorFALSE(showProgress)) stopf("%s must be TRUE or FALSE", "showProgress")
+  if (!missing(by) && !(isTRUEorFALSE(showProgress) || (is.numeric(showProgress) && length(showProgress)==1L && showProgress >= 0))) stopf("showProgress must be TRUE, FALSE, or a single non-negative number") # nocov
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
@@ -1972,7 +1972,7 @@ replace_dot_alias = function(e) {
     }
     ans = c(g, ans)
   } else {
-    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose, showProgress)
+    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose, as.integer(showProgress))
   }
   # unlock any locked data.table components of the answer, #4159
   # MAX_DEPTH prevents possible infinite recursion from truly recursive object, #4173
@@ -2854,10 +2854,20 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   invisible(x)
 }
 
+.set_needs_alloccol = function(x, value) {
+  # automatically allocate more space when tl <= ncol (either full or loaded from disk)
+  if (truelength(x) <= length(x)) return(TRUE)
+  if (selfrefok(x, verbose=FALSE) >= 1L) return(FALSE)
+  # value can be NULL or list with NULLs inside
+  if (is.null(value)) return(TRUE)
+  if (!is.list(value)) return(FALSE)
+  any(vapply_1b(value, is.null))
+}
+
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
   # If removing columns from a table that's not selfrefok, need to call setalloccol first, #7488
-  if ((is.null(value) || (is.list(value) && any(vapply_1b(value, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+  if (.set_needs_alloccol(x, value)) {
     name = substitute(x)
     setalloccol(x, verbose=FALSE)
     if (is.name(name)) {

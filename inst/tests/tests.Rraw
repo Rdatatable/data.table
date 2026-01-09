@@ -14797,7 +14797,7 @@ test(2016.1, name, "DT")
 test(2016.2, DT, data.table(a=1:3))
 test(2016.3, DT[2,a:=4L], data.table(a=INT(1,4,3)))        # no error for := when existing column
 test(2016.4, set(DT,3L,1L,5L), data.table(a=INT(1,4,5)))   # no error for set() when existing column
-test(2016.5, set(DT,2L,"newCol",5L), error="either been loaded from disk.*or constructed manually.*Please run setDT.*setalloccol.*on it first")   # just set()
+test(2016.5, set(DT,2L,"newCol",5L), data.table(a=INT(1,4,5), newCol=INT(NA,5L,NA)))   # works since set overallocates #4100
 test(2016.6, DT[2,newCol:=6L], data.table(a=INT(1,4,5), newCol=INT(NA,6L,NA)))  # := ok (it changes DT in caller)
 unlink(tt)
 
@@ -19478,7 +19478,7 @@ test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in
 df = data.frame(a=1:3)
 setDT(df)
 attr(df, "att") = 1
-test(2291.1, set(df, NULL, "new", "new"), error="either been loaded from disk.*or constructed manually.*Please run setDT.*setalloccol.*on it first")
+test(2291.1, set(df, NULL, "new", "new"), setattr(data.table(a=1:3, new="new"), "att", 1)) # fixed when calling setalloccol before set #4100
 
 # ns-qualified bysub error, #6493
 DT = data.table(a = 1)
@@ -21959,3 +21959,74 @@ test(2355.1, fread(txt, skip=0),              data.table(V1 = c("b1", "c1"), a1 
 test(2355.2, fread(txt, skip=0, header=TRUE), data.table(V1 = c("b1", "c1"), a1 = c("b2", "c2"), a2 = c("b3", "c3")), warning="Added an extra default column name")
 test(2355.3, fread(txt, skip=0, header=FALSE), data.table(V1=character(), V2=character(), V3=character()), warning="Consider fill=TRUE")
 test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"), V2 = c("a2", "b2", "c2"), V3 = c("", "b3", "c3")))
+
+# re-overallocate in set if quota is reached #496 #1831 #4100
+DT = data.table()
+test(2356.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i); ncol(DT)}, 10L)
+DT = structure(list(a = 1, b = 2), class = c("data.table", "data.frame"))
+test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
+# ensure := and set are consistent if they need to overallocate
+DT = data.table(); DT2 = data.table()
+test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
+
+# fread works on file:// URIs with spaces, #7550
+local({
+  f = tempfile("with spaces"); on.exit(unlink(f))
+  DT = data.table(a = 1L, b = 2L)
+  fwrite(DT, f)
+
+  test(2357.1, fread(f), DT)
+  test(2357.2, fread(paste0("file://", f)), DT)
+})
+
+#7571 issue for na.rm on int64
+if (test_bit64) local({
+  # integer64 + GForce grouped sum with na.rm = FALSE
+  # Example 1 from issue: ids 1:8, 9, 9; three leading NAs then 4:10
+  dt_short = data.table(
+    id = c(1:8, 9, 9),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2358.1, options=c(datatable.optimize=2L),
+    dt_short[, sum(value, na.rm = FALSE), by = id]$V1,
+    as.integer64(c(NA, NA, NA, 4:8, 19))
+  )
+
+  # Example 2 from issue: ids in pairs, same values; checks multi-row groups
+  dt_short2 = data.table(
+    id = rep(1:5, each = 2L),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2358.2, options=c(datatable.optimize=2L),
+    dt_short2[, sum(value, na.rm = FALSE), by = id]$V1,
+    as.integer64(c(NA, NA, 11, 15, 19))
+  )
+
+  # Test mean for integer64 with NA
+  dt_mean = data.table(
+    id = c(1,1,2,2,3,3),
+    value = as.integer64(c(NA, NA, NA, 20000000, 5, 3))
+  )
+  test(2358.3, options=c(datatable.optimize=2L),
+    dt_mean[, mean(value, na.rm=FALSE), by = id]$V1,
+    c(NA, NA, 4)
+  )
+
+  # GForce sum vs base::sum for integer64
+  DT = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce = DT[, .(gforce_sum = sum(value)), by=id]
+  base = DT[, .(true_sum = base::sum(value)), by=id]
+  merged = merge(gforce, base, by="id", all=TRUE)
+  test(2358.4, options=c(datatable.optimize=2L),
+    merged$gforce_sum, merged$true_sum
+  )
+
+  # GForce mean vs base::mean for integer64
+  DTm = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce_m = DTm[, .(gforce_mean = mean(value)), by=id]
+  base_m = DTm[, .(true_mean = base::mean(value)), by=id]
+  merged_m = merge(gforce_m, base_m, by="id", all=TRUE)
+  test(2358.5, options=c(datatable.optimize=2L),
+    merged$gforce_mean, merged$true_mean
+  )
+})

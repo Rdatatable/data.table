@@ -219,7 +219,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (!binplace) {
     for (R_len_t i=0; i<nx; i++) {
       SEXP xi = VECTOR_ELT(x, i);
-      if (!isNull(ATTRIB(xi))) {
+      if (ANY_ATTRIB(xi)) {
         copyMostAttrib(xi, VECTOR_ELT(ans, i));
         if (itype == 0 && hasFill && isFactor(xi)) {
           SEXP fillLev = PROTECT(getAttrib(VECTOR_ELT(fill, i), R_LevelsSymbol));
