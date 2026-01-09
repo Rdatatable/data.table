@@ -1,9 +1,9 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
-  if (!sort %in% c(TRUE, FALSE))
-    stopf("Argument 'sort' should be logical TRUE/FALSE")
-  if (!no.dups %in% c(TRUE, FALSE))
-    stopf("Argument 'no.dups' should be logical TRUE/FALSE")
+  if (!isTRUEorFALSE(sort))
+    stopf("'%s' must be TRUE or FALSE", "sort")
+  if (!isTRUEorFALSE(no.dups))
+    stopf("'%s' must be TRUE or FALSE", "no.dups")
   class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
