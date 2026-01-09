@@ -4,7 +4,9 @@
 
 ## data.table [v1.18.2](https://github.com/Rdatatable/data.table/milestone/44?closed=1) In Development
 
+### Notes
 
+1. Removed use of non-API macros `ATTRIB`, `SET_ATTRIB`, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here.
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
