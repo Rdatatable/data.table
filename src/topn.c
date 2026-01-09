@@ -24,10 +24,11 @@ static inline bool i64cmp(const int64_t *x, int i, int j, bool min, bool nalast)
 }
 
 static inline bool scmp(const SEXP *restrict x, int i, int j, bool min, bool nalast) {
-  if (strcmp(CHAR(x[i]), CHAR(x[j])) == 0) return i > j;
-  if (x[i]==NA_STRING) return nalast;
+  if (x[i]==NA_STRING) return x[j]==NA_STRING ? i > j : nalast;
   if (x[j]==NA_STRING) return !nalast;
-  return min ? strcmp(CHAR(x[i]),CHAR(x[j]))<0 : strcmp(CHAR(x[i]),CHAR(x[j]))>0;
+  int cmp = strcmp(CHAR(x[i]), CHAR(x[j]));
+  if (cmp == 0) return i > j;
+  return min ? cmp < 0 : cmp > 0;
 }
 
 static inline bool ccmp(const Rcomplex *x, int i, int j, bool min, bool nalast) {
