@@ -18,6 +18,9 @@
 
 2. `[,showProgress=]` and `options(datatable.showProgress)` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency; `TRUE` uses the default 3-second interval, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
 
+
+3. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `shallow_search=TRUE`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

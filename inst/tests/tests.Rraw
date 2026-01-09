@@ -22030,3 +22030,26 @@ if (test_bit64) local({
     merged$gforce_mean, merged$true_mean
   )
 })
+
+#2606 tables() shallow_search finds nested data.tables in lists
+# creating env so that the names are within it
+xenv2 = new.env()
+xenv2$DT = data.table(a = 1L)
+xenv2$L = list(data.table(a = 1, b = 4:6), data.table(a = 2, b = 7:10))
+xenv2$M = list(b = data.table(a = 1, b = 4:6), a = 1:5)
+# Test for NAME column
+test(2359.1,
+  tables(env = xenv2, shallow_search = TRUE)$NAME,
+  c("DT", "L[[1]]", "L[[2]]", "M$b")
+)
+# Test for NROW column
+test(2359.2,
+  tables(env = xenv2, shallow_search = TRUE)$NROW,
+  c(1L, 1L, 1L, 1L)
+)
+# Test for NCOL column
+test(2359.3,
+  tables(env = xenv2, shallow_search = TRUE)$NCOL,
+  c(1L, 2L, 2L, 2L)
+)
+rm(xenv2)
