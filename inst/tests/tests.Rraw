@@ -17531,7 +17531,7 @@ funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
 testnum = 0L
 for (fun in funs) {
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, optimize=2L, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
+  test(2220.0 + testnum*0.01, optimize=2L, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="'na.rm' must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
   testnum = testnum + 1L
   test(2220.0 + testnum*0.01, optimize=2L, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun), context=sprintf("fun=%s [factor]", fun))
 }

@@ -385,7 +385,11 @@ test = function(num, x, y=TRUE,
     # Check if y was explicitly provided (not just the default)
     y_provided = !missing(y)
     vector_params = mget(c("error", "warning", "message", "output", "notOutput", "ignore.warning"), environment())
-    compare = !y_provided && length(optimize)>1L && !any(lengths(vector_params))
+    vector_params = vector_params[lengths(vector_params) > 0L]
+    compare = !y_provided && length(optimize)>1L && !length(vector_params)
+    # When optimize has multiple levels, vector params are recycled across levels.
+    if (length(optimize) > 1L && "warning" %in% names(vector_params) && length(vector_params$warning) > 1L)
+      warningf("warning= with multiple values is recycled across optimize levels, not treated as multiple warnings in one run")
 
     for (i in seq_along(optimize)) {
       cl$num = num + (i - 1L) * 1e-6
@@ -393,9 +397,7 @@ test = function(num, x, y=TRUE,
       cl$options = if (!is.null(options)) c(as.list(options), opt_level) else opt_level
       for (param in names(vector_params)) {
         val = vector_params[[param]]
-        if (length(val) > 0L) {
-          cl[[param]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than optimization levels
-        }
+        cl[[param]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than optimization levels
       }
 
       if (compare && i == 1L) cl$y = eval(cl$x, parent.frame())
