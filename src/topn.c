@@ -188,7 +188,7 @@ SEXP quickn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
     if (INHERITS(x, char_integer64)) { QUICKN(int64_t,  REAL,       i64cmp, i64swap); }
     else {                             QUICKN(double,   REAL,       dcmp,   dswap); } break; }
   case CPLXSXP: {                      QUICKN(Rcomplex, COMPLEX,    ccmp,   cswap); } break;
-  case STRSXP: {                       QUICKN(SEXP,     STRING_PTR_RO, scmp,   sswap); } break;
+  case STRSXP: {                       QUICKN(SEXP,     DATAPTR_RO, scmp,   sswap); } break; // note that we use DATAPTR_RO for swapping elements in place similar to reorder.c
   default:
     error(_("Type '%s' not supported by quickn."), type2char(TYPEOF(x)));
   }
