@@ -14,7 +14,19 @@
 
 ### NEW FEATURES
 
-1. `nafill()`, `setnafill()` extended to work on logical vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
+1. `nafill()`, `setnafill()` extended to work on logical and factor vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
+
+2. `[,showProgress=]` and `options(datatable.showProgress)` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency; `TRUE` uses the default 3-second interval, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
+
+### BUG FIXES
+
+1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
+
+2. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#1831](https://github.com/Rdatatable/data.table/issues/1831) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to @zachokeeffe and @tyner for the report and @ben-schwen for the fix.
+
+3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
+
+4. `sum(<int64 column>)` by group is correct with missing entries and GForce activated ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report and @manmita for the fix. The issue was caused by a faulty early `break` that spilled between groups, and resulted in silently incorrect results!
 
 2. GForce and lapply optimization detection has been refactored to use modular optimization paths and an AST (Abstract Syntax Tree) walker for improved maintainability and extensibility. The new architecture separates optimization detection into distinct, composable phases. This makes future optimization enhancements a lot easier. Thanks to @grantmcdermott, @jangorecki, @MichaelChirico, and @HughParsonage for the suggestions and @ben-schwen for the implementation.
 
@@ -32,13 +44,7 @@
 
 3. Vignettes are now built using `litedown` instead of `knitr`, [#6394](https://github.com/Rdatatable/data.table/issues/6394). Thanks @jangorecki for the suggestion and @ben-schwen and @aitap for the implementation.
 
-### BUG FIXES
-
-1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
-
-2. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#1831](https://github.com/Rdatatable/data.table/issues/1831) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to @zachokeeffe and @tyner for the report and @ben-schwen for the fix.
-
-3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
+4. Removed use of non-API `ATTRIB`, `SET_ATTRIB`, and `findVar` [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here, and @MichaelChirico for the easy fix to replace `findVar` with `R_getVar`.
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 

@@ -17,18 +17,21 @@ SEXP copyCols(SEXP x, SEXP cols) {
   return R_NilValue;
 }
 
+static SEXP setDuplicateOneAttrib(SEXP key, SEXP val, void *x) {
+  setAttrib(x, PROTECT(key), PROTECT(shallow_duplicate(val)));
+  UNPROTECT(2);
+  return NULL; // continue
+}
+
 void mergeIndexAttrib(SEXP to, SEXP from) {
   if (!isInteger(to) || LENGTH(to)!=0)
     internal_error(__func__, "'to' must be integer() already"); // # nocov
   if (isNull(from))
     return;
-  SEXP t = ATTRIB(to), f = ATTRIB(from);
-  if (isNull(t)) // target has no attributes -> overwrite
-    SET_ATTRIB(to, shallow_duplicate(f));
-  else {
-    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t)); // traverse to end of attributes list of to
-    SETCDR(t, shallow_duplicate(f));
-  }
+  if (!ANY_ATTRIB(to)) // target has no attributes -> overwrite
+    SHALLOW_DUPLICATE_ATTRIB(to, from);
+  else
+    R_mapAttrib(from, setDuplicateOneAttrib, to);
 }
 
 SEXP cbindlist(SEXP x, SEXP copyArg) {
@@ -84,7 +87,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
       key = getAttrib(thisx, sym_sorted);
     UNPROTECT(protecti); // thisnames, thisxcol
   }
-  if (isNull(ATTRIB(index)))
+  if (!ANY_ATTRIB(index))
     setAttrib(ans, sym_index, R_NilValue);
   setAttrib(ans, R_NamesSymbol, names);
   setAttrib(ans, sym_sorted, key);
