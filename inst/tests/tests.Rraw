@@ -22050,7 +22050,7 @@ test(2360.1,
 # Test for NROW column
 test(2360.2,
   tables(env = xenv2, shallow_search = TRUE)$NROW,
-  c(1L, 1L, 1L, 1L)
+  c(1L, 3L, 4L, 3L)
 )
 # Test for NCOL column
 test(2360.3,
