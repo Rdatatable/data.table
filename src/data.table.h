@@ -14,7 +14,10 @@
 #  define LOGICAL_RO LOGICAL
 #endif
 #if R_VERSION < R_Version(4, 5, 0)
+#  define R_getVar(x, env, inherits) findVar(x, env)
 #  define isDataFrame(x) isFrame(x) // #6180
+#  define CLEAR_ATTRIB(x) SET_ATTRIB(x, R_NilValue)
+#  define ANY_ATTRIB(x) (!(isNull(ATTRIB(x))))
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
@@ -102,6 +105,11 @@
     return (LEVELS(x) & 0x20) && XLENGTH(x) <= TRUELENGTH(x);
   }
 # define R_resizeVector(x, newlen) R_resizeVector_(x, newlen)
+#endif
+// TODO(R>=4.6.0): remove the SVN revision check
+#if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89194
+# define BACKPORT_MAP_ATTRIB
+# define R_mapAttrib(x, fun, ctx) R_mapAttrib_(x, fun, ctx)
 #endif
 
 // init.c
@@ -342,6 +350,9 @@ NORET void internal_error(const char *call_name, const char *format, ...);
 SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen);
 SEXP R_duplicateAsResizable_(SEXP x);
 void R_resizeVector_(SEXP x, R_xlen_t newlen);
+#endif
+#ifdef BACKPORT_MAP_ATTRIB
+SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx);
 #endif
 SEXP is_direct_child(SEXP pids);
 
