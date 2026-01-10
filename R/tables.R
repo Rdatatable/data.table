@@ -51,7 +51,9 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     name_count = length(w) + total_dt
     # initialize info data.table with total number of data.tables found
     if (name_count == 0L) {
+      # nocov start. Requires long-running test case
       if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
+      # nocov end
       return(invisible(data.table(NULL)))
     }
     # create info data.table with total rows equal to number of data.tables found
