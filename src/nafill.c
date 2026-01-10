@@ -109,7 +109,7 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 
 /*
