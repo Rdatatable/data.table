@@ -22043,32 +22043,13 @@ xenv2$DT = data.table(a = 1L)
 xenv2$L = list(data.table(a = 1, b = 4:6), data.table(a = 2, b = 7:10))
 xenv2$M = list(b = data.table(a = 1, b = 4:6), a = 1:5)
 xenv2$N = list(a = 1:5)
-# Test for NAME column
-test(2360.1,
-  tables(env = xenv2, shallow_search = TRUE)$NAME,
-  c("DT", "L[[1]]", "L[[2]]", "M$b")
-)
-# Test for NROW column
-test(2360.2,
-  tables(env = xenv2, shallow_search = TRUE)$NROW,
-  c(1L, 3L, 4L, 3L)
-)
-# Test for NCOL column
-test(2360.3,
-  tables(env = xenv2, shallow_search = TRUE)$NCOL,
-  c(1L, 2L, 2L, 2L)
-)
-# Test for index and keys
 setkey(xenv2$M$b, a)
 setindex(xenv2$M$b, b)
-test(2360.4, 
-  tables(env = xenv2, shallow_search = TRUE, index = TRUE)$INDICES, 
-  c(NULL, NULL, NULL, "b")
-)
-test(2360.5,
-  tables(env = xenv2, shallow_search = TRUE, index = TRUE)$KEY,
-  c(NULL, NULL, NULL, "a")
-)
+test(2360.1, tables(env = xenv2, shallow_search = TRUE)$NAME, c("DT", "L[[1]]", "L[[2]]", "M$b"))
+test(2360.2, tables(env = xenv2, shallow_search = TRUE)$NROW, c(1L, 3L, 4L, 3L))
+test(2360.3, tables(env = xenv2, shallow_search = TRUE)$NCOL, c(1L, 2L, 2L, 2L))
+test(2360.4, tables(env = xenv2, shallow_search = TRUE, index = TRUE)$INDICES, list(NULL, NULL, NULL, "b"))
+test(2360.5, tables(env = xenv2, shallow_search = TRUE, key = TRUE)$KEY, list(NULL, NULL, NULL, "a"))
 rm(xenv2)
 
 # no data.table test
