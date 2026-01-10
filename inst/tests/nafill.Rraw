@@ -417,6 +417,7 @@ test(15.11, setnafill(copy(DT), fill=list(TRUE, 9L, 9.0, "a"), cols=c("l1", "i1"
                        i1 = c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
                        d1 = c(9.0, 9L, 0L, 1L, 9L, 9L, 2:3, 9L, 9L),
                        f1 = as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a"))))
+test(15.12, setnafill(DT, cols=c("l1", "c1")), error="not yet supported")
 
 ## Date
 ## POSIXct
