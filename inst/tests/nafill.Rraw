@@ -376,6 +376,9 @@ test(14.09, nafill(x, fill=1.0), c("1", "1", "a", "b", "1", "1", "c", "d", "1", 
 test(14.10, nafill(x, fill=NA_integer_), x)
 test(14.11, nafill(x, fill=NA_real_), x)
 test(14.12, nafill(x, fill=NA_character_), x)
+test(14.13, options=c(datatable.verbose=TRUE),
+     nafill(x, fill="z"), c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
+     output="nafillString: took")
 
 ## setnafill
 DT = data.table(l1=c(NA, NA, TRUE, TRUE, NA, NA, FALSE, FALSE, NA, NA),
