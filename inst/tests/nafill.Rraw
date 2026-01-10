@@ -112,8 +112,8 @@ x = 1:10
 test(3.01, nafill(x, "locf", fill=0L), x)
 test(3.02, setnafill(list(copy(x)), "locf", fill=0L), list(x))
 test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
-test(3.04, nafill(letters[1:5], fill=0), error="must be logical/numeric type, or list/data.table")
-test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be logical/numeric type, or list/data.table")
+test(3.04, nafill(as.raw(x), fill=0), error="not supported")
+test(3.05, setnafill(list(as.raw(x)), fill=0), error="not supported")
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1.*fcoalesce")
 test(3.07, nafill(x, "locf", fill=1:2), error="fill must be a vector of length 1.*x\\.$")
 test(3.08, nafill(x, fill="asd"), x, warning=c("Coercing.*character.*integer","NAs introduced by coercion"))
@@ -324,14 +324,16 @@ test(11.09, coerceAs(1L, a), error="must not be matrix or array")
 x = c(NA, NA, TRUE, FALSE, NA, NA, FALSE, TRUE, NA, NA)
 test(12.01, nafill(x, "locf"), c(NA, NA, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE))
 test(12.02, nafill(x, "nocb"), c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, NA, NA))
-test(12.03, nafill(x, fill=TRUE), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE))
-test(12.04, nafill(x, fill=0L), c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE))
-test(12.05, nafill(x, fill=5.0), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE), warning="double.*taken as TRUE")
-test(12.06, nafill(x, fill=Inf), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE), warning="double.*taken as TRUE")
-test(12.07, nafill(x, fill=NA), x)
-test(12.08, nafill(x, fill=NA_integer_), x)
-test(12.09, nafill(x, fill=NA_real_), x)
-test(12.10, nafill(x, fill=NaN), x)
+test(12.03, nafill(x, "locf", fill=TRUE), c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE))
+test(12.04, nafill(x, "nocb", fill=TRUE), c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE))
+test(12.05, nafill(x, fill=TRUE), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE))
+test(12.06, nafill(x, fill=0L), c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE))
+test(12.07, nafill(x, fill=5.0), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE), warning="double.*taken as TRUE")
+test(12.08, nafill(x, fill=Inf), c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE), warning="double.*taken as TRUE")
+test(12.09, nafill(x, fill=NA), x)
+test(12.10, nafill(x, fill=NA_integer_), x)
+test(12.11, nafill(x, fill=NA_real_), x)
+test(12.12, nafill(x, fill=NaN), x)
 
 ## factor input
 x = rep(NA_character_, 10L)
@@ -339,27 +341,83 @@ x[c(3:4, 7:8)] = c("a", "b", "a", "c")
 x = as.factor(x)
 test(13.01, nafill(x, "locf"), replace(replace(x, 5:6, "b"), 9:10, "c"))
 test(13.02, nafill(x, "nocb"), replace(x, c(1:2, 5:6), "a"))
+test(13.03, nafill(x, "locf", fill="b"), replace(replace(x, c(1:2, 5:6), "b"), 9:10, "c"))
+test(13.04, nafill(x, "nocb", fill="a"), replace(x, c(1:2, 5:6, 9:10), "a"))
 x_fill_a = replace(x, c(1:2, 5:6, 9:10), "a")
-test(13.03, nafill(x, fill="a"), x_fill_a)
-test(13.04, nafill(x, fill=1L), x_fill_a)
-test(13.05, nafill(x, fill=1.0), x_fill_a)
-test(13.06, nafill(x, fill=factor("a")), x_fill_a)
-test(13.07, nafill(x, fill=factor("a", levels=levels(x))), x_fill_a)
-test(13.08, nafill(x, fill=factor("a", levels=c("a", "b"))), x_fill_a)
-test(13.09, nafill(x, fill=factor("a", levels=c("a", "d"))), factor(x_fill_a, levels=c("a", "b", "c", "d")))
+test(13.05, nafill(x, fill="a"), x_fill_a)
+test(13.06, nafill(x, fill=1L), x_fill_a)
+test(13.07, nafill(x, fill=1.0), x_fill_a)
+test(13.08, nafill(x, fill=factor("a")), x_fill_a)
+test(13.09, nafill(x, fill=factor("a", levels=levels(x))), x_fill_a)
+test(13.10, nafill(x, fill=factor("a", levels=c("a", "b"))), x_fill_a)
+test(13.11, nafill(x, fill=factor("a", levels=c("a", "d"))), factor(x_fill_a, levels=c("a", "b", "c", "d")))
 x_fill_d = replace(factor(x, levels = c(levels(x), "d")), c(1:2, 5:6, 9:10), "d")
-test(13.10, nafill(x, fill="d"), x_fill_d)
-test(13.11, nafill(x, fill=factor("d", levels=c("a", "b", "c", "d"))), x_fill_d)
-test(13.12, nafill(x, fill=factor("d", levels=c("d", "a", "b", "c"))), x_fill_d)
-test(13.13, nafill(x, fill=factor("d", levels=c("d", "c", "b", "a"))), x_fill_d)
-test(13.14, nafill(x, fill=factor("d", levels=c("b", "c", "d"))), x_fill_d)
-test(13.15, nafill(x, fill=NA), x)
-test(13.16, nafill(x, fill=NA_integer_), x)
-test(13.17, nafill(x, fill=NA_character_), x)
+test(13.12, nafill(x, fill="d"), x_fill_d)
+test(13.13, nafill(x, fill=factor("d", levels=c("a", "b", "c", "d"))), x_fill_d)
+test(13.14, nafill(x, fill=factor("d", levels=c("d", "a", "b", "c"))), x_fill_d)
+test(13.15, nafill(x, fill=factor("d", levels=c("d", "c", "b", "a"))), x_fill_d)
+test(13.16, nafill(x, fill=factor("d", levels=c("b", "c", "d"))), x_fill_d)
+test(13.17, nafill(x, fill=NA), x)
+test(13.18, nafill(x, fill=NA_integer_), x)
+test(13.19, nafill(x, fill=NA_real_), x)
+test(13.20, nafill(x, fill=NA_character_), x)
 
-## logical
-## character
-## factor
+## character input
+x = c(NA, NA, "a", "b", NA, NA, "c","d", NA, NA)
+test(14.01, nafill(x, fill="unknown"), c("unknown", "unknown", "a", "b", "unknown", "unknown", "c", "d", "unknown", "unknown"))
+test(14.02, nafill(x, fill=NA), x)
+test(14.03, nafill(x, "locf"), c(NA, NA, "a", "b", "b", "b", "c", "d", "d", "d"))
+test(14.04, nafill(x, "nocb"), c("a", "a", "a", "b", "c", "c", "c", "d", NA, NA))
+test(14.05, nafill(x, "locf", fill="unknown"), c("unknown", "unknown", "a", "b", "b", "b", "c", "d", "d", "d"))
+test(14.06, nafill(x, "nocb", fill="unknown"), c("a", "a", "a", "b", "c", "c", "c", "d", "unknown", "unknown"))
+test(14.07, nafill(x, fill=TRUE), c("TRUE", "TRUE", "a", "b", "TRUE", "TRUE", "c", "d", "TRUE", "TRUE"))
+test(14.08, nafill(x, fill=1L), c("1", "1", "a", "b", "1", "1", "c", "d", "1", "1"))
+test(14.09, nafill(x, fill=1.0), c("1", "1", "a", "b", "1", "1", "c", "d", "1", "1"))
+test(14.10, nafill(x, fill=NA_integer_), x)
+test(14.11, nafill(x, fill=NA_real_), x)
+test(14.12, nafill(x, fill=NA_character_), x)
+
+## setnafill
+DT = data.table(l1 = c(NA, NA, TRUE, TRUE, NA, NA, FALSE, FALSE, NA, NA),
+                l2 = c(NA, NA, FALSE, FALSE, NA, NA, TRUE, TRUE, NA, NA),
+                i1 = c(NA, NA, 0:1, NA, NA, 2:3, NA, NA),
+                i2 = c(NA, NA, 3:2, NA, NA, 1:0, NA, NA),
+                d1 = c(NA, NA, 0.0, 1L, NA, NA, 2:3, NA, NA),
+                d2 = c(NA, NA, 3.0, 2L, NA, NA, 1:0, NA, NA),
+                f1 = as.factor(c(NA, NA, "a", "b", NA, NA, "b", "c", NA, NA)),
+                f2 = as.factor(c(NA, NA, "c", "b", NA, NA, "b", "a", NA, NA)),
+                c1 = c(NA, NA, "a", "b", NA, NA, "c", "d", NA, NA),
+                c2 = c(NA, NA, "d", "c", NA, NA, "b", "a", NA, NA))
+test(15.01, setnafill(copy(DT), fill=TRUE, cols='l1')$l1,
+            c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE))
+test(15.02, setnafill(copy(DT), fill=TRUE, cols=c('l1', 'l2'))[, .(l1, l2)],
+            data.table(l1 = c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
+                       l2 = c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)))
+test(15.03, setnafill(copy(DT), fill=9L, cols='i1')$i1,
+            c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L))
+test(15.04, setnafill(copy(DT), fill=9L, cols=c('i1', 'i2'))[, .(i1, i2)],
+            data.table(i1 = c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
+                       i2 = c(9L, 9L, 3:2, 9L, 9L, 1:0, 9L, 9L)))
+test(15.05, setnafill(copy(DT), fill=9.0, cols='d1')$d1,
+            c(9.0, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L))
+test(15.06, setnafill(copy(DT), fill=9.0, cols=c('d1', 'd2'))[, .(d1, d2)],
+            data.table(d1 = c(9.0, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
+                       d2 = c(9.0, 9L, 3:2, 9L, 9L, 1:0, 9L, 9L)))
+test(15.07, setnafill(copy(DT), fill="a", cols='f1')$f1,
+            as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")))
+test(15.08, setnafill(copy(DT), fill="a", cols=c('f1', 'f2'))[, .(f1, f2)],
+            data.table(f1 = as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")),
+                       f2 = as.factor(c("a", "a", "c", "b", "a", "a", "b", "a", "a", "a"))))
+test(15.09, setnafill(DT, fill="z", cols='c1'), error="not yet supported")
+# test(15.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
+#             data.table(c1 = c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
+#                        c2 = c("z", "z", "d", "c", "z", "z", "b", "a", "z", "z")))
+test(15.11, setnafill(copy(DT), fill=list(TRUE, 9L, 9.0, "a"), cols=c("l1", "i1", "d1", "f1"))[, .(l1, i1, d1, f1)],
+            data.table(l1 = c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
+                       i1 = c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
+                       d1 = c(9.0, 9L, 0L, 1L, 9L, 9L, 2:3, 9L, 9L),
+                       f1 = as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a"))))
+
 ## Date
 ## POSIXct
 ## IDate
