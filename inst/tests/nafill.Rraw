@@ -380,6 +380,44 @@ test(14.13, options=c(datatable.verbose=TRUE),
      nafill(x, fill="z"), c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
      output="nafillString: took")
 
+## other common classed vector objects: Date, IDate, POSIXct
+x = as.IDate(c(NA, "2025-01-01", NA, "2025-06-01", NA))
+y26 = as.IDate("2026-01-01")
+test(15.01, nafill(x, fill=y26), replace(x, c(1L, 3L, 5L), y26))
+test(15.02, nafill(x, fill=NA), x)
+test(15.03, nafill(x, "locf"), replace(x, c(3L, 5L), x[c(2L, 4L)]))
+test(15.04, nafill(x, "nocb"), replace(x, c(1L, 3L), x[c(2L, 4L)]))
+test(15.05, nafill(x, "locf", fill=y26), replace(x, c(1L, 3L, 5L), c(y26, x[c(2L, 4L)])))
+test(15.06, nafill(x, "nocb", fill=y26), replace(x, c(1L, 3L, 5L), c(x[c(2L, 4L)], y26)))
+test(15.07, nafill(x, fill=as.numeric(y26)), replace(x, c(1L, 3L, 5L), y26))
+
+x = as.Date(x)
+y26 = as.Date(y26)
+test(15.08, nafill(x, fill=y26), replace(x, c(1L, 3L, 5L), y26))
+test(15.09, nafill(x, fill=NA), x)
+test(15.10, nafill(x, "locf"), replace(x, c(3L, 5L), x[c(2L, 4L)]))
+test(15.11, nafill(x, "nocb"), replace(x, c(1L, 3L), x[c(2L, 4L)]))
+test(15.12, nafill(x, "locf", fill=y26), replace(x, c(1L, 3L, 5L), c(y26, x[c(2L, 4L)])))
+test(15.13, nafill(x, "nocb", fill=y26), replace(x, c(1L, 3L, 5L), c(x[c(2L, 4L)], y26)))
+test(15.14, nafill(x, fill=as.numeric(y26)), replace(x, c(1L, 3L, 5L), y26))
+
+x = as.POSIXct(x)
+y26 = as.POSIXct(y26)
+test(15.15, nafill(x, fill=y26), replace(x, c(1L, 3L, 5L), y26))
+test(15.16, nafill(x, fill=NA), x)
+test(15.17, nafill(x, "locf"), replace(x, c(3L, 5L), x[c(2L, 4L)]))
+test(15.18, nafill(x, "nocb"), replace(x, c(1L, 3L), x[c(2L, 4L)]))
+test(15.19, nafill(x, "locf", fill=y26), replace(x, c(1L, 3L, 5L), c(y26, x[c(2L, 4L)])))
+test(15.20, nafill(x, "nocb", fill=y26), replace(x, c(1L, 3L, 5L), c(x[c(2L, 4L)], y26)))
+test(15.21, nafill(x, fill=as.numeric(y26)), replace(x, c(1L, 3L, 5L), y26))
+
+attr(x, "tzone") = "Asia/Singapore"
+test(15.22, nafill(x, fill=y26), replace(x, c(1L, 3L, 5L), y26))
+
+test(15.23, nafill(as.Date(NA), fill=as.IDate("2025-01-01")), as.Date("2025-01-01"))
+test(15.24, nafill(as.Date(NA_integer_), fill=as.IDate("2025-01-01")), as.Date("2025-01-01"))
+test(15.25, nafill(as.IDate(NA), fill=as.Date("2025-01-01")), as.IDate("2025-01-01"))
+
 ## setnafill
 DT = data.table(l1=c(NA, NA, TRUE, TRUE, NA, NA, FALSE, FALSE, NA, NA),
                 l2=c(NA, NA, FALSE, FALSE, NA, NA, TRUE, TRUE, NA, NA),
@@ -391,39 +429,39 @@ DT = data.table(l1=c(NA, NA, TRUE, TRUE, NA, NA, FALSE, FALSE, NA, NA),
                 f2=as.factor(c(NA, NA, "c", "b", NA, NA, "b", "a", NA, NA)),
                 c1=c(NA, NA, "a", "b", NA, NA, "c", "d", NA, NA),
                 c2=c(NA, NA, "d", "c", NA, NA, "b", "a", NA, NA))
-test(15.01, setnafill(copy(DT), fill=TRUE, cols='l1')$l1,
+test(16.01, setnafill(copy(DT), fill=TRUE, cols='l1')$l1,
             c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE))
-test(15.02, setnafill(copy(DT), fill=TRUE, cols=c('l1', 'l2'))[, .(l1, l2)],
+test(16.02, setnafill(copy(DT), fill=TRUE, cols=c('l1', 'l2'))[, .(l1, l2)],
             data.table(l1=c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
                        l2=c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)))
-test(15.03, setnafill(copy(DT), fill=9L, cols='i1')$i1,
+test(16.03, setnafill(copy(DT), fill=9L, cols='i1')$i1,
             c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L))
-test(15.04, setnafill(copy(DT), fill=9L, cols=c('i1', 'i2'))[, .(i1, i2)],
+test(16.04, setnafill(copy(DT), fill=9L, cols=c('i1', 'i2'))[, .(i1, i2)],
             data.table(i1=c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
                        i2=c(9L, 9L, 3:2, 9L, 9L, 1:0, 9L, 9L)))
-test(15.05, setnafill(copy(DT), fill=9.0, cols='d1')$d1,
+test(16.05, setnafill(copy(DT), fill=9.0, cols='d1')$d1,
             c(9.0, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L))
-test(15.06, setnafill(copy(DT), fill=9.0, cols=c('d1', 'd2'))[, .(d1, d2)],
+test(16.06, setnafill(copy(DT), fill=9.0, cols=c('d1', 'd2'))[, .(d1, d2)],
             data.table(d1=c(9.0, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
                        d2=c(9.0, 9L, 3:2, 9L, 9L, 1:0, 9L, 9L)))
-test(15.07, setnafill(copy(DT), fill="a", cols='f1')$f1,
+test(16.07, setnafill(copy(DT), fill="a", cols='f1')$f1,
             as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")))
-test(15.08, setnafill(copy(DT), fill="a", cols=c('f1', 'f2'))[, .(f1, f2)],
+test(16.08, setnafill(copy(DT), fill="a", cols=c('f1', 'f2'))[, .(f1, f2)],
             data.table(f1=as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")),
                        f2=as.factor(c("a", "a", "c", "b", "a", "a", "b", "a", "a", "a"))))
-test(15.09, setnafill(DT, fill="z", cols='c1'), error="not yet supported")
-# test(15.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
+test(16.09, setnafill(DT, fill="z", cols='c1'), error="not yet supported")
+# test(16.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
 #             data.table(c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
 #                        c2=c("z", "z", "d", "c", "z", "z", "b", "a", "z", "z")))
-test(15.11, setnafill(copy(DT), fill=list(TRUE, 9L, 9.0, "a"), cols=c("l1", "i1", "d1", "f1"))[, .(l1, i1, d1, f1)],
+test(16.11, setnafill(copy(DT), fill=list(TRUE, 9L, 9.0, "a"), cols=c("l1", "i1", "d1", "f1"))[, .(l1, i1, d1, f1)],
             data.table(l1=c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
                        i1=c(9L, 9L, 0:1, 9L, 9L, 2:3, 9L, 9L),
                        d1=c(9.0, 9L, 0L, 1L, 9L, 9L, 2:3, 9L, 9L),
                        f1=as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a"))))
-test(15.12, setnafill(DT, cols=c("l1", "c1")), error="not yet supported")
+test(16.12, setnafill(DT, cols=c("l1", "c1")), error="not yet supported")
 DT = data.table(l=c(NA, FALSE), i=c(NA, 0L))
 setnafill(DT, fill=list(TRUE, 1L))
-test(15.13, DT, data.table(l=c(TRUE, FALSE), i=1:0))
+test(16.13, DT, data.table(l=c(TRUE, FALSE), i=1:0))
 
 ## Date
 ## POSIXct
