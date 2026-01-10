@@ -186,13 +186,21 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
       const SEXP ansi = VECTOR_ELT(ans, i);
-      const void *p = isReal(ansi)
-        ? (void *)REAL(ansi)
-        : isLogical(ansi)
-          ? (void *)LOGICAL(ansi)
-          : TYPEOF(ansi) == INTSXP
-            ? (void *)INTEGER(ansi)
-            : (void *)ansi;
+      const void *p;
+      switch (TYPEOF(ansi)) {
+        case LGLSXP:
+          p = LOGICAL(ansi);
+          break;
+        case INTSXP:
+          p = INTEGER(ansi);
+          break;
+        case REALSXP:
+          p = REAL(ansi);
+          break;
+        default:
+          p = ansi;
+          break;
+      }
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else if (any_char) {
