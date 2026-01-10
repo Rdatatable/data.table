@@ -3737,8 +3737,9 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # issue 5824 - tests for "value.var.in.dots", "value.var.in.LHSdots", "value.var.in.RHSdots" arguments of dcast
   DT = data.table(index = c("a","b"), x = 1:2)
-  test(1102.181, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = NA), error = "Argument 'value.var.in.dots' should be logical TRUE/FALSE")
-  test(1102.182, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.LHSdots = NA), error = "Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
+  test(1102.1810, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = NA), error = "'value.var.in.dots' must be TRUE or FALSE")
+  test(1102.1821, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.LHSdots = NA), error = "'value.var.in.LHSdots' must be TRUE or FALSE")
+  test(1102.1822, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.RHSdots = NA), error = "'value.var.in.RHSdots' must be TRUE or FALSE")
   test(1102.183, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = TRUE), data.table(x = 1:2, a = 1:0, b = 0:1, key = "x"))
   test(1102.184, dcast(DT, ... ~ index, fun.aggregate = length, value.var = "index", value.var.in.dots = TRUE), data.table(index = c("a","b"), x = 1:2, a = 1:0, b = 0:1, key = c("index", "x")))
   test(1102.185, dcast(DT, ... + index ~ index, fun.aggregate = length, value.var = "index", value.var.in.dots = TRUE), data.table(index = c("a","b"), x = 1:2, a = 1:0, b = 0:1, key = c("index", "x")))
@@ -7085,7 +7086,7 @@ test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
 test(1477.10, transpose(list(x~y)), error="Item 1 of list input is")
 test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
-test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
+test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="'ignore.empty' must be TRUE or FALSE")
 test(1477.13, transpose(list()), list())
 # return list columns #5639
 la = list(as.list(1:3), list("a","b","c"))
@@ -7098,7 +7099,7 @@ test(1477.18, transpose(list(list(1L,"a"), list(2L), list(3L,"c")), list.cols=TR
 test(1477.19, transpose(list(1:2, c("a","b","c")), list.cols=TRUE, fill=3L), lb)
 test(1477.20, transpose(list(factor(letters[1:3])), list.cols=TRUE), list(list("a"), list("b"), list("c")))
 test(1477.21, transpose(list(factor(letters[1:3])), list.cols=FALSE), list("a", "b", "c"))
-test(1477.22, transpose(la, list.cols=NA), error="list.cols should be logical TRUE/FALSE.")
+test(1477.22, transpose(la, list.cols=NA), error="'list.cols' must be TRUE or FALSE")
 
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
@@ -11932,8 +11933,8 @@ test(1774.13, as.data.table(x), error = "Argument 'value.name' should not overla
 ## unsupported usage of as.data.table.array
 test(1774.14, as.data.table.array(as.matrix(x)), error="method should only be called for arrays with 3+")
 test(1774.15, as.data.table(x, value.name=NA), error="'value.name' must be scalar")
-test(1774.16, as.data.table(x, sorted='a'), error="'sorted' must be scalar")
-test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be scalar")
+test(1774.16, as.data.table(x, sorted='a'), error="'sorted' must be TRUE or FALSE")
+test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be TRUE or FALSE")
 
 # verify print.keys works
 DT1 <- data.table(a = 1:3, key = "a")
@@ -12868,7 +12869,7 @@ test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
 x = runif(1e3)
 test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
-test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
+test(1888.8, fsort(x,verbose=1), error="'verbose' must be TRUE or FALSE")
 test(1888.9, fsort(c(1L, 2L, 3L, 4L), internal = TRUE), c(1L, 2L, 3L, 4L))
 rm(x, y)
 
@@ -13659,9 +13660,9 @@ test(1962.011, uniqlist(list()), list(0L))
 DT1 = data.table(a = 1:3, V = 'a')
 DT2 = data.table(a = 2:4, V = 'b')
 test(1962.012, merge(DT1, DT2, sort = 1+3i),
-     error = 'should be logical TRUE/FALSE')
+     error = "'sort' must be TRUE or FALSE")
 test(1962.013, merge(DT1, DT2, no.dups = 1+3i),
-     error = 'should be logical TRUE/FALSE')
+     error = "'no.dups' must be TRUE or FALSE")
 setDF(DT2)
 test(1962.014, merge(DT1, DT2),
      data.table(a = integer(0), V = character(0)))
@@ -13692,7 +13693,7 @@ test(1962.023, frankv(x, na.last = c(TRUE, FALSE)),
 test(1962.024, frankv(x, cols = 'y'),
      error = 'x is a single vector')
 test(1962.025, frankv(list(x), cols = integer(0L)),
-     error = "x is a list, 'cols' can not be 0-length")
+     error = "x is a list, 'cols' cannot be 0-length")
 f = frankv(list(x), ties.method = 'random')
 test(1962.026,
      length(f) == 9L && identical(f[c(3:4, 6L, 8:9)], c(3L, 7L, 4L, 9L, 8L)) &&
@@ -13815,11 +13816,11 @@ DT = data.table(
 )
 setDF(DT)
 test(1962.068, rollup(DT), error=base_messages$missing_dispatch_method)
-test(1962.069, rollup.data.table(DT), error = 'must be a data.table object')
+test(1962.069, rollup.data.table(DT), error = 'must be a data.table')
 test(1962.070, cube(DT), error=base_messages$missing_dispatch_method)
-test(1962.071, cube.data.table(DT), error = 'must be a data.table object')
+test(1962.071, cube.data.table(DT), error = 'must be a data.table')
 test(1962.072, groupingsets(DT), error=base_messages$missing_dispatch_method)
-test(1962.073, groupingsets.data.table(DT), error = 'must be a data.table object')
+test(1962.073, groupingsets.data.table(DT), error = 'must be a data.table')
 setDT(DT)
 test(1962.074, rollup(DT, by = 3L), error = "'by' must be a character vector")
 test(1962.075, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
@@ -13851,7 +13852,7 @@ setDF(DT)
 test(1962.085, dcast.data.table(DT), error = 'must be a data.table')
 setDT(DT)
 test(1962.086, dcast(DT, a ~ a, drop = NA),
-     error = 'must be logical TRUE/FALSE')
+     error = "'drop' must be logical vector with no missing entries")
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
 test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
      error = 'Columns specified in formula can not be of type list')
@@ -14011,11 +14012,11 @@ test(1967.09, foverlaps(x, y, minoverlap = NA),
 test(1967.10, foverlaps(x, y, minoverlap = -5),
      error = 'minoverlap must be a positive integer')
 test(1967.11, foverlaps(x, y, which = integer(0L)),
-     error = 'which must be a logical vector')
+     error = "'which' must be TRUE or FALSE")
 test(1967.12, foverlaps(x, y, which = c(3, 4)),
-     error = 'which must be a logical vector')
+     error = "'which' must be TRUE or FALSE")
 test(1967.13, foverlaps(x, y, which = NA),
-     error = 'which must be a logical vector')
+     error = "'which' must be TRUE or FALSE")
 test(1967.14, foverlaps(x, y, nomatch = integer(0L)),
      error = 'nomatch must either be NA or NULL')
 test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
@@ -14035,9 +14036,9 @@ test(1967.22, foverlaps(x, y, by.y = c(-1L, 0L)),
 test(1967.23, foverlaps(x, y, by.y = c(1L, 100L)),
      error = "Invalid numeric value for 'by.y'")
 test(1967.24, foverlaps(x, y, by.x = c(1 + 3i, 2 - 1i)),
-     error = 'non-empty vector of column names or numbers is required for by.x')
+     error = "non-empty vector of column names or numbers is required for 'by.x'")
 test(1967.25, foverlaps(x, y, by.y = c(1 + 3i, 2 - 1i)),
-     error = 'non-empty vector of column names or numbers is required for by.y')
+     error = "non-empty vector of column names or numbers is required for 'by.y'")
 test(1967.26, foverlaps(x, y, by.x = c('start', 'END')),
      error = "Elements listed in 'by.x' must be valid names")
 test(1967.27, foverlaps(x, y, by.x = c('start', 'start')),
@@ -14623,7 +14624,7 @@ test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logica
 
 #rbindlist coverage
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
-test(2003.2, rbindlist(list(), fill=1), error="fill should be TRUE or FALSE")
+test(2003.2, rbindlist(list(), fill=1), error="'fill' must be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:4)))
 test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
@@ -14642,7 +14643,7 @@ test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
 test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
 test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
 # rbindlist ignore attributes #3911
-test(2003.85, rbindlist(list(), ignore.attr=1), error="ignore.attr should be TRUE or FALSE")
+test(2003.85, rbindlist(list(), ignore.attr=1), error="'ignore.attr' must be TRUE or FALSE")
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -15076,8 +15077,8 @@ test(2037.2, names(DT), 'a')
 test(2037.3, foo(DT), output="data.table internal attributes", notOutput="data.table internal attributes.*data.table internal attributes")
 
 # `between` invalid args, and verbose #3516
-test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")
-test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be TRUE or FALSE")
+test(2038.01, between(1:5, 2, 4, incbounds=423), error="'incbounds' must be TRUE or FALSE")
+test(2038.02, between(1:5, 2, 4, incbounds=NA), error="'incbounds' must be TRUE or FALSE")
 old = options(datatable.verbose=TRUE)
 test(2038.03, between(1:5, 2L, 4L), output="between parallel processing of integer took")
 test(2038.04, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel processing of integer took")
@@ -16224,7 +16225,7 @@ if (test_bit64) {
 test(2082.07, between(letters[1:2], c("foo","bar"), c("bar")), c(FALSE,FALSE))
 test(2082.08, between(letters[1:2], c("foo","bar"), c("bar"), check=TRUE), error="Item 1 of lower ('foo') is greater than item 1 of upper ('bar')")
 test(2082.09, between(as.raw(1:5), as.raw(3), as.raw(2), check=TRUE), error="Some lower>upper for this non-numeric and non-character type")
-test(2082.10, between(1:3, 2, 4, check=NA), error="check must be TRUE or FALSE")
+test(2082.10, between(1:3, 2, 4, check=NA), error="'check' must be TRUE or FALSE")
 
 # partial instantiation of integer64 column was creating NA_REAL, not INT64_MIN
 if (test_bit64) {
@@ -18054,7 +18055,7 @@ funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
 testnum = 0L
 for (fun in funs) {
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
+  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="'na.rm' must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
   testnum = testnum + 1L
   test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun), context=sprintf("fun=%s [factor]", fun))
 }
@@ -22020,3 +22021,69 @@ test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.tab
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
 test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
+
+# fread works on file:// URIs with spaces, #7550
+local({
+  f = tempfile("with spaces"); on.exit(unlink(f))
+  DT = data.table(a = 1L, b = 2L)
+  fwrite(DT, f)
+
+  test(2357.1, fread(f), DT)
+  test(2357.2, fread(paste0("file://", f)), DT)
+})
+
+#7571 issue for na.rm on int64
+if (test_bit64) local({
+  # integer64 + GForce grouped sum with na.rm = FALSE
+  # Example 1 from issue: ids 1:8, 9, 9; three leading NAs then 4:10
+  dt_short = data.table(
+    id = c(1:8, 9, 9),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2358.1, options=c(datatable.optimize=2L),
+    dt_short[, sum(value, na.rm = FALSE), by = id]$V1,
+    as.integer64(c(NA, NA, NA, 4:8, 19))
+  )
+
+  # Example 2 from issue: ids in pairs, same values; checks multi-row groups
+  dt_short2 = data.table(
+    id = rep(1:5, each = 2L),
+    value = c(rep(NA_integer64_, 3L), as.integer64(4:10))
+  )
+  test(2358.2, options=c(datatable.optimize=2L),
+    dt_short2[, sum(value, na.rm = FALSE), by = id]$V1,
+    as.integer64(c(NA, NA, 11, 15, 19))
+  )
+
+  # Test mean for integer64 with NA
+  dt_mean = data.table(
+    id = c(1,1,2,2,3,3),
+    value = as.integer64(c(NA, NA, NA, 20000000, 5, 3))
+  )
+  test(2358.3, options=c(datatable.optimize=2L),
+    dt_mean[, mean(value, na.rm=FALSE), by = id]$V1,
+    c(NA, NA, 4)
+  )
+
+  # GForce sum vs base::sum for integer64
+  DT = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce = DT[, .(gforce_sum = sum(value)), by=id]
+  base = DT[, .(true_sum = base::sum(value)), by=id]
+  merged = merge(gforce, base, by="id", all=TRUE)
+  test(2358.4, options=c(datatable.optimize=2L),
+    merged$gforce_sum, merged$true_sum
+  )
+
+  # GForce mean vs base::mean for integer64
+  DTm = data.table(id = sample(letters, 1000, TRUE), value = as.integer64(sample(c(1:100, NA), 1000, TRUE)))
+  gforce_m = DTm[, .(gforce_mean = mean(value)), by=id]
+  base_m = DTm[, .(true_mean = base::mean(value)), by=id]
+  merged_m = merge(gforce_m, base_m, by="id", all=TRUE)
+  test(2358.5, options=c(datatable.optimize=2L),
+    merged$gforce_mean, merged$true_mean
+  )
+})
+
+# 7407 Test for fread() handling \x1A (ASCII SUB) at end of input
+txt = paste0("foo\n", strrep("a", 4096 * 100), "\x1A")
+test(2359.1, nchar(fread(txt)$foo), 409600L)

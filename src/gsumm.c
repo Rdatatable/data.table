@@ -348,7 +348,7 @@ void *gather(SEXP x, bool *anyNA)
 SEXP gsum(SEXP x, SEXP narmArg)
 {
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   const bool narm = LOGICAL(narmArg)[0];
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), "sum");
@@ -502,13 +502,13 @@ SEXP gsum(SEXP x, SEXP narmArg)
               const int64_t *my_gx = gx + b*batchSize + pos;
               const uint16_t *my_low = low + b*batchSize + pos;
               for (int i=0; i<howMany; i++) {
-                const int64_t elem = my_gx[i];
-                if (elem!=INT64_MIN) {
-                  _ans[my_low[i]] += elem;
-                } else {
-                  _ans[my_low[i]] = INT64_MIN;
-                  break;
+                if (_ans[my_low[i]] == INT64_MIN) continue;
+                const int64_t b = my_gx[i];
+                if (b == INT64_MIN) {
+                  if (!narm) _ans[my_low[i]] = INT64_MIN;
+                  continue;
                 }
+                _ans[my_low[i]] += b;
               }
             }
           }
@@ -584,7 +584,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), "mean");
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   const bool narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
@@ -730,7 +730,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
 static SEXP gminmax(SEXP x, SEXP narm, const bool min)
 {
   if (!IS_TRUE_OR_FALSE(narm))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce min/max can only be applied to columns, not .SD or similar. To find min/max of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"));
   if (inherits(x, "factor") && !inherits(x, "ordered"))
     error(_("%s is not meaningful for factors."), min?"min":"max");
@@ -868,7 +868,7 @@ SEXP gmax(SEXP x, SEXP narm)
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
 SEXP gmedian(SEXP x, SEXP narmArg) {
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'"));
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), "median");
@@ -1023,7 +1023,7 @@ SEXP gnthvalue(SEXP x, SEXP nArg) {
 static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
 {
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce var/sd can only be applied to columns, not .SD or similar. For the full covariance matrix of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). Alternatively, if you only need the diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way to do this."));
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), isSD ? "sd" : "var");
@@ -1115,7 +1115,7 @@ SEXP gsd(SEXP x, SEXP narm) {
 
 SEXP gprod(SEXP x, SEXP narmArg) {
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   const bool narm=LOGICAL(narmArg)[0];
   if (!isVectorAtomic(x))
     error(_("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"));

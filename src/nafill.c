@@ -105,7 +105,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   bool binplace = LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error(_("%s must be TRUE or FALSE"), "nan_is_na"); // # nocov
+    error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
@@ -113,7 +113,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (obj_scalar) {
     if (binplace)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
-    else if (!isReal(obj) && !isInteger(obj) && !isLogical(obj))
+    else if (!isReal(obj) && TYPEOF(obj) != INTSXP && !isLogical(obj))
       error(_("'x' argument must be logical/numeric type, or list/data.table of logical/numeric types"));
     SEXP obj1 = obj;
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
@@ -124,7 +124,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   int *icols = INTEGER(ricols);
   for (int i=0; i<length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-    if (!isReal(this_col) && !isInteger(this_col) && !isLogical(this_col))
+    if (!isReal(this_col) && TYPEOF(this_col) != INTSXP && !isLogical(this_col))
       error(_("'x' argument must be logical/numeric type, or list/data.table of logical/numeric types"));
     SET_VECTOR_ELT(x, i, this_col);
   }
@@ -218,8 +218,17 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   if (!binplace) {
     for (R_len_t i=0; i<nx; i++) {
-      if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
-        copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
+      SEXP xi = VECTOR_ELT(x, i);
+      if (ANY_ATTRIB(xi)) {
+        copyMostAttrib(xi, VECTOR_ELT(ans, i));
+        if (itype == 0 && hasFill && isFactor(xi)) {
+          SEXP fillLev = PROTECT(getAttrib(VECTOR_ELT(fill, i), R_LevelsSymbol));
+          if (!R_compute_identical(PROTECT(getAttrib(xi, R_LevelsSymbol)), fillLev, 0)) {
+            setAttrib(VECTOR_ELT(ans, i), R_LevelsSymbol, fillLev);
+          }
+          UNPROTECT(2);
+        }
+      }
     }
     SEXP obj_names = getAttrib(obj, R_NamesSymbol); // copy names
     if (!isNull(obj_names)) {
