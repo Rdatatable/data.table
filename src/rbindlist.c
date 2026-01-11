@@ -301,9 +301,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
         if (isOrdered(thisCol)) {
+          if (longestLen > 0) PROTECT(longestLevels);
           orderedFactor = true;
           int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
-          if (thisLen>longestLen) { longestLen=thisLen; longestLevels=PROTECT(getAttrib(thisCol, R_LevelsSymbol)); /*for warnings later ...*/longestW=w; longestI=i; }
+          if (thisLen>longestLen) { longestLen=thisLen; longestLevels=getAttrib(thisCol, R_LevelsSymbol); /*for warnings later ...*/longestW=w; longestI=i; }
         }
       } else if (!isString(thisCol)) anyNotStringOrFactor=true;  // even for length 0 columns for consistency; test 2113.3
       if (INHERITS(thisCol, char_integer64)) {
@@ -424,6 +425,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
             }
           }
         }
+        UNPROTECT(1); // longestLevels
       }
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
@@ -531,7 +533,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
-      UNPROTECT(2); // longestLevels, marks
+      UNPROTECT(2); // marks
     } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
