@@ -4644,7 +4644,7 @@ test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 DT = data.table(x=1:5, y=10:6)
 test(1229.1, DT[forderv(DT, -1)], error="non-existing column")
 test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
-# umlaut in column names (red herring I think, but testing anyway
+# umlaut in column names (red herring I think, but testing anyway)
 local(if (utf8_check("\u00e4\u00f6\u00fc")) {
   eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
     sentEx = data.table(abend = c(1, 1, 0, 0, 2),
