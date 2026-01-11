@@ -3589,7 +3589,7 @@ if (utf8_check(c(x1,x2))) {
   test(1091.2, tstc(x1) %chin% tstc(x2), tstc(x1) %in% tstc(x2))
 } else cat("Tests 1088-1091 skipped because required UTF-8 symbols cannot be represented in native encoding.\n")
 })
-# for completness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
+# for completeness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
 
 local(if (utf8_check("\u00E4")) {
 eval(parse(text='  # eval(parse()) defers parsing to runtime; see utf8_check description
