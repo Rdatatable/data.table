@@ -418,37 +418,42 @@ replace_dot_alias = function(e) {
     return(list(GForce=FALSE, jsub=jsub))
 
   if (!length(ansvars) && !use.I) {
-    GForce = FALSE
     if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
-      GForce = TRUE
-      if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
-    }
-  } else if (length(lhs) && is.symbol(jsub)) { # turn off GForce for the combination of := and .N
-    GForce = FALSE
-  } else {
-    # Apply GForce
-    if (jsub %iscall% "list") {
-      GForce = TRUE
-      for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
-        if (!.gforce_ok(jsub[[ii]], SDenv$.SDall, envir)) {GForce = FALSE; break}
-      }
-    } else
-      GForce = .gforce_ok(jsub, SDenv$.SDall, envir)
-    if (GForce) {
-      if (jsub %iscall% "list")
-        for (ii in seq_along(jsub)[-1L]) {
-          if (is.N(jsub[[ii]])) next; # For #334
-          jsub[[ii]] = .gforce_jsub(jsub[[ii]], names_x, envir)
-        }
-      else {
-        # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
-        if (length(jsub) == 2L && jsub %iscall% c("head", "tail")) jsub[["n"]] = 6L
-        jsub = .gforce_jsub(jsub, names_x, envir)
-      }
       if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
-    } else if (verbose) catf("GForce is on, but not activated for this query; left j unchanged (see ?GForce)\n");
+    }
+    return(list(GForce=TRUE, jsub=jsub)
   }
 
+  # turn off GForce for the combination of := and .N
+  if (length(lhs) && is.symbol(jsub))
+    return(list(GForce=FALSE, jsub=jsub))
+    
+  # Apply GForce
+  if (jsub %iscall% "list") {
+    GForce = TRUE
+    for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
+      if (.gforce_ok(jsub[[ii]], SDenv$.SDall, envir)) {GForce = FALSE; break}
+    }
+  } else
+    GForce = .gforce_ok(jsub, SDenv$.SDall, envir)
+
+  if (!GForce) {
+    if (verbose) catf("GForce is on, but not activated for this query; left j unchanged (see ?GForce)\n")
+    return(list(GForce=FALSE, jsub=jsub))
+  }
+
+  if (jsub %iscall% "list") {
+    for (ii in seq.int(from=2L, length.out=length(jsub)-1L) {
+      if (is.N(jsub[[ii]])) next; # For #334
+      jsub[[ii]] = .gforce_jsub(jsub[[ii]], names_x, envir)
+    }
+  } else {
+    # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
+    if (length(jsub) == 2L && jsub %iscall% c("head", "tail")) jsub[["n"]] = 6L
+    jsub = .gforce_jsub(jsub, names_x, envir)
+  }
+
+  if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
   list(GForce=GForce, jsub=jsub)
 }
 
