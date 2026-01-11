@@ -305,7 +305,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (isOrdered(thisCol)) {
           orderedFactor = true;
           int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
-          if (thisLen > longestLen) { longestLen=thisLen; REPROTECT(longestLevels = getAttrib(thisCol, R_LevelsSymbol), ILongestLevels); /*for warnings later ...*/longestW=w; longestI=i; }
+          if (thisLen > longestLen) { longestLen=thisLen; REPROTECT(longestLevels=getAttrib(thisCol, R_LevelsSymbol), ILongestLevels); /*for warnings later ...*/longestW=w; longestI=i; }
         }
       } else if (!isString(thisCol)) anyNotStringOrFactor=true;  // even for length 0 columns for consistency; test 2113.3
       if (INHERITS(thisCol, char_integer64)) {
