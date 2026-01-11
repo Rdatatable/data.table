@@ -399,7 +399,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 28. `rbindlist()` now avoids the crash when working with many non-UTF-8 column names, [#7452](https://github.com/Rdatatable/data.table/issues/7452). Thanks @aitap for the report and the fix.
 
-29. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`. [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
+29. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
 
 ### NOTES
 

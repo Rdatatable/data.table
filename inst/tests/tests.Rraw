@@ -22043,8 +22043,8 @@ test(2360.2, rowwiseDT(x =, func =,
     2, list(function(z) z * 2)),
     data.table(x = c(1, 2), func = list(\(x) x + 1, function(z) z * 2)))
 test(2360.3, rowwiseDT(x =, func =, 1, \(x) x + 1),
-  error = "In column 'func', received an object of type 'function'.*wrap.*list")
+  error = "Column 'func' is type 'function'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
 test(2360.4, rowwiseDT(x =, expr =, 1, quote(a + b)),
-  error = "In column 'expr', received an object of type 'call'.*wrap.*list")
+  error = "Column 'expr' is type 'call'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
 test(2360.5, rowwiseDT(x =, plist =, 1, as.pairlist(list(123))),
-  error = "In column 'plist', received an object of type 'pairlist'.*wrap.*list")
+  error = "Column 'plist' is type 'pairlist'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
