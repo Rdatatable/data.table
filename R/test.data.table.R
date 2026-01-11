@@ -396,7 +396,7 @@ test = function(num, x, y=TRUE,
   }
   # Check UTF-8 requirement
   if (!isFALSE(requires_utf8)) {
-    test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8
+    test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8 # the default test_str are UTF-8 symbols we found over time, TOOD: harden this default
     if (!utf8_check(test_str)) {
       # nocov start
       last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
