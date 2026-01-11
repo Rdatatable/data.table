@@ -1,0 +1,182 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: setkey 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: setkey.R:3
+msgid ""
+"x may no longer be the character name of the data.table. The possibility was "
+"undocumented and has been removed."
+msgstr ""
+"x अब data.table का कैरेक्टर (character) नाम नहीं हो सकता है।"
+"यह संभावना अप्रलेखित थी और हटा दी गई है।"
+
+#: setkey.R:23
+msgid ""
+"key(x)<-value is deprecated and not supported. Please change to use setkey() "
+"with perhaps copy(). Has been warning since 2012."
+msgstr ""
+"key(x)<-value को हटाया जा चुका है और इसका समर्थन नहीं किया जाता है। कृपया setkey() का उपयोग करें, संभवतः copy() के साथ।"
+"२०१२ से चेतावनी दी जा रही है।"
+
+#: setkey.R:39
+msgid "x is not a data.table"
+msgstr "x एक data.table नहीं है"
+
+#: setkey.R:40
+msgid ""
+"cols is not a character vector. Please see further information in ?setkey."
+msgstr ""
+"cols एक कैरेक्टर (character) वेक्टर (vector) नहीं है। कृपया ?setkey में आगे की जानकारी देखें।"
+
+#: setkey.R:41
+msgid ""
+"Setting a physical key on .SD is reserved for possible future use; to modify "
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
+msgstr ""
+".SD पर एक भौतिक कुंजी सेट (set) करना भविष्य के संभावित उपयोग के लिए आरक्षित है; समूह के अनुसार मूल डेटा (data) के क्रम को परिवर्तित करने के लिए।"
+"इसके बजाय setindex() का उपयोग करें।"
+"या, set*(copy(.SD)) को एक (धीमे) अंतिम उपाय के रूप में उपयोग करें।"
+
+#: setkey.R:43
+msgid ""
+"cols is a character vector of zero length. Removed the key, but use NULL "
+"instead, or wrap with suppressWarnings() to avoid this warning."
+msgstr ""
+"cols एक शून्य लेंथ (length) का कैरेक्टर (character) वेक्टर (vector) है।"
+"कुंजी हटा दी गई, लेकिन इसके बजाय NULL का उपयोग करें, या इस चेतावनी से बचने के लिए suppressWarnings() के साथ रैप (wrap) करें।"
+
+#: setkey.R:47
+msgid "cols is the empty string. Use NULL to remove the key."
+msgstr "cols खाली स्ट्रिंग (string) है। कुंजी हटाने के लिए NULL का उपयोग करें।"
+
+#: setkey.R:48 setkey.R:262
+msgid "cols contains some blanks."
+msgstr "cols में कुछ रिक्त स्थान हैं।"
+
+#: setkey.R:51 setkey.R:266
+msgid "some columns are not in the data.table: %s"
+msgstr "कुछ कॉलम (column) data.table में नहीं हैं: %s"
+
+#: setkey.R:59 setkey.R:267
+msgid ""
+"x contains a column called '.xi'. Conflicts with internal use by data.table."
+msgstr ""
+"x में '.xi' नामक एक कॉलम (column) है। यह data.table के आंतरिक उपयोग से टकराव करता है।"
+
+#: setkey.R:62
+msgid ""
+"Column '%s' is type '%s' which is not supported as a key column type, "
+"currently."
+msgstr ""
+"कॉलम (column) '%s' का प्रकार '%s' है जो वर्तमान में मुख्य कॉलम (column) प्रकार के रूप में समर्थित नहीं है।"
+
+#: setkey.R:70
+msgid "forder took %.03f sec"
+msgstr "forder ने %.03f सेकंड लिया"
+
+#: setkey.R:82
+msgid "reorder took %s"
+msgstr "reorder ने %s लिया"
+
+#: setkey.R:84
+msgid "x is already ordered by these columns, no need to call reorder"
+msgstr "x पहले से इन कॉलम्स (columns) द्वारा क्रमबद्ध है, reorder कॉल (call) करने की आवश्यकता नहीं है"
+
+#: setkey.R:137
+msgid "x is vector but 'by' is supplied"
+msgstr "x एक वेक्टर (vector) है लेकिन 'by' प्रदान किया गया है"
+
+#: setkey.R:153
+msgid "x is a single vector, non-NULL 'by' doesn't make sense"
+msgstr "x एक एकल वेक्टर (vector) है, non-NULL 'by' का कोई मतलब नहीं है"
+
+#: setkey.R:184
+msgid "Attempting to order a 0-column data.table or data.frame."
+msgstr "0-कॉलम (column) data.table या data.frame को क्रमबद्ध करने का प्रयास किया जा रहा है।"
+
+#: setkey.R:189
+msgid ""
+"The first item passed to [f]order is a plain list but there are more items. "
+"It should be a data.table or data.frame."
+msgstr ""
+"पहला आइटम (item) जो [f]order को पास किया गया है वह एक साधारण list है लेकिन और भी आइटम्स (items) हैं।"
+"यह एक data.table या data.frame होना चाहिए।"
+
+#: setkey.R:206
+msgid "Internal code should not be being called on type double"
+msgstr "आंतरिक कोड (code) को प्रकार डबल (double) पर नहीं चलाना चाहिए।"
+
+#: setkey.R:214
+msgid ""
+"Input is not a vector of type double. New parallel sort has only been done "
+"for double vectors so far. Using one thread."
+msgstr ""
+"इनपुट (input) डबल (double) प्रकार का वेक्टर (vector) नहीं है। अब तक नए समानांतर सॉर्ट (sort) केवल डबल (double) वेक्टर (vector) के लिए किया गया है।"
+"एक थ्रेड (thread) का उपयोग किया जा रहा है।"
+
+#: setkey.R:215
+msgid ""
+"New parallel sort has not been implemented for decreasing=TRUE so far. Using "
+"one thread."
+msgstr ""
+"अब तक decreasing=TRUE के लिए नया समानांतर सॉर्ट (sort) लागू नहीं किया गया है।"
+"एक थ्रेड (thread) का उपयोग किया जा रहा है।"
+
+#: setkey.R:216
+msgid ""
+"New parallel sort has not been implemented for vectors containing NA values "
+"so far. Using one thread."
+msgstr ""
+"नए समानांतर क्रम (sort) को अब तक NA मान वाले वेक्टर (vector) के लिए लागू नहीं किया गया है।"
+"एक थ्रेड (thread) का उपयोग किया जा रहा है।"
+
+#: setkey.R:228 setkey.R:254
+msgid "x must be a data.frame or data.table"
+msgstr "x एक data.table या data.frame होना चाहिए"
+
+#: setkey.R:256
+msgid "na.last must be logical TRUE/FALSE"
+msgstr "na.last को लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: setkey.R:257
+msgid ""
+"cols is not a character vector. Please see further information in ?setorder."
+msgstr ""
+"cols एक कैरेक्टर (character) वेक्टर (vector) नहीं है। कृपया अधिक जानकारी के लिए ?setorder देखें।"
+
+#: setkey.R:259
+msgid ""
+"cols is a character vector of zero length. Use NULL instead, or wrap with "
+"suppressWarnings() to avoid this warning."
+msgstr ""
+"cols एक शून्य लेंथ (length) का कैरेक्टर (character) वेक्टर (vector) है।"
+"इसके बजाय NULL का उपयोग करें, या इस चेतावनी से बचने के लिए suppressWarnings() के साथ रैप (wrap) करें।"
+
+#: setkey.R:270
+msgid "Column '%s' is type '%s' which is not supported for ordering currently."
+msgstr "कॉलम (column) '%s' का प्रकार '%s' है, जो वर्तमान में क्रमबद्ध करने के लिए समर्थित नहीं है।"
+
+#: setkey.R:314
+msgid ""
+"'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try "
+"setting sorted = FALSE"
+msgstr ""
+"'sorted' TRUE है लेकिन तत्व %d non-atomic है, जिसे सॉर्ट (sort) नहीं किया जा सकता है।"
+"sorted = FALSE सेट (set) करने का प्रयास करें"
+
+#: setkey.R:329
+msgid ""
+"Cross product of elements provided to CJ() would result in %.0f rows which "
+"exceeds .Machine$integer.max == %d"
+msgstr ""
+"CJ() को प्रदान किए गए तत्वों का क्रॉस (cross) प्रोडक्ट (product) %.0f रोज़ (rows) में परिणामित होगा, "
+"जो .Machine$integer.max == %d से अधिक है"
