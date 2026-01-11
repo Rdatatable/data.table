@@ -8,7 +8,8 @@
 test(num, x, y = TRUE,
      error = NULL, warning = NULL, message = NULL,
      output = NULL, notOutput = NULL, ignore.warning = NULL,
-     options = NULL, env = NULL, context = NULL)
+     options = NULL, env = NULL, context = NULL,
+     requires_utf8 = FALSE)
 }
 \arguments{
 \item{num}{ A unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as \code{n.m}, where essentially \code{n} indexes an issue and \code{m} indexes aspects of that issue. For the most part, your new PR should only have one value of \code{n} (scroll to the end of \code{inst/tests/tests.Rraw} to see the next available ID) and then index the tests within your PR by increasing \code{m}. Note -- \code{n.m} is interpreted as a number, so \code{123.4} and \code{123.40} are actually the same -- please \code{0}-pad as appropriate. Test identifiers are checked to be in increasing order at runtime to prevent duplicates being possible. }
@@ -23,6 +24,7 @@ test(num, x, y = TRUE,
 \item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to \code{test()} (usually, \code{x}, or maybe \code{y}) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
 \item{env}{ A named list of environment variables to set for the duration of the test, much like \code{options}. A list entry set to \code{NULL} will unset (i.e., \code{\link{Sys.unsetenv}}) the corresponding variable. }
 \item{context}{ String, default \code{NULL}. Used to provide context where this is useful, e.g. in a test run in a loop where we can't just search for the test number. }
+\item{requires_utf8}{ \code{FALSE} (default), \code{TRUE}, or a character string. When set, the test is skipped if UTF-8 characters cannot be represented in the native encoding. Use \code{TRUE} for default UTF-8 test characters or provide a custom string of test characters. }
 }
 \note{
    \code{NA_real_} and \code{NaN} are treated as equal, use \code{identical} if distinction is needed. See examples below.
