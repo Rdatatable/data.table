@@ -278,7 +278,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     PROTECT_INDEX ILongestLevels;
-    SEXP longestLevels = R_NilValue; // just for ordered factor
+    SEXP longestLevels=R_NilValue;              // just for ordered factor
     PROTECT_WITH_INDEX(longestLevels, &ILongestLevels); nprotect++;
     bool int64=false, date=false, posixct=false, itime=false, asis=false;
     const char *foundName=NULL;
