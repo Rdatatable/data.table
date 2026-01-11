@@ -29,6 +29,17 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
     stopf("Argument 'id' must be a logical scalar.")
   if (missing(j))
     stopf("Argument 'j' is required")
+  # Implementing NSE in cube using the helper, .processSDcols
+  jj = substitute(j)
+  sdcols_result = .processSDcols(SDcols_sub = substitute(.SDcols), SDcols_missing = missing(.SDcols), x = x, jsub = jj, by = by, enclos = parent.frame())
+  if (is.null(sdcols_result)) {
+    .SDcols = NULL
+  } else {
+    ansvars = sdcols_result$ansvars
+    sdvars = sdcols_result$sdvars
+    ansvals = sdcols_result$ansvals
+    .SDcols = sdvars
+  }
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
   keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
