@@ -150,12 +150,16 @@ SEXP uniqlengths(SEXP x, SEXP n) {
   // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
   if (TYPEOF(x) != INTSXP) error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
   if (TYPEOF(n) != INTSXP || length(n) != 1) error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
-  R_len_t len = length(x);
+  const R_len_t len = length(x);
   SEXP ans = PROTECT(allocVector(INTSXP, len));
+
+  const int *px = INTEGER_RO(x);
+  int *pans = INTEGER(ans);
+
   for (R_len_t i=1; i<len; i++) {
-    INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
+      pans[i-1] = px[i] - px[i-1];
   }
-  if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+  if (len>0) pans[len-1] = INTEGER(n)[0] - px[len-1] + 1;
   UNPROTECT(1);
   return(ans);
 }
@@ -351,7 +355,7 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)

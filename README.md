@@ -3,21 +3,21 @@
 
 <!-- badges: start -->
 [![CRAN status](https://badges.cranchecks.info/flavor/release/data.table.svg)](https://cran.r-project.org/web/checks/check_results_data.table.html)
-[![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
+[![R-CMD-check](https://github.com/Rdatatable/data.table/actions/workflows/R-CMD-check.yaml/badge.svg?branch=master)](https://github.com/Rdatatable/data.table/actions)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://app.codecov.io/github/Rdatatable/data.table?branch=master)
 [![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![indirect usage](https://jangorecki.gitlab.io/rdeps/data.table/indirect_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
-[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
+[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](https://numfocus.org)
 <!-- badges: end -->
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
 [//]: # (numfocus-fiscal-sponsor-attribution)
 
-The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+The `data.table` project uses a [custom governance agreement](https://rdatatable.gitlab.io/data.table/GOVERNANCE.html) 
 and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
 a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
 pay for developer time, professional services, travel, workshops, and a variety of other needs.
@@ -51,7 +51,7 @@ pay for developer time, professional services, travel, workshops, and a variety 
 * fast and feature rich **reshaping** data: **[`?dcast`](https://rdatatable.gitlab.io/data.table/reference/dcast.data.table.html)** (_pivot/wider/spread_) and **[`?melt`](https://rdatatable.gitlab.io/data.table/reference/melt.data.table.html)** (_unpivot/longer/gather_)
 * **any R function from any R package** can be used in queries not just the subset of functions made available by a database backend, also columns of type `list` are supported
 * has **[no dependencies](https://en.wikipedia.org/wiki/Dependency_hell)** at all other than base R itself, for simpler production/maintenance
-* the R dependency is **as old as possible for as long as possible**, dated April 2014, and we continuously test against that version; e.g. v1.11.0 released on 5 May 2018 bumped the dependency up from 5 year old R 3.0.0 to 4 year old R 3.1.0
+* the R dependency is **as old as possible for as long as possible**, currently R 3.5.0 (2018), and we continuously test against that version
 
 ## Installation
 
@@ -108,7 +108,7 @@ A list of packages that significantly support, extend, or make use of `data.tabl
 
 - click the **Watch** button at the top and right of GitHub project page
 - read [NEWS file](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)
-- follow [#rdatatable](https://twitter.com/hashtag/rdatatable) and the [r_data_table](https://x.com/r_data_table) account on X/Twitter
+- follow [#rdatatable](https://x.com/hashtag/rdatatable) and the [r_data_table](https://x.com/r_data_table) account on X/Twitter
 - follow [#rdatatable](https://fosstodon.org/tags/rdatatable) and the [r_data_table account](https://fosstodon.org/@r_data_table) on fosstodon
 - follow the [data.table community page](https://www.linkedin.com/company/data-table-community) on LinkedIn
 - watch recent [Presentations](https://github.com/Rdatatable/data.table/wiki/Presentations)
