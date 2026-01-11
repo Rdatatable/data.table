@@ -303,7 +303,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (isOrdered(thisCol)) {
           orderedFactor = true;
           int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
-          if (thisLen>longestLen) { longestLen=thisLen; longestLevels=getAttrib(thisCol, R_LevelsSymbol); /*for warnings later ...*/longestW=w; longestI=i; }
+          if (thisLen>longestLen) { longestLen=thisLen; longestLevels=PROTECT(getAttrib(thisCol, R_LevelsSymbol)); /*for warnings later ...*/longestW=w; longestI=i; }
         }
       } else if (!isString(thisCol)) anyNotStringOrFactor=true;  // even for length 0 columns for consistency; test 2113.3
       if (INHERITS(thisCol, char_integer64)) {
@@ -531,7 +531,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
-      UNPROTECT(1); // marks
+      UNPROTECT(2); // longestLevels, marks
     } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
