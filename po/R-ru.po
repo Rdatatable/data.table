@@ -1733,13 +1733,13 @@ msgid ""
 "Git revision is not available. Most likely data.table was installed from "
 "CRAN or local archive.\n"
 "Git revision is available when installing from our repositories 'https://"
-"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"rdatatable.gitlab.io/data.table' and 'https://rdatatable.github.io/data."
 "table'."
 msgstr ""
 "Не указан Git-коммит для установленной версии data.table. Вероятно, пакет "
 "был установлен с CRAN (или из локального архива).\n"
 "Git-коммит станет известен при установке из наших репозиториев 'https://"
-"Rdatatable.gitlab.io/data.table' и 'https://Rdatatable.github.io/data.table'."
+"rdatatable.gitlab.io/data.table' и 'https://rdatatable.github.io/data.table'."
 
 #: duplicated.R:7
 #, c-format
