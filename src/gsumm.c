@@ -880,35 +880,60 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   const bool nosubset = irowslen==-1;
   switch(TYPEOF(x)) {
   case REALSXP: {
-    double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
     int64_t *xi64 = (int64_t *)REAL(x);
     double  *xd = REAL(x);
-    for (int i=0; i<ngrp; ++i) {
-      int thisgrpsize = grpsize[i], nacount=0;
-      for (int j=0; j<thisgrpsize; ++j) {
-        int k = ff[i]+j-1;
-        if (isunsorted) k = oo[k]-1;
-        k = nosubset ? k : (irows[k]==NA_INTEGER ? NA_INTEGER : irows[k]-1);
-        if (k==NA_INTEGER || (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k]))) nacount++;
-        else subd[j-nacount] = xd[k];
+    #pragma omp parallel num_threads(getDTthreads(ngrp, true))
+    {
+      double *thread_subd = malloc(maxgrpn * sizeof(double));
+      if (!thread_subd) error(_("Unable to allocate thread-local buffer in gmedian")); // # nocov
+      #pragma omp for
+      for (int i=0; i<ngrp; ++i) {
+        int thisgrpsize = grpsize[i], nacount=0;
+        for (int j=0; j<thisgrpsize; ++j) {
+          int k = ff[i]+j-1;
+          if (isunsorted) k = oo[k]-1;
+          k = nosubset ? k : (irows[k]==NA_INTEGER ? NA_INTEGER : irows[k]-1);
+          if (k==NA_INTEGER || (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k]))) nacount++;
+          else thread_subd[j-nacount] = xd[k];
+        }
+        thisgrpsize -= nacount;  // all-NA is returned as NA_REAL via n==0 case inside *quickselect
+        if (nacount && !narm) {
+          ansd[i] = NA_REAL;
+        } else {
+          // Use Floyd-Rivest for groups larger than 100, quickselect for smaller
+          ansd[i] = isInt64 ?
+            (thisgrpsize > 100 ? i64floyd_rivest((int64_t *)thread_subd, thisgrpsize) : i64quickselect((int64_t *)thread_subd, thisgrpsize)) :
+            (thisgrpsize > 100 ? dfloyd_rivest(thread_subd, thisgrpsize) : dquickselect(thread_subd, thisgrpsize));
+        }
       }
-      thisgrpsize -= nacount;  // all-NA is returned as NA_REAL via n==0 case inside *quickselect
-      ansd[i] = (nacount && !narm) ? NA_REAL : (isInt64 ? i64quickselect((void *)subd, thisgrpsize) : dquickselect(subd, thisgrpsize));
+      free(thread_subd);
     }}
     break;
   case LGLSXP: case INTSXP: {
-    int *subi = INTEGER(PROTECT(allocVector(INTSXP, maxgrpn)));
     int *xi = INTEGER(x);
-    for (int i=0; i<ngrp; i++) {
-      const int thisgrpsize = grpsize[i];
-      int nacount=0;
-      for (int j=0; j<thisgrpsize; ++j) {
-        int k = ff[i]+j-1;
-        if (isunsorted) k = oo[k]-1;
-        if (nosubset ? xi[k]==NA_INTEGER : (irows[k]==NA_INTEGER || (k=irows[k]-1,xi[k]==NA_INTEGER))) nacount++;
-        else subi[j-nacount] = xi[k];
+    #pragma omp parallel num_threads(getDTthreads(ngrp, true))
+    {
+      int *thread_subi = malloc(maxgrpn * sizeof(int));
+      if (!thread_subi) error(_("Unable to allocate thread-local buffer in gmedian")); // # nocov
+      #pragma omp for
+      for (int i=0; i<ngrp; i++) {
+        const int thisgrpsize = grpsize[i];
+        int nacount=0;
+        for (int j=0; j<thisgrpsize; ++j) {
+          int k = ff[i]+j-1;
+          if (isunsorted) k = oo[k]-1;
+          if (nosubset ? xi[k]==NA_INTEGER : (irows[k]==NA_INTEGER || (k=irows[k]-1,xi[k]==NA_INTEGER))) nacount++;
+          else thread_subi[j-nacount] = xi[k];
+        }
+        if (nacount && !narm) {
+          ansd[i] = NA_REAL;
+        } else {
+          const int validsize = thisgrpsize-nacount;
+          // Use Floyd-Rivest for groups larger than 100, quickselect for smaller
+          ansd[i] = validsize > 100 ? ifloyd_rivest(thread_subi, validsize) : iquickselect(thread_subi, validsize);
+        }
       }
-      ansd[i] = (nacount && !narm) ? NA_REAL : iquickselect(subi, thisgrpsize-nacount);
+      free(thread_subi);
     }}
     break;
   default:
@@ -916,7 +941,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   }
   if (!isInt64) copyMostAttrib(x, ans);
   // else the integer64 class needs to be dropped since double is always returned by gmedian
-  UNPROTECT(2);  // ans, subd|subi
+  UNPROTECT(1);  // ans
   return ans;
 }
 
