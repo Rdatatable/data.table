@@ -532,7 +532,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
-      UNPROTECT(2); // marks
+      UNPROTECT(1); // marks
     } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
@@ -563,6 +563,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
   }
-  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor?
+  UNPROTECT(nprotect); // ans, ansNames, longestLevels? coercedForFactor?
   return(ans);
 }
