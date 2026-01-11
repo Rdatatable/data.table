@@ -1,0 +1,7 @@
+---
+title: "News"
+---
+
+```{r, echo=FALSE, results='asis'}
+litedown::pkg_news()
+```
