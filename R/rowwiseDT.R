@@ -13,10 +13,7 @@ rowwiseDT = function(...) {
   nrows = length(body) %/% ncols
   if (length(body) != nrows * ncols)
     stopf("There are %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body))
-  is_problematic = vapply_1b(
-    body,
-    function(v) !(is.atomic(v) || is.null(v) || typeof(v) == "list")
-  )
+  is_problematic = vapply_1b(body, function(v) !(is.atomic(v) || is.null(v) || typeof(v) == "list"))
   if (any(is_problematic)) {
     idx = which(is_problematic)[1L]
     col_idx = (idx - 1L) %% ncols + 1L
