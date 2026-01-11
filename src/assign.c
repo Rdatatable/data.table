@@ -52,7 +52,7 @@ void setselfref(SEXP x) {
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
-  SEXP v, p, tag, prot, names;
+  SEXP v, p, tag, prot;
   v = getAttrib(x, SelfRefSymbol);
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
@@ -70,11 +70,11 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
-  names = getAttrib(x, R_NamesSymbol);
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
+  if (!checkNames) return x == R_ExternalPtrAddr(prot);
+  return getAttrib(x, R_NamesSymbol) == tag;
 }
 
 static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
