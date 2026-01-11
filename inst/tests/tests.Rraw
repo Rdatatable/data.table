@@ -20909,7 +20909,7 @@ x = data.table(a=1, b=2L)
 y = data.table(c=1.5, d=1L)
 test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
 
-local(if (utf8_check("\u00e4\u00f6\u00fc")) {
+local(if (utf8_check(c("\u00e4", "\u00f6", "\u00fc"))) {
   # rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
   x = data.table(a = 1, b = 2, c = 3)
   y = data.table(x = 4, y = 5, z = 6)
