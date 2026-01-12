@@ -2,6 +2,8 @@
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
+## data.table [v1.18.2](https://github.com/Rdatatable/data.table/milestone/37?closed=1) In Development
+
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
 ### BREAKING CHANGE
