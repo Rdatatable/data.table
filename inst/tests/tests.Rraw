@@ -21682,12 +21682,14 @@ test(2336.01, options=c(datatable.old.diff.idate=FALSE), all.equal(as.Date(t1) -
 test(2336.02, options=c(datatable.old.diff.idate=FALSE), all.equal(as.Date(t2) - as.Date(t1), t2 - t1))
 test(2336.03, options=c(datatable.old.diff.idate=FALSE), all.equal(as.Date(t1) - t2, t1 - t2))
 test(2336.04, options=c(datatable.old.diff.idate=FALSE), all.equal(as.Date(t2) - t1, t2 - t1))
-test(2336.05, all.equal(t1 - as.Date(t2), t1 - t2))
-test(2336.06, all.equal(t2 - as.Date(t1), t2 - t1))
-test(2336.07, all.equal(as.numeric(as.Date(t1) - as.Date(t2)), as.numeric(t1 - t2)))
-test(2336.08, all.equal(as.numeric(as.Date(t2) - as.Date(t1)), as.numeric(t2 - t1)))
-test(2336.09, all.equal(as.numeric(as.Date(t1) - t2), as.numeric(t1 - t2)))
-test(2336.10, all.equal(as.numeric(as.Date(t2) - t1), as.numeric(t2 - t1)))
+if (base::getRversion() >= "4.3.0") { ## follow up of #7213, see #7321
+  test(2336.05, all.equal(t1 - as.Date(t2), t1 - t2))
+  test(2336.06, all.equal(t2 - as.Date(t1), t2 - t1))
+  test(2336.07, all.equal(as.numeric(as.Date(t1) - as.Date(t2)), as.numeric(t1 - t2)))
+  test(2336.08, all.equal(as.numeric(as.Date(t2) - as.Date(t1)), as.numeric(t2 - t1)))
+  test(2336.09, all.equal(as.numeric(as.Date(t1) - t2), as.numeric(t1 - t2)))
+  test(2336.10, all.equal(as.numeric(as.Date(t2) - t1), as.numeric(t2 - t1)))
+}
 
 # fwrite: allow dec=',' with single column, #7227
 test(2337.1, fwrite(data.table(1), dec=","), output = "V1\n1")
