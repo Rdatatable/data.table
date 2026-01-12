@@ -14,7 +14,7 @@
 
 ### NEW FEATURES
 
-1. `nafill()`, `setnafill()` extended to work on logical and factor vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Thanks @jangorecki for the request and @MichaelChirico for the PR.
+1. `nafill()`, `setnafill()` extended to work on logical and factor vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct`, etc. `nafill()` works for character vectors, but not yet `setnafill()`. Thanks @jangorecki for the request and @jangorecki and @MichaelChirico for the PRs.
 
 2. `[,showProgress=]` and `options(datatable.showProgress)` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency; `TRUE` uses the default 3-second interval, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
 
@@ -28,7 +28,9 @@
 
 4. `sum(<int64 column>)` by group is correct with missing entries and GForce activated ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report and @manmita for the fix. The issue was caused by a faulty early `break` that spilled between groups, and resulted in silently incorrect results!
 
-5. `fread(text=)` could segfault when reading text input ending with a `\x1a` (ASCII SUB) character after a long line, [#7407](https://github.com/Rdatatable/data.table/issues/7407) which is solved by adding check for eof. Thanks @aitap for the report and @manmita for the fix.  
+5. `fread(text=)` could segfault when reading text input ending with a `\x1a` (ASCII SUB) character after a long line, [#7407](https://github.com/Rdatatable/data.table/issues/7407) which is solved by adding check for eof. Thanks @aitap for the report and @manmita for the fix.
+
+6. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
 
 ### Notes
 
@@ -39,6 +41,8 @@
 3. Vignettes are now built using `litedown` instead of `knitr`, [#6394](https://github.com/Rdatatable/data.table/issues/6394). Thanks @jangorecki for the suggestion and @ben-schwen and @aitap for the implementation.
 
 4. Removed use of non-API `ATTRIB`, `SET_ATTRIB`, and `findVar` [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here, and @MichaelChirico for the easy fix to replace `findVar` with `R_getVar`.
+
+5. The data.table test suite is a bit more robust to lacking UTF-8 support via a new `requires_utf8` argument to `test()` to skip tests when UTF-8 support is not available, [#7336](https://github.com/Rdatatable/data.table/issues/7336). Thanks @MichaelChirico for the suggestion and @ben-schwen for the implementation.
 
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
