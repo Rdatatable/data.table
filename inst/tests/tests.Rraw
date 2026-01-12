@@ -78,6 +78,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
+  utf8_check = data.table:::utf8_check
   warningf = data.table:::warningf
   which_ = data.table:::which_
   which.first = data.table:::which.first
@@ -3569,7 +3570,35 @@ DT[,`:=`(last.x=tail(x,1L),last.x1=tail(x1,1L)),by=y]
 test(1086, class(DT$last.x), c("POSIXct", "POSIXt"))
 test(1087, class(DT$last.x1), "ITime")
 
-# Tests 1088-1093 were non-ASCII. Now in DtNonAsciiTests
+# chmatch on 'unknown' encoding (e.g. as.character(as.symbol("\u00E4")) )falling back to match, #2538 and #4818
+local({
+x1 = c("al\u00E4", "ala", "\u00E4allc", "coep")
+x2 = c("ala", "al\u00E4")
+if (utf8_check(c(x1,x2))) {
+  tstc = function(y) unlist(lapply(y, function(x) as.character(as.name(x))), use.names=FALSE)
+  test(1088.1, chmatch(x1, x2), match(x1, x2)) # should not fallback to "match"
+  test(1088.2, x1 %chin% x2, x1 %in% x2)
+  # change x1 to symbol to character
+  test(1089.1, chmatch(tstc(x1), x2), match(tstc(x1), x2)) # should fallback to match in "x"
+  test(1089.2, tstc(x1) %chin% x2, tstc(x1) %in% x2) # should fallback to match in "x"
+  # change x2 to symbol to character
+  test(1090.1, chmatch(x1,tstc(x2)), match(x1, tstc(x2))) # should fallback to match in "table"
+  test(1090.2, x1 %chin% tstc(x2), x1 %in% tstc(x2))
+  # both are symbols to characters
+  test(1091.1, chmatch(tstc(x1), tstc(x2)), match(tstc(x1), tstc(x2))) # should fallback to "match" in "x" as well.
+  test(1091.2, tstc(x1) %chin% tstc(x2), tstc(x1) %in% tstc(x2))
+} else cat("Tests 1088-1091 skipped because required UTF-8 symbols cannot be represented in native encoding.\n")
+})
+# for completeness, include test from #2528 of non ascii LHS of := (it could feasibly fail in future due to something other than chmatch)
+
+local(if (utf8_check("\u00E4")) {
+eval(parse(text='  # eval(parse()) defers parsing to runtime; see utf8_check description
+  DT = data.table(pas = c(1:5, NA, 6:10), good = c(1:10, NA))
+  setnames(DT, "pas", "p\u00E4s")
+  test(1092, DT[is.na(p\u00E4s), p\u00E4s := 99L], data.table("p\u00E4s" = c(1:5, 99L, 6:10), good = c(1:10,NA)))
+  test(1093, DT[, p\u00E4s := 34L], data.table("p\u00E4s" = 34L, good=c(1:10,NA)))
+'))
+} else cat("Tests 1092+1093 skipped because required UTF-8 symbols cannot be represented in native encoding.\n"))
 
 # print of unnamed DT with >20 <= 100 rows, #97 (RF#4934)
 DT <- data.table(x=1:25, y=letters[1:25])
@@ -3708,8 +3737,9 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # issue 5824 - tests for "value.var.in.dots", "value.var.in.LHSdots", "value.var.in.RHSdots" arguments of dcast
   DT = data.table(index = c("a","b"), x = 1:2)
-  test(1102.181, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = NA), error = "Argument 'value.var.in.dots' should be logical TRUE/FALSE")
-  test(1102.182, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.LHSdots = NA), error = "Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
+  test(1102.1810, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = NA), error = "'value.var.in.dots' must be TRUE or FALSE")
+  test(1102.1821, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.LHSdots = NA), error = "'value.var.in.LHSdots' must be TRUE or FALSE")
+  test(1102.1822, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.RHSdots = NA), error = "'value.var.in.RHSdots' must be TRUE or FALSE")
   test(1102.183, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = TRUE), data.table(x = 1:2, a = 1:0, b = 0:1, key = "x"))
   test(1102.184, dcast(DT, ... ~ index, fun.aggregate = length, value.var = "index", value.var.in.dots = TRUE), data.table(index = c("a","b"), x = 1:2, a = 1:0, b = 0:1, key = c("index", "x")))
   test(1102.185, dcast(DT, ... + index ~ index, fun.aggregate = length, value.var = "index", value.var.in.dots = TRUE), data.table(index = c("a","b"), x = 1:2, a = 1:0, b = 0:1, key = c("index", "x")))
@@ -4321,7 +4351,10 @@ test(1162.24, is.sorted(rep(NA_character_, 2)))
 x <- character(0)
 test(1163, last(x), character(0))
 
-# Test 1164 was a non-ASCII test, now in DtNonAsciiTests
+# Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
+a = c("a","\u00E4","\u00DF","z")
+au = iconv(a,"UTF8","latin1")
+test(1164.1, requires_utf8=c("\u00E4", "\u00DF"), chmatch(a, au), match(a, au))
 
 # Bug fix for #73 - segfault when rbindlist on empty data.tables
 x <- as.data.table(BOD)
@@ -4607,7 +4640,28 @@ test(1228.4, class(DT), class(DT[, sum(b), by=a]))
 test(1228.5, class(DT), class(DT[a>1, sum(b), by=a]))
 test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))
 
-# test 1229 was non-ASCII, now in package DtNonAsciiTests
+# savetl_init error after error, in v1.9.2, thanks Arun
+DT = data.table(x=1:5, y=10:6)
+test(1229.1, DT[forderv(DT, -1)], error="non-existing column")
+test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
+# umlaut in column names (red herring I think, but testing anyway)
+local(if (utf8_check("\u00fc")) {
+  eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
+    sentEx = data.table(abend = c(1, 1, 0, 0, 2),
+                      aber = c(0, 1, 0, 0, 0),
+                      "\u00FCber" = c(1, 0, 0, 0, 0),
+                      "\u00FCberall" = c(0, 0, 0, 0, 0),
+                      "\u00FCberlegt" = c(0, 0, 0, 0, 0),
+                      ID = structure(c(1L, 1L, 2L, 2L, 2L), .Label = c("0019", "0021"), class = "factor"),
+                      abgeandert = c(1, 1, 1, 0, 0),
+                      abgebildet = c(0, 0, 1, 1, 0),
+                      abgelegt = c(0, 0, 0, 0, 3))
+    test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), "\u00FCber"=c(1,0),
+         "\u00FCberall"=c(0,0), "\u00FCberlegt" = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
+  '))
+} else {
+  cat("Test 1229.3 skipped because required UTF-8 symbols cannot be represented in native encoding.\n")
+})
 
 # Test that ad hoc by detects if ordered and dogroups switches to memcpy if contiguous, #1050
 DT = data.table(a=1:3,b=1:6,key="a")
@@ -7032,7 +7086,7 @@ test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
 test(1477.10, transpose(list(x~y)), error="Item 1 of list input is")
 test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
-test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
+test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="'ignore.empty' must be TRUE or FALSE")
 test(1477.13, transpose(list()), list())
 # return list columns #5639
 la = list(as.list(1:3), list("a","b","c"))
@@ -7045,7 +7099,7 @@ test(1477.18, transpose(list(list(1L,"a"), list(2L), list(3L,"c")), list.cols=TR
 test(1477.19, transpose(list(1:2, c("a","b","c")), list.cols=TRUE, fill=3L), lb)
 test(1477.20, transpose(list(factor(letters[1:3])), list.cols=TRUE), list(list("a"), list("b"), list("c")))
 test(1477.21, transpose(list(factor(letters[1:3])), list.cols=FALSE), list("a", "b", "c"))
-test(1477.22, transpose(la, list.cols=NA), error="list.cols should be logical TRUE/FALSE.")
+test(1477.22, transpose(la, list.cols=NA), error="'list.cols' must be TRUE or FALSE")
 
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
@@ -7900,10 +7954,8 @@ test(1547, foo(1L, 5L, a=2L, "c"), c("2", "c"))
 
 # Fix for encoding issues in windows, #563
 f = testDir("issue_563_fread.txt")
-ans1 <- fread(f, sep=",", header=TRUE)
-ans2 <- fread(f, sep=",", header=TRUE, encoding="UTF-8")
-test(1548.1, unique(unlist(lapply(ans1, Encoding))), "unknown")
-test(1548.2, unique(unlist(lapply(ans2, Encoding))), "UTF-8")
+test(1548.1, requires_utf8=TRUE, unique(unlist(lapply(fread(f, sep=",", header=TRUE), Encoding))), "unknown")
+test(1548.2, requires_utf8=TRUE, unique(unlist(lapply(fread(f, sep=",", header=TRUE, encoding="UTF-8"), Encoding))), "UTF-8")
 
 # 1549 moved to benchmark.Rraw, #5517
 
@@ -11881,8 +11933,8 @@ test(1774.13, as.data.table(x), error = "Argument 'value.name' should not overla
 ## unsupported usage of as.data.table.array
 test(1774.14, as.data.table.array(as.matrix(x)), error="method should only be called for arrays with 3+")
 test(1774.15, as.data.table(x, value.name=NA), error="'value.name' must be scalar")
-test(1774.16, as.data.table(x, sorted='a'), error="'sorted' must be scalar")
-test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be scalar")
+test(1774.16, as.data.table(x, sorted='a'), error="'sorted' must be TRUE or FALSE")
+test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be TRUE or FALSE")
 
 # verify print.keys works
 DT1 <- data.table(a = 1:3, key = "a")
@@ -12817,7 +12869,7 @@ test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
 x = runif(1e3)
 test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
-test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
+test(1888.8, fsort(x,verbose=1), error="'verbose' must be TRUE or FALSE")
 test(1888.9, fsort(c(1L, 2L, 3L, 4L), internal = TRUE), c(1L, 2L, 3L, 4L))
 rm(x, y)
 
@@ -13608,9 +13660,9 @@ test(1962.011, uniqlist(list()), list(0L))
 DT1 = data.table(a = 1:3, V = 'a')
 DT2 = data.table(a = 2:4, V = 'b')
 test(1962.012, merge(DT1, DT2, sort = 1+3i),
-     error = 'should be logical TRUE/FALSE')
+     error = "'sort' must be TRUE or FALSE")
 test(1962.013, merge(DT1, DT2, no.dups = 1+3i),
-     error = 'should be logical TRUE/FALSE')
+     error = "'no.dups' must be TRUE or FALSE")
 setDF(DT2)
 test(1962.014, merge(DT1, DT2),
      data.table(a = integer(0), V = character(0)))
@@ -13641,7 +13693,7 @@ test(1962.023, frankv(x, na.last = c(TRUE, FALSE)),
 test(1962.024, frankv(x, cols = 'y'),
      error = 'x is a single vector')
 test(1962.025, frankv(list(x), cols = integer(0L)),
-     error = "x is a list, 'cols' can not be 0-length")
+     error = "x is a list, 'cols' cannot be 0-length")
 f = frankv(list(x), ties.method = 'random')
 test(1962.026,
      length(f) == 9L && identical(f[c(3:4, 6L, 8:9)], c(3L, 7L, 4L, 9L, 8L)) &&
@@ -13764,11 +13816,11 @@ DT = data.table(
 )
 setDF(DT)
 test(1962.068, rollup(DT), error=base_messages$missing_dispatch_method)
-test(1962.069, rollup.data.table(DT), error = 'must be a data.table object')
+test(1962.069, rollup.data.table(DT), error = 'must be a data.table')
 test(1962.070, cube(DT), error=base_messages$missing_dispatch_method)
-test(1962.071, cube.data.table(DT), error = 'must be a data.table object')
+test(1962.071, cube.data.table(DT), error = 'must be a data.table')
 test(1962.072, groupingsets(DT), error=base_messages$missing_dispatch_method)
-test(1962.073, groupingsets.data.table(DT), error = 'must be a data.table object')
+test(1962.073, groupingsets.data.table(DT), error = 'must be a data.table')
 setDT(DT)
 test(1962.074, rollup(DT, by = 3L), error = "'by' must be a character vector")
 test(1962.075, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
@@ -13800,7 +13852,7 @@ setDF(DT)
 test(1962.085, dcast.data.table(DT), error = 'must be a data.table')
 setDT(DT)
 test(1962.086, dcast(DT, a ~ a, drop = NA),
-     error = 'must be logical TRUE/FALSE')
+     error = "'drop' must be logical vector with no missing entries")
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
 test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
      error = 'Columns specified in formula can not be of type list')
@@ -13960,11 +14012,11 @@ test(1967.09, foverlaps(x, y, minoverlap = NA),
 test(1967.10, foverlaps(x, y, minoverlap = -5),
      error = 'minoverlap must be a positive integer')
 test(1967.11, foverlaps(x, y, which = integer(0L)),
-     error = 'which must be a logical vector')
+     error = "'which' must be TRUE or FALSE")
 test(1967.12, foverlaps(x, y, which = c(3, 4)),
-     error = 'which must be a logical vector')
+     error = "'which' must be TRUE or FALSE")
 test(1967.13, foverlaps(x, y, which = NA),
-     error = 'which must be a logical vector')
+     error = "'which' must be TRUE or FALSE")
 test(1967.14, foverlaps(x, y, nomatch = integer(0L)),
      error = 'nomatch must either be NA or NULL')
 test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
@@ -13984,9 +14036,9 @@ test(1967.22, foverlaps(x, y, by.y = c(-1L, 0L)),
 test(1967.23, foverlaps(x, y, by.y = c(1L, 100L)),
      error = "Invalid numeric value for 'by.y'")
 test(1967.24, foverlaps(x, y, by.x = c(1 + 3i, 2 - 1i)),
-     error = 'non-empty vector of column names or numbers is required for by.x')
+     error = "non-empty vector of column names or numbers is required for 'by.x'")
 test(1967.25, foverlaps(x, y, by.y = c(1 + 3i, 2 - 1i)),
-     error = 'non-empty vector of column names or numbers is required for by.y')
+     error = "non-empty vector of column names or numbers is required for 'by.y'")
 test(1967.26, foverlaps(x, y, by.x = c('start', 'END')),
      error = "Elements listed in 'by.x' must be valid names")
 test(1967.27, foverlaps(x, y, by.x = c('start', 'start')),
@@ -14572,7 +14624,7 @@ test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logica
 
 #rbindlist coverage
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
-test(2003.2, rbindlist(list(), fill=1), error="fill should be TRUE or FALSE")
+test(2003.2, rbindlist(list(), fill=1), error="'fill' must be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:4)))
 test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
@@ -14591,7 +14643,7 @@ test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
 test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
 test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
 # rbindlist ignore attributes #3911
-test(2003.85, rbindlist(list(), ignore.attr=1), error="ignore.attr should be TRUE or FALSE")
+test(2003.85, rbindlist(list(), ignore.attr=1), error="'ignore.attr' must be TRUE or FALSE")
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -15025,8 +15077,8 @@ test(2037.2, names(DT), 'a')
 test(2037.3, foo(DT), output="data.table internal attributes", notOutput="data.table internal attributes.*data.table internal attributes")
 
 # `between` invalid args, and verbose #3516
-test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")
-test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be TRUE or FALSE")
+test(2038.01, between(1:5, 2, 4, incbounds=423), error="'incbounds' must be TRUE or FALSE")
+test(2038.02, between(1:5, 2, 4, incbounds=NA), error="'incbounds' must be TRUE or FALSE")
 old = options(datatable.verbose=TRUE)
 test(2038.03, between(1:5, 2L, 4L), output="between parallel processing of integer took")
 test(2038.04, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel processing of integer took")
@@ -16173,7 +16225,7 @@ if (test_bit64) {
 test(2082.07, between(letters[1:2], c("foo","bar"), c("bar")), c(FALSE,FALSE))
 test(2082.08, between(letters[1:2], c("foo","bar"), c("bar"), check=TRUE), error="Item 1 of lower ('foo') is greater than item 1 of upper ('bar')")
 test(2082.09, between(as.raw(1:5), as.raw(3), as.raw(2), check=TRUE), error="Some lower>upper for this non-numeric and non-character type")
-test(2082.10, between(1:3, 2, 4, check=NA), error="check must be TRUE or FALSE")
+test(2082.10, between(1:3, 2, 4, check=NA), error="'check' must be TRUE or FALSE")
 
 # partial instantiation of integer64 column was creating NA_REAL, not INT64_MIN
 if (test_bit64) {
@@ -17653,12 +17705,9 @@ test(2194.4, endsWithAny(letters, 'e'), error="Internal error.*types or lengths 
 test(2194.5, endsWithAny(NA_character_, 'a'), FALSE)
 test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or lengths incorrect")
 # file used in encoding tests
-txt = readLines(testDir("issue_563_fread.txt"))
-local(if (eval(utf8_check_expr)) {
-  test(2194.7, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
-} else {
-  cat("Test 2194.7 skipped because it needs a UTF-8 locale.\n")
-})
+needed_chars = c("\u0105", "\u017E", "\u016B", "\u012F", "\u0173", "\u0117", "\u0161", "\u0119")
+txt = parse(text='readLines(testDir("issue_563_fread.txt"))')
+test(2194.7, requires_utf8=needed_chars, endsWithAny(eval(txt), 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
 test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
 
 # uniqueN(x, by=character()) was internal error, #4594
@@ -18006,7 +18055,7 @@ funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
 testnum = 0L
 for (fun in funs) {
   testnum = testnum + 1L
-  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
+  test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="'na.rm' must be TRUE or FALSE", context=sprintf("fun=%s [na.rm='a']", fun))
   testnum = testnum + 1L
   test(2220.0 + testnum*0.01, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun), context=sprintf("fun=%s [factor]", fun))
 }
@@ -18650,12 +18699,14 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters #5096
-local(if (eval(utf8_check_expr)) {
-  accented_a = "\u0061\u0301"
-  ja_ichi = "\u4E00"
-  ja_ni = "\u4E8C"
-  ja_ko = "\u3053"
-  ja_n = "\u3093"
+local({
+accented_a = "\u0061\u0301"
+ja_ichi = "\u4E00"
+ja_ni = "\u4E8C"
+ja_ko = "\u3053"
+ja_n = "\u3093"
+nc = c(accented_a, ja_ichi, ja_ni, ja_ko, ja_n)
+if (utf8_check(nc)) {
   dots = "..."
   clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
   # Tests for combining character latin a and acute accent, single row
@@ -18702,7 +18753,7 @@ local(if (eval(utf8_check_expr)) {
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
 } else {
   cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
-})
+}})
 
 # allow 1-D matrix in j for consistency, #783
 DT=data.table(a = rep(1:2, 3), b = 1:6)
@@ -20858,18 +20909,20 @@ x = data.table(a=1, b=2L)
 y = data.table(c=1.5, d=1L)
 test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
 
-local(if (eval(utf8_check_expr)) {
+local(if (utf8_check(c("\u00e4", "\u00f6", "\u00fc"))) {
   # rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
   x = data.table(a = 1, b = 2, c = 3)
   y = data.table(x = 4, y = 5, z = 6)
   # a-umlaut, o-umlaut, u-umlaut
-  setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
-  setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
-  test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
-  test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
-  set(y, j="\u00e4", value=NULL)
-  test(2298.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
-  test(2298.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
+  eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
+    setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
+    setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+    test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+    test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
+    set(y, j="\u00e4", value=NULL)
+    test(2298.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+    test(2298.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
+  '))
 } else {
   cat("Tests 2298.* skipped because they need a UTF-8 locale.\n")
 })
@@ -21635,13 +21688,13 @@ if (base::getRversion() >= "4.3.0") { ## follow up of #7213, see #7321
 }
 
 # fwrite: allow dec=',' with single column, #7227
-test(2337.1, fwrite(data.table(1), dec=","), NULL)
+test(2337.1, fwrite(data.table(1), dec=","), output = "V1\n1")
 if (base::getRversion() >= "4.0.0") { # rely on stopifnot(named = ...) for correct message
   test(2337.2, fwrite(data.table(0.1, 0.2), dec=",", sep=","), error = "dec and sep must be distinct")
 }
-test(2337.3, is.null(fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t")))
-test(2337.4, is.null(fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=",")))
-test(2337.5, is.null(fwrite(data.table(a=numeric()), dec=",", sep=",")))
+test(2337.3, fwrite(data.table(c(0.1, 0.2)), dec=",", sep="\t"), output = "V1\n0,1\n0,2")
+test(2337.4, fwrite(data.table(a=numeric(), b=numeric()), dec=",", sep=","), output = "a,b")
+test(2337.5, fwrite(data.table(a=numeric()), dec=",", sep=","), output = "a")
 
 # 2864 force decimal points for whole numbers in numeric columns
 dd = data.table(x=c(1, 2, 3))
@@ -22030,3 +22083,20 @@ if (test_bit64) local({
     merged$gforce_mean, merged$true_mean
   )
 })
+
+# 7407 Test for fread() handling \x1A (ASCII SUB) at end of input
+txt = paste0("foo\n", strrep("a", 4096 * 100), "\x1A")
+test(2359.1, nchar(fread(txt)$foo), 409600L)
+
+# rowwiseDT() valid and invalid handling of complex objects #7219
+test(2360.1, rowwiseDT(x =, y =, 1, 2, 3, 4), data.table(x = c(1, 3), y = c(2, 4)))
+test(2360.2, rowwiseDT(x =, func =,
+    1, list(\(x) x + 1),
+    2, list(function(z) z * 2)),
+    data.table(x = c(1, 2), func = list(\(x) x + 1, function(z) z * 2)))
+test(2360.3, rowwiseDT(x =, func =, 1, \(x) x + 1),
+  error = "Column 'func' is type 'function'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
+test(2360.4, rowwiseDT(x =, expr =, 1, quote(a + b)),
+  error = "Column 'expr' is type 'call'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
+test(2360.5, rowwiseDT(x =, plist =, 1, as.pairlist(list(123))),
+  error = "Column 'plist' is type 'pairlist'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
