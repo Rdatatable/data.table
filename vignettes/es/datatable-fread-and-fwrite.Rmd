@@ -1,0 +1,291 @@
+---
+title: "Lectura y escritura rápida: fread()/fwrite()"
+date: "`r Sys.Date()`"
+output: 
+  markdown::html_format
+vignette: >
+  %\VignetteIndexEntry{Fast Read and Fast Write}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r echo=FALSE, file='../_translation_links.R'}
+```
+
+`r .write.translation.links("Las traducciones de este documento están disponibles en: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+require(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+Las funciones `fread()` y `fwrite()` del paquete `data.table` de R no solo están optimizadas para la velocidad con archivos grandes, sino que también ofrecen funciones potentes y prácticas para trabajar con conjuntos de datos pequeños. Esta viñeta destaca su usabilidad, flexibilidad y rendimiento para una importación y exportación de datos eficiente.
+
+***
+
+## 1. fread()
+
+### **1.1 Uso directo de herramientas de línea de comandos**
+
+La función `fread()` de `data.table` puede leer datos canalizados desde comandos de shell, lo que le permite filtrar o preprocesar datos incluso antes de que ingresen a R.
+
+```{r}
+# Create a sample file with some unwanted lines
+writeLines(
+'HEADER: Some metadata
+HEADER: More metadata
+1 2.0 3.0
+2 4.5 6.7
+HEADER: Yet more
+3 8.9 0.1
+4 1.2 3.4',
+"example_data.txt")
+
+library(data.table)
+fread("grep -v HEADER example_data.txt")
+```
+
+La opción `-v` hace que `grep` devuelva todas las líneas excepto aquellas que contienen la cadena 'HEADER'.
+
+> Dada la cantidad de ingenieros de alto nivel que han analizado la herramienta de comandos grep a lo largo de los años, es muy probable que sea la más rápida posible, además de ser correcta, práctica, estar bien documentada en línea y ser fácil de aprender y de buscar soluciones para tareas específicas. Si necesita realizar un filtrado de cadenas más complejo (por ejemplo, buscar cadenas al principio o al final de las líneas), la sintaxis de grep es muy potente. Aprender su sintaxis es una habilidad transferible a otros lenguajes y entornos.
+>
+> —Matt Dowle
+
+Mira este [ejemplo](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) para obtener más detalles.
+
+En Windows, las herramientas de línea de comandos como `grep` están disponibles a través de diversos entornos, como Rtools, Cygwin o el Subsistema de Windows para Linux (WSL). En Linux y macOS, estas herramientas suelen estar incluidas en el sistema operativo.
+
+#### 1.1.1 Lectura directa de una cadena de texto
+
+`fread()` puede leer datos directamente de una cadena de caracteres en R usando el argumento `text`. Esto es especialmente útil para crear ejemplos reproducibles, probar fragmentos de código o trabajar con datos generados programáticamente en la sesión de R. Cada línea de la cadena debe estar separada por un carácter de nueva línea `\n`.
+
+```{r}
+my_data_string = "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
+dt_from_text = fread(text = my_data_string)
+print(dt_from_text)
+```
+
+#### 1.1.2 Lectura desde URL
+
+`fread()` puede leer datos directamente de URLs web al pasar la URL como una cadena de caracteres a su argumento `file`. Esto permite descargar y leer datos de internet en un solo paso.
+
+```{r}
+# dt = fread("https://people.sc.fsu.edu/~jburkardt/data/csv/airtravel.csv")
+# print(dt)
+```
+
+#### 1.1.3 Descompresión automática de archivos comprimidos
+
+En muchos casos, `fread()` puede detectar y descomprimir automáticamente archivos con extensiones de compresión comunes, sin necesidad de un objeto de conexión explícito ni comandos de shell. Esto funciona comprobando la extensión del archivo.
+
+**Las extensiones compatibles generalmente incluyen:** =====- `.gz` / `.bz2` (gzip / bzip2): Compatible y funciona de inmediato.
+- `.zip` / `.tar` (archivos ZIP / tar, archivo único): Compatible: `fread()` leerá el primer archivo del archivo si solo hay un archivo presente.=====
+
+**Nota**: Si hay varios archivos en el archivo, `fread()` fallará con un error.
+
+### 1.2 Separador automático y detección de saltos
+
+`fread` automatiza la detección de delimitadores y encabezados, eliminando la necesidad de especificar manualmente en la mayoría de los casos. Simplemente proporcione el nombre del archivo; `fread` detecta la estructura de forma inteligente:
+
+**Detección de separadores**
+
+`fread` prueba separadores comunes (`,`,`\t`, `|`, espacio, `:`, `;`) y selecciona el que genera el número más consistente de campos en las filas muestreadas. Para delimitadores no estándar, puede anular esto con el parámetro `sep=`.
+
+**Detección de encabezado**
+
+Después de aplicar cualquier configuración `skip` o `nrows` (si se especifica), se examina la primera fila con una cantidad constante de campos:
+
+Si todos los campos de esta línea son interpretables como caracteres y los valores no se parecen mucho a una fila de datos (por ejemplo, una fila de cadenas de apariencia puramente numérica aún podría considerarse datos), normalmente se utiliza como encabezado (nombres de columnas).
+
+De lo contrario (por ejemplo, si la línea contiene tipos numéricos detectados o cadenas de caracteres que se parecen mucho a números y podrían ser datos), se trata como una fila de datos y se asignan nombres de columna predeterminados (`V1`, `V2`, …).
+
+Puedes decirle explícitamente a fread si existe un encabezado usando `header = TRUE` o `header = FALSE`.
+
+**Detección de saltos**
+
+De forma predeterminada (`skip="auto"`), `fread` omitirá automáticamente las líneas en blanco y las líneas de comentario (p. ej., las que empiezan por `#`) antes del encabezado de datos. Para especificar manualmente un número diferente de líneas a omitir, utilice
+
+* `skip=n` para omitir las primeras `n` líneas.
+* `skip="string"` para buscar una línea que contenga una subcadena (normalmente de los nombres de columna, como `skip="Date"`). La lectura comienza en la primera línea coincidente. Esto es útil para omitir metadatos o seleccionar subtablas en archivos multitabla. Esta función está inspirada en la función `read.xls` del paquete `gdata`.
+
+### 1.3 Detección automática de tipo de columna de alta calidad
+
+Muchos conjuntos de datos reales contienen columnas que inicialmente están en blanco, se rellenan con ceros o parecen numéricas, pero luego contienen caracteres. Para gestionar estas inconsistencias, `fread()` emplea una robusta estrategia de detección de tipos de columna.
+
+Desde la versión 1.10.5, `fread()` muestrea filas leyendo bloques de filas contiguas desde varios puntos equidistantes del archivo, incluyendo el inicio, el centro y el final. El número total de filas muestreadas se selecciona dinámicamente en función del tamaño y la estructura del archivo, y suele rondar las 10 000, aunque puede ser menor o ligeramente mayor. Este amplio muestreo ayuda a detectar cambios de tipo que se producen posteriormente en los datos (por ejemplo, de `001` a `0A0` o espacios en blanco que se rellenan).
+
+**Acceso eficiente a archivos con mmap**
+
+Para implementar este muestreo eficientemente, `fread()` utiliza el acceso a archivos mapeados en memoria del sistema operativo (`mmap`), lo que le permite saltar a posiciones arbitrarias en el archivo sin necesidad de escaneo secuencial. Esta estrategia perezosa y bajo demanda hace que el muestreo sea casi instantáneo, incluso para archivos muy grandes.
+
+Si un salto cae dentro de un campo entre comillas que incluye nuevas líneas, `fread()` prueba las líneas subsiguientes hasta que encuentra 5 filas consecutivas con la cantidad esperada de campos, lo que garantiza un análisis correcto incluso en archivos complejos.
+
+**Detección de tipos precisa y optimizada**
+
+El tipo de cada columna se infiere en función del tipo requerido más bajo de la siguiente lista ordenada:
+
+`lógico` < `entero` < `entero64` < `doble` < `carácter`
+
+Esto garantiza:
+
+- Asignación única de memoria por adelantado utilizando el tipo correcto
+- Evita tener que volver a leer el archivo o configurar manualmente `colClasses`
+- Mayor velocidad y eficiencia de la memoria
+
+**Excepciones de tipo fuera de muestra**
+
+Si se produce un cambio de tipo fuera de las filas muestreadas, `fread()` lo detecta automáticamente y relee el archivo para garantizar la correcta asignación de tipo, sin necesidad de intervención del usuario. Por ejemplo, una columna muestreada como entero podría contener posteriormente `00A`, lo que activaría una relectura automática como carácter.
+
+Toda la lógica de detección y cualquier relectura se detallan cuando `verbose=TRUE` está habilitado.
+
+### 1.4 Detección temprana de errores al final del archivo
+
+Dado que la muestra grande incluye explícitamente el final del archivo, se pueden detectar y reportar casi al instante problemas críticos, como un número inconsistente de columnas, un pie de página incorrecto o una comilla inicial sin su comilla de cierre correspondiente. Esta detección temprana de errores evita la sobrecarga innecesaria de procesar todo el archivo o asignar memoria excesiva para luego encontrar un fallo en el paso final. Garantiza una retroalimentación más rápida y un uso más eficiente de los recursos, especialmente al trabajar con grandes conjuntos de datos.
+
+### 1.5 Compatibilidad con `integer64`
+
+De forma predeterminada, `fread` detecta enteros mayores que 2<sup>31</sup> y los lee como `bit64::integer64` para mantener la precisión total. Este comportamiento se puede anular de tres maneras:
+
+- Por columna: utilice el argumento `colClasses` para especificar el tipo de columnas individuales.
+
+- Por llamada: use el argumento `integer64` en `fread()` para establecer cómo se leen todas las columnas `integer64` detectadas.
+
+- Globalmente: Establezca la opción `datatable.integer64` en su sesión R o en el archivo `.Rprofile` para cambiar el comportamiento predeterminado para todas las llamadas fread.
+
+El argumento integer64 (y la opción correspondiente) acepta los siguientes valores:
+
+- `"integer64"` (predeterminado): lee números enteros grandes como `bit64::integer64` con total precisión.
+
+- `"double"` o `"numeric"`: lee números enteros grandes como números de doble precisión, perdiendo potencialmente la precisión de forma silenciosa (similar a `utils::read.csv` en base R).
+
+- `"carácter"`: Lee números enteros grandes como cadenas de caracteres.
+
+Para comprobar o establecer el valor predeterminado global, utilice:
+
+```{r}
+# fread's default behavior is to treat large integers as "integer64"; however, this global setting can be changed:
+options(datatable.integer64 = "double")   # Example: set globally to "double"
+getOption("datatable.integer64")
+```
+
+### 1.6 Eliminar o seleccionar columnas por nombre o posición
+
+Para ahorrar memoria y mejorar el rendimiento, utilice los argumentos `select` o `drop` de `fread()` para leer solo las columnas que necesita.
+
+- Si solo necesita unas pocas columnas, utilice `select`.
+- Si desea excluir solo algunas, utilice `drop`—esto evita tener que listar todo lo que desea conservar.
+
+Puntos clave: =====- `select`: Vector de nombres/posiciones de columnas a conservar (descarta las demás).
+- `drop`: Vector de nombres/posiciones de columnas a descartar (descarta las demás).
+- No utilice `select` y `drop` juntos, son mutuamente excluyentes.
+- `fread()` le avisará si falta alguna columna especificada en el archivo.=====
+
+Para obtener más detalles, consulte la página del manual ejecutando `?fread` en R.
+
+### 1.7 Detección automática de escape de comillas (incluida la ausencia de escape)
+
+`fread` detecta automáticamente cómo se escapan las comillas, incluidas las comillas dobles ("") o las comillas con barra invertida ("), sin necesidad de intervención del usuario. Esto se determina mediante una muestra amplia de datos (véase el punto 3) y se valida con todo el archivo.
+
+Escenarios admitidos: =====- Comillas sin escape dentro de campos entre comillas===== p. ej., `"Esta "comilla" no es válida, pero fread funciona de todos modos"` — admitido siempre que el recuento de columnas permanezca constante:
+
+```{r}
+data.table::fread(text='x,y\n"This "quote" is invalid, but fread works anyway",1')
+```
+
+=====- Campos sin comillas que comienzan con comillas===== p. ej., `Invalid"Field,10,20` — se reconoce correctamente como un campo no entre comillas.
+
+```{r}
+data.table::fread(text='x,y\nNot"Valid,1')
+```
+
+Requisitos y limitaciones: =====- Las reglas de escape y los recuentos de columnas deben ser consistentes en todo el archivo.=====
+
+- No compatible cuando `fill=TRUE` — en ese caso, el archivo debe seguir las comillas y el escape compatibles con RFC4180.
+
+Robustez específica de la versión: A partir de la versión 1.10.6, `fread` resuelve ambigüedades de forma más fiable en todo el archivo mediante la consistencia de recuento de columnas completo (el valor predeterminado es `fill=FALSE`). Se emiten advertencias si el análisis falla debido a una ambigüedad.
+
+## 2. fwrite()
+
+`fwrite()` es el complemento rápido para la escritura de archivos de `fread()`. Está diseñado para ofrecer velocidad, valores predeterminados sensatos y facilidad de uso, reflejando muchas de las ventajas de `fread`.
+
+### 2.1 Entrecomillado inteligente y minimalista (quote="auto")
+
+Cuando los datos se escriben como cadenas (ya sea de manera inherente, como columnas de caracteres, o por elección, como `dateTimeAs="ISO"`), `quote="auto"` (predeterminado) usa comillas en los campos de manera inteligente:
+
+**Entrecomillado contextual**: Los campos se ponen entre comillas solo cuando es necesario. Esto ocurre si contienen el delimitador `(sep)`, una comilla doble `(")`, un salto de línea `(\n)`, un retorno de carro `(\r)` o si el campo es una cadena vacía `("")`. La cadena vacía se entrecomilla  para distinguirla de un valor NA al leer el archivo.
+
+**Omitido para salida numérica directa**: si se escriben columnas específicas como sus tipos numéricos subyacentes (por ejemplo, a través de `dateTimeAs="epoch"` para `POSIXct`, o si un usuario preconvierte Date a entero), entonces la lógica de comillas se omite naturalmente para esos campos numéricos, lo que contribuye a la eficiencia.
+
+```{r}
+dt_quoting_scenario = data.table(
+  text_field = c("Contains,a,comma", "Contains \"a quote\"", "Clean_text", "", NA),
+  numeric_field = 1:5
+)
+temp_quote_adv = tempfile(fileext = ".csv")
+
+fwrite(dt_quoting_scenario, temp_quote_adv)
+# Note the output: the empty string is quoted (""), but the NA is not.
+cat(readLines(temp_quote_adv), sep = "\n")
+```
+
+### 2.2 Serialización de fecha y hora de grano fino (argumento `dateTimeAs`)
+
+Ofrece un control preciso para los tipos POSIXct/Date:
+
+- `dateTimeAs="ISO"` (predeterminado para POSIXct): formato ISO 8601 (por ejemplo, AAAA-MM-DDTHH:MM:SS.ffffffZ), que conserva una precisión de subsegundos para un intercambio inequívoco.
+
+- `dateTimeAs="epoch"`: POSIXct como segundos desde la época (numérico).
+
+```{r}
+dt_timestamps = data.table(
+  ts = as.POSIXct("2023-10-26 14:35:45.123456", tz = "GMT"),
+  dt = as.Date("2023-11-15")
+)
+temp_dt_iso = tempfile(fileext = ".csv")
+fwrite(dt_timestamps, temp_dt_iso, dateTimeAs = "ISO")
+cat(readLines(temp_dt_iso), sep = "\n")
+unlink(temp_dt_iso)
+```
+
+### 2.3 Manejo de `bit64::integer64`
+
+**Precisión completa para enteros grandes**: `fwrite` escribe columnas `bit64::integer64` convirtiéndolas en cadenas con precisión completa. Esto evita la pérdida de datos o la conversión silenciosa a dobles que podrían ocurrir con escritores menos especializados. Esto es crucial para identificadores o mediciones que requieren un rango de enteros superior al estándar de R de `32 bits` o una precisión doble de `53 bits`.
+
+**Manejo directo**: Este manejo directo y cuidadoso de datos numéricos especializados garantiza la integridad de los datos y una E/S eficiente, sin conversiones intermedias innecesarias a tipos menos precisos.
+
+```{r}
+if (requireNamespace("bit64", quietly = TRUE)) {
+  dt_i64 = data.table(uid = bit64::as.integer64("1234567890123456789"), val = 100)
+  temp_i64_out = tempfile(fileext = ".csv")
+  fwrite(dt_i64, temp_i64_out)
+  cat(readLines(temp_i64_out), sep = "\n")
+  unlink(temp_i64_out)
+}
+```
+
+### 2.4 Orden de columnas y control de filtrado
+
+Para controlar el orden y el filtrado de columnas que se escriben en el archivo, filtre la `data.table` antes de llamar a `fwrite()`. El argumento `col.names` en `fwrite()` es un valor lógico (VERDADERO/FALSO) que controla si se escribe la fila del encabezado, no qué columnas se escriben.
+
+```{r}
+dt = data.table(A = 1:3, B = 4:6, C = 7:9)
+
+# Write only columns C and A, in that order
+fwrite(dt[, .(C, A)], "out.csv")
+cat(readLines("out.csv"), sep = "\n")
+file.remove("out.csv")
+```
+
+## 3. Una nota sobre el rendimiento
+
+Si bien esta viñeta se centra en las características y la facilidad de uso, la motivación principal para `fread` y `fwrite` es la velocidad.
+
+Para los usuarios interesados ​​en comparaciones de rendimiento detalladas y actualizadas, recomendamos estas publicaciones de blog externas que utilizan el paquete `atime` para un análisis riguroso:
+
+- **[Tiempos asintóticos de data.table](https://tdhock.github.io/blog/2023/dt-atime-figures/)**: Compara el rendimiento de `fread` y `fwrite` con otros paquetes R populares como `readr` y `arrow`.
+- **[Evaluación comparativa de data.table con polares, duckdb y pandas](https://tdhock.github.io/blog/2024/pandas-dt/)**: Compara el rendimiento de E/S y agrupación de `data.table` con las principales bibliotecas de Python.
+
+Estos puntos de referencia muestran consistentemente que `fread` y `fwrite` son altamente competitivos y, a menudo, están a la vanguardia en términos de rendimiento en el ecosistema R.
+
+***
