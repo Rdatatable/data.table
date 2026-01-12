@@ -251,28 +251,30 @@ msgstr ""
 #: fread.c:1539
 #, c-format
 msgid ""
-"  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in "
+"  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in "
 "RAM. %s.\n"
 msgstr ""
+"  फाइल (file) अचानक '%c' के साथ समाप्त होती है। अंतिम अंत गायब है। फाइल (file) को "
+"RAM में कॉपी (copy) किया जा रहा है। %s.\n"
 
 #: fread.c:1546 fread.c:1830
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM."
-msgstr ""
+msgstr "सन्निहित आभासी RAM के %s आवंटित करने में असमर्थ।"
 
 #: fread.c:1550 fread.c:1834
 #, c-format
-msgid "  File copy in RAM took %.3f seconds.\n"
-msgstr ""
+msgid "  File copy in RAM took %.3f seconds.\n"
+msgstr "  RAM में फाइल (file) कॉपी (copy) करने में %.3f सेकंड लगे।\n"
 
 #: fread.c:1552 fread.c:1836
 #, c-format
 msgid "Avoidable file copy in RAM took %.3f seconds. %s.\n"
-msgstr ""
+msgstr "RAM में परिहार्य फाइल (file) कॉपी (copy) करने में %.3f सेकंड लगे। %s.\n"
 
 #: fread.c:1584
 msgid "[05] Skipping initial rows if needed\n"
-msgstr ""
+msgstr "[05] यदि आवश्यक हो तो शुरुआती पंक्तियां छोड़ रहे हैं\n"
 
 #: fread.c:1590
 #, c-format
@@ -280,6 +282,8 @@ msgid ""
 "skip='%s' not found in input (it is case sensitive and literal; i.e., no "
 "patterns, wildcards or regex)"
 msgstr ""
+"इनपुट (input) में skip='%s' नहीं मिला (यह केस-सेंसिटिव (case-sensitive) और शाब्दिक है; "
+"अर्थात, कोई स्वरूप, वाइल्डकार्ड्स (wildcards) या regex नहीं)"
 
 #: fread.c:1596
 #, c-format
@@ -287,35 +291,40 @@ msgid ""
 "Found skip='%s' on line %<PRIu64>. Taking this to be header row or first row "
 "of data.\n"
 msgstr ""
+"पंक्ति %<PRIu64> पर skip='%s' मिला। इसे हेडर (header) पंक्ति या डेटा (data) की पहली "
+"पंक्ति माना जा रहा है।\n"
 
 #: fread.c:1610
 #, c-format
-msgid "  Skipped to line %<PRIu64> in the file"
-msgstr ""
+msgid "  Skipped to line %<PRIu64> in the file"
+msgstr "  फाइल (file) में पंक्ति %<PRIu64> तक छोड़ दिया गया"
 
 #: fread.c:1624
 msgid ""
 "Input is either empty, fully whitespace, or skip has been set after the last "
 "non-whitespace."
 msgstr ""
+"इनपुट (input) या तो खाली है, पूरी तरह से व्हाइटस्पेस (whitespace) है, या skip को अंतिम "
+"non-whitespace के बाद तय किया गया है।"
 
 #: fread.c:1626
 #, c-format
-msgid "  Moved forward to first non-blank line (%d)\n"
-msgstr ""
+msgid "  Moved forward to first non-blank line (%d)\n"
+msgstr "  पहली non-blank पंक्ति (%d) पर आगे बढ़े\n"
 
 #: fread.c:1627
 #, c-format
-msgid "  Positioned on line %d starting: <<%s>>\n"
-msgstr ""
+msgid "  Positioned on line %d starting: <<%s>>\n"
+msgstr "  पंक्ति %d पर स्थित, शुरुआत: <<%s>>\n"
 
 #: fread.c:1649
 msgid "[06] Detect separator, quoting rule, and ncolumns\n"
-msgstr ""
+msgstr "[06] सेपरेटर (separator), कोटिंग नियम, और ncolumns का पता लगाएं\n"
 
 #: fread.c:1653
-msgid "  sep='\\n' passed in meaning read lines as single character column\n"
+msgid "  sep='\\n' passed in meaning read lines as single character column\n"
 msgstr ""
+"  sep='\\n' पास किया गया जिसका अर्थ है पंक्तियों को सिंगल (single) कैरेक्टर (character) कॉलम (column) के रूप में पढ़ना\n"
 
 #: fread.c:1672
 msgid "  Detecting sep automatically ...\n"
