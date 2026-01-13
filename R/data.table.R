@@ -218,8 +218,12 @@ replace_dot_alias = function(e) {
   }
   # FR #2722 is just about optimisation of j=c(.N, lapply(.SD, .)) that is taken care of here.
   # FR #735 tries to optimise j-expressions of the form c(...) as long as ... contains
-  # 1) lapply(.SD, ...), 2) simply .SD or .SD[..], 3) .N, 4) list(...) and 5) functions that normally return a single value*
-  # On 5)* the IMPORTANT point to note is that things that are not wrapped within "list(...)" should *always*
+  #   (1) lapply(.SD, ...)
+  #   (2) simply .SD or .SD[..]
+  #   (3) .N
+  #   (4) list(...)
+  #   (5) functions that normally return a single value*
+  # On (5)* the IMPORTANT point to note is that things that are not wrapped within "list(...)" should *always*
   # return length 1 output for us to optimise. Else, there's no equivalent to optimising c(...) to list(...) AFAICT.
   # One issue could be that these functions (e.g., mean) can be "re-defined" by the OP to produce a length > 1 output
   # Of course this is worrying too much though. If the issue comes up, we'll just remove the relevant optimisations.
