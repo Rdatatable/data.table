@@ -369,10 +369,18 @@ gc_mem = function() {
   m
   # nocov end
 }
+
+# Check if UTF-8 symbols can be represented in native encoding
+# R's parser requires symbol names (PRINTNAME in LANGSXP) to be in native encoding. In non-UTF-8
+# locales, parsing Unicode escapes like \u00FC fails with a warning and substitutes <U+00FC>.
+# Tests using requires_utf8 are skipped when UTF-8 cannot be represented. Using eval(parse(text=...))
+# defers parsing to runtime, allowing the encoding check to run first and avoid source() warnings.
+utf8_check = function(test_str) identical(test_str, enc2native(test_str))
+
 test = function(num, x, y=TRUE,
                 error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
                 options=NULL, env=NULL,
-                context=NULL, optimize=NULL) {
+                context=NULL, requires_utf8=FALSE, optimize=NULL) {
   # if optimization is provided, test across multiple optimization levels
   if (!is.null(optimize)) {
     if (!is.numeric(optimize) || length(optimize) < 1L || anyNA(optimize) || any(optimize < 0L))
@@ -417,6 +425,20 @@ test = function(num, x, y=TRUE,
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
+  }
+  # Check UTF-8 requirement
+  if (!isFALSE(requires_utf8)) {
+    test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8 # the default test_str are UTF-8 symbols we found over time, TOOD: harden this default
+    if (!utf8_check(test_str)) {
+      # nocov start
+      last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
+      if (num - last_utf8_skip >= 1) {
+        catf("Test %s skipped because required UTF-8 symbols cannot be represented in native encoding.\n", num)
+      }
+      assign("last_utf8_skip", num, parent.frame(), inherits=TRUE)
+      return(invisible(TRUE))
+      # nocov end
+    }
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
