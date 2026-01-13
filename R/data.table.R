@@ -278,7 +278,7 @@ replace_dot_alias = function(e) {
         if (isTRUE(nzchar(names(jsubl)[i_]))) {
           # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
           jl__names = names(jl__) %||% rep("", length(jl__))
-          jl__hasname = nzchar(names(jl__))
+          jl__hasname = nzchar(jl__names)
           if (length(jl__) > 1L) {
             jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
           } else {
