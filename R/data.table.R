@@ -148,6 +148,18 @@ replace_dot_alias = function(e) {
 }
 
 # Transform lapply(.SD, fun) or Map(fun, .SD) into list(fun(col1), fun(col2), ...)
+#
+# It may seem inefficient to construct a potentially long expression. But, consider calling
+# lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
+# is called, involving small memory allocations.
+# The R level lapply calls as.list which needs a shallow copy.
+# lapply also does a setAttib of names (duplicating the same names over and over again
+# for each group) which is terrible for our needs. We replace all that with a
+# (ok, long, but not huge in memory terms) list() which is primitive (so avoids symbol
+# lookup), and the eval() inside dogroups hardly has to do anything. All this results in
+# overhead minimised. We don't need to worry about the env passed to the eval in a possible
+# lapply replacement, or how to pass ... efficiently to it.
+# Plus we optimize lapply first, so that mean() can be optimized too as well, next.
 .massageSD = function(jsub, sdvars, SDenv, funi) {
   txt = as.list(jsub)[-1L]
   if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #110
@@ -175,17 +187,6 @@ replace_dot_alias = function(e) {
   jsub = as.call(ans)  # important no names here
   jvnames = sdvars      # but here instead
   list(jsub=jsub, jvnames=jvnames, funi=funi+1L)
-  # It may seem inefficient to construct a potentially long expression. But, consider calling
-  # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
-  # is called, involving small memory allocations.
-  # The R level lapply calls as.list which needs a shallow copy.
-  # lapply also does a setAttib of names (duplicating the same names over and over again
-  # for each group) which is terrible for our needs. We replace all that with a
-  # (ok, long, but not huge in memory terms) list() which is primitive (so avoids symbol
-  # lookup), and the eval() inside dogroups hardly has to do anything. All this results in
-  # overhead minimised. We don't need to worry about the env passed to the eval in a possible
-  # lapply replacement, or how to pass ... efficiently to it.
-  # Plus we optimize lapply first, so that mean() can be optimized too as well, next.
 }
 
 # Optimize .SD subsetting patterns like .SD[1], head(.SD), first(.SD)
