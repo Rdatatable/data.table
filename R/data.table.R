@@ -165,7 +165,7 @@ replace_dot_alias = function(e) {
   if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #110
   # support Map instead of lapply #5336
   fun = if (jsub %iscall% "Map") txt[[1L]] else txt[[2L]]
-  if (fun %iscall% "function") {
+  if (fun %iscall% "function") { # NB: '\(x)' only exists pre-parser, so it's also covered
     # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
     # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
     # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
