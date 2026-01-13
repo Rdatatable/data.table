@@ -301,8 +301,10 @@ replace_dot_alias = function(e) {
         jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
       }
       # Case 2d: .SD[1] or similar subsetting
-      else if (length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") &&
-               this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N")) {
+      else if (length(this) == 3L
+               && (this[[1L]] == "[" || this[[1L]] == "head")
+               && this[[2L]] == ".SD"
+               && (is.numeric(this[[3L]]) || this[[3L]] == ".N")) {
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         any_optimized = TRUE
         jsubl[[i_]] = lapply(sdvars, function(x) { this[[2L]] = as.name(x); this })
