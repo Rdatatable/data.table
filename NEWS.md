@@ -32,6 +32,8 @@
 
 6. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
 
+7. Fixed compilation failure like "error: unknown type name 'siginfo_t'" in v1.18.0 in some strict environments, e.g., FreeBSD, where the header file declaring the POSIX function `waitid` does not transitively include the header file defining the `siginfo_t` type, [#7516](https://github.com/rdatatable/data.table/issues/7516). Thanks to @jszhao for the report and @aitap for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
