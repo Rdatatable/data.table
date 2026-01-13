@@ -274,28 +274,27 @@ replace_dot_alias = function(e) {
       # Case 2b: list(...)
       else if (this[[1L]] == "list") {
         # also handle c(lapply(.SD, sum), list()) - silly, yes, but can happen
-        if (length(this) > 1L) {
-          jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
-          if (isTRUE(nzchar(names(jsubl)[i_]))) {
-            # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
-            njl__ = names(jl__) %||% rep("", length(jl__))
-            njl__nonblank = nzchar(names(jl__))
-            if (length(jl__) > 1L) {
-              jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
-            } else {
-              jn__ = names(jsubl)[i_]
-            }
-            jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
+        if (length(this) == 1L) next
+        jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
+        if (isTRUE(nzchar(names(jsubl)[i_]))) {
+          # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
+          njl__ = names(jl__) %||% rep("", length(jl__))
+          njl__nonblank = nzchar(names(jl__))
+          if (length(jl__) > 1L) {
+            jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
           } else {
-            jn__ = names(jl__) %||% rep("", length(jl__))
+            jn__ = names(jsubl)[i_]
           }
-          idx = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
-          if (any(idx))
-            jn__[idx & !nzchar(jn__)] = "I"  # this & is correct not &&
-          jvnames = c(jvnames, jn__)
-          jsubl[[i_]] = jl__
-          any_optimized = TRUE
+          jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
+        } else {
+          jn__ = names(jl__) %||% rep("", length(jl__))
         }
+        idx = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
+        if (any(idx))
+          jn__[idx & !nzchar(jn__)] = "I"  # this & is correct not &&
+        jvnames = c(jvnames, jn__)
+        jsubl[[i_]] = jl__
+        any_optimized = TRUE
       }
       # Case 2c: Single-value functions like mean, sum, etc.
       else if (this %iscall% optfuns && length(this)>1L) {
