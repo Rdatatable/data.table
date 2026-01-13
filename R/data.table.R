@@ -385,7 +385,7 @@ replace_dot_alias = function(e) {
   # Pattern 3b: Map(fun, .SD)
   # Only optimize if .SD appears exactly once to avoid cases like Map(rep, .SD, .SD)
   else if (is.call(jsub) && jsub %iscall% "Map" && length(jsub) >= 3L && jsub[[3L]] == ".SD" && length(sdvars) &&
-           sum(vapply_1b(as.list(jsub), function(x) identical(x, quote(.SD)))) == 1L) {
+           sum(vapply_1b(as.list(jsub), identical, quote(.SD))) == 1L) {
     massage_result = .massageSD(jsub, sdvars, SDenv, funi)
     jsub = massage_result$jsub
     jvnames = massage_result$jvnames
