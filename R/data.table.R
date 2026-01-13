@@ -422,6 +422,7 @@ replace_dot_alias = function(e) {
       if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
       return(list(GForce=TRUE, jsub=jsub))
     }
+    return(list(GForce=FALSE, jsub=jsub))
   }
 
   # turn off GForce for the combination of := and .N
