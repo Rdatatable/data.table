@@ -34,7 +34,7 @@
 
 7. Fixed compilation failure like "error: unknown type name 'siginfo_t'" in v1.18.0 in some strict environments, e.g., FreeBSD, where the header file declaring the POSIX function `waitid` does not transitively include the header file defining the `siginfo_t` type, [#7516](https://github.com/rdatatable/data.table/issues/7516). Thanks to @jszhao for the report and @aitap for the fix.
 
-6. GForce and lapply optimization detection has been refactored to use modular optimization paths and an AST (Abstract Syntax Tree) walker for improved maintainability and extensibility. The new architecture separates optimization detection into distinct, composable phases. This makes future optimization enhancements a lot easier. Thanks to @grantmcdermott, @jangorecki, @MichaelChirico, and @HughParsonage for the suggestions and @ben-schwen for the implementation.
+8. GForce and lapply optimization detection has been refactored to use modular optimization paths and an AST (Abstract Syntax Tree) walker for improved maintainability and extensibility. The new architecture separates optimization detection into distinct, composable phases. This makes future optimization enhancements a lot easier. Thanks to @grantmcdermott, @jangorecki, @MichaelChirico, and @HughParsonage for the suggestions and @ben-schwen for the implementation.
 
     This rewrite also introduces several new optimizations:
       - Enables Map in addition to lapply optimizations (e.g., `Map(fun, .SD)` -> `list(fun(col1), fun(col2), ...)`) [#5336](https://github.com/Rdatatable/data.table/issues/5336)

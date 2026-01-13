@@ -428,7 +428,7 @@ replace_dot_alias = function(e) {
   # turn off GForce for the combination of := and .N
   if (length(lhs) && is.symbol(jsub))
     return(list(GForce=FALSE, jsub=jsub))
-    
+
   # Apply GForce
   if (jsub %iscall% "list") {
     GForce = TRUE
