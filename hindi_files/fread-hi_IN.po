@@ -328,34 +328,38 @@ msgstr ""
 
 #: fread.c:1672
 msgid "  Detecting sep automatically ...\n"
-msgstr ""
+msgstr "  स्वचालित रूप से sep का पता लगाया जा रहा है ...\n"
 
 #: fread.c:1679
 #, c-format
 msgid "  Using supplied sep '%s'\n"
-msgstr ""
+msgstr "  प्रदान किए गए sep '%s' का उपयोग किया जा रहा है\n"
 
 #: fread.c:1713
 #, c-format
 msgid "  with %d fields using quote rule %d\n"
-msgstr ""
+msgstr "  %d फ़ील्ड्स (fields) के साथ कोट नियम (quote rule) %d का उपयोग करते हुए\n"
 
 #: fread.c:1763
 #, c-format
 msgid "  with %d lines of %d fields using quote rule %d\n"
-msgstr ""
+msgstr "  %d पंक्तियों की %d फ़ील्ड्स (fields) के साथ कोट नियम (quote rule) %d का उपयोग करते हुए\n"
 
 #: fread.c:1770
 msgid ""
 "  No sep and quote rule found a block of 2x2 or greater. Single column "
 "input.\n"
 msgstr ""
+"  किसी भी sep और कोट नियम (quote rule) को 2x2 या उससे बड़ा खंड नहीं मिला।\n"
+"सिंगल (single) कॉलम (column) इनपुट (input)।\n"
 
 #: fread.c:1786
 msgid ""
 "Single column input contains invalid quotes. Self healing only effective when "
 "ncol>1"
 msgstr ""
+"सिंगल (single) कॉलम (column) इनपुट (input) में अमान्य कोट्स (quotes) हैं। स्वतः सुधार\n"
+"केवल तभी प्रभावी होता है जब ncol>1 हो"
 
 #: fread.c:1791
 #, c-format
@@ -364,6 +368,9 @@ msgid ""
 "quoted (e.g. field separator does not appear within any field), try "
 "quote=\"\" to avoid this warning."
 msgstr ""
+"पहली %d पंक्तियों में अनुचित कोटिंग (quoting) पाई गई और उसे सुलझा लिया गया। यदि फ़ील्ड्स (fields)\n"
+"कोटिंग में नहीं हैं (जैसे कि फ़ील्ड (field) सेपरेटर (separator) किसी फ़ील्ड (field) के भीतर नहीं दिखता है),\n"
+"तो इस वॉर्निंग (warning) से बचने के लिए quote=\"\" का प्रयास करें।"
 
 #: fread.c:1812
 #, c-format
@@ -371,16 +378,18 @@ msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
 "data row. Line starts as: <<%s>>\n"
 msgstr ""
+"  पंक्ति %d पर %d कॉलम (column) का पता चला। यह पंक्ति या तो कॉलम (column) के नाम है या\n"
+"डेटा (data) की पहली पंक्ति है। पंक्ति इस प्रकार शुरू होती है: <<%s>>\n"
 
 #: fread.c:1814
 #, c-format
 msgid "  Quote rule picked = %d\n"
-msgstr ""
+msgstr "  चुना गया कोट नियम (quote rule) = %d\n"
 
 #: fread.c:1815
 #, c-format
 msgid "  fill=%s and the most number of columns found is %d\n"
-msgstr ""
+msgstr "  fill=%s और पाए गए कॉलम (column) की अधिकतम संख्या %d है\n"
 
 #: fread.c:1821
 msgid ""
@@ -388,6 +397,8 @@ msgid ""
 "line (representing several NA at the end), and the file size is a multiple of "
 "4096, too"
 msgstr ""
+"यह फाइल (file) बहुत असामान्य है: यह एक सिंगल (single) कॉलम (column) है, 2 या अधिक अंत के साथ\n"
+"समाप्त होती है (जो अंत में कई NA को दर्शाते हुए हैं), और फाइल (file) का आकार भी 4096 का गुणज है"
 
 #: fread.c:1823
 #, c-format
