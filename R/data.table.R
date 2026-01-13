@@ -420,8 +420,8 @@ replace_dot_alias = function(e) {
   if (!length(ansvars) && !use.I) {
     if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
       if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
+      return(list(GForce=TRUE, jsub=jsub))
     }
-    return(list(GForce=TRUE, jsub=jsub))
   }
 
   # turn off GForce for the combination of := and .N
