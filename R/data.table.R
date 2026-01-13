@@ -278,14 +278,14 @@ replace_dot_alias = function(e) {
         jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
         if (isTRUE(nzchar(names(jsubl)[i_]))) {
           # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
-          njl__ = names(jl__) %||% rep("", length(jl__))
-          njl__nonblank = nzchar(names(jl__))
+          jl__names = names(jl__) %||% rep("", length(jl__))
+          jl__hasname = nzchar(names(jl__))
           if (length(jl__) > 1L) {
             jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
           } else {
             jn__ = names(jsubl)[i_]
           }
-          jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
+          jn__[jl__hasname] = paste(names(jsubl)[i_], jl__names[jl__hasname], sep=".")
         } else {
           jn__ = names(jl__) %||% rep("", length(jl__))
         }
