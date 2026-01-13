@@ -288,7 +288,7 @@ replace_dot_alias = function(e) {
         } else {
           jn__ = names(jl__) %||% rep("", length(jl__))
         }
-        idx = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
+        idx = vapply_1b(jl__, identical, quote(.I))
         if (any(idx))
           jn__[idx & !nzchar(jn__)] = "I"  # this & is correct not &&
         jvnames = c(jvnames, jn__)
