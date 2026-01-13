@@ -234,7 +234,6 @@ replace_dot_alias = function(e) {
   jsubl = as.list.default(jsub)
   oldjvnames = jvnames
   jvnames = NULL  # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*length(sdvars) + other jvars ?? not straightforward.
-  # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
   for (i_ in 2L:length(jsubl)) {
     this = jsub[[i_]]
     # Case 1: Plain name (.SD or .N)
