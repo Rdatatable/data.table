@@ -1367,61 +1367,22 @@ inline static double peek(const double *x, int m, int tail) {
   return m == tail ? R_PosInf : x[m];
 }
 #define PEEK(j) peek(&x[(j)*k], m[(j)], tail)
-// return median, for even k, from x_A[m_a], x_A[n_A], x_B[m_B], x_B[n_B] - having two sets of sorted 2 elements, take two smallest and give their mean
-#define MED(A, B) MIN(PEEK(A), PEEK(B))
-// delete all elements from B in reverse order
-static void unwind(int *prev, int *next, int *m, int *s, int k, int tail) {
-   for (int i=k-1; i>=0; i--) {
-     next[prev[i]] = next[i];
-     prev[next[i]] = prev[i];
-   }
-   m[0] = tail;
-   s[0] = 0;
- }
-#define UNWIND(j) unwind(&prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], k, tail);
 // checks if object i is "small" - smaller than value(s) used for median answer
 inline static bool small(int i, const double *x, int m, int tail) {
   return (m == tail) || (x[i] < x[m]) || ((x[i] == x[m]) && (i < m));
 }
 #define SMALL(i) small((i), x, m[0], tail)
-// delete element from A
-static void delete(int i, const double *x, int *prev, int *next, int *m, int *s, int tail) {
-  next[prev[i]] = next[i];
-  prev[next[i]] = prev[i];
-  if (SMALL(i)) {
-    s[0]--;
-  } else {
-    if (m[0] == i) {
-      m[0] = next[m[0]];
-    }
-    if (s[0] > 0) {
-      m[0] = prev[m[0]];
-      s[0]--;
-    }
-  }
-}
-#define DELETE(j) delete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], tail)
-// undelete element from B
-static void undelete(int i, const double *x, int *prev, int *next, int *m, int tail) {
-  next[prev[i]] = i;
-  prev[next[i]] = i;
-  if (SMALL(i)) {
-    m[0] = prev[m[0]];
-  }
-}
-#define UNDELETE(j) undelete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], tail)
-// advance - balance block after delete/undelete, fixed m (and n) pointers and s counter
-static void advance(int *next, int* m, int *s) {
-  m[0] = next[m[0]];
-  s[0]++;
-}
-#define ADVANCE(j) advance(&next[(j)*(k+1)], &m[(j)], &s[(j)])
-// same helper functions supporting any k
+// helper functions supporting any k
 #define PEEK2(j) peek(&x[(j)*k], n[(j)], tail)
-static double med2(const double *xa, const double *xb, int ma, int na, int mb, int nb, int tail) {
+static double med2(const double *xa, const double *xb, int ma, int na, int mb, int nb, int tail, bool even) {
   double xam = ma == tail ? R_PosInf : xa[ma];
-  double xan = na == tail ? R_PosInf : xa[na];
   double xbm = mb == tail ? R_PosInf : xb[mb];
+  if (!even) {
+    // Odd k: return minimum of two median candidates
+    return xam < xbm ? xam : xbm;
+  }
+  // Even k: return average of two middle values
+  double xan = na == tail ? R_PosInf : xa[na];
   double xbn = nb == tail ? R_PosInf : xb[nb];
   if (xam == xbm) {
     return xam;
@@ -1439,7 +1400,7 @@ static double med2(const double *xa, const double *xb, int ma, int na, int mb, i
     }
   }
 }
-#define MED2(A, B) med2(&x[(A)*k], &x[(B)*k], m[(A)], n[(A)], m[(B)], n[(B)], tail)
+#define MED2(A, B) med2(&x[(A)*k], &x[(B)*k], m[(A)], n[(A)], m[(B)], n[(B)], tail, even)
 static void unwind2(int *prev, int *next, int *m, int *n, int *s, int k, int tail, bool even) {
   for (int i=k-1; i>=0; i--) {
     next[prev[i]] = next[i];
@@ -1619,8 +1580,7 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
   for (int j=0; j<b; j++) { // par ensures no nested parallelism so if input is not already vectorized (and therefore parallel) then we can use omp here
     shellsort(&x[j*k], (nx_mod_k && j==b-1) ? nx_mod_k : k, &o[j*k]);
     m[j] = o[j*k+h];
-    if (even)
-      n[j] = o[j*k+h+1];
+    n[j] = even ? o[j*k+h+1] : tail;
     s[j] = h;
     setlinks(&o[j*k], &next[j*(k+1)], &prev[j*(k+1)], tail);
   }
@@ -1634,87 +1594,51 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
   // main rolling loop - called post processing in the paper
   if (verbose)
     tic = omp_get_wtime();
-  if (!nx_mod_k && !even) { // see verbose message below for explanation
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data\n"), "frollmedianFast");
-    ansv[k-1] = PEEK(0);
-    for (int j=1; j<b; j++) {
-      int A = j-1, B = j;
-      UNWIND(B);
-      /*stopifnot*/ /*if (!(s[A] == h)) {
-        snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
-        return;
-      }*/
-      /*stopifnot*/ /*if (!(s[B] == 0)) {
-        snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
-        return;
-      }*/
-      for (int i=0; i<k; i++) {
-        DELETE(A);
-        UNDELETE(B);
-        /*stopifnot*/ /*if (!(s[A] + s[B] <= h)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
-          return;
-        }*/
-        if (s[A] + s[B] < h) {
-          if (PEEK(A) <= PEEK(B)) {
-            ADVANCE(A);
-          } else {
-            ADVANCE(B);
-          }
-        }
-        /*stopifnot*/ /*if (!(s[A] + s[B] == h)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
-          return;
-        }*/
-        ansv[j*k+i] = MED(A, B);
+  ansv[k-1] = even ? (PEEK(0) + PEEK2(0)) / 2 : PEEK(0);
+  for (int j=1; j<b; j++) {
+    int A = j-1, B = j;
+    UNWIND2(B);
+    /*stopifnot*/ /*if (!(s[A] == h)) {
+      snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
+      return;
+    }*/
+    /*stopifnot*/ /*if (!(s[B] == 0)) {
+      snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
+      return;
+    }*/
+    for (int i=0; i<k; i++) {
+      if (nx_mod_k && j == b-1) {
+        if (verbose && i == nx_mod_k)
+          snprintf(end(ans->message[0]), 500, _("%s: skip rolling for %d padded elements\n"), "frollmedianFast", k-nx_mod_k);
+        if (i >= nx_mod_k)
+          continue;
       }
-    }
-  } else {
-    ansv[k-1] = even ? (PEEK(0) + PEEK2(0)) / 2 : PEEK(0);
-    for (int j=1; j<b; j++) {
-      int A = j-1, B = j;
-      UNWIND2(B);
-      /*stopifnot*/ /*if (!(s[A] == h)) {
-        snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
+      DELETE2(A);
+      UNDELETE2(B);
+      /*stopifnot*/ /*if (!(s[A] + s[B] <= h)) {
+        snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
         return;
       }*/
-      /*stopifnot*/ /*if (!(s[B] == 0)) {
-        snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
+      if (s[A] + s[B] < h) {
+        if (PEEK(A) <= PEEK(B)) {
+          ADVANCE2(A);
+        } else {
+          ADVANCE2(B);
+        }
+      }
+      /*stopifnot*/ /*if (!(s[A] + s[B] == h)) {
+        snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
         return;
       }*/
-      for (int i=0; i<k; i++) {
-        if (nx_mod_k && j == b-1) {
-          if (verbose && i == nx_mod_k)
-            snprintf(end(ans->message[0]), 500, _("%s: skip rolling for %d padded elements\n"), "frollmedianFast", k-nx_mod_k);
-          if (i >= nx_mod_k)
-            continue;
-        }
-        DELETE2(A);
-        UNDELETE2(B);
-        /*stopifnot*/ /*if (!(s[A] + s[B] <= h)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
-          return;
-        }*/
-        if (s[A] + s[B] < h) {
-          if (PEEK(A) <= PEEK(B)) {
-            ADVANCE2(A);
-          } else {
-            ADVANCE2(B);
-          }
-        }
-        /*stopifnot*/ /*if (!(s[A] + s[B] == h)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
-          return;
-        }*/
+      if (even) {
         if (n[A]!=tail && m[A] == n[A]) {
           n[A] = tail;
         }
         if (n[B]!=tail && m[B] == n[B]) {
           n[B] = tail;
         }
-        ansv[j*k+i] = even ? MED2(A, B) : MED(A, B);
       }
+      ansv[j*k+i] = MED2(A, B);
     }
   }
   free(next); free(prev); free(s); free(n); free(m); free(o);
