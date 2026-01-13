@@ -244,7 +244,7 @@ replace_dot_alias = function(e) {
         jsubl[[i_]] = lapply(sdvars, as.name)
         jvnames = c(jvnames, sdvars)
       } else if (this == ".N") {
-        # don't optimise .I in c(.SD, .I), it's length can be > 1
+        # don't optimise .I in c(.SD, .I), its length can be > 1
         # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
         jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))
       } else {
