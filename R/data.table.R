@@ -229,7 +229,6 @@ replace_dot_alias = function(e) {
   # Of course this is worrying too much though. If the issue comes up, we'll just remove the relevant optimisations.
   # For now, we optimise all functions mentioned in 'optfuns' below.
   optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
-  is_valid = TRUE
   any_optimized = FALSE
   jsubl = as.list.default(jsub)
   oldjvnames = jvnames
@@ -248,8 +247,7 @@ replace_dot_alias = function(e) {
         jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))
       } else {
         # jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
-        is_valid = FALSE
-        break
+        return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
       }
     }
     # Case 2: Call expression
@@ -314,34 +312,30 @@ replace_dot_alias = function(e) {
         # TODO, TO DO: revisit complex cases (as illustrated below)
         # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
         # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
-        is_valid = FALSE
-        break
+        return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
       }
       # Case 2f: Other cases - skip optimization
       else {
         # TO DO, TODO: maybe a message/warning here so that we can catch the overlooked cases, if any?
-        is_valid = FALSE
-        break
+        return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
       }
     }
     # Case 3: Other types - can't optimize
     else {
-      is_valid = FALSE
-      break
+      return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
     }
   }
 
   # Return result
-  if (!is_valid || !any_optimized) {
+  if (!any_optimized) {
     # Can't optimize - return original
-    list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE)
-  } else {
-    # Optimization successful
-    setattr(jsubl, 'names', NULL)
-    jsub_new = as.call(unlist(jsubl, use.names=FALSE))
-    jsub_new[[1L]] = quote(list)
-    list(jsub=jsub_new, jvnames=jvnames, funi=funi, optimized=TRUE)
+    return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
   }
+  # Optimization successful
+  setattr(jsubl, 'names', NULL)
+  jsub_new = as.call(unlist(jsubl, use.names=FALSE))
+  jsub_new[[1L]] = quote(list)
+  list(jsub=jsub_new, jvnames=jvnames, funi=funi, optimized=TRUE)
 }
 
 # Optimize lapply(.SD, ...) expressions
