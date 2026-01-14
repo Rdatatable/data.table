@@ -37,7 +37,7 @@ Una de las principales características de `data.table` es su sintaxis concisa, 
 
 Es muy fácil usar `data.table` como dependencia, ya que no tiene dependencias propias. Esto aplica tanto al sistema operativo como a las dependencias de R. Esto significa que si tiene R instalado en su equipo, ya tiene todo lo necesario para instalar `data.table`. Además, añadir `data.table` como dependencia de su paquete no generará una cadena de otras dependencias recursivas, lo que lo hace muy conveniente para la instalación sin conexión.
 
-## Archivo `DESCRIPCIÓN` {#DESCRIPCIÓN}
+## Archivo `DESCRIPTION` {#DESCRIPTION}
 
 El primer lugar para definir una dependencia en un paquete es el archivo `DESCRIPTION`. Normalmente, deberá agregar `data.table` en el campo `Imports:`. Para ello, deberá instalar `data.table` antes de que el paquete pueda compilarse/instalarse. Como se mencionó anteriormente, no se instalarán otros paquetes porque `data.table` no tiene dependencias propias. También puede especificar la versión mínima requerida de una dependencia; por ejemplo, si su paquete utiliza la función `fwrite`, introducida en `data.table` en la versión 1.9.8, debería incorporarla como `Imports: data.table (>= 1.9.8)`. De esta forma, puede asegurarse de que la versión de `data.table` instalada sea la 1.9.8 o posterior antes de que los usuarios puedan instalar el paquete. Además del campo `Imports:`, también puede usar `Depends: data.table`, pero desaconsejamos este método (y es posible que no lo permitamos en el futuro) porque carga `data.table` en el espacio de trabajo del usuario; es decir, habilita la funcionalidad de `data.table` en los scripts del usuario sin que este la solicite. `Imports:` es la forma correcta de usar `data.table` dentro del paquete sin afectar a `data.table` en el usuario. De hecho, esperamos que el campo `Depends:` quede obsoleto en R, ya que esto aplica a todos los paquetes.
 
@@ -185,7 +185,7 @@ my.write = function (x) {
 
 Al usar un paquete como dependencia sugerida, no debe importarlo en el archivo `NAMESPACE`. Simplemente menciónelo en el archivo `DESCRIPTION`. Al usar funciones `data.table` en el código del paquete (archivos R/*), debe usar el prefijo `data.table::`, ya que ninguna se importa. Al usar `data.table` en pruebas de paquetes (por ejemplo, archivos tests/testthat/test*), debe declarar `.datatable.aware=TRUE` en uno de los archivos R/*.
 
-## `data.table` en `Importaciones` pero no se importó nada
+## `data.table` en `Imports` pero no se importó nada
 
 Algunos usuarios ([por ejemplo](https://github.com/Rdatatable/data.table/issues/2341)) pueden preferir evitar el uso de `importFrom` o `import` en su archivo `NAMESPACE` y en su lugar usar la calificación `data.table::` en todo el código interno (por supuesto, manteniendo `data.table` debajo de su `Imports:` en `DESCRIPTION`).
 
@@ -213,7 +213,7 @@ Para convertir una dependencia `Depends` de `data.table` en una dependencia `Imp
 
 ### Paso 0. Asegúrese de que su paquete pase la verificación R CMD inicialmente
 
-### Paso 1. Actualice el archivo DESCRIPCIÓN para colocar data.table en Importaciones, no en Dependencias
+### Paso 1. Actualice el archivo DESCRIPTION para colocar data.table en Imports, no en Depends
 
 **Antes:**
 
@@ -249,7 +249,7 @@ Según los resultados de `R CMD check`, asegúrese de que se importen todas las 
 
 Esto implica agregar directivas `importFrom(data.table, ...)` para símbolos, funciones y genéricos de S3, o directivas `importClassesFrom(data.table, ...)` para clases de S4, según corresponda. Consulte "Escritura de extensiones de R" para obtener más información sobre cómo hacerlo correctamente.
 
-#### Importación de mantas
+#### Importación completa
 
 Como alternativa, puede importar todas las funciones de `data.table` a la vez, aunque esto generalmente no se recomienda:
 
@@ -257,8 +257,9 @@ Como alternativa, puede importar todas las funciones de `data.table` a la vez, a
 import(data.table)
 ```
 
-**Justificación para evitar importaciones generales:** =====1. **Documentación**: El archivo NAMESPACE puede servir como buena documentación de cómo depende de ciertos paquetes.
-2. **Evitar conflictos**: Las importaciones generales pueden causar fallos sutiles. Por ejemplo, si importa `import(pkgA)` e `import(pkgB)`, pero posteriormente pkgB exporta una función también exportada por pkgA, esto romperá su paquete debido a conflictos en su espacio de nombres, lo cual no está permitido por `R CMD check` y CRAN.=====
+**Justificación para evitar importaciones generales:** 
+1. **Documentación**: El archivo NAMESPACE puede servir como buena documentación de cómo depende de ciertos paquetes.
+2. **Evitar conflictos**: Las importaciones generales pueden causar fallos sutiles. Por ejemplo, si importa `import(pkgA)` e `import(pkgB)`, pero posteriormente pkgB exporta una función también exportada por pkgA, esto romperá su paquete debido a conflictos en su espacio de nombres, lo cual no está permitido por `R CMD check` y CRAN.
 
 ### Paso 3: Actualice sus archivos de código R fuera del directorio R/ del paquete
 
@@ -285,7 +286,7 @@ setDT(dt)
 result <- merge(dt, other_dt, by = "x")
 ```
 
-### Beneficios de usar `Importaciones`
+### Beneficios de usar `Imports`
 
 - **Facilidad de uso**: `Depends` modifica la ruta `search()` de los usuarios, posiblemente sin su consentimiento.
 - **Gestión del espacio de nombres**: Solo están disponibles las funciones que tu paquete importa explícitamente, lo que reduce el riesgo de conflictos de nombres de funciones.
