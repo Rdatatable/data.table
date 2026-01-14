@@ -21999,3 +21999,7 @@ test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.tab
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
 test(2356.3, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = sprintf("V%d",i), value = i); DT}, {for (i in seq(10)) DT2[, sprintf("V%d",i) := i]; DT2})
+
+# setattr() must not crash for out-of-bounds factor indices when fixing duplicate levels, #7595
+test(2357.1, setattr(factor(c(1, NA), levels = 1), "levels", c("1", "1")), factor(c(1, NA)))
+test(2357.2, setattr(structure(c(-999L, 999L), class = "factor", levels = "a"), "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))

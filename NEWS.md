@@ -4,6 +4,10 @@
 
 ## data.table [v1.18.2](https://github.com/Rdatatable/data.table/milestone/44?closed=1) In Development
 
+### BUG FIXES
+
+1. When fixing duplicate factor levels, `setattr()` no longer crashes upon encountering missing factor values, [#7595](https://github.com/Rdatatable/data.table/issues/7595). Thanks to @sindribaldur for the report and @aitap for the fix.
+
 ### Notes
 
 1. Removed use of non-API `ATTRIB`, `SET_ATTRIB`, and `findVar` [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here, and @MichaelChirico for the easy fix to replace `findVar` with `R_getVar`.
