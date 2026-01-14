@@ -576,7 +576,11 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 #
 # Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 # Submit to R-Hub
-# If RESUBMISSION, update date in NEWS file
+#
+# If RESUBMISSION:
+#   1. update date in NEWS file
+#   2. update version to append -1 for init.c and DESCRIPTION
+#   
 # Submit to CRAN. Message template :
 # ------------------------------------------------------------
 # Hello,
