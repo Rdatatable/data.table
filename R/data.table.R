@@ -308,12 +308,12 @@ replace_dot_alias = function(e) {
         jvnames = c(jvnames, sdvars)
       }
       # Case 2e: Complex .SD usage - can't optimize
-      else if (any(all.vars(this) == ".SD")) {
-        # TODO, TO DO: revisit complex cases (as illustrated below)
-        # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
-        # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
-        return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
-      }
+      # else if (any(all.vars(this) == ".SD")) {
+      # TODO, TO DO: revisit complex cases (as illustrated below)
+      # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]
+      # hard to optimise such cases (+ difficulty in counting exact columns and therefore names). revert back to no optimisation.
+      # return(list(jsub=jsub, jvnames=oldjvnames, funi=funi, optimized=FALSE))
+      # }
       # Case 2f: Other cases - skip optimization
       else {
         # TO DO, TODO: maybe a message/warning here so that we can catch the overlooked cases, if any?
