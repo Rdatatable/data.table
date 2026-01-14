@@ -45,7 +45,7 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   xchar = PROTECT(allocVector(STRSXP, nx));
   int *ix = INTEGER(x);
   for (int i=0; i<nx; ++i)
-    SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
+    SET_STRING_ELT(xchar, i, ix[i] == NA_INTEGER ? NA_STRING : STRING_ELT(levels, ix[i]-1));
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
   int *inewx = INTEGER(newx);
   for (int i=0; i<nx; ++i) ix[i] = inewx[i];
