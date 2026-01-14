@@ -22101,5 +22101,6 @@ test(2360.4, rowwiseDT(x =, expr =, 1, quote(a + b)),
 test(2360.5, rowwiseDT(x =, plist =, 1, as.pairlist(list(123))),
   error = "Column 'plist' is type 'pairlist'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
 
-# setattr() must not fail with missing factor values when fixing duplicate levels, #7595
-test(2361, setattr(factor(c(1, NA), levels = 1), "levels", c("1", "1")), factor(c(1, NA)))
+# setattr() must not crash for out-of-bounds factor indices when fixing duplicate levels, #7595
+test(2361.1, setattr(factor(c(1, NA), levels = 1), "levels", c("1", "1")), factor(c(1, NA)))
+test(2361.2, setattr(structure(c(-999L, 999L), class = "factor", levels = "a"), "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))
