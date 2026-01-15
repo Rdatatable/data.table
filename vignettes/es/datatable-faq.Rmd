@@ -400,7 +400,7 @@ Una ventaja clave de los vectores columna en R es que están *ordenados*, a dife
  - `DT[ , colA] == DF[ , "colA"]` (actualmente en data.table v1.9.8 pero está a punto de cambiar, consulte las notas de la versión)
  - `DT[ , list(colA)] == DF[ , "colA", drop = FALSE]`
  - `DT[NA]` devuelve 1 fila de `NA`, pero `DF[NA]` devuelve una copia completa de `DF` que contiene `NA` en todas partes. El símbolo «NA» es de tipo «lógico» en R y, por lo tanto, se recicla mediante «[.data.frame». La intención del usuario probablemente era «DF[NA_integer_]». `[.data.table` desvía a esta probable intención automáticamente, por conveniencia.
- - `DT[c(TRUE, NA, FALSE)]` trata el `NA` como `FALSE`, pero `DF[c(TRUE, NA, FALSE)]` devuelve===== `NA` filas para cada `NA` ===== - `DT[ColA == ColB]` es más simple que `DF[!is.na(ColA) & !is.na(ColB) & ColA == ColB, ]`
+ - `DT[c(TRUE, NA, FALSE)]` trata el `NA` como `FALSE`, pero `DF[c(TRUE, NA, FALSE)]` devuelve `NA` filas para cada `NA` - `DT[ColA == ColB]` es más simple que `DF[!is.na(ColA) & !is.na(ColB) & ColA == ColB, ]`
  - `data.frame(list(1:2, "k", 1:4))` crea 3 columnas, data.table crea una columna `list`.
  - `check.names` es por defecto `TRUE` en `data.frame` pero `FALSE` en data.table, por conveniencia.
  - `data.table` siempre ha establecido `stringsAsFactors=FALSE` por defecto. En R 4.0.0 (abril de 2020), el valor predeterminado de `data.frame` se cambió de `TRUE` a `FALSE` y ya no existe diferencia en este aspecto. - Los vectores atómicos en las columnas `list` se contraen cuando se imprimen usando `", "` en `data.frame`, pero `","` en data.table con una coma final después del sexto elemento para evitar la impresión accidental de objetos incrustados grandes.

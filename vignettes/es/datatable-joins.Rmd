@@ -173,7 +173,7 @@ Products[ProductReceived,
 
 En todos los ejemplos anteriores, pasamos los nombres de las columnas que queremos que coincidan con el argumento `on`, pero `data.table` también tiene alternativas a esa sintaxis.
 
-=====- **Unión natural**: Selecciona las columnas para realizar la coincidencia según nombres de columna comunes. Para ilustrar este método, cambiemos la columna de la tabla "Productos" de "id" a "product_id" y usemos la palabra clave ".NATURAL".
+- **Unión natural**: Selecciona las columnas para realizar la coincidencia según nombres de columna comunes. Para ilustrar este método, cambiemos la columna de la tabla "Productos" de "id" a "product_id" y usemos la palabra clave ".NATURAL".
 
 ```{r}
 ProductsChangedName = setnames(copy(Products), "id", "product_id")

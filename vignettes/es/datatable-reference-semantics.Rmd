@@ -388,8 +388,9 @@ y_cpy   # 1 2 3
 z_cpy   # 1 2 3
 ```
 
-Para seleccionar una sola columna como vector, recuerde: =====- `DT[, mycol]` es más seguro, ya que siempre devuelve una copia nueva e independiente.
-- `DT$mycol` es rápido, pero puede devolver una referencia. Use `copy(DT$mycol)` para garantizar la independencia.=====
+Para seleccionar una sola columna como vector, recuerde: 
+- `DT[, mycol]` es más seguro, ya que siempre devuelve una copia nueva e independiente.
+- `DT$mycol` es rápido, pero puede devolver una referencia. Use `copy(DT$mycol)` para garantizar la independencia.
 
 ## Resumen
 

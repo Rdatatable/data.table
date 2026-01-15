@@ -79,8 +79,9 @@ print(dt_from_text)
 
 En muchos casos, `fread()` puede detectar y descomprimir automáticamente archivos con extensiones de compresión comunes, sin necesidad de un objeto de conexión explícito ni comandos de shell. Esto funciona comprobando la extensión del archivo.
 
-**Las extensiones compatibles generalmente incluyen:** =====- `.gz` / `.bz2` (gzip / bzip2): Compatible y funciona de inmediato.
-- `.zip` / `.tar` (archivos ZIP / tar, archivo único): Compatible: `fread()` leerá el primer archivo del archivo si solo hay un archivo presente.=====
+**Las extensiones compatibles generalmente incluyen:** 
+- `.gz` / `.bz2` (gzip / bzip2): Compatible y funciona de inmediato.
+- `.zip` / `.tar` (archivos ZIP / tar, archivo único): Compatible: `fread()` leerá el primer archivo del archivo si solo hay un archivo presente.
 
 **Nota**: Si hay varios archivos en el archivo, `fread()` fallará con un error.
 
@@ -176,10 +177,11 @@ Para ahorrar memoria y mejorar el rendimiento, utilice los argumentos `select` o
 - Si solo necesita unas pocas columnas, utilice `select`.
 - Si desea excluir solo algunas, utilice `drop`—esto evita tener que listar todo lo que desea conservar.
 
-Puntos clave: =====- `select`: Vector de nombres/posiciones de columnas a conservar (descarta las demás).
+Puntos clave: 
+- `select`: Vector de nombres/posiciones de columnas a conservar (descarta las demás).
 - `drop`: Vector de nombres/posiciones de columnas a descartar (descarta las demás).
 - No utilice `select` y `drop` juntos, son mutuamente excluyentes.
-- `fread()` le avisará si falta alguna columna especificada en el archivo.=====
+- `fread()` le avisará si falta alguna columna especificada en el archivo.
 
 Para obtener más detalles, consulte la página del manual ejecutando `?fread` en R.
 
@@ -187,19 +189,21 @@ Para obtener más detalles, consulte la página del manual ejecutando `?fread` e
 
 `fread` detecta automáticamente cómo se escapan las comillas, incluidas las comillas dobles ("") o las comillas con barra invertida ("), sin necesidad de intervención del usuario. Esto se determina mediante una muestra amplia de datos (véase el punto 3) y se valida con todo el archivo.
 
-Escenarios admitidos: =====- Comillas sin escape dentro de campos entre comillas===== p. ej., `"Esta "comilla" no es válida, pero fread funciona de todos modos"` — admitido siempre que el recuento de columnas permanezca constante:
+Escenarios admitidos:
+- Comillas sin escape dentro de campos entre comillas p. ej., `"Esta "comilla" no es válida, pero fread funciona de todos modos"` — admitido siempre que el recuento de columnas permanezca constante:
 
 ```{r}
 data.table::fread(text='x,y\n"This "quote" is invalid, but fread works anyway",1')
 ```
 
-=====- Campos sin comillas que comienzan con comillas===== p. ej., `Invalid"Field,10,20` — se reconoce correctamente como un campo no entre comillas.
+- Campos sin comillas que comienzan con comillas p. ej., `Invalid"Field,10,20` — se reconoce correctamente como un campo no entre comillas.
 
 ```{r}
 data.table::fread(text='x,y\nNot"Valid,1')
 ```
 
-Requisitos y limitaciones: =====- Las reglas de escape y los recuentos de columnas deben ser consistentes en todo el archivo.=====
+Requisitos y limitaciones: 
+- Las reglas de escape y los recuentos de columnas deben ser consistentes en todo el archivo.
 
 - No compatible cuando `fill=TRUE` — en ese caso, el archivo debe seguir las comillas y el escape compatibles con RFC4180.
 
@@ -281,7 +285,7 @@ file.remove("out.csv")
 
 Si bien esta viñeta se centra en las características y la facilidad de uso, la motivación principal para `fread` y `fwrite` es la velocidad.
 
-Para los usuarios interesados ​​en comparaciones de rendimiento detalladas y actualizadas, recomendamos estas publicaciones de blog externas que utilizan el paquete `atime` para un análisis riguroso:
+Para los usuarios interesados en comparaciones de rendimiento detalladas y actualizadas, recomendamos estas publicaciones de blog externas que utilizan el paquete `atime` para un análisis riguroso:
 
 - **[Tiempos asintóticos de data.table](https://tdhock.github.io/blog/2023/dt-atime-figures/)**: Compara el rendimiento de `fread` y `fwrite` con otros paquetes R populares como `readr` y `arrow`.
 - **[Evaluación comparativa de data.table con polares, duckdb y pandas](https://tdhock.github.io/blog/2024/pandas-dt/)**: Compara el rendimiento de E/S y agrupación de `data.table` con las principales bibliotecas de Python.

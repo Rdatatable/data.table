@@ -170,7 +170,7 @@ Como veremos en la siguiente sección, el argumento `on` proporciona varias vent
 
 * permite la reutilización sencilla de índices existentes simplemente verificando los atributos.
 
-=====* permite una sintaxis más clara al incluir las columnas en las que se ejecuta el subconjunto como parte de la sintaxis. Esto facilita la lectura del código al revisarlo posteriormente.
+* permite una sintaxis más clara al incluir las columnas en las que se ejecuta el subconjunto como parte de la sintaxis. Esto facilita la lectura del código al revisarlo posteriormente.
 
     Note that `on` argument can also be used on keyed subsets as well. In fact, we encourage providing the `on` argument even when subsetting using keys for better readability.
 
@@ -190,7 +190,7 @@ flights["JFK", on = "origin"]
 # flights[list("JFK"), on = "origin"]
 ```
 
-=====* Esta instrucción también realiza una búsqueda binaria rápida basada en subconjuntos, calculando el índice sobre la marcha. Sin embargo, tenga en cuenta que no guarda el índice como atributo automáticamente. Esto podría cambiar en el futuro.
+* Esta instrucción también realiza una búsqueda binaria rápida basada en subconjuntos, calculando el índice sobre la marcha. Sin embargo, tenga en cuenta que no guarda el índice como atributo automáticamente. Esto podría cambiar en el futuro.
 
 * Si ya hubiéramos creado un índice secundario con `setindex()`, `on` lo reutilizaría en lugar de recalcularlo. Podemos comprobarlo con `verbose = TRUE`:
 
@@ -266,7 +266,7 @@ Ahora, verifiquemos si `24` se reemplaza con `0` en la columna `hora`.
 flights[, sort(unique(hour))]
 ```
 
-=====* Esta es una gran ventaja de los índices secundarios. Anteriormente, para actualizar solo algunas filas de `hour`, teníamos que ejecutar `setkey()`, lo que inevitablemente reordenaba toda la tabla data.table. Con `on`, el orden se conserva y la operación es mucho más rápida. Al observar el código, la tarea que queríamos realizar también está bastante clara.
+* Esta es una gran ventaja de los índices secundarios. Anteriormente, para actualizar solo algunas filas de `hour`, teníamos que ejecutar `setkey()`, lo que inevitablemente reordenaba toda la tabla data.table. Con `on`, el orden se conserva y la operación es mucho más rápida. Al observar el código, la tarea que queríamos realizar también está bastante clara.
 
 ### f) Agregación utilizando `by`
 
