@@ -21465,7 +21465,7 @@ test(2362.32, optimize=0:2, dt[, .((max(a) - min(a)) / (max(a) + min(a))), by=b,
 test(2362.33, optimize=0:2, dt[, sum(a) / .N, b, verbose=TRUE], output=out)
 test(2362.34, optimize=0:2, dt[, mean(a) * 2L + sum(a), b, verbose=TRUE], output=out)
 test(2362.35, optimize=0:2, dt[, list(range=max(a)-min(a), avg=mean(a)), by=b, verbose=TRUE], output=out)
-test(2362.36, optimize=0:2, dt[, .(max(a)-sqrt(min(a))), by=b, verbose=TRUE], output="GForce FALSE")
+test(2362.36, optimize=0:2, dt[, .(max(a)-sqrt(min(a))), by=b, verbose=TRUE], output=out)
 test(2362.37, optimize=0:2, dt[, sum(a) %% 2, b, verbose=TRUE], output=out)
 test(2362.38, optimize=0:2, dt[, sum(a) %/% 2, b, verbose=TRUE], output=out)
 test(2362.39, optimize=0:2, dt[, -sum(a), b, verbose=TRUE], output=out)
