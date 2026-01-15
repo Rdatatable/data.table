@@ -223,7 +223,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
 
 SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchArg, SEXP verbose) {
 
-  R_len_t uxcols=LENGTH(ux),rows=length(VECTOR_ELT(imatches,0));
+  R_len_t uxcols=LENGTH(ux), rows=length(VECTOR_ELT(imatches,0)), xrows=length(VECTOR_ELT(ux,0));
   int nomatch = INTEGER(nomatchArg)[0], totlen=0, thislen;
   int *from   = INTEGER(VECTOR_ELT(imatches, 0));
   int *to     = INTEGER(VECTOR_ELT(imatches, 1));
@@ -252,7 +252,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   // As a first pass get the final length, so that we can allocate up-front and not deal with R_Calloc + R_Realloc + size calculation hassle
   // Checked the time for this loop on realisitc data (81m reads) and took 0.27 seconds! No excuses ;).
   start = clock();
-  if (mult == ALL) {
+  if (xrows && mult == ALL) {
     totlen=0;
     switch (type) {
     case START: case END:
@@ -340,7 +340,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   // switching mult=ALL,FIRST,LAST separately to
   //   - enhance performance for special cases, and
   //   - easy to fix any bugs in the future
-  switch (mult) {
+  if (xrows) switch (mult) {
   case ALL:
     switch (type) {
     case START : case END :
@@ -723,6 +723,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
     }
     break;
   default: internal_error(__func__, "unknown mult: %d", mult); // # nocov
+  } else if (totlen) {
+    int *f1i = INTEGER(f1__), *f2i = INTEGER(f2__);
+    for (R_len_t i = 0; i < totlen; ++i) f1i[i] = i+1;
+    for (R_len_t i = 0; i < totlen; ++i) f2i[i] = NA_INTEGER;
   }
   end2 = clock() - start;
   if (LOGICAL(verbose)[0])
