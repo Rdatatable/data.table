@@ -380,7 +380,39 @@ utf8_check = function(test_str) identical(test_str, enc2native(test_str))
 test = function(num, x, y=TRUE,
                 error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
                 options=NULL, env=NULL,
-                context=NULL, requires_utf8=FALSE) {
+                context=NULL, requires_utf8=FALSE, optimize=NULL) {
+  # if optimization is provided, test across multiple optimization levels
+  if (!is.null(optimize)) {
+    if (!is.numeric(optimize) || length(optimize) < 1L || anyNA(optimize) || any(optimize < 0L))
+      stopf("optimize must be numeric, length >= 1, non-NA, and >= 0; got: %s", optimize) # nocov
+    cl = match.call()
+    if ("datatable.optimize" %in% names(cl$options))
+      stopf("Trying to set optimization level through both options= and optimize=") # nocov
+    cl$optimize = NULL  # Remove optimization levels from the recursive call
+
+    # Check if y was explicitly provided (not just the default)
+    y_provided = !missing(y)
+    vector_params = mget(c("error", "warning", "message", "output", "notOutput", "ignore.warning"), environment())
+    vector_params = vector_params[lengths(vector_params) > 0L]
+    compare = !y_provided && length(optimize)>1L && !length(vector_params)
+    # When optimize has multiple levels, vector params are recycled across levels.
+    if (length(optimize) > 1L && "warning" %in% names(vector_params) && length(vector_params$warning) > 1L)
+      warningf("warning= with multiple values is recycled across optimize levels, not treated as multiple warnings in one run")
+
+    for (i in seq_along(optimize)) {
+      cl$num = num + (i - 1L) * 1e-6
+      opt_level = list(datatable.optimize = optimize[i])
+      cl$options = if (!is.null(options)) c(as.list(options), opt_level) else opt_level
+      for (param in names(vector_params)) {
+        val = vector_params[[param]]
+        cl[[param]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than optimization levels
+      }
+
+      if (compare && i == 1L) cl$y = eval(cl$x, parent.frame())
+      eval(cl, parent.frame()) # actual test call
+    }
+    return(invisible())
+  }
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
