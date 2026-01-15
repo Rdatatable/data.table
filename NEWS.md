@@ -44,6 +44,8 @@
 
 8. When fixing duplicate factor levels, `setattr()` no longer crashes upon encountering missing factor values, [#7595](https://github.com/Rdatatable/data.table/issues/7595). Thanks to @sindribaldur for the report and @aitap for the fix.
 
+9. `foverlaps()` no longer crashes due to out-of-bounds access to list and integer vectors when `y` has no rows or the non-range part of the join fails, [#7597](https://github.com/Rdatatable/data.table/issues/7597). Thanks to @nextpagesoft for the report and @aitap for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
