@@ -271,7 +271,10 @@ replace_dot_alias = function(e) {
       # Case 2b: list(...)
       else if (this[[1L]] == "list") {
         # also handle c(lapply(.SD, sum), list()) - silly, yes, but can happen
-        if (length(this) == 1L) next
+        if (length(this) == 1L) {
+          jsubl[[i_]] = list()  # empty list gets dropped by unlist later
+          next
+        }
         jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
         # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
         jl__names = names(jl__) %||% rep("", length(jl__))
@@ -3383,6 +3386,7 @@ is_constantish = function(q, check_singleton=FALSE) {
 # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
 .get_gcall = function(q) {
   if (!is.call(q)) return(NULL)
+  if (length(q) < 2L) return(NULL) # e.g. list()
   # is.symbol() is for #1369, #1974 and #2949
   if (!is.symbol(q[[2L]]) && !is.call(q[[2L]])) return(NULL)
   if (is.call(q[[2L]]) && !.is_type_conversion(q[[2L]])) return(NULL)

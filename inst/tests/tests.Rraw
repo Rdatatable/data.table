@@ -21475,3 +21475,8 @@ test(2361.44, optimize=0:2, dt[, sum(a) + as.numeric("5"), by=b, verbose=TRUE], 
 test(2361.45, optimize=0:2, dt[, sum(a[a > 2]), by=b, verbose=TRUE], output="GForce FALSE")
 dt = data.table(a=1:4, b=1:2, c=2:5)
 test(2361.46, optimize=0:2, dt[, .(sum(a) + sum(c)), by=b, verbose=TRUE], output=out)
+# coverage and edge cases for lapply(.SD, ...)
+dt = data.table(a=1:4, b=1:2)
+test(2361.51, optimize=0:2, dt[, c(list()), b, verbose=TRUE], data.table(b=integer(0L)), output="GForce FALSE")
+test(2361.52, optimize=0:2, dt[, c(lapply(.SD, sum), list()), b, verbose=TRUE], output=out)
+test(2361.53, optimize=0:2, dt[, list(lapply(.SD, sum), list()), b, verbose=TRUE], output="GForce FALSE")
