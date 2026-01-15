@@ -3410,6 +3410,13 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 .gforce_ops = c("+", "-", "*", "/", "^", "%%", "%/%")
 
+# Outer transformations that can wrap GForce-optimizable expressions
+# e.g., sqrt(min(x)) should be optimized to sqrt(gmin(x))
+# for the moment we only include unary functions
+.gforce_outer_trans = c("sqrt", "abs", "sign", "log", "log10", "log2", "log1p",
+                     "exp", "expm1", "cos", "sin", "tan", "acos", "asin", "atan",
+                     "cosh", "sinh", "tanh", "floor", "ceiling")
+
 .unwrap_conversions = function(expr) {
   while (.is_type_conversion(expr) && length(expr) >= 2L) expr = expr[[2L]]
   expr
@@ -3435,8 +3442,8 @@ is_constantish = function(q, check_singleton=FALSE) {
     ))
   }
 
-  # check if arithmetic operator -> recursively validate ALL branches (like in AST)
-  if (is.symbol(q[[1L]]) && q[[1L]] %chin% .gforce_ops) {
+  # check if arithmetic operator or outer transformation -> recursively validate ALL branches (like in AST)
+  if (is.symbol(q[[1L]]) && q[[1L]] %chin% c(.gforce_ops, .gforce_outer_trans)) {
     for (i in 2:length(q)) {
       if (!.gforce_ok(q[[i]], x, envir)) return(FALSE)
     }
@@ -3467,8 +3474,8 @@ is_constantish = function(q, check_singleton=FALSE) {
     return(q)
   }
 
-  # if arithmetic operator, recursively substitute its operands. we know what branches are valid from .gforce_ok
-  if (is.symbol(q[[1L]]) && q[[1L]] %chin% .gforce_ops) {
+  # if arithmetic operator or outer transformation, recursively substitute its operands. we know what branches are valid from .gforce_ok
+  if (is.symbol(q[[1L]]) && q[[1L]] %chin% c(.gforce_ops, .gforce_outer_trans)) {
     for (i in 2:length(q)) {
       q[[i]] = .gforce_jsub(q[[i]], names_x, envir)
     }

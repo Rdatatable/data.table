@@ -21484,3 +21484,13 @@ dt = data.table(a=1:4, b=1:2)
 test(2362.51, optimize=0:2, dt[, c(list()), b, verbose=TRUE], data.table(b=integer(0L)), output="GForce FALSE")
 test(2362.52, optimize=0:2, dt[, c(lapply(.SD, sum), list()), b, verbose=TRUE], output=out)
 test(2362.53, optimize=0:2, dt[, list(lapply(.SD, sum), list()), b, verbose=TRUE], output="GForce FALSE")
+
+# outer transformations with GForce, #7594
+dt = data.table(x = 1:2, y = 1:10)
+out = c('GForce FALSE', 'GForce TRUE')
+test(2284.01, optimize=1:2, dt[, sqrt(min(y)), by=x, verbose=TRUE], output=out)
+test(2284.02, optimize=1:2, dt[, sqrt(abs(min(y))), by=x, verbose=TRUE], output=out)
+test(2284.03, optimize=1:2, dt[, sqrt(min(y)) + 1, by=x, verbose=TRUE], output=out)
+test(2284.04, optimize=1:2, dt[, floor(mean(y)), by=x, verbose=TRUE], output=out)
+# Transformation around non-GForce expression should NOT optimize
+test(2284.11, optimize=2L, dt[, sqrt(y), by=x, verbose=TRUE], output="GForce FALSE")
