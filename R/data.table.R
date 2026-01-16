@@ -3416,7 +3416,9 @@ is_constantish = function(q, check_singleton=FALSE) {
 .gforce_outer_trans = c("sqrt", "abs", "sign", "floor", "ceiling",
                      "log", "log10", "log2", "log1p", "exp", "expm1",
                      "cos", "sin", "tan", "acos", "asin", "atan",
+                     "cospi", "sinpi", "tanpi",
                      "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
+                     "gamma" "lgamma" "digamma" "trigamma"
                      "is.na", "is.nan", "is.finite", "is.infinite",
                      "trunc", "round", "signif")
 
