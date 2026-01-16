@@ -14743,7 +14743,7 @@ DT = data.table(
   Date2 = .Date(c(17459.1561177987, 17451.1086757995, 17449.0820898537, 17443.1175238448, 17461.0463715783, 17448.1033968224))
 )
 DT[ , DiffTime := abs(difftime(Date1, Date2, units = 'days'))]
-test(2042.4, DT[ , round(mean(DiffTime)), by=Group, verbose=TRUE],
+test(2042.4, DT[ , base::round(mean(DiffTime)), by=Group, verbose=TRUE],
      data.table(Group=c("A", "B", "C"), V1=structure(c(16, 8, 12), class="difftime", units="days")),
      output="Old mean optimization is on, left j unchanged.*GForce.*FALSE")
 
