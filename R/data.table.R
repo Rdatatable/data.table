@@ -3418,7 +3418,7 @@ is_constantish = function(q, check_singleton=FALSE) {
                      "cos", "sin", "tan", "acos", "asin", "atan",
                      "cospi", "sinpi", "tanpi",
                      "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
-                     "gamma" "lgamma" "digamma" "trigamma"
+                     "gamma", "lgamma", "digamma", "trigamma",
                      "is.na", "is.nan", "is.finite", "is.infinite",
                      "trunc", "round", "signif")
 
