@@ -3412,7 +3412,7 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 # Outer transformations that can wrap GForce-optimizable expressions
 # e.g., sqrt(min(x)) should be optimized to sqrt(gmin(x))
-# for the moment we only include unary functions
+# for the moment we only include unary elementwise functions
 .gforce_outer_trans = c("sqrt", "abs", "sign", "floor", "ceiling",
                      "log", "log10", "log2", "log1p", "exp", "expm1",
                      "cos", "sin", "tan", "acos", "asin", "atan",
