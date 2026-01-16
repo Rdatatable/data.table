@@ -3417,7 +3417,8 @@ is_constantish = function(q, check_singleton=FALSE) {
                      "log", "log10", "log2", "log1p", "exp", "expm1",
                      "cos", "sin", "tan", "acos", "asin", "atan",
                      "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
-                     "is.na", "is.nan", "is.finite", "is.infinite")
+                     "is.na", "is.nan", "is.finite", "is.infinite",
+                     "trunc", "round", "signif")
 
 .unwrap_conversions = function(expr) {
   while (.is_type_conversion(expr) && length(expr) >= 2L) expr = expr[[2L]]
