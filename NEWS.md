@@ -26,6 +26,20 @@
       - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))` will use GForce, saving the need to coerce `x` in a setup step) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
       - Arithmetic operation support in GForce (e.g., `max(x) - min(x)` will use GForce on both `max(x)` and `min(x)`, saving the need to do the subtraction in a follow-up step) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
 
+4. `median()` is now faster when used in `by=` grouping operations. Thanks @ben-schwen for the suggestion and implementation.
+    ```r
+    set.seed(1)
+    DT = data.table(g = sample(1e4, 1e6, TRUE), v = rnorm(1e6))
+    microbenchmark::microbenchmark(
+        "master" = `[.data.table`(DT, j=median(v), by=g),
+        "1.18.0" = data.table:::`[.data.table`(DT, j=median(v), by=g)
+    )
+    # Unit: milliseconds
+    #    expr       min        lq     mean    median       uq        max neval
+    #  master  6.761768  8.392194 22.36680  9.221132 10.66201 1102.11168   100
+    #  1.18.0 18.928767 22.003751 26.64251 24.273920 28.06920   88.66257   100
+    ```
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
