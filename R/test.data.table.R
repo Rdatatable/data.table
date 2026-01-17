@@ -130,6 +130,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
+  assign("nskip", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
@@ -282,6 +283,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   nfail = env$nfail
   ntest = env$ntest
+  nskip = env$nskip
   if (nfail > 0L) {
     # nocov start
     stopf(
@@ -331,6 +333,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
+  if (foreign && nskip > 0L) catf("Skipped %d tests for translated messages. ", nskip) # nocov
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
   ans = nfail==0L
   attr(ans, "timings") = timings  # as attr to not upset callers who expect a TRUE/FALSE result
@@ -367,7 +370,49 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+# Check if UTF-8 symbols can be represented in native encoding
+# R's parser requires symbol names (PRINTNAME in LANGSXP) to be in native encoding. In non-UTF-8
+# locales, parsing Unicode escapes like \u00FC fails with a warning and substitutes <U+00FC>.
+# Tests using requires_utf8 are skipped when UTF-8 cannot be represented. Using eval(parse(text=...))
+# defers parsing to runtime, allowing the encoding check to run first and avoid source() warnings.
+utf8_check = function(test_str) identical(test_str, enc2native(test_str))
+
+test = function(num, x, y=TRUE,
+                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
+                options=NULL, env=NULL,
+                context=NULL, requires_utf8=FALSE, optimize=NULL) {
+  # if optimization is provided, test across multiple optimization levels
+  if (!is.null(optimize)) {
+    if (!is.numeric(optimize) || length(optimize) < 1L || anyNA(optimize) || any(optimize < 0L))
+      stopf("optimize must be numeric, length >= 1, non-NA, and >= 0; got: %s", optimize) # nocov
+    cl = match.call()
+    if ("datatable.optimize" %in% names(cl$options))
+      stopf("Trying to set optimization level through both options= and optimize=") # nocov
+    cl$optimize = NULL  # Remove optimization levels from the recursive call
+
+    # Check if y was explicitly provided (not just the default)
+    y_provided = !missing(y)
+    vector_params = mget(c("error", "warning", "message", "output", "notOutput", "ignore.warning"), environment())
+    vector_params = vector_params[lengths(vector_params) > 0L]
+    compare = !y_provided && length(optimize)>1L && !length(vector_params)
+    # When optimize has multiple levels, vector params are recycled across levels.
+    if (length(optimize) > 1L && "warning" %in% names(vector_params) && length(vector_params$warning) > 1L)
+      warningf("warning= with multiple values is recycled across optimize levels, not treated as multiple warnings in one run")
+
+    for (i in seq_along(optimize)) {
+      cl$num = num + (i - 1L) * 1e-6
+      opt_level = list(datatable.optimize = optimize[i])
+      cl$options = if (!is.null(options)) c(as.list(options), opt_level) else opt_level
+      for (param in names(vector_params)) {
+        val = vector_params[[param]]
+        cl[[param]] = val[((i - 1L) %% length(val)) + 1L] # cycle through values if fewer than optimization levels
+      }
+
+      if (compare && i == 1L) cl$y = eval(cl$x, parent.frame())
+      eval(cl, parent.frame()) # actual test call
+    }
+    return(invisible())
+  }
   if (!is.null(env)) {
     old = Sys.getenv(names(env), names=TRUE, unset=NA)
     to_unset = !lengths(env)
@@ -380,6 +425,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
+  }
+  # Check UTF-8 requirement
+  if (!isFALSE(requires_utf8)) {
+    test_str = if (isTRUE(requires_utf8)) "\u00F1\u00FC\u3093" else requires_utf8 # the default test_str are UTF-8 symbols we found over time, TOOD: harden this default
+    if (!utf8_check(test_str)) {
+      # nocov start
+      last_utf8_skip = get0("last_utf8_skip", parent.frame(), ifnotfound=0, inherits=TRUE)
+      if (num - last_utf8_skip >= 1) {
+        catf("Test %s skipped because required UTF-8 symbols cannot be represented in native encoding.\n", num)
+      }
+      assign("last_utf8_skip", num, parent.frame(), inherits=TRUE)
+      return(invisible(TRUE))
+      # nocov end
+    }
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
@@ -409,6 +468,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     memtest.id = get("memtest.id", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
+    nskip = get("nskip", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
     # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
@@ -451,6 +511,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters
     length(tryCatch(grep(x, y, ignore.case=ignore.case), error=function(e)NULL))  # otherwise try x as regexp
   }
+  if (foreign && .test.data.table && (
+    length(error) || length(warning) || length(message) || length(output) ||
+    length(notOutput) || length(ignore.warning)
+  ))
+    assign("nskip", nskip+1L, parent.frame(), inherits=TRUE) # nocov
 
   xsub = substitute(x)
   ysub = substitute(y)
@@ -478,7 +543,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
-    out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+    out = if (xsub %iscall% "print") {
+      capture.output(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler)))
+    } else {
+      capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+    }
   }
   if (!is.null(options)) {
     # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
@@ -613,6 +682,9 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
     }
     # nocov end
+  }
+  if (fail && !is.null(context)) {
+    catf("Test context: %s\n", context) # nocov
   }
   if (fail && .test.data.table && num>0.0) {
     # nocov start

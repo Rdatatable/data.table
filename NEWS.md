@@ -2,7 +2,61 @@
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-## data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
+## data.table [v1.18.99](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (in development)
+
+### BREAKING CHANGES
+
+1. `hasNA` argument to `froll*` functions no longer works. Use `has.nf` instead; see the release note for 1.18.0, item 3 under `BREAKING CHANGE`.
+
+2. `x` and `n` arguments to `frollapply` functions no longer work. Use `X` and `N` instead, respectively; see the release note for 1.18.0, item 4 under `BREAKING CHANGE`.
+
+3. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
+
+### NEW FEATURES
+
+1. `nafill()`, `setnafill()` extended to work on logical and factor vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct`, etc. `nafill()` works for character vectors, but not yet `setnafill()`. Thanks @jangorecki for the request and @jangorecki and @MichaelChirico for the PRs.
+
+2. `[,showProgress=]` and `options(datatable.showProgress)` now accept an integer to control the progress bar update interval in seconds, allowing finer control over progress reporting frequency; `TRUE` uses the default 3-second interval, [#6514](https://github.com/Rdatatable/data.table/issues/6514). Thanks @ethanbsmith for the report and @ben-schwen for the PR.
+
+3. GForce and lapply optimization detection has been refactored to use modular optimization paths and an AST (Abstract Syntax Tree) walker for improved maintainability and extensibility. The new architecture separates optimization detection into distinct, composable phases. This makes future optimization enhancements a lot easier. Thanks to @grantmcdermott, @jangorecki, @MichaelChirico, and @HughParsonage for the suggestions and @ben-schwen for the implementation.
+
+    This rewrite also introduces several new optimizations:
+      - Enables Map in addition to lapply optimizations (e.g., `Map(fun, .SD)` -> `list(fun(col1), fun(col2), ...)`) [#5336](https://github.com/Rdatatable/data.table/issues/5336)
+      - lapply optimization works without .SD (e.g., `lapply(list(col1, col2), fun)` -> `list(fun(col1), fun(col2))` [#5032](https://github.com/Rdatatable/data.table/issues/5032)
+      - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))` will use GForce, saving the need to coerce `x` in a setup step) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
+      - Arithmetic operation support in GForce (e.g., `max(x) - min(x)` will use GForce on both `max(x)` and `min(x)`, saving the need to do the subtraction in a follow-up step) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
+
+### BUG FIXES
+
+1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
+
+2. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#1831](https://github.com/Rdatatable/data.table/issues/1831) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to @zachokeeffe and @tyner for the report and @ben-schwen for the fix.
+
+3. `fread("file://...")` works for file URIs with spaces, [#7550](https://github.com/Rdatatable/data.table/issues/7550). Thanks @aitap for the report and @MichaelChirico for the PR.
+
+4. `sum(<int64 column>)` by group is correct with missing entries and GForce activated ([#7571](https://github.com/Rdatatable/data.table/issues/7571)). Thanks to @rweberc for the report and @manmita for the fix. The issue was caused by a faulty early `break` that spilled between groups, and resulted in silently incorrect results!
+
+5. `fread(text=)` could segfault when reading text input ending with a `\x1a` (ASCII SUB) character after a long line, [#7407](https://github.com/Rdatatable/data.table/issues/7407) which is solved by adding check for eof. Thanks @aitap for the report and @manmita for the fix.
+
+6. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
+
+7. Fixed compilation failure like "error: unknown type name 'siginfo_t'" in v1.18.0 in some strict environments, e.g., FreeBSD, where the header file declaring the POSIX function `waitid` does not transitively include the header file defining the `siginfo_t` type, [#7516](https://github.com/rdatatable/data.table/issues/7516). Thanks to @jszhao for the report and @aitap for the fix.
+
+8. When fixing duplicate factor levels, `setattr()` no longer crashes upon encountering missing factor values, [#7595](https://github.com/Rdatatable/data.table/issues/7595). Thanks to @sindribaldur for the report and @aitap for the fix.
+
+### Notes
+
+1. {data.table} now depends on R 3.5.0 (2018).
+
+2. pydatatable compatibility layer in `fread()` and `fwrite()` has been removed, [#7069](https://github.com/Rdatatable/data.table/issues/7069). Thanks @badasahog for the report and the PR.
+
+3. Vignettes are now built using `litedown` instead of `knitr`, [#6394](https://github.com/Rdatatable/data.table/issues/6394). Thanks @jangorecki for the suggestion and @ben-schwen and @aitap for the implementation.
+
+4. Removed use of non-API `ATTRIB`, `SET_ATTRIB`, and `findVar` [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here, and @MichaelChirico for the easy fix to replace `findVar` with `R_getVar`.
+
+5. The data.table test suite is a bit more robust to lacking UTF-8 support via a new `requires_utf8` argument to `test()` to skip tests when UTF-8 support is not available, [#7336](https://github.com/Rdatatable/data.table/issues/7336). Thanks @MichaelChirico for the suggestion and @ben-schwen for the implementation.
+
+## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
 
 ### BREAKING CHANGE
 
@@ -11,6 +65,7 @@
 2. `melt()` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name). This change has been planned since 1.16.0 (25 Aug 2024).
 
 3. Rolling functions `frollmean` and `frollsum` distinguish `Inf`/`-Inf` from `NA` to match the same rules as base R when `algo="fast"` (previously they were considered the same). If your input into those functions has `Inf` or `-Inf` then you will be affected by this change. As a result, the argument that controls the handling of `NA`s has been renamed from `hasNA` to `has.nf` (_has non-finite_). `hasNA` continues to work with a warning, for now.
+
     ```r
     ## before
     frollsum(c(1,2,3,Inf,5,6), 2)
@@ -19,8 +74,10 @@
     ## now
     frollsum(c(1,2,3,Inf,5,6), 2)
     #[1]  NA   3   5 Inf Inf  11
+    ```
 
 4. `frollapply` result is not coerced to numeric anymore. Users' code could possibly break if it depends on forced coercion of input/output to numeric type.
+
     ```r
     ## before
     frollapply(c(F,T,F,F,F,T), 2, any)
@@ -30,6 +87,7 @@
     frollapply(c(F,T,F,F,F,T), 2, any)
     #[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
     ```
+
     Additionally argument names in `frollapply` has been renamed from `x` to `X` and `n` to `N` to avoid conflicts with common argument names that may be passed to `...`, aligning to base R API of `lapply`. `x` and `n` continue to work with a warning, for now.
 
 5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
@@ -218,6 +276,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     ```
 
 18. New helper `frolladapt` to facilitate applying rolling functions over windows of fixed calendar-time width in irregularly-spaced data sets, thereby bypassing the need to "augment" such data with placeholder rows, [#3241](https://github.com/Rdatatable/data.table/issues/3241). Thanks to @jangorecki for implementation.
+
     ```r
     idx = as.Date("2025-09-05") + c(0,4,7,8,9,10,12,13,17)
     dt = data.table(index=idx, value=seq_along(idx))
@@ -350,6 +409,12 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 25. By-group operations on missing rows (e.g. `foo[c(i, NA), bar, by=grp]`) now avoid leaving in data from the previous groups, [#7442](https://github.com/Rdatatable/data.table/issues/7442). Thanks @aitap for the report and the fix.
 
+26. Grouping by a factor with many groups is now fast again, fixing a timing regression introduced in [#6890](https://github.com/Rdatatable/data.table/pull/6890) where UTF-8 coercion and level remapping were performed unnecessarily, [#7404](https://github.com/Rdatatable/data.table/issues/7404). Thanks @ben-schwen for the report and fix.
+
+27. `dogroups()` no longer reads beyond the resized end of over-allocated data.table list columns, [#7486](https://github.com/Rdatatable/data.table/issues/7486). While this didn't crash in practice, it is now explicitly checked for in recent R versions (r89198+). Thanks @TimTaylor and @aitap for the report and @aitap for the fix.
+
+28. `rbindlist()` now avoids the crash when working with many non-UTF-8 column names, [#7452](https://github.com/Rdatatable/data.table/issues/7452). Thanks @aitap for the report and the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
@@ -376,6 +441,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 7. In rare situations a data.table object may lose its internal attribute that holds a self-reference. New helper function `.selfref.ok()` tests just that. It is only intended for technical use cases. See manual for examples.
 
 8. Retain important information in the error message about the source of the error when `i=` fails, e.g. pointing to `charToDate()` failing in `DT[date_col == "20250101"]`, [#7444](https://github.com/Rdatatable/data.table/issues/7444). Thanks @jan-swissre for the report and @MichaelChirico for the fix.
+
+9. Internal use of declared non-API R functions `SETLENGTH`, `TRUELENGTH`, `SET_TRUELENGTH`, and `SET_GROWABLE_BIT` has been eliminated. Most usages have been migrated to R's experimental resizable vectors API (thanks to @ltierney, introduced in R 4.6.0, backported for older R versions), [#7451](https://github.com/Rdatatable/data.table/pull/7451). Uses of `TRUELENGTH` for marking seen items during grouping and binding operations (aka free hash table trick) have been replaced with proper hash tables, [#6694](https://github.com/Rdatatable/data.table/pull/6694). The new hash table implementation uses linear probing with power of 2 tables and automatic resizing. Additionally, `chmatch()` now hashes the needle (`x`) instead of the haystack (`table`) when `length(table) >> length(x)`, significantly improving performance for lookups into large tables. We've benchmarked the refactored code and find the performance satisfactory, but please do report any edge case performance regressions we may have missed. Thanks to @aitap, @ben-schwen, @jangorecki and @HughParsonage for implementation and reviews.
 
 ## data.table [v1.17.8](https://github.com/Rdatatable/data.table/milestone/41) (6 July 2025)
 

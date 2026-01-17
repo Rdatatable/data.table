@@ -5,16 +5,11 @@
 #include <stdlib.h>    // size_t
 #include <stdbool.h>   // bool
 #include "myomp.h"
-#ifdef DTPY
-  #include "py_fread.h"
-  #define ENC2NATIVE(s) (s)
-#else
-  #include "freadR.h"
-  extern cetype_t ienc;
-  // R's message functions only take C's char pointer not SEXP, where encoding info can't be stored
-  // so must convert the error message char to native encoding first in order to correctly display in R
-  #define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
-#endif
+#include "freadR.h"
+extern cetype_t ienc;
+// R's message functions only take C's char pointer not SEXP, where encoding info can't be stored
+// so must convert the error message char to native encoding first in order to correctly display in R
+#define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
 
 // Ordered hierarchy of types
 // Each of these corresponds to a parser; they must be ordered "preferentially", i.e., if the same
@@ -177,7 +172,7 @@ typedef struct freadMainArgs
   char _padding[1];
 
   // Any additional implementation-specific parameters.
-  FREAD_MAIN_ARGS_EXTRA_FIELDS
+  bool oldNoDateTime;
 
 } freadMainArgs;
 
@@ -223,8 +218,8 @@ typedef struct ThreadLocalFreadParsingContext
 
   int quoteRule;
 
-  // Any additional implementation-specific parameters.
-  FREAD_PUSH_BUFFERS_EXTRA_FIELDS
+  int nStringCols;
+  int nNonStringCols;
 
 } ThreadLocalFreadParsingContext;
 

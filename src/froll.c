@@ -1625,7 +1625,8 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
     setlinks(&o[j*k], &next[j*(k+1)], &prev[j*(k+1)], tail);
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: finding order and initializing links for %d blocks %stook %.3fs\n"), "frollmedianFast", b, par ? "in parallel " : "", omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, par ? _("%s: finding order and initializing links for %d blocks in parallel took %.3fs\n")
+                                            : _("%s: finding order and initializing links for %d blocks sequentially took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
   // fill leading partial window
   for (int i=0; i<k-1; i++) {
     ansv[i] = fill;
@@ -1706,11 +1707,13 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
           snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
           return;
         }*/
-        if (n[A]!=tail && m[A] == n[A]) {
-          n[A] = tail;
-        }
-        if (n[B]!=tail && m[B] == n[B]) {
-          n[B] = tail;
+        if (even) {
+          if (n[A]!=tail && m[A] == n[A]) {
+            n[A] = tail;
+          }
+          if (n[B]!=tail && m[B] == n[B]) {
+            n[B] = tail;
+          }
         }
         ansv[j*k+i] = even ? MED2(A, B) : MED(A, B);
       }

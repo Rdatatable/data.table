@@ -1,6 +1,6 @@
 ---
 title: "Utiliser .SD pour l’analyse de données"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format:
     options:
@@ -8,7 +8,7 @@ output:
       number_sections: true
 vignette: >
   %\VignetteIndexEntry{Utiliser .SD pour l’analyse de données}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -21,21 +21,13 @@ vignette: >
 }
 </style>
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
+`{r} .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse = TRUE,
-  out.width = '100%',
-  dpi = 144
-)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 

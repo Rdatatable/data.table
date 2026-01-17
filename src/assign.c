@@ -52,7 +52,7 @@ void setselfref(SEXP x) {
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
-  SEXP v, p, tag, prot, names;
+  SEXP v, p, tag, prot;
   v = getAttrib(x, SelfRefSymbol);
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
@@ -70,11 +70,11 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
-  names = getAttrib(x, R_NamesSymbol);
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
+  if (!checkNames) return x == R_ExternalPtrAddr(prot);
+  return getAttrib(x, R_NamesSymbol) == tag;
 }
 
 static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
@@ -180,7 +180,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   R_len_t l, tl;
   if (isNull(dt)) error(_("alloccol has been passed a NULL dt"));
-  if (TYPEOF(dt) != VECSXP) error(_("dt passed to alloccol isn't type VECSXP"));
+  if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "alloccol");
   klass = getAttrib(dt, R_ClassSymbol);
   if (isNull(klass)) error(_("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker."));
   l = LENGTH(dt);
@@ -222,7 +222,7 @@ int checkOverAlloc(SEXP x)
 
 SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
   if (!IS_TRUE_OR_FALSE(verbose))
-    error(_("%s must be TRUE or FALSE"), "verbose");
+    error(_("'%s' must be TRUE or FALSE"), "verbose");
   int overAlloc = checkOverAlloc(overAllocArg);
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
@@ -256,6 +256,103 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
+struct attrib_name_ctx {
+  hashtab *indexNames; // stores a 1 for every CHARSXP index name in use, 0 for removed
+  R_xlen_t indexNamesLen; // how much memory to allocate for the hash?
+  SEXP index; // attr(DT, "index")
+  SEXP assignedNames; // STRSXP vector of variable names just assigned
+  bool verbose;
+};
+
+// Mark each CHARSXP attribute name with a 1 inside the hash, or count them to find out the allocation size.
+static SEXP getOneAttribName(SEXP key, SEXP val, void *ctx_) {
+  (void)val;
+  struct attrib_name_ctx *ctx = ctx_;
+  if (ctx->indexNames)
+    hash_set(ctx->indexNames, PRINTNAME(key), 1);
+  else
+    ctx->indexNamesLen++;
+  return NULL;
+}
+
+// For a given index, find out if it sorts a column that has just been assigned. If so, shorten the index (if an equivalent one doesn't already exist) or remove it altogether.
+static SEXP fixIndexAttrib(SEXP tag, SEXP value, void *ctx_) {
+  const struct attrib_name_ctx *ctx = ctx_;
+
+  hashtab *indexNames = ctx->indexNames;
+  SEXP index = ctx->index, assignedNames = ctx->assignedNames;
+  R_xlen_t indexLength = xlength(value);
+  bool verbose = ctx->verbose;
+
+  const char *tc1, *c1;
+  tc1 = c1 = CHAR(PRINTNAME(tag));  // the index name; e.g. "__col1__col2"
+
+  if (*tc1!='_' || *(tc1+1)!='_') {
+    // fix for #1396
+    if (verbose) {
+      Rprintf(_("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n"), tc1);
+    }
+    setAttrib(index, tag, R_NilValue);
+    return NULL;
+  }
+
+  tc1 += 2; // tc1 always marks the start of a key column
+  if (!*tc1) internal_error(__func__, "index name ends with trailing __"); // # nocov
+
+  void *vmax = vmaxget();
+  // check the position of the first appearance of an assigned column in the index.
+  // the new index will be truncated to this position.
+  size_t newKeyLength = strlen(c1);
+  char *s4 = R_alloc(newKeyLength + 3, 1);
+  memcpy(s4, c1, newKeyLength);
+  memcpy(s4 + newKeyLength, "__", 3);
+
+  for(int i = 0; i < xlength(assignedNames); i++){
+    const char *tc2 = CHAR(STRING_ELT(assignedNames, i));
+    void *vmax2 = vmaxget();
+    size_t tc2_len = strlen(tc2);
+    char *s5 = R_alloc(tc2_len + 5, 1); //4 * '_' + \0
+    memcpy(s5, "__", 2);
+    memcpy(s5 + 2, tc2, tc2_len);
+    memcpy(s5 + 2 + tc2_len, "__", 3);
+    tc2 = strstr(s4, s5);
+    if(tc2 && (tc2 - s4 < newKeyLength)){ // new column is part of key; match is before last match
+      newKeyLength = tc2 - s4;
+    }
+    vmaxset(vmax2);
+  }
+
+  s4[newKeyLength] = '\0'; // truncate the new key to the new length
+  if(newKeyLength == 0){ // no valid key column remains. Drop the key
+    setAttrib(index, tag, R_NilValue);
+    hash_set(indexNames, PRINTNAME(tag), 0);
+    if (verbose) {
+      Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
+    }
+  } else if(newKeyLength < strlen(c1)) {
+    SEXP s4Str = PROTECT(mkChar(s4));
+    if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
+      !hash_lookup(indexNames, s4Str, 0)) { // index with shortened name not present yet
+      setAttrib(index, installChar(s4Str), value);
+      hash_set(indexNames, PRINTNAME(tag), 0);
+      setAttrib(index, tag, R_NilValue);
+      hash_set(indexNames, s4Str, 1);
+      if (verbose)
+        Rprintf(_("Shortening index '%s' to '%s' due to an update on a key column\n"), c1+2, s4+2);
+    } else { // indexLength > 0 || shortened name present already
+      // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
+      // shortened name already present indicates that index needs to be dropped to avoid duplicate indices.
+      setAttrib(index, tag, R_NilValue);
+      hash_set(indexNames, PRINTNAME(tag), 0);
+      if (verbose)
+        Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
+    }
+    UNPROTECT(1); // s4Str
+  } //else: index is not affected by assign: nothing to be done
+  vmaxset(vmax);
+  return NULL;
+}
+
 int *_Last_updated = NULL;
 
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
@@ -264,14 +361,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // newcolnames : add these columns (if any)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
-  R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, nullint, s, colnam, tmp, key, index, a, assignedNames, indexNames;
+  R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum;
+  SEXP targetcol, nullint, colnam, tmp, key, index, assignedNames;
   bool verbose=GetVerbose();
   int ndelete=0;  // how many columns are being deleted
-  const char *c1, *tc1, *tc2;
-  int *buf, indexNo;
+  int *buf;
   if (isNull(dt)) error(_("assign has been passed a NULL dt"));
-  if (TYPEOF(dt) != VECSXP) error(_("dt passed to assign isn't type VECSXP"));
+  if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "assign");
   if (islocked(dt))
     error(_(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported."));
 
@@ -549,93 +645,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   index = getAttrib(dt, install("index"));
   if (index != R_NilValue) {
-    s = ATTRIB(index);
-    indexNo = 0;
-    // get a vector with all index names
-    PROTECT(indexNames = allocVector(STRSXP, xlength(s))); protecti++;
-    while(s != R_NilValue){
-      SET_STRING_ELT(indexNames, indexNo, PRINTNAME(TAG(s)));
-      indexNo++;
-      s = CDR(s);
-    }
-    s = ATTRIB(index); // reset to first element
-    indexNo = 0;
-    while(s != R_NilValue) {
-      a = TAG(s);
-      indexLength = xlength(CAR(s));
-      tc1 = c1 = CHAR(PRINTNAME(a));  // the index name; e.g. "__col1__col2"
-      if (*tc1!='_' || *(tc1+1)!='_') {
-        // fix for #1396
-        if (verbose) {
-          Rprintf(_("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n"), tc1);
-        }
-        setAttrib(index, a, R_NilValue);
-        indexNo++;
-        s = CDR(s);
-        continue; // with next index
-      }
-      tc1 += 2; // tc1 always marks the start of a key column
-      if (!*tc1) internal_error(__func__, "index name ends with trailing __"); // # nocov
-      // check the position of the first appearance of an assigned column in the index.
-      // the new index will be truncated to this position.
-      char *s4 = malloc(strlen(c1) + 3);
-      if (!s4) {
-        internal_error(__func__, "Couldn't allocate memory for s4"); // # nocov
-      }
-      memcpy(s4, c1, strlen(c1));
-      memset(s4 + strlen(c1), '\0', 1);
-      strcat(s4, "__"); // add trailing '__' to newKey so we can search for pattern '__colName__' also at the end of the index.
-      int newKeyLength = strlen(c1);
-      for(int i = 0; i < xlength(assignedNames); i++){
-        tc2 = CHAR(STRING_ELT(assignedNames, i));
-        char *s5 = malloc(strlen(tc2) + 5); //4 * '_' + \0
-        if (!s5) {
-          free(s4);                                                  // # nocov
-          internal_error(__func__, "Couldn't allocate memory for s5"); // # nocov
-        }
-        memset(s5, '_', 2);
-        memset(s5 + 2, '\0', 1);
-        strcat(s5, tc2);
-        strcat(s5, "__");
-        tc2 = strstr(s4, s5);
-        if(tc2 == NULL){ // column is not part of key
-          free(s5);
-          continue;
-        }
-        if(tc2 - s4 < newKeyLength){ // new column match is before last match
-          newKeyLength = tc2 - s4;
-        }
-        free(s5);
-      }
-      memset(s4 + newKeyLength, '\0', 1); // truncate the new key to the new length
-      if(newKeyLength == 0){ // no valid key column remains. Drop the key
-        setAttrib(index, a, R_NilValue);
-        SET_STRING_ELT(indexNames, indexNo, NA_STRING);
-        if (verbose) {
-          Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
-        }
-      } else if(newKeyLength < strlen(c1)) {
-        SEXP s4Str = PROTECT(mkString(s4));
-        if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
-           LOGICAL(chin(s4Str, indexNames))[0] == 0) {// index with shortened name not present yet
-          SET_TAG(s, install(s4));
-          SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
-          if (verbose)
-            Rprintf(_("Shortening index '%s' to '%s' due to an update on a key column\n"), c1+2, s4 + 2);
-        } else { // indexLength > 0 || shortened name present already
-          // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
-          // shortened name already present indicates that index needs to be dropped to avoid duplicate indices.
-          setAttrib(index, a, R_NilValue);
-          SET_STRING_ELT(indexNames, indexNo, NA_STRING);
-          if (verbose)
-            Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
-        }
-        UNPROTECT(1); // s4Str
-      } //else: index is not affected by assign: nothing to be done
-      free(s4);
-      indexNo ++;
-      s = CDR(s);
-    }
+    struct attrib_name_ctx ctx = { 0, };
+    R_mapAttrib(index, getOneAttribName, &ctx); // how many attributes?
+    hashtab *h = hash_create(ctx.indexNamesLen);
+    PROTECT(h->prot);
+    ctx.indexNames = h;
+    R_mapAttrib(index, getOneAttribName, &ctx); // now remember the names
+    ctx.index = index;
+    ctx.assignedNames = assignedNames;
+    ctx.verbose = verbose;
+    R_mapAttrib(index, fixIndexAttrib, &ctx); // adjust indices as needed
+    UNPROTECT(1); // h
   }
   if (ndelete) {
     // delete any columns assigned NULL (there was a 'continue' earlier in loop above)
@@ -755,35 +775,26 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
       SEXP sourceLevels = source;  // character source
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
-      sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
-      if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
-        const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+      bool needUtf8Coerce = !sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0);
+      if (needUtf8Coerce) {
+        sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
         targetLevels = PROTECT(coerceUtf8IfNeeded(targetLevels)); protecti++;
+        const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
         const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
-        savetl_init();
+        hashtab * marks = hash_create((size_t)nTargetLevels + nSourceLevels);
+        PROTECT(marks->prot); protecti++;
         for (int k=0; k<nTargetLevels; ++k) {
           const SEXP s = targetLevelsD[k];
-          const int tl = TRUELENGTH(s);
-          if (tl>0) {
-            savetl(s);
-          } else if (tl<0) {
-            // # nocov start
-            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
-            savetl_end();                                  // then restore R's own usage (if any)
-            internal_error(__func__, "levels of target are either not unique or have truelength<0"); // # nocov
-            // # nocov end
-          }
-          SET_TRUELENGTH(s, -k-1);
+          hash_set(marks, s, -k-1);
         }
         int nAdd = 0;
         for (int k=0; k<nSourceLevels; ++k) {
           const SEXP s = sourceLevelsD[k];
-          const int tl = TRUELENGTH(s);
+          const int tl = hash_lookup(marks, s, 0);
           if (tl>=0) {
             if (!sourceIsFactor && s==NA_STRING) continue; // don't create NA factor level when assigning character to factor; test 2117
-            if (tl>0) savetl(s);
-            SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+            hash_set(marks, s, -nTargetLevels-(++nAdd));
           } // else, when sourceIsString, it's normal for there to be duplicates here
         }
         const int nSource = length(source);
@@ -792,45 +803,36 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const int *sourceD = INTEGER(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const int val = sourceD[i];
-            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
+            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks, sourceLevelsD[val-1], 0); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
           const SEXP *sourceD = STRING_PTR_RO(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const SEXP val = sourceD[i];
-            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
+            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -hash_lookup(marks, val, 0);
           }
         }
         source = newSource;
-        for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
+        for (int k=0; k<nTargetLevels; ++k) hash_set(marks, targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
-          // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-          SEXP *temp = malloc(sizeof(*temp) * nAdd);
-          if (!temp) {
-            // # nocov start
-            for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
-            savetl_end();
-            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
-            // # nocov end
-          }
+          void *vmax = vmaxget();
+          SEXP *temp = (SEXP *)R_alloc(nAdd, sizeof(*temp));
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
             SEXP s = sourceLevelsD[k];
-            int tl = TRUELENGTH(s);
+            int tl = hash_lookup(marks, s, 0);
             if (tl) {  // tl negative here
               if (tl != -nTargetLevels-thisAdd-1) internal_error(__func__, "extra level check sum failed"); // # nocov
               temp[thisAdd++] = s;
-              SET_TRUELENGTH(s,0);
+              hash_set(marks, s, 0);
             }
           }
-          savetl_end();
           setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
           for (int k=0; k<nAdd; ++k) {
             SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
           }
-          free(temp);
+          vmaxset(vmax);
         } else {
           // all source levels were already in target levels, but not with the same integers; we're done
-          savetl_end();
         }
         // now continue, but with the mapped integers in the (new) source
       }
@@ -1205,68 +1207,12 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   return(v);
 }
 
-static SEXP *saveds=NULL;
-static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
-
-void savetl_init(void) {
-  if (nsaved || nalloc || saveds || savedtl) {
-    internal_error(__func__, "savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
-  }
-  nsaved = 0;
-  nalloc = 100;
-  saveds = malloc(sizeof(*saveds) * nalloc);
-  savedtl = malloc(sizeof(*savedtl) * nalloc);
-  if (!saveds || !savedtl) {
-    free(saveds); free(savedtl);                                            // # nocov
-    savetl_end();                                                           // # nocov
-    error(_("Failed to allocate initial %d items in savetl_init"), nalloc); // # nocov
-  }
-}
-
-void savetl(SEXP s)
-{
-  if (nsaved==nalloc) {
-    if (nalloc==INT_MAX) {
-      savetl_end();                                                                                                     // # nocov
-      internal_error(__func__, "reached maximum %d items for savetl", nalloc); // # nocov
-    }
-    nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
-    char *tmp = realloc(saveds, sizeof(SEXP)*nalloc);
-    if (tmp==NULL) {
-      // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
-      savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
-      error(_("Failed to realloc saveds to %d items in savetl"), nalloc);   // # nocov
-    }
-    saveds = (SEXP *)tmp;
-    tmp = realloc(savedtl, sizeof(R_len_t)*nalloc);
-    if (tmp==NULL) {
-      savetl_end();                                                      // # nocov
-      error(_("Failed to realloc savedtl to %d items in savetl"), nalloc);  // # nocov
-    }
-    savedtl = (R_len_t *)tmp;
-  }
-  saveds[nsaved] = s;
-  savedtl[nsaved] = TRUELENGTH(s);
-  nsaved++;
-}
-
-void savetl_end(void) {
-  // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
-  // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
-  for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
-  free(saveds);  // possible free(NULL) which is safe no-op
-  saveds = NULL;
-  free(savedtl);
-  savedtl = NULL;
-  nsaved = nalloc = 0;
-}
-
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 {
   int w;
-  if (!isString(x)) error(_("x must be a character vector"));
+  if (!isString(x)) error(_("'%s' must be a character vector"), "x");
   if (!isInteger(which)) error(_("'which' must be an integer vector"));
-  if (!isString(newx)) error(_("'new' must be a character vector"));
+  if (!isString(newx)) error(_("'%s' must be a character vector"), "new");
   if (LENGTH(newx)!=LENGTH(which)) error(_("'new' is length %d. Should be the same as length of 'which' (%d)"),LENGTH(newx),LENGTH(which));
   for (int i=0; i<LENGTH(which); i++) {
     w = INTEGER(which)[i];
