@@ -195,8 +195,6 @@ replace_dot_alias = function(e) {
 .optimize_constant_list = function(jsub) {
   if (!jsub %iscall% "list") return(NULL)
   if (length(jsub) != 2L) return(NULL)
-  if (is.null(jsub[[2L]])) return(NULL)
-  if (is.call(jsub[[2L]])) return(NULL)
   if (!is_constantish(jsub[[2L]])) return(NULL)
   jsub[[2L]]
 }
