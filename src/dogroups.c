@@ -526,25 +526,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
     UNPROTECT(1);
     return newx;
   }
-  switch (TYPEOF(x)) {
-  case RAWSXP:  memcpy(RAW(newx),     RAW_RO(x),     len*RTYPE_SIZEOF(x)); break;
-  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL_RO(x), len*RTYPE_SIZEOF(x)); break;
-  case INTSXP:  memcpy(INTEGER(newx), INTEGER_RO(x), len*RTYPE_SIZEOF(x)); break;
-  case REALSXP: memcpy(REAL(newx),    REAL_RO(x),    len*RTYPE_SIZEOF(x)); break;
-  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX_RO(x), len*RTYPE_SIZEOF(x)); break;
-  case STRSXP : {
-    const SEXP *xd = SEXPPTR_RO(x);
-    for (int i=0; i<len; ++i)
-      SET_STRING_ELT(newx, i, xd[i]);
-  } break;
-  case VECSXP : {
-    const SEXP *xd = SEXPPTR_RO(x);
-    for (int i=0; i<len; ++i)
-      SET_VECTOR_ELT(newx, i, xd[i]);
-  } break;
-  default : // # nocov
-    internal_error(__func__, "type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
-  }
+  copyVectorElements(newx, x, (int64_t)len, false, "growVector()");
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
   SHALLOW_DUPLICATE_ATTRIB(newx, x);
