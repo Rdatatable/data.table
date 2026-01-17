@@ -103,9 +103,11 @@ for (rd_file in rd_files) {
 
   for (link in xml_find_all(html_root, '//a|//link')) {
     href = xml_attr(link, 'href')
-    if (!is.na(href) && !grepl('^https?://', href)) {
-     xml_attr(link, 'href') <- paste0('../', href)
-   }
+    if (!is.na(href))
+      if (startsWith(href, '../../')) # \link[package]{topic}
+        xml_attr(link, 'href') <- NULL
+      else if (!grepl('^https?://', href))
+        xml_attr(link, 'href') <- paste0('../', href)
   }
 
   write_html(html_root, out_file)
