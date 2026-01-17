@@ -21484,3 +21484,13 @@ dt = data.table(a=1:4, b=1:2)
 test(2362.51, optimize=0:2, dt[, c(list()), b, verbose=TRUE], data.table(b=integer(0L)), output="GForce FALSE")
 test(2362.52, optimize=0:2, dt[, c(lapply(.SD, sum), list()), b, verbose=TRUE], output=out)
 test(2362.53, optimize=0:2, dt[, list(lapply(.SD, sum), list()), b, verbose=TRUE], output="GForce FALSE")
+
+set.seed(1)
+dt = data.table(g=sample(1:2, 1e4, TRUE), i=sample(1e4), d=rnorm(1e4))
+test(2363.1, optimize=0:2, dt[, median(i), by=g][, .(g, V1=as.numeric(V1))])
+test(2363.2, optimize=0:2, dt[, median(d), by=g][, .(g, V1=as.numeric(V1))])
+if (test_bit64) {
+  dt[, dd := as.integer64(sample(i))]
+  # test omitted to clarify intended bit64 behavior
+  # test(2363.3, dt[, median(dd), by=g])
+}
