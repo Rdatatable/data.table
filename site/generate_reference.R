@@ -35,17 +35,20 @@ get_rd_info = function(rd_file) {
 
 # Generate HTML for each .Rd file
 cat("Generating individual reference pages...\n")
-all_info = list()
+
+all_info = lapply(setNames(nm = rd_files), get_rd_info)
+topic_links = character()
+for (topic in all_info) topic_links[topic$aliases] = paste0('reference/', topic$name, '.html')
+
 html_meta = xfun::yaml_load(readLines('site/_litedown.yml'))$output$html$meta
 
 for (rd_file in rd_files) {
-  info = get_rd_info(rd_file)
-  all_info[[length(all_info) + 1]] <- info
+  info = all_info[[rd_file]]
 
   out_file = file.path(ref_dir, paste0(info$name, ".html"))
 
   temp_html = tempfile(fileext = ".html")
-  Rd2HTML(rd_file, out = temp_html, package = "data.table")
+  Rd2HTML(rd_file, out = temp_html, package = "data.table", Links = topic_links, Links2 = character())
   html_root = read_html(temp_html)
 
   if (!is.null(html_meta$lang))
