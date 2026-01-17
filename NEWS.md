@@ -29,15 +29,15 @@
 4. `median()` is now faster when used in `by=` grouping operations. Thanks @ben-schwen for the suggestion and implementation.
     ```r
     set.seed(1)
-    DT = data.table(g = sample(1e4, 1e6, TRUE), v = rnorm(1e6))
+    DT = data.table(g = sample(1e4, 1e7, TRUE), v = rnorm(1e7))
     microbenchmark::microbenchmark(
         "master" = `[.data.table`(DT, j=median(v), by=g),
         "1.18.0" = data.table:::`[.data.table`(DT, j=median(v), by=g)
     )
     # Unit: milliseconds
-    #    expr       min        lq     mean    median       uq        max neval
-    #  master  6.761768  8.392194 22.36680  9.221132 10.66201 1102.11168   100
-    #  1.18.0 18.928767 22.003751 26.64251 24.273920 28.06920   88.66257   100
+    #    expr       min        lq     mean    median       uq      max neval
+    #  master  85.11445  92.76479 101.6840  99.22233 105.7872 146.8693   100
+    #  1.18.0 217.07793 232.08915 250.6945 244.30433 264.9017 321.9682   100
     ```
 
 ### BUG FIXES
