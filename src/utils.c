@@ -276,7 +276,7 @@ SEXP copyAsPlain(SEXP x) {
     UNPROTECT(1);
     return ans;
   }
-  copyVectorElements(ans, x, n, true, "copyAsPlain()");
+  copyVectorElements(ans, x, n, true, __func__);
   DUPLICATE_ATTRIB(ans, x);
   UNPROTECT(1);
   return ans;
