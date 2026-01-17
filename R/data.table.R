@@ -2039,6 +2039,7 @@ replace_dot_alias = function(e) {
   SDenv$.NGRP = length(f__)
   lockBinding(".NGRP", SDenv)
 
+  # Determine GForce-optimized query
   gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, parent.frame())
   GForce = gforce_result$GForce
   jsub = gforce_result$jsub
