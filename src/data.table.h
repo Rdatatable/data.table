@@ -236,6 +236,9 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg,
 double dquickselect(double *x, int n);
 double iquickselect(int *x, int n);
 double i64quickselect(int64_t *x, int n);
+double dfloyd_rivest(double *x, int n);
+double ifloyd_rivest(int *x, int n);
+double i64floyd_rivest(int64_t *x, int n);
 
 // fread.c
 double wallclock(void);
