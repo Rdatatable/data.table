@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <time.h>
 
+static SEXP anySpecialAttribute(SEXP key, SEXP val, void *ctx);
+
 static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
@@ -39,7 +41,7 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // with PR#4164 started to copy input list columns too much. Hence PR#4655 in v1.13.2 moved that copy here just where it is needed.
   // Currently the marker is negative truelength. These specials are protected by us here and before we release them
   // we restore the true truelength for when R starts to use vector truelength.
-  SEXP attribs, list_el;
+  SEXP list_el;
   const int n = length(x);
   // use length() not LENGTH() because isNewList() is true for NULL
   if (n==0)
@@ -53,20 +55,29 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
       list_el = VECTOR_ELT(x,i);
       if (anySpecialStatic(list_el, specials))
         return true;
-      for(attribs = ATTRIB(list_el); attribs != R_NilValue; attribs = CDR(attribs)) {
-        if (anySpecialStatic(CAR(attribs), specials))
-          return true;  // #4936
-      }
+      if (R_mapAttrib(list_el, anySpecialAttribute, specials))
+        return true;  // #4936
     }
   }
   return false;
+}
+
+static SEXP anySpecialAttribute(SEXP key, SEXP val, void *specials) {
+  (void)key;
+  return anySpecialStatic(val, specials) ? R_NilValue : NULL;
+}
+
+static SEXP findRowNames(SEXP key, SEXP val, void *data) {
+  (void)data;
+  if (key == R_RowNamesSymbol) return val;
+  return NULL;
 }
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg, SEXP showProgressArg)
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
   int nprotect=0;
-  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
+  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   const bool verbose = LOGICAL(verboseArg)[0]==1;
   double tstart=0, tblock[10]={0}; int nblock[10]={0}; // For verbose printing, tstart is updated each block
@@ -83,12 +94,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   ngrpcols = length(grpcols);
   nrowgroups = length(VECTOR_ELT(groups,0));
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
-  SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
-  SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
+  SEXP SDall = PROTECT(R_getVar(install(".SDall"), env, false)); nprotect++;  // PROTECT for rchk
+  SEXP SD = PROTECT(R_getVar(install(".SD"), env, false)); nprotect++;
 
-  const bool showProgress = LOGICAL(showProgressArg)[0]==1 && ngrp > 1; // showProgress only if more than 1 group
+  int updateTime = INTEGER(showProgressArg)[0];
+  const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
-  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
+  double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before starting to print progress
 
   hashtab * specials = hash_create(3 + ngrpcols + xlength(SDall)); // .I, .N, .GRP plus columns of .BY plus SDall
   PROTECT(specials->prot); nprotect++;
@@ -113,12 +125,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]", length(bynames), length(groups), length(grpcols)); // # notranslate
   // TO DO: check this check above.
 
-  N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
+  N =   PROTECT(R_getVar(install(".N"), env, false));   nprotect++; // PROTECT for rchk
   hash_set(specials, N, -1);  // marker for anySpecialStatic(); see its comments
-  GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
+  GRP = PROTECT(R_getVar(install(".GRP"), env, false)); nprotect++;
   hash_set(specials, GRP, -1);  // marker for anySpecialStatic(); see its comments
-  iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
-  xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
+  iSD = PROTECT(R_getVar(install(".iSD"), env, false)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
+  xSD = PROTECT(R_getVar(install(".xSD"), env, false)); nprotect++;
   R_len_t maxGrpSize = 0;
   const int *ilens = INTEGER(lens), n=LENGTH(lens);
   for (R_len_t i=0; i<n; ++i) {
@@ -129,11 +141,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   R_LockBinding(install(".I"), env);
 
   SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #91 - `:=` did not issue recycling warning during "by"
-  // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
+
+  // override rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
-  for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));  // getAttrib0 basically but that's hidden in attrib.c; #loop_counter_not_local_scope_ok
-  if (s==R_NilValue) error(_("row.names attribute of .SD not found"));
-  rownames = CAR(s);
+  SEXP rownames = PROTECT(R_mapAttrib(SD, findRowNames, NULL)); nprotect++;
+  if (rownames == NULL) error(_("row.names attribute of .SD not found"));
   if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
@@ -451,17 +463,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // could potentially refactor to use fread's progress() function, however we would lose some information in favor of simplicity.
     double now;
     if (showProgress && (now=wallclock())>=nextTime) {
+      // # nocov start. Requires long-running test case
       double avgTimePerGroup = (now-startTime)/(i+1);
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
-        // # nocov start. Requires long-running test case
         if (verbose && !hasPrinted) Rprintf(_("\n"));
         Rprintf("\r"); // # notranslate. \r is not internationalizable
         Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
-        // # nocov end
       }
-      nextTime = now+1;
+      nextTime = now+updateTime;
       hasPrinted = true;
+      // # nocov end
     }
     ansloc += maxn;
     if (firstalloc) {

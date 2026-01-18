@@ -4,12 +4,12 @@
 
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignoreattrArg)
 {
-  if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
-    error(_("%s should be TRUE or FALSE"), "fill");
+  if (!IS_TRUE_OR_FALSE(fillArg))
+    error(_("'%s' must be TRUE or FALSE"), "fill");
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
-  if (!isLogical(ignoreattrArg) || LENGTH(ignoreattrArg)!=1 || LOGICAL(ignoreattrArg)[0] == NA_LOGICAL)
-    error(_("%s should be TRUE or FALSE"), "ignore.attr");
+  if (!IS_TRUE_OR_FALSE(ignoreattrArg))
+    error(_("'%s' must be TRUE or FALSE"), "ignore.attr");
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   int usenames = LOGICAL(usenamesArg)[0];
@@ -277,7 +277,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
+    PROTECT_INDEX ILongestLevels;
     SEXP longestLevels=R_NilValue;              // just for ordered factor
+    PROTECT_WITH_INDEX(longestLevels, &ILongestLevels); nprotect++;
     bool int64=false, date=false, posixct=false, itime=false, asis=false;
     const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
@@ -303,7 +305,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (isOrdered(thisCol)) {
           orderedFactor = true;
           int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
-          if (thisLen>longestLen) { longestLen=thisLen; longestLevels=getAttrib(thisCol, R_LevelsSymbol); /*for warnings later ...*/longestW=w; longestI=i; }
+          if (thisLen > longestLen) { longestLen=thisLen; REPROTECT(longestLevels=getAttrib(thisCol, R_LevelsSymbol), ILongestLevels); /*for warnings later ...*/longestW=w; longestI=i; }
         }
       } else if (!isString(thisCol)) anyNotStringOrFactor=true;  // even for length 0 columns for consistency; test 2113.3
       if (INHERITS(thisCol, char_integer64)) {
@@ -562,6 +564,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
   }
-  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor?
+  UNPROTECT(nprotect); // ans, ansNames, longestLevels? coercedForFactor?
   return(ans);
 }

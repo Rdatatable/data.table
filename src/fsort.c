@@ -114,7 +114,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
   if (!IS_TRUE_OR_FALSE(verboseArg))
-    error(_("%s must be TRUE or FALSE"), "verbose");
+    error(_("'%s' must be TRUE or FALSE"), "verbose");
   int verbose = LOGICAL(verboseArg)[0];
   if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
