@@ -521,8 +521,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       for (int i=0; i<rows; ++i) {
         const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
-        // k = (from[i]>0) ? from[i] : 1;
-        const int k = from[i];
+        const int k = (from[i]>0) ? from[i] : 1;
         for (int j=k; j<=to[i]; ++j) {
           if (type_count[j-1]) {
             tmp2 = VECTOR_ELT(type_lookup, j-1);
