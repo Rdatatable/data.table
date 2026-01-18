@@ -402,67 +402,79 @@ msgstr ""
 
 #: fread.c:1823
 #, c-format
-msgid "  Copying file in RAM. %s\n"
-msgstr ""
+msgid "  Copying file in RAM. %s\n"
+msgstr "  RAM में फाइल (file) कॉपी (copy) की जा रही है। %s\n"
 
 #: fread.c:1840
 msgid ""
-"  1-column file ends with 2 or more end-of-line. Restoring last eol using "
+"  1-column file ends with 2 or more end-of-line. Restoring last eol using "
 "extra byte in cow page.\n"
 msgstr ""
+"  1-कॉलम (column) फाइल (file) 2 या अधिक पंक्ति अंत के साथ समाप्त होती है। cow page में अतिरिक्त बाइट (byte)\n"
+"का उपयोग करके अंतिम eol को बहाल किया जा रहा है।\n"
 
 #: fread.c:1859
 msgid ""
 "[07] Detect column types, dec, good nrow estimate and whether first row is "
 "column names\n"
 msgstr ""
+"[07] कॉलम (column) के प्रकार, dec, अच्छे nrow अनुमान का पता लगाएं और क्या पहली पंक्ति कॉलम (column)\n"
+"के नाम है\n"
 
 #: fread.c:1860
 #, c-format
-msgid "  'header' changed by user from 'auto' to %s\n"
-msgstr ""
+msgid "  'header' changed by user from 'auto' to %s\n"
+msgstr "  'header' को यूजर (user) द्वारा 'auto' से %s में बदल दिया गया है\n"
 
 #: fread.c:1866
 #, c-format
 msgid "Failed to allocate 2 x %d bytes for type and tmpType: %s"
-msgstr ""
+msgstr "type और tmpType के लिए 2 x %d बाइट्स (bytes) आवंटित करने में विफल: %s"
 
 #: fread.c:1871
-msgid "  sep=',' so dec set to '.'\n"
-msgstr ""
+msgid "  sep=',' so dec set to '.'\n"
+msgstr "  sep=',' इसलिए dec को '.' पर तय किया गया है\n"
 
 #: fread.c:1896
 #, c-format
 msgid ""
-"  Number of sampling jump points = %d because nrow limit (%<PRIu64>) "
+"  Number of sampling jump points = %d because nrow limit (%<PRIu64>) "
 "supplied\n"
 msgstr ""
+"  सैंपलिंग (sampling) जंप (jump) पॉइंट्स (points) की संख्या = %d क्योंकि nrow लिमिट (limit)\n"
+"(%<PRIu64>) प्रदान की गई है\n"
 
 #: fread.c:1898
 #, c-format
-msgid "  Number of sampling jump points = %d because jump0size==0\n"
-msgstr ""
+msgid "  Number of sampling jump points = %d because jump0size==0\n"
+msgstr "  सैंपलिंग (sampling) जंप (jump) पॉइंट्स (points) की संख्या = %d क्योंकि jump0size==0 है\n"
 
 #: fread.c:1900
 #, c-format
 msgid ""
-"  Number of sampling jump points = %d because (%<PRIu64> bytes from row 1 to "
+"  Number of sampling jump points = %d because (%<PRIu64> bytes from row 1 to "
 "eof) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
 msgstr ""
+"  सैंपलिंग (sampling) जंप (jump) पॉइंट्स (points) की संख्या = %d क्योंकि (%<PRIu64> बाइट्स (bytes)\n"
+"पंक्ति 1 से eof तक) / (2 * %<PRIu64> jump0size) == %<PRIu64> है\n"
 
 #: fread.c:1941
 #, c-format
 msgid ""
-"  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. "
+"  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
+"  सैंपल (sample) जंप (jump) %4$d की पंक्ति %3$d पर बहुत कम फ़ील्ड्स (fields) (%1$d/%2$d) वाली\n"
+"एक पंक्ति मिली। %5$s\n"
 
 #: fread.c:1942
 #, c-format
 msgid ""
-"  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. "
+"  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
+"  सैंपल (sample) जंप (jump) %4$d की पंक्ति %3$d पर बहुत अधिक फ़ील्ड्स (fields) (%1$d/%2$d) वाली\n"
+"एक पंक्ति मिली। %5$s\n"
 
 #: fread.c:1943
 msgid ""
