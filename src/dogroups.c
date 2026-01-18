@@ -526,7 +526,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
     UNPROTECT(1);
     return newx;
   }
-  copyVectorElements(newx, x, (int64_t)len, false, __func__);
+  copyVectorElements(newx, x, (R_xlen_t)len, false, __func__);
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
   SHALLOW_DUPLICATE_ATTRIB(newx, x);

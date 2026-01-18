@@ -329,7 +329,7 @@ SEXP fitsInInt64R(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
-void copyVectorElements(SEXP dst, SEXP src, int64_t n, bool deep_copy, const char *caller);
+void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);

@@ -212,7 +212,7 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
-void copyVectorElements(SEXP dst, SEXP src, int64_t n, bool deep_copy, const char *caller) {
+void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller) {
   switch (TYPEOF(src)) {
   case RAWSXP:
     memcpy(RAW(dst),     RAW_RO(src),     n*sizeof(Rbyte));
@@ -231,15 +231,15 @@ void copyVectorElements(SEXP dst, SEXP src, int64_t n, bool deep_copy, const cha
     break;
   case STRSXP: {
     const SEXP *xp = STRING_PTR_RO(src);
-    for (int64_t i=0; i<n; ++i) SET_STRING_ELT(dst, i, xp[i]);
+    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(dst, i, xp[i]);
   } break;
   case VECSXP: {
     const SEXP *xp = SEXPPTR_RO(src);
     if (deep_copy) {
-      for (int64_t i=0; i<n; ++i)
+      for (R_xlen_t i=0; i<n; ++i)
         SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
     } else {
-      for (int64_t i=0; i<n; ++i)
+      for (R_xlen_t i=0; i<n; ++i)
         SET_VECTOR_ELT(dst, i, xp[i]);
     }
   } break;
