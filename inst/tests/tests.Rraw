@@ -4061,6 +4061,15 @@ set.seed(45)
 DT = data.table(x=c("A", "A", "C", "C"), y=1:4, z=runif(4))
 test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum), by=x, .SDcols="z"])
 
+# Additional tests for .processSDcols coverage
+DT <- data.table(x=1:5, y=6:10, z=11:15)
+test(1137.13, DT[, .SD, .SDcols = c("x", NA_character_, "y")], error = ".SDcols missing at the following indices")
+test(1137.14, DT[, .SD, .SDcols = c(TRUE, FALSE, TRUE)], DT[, c(1,3), with=FALSE])
+test(1137.15, DT[, .SD, .SDcols = c(TRUE, FALSE)], error = ".SDcols is a logical vector of length 2 but there are 3 columns")
+test(1137.16, DT[, .SD, .SDcols = !c(FALSE, TRUE, FALSE)], DT[, c(1,3), with=FALSE])
+test(1137.17, DT[, .SD, .SDcols = 5L], error = "out of bounds.*1.*3.*at")
+test(1137.18, DT[, .SD, .SDcols = c("x", "notexist")], error = "Some items of .SDcols are not column names.*notexist")
+
 # test for FR #353 / R-Forge #353 - print.data.table gets new argument "row.names", default=TRUE. if FALSE, the row-names don't get printed
 # Thanks to Eddi for `capture.output` function!
 DT <- data.table(x=1:5, y=6:10)
