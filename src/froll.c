@@ -1707,13 +1707,11 @@ void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fil
           snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
           return;
         }*/
-        if (even) {
-          if (n[A]!=tail && m[A] == n[A]) {
-            n[A] = tail;
-          }
-          if (n[B]!=tail && m[B] == n[B]) {
-            n[B] = tail;
-          }
+        if (n[A]!=tail && m[A] == n[A]) {
+          n[A] = tail;
+        }
+        if (n[B]!=tail && m[B] == n[B]) {
+          n[B] = tail;
         }
         ansv[j*k+i] = even ? MED2(A, B) : MED(A, B);
       }
