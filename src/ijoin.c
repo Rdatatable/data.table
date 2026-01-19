@@ -286,8 +286,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
     case ANY:
       for (int i=0; i<rows; ++i) {
         const int len = totlen;
-        // k = (from[i] > 0) ? from[i] : 1;
-        const int k = from[i];
+        const int k = (from[i] > 0) ? from[i] : 1;
         if (k<=to[i])
           totlen += count[k-1];
         for (int j=k+1; j<=to[i]; ++j)
