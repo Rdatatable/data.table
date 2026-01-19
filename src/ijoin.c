@@ -723,7 +723,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   } else if (totlen) {
     int *f1i = INTEGER(f1__), *f2i = INTEGER(f2__);
     for (R_len_t i = 0; i < totlen; ++i) f1i[i] = i+1;
-    for (R_len_t i = 0; i < totlen; ++i) f2i[i] = NA_INTEGER;
+    for (R_len_t i = 0; i < totlen; ++i) f2i[i] = nomatch;
   }
   end2 = clock() - start;
   if (LOGICAL(verbose)[0])
