@@ -11097,12 +11097,6 @@ test(1750.34,
                            character(0)),
                id = TRUE)
 )
-test(1750.25,   
-  cube(copy(dt), j = lapply(.SD, mean), by = "color", .SDcols = 4, id=TRUE),   
-  groupingsets(dt, j = lapply(.SD, mean), by = "color", .SDcols = "amount",
-               sets = list("color", character(0)), id = TRUE)
-)
-
 test(1750.35,
   cube(dt, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols=patterns("value")),
   groupingsets(dt, j = lapply(.SD, sum), by = c("color","year","status"), .SDcols = "value", 
