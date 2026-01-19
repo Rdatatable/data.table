@@ -253,7 +253,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   // Checked the time for this loop on realisitc data (81m reads) and took 0.27 seconds! No excuses ;).
   start = clock();
   if (xrows && mult == ALL) {
-    totlen=0;
     switch (type) {
     case START: case END:
       for (int i=0; i<rows; ++i)
