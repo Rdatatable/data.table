@@ -46,7 +46,7 @@
 
 9. `foverlaps()` no longer crashes due to out-of-bounds access to list and integer vectors when `y` has no rows or the non-range part of the join fails, [#7597](https://github.com/Rdatatable/data.table/issues/7597). Thanks to @nextpagesoft for the report and @aitap for the fix.
 
-10. The package dynamic library now exports only a single function, `R_init_data_table`. This prevents crashes arising from conflicts between globally visible functions sharing the same name loaded from different parts of the program, [#7605](https://github.com/Rdatatable/data.table/issues/7605). Thanks to @ced75 for the report and @aitap for the fix.
+10. The package dynamic library now exports only a single function, `R_init_data_table`, fixing [#7605](https://github.com/Rdatatable/data.table/issues/7605) and preventing similar name conflicts in the future. Thanks to @ced75 for the report and @aitap for the fix.
 
 ### Notes
 
