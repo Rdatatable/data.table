@@ -46,7 +46,7 @@
 
 9. `foverlaps()` no longer crashes due to out-of-bounds access to list and integer vectors when `y` has no rows or the non-range part of the join fails, [#7597](https://github.com/Rdatatable/data.table/issues/7597). Thanks to @nextpagesoft for the report and @aitap for the fix.
 
-10. The dynamic library now exports only `R_init_data_table`, preventing symbol name conflicts like `hash_create` with PostgreSQL, [#7605](https://github.com/Rdatatable/data.table/issues/7605). Thanks to @ced75 for the report and @aitap for the fix
+10. The dynamic library now exports only `R_init_data_table`, preventing symbol name conflicts like `hash_create` with PostgreSQL, [#7605](https://github.com/Rdatatable/data.table/issues/7605). Thanks to @ced75 for the report and @aitap for the fix.
 
 ### Notes
 
