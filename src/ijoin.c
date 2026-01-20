@@ -10,8 +10,8 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
 
   SEXP vv, tt, lookup, type_lookup;
   R_len_t *idx,*count,*type_count,xrows=INTEGER(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
-  int *from = INTEGER(VECTOR_ELT(indices, 0));
-  int *to   = INTEGER(VECTOR_ELT(indices, 1));
+  const int *from = INTEGER_RO(VECTOR_ELT(indices, 0));
+  const int *to   = INTEGER_RO(VECTOR_ELT(indices, 1));
   clock_t pass1, pass2, pass3, start;
   enum {ALL, FIRST, LAST} mult = ALL;
   enum {ANY, WITHIN, START, END, EQUAL} type = ANY;
@@ -225,10 +225,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
 
   R_len_t uxcols=LENGTH(ux), rows=length(VECTOR_ELT(imatches,0)), xrows=length(VECTOR_ELT(ux,0));
   int nomatch = INTEGER(nomatchArg)[0], totlen=0, thislen;
-  int *from   = INTEGER(VECTOR_ELT(imatches, 0));
-  int *to     = INTEGER(VECTOR_ELT(imatches, 1));
-  int *count   = INTEGER(VECTOR_ELT(ux, uxcols-2));
-  int *type_count   = INTEGER(VECTOR_ELT(ux, uxcols-1));
+  const int *from   = INTEGER_RO(VECTOR_ELT(imatches, 0));
+  const int *to     = INTEGER_RO(VECTOR_ELT(imatches, 1));
+  const int *count   = INTEGER_RO(VECTOR_ELT(ux, uxcols-2));
+  const int *type_count   = INTEGER_RO(VECTOR_ELT(ux, uxcols-1));
   SEXP lookup = VECTOR_ELT(ux, uxcols-4);
   SEXP type_lookup = VECTOR_ELT(ux, uxcols-3);
   SEXP ans, f1__, f2__, tmp1, tmp2;

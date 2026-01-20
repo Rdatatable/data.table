@@ -221,7 +221,7 @@ SEXP rleid(SEXP l, SEXP cols) {
     SEXP jcol = VECTOR_ELT(l, icols[0]-1);
     switch (TYPEOF(jcol)) {
     case INTSXP : case LGLSXP : {
-      int *ijcol = INTEGER(jcol);
+      const int *ijcol = INTEGER_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = ijcol[i]==ijcol[i-1];
         ians[i] = (grp+=!same);
@@ -235,14 +235,14 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case REALSXP : {
-      long long *lljcol = (long long *)REAL(jcol);
+      const long long *lljcol = (const long long *)REAL_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = lljcol[i]==lljcol[i-1];
         ians[i] = (grp+=!same);
       }
     } break;
     case CPLXSXP: {
-      Rcomplex *pzjcol = COMPLEX(jcol);
+      const Rcomplex *pzjcol = COMPLEX_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = memcmp(&pzjcol[i], &pzjcol[i-1], sizeof(Rcomplex))==0;
         ians[i] = (grp += !same);
