@@ -2991,7 +2991,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   # when removing a column, value can be NULL or list with NULLs inside
   removing = is.null(value) || (is.list(value) && length(value) == length(j) && any(vapply_1b(value, is.null)))
   # columns can be created by name
-  adding = is.character(j) && any(j %notin% names(x))
+  adding = is.character(j) && !all(j %chin% names(x))
 
   if (!(removing || adding)) return(FALSE)
 
