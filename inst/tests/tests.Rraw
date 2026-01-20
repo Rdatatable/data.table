@@ -22016,3 +22016,15 @@ test(2363.1, foverlaps(x, y, by.x, by.y), foverlaps(x, y2, by.x, by.y))
 test(2363.2, foverlaps(x, y2, by.x, by.y, type="any", mult="all"), foverlaps(x, y2, by.x, by.y, type="any", mult="first"))
 test(2363.3, foverlaps(x, y, by.x, by.y, which=TRUE, mult="first", nomatch=NULL), foverlaps(x, y2, by.x, by.y, which=TRUE, mult="first", nomatch=NULL))
 rm(x, y, y2)
+
+# internal use of set() causes non-resizable data.tables to be re-assigned in the wrong frame, #7604
+# bmerge -> coerce_col
+x = structure(list(a = as.double(2:3), b = list("foo", "bar")), class = c("data.table", "data.frame"))
+y = structure(list(a = 1:3), class = c("data.table", "data.frame"))
+test(2364.1, x[y, on = "a"], data.table(a = 1:3, b = list(NULL, "foo", "bar")))
+x = structure(list(a = factor("a", levels = letters)), class = c("data.table", "data.frame"))
+y = data.table(a = factor("a", levels = letters))
+setdroplevels(x)
+setdroplevels(y)
+test(2364.2, levels(x$a), levels(y$a))
+rm(x, y)
