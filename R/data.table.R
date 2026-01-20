@@ -2991,7 +2991,10 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   # when removing a column, value can be NULL or list with NULLs inside
   removing = is.null(value) || (is.list(value) && length(value) == length(j) && any(vapply_1b(value, is.null)))
   # columns can be created by name
-  adding = is.character(j) && !all(j %chin% names(x))
+  adding = if (is.character(j)) {
+    jexists = j %chin% names(x)
+    !all(jexists)
+  } else FALSE
 
   if (!(removing || adding)) return(FALSE)
 
@@ -3000,10 +3003,8 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   if (selfrefok(x, verbose=FALSE) < 1L || truelength(x) <= length(x))
     return(TRUE)
 
-  if (adding) {
-    extra = sum(j %notin% names(x))
-    return(truelength(x) < length(x) + extra)
-  }
+  if (adding)
+    return(truelength(x) < length(x) + sum(!jexists))
 
   FALSE
 }
