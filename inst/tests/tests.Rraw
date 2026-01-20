@@ -21500,9 +21500,9 @@ rm(x, y, y2)
 
 # internal use of set() causes non-resizable data.tables to be re-assigned in the wrong frame, #7604
 # bmerge -> coerce_col
-y = structure(list(x = as.double(2:3), y = list("foo", "bar")), class = c("data.table", "data.frame"))
-x = structure(list(x = 1:3), class = c("data.table", "data.frame"))
-test(2364.1, y[x, on = "x"], data.table(x = 1:3, y = list(NULL, "foo", "bar")))
+x = structure(list(a = as.double(2:3), b = list("foo", "bar")), class = c("data.table", "data.frame"))
+y = structure(list(a = 1:3), class = c("data.table", "data.frame"))
+test(2364.1, x[y, on = "a"], data.table(a = 1:3, b = list(NULL, "foo", "bar")))
 x = structure(list(a = factor("a", levels = letters)), class = c("data.table", "data.frame"))
 y = data.table(a = factor("a", levels = letters))
 setdroplevels(x)
