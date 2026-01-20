@@ -10,6 +10,8 @@
 
 2. `foverlaps()` no longer crashes due to out-of-bounds access to list and integer vectors when `y` has no rows or the non-range part of the join fails, [#7597](https://github.com/Rdatatable/data.table/issues/7597). Thanks to @nextpagesoft for the report and @aitap for the fix.
 
+3. The dynamic library now exports only `R_init_data_table`, preventing symbol name conflicts like `hash_create` with PostgreSQL, [#7605](https://github.com/Rdatatable/data.table/issues/7605). Thanks to @ced75 for the report and @aitap for the fix
+
 ### Notes
 
 1. Removed use of non-API `ATTRIB`, `SET_ATTRIB`, and `findVar` [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks @aitap for the continued assiduous work here, and @MichaelChirico for the easy fix to replace `findVar` with `R_getVar`.
