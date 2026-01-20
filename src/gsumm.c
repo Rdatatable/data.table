@@ -744,7 +744,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   case LGLSXP: case INTSXP: {
     ans = PROTECT(allocVector(INTSXP, ngrp));
     int *ansd = INTEGER(ans);
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     if (!LOGICAL(narm)[0]) {
       const int init = min ? INT_MAX : INT_MIN+1;  // NA_INTEGER==INT_MIN checked in init.c
       for (int i=0; i<ngrp; ++i) ansd[i] = init;
@@ -818,7 +818,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
       }
     } else {
       double *ansd = REAL(ans);
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       if (!LOGICAL(narm)[0]) {
         const double init = min ? R_PosInf : R_NegInf;
         for (int i=0; i<ngrp; ++i) ansd[i] = init;
@@ -1037,7 +1037,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   case LGLSXP: case INTSXP: {
     sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
     int *subd = INTEGER(sub);
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<ngrp; ++i) {
       const int thisgrpsize = grpsize[i];
       if (thisgrpsize==1) {
@@ -1068,7 +1068,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   case REALSXP: {
     sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
     double *subd = REAL(sub);
-    const double *xd = REAL(x);
+    const double *xd = REAL_RO(x);
     for (int i=0; i<ngrp; ++i) {
       const int thisgrpsize = grpsize[i];
       if (thisgrpsize==1) {
@@ -1131,7 +1131,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<n; ++i) {
       const int thisgrp = grp[i];
       const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
@@ -1155,7 +1155,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
         s[thisgrp] *= elem;
       }
     } else {
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       for (int i=0; i<n; ++i) {
         const int thisgrp = grp[i];
         const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
@@ -1217,7 +1217,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   R_xlen_t nk = length(nArg);
   if (!isInteger(nArg))
     internal_error(__func__, "n must be integer"); // # nocov
-  const int *kd = INTEGER(nArg);
+  const int *kd = INTEGER_RO(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;

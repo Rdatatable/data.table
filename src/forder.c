@@ -587,7 +587,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case CPLXSXP : {
       // treat as if two separate columns of double
-      const Rcomplex *xd = COMPLEX(x);
+      const Rcomplex *xd = COMPLEX_RO(x);
       double *tmp = REAL(CplxPart);
       if (!complexRerun) {
         for (int i=0; i<nrow; ++i) tmp[i] = xd[i].r;  // extract the real part on the first time
@@ -1527,7 +1527,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
   if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error(_("nrow must be integer vector length 1"));
   const int nrow = INTEGER(nrowArg)[0];
   if (nrow<0) error(_("nrow==%d but must be >=0"), nrow);
-  const int *xd = INTEGER(x), xlen=LENGTH(x);
+  const int *xd = INTEGER_RO(x), xlen=LENGTH(x);
   for (int i=0, last=INT_MIN; i<xlen; ++i) {
     int elem = xd[i];
     if (elem==0) continue;

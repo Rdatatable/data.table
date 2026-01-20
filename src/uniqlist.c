@@ -55,7 +55,7 @@ SEXP uniqlist(SEXP l, SEXP order)
     int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
-      const int *vd=INTEGER(v);
+      const int *vd=INTEGER_RO(v);
       int prev, elem;
       if (via_order) {
         // ad hoc by (order passed in)
@@ -362,7 +362,7 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
     return ScalarInteger(0);  // empty vector
   int first = LOGICAL(x)[0];
   R_xlen_t i=0;
-  const int *ix = LOGICAL(x);
+  const int *ix = LOGICAL_RO(x);
   while (++i<n && ix[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value

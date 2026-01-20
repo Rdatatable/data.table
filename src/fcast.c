@@ -37,7 +37,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     switch (thistype) {
     case INTSXP:
     case LGLSXP: {
-      const int *ithiscol = INTEGER(thiscol);
+      const int *ithiscol = INTEGER_RO(thiscol);
       const int *ithisfill = NULL;
       if (some_fill) ithisfill = INTEGER(thisfill);
       for (int j=0; j<ncols; ++j) {
@@ -51,7 +51,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       }
     } break;
     case REALSXP: {
-      const double *dthiscol = REAL(thiscol);
+      const double *dthiscol = REAL_RO(thiscol);
       const double *dthisfill = NULL;
       if (some_fill) dthisfill = REAL(thisfill);
       for (int j=0; j<ncols; ++j) {
@@ -65,7 +65,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       }
     } break;
     case CPLXSXP: {
-      const Rcomplex *zthiscol = COMPLEX(thiscol);
+      const Rcomplex *zthiscol = COMPLEX_RO(thiscol);
       const Rcomplex *zthisfill = NULL;
       if (some_fill) zthisfill = COMPLEX(thisfill);
       for (int j=0; j<ncols; ++j) {
