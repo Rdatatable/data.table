@@ -480,16 +480,18 @@ msgstr ""
 msgid ""
 "Most likely this jump landed awkwardly so type bumps here will be skipped."
 msgstr ""
+"इस बात की पूरी संभावना है कि यह जंप (jump) गलत तरीके से लगा है, इसलिए यहाँ टाइप (type) परिवर्तन\n"
+"को छोड़ दिया जाएगा।"
 
 #: fread.c:1966 fread.c:1992
 #, c-format
 msgid "  dec='%c' detected based on a balance of %d parsed fields\n"
-msgstr ""
+msgstr "  %2$d पार्स (parsed) किए गए फ़ील्ड्स (fields) के संतुलन के आधार पर dec='%1$c' का पता चला\n"
 
 #: fread.c:1976
 #, c-format
-msgid "  Type codes (jump %03d)    : %s  Quote rule %d\n"
-msgstr ""
+msgid "  Type codes (jump %03d)    : %s    Quote rule %d\n"
+msgstr "  टाइप कोड (Type codes) (जंप (jump) %03d)    : %s    कोट नियम (quote rule) %d\n"
 
 #: fread.c:1998
 #, c-format
@@ -497,6 +499,8 @@ msgid ""
 "  'header' determined to be true due to column %d containing a string on row "
 "1 and a lower type (%s) in the rest of the %<PRId64> sample rows\n"
 msgstr ""
+"  'header' को TRUE निर्धारित किया गया है क्योंकि कॉलम (column) %d की रो (row) 1 में एक स्ट्रिंग (string) है\n"
+"और बाकी %<PRId64> सैंपल (sample) रोज़(rows) में लोअर टाइप (lower type) (%s) है\n"
 
 #: fread.c:2012
 #, c-format
@@ -504,6 +508,8 @@ msgid ""
 "Types in 1st data row match types in 2nd data row but previous row has %d "
 "fields. Taking previous row as column names."
 msgstr ""
+"पहली डेटा (data) रो (row) के प्रकार दूसरी डेटा (data) रो (row) के प्रकारों से मेल खाते हैं, लेकिन पिछली रो (row) में %d\n"
+"फ़ील्ड्स (fields) हैं। पिछली रो (row) को कॉलम (column) नामों के रूप में लिया जा रहा है।"
 
 #: fread.c:2016
 #, c-format
@@ -514,6 +520,11 @@ msgid ""
 "correct, or fix the file write command that created the file to create a "
 "valid file.\n"
 msgstr ""
+"%d कॉलम (column) नामों का पता चला लेकिन डेटा (data) में %d कॉलम (column) हैं (अर्थात अमान्य फाइल (file))।\n"
+"पहले कॉलम (column) के लिए एक अतिरिक्त डिफ़ॉल्ट (default) कॉलम (column) नाम जोड़ा गया है जिसका अनुमान\n"
+"रोज़(rows) के नाम या एक इंडेक्स (index) होने का लगाया गया है। यदि यह अनुमान सही नहीं है, तो बाद में\n"
+"setnames() का उपयोग करें, या फाइल (file) बनाने वाले कमांड (command) को ठीक करें ताकि एक मान्य\n"
+"फाइल (file) बन सके।\n"
 
 #: fread.c:2019
 #, c-format
@@ -521,6 +532,8 @@ msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added %d extra default column names at the end.\n"
 msgstr ""
+"%d कॉलम (column) नामों का पता चला लेकिन डेटा (data) में %d कॉलम (column) हैं (अर्थात अमान्य फाइल (file))।\n"
+"अंत में %d अतिरिक्त डिफ़ॉल्ट (default) कॉलम (column) नाम जोड़े गए हैं।\n"
 
 #: fread.c:2023
 #, c-format
@@ -528,23 +541,30 @@ msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
 "automatically. Set fill=TRUE explicitly to avoid this warning.\n"
 msgstr ""
+"%d कॉलम (column) नामों का पता चला लेकिन डेटा (data) में %d कॉलम (column) हैं। रोज़(rows)\n"
+"स्वचालित रूप से भरी जा रही हैं। इस वॉर्निंग (warning) से बचने के लिए स्पष्ट रूप से\n"
+"fill=TRUE तय करें।\n"
 
 #: fread.c:2027
 #, c-format
 msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
-msgstr ""
+msgstr "type और tmpType के लिए 2 x %d बाइट्स (bytes) को realloc करने में विफल: %s"
 
 #: fread.c:2048
 msgid ""
 "  'header' determined to be TRUE because there are no number fields in the "
 "first and only row\n"
 msgstr ""
+"  'header' को TRUE निर्धारित किया गया है क्योंकि पहली और एकमात्र रो (row) में कोई अंक\n"
+"फ़ील्ड्स (fields) नहीं हैं\n"
 
 #: fread.c:2050
 msgid ""
 "  'header' determined to be FALSE because there are number fields in the "
 "first and only row\n"
 msgstr ""
+"  'header' को FALSE निर्धारित किया गया है क्योंकि पहली और एकमात्र रो (row) में अंक\n"
+"फ़ील्ड्स (fields) हैं\n"
 
 #: fread.c:2053
 msgid ""
