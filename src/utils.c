@@ -161,7 +161,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-    int *icols = INTEGER(ricols);
+    const int *icols = INTEGER_RO(ricols);
     if (!bskip_absent) {
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
@@ -707,7 +707,7 @@ SEXP is_direct_child(SEXP pids) {
 #ifdef _WIN32
   internal_error(__func__, "not implemented on Windows");
 #else
-  int *ppids = INTEGER(pids);
+  const int *ppids = INTEGER_RO(pids);
   R_xlen_t len = xlength(pids);
   SEXP ret = allocVector(LGLSXP, len);
   int *pret = LOGICAL(ret);

@@ -881,8 +881,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   switch(TYPEOF(x)) {
   case REALSXP: {
     double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
-    int64_t *xi64 = (int64_t *)REAL(x);
-    double  *xd = REAL(x);
+    const int64_t *xi64 = (const int64_t *)REAL_RO(x);
+    const double  *xd = REAL_RO(x);
     for (int i=0; i<ngrp; ++i) {
       int thisgrpsize = grpsize[i], nacount=0;
       for (int j=0; j<thisgrpsize; ++j) {
@@ -898,7 +898,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     break;
   case LGLSXP: case INTSXP: {
     int *subi = INTEGER(PROTECT(allocVector(INTSXP, maxgrpn)));
-    int *xi = INTEGER(x);
+    const int *xi = INTEGER_RO(x);
     for (int i=0; i<ngrp; i++) {
       const int thisgrpsize = grpsize[i];
       int nacount=0;
