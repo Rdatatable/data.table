@@ -141,6 +141,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     print_default(toprint)
     return(invisible(x))
   }
+  if (col.names == "none")
+    colnames(toprint) = rep.int("", ncol(toprint))
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
@@ -225,7 +227,7 @@ format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
     "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) sprintf("...[%d]", length(x))), collapse=",") # fix for #5435, #37, and #605 - format has to be added here...
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
     # the column's class does not have a format method (otherwise it would have been used by format_col and this
     # format_list_item would not be reached) but this particular list item does have a format method so use it
@@ -292,7 +294,13 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
 }
 
 # Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
+# nocov start
 knit_print.data.table = function(x, ...) {
   if (!shouldPrint(x)) return(invisible(x))
   NextMethod()
 }
+record_print.data.table = function(x, ...) {
+  if (!shouldPrint(x)) return(character())
+  NextMethod()
+}
+# nocov end

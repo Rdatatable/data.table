@@ -277,5 +277,28 @@ test.list <- atime::atime_test_list(
     Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
     Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that removes inefficiency
 
-    tests=extra.test.list)
+  "isoweek improved in #7144" = atime::atime_test(
+    setup = {
+      set.seed(349)
+      x = sample(Sys.Date() - 0:5000, N, replace=TRUE)
+    },
+    expr = data.table::isoweek(x),
+    Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
+    Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
+
+  # Regression introduced in #7404 (grouped by factor).
+  "DT[by] max regression fixed in #7480" = atime::atime_test(
+    N = as.integer(10^seq(3, 5, by=0.5)),
+    setup = {
+      dt = data.table(
+        id = as.factor(rep(seq_len(N), each = 100L)),
+        V1 = 1L
+      )
+    },
+    expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id),
+    Before = "476de7e3",
+    Regression = "6f49bf1",
+    Fixed = "b6ad1a4",
+    seconds.limit = 1),
+  tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

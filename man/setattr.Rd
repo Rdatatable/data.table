@@ -15,7 +15,7 @@ setnames(x, old, new, skip_absent=FALSE)
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, a function or the new column names (i.e., it's implicitly treated as \code{new}; excluding \code{old} and explicitly naming \code{new} is equivalent). If a function, it will be called with the current column names and is supposed to return the new column names. The new column names must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. It can be a function or the new column names. If a function, it will be called with \code{old} and expected to return the new column names. The new column names must be the same length as columns provided to \code{old} argument. Missing values in \code{new} mean to not rename that column, note: missing values are only allowed when \code{old} is not provided.}
-  \item{skip_absent}{ Skip items in \code{old} that are missing (i.e. absent) in `names(x)`. Default \code{FALSE} halts with error if any are missing. }
+  \item{skip_absent}{ Skip items in \code{old} that are missing (i.e. absent) in \code{names(x)}. Default \code{FALSE} halts with error if any are missing. }
 }
 
 \details{
@@ -24,7 +24,7 @@ setnames(x, old, new, skip_absent=FALSE)
 
   \code{setattr} is a more general function that allows setting of any attribute to an object \emph{by reference}.
 
-  A very welcome change in R 3.1+ was that `names<-` and `colnames<-` no longer copy the \emph{entire} object as they used to (up to 4 times), see examples below. They now take a shallow copy. The `set*` functions in data.table are still useful because they don't even take a shallow copy. This allows changing names and attributes of a (usually very large) \code{data.table} in the global environment \emph{from within functions}. Like a database.
+  A very welcome change in R 3.1+ was that \code{\link[base]{names<-}} and \code{\link[base]{colnames<-}} no longer copy the \emph{entire} object as they used to (up to 4 times), see examples below. They now take a shallow copy. The \samp{set*} functions in data.table are still useful because they don't even take a shallow copy. This allows changing names and attributes of a (usually very large) \code{data.table} in the global environment \emph{from within functions}. Like a database.
 
   }
 \value{

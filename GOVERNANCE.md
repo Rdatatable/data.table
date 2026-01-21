@@ -1,4 +1,4 @@
-Governance for the R data.table project
+# Governance for the R data.table project
 
 # Purpose and scope
 
@@ -63,7 +63,7 @@ Functionality that is out of current scope:
 ## Committer
 
 * Definition: permission to commit to, and merge PRs into, master branch. 
-* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
+* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' substantial PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
 * How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/committers which gives permission to merge PRs into master branch. 
 
 ## CRAN Maintainer
@@ -108,7 +108,7 @@ Please also make a note in the change log under [`# Governance history`](#govern
 
 # Finances and Funding
 
-data.table is a [NumFOCUS](https://numfocus.org/) project.  Donations to the data.table can be made at [https://numfocus.org/project/data-table]([https://numfocus.org/donate-to-data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK))
+data.table is a [NumFOCUS](https://numfocus.org/) project. Donations to data.table can be made at [https://numfocus.org/project/data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK).
 
 *NumFOCUS is a 501(c)(3) non-profit charity in the United States; as such, donations to NumFOCUS are tax-deductible as allowed by law. As with any donation, you should consult with your personal tax adviser or the IRS about your particular tax situation.*
 
@@ -121,7 +121,7 @@ Funds acquired by the data.table project will be disbursed at the discretion of 
 
 # Code of conduct
 
-The full Code of Conduct can be found [here](CODE_OF_CONDUCT.md), including details for reporting violations.
+The full Code of Conduct can be found [here](.github/CODE_OF_CONDUCT.md), including details for reporting violations.
 
 ## Reporting Responsibility
 
@@ -138,6 +138,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+July 2025: require potential new committers' considered history to be of "substantial" PRs
 
 May 2025: update Finance and CoC language for NumFOCUS incorporation.
 

@@ -9,7 +9,7 @@ cbindlist_impl_ = function(l, copy) {
 }
 
 cbindlist = function(l) cbindlist_impl_(l, copy=TRUE)
-setcbindlist = function(l) cbindlist_impl_(l, copy=FALSE)
+setcbindlist = function(l) invisible(cbindlist_impl_(l, copy=FALSE))
 
 # when 'on' is missing then use keys, used only for inner and full join
 onkeys = function(x, y) {
@@ -157,9 +157,9 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
         stopf("'on' is missing and necessary key is not present")
     }
     if (any(bad.on <- !on %chin% names(lhs)))
-      stopf("'on' argument specifies columns to join [%s] that are not present in %s table [%s]", brackify(on[bad.on]), "LHS", brackify(names(lhs)))
+      stopf("'on' argument specifies columns to join %s that are not present in %s table %s", brackify(on[bad.on]), "LHS", brackify(names(lhs)))
     if (any(bad.on <- !on %chin% names(rhs)))
-      stopf("'on' argument specifies columns to join [%s] that are not present in %s table [%s]", brackify(on[bad.on]), "RHS", brackify(names(rhs)))
+      stopf("'on' argument specifies columns to join %s that are not present in %s table %s", brackify(on[bad.on]), "RHS", brackify(names(rhs)))
   } else if (is.null(on)) {
     on = character() ## cross join only
   }
@@ -203,7 +203,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     copy_x = TRUE
     ## ensure no duplicated column names in merge results
     if (any(dup.i <- names(out.i) %chin% names(out.x)))
-      stopf("merge result has duplicated column names [%s], use 'cols' argument or rename columns in 'l' tables", brackify(names(out.i)[dup.i]))
+      stopf("merge result has duplicated column names %s, use 'cols' argument or rename columns in 'l' tables", brackify(names(out.i)[dup.i]))
   }
 
   ## stack i and x
@@ -255,6 +255,104 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     }
   }
   setDT(out)
+}
+
+mergelist_impl_ = function(l, on, cols, how, mult, join.many, copy) {
+  verbose = getOption("datatable.verbose")
+  if (verbose)
+    p = proc.time()[[3L]]
+
+  if (!is.list(l) || is.data.frame(l))
+    stopf("'%s' must be a list", "l")
+  if (!all(vapply_1b(l, is.data.table)))
+    stopf("Every element of 'l' list must be data.table objects")
+  if (!all(idx <- lengths(l) > 0L))
+    stopf("Tables in 'l' must all have columns, but these entries have 0: %s", brackify(which(!idx)))
+  if (any(idx <- vapply_1i(l, function(x) anyDuplicated(names(x))) > 0L))
+    stopf("Column names in individual 'l' entries must be unique, but these have some duplicates: %s", brackify(which(idx)))
+
+  n = length(l)
+  if (n < 2L) {
+    out = if (n) l[[1L]] else as.data.table(l)
+    if (copy) out = copy(out)
+    if (verbose)
+      catf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p)
+    return(out)
+  }
+
+  if (!is.list(join.many))
+    join.many = rep(list(join.many), n - 1L)
+  if (length(join.many) != n - 1L || !all(vapply_1b(join.many, isTRUEorFALSE)))
+    stopf("'join.many' must be TRUE or FALSE, or a list of such whose length must be length(l)-1L")
+
+  if (missing(mult))
+    mult = NULL
+  if (!is.list(mult))
+    mult = rep(list(mult), n - 1L)
+  if (length(mult) != n - 1L || !all(vapply_1b(mult, function(x) is.null(x) || (is.character(x) && length(x) == 1L && !anyNA(x) && x %chin% c("error", "all", "first", "last")))))
+    stopf("'mult' must be one of [error, all, first, last] or NULL, or a list of such whose length must be length(l)-1L")
+
+  if (!is.list(how))
+    how = rep(list(how), n-1L)
+  if (length(how)!=n-1L || !all(vapply_1b(how, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x %chin% c("left", "inner", "full", "right", "semi", "anti", "cross"))))
+    stopf("'how' must be one of [left, inner, full, right, semi, anti, cross], or a list of such whose length must be length(l)-1L")
+
+  if (is.null(cols)) {
+    cols = vector("list", n)
+  } else {
+    if (!is.list(cols))
+      stopf("'%s' must be a list", "cols")
+    if (length(cols) != n)
+      stopf("'cols' must be same length as 'l' (%d != %d)", length(cols), n)
+    skip = vapply_1b(cols, is.null)
+    if (!all(vapply_1b(cols[!skip], function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x))))
+      stopf("'cols' must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULLs (all columns)")
+    if (any(mapply(function(x, icols) !all(icols %chin% names(x)), l[!skip], cols[!skip])))
+      stopf("'cols' specify columns not present in corresponding table")
+  }
+
+  if (missing(on) || is.null(on)) {
+    on = vector("list", n - 1L)
+  } else {
+    if (!is.list(on))
+      on = rep(list(on), n - 1L)
+    if (length(on) != n-1L || !all(vapply_1b(on, function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x)))) ## length checked in dtmerge
+      stopf("'on' must be non-NA, non-duplicated, character vector, or a list of such which length must be length(l)-1L")
+  }
+
+  l.mem = lapply(l, vapply, address, "")
+  out = l[[1L]]
+  out.cols = cols[[1L]]
+  for (join.i in seq_len(n - 1L)) {
+    rhs.i = join.i + 1L
+    out = mergepair(
+      lhs = out, rhs = l[[rhs.i]],
+      on = on[[join.i]],
+      how = how[[join.i]], mult = mult[[join.i]],
+      lhs.cols = out.cols, rhs.cols = cols[[rhs.i]],
+      copy = FALSE, ## avoid any copies inside, will copy once below
+      join.many = join.many[[join.i]],
+      verbose = verbose
+    )
+    out.cols = copy(names(out))
+  }
+  out.mem = vapply_1c(out, address)
+  if (copy)
+    .Call(CcopyCols, out, colnamesInt(out, names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
+  if (verbose)
+    catf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]] - p)
+  out
+}
+
+mergelist = function(l, on, cols=NULL, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
+  if (missing(how) || is.null(how))
+    how = match.arg(how)
+  mergelist_impl_(l, on, cols, how, mult, join.many, copy=TRUE)
+}
+setmergelist = function(l, on, cols=NULL, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
+  if (missing(how) || is.null(how))
+    how = match.arg(how)
+  invisible(mergelist_impl_(l, on, cols, how, mult, join.many, copy=FALSE))
 }
 
 # Previously, we had a custom C implementation here, which is ~2x faster,

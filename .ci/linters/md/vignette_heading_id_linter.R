@@ -1,6 +1,6 @@
 # ensure that ids are limited to alphanumerics and dashes
 # (in particular, dots and underscores break the links)
-check_header_ids = function(md) {
+vignette_heading_id_linter = function(md) {
   if (!grepl('[.]Rmd$', md)) return(invisible())
   md = readLines(md)
   # A bit surprisingly, some headings don't start with a letter.

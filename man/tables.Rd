@@ -19,7 +19,7 @@ tables(mb=type_size, order.col="NAME", width=80,
 \details{
 Usually \code{tables()} is executed at the prompt, where \code{parent.frame()} returns \code{.GlobalEnv}. \code{tables()} may also be useful inside functions where \code{parent.frame()} is the local scope of the function; in such a scenario, simply set it to \code{.GlobalEnv} to get the same behaviour as at prompt.
 
-`mb = utils::object.size` provides a higher and more accurate estimate of size, but may take longer. Its default `units="b"` is appropriate.
+\code{mb = utils::object.size} provides a higher and more accurate estimate of size, but may take longer. Its default \code{units="b"} is appropriate.
 
 Setting \code{silent=TRUE} prints nothing; the metadata is returned as a \code{data.table} invisibly whether \code{silent} is \code{TRUE} or \code{FALSE}.
 }
