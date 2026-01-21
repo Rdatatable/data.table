@@ -142,7 +142,7 @@ As many things have changed, let's explain the new characteristics in the follow
 - **Column level**
   - The *first group* of columns in the new `data.table` comes from the `x` table.
   - The *second group* of columns in the new `data.table` comes from the `i` table.
-  - If the join operation presents a present any **name conflict** (both table have same column name) the ***prefix*** `i.` is added to column names from the **right-hand table** (table on `i` position).
+  - If the join operation presents any **name conflict** (both tables have same column name) the ***prefix*** `i.` is added to column names from the **right-hand table** (table on `i` position).
   
 - **Row level**
   - The missing `product_id` present on the `ProductReceived` table in row 1 was successfully matched with missing `id` of the `Products` table, so `NA` ***values are treated as any other value***.
