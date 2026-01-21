@@ -181,7 +181,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(data)) stopf("'data' must be a data.table")
+  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
   for(type.vars in c("id.vars","measure.vars")){
     sub.lang <- substitute({
       if (missing(VAR)) VAR=NULL

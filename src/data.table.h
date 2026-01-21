@@ -14,7 +14,10 @@
 #  define LOGICAL_RO LOGICAL
 #endif
 #if R_VERSION < R_Version(4, 5, 0)
+#  define R_getVar(x, env, inherits) findVar(x, env)
 #  define isDataFrame(x) isFrame(x) // #6180
+#  define CLEAR_ATTRIB(x) SET_ATTRIB(x, R_NilValue)
+#  define ANY_ATTRIB(x) (!(isNull(ATTRIB(x))))
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
@@ -87,6 +90,28 @@
 # endif
 #endif
 
+// TODO(R>=4.6.0): remove the SVN revision check
+#if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89077
+# define BACKPORT_RESIZABLE_API
+# define R_allocResizableVector(type, maxlen) R_allocResizableVector_(type, maxlen)
+# define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
+# define R_maxLength(x) R_maxLength_(x)
+  static inline R_xlen_t R_maxLength_(SEXP x) {
+    return IS_GROWABLE(x) ? TRUELENGTH(x) : XLENGTH(x);
+  }
+# define R_isResizable(x) R_isResizable_(x)
+  static inline bool R_isResizable_(SEXP x) {
+    // IS_GROWABLE checks for XLENGTH < TRUELENGTH instead
+    return (LEVELS(x) & 0x20) && XLENGTH(x) <= TRUELENGTH(x);
+  }
+# define R_resizeVector(x, newlen) R_resizeVector_(x, newlen)
+#endif
+// TODO(R>=4.6.0): remove the SVN revision check
+#if R_VERSION < R_Version(4, 6, 0) || R_SVN_REVISION < 89194
+# define BACKPORT_MAP_ATTRIB
+# define R_mapAttrib(x, fun, ctx) R_mapAttrib_(x, fun, ctx)
+#endif
+
 // init.c
 extern SEXP char_integer64;
 extern SEXP char_ITime;
@@ -147,7 +172,6 @@ SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n, const bool listNA);
-void savetl_init(void), savetl(SEXP s), savetl_end(void);
 int checkOverAlloc(SEXP x);
 
 // forder.c
@@ -249,9 +273,9 @@ void frollprodFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill,
 void frollprodExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollmedianFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par);
 void frollmedianExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
-void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
-void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
-void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollvarFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par);
+void frollvarExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par);
+void frollsdFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par);
 void frollsdExact(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 
 // frolladaptive.c
@@ -282,7 +306,7 @@ SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
-SEXP setgrowable(SEXP x);
+SEXP copyAsGrowable(SEXP x);
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
@@ -322,6 +346,15 @@ bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
 SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
+#ifdef BACKPORT_RESIZABLE_API
+SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen);
+SEXP R_duplicateAsResizable_(SEXP x);
+void R_resizeVector_(SEXP x, R_xlen_t newlen);
+#endif
+#ifdef BACKPORT_MAP_ATTRIB
+SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx);
+#endif
+SEXP is_direct_child(SEXP pids);
 
 // types.c
 char *end(char *start);
@@ -341,6 +374,23 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
+
+// hash.c
+typedef struct {
+  SEXP prot; // make sure to PROTECT() while the table is in use
+} hashtab;
+// Allocate, initialise, and return a pointer to the new hash table.
+// n is the maximal number of elements that will be inserted.
+// May raise an R error if an allocation fails or a size is out of bounds.
+hashtab * hash_create(size_t n);
+// Inserts a new key-value pair into the hash, or overwrites an existing value.
+// Will grow the table in a thread-unsafe manner if needed.
+// Don't try to insert a null pointer, nothing good will come out of it.
+void hash_set(hashtab *, SEXP key, R_xlen_t value);
+// Same as hash_set, but returns the new hash table pointer, which the caller may assign atomically in a thread-safe manner.
+hashtab *hash_set_shared(hashtab *, SEXP key, R_xlen_t value);
+// Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
+R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
 
 // mergelist.c
 SEXP cbindlist(SEXP x, SEXP copyArg);
