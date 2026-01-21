@@ -2,11 +2,6 @@
 title: "data.table"
 ---
 
-```{r setup, include=FALSE}
-pkg_name = litedown:::detect_pkg()
-pkg_dir = find.package(pkg_name)
-```
-
 ```{r, results='asis', echo=FALSE}
 # Read README.md from repository root (one directory up from site/)
 readme_file = normalizePath(file.path('..', 'README.md'), mustWork = FALSE)
@@ -27,5 +22,5 @@ if (file.exists(readme_file)) {
 ## Citation
 
 ```{r, echo=FALSE, results='asis'}
-suppressWarnings(litedown::pkg_citation(pkg_name))
+suppressWarnings(litedown::pkg_citation('data.table'))
 ```
