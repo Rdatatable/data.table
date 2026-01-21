@@ -17,7 +17,7 @@
 
 [//]: # (numfocus-fiscal-sponsor-attribution)
 
-The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+The `data.table` project uses a [custom governance agreement](https://rdatatable.gitlab.io/data.table/GOVERNANCE.html) 
 and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
 a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
 pay for developer time, professional services, travel, workshops, and a variety of other needs.
@@ -51,7 +51,7 @@ pay for developer time, professional services, travel, workshops, and a variety 
 * fast and feature rich **reshaping** data: **[`?dcast`](https://rdatatable.gitlab.io/data.table/reference/dcast.data.table.html)** (_pivot/wider/spread_) and **[`?melt`](https://rdatatable.gitlab.io/data.table/reference/melt.data.table.html)** (_unpivot/longer/gather_)
 * **any R function from any R package** can be used in queries not just the subset of functions made available by a database backend, also columns of type `list` are supported
 * has **[no dependencies](https://en.wikipedia.org/wiki/Dependency_hell)** at all other than base R itself, for simpler production/maintenance
-* the R dependency is **as old as possible for as long as possible**, dated April 2014, and we continuously test against that version; e.g. v1.11.0 released on 5 May 2018 bumped the dependency up from 5 year old R 3.0.0 to 4 year old R 3.1.0
+* the R dependency is **as old as possible for as long as possible**, currently R 3.5.0 (2018), and we continuously test against that version
 
 ## Installation
 

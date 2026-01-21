@@ -331,7 +331,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   SEXP tmp = PROTECT(R_allocResizableVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
   R_resizeVector(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
-  subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
+  subsetVectorRaw(tmp, PROTECT(getAttrib(x, R_NamesSymbol)), cols, /*anyNA=*/false); nprotect++;
 
   tmp = PROTECT(allocVector(INTSXP, 2)); nprotect++;
   INTEGER(tmp)[0] = NA_INTEGER;
@@ -341,7 +341,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // clear any index that was copied over by copyMostAttrib() above, e.g. #1760 and #1734 (test 1678)
   setAttrib(ans, sym_index, R_NilValue);
   // but maintain key if ordered subset
-  SEXP key = getAttrib(x, sym_sorted);
+  SEXP key = PROTECT(getAttrib(x, sym_sorted)); nprotect++;
   if (length(key)) {
     SEXP innames = PROTECT(getAttrib(ans,R_NamesSymbol)); nprotect++;
     SEXP in = PROTECT(chin(key, innames)); nprotect++;
@@ -352,7 +352,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
       setAttrib(ans, sym_sorted, R_NilValue);
     } else {
       // make a new key attribute; shorter if i<LENGTH(key) or same length copied so this key is safe to change by ref (setnames)
-      setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
+      setAttrib(ans, sym_sorted, tmp=PROTECT(allocVector(STRSXP, i))); nprotect++;
       for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
     }
   }

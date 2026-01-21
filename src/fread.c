@@ -349,9 +349,9 @@ static inline bool end_of_field(const char *ch)
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
   // Comment characters terminate a field immediately and take precedence over separators.
-  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) || (commentChar && *ch == commentChar);
   if (*ch == sep) return true;
-  if ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch))) return true;
+  if (ch == eof) return true;
+  if ((uint8_t)*ch <= 13 && eol(&ch)) return true;
   if (!commentChar) return false;
   return *ch == commentChar;
 }
@@ -2190,7 +2190,7 @@ int freadMain(freadMainArgs _args)
     }
   }
 
-  if (args.header == NA_BOOL8 && prevStart != NULL) {
+  if (prevStart != NULL && (args.header == NA_BOOL8 || args.skipNrow >= 0)) {
     // The first data row matches types in the row after that, and user didn't override default auto detection.
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
@@ -2198,7 +2198,7 @@ int freadMain(freadMainArgs _args)
     if (tt == ncol) INTERNAL_STOP("row before first data row has the same number of fields but we're not using it"); // # nocov
     if (ch != pos)  INTERNAL_STOP("ch!=pos after counting fields in the line before the first data row"); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
-    if (tt < ncol) {
+    if (tt < ncol && args.header != false) {
       autoFirstColName = (ncol - tt == 1);
       if (autoFirstColName) {
         DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added an extra default column name for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.\n"),
@@ -2216,7 +2216,7 @@ int freadMain(freadMainArgs _args)
       for (int j = ncol; j < tt; j++) { tmpType[j] = type[j] = type0; }
       ncol = tt;
     }
-    args.header = true;
+    if (args.header == NA_BOOL8) args.header = true;
     pos = prevStart;
     row1line--;
   }
@@ -2502,10 +2502,8 @@ int freadMain(freadMainArgs _args)
         .threadn = me,
         .quoteRule = quoteRule,
         .stopTeam = &stopTeam,
-        #ifndef DTPY
         .nStringCols = nStringCols,
         .nNonStringCols = nNonStringCols
-        #endif
       };
       if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
         stopTeam = true;

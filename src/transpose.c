@@ -9,8 +9,8 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     error(_("l must be a list."));
   if (!length(l))
     return(copyAsPlain(l));
-  if (!isLogical(ignoreArg) || LOGICAL_RO(ignoreArg)[0] == NA_LOGICAL)
-    error(_("ignore.empty should be logical TRUE/FALSE."));
+  if (!IS_TRUE_OR_FALSE(ignoreArg))
+    error(_("'%s' must be TRUE or FALSE"), "ignore.empty");
   const bool ignore = LOGICAL_RO(ignoreArg)[0];
   if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg) == 1)))
     error(_("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input"));
@@ -19,7 +19,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     error(_("fill must be a length 1 vector, such as the default NA"));
   const R_len_t ln = LENGTH(l);
   if (!IS_TRUE_OR_FALSE(listColsArg))
-    error(_("list.cols should be logical TRUE/FALSE."));
+    error(_("'%s' must be TRUE or FALSE"), "list.cols");
   const bool listCol = LOGICAL_RO(listColsArg)[0];
 
   // preprocessing
