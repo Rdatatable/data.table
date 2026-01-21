@@ -1,4 +1,4 @@
-Governance for the R data.table project
+# Governance for the R data.table project
 
 # Purpose and scope
 
@@ -63,7 +63,7 @@ Functionality that is out of current scope:
 ## Committer
 
 * Definition: permission to commit to, and merge PRs into, master branch. 
-* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
+* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' substantial PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
 * How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/committers which gives permission to merge PRs into master branch. 
 
 ## CRAN Maintainer
@@ -71,6 +71,14 @@ Functionality that is out of current scope:
 * Definition: in charge of communication with CRAN. Responsible for submitting releases to CRAN on a regular basis, and for responding to requests from CRAN.
 * How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN Maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
+
+## Community Engagement Coordinator
+
+* Definition: An individual who is involved in the project but does **not** also occupy the Committer or CRAN Maintainer role.  In charge of maintaining The Raft blog, preparing Seal of Approval Applications, addressing Code of Conduct violations, and planning social or community events.
+
+* How to obtain this role: At the discretion of the current Community Engagement Coordinator(s) in conversation with the current Committers.
+
+* How this role is recognized: Holds the Owner role in the [rdatatable-community organization](https://github.com/orgs/rdatatable-community/people) on GitHub.
 
 # Decision-making processes
 
@@ -98,19 +106,26 @@ There is no special process for changing this document. Submit a PR and ask for 
 
 Please also make a note in the change log under [`# Governance history`](#governance-history)
 
+# Finances and Funding
+
+data.table is a [NumFOCUS](https://numfocus.org/) project. Donations to data.table can be made at [https://numfocus.org/project/data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK).
+
+*NumFOCUS is a 501(c)(3) non-profit charity in the United States; as such, donations to NumFOCUS are tax-deductible as allowed by law. As with any donation, you should consult with your personal tax adviser or the IRS about your particular tax situation.*
+
+
+## Decision-making for funding use
+
+We here outline a procedure for disbursing funds acquired through direct donations via NumFOCUS or grant-style research funding.
+
+Funds acquired by the data.table project will be disbursed at the discretion of the **Committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
+
 # Code of conduct
 
-As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
+The full Code of Conduct can be found [here](.github/CODE_OF_CONDUCT.md), including details for reporting violations.
 
-We are committed to making participation in this project a harassment-free experience for everyone, regardless of level of experience, gender, gender identity and expression, sexual orientation, disability, personal appearance, body size, race, ethnicity, age, religion, etc.
+## Reporting Responsibility
 
-Examples of unacceptable behavior by participants include the use of sexual language or imagery, derogatory comments or personal attacks, trolling, public or private harassment, insults, or other unprofessional conduct.
-
-Committers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct. A person with special roles who does not follow the Code of Conduct may have their roles revoked.
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue or emailing one or more of the Committers.
-
-This Code of Conduct is adapted from Tidyverse code of conduct.
+Committers and the Community Engagement Coordinator pledge to address any publicly posted issues or privately sent messages regarding Code of Conduct violations in a respectful and timely manner.
 
 # Version numbering
 
@@ -123,6 +138,12 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+July 2025: require potential new committers' considered history to be of "substantial" PRs
+
+May 2025: update Finance and CoC language for NumFOCUS incorporation.
+
+Feb 2025: add Finances and Funding section, update Code of Conduct section to be a brief summary and reference the broader CoC document.
 
 Jan 2025: clarify that edits to governance should notify all committers, and that role names are proper nouns (i.e., upper-case) throughout.
 

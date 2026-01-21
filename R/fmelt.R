@@ -181,14 +181,18 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(data)) stopf("'data' must be a data.table")
-  if (missing(id.vars)) id.vars=NULL
-  if (missing(measure.vars)) measure.vars = NULL
-  measure.sub = substitute(measure.vars)
-  if (is.call(measure.sub)) {
-    eval.result = eval_with_cols(measure.sub, names(data))
-    if (!is.null(eval.result)) {
-      measure.vars = eval.result
+  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
+  for(type.vars in c("id.vars","measure.vars")){
+    sub.lang <- substitute({
+      if (missing(VAR)) VAR=NULL
+      substitute(VAR)
+    }, list(VAR=as.symbol(type.vars)))
+    sub.result = eval(sub.lang)
+    if (is.call(sub.result)) {
+      eval.result = eval_with_cols(sub.result, names(data))
+      if (!is.null(eval.result)) {
+        assign(type.vars, eval.result)
+      }
     }
   }
   if (is.list(measure.vars)) {

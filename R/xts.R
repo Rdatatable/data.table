@@ -25,6 +25,6 @@ as.xts.data.table = function(x, numeric.only = TRUE, ...) {
     if (!all(colsNumeric)) warningf("Following columns are not numeric and will be omitted: %s", brackify(names(colsNumeric)[!colsNumeric]))
     r = r[, .SD, .SDcols = names(colsNumeric)[colsNumeric]]
   }
-  return(xts::xts(as.matrix(r), order.by = if (inherits(x[[1L]], "IDate")) as.Date(x[[1L]]) else x[[1L]]))
+  xts::xts(as.matrix(r), order.by = if (inherits(x[[1L]], "IDate")) as.Date(x[[1L]]) else x[[1L]])
 }
 # nocov end

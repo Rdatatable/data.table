@@ -122,13 +122,15 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
 }
 
 dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose"), value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, value.var.in.RHSdots = value.var.in.dots) {
-  if (!is.data.table(data)) stopf("'data' must be a data.table.")
+  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
   drop = as.logical(rep_len(drop, 2L))
-  if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
+  if (anyNA(drop)) stopf("'drop' must be logical vector with no missing entries")
   if (!isTRUEorFALSE(value.var.in.dots))
-    stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
-  if (!isTRUEorFALSE(value.var.in.LHSdots) || !isTRUEorFALSE(value.var.in.RHSdots))
-    stopf("Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
+    stopf("'%s' must be TRUE or FALSE", "value.var.in.dots")
+  if (!isTRUEorFALSE(value.var.in.LHSdots))
+    stopf("'%s' must be TRUE or FALSE", "value.var.in.LHSdots")
+  if (!isTRUEorFALSE(value.var.in.RHSdots))
+    stopf("'%s' must be TRUE or FALSE", "value.var.in.RHSdots")
   # #2980 if explicitly providing fun.aggregate=length but not a value.var,
   #   just use the last column (as guess(data) would do) because length will be
   #   the same on all columns
@@ -185,12 +187,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     maybe_err = function(list.of.columns) {
       if (!all(lengths(list.of.columns) == 1L)) {
-        msg = gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
-        if (is.null(fill)) { # TODO change to always stopf #6329
-          stop(msg, domain=NA, call. = FALSE)
-        } else {
-          warning(msg, domain=NA, call. = FALSE)
-        }
+        stopf("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
       }
       list.of.columns
     }
@@ -214,42 +211,42 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   # 'dat' != 'data'? then setkey to speed things up (slightly), else ad-hoc (for now). Still very fast!
   if (!is.null(fun.call) || !is.null(subset))
     setkeyv(dat, varnames)
-  if (length(rhsnames)) {
-    lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
-    # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
-    if (all(drop)) {
-      map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE))) # #2202 fix
-      maporder = lapply(map, order_)
-      mapunique = lapply(seq_along(map), function(i) .Call(CsubsetVector, map[[i]], maporder[[i]]))
-      lhs = .Call(CsubsetDT, lhs, maporder[[1L]], seq_along(lhs))
-      rhs = .Call(CsubsetDT, rhs, maporder[[2L]], seq_along(rhs))
-    } else {
-      lhs_ = if (!drop[1L]) cj_uniq(lhs) else setkey(unique(lhs, by=names(lhs)))
-      rhs_ = if (!drop[2L]) cj_uniq(rhs) else setkey(unique(rhs, by=names(rhs)))
-      map = vector("list", 2L)
-      .Call(Csetlistelt, map, 1L, lhs_[lhs, which=TRUE])
-      .Call(Csetlistelt, map, 2L, rhs_[rhs, which=TRUE])
-      setDT(map)
-      mapunique = vector("list", 2L)
-      .Call(Csetlistelt, mapunique, 1L, seq_len(nrow(lhs_)))
-      .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
-      lhs = lhs_; rhs = rhs_
-    }
-    maplen = lengths(mapunique)
-    idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
-    some_fill = anyNA(idx)
-    fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
-    if (run_agg_funs && is.null(fill) && some_fill) {
-      fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
-    }
-    ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
-    allcols = do.call(paste, c(rhs, sep=sep))
-    if (length(valnames) > 1L)
-      allcols = do.call(paste, if (identical(".", allcols)) list(valnames, sep=sep)
-            else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
-      # removed 'setcolorder()' here, #1153
-    setattr(ans, 'names', c(lhsnames, allcols))
-    setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else internal_error("empty rhsnames") # nocov
-  return(ans)
+  if (!length(rhsnames)) internal_error("empty rhsnames") # nocov
+  lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
+  # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
+  if (all(drop)) {
+    map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE))) # #2202 fix
+    maporder = lapply(map, order_)
+    mapunique = lapply(seq_along(map), function(i) .Call(CsubsetVector, map[[i]], maporder[[i]]))
+    lhs = .Call(CsubsetDT, lhs, maporder[[1L]], seq_along(lhs))
+    rhs = .Call(CsubsetDT, rhs, maporder[[2L]], seq_along(rhs))
+  } else {
+    lhs_ = if (!drop[1L]) cj_uniq(lhs) else setkey(unique(lhs, by=names(lhs)))
+    rhs_ = if (!drop[2L]) cj_uniq(rhs) else setkey(unique(rhs, by=names(rhs)))
+    map = vector("list", 2L)
+    .Call(Csetlistelt, map, 1L, lhs_[lhs, which=TRUE])
+    .Call(Csetlistelt, map, 2L, rhs_[rhs, which=TRUE])
+    setDT(map)
+    mapunique = vector("list", 2L)
+    .Call(Csetlistelt, mapunique, 1L, seq_len(nrow(lhs_)))
+    .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
+    lhs = lhs_; rhs = rhs_
+  }
+  maplen = lengths(mapunique)
+  idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
+  some_fill = anyNA(idx)
+  fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
+  if (run_agg_funs && is.null(fill) && some_fill) {
+    fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
+  }
+  ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
+  allcols = do.call(paste, c(rhs, sep=sep))
+  if (length(valnames) > 1L)
+    allcols = do.call(paste, if (identical(".", allcols)) list(valnames, sep=sep)
+          else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
+    # removed 'setcolorder()' here, #1153
+  setattr(ans, 'names', c(lhsnames, allcols))
+  setDT(ans)
+  setattr(ans, 'sorted', lhsnames)
+  ans
 }

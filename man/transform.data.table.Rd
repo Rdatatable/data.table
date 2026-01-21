@@ -10,8 +10,8 @@
   \code{within}, \code{transform} and other similar functions in \code{data.table} are not just provided for users who expect them to work, but for non-data.table-aware packages to retain keys, for example. Hopefully the faster and more convenient \code{data.table} syntax will be used in time. See examples.
 }
 \usage{
-\method{transform}{data.table}(`_data`, \ldots)
-\method{within}{data.table}(data, expr, \ldots)
+\method{transform}{data.table}(`_data`, ...)
+\method{within}{data.table}(data, expr, ...)
 }
 \arguments{
   \item{data, _data}{ data.table to be transformed.}
@@ -51,7 +51,7 @@ DT[,`:=`(b = rev(b),
          a = NULL)]
 identical(DT,DT2)
 
-DT$d = ave(DT$b, DT$c, FUN=max)               # copies entire DT, even if it is 10GB in RAM
+DT$d = ave(DT$b, DT$c, FUN=max)               # copies entire DT, even if it is 10GiB in RAM
 DT = DT[, transform(.SD, d=max(b)), by="c"]   # same, but even worse as .SD is copied for each group
 DT[, d:=max(b), by="c"]                       # same result, but much faster, shorter and scales
 

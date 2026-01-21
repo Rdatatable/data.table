@@ -18,6 +18,9 @@ of \code{xts::first} is deployed. }
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }
+\note{
+For zero-length vectors, \code{first(x)} and \code{last(x)} mimic \code{head(x, 1)} and \code{tail(x, 1)} by returning an empty vector instead of \code{NA}. However, unlike \code{head()}/\code{tail()} and base R subsetting (e.g., \code{x[1]}), they do not preserve attributes like names.
+}
 \value{
 If no other arguments are supplied it depends on the type of \code{x}. The first/last item
 of a vector or list. The first/last row of a \code{data.frame} or \code{data.table}.

@@ -28,7 +28,8 @@ setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
 }
 
 \seealso{
-  \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}
+  \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}},
+  See the FAQ vignette: \code{vignette("datatable-faq", package = "data.table")}.
 }
 \examples{
 
@@ -58,6 +59,14 @@ setDT(X, key="a")[]
 X = list(a=1:5, a=6:10)
 setDT(X, check.names=TRUE)[]
 
+# Example demonstrating setDT after loading from RDS
+rds_file = tempfile(fileext = ".rds")
+X = data.table(a = 1:5, b = letters[1:5])
+saveRDS(X, rds_file)
+X_loaded = readRDS(rds_file)
+setDT(X_loaded)  # restore internal data.table attributes
+print(X_loaded)
+unlink(rds_file)
 }
 \keyword{ data }
 

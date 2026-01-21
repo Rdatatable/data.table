@@ -2,16 +2,49 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
 name: code-quality
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      r:  ${{ steps.filter.outputs.r }}
+      c:  ${{ steps.filter.outputs.c }}
+      po: ${{ steps.filter.outputs.po }}
+      md: ${{ steps.filter.outputs.md }}
+      rd: ${{ steps.filter.outputs.rd }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # ensure diff against base is available for PRs
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            r:
+              - '**/*.R'
+              - '**/*.Rmd'
+            c:
+              - '**/*.c'
+              - '**/*.h'
+            po:
+              - 'po/**/*.po'
+            md:
+              - '**/*.md'
+              - '**/*.Rmd'
+            rd:
+              - 'man/**/*.Rd'
+
   lint-r:
+    needs: changes
+    if: needs.changes.outputs.r == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -31,49 +64,48 @@ jobs:
           LINTR_ERROR_ON_LINT: true
           R_LINTR_LINTER_FILE: .ci/.lintr
   lint-c:
+    needs: changes
+    if: needs.changes.outputs.c == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
       - name: Install Coccinelle
         # relying on the action above us to have updated the package cache
         run: /usr/bin/sudo apt-get -y install coccinelle
       - name: Lint
         run: |
-          linter_env = new.env()
-          for (f in list.files('.ci/linters/c', full.names=TRUE)) sys.source(f, linter_env)
-          for (f in list.files('src', pattern='[.][ch]$', full.names=TRUE)) {
-            c_obj = list(path = f, lines = readLines(f))
-            c_obj$preprocessed = system2("gcc", c("-fpreprocessed", "-E", f), stdout=TRUE, stderr=FALSE)
-            for (linter in ls(linter_env)) linter_env[[linter]](c_obj)
-            # TODO(#6272): Incorporate more checks from CRAN_Release
-          }
-        shell: Rscript {0}
+          Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
   lint-po:
+    needs: changes
+    if: needs.changes.outputs.po == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
       - name: Check translations
+        # only pay attention to files edited in the current PR, otherwise we can get
+        # a situation like after #6424 where some untranslated messages were added
+        # as part of non-translation maintenance, but this GHA would go red repeatedly
+        # until a translation is added or the blank/fuzzy translations removed. We'd
+        # rather only have the failure on one PR, then ignore these files later.
         run: |
-          linter_env = new.env()
-          for (f in list.files('.ci/linters/po', full.names=TRUE)) sys.source(f, linter_env)
-          for (po_file in list.files(pattern = "[.]po$", full.names=TRUE)) {
-            # only pay attention to files edited in the current PR, otherwise we can get
-            #   a situation like after #6424 where some untranslated messages were added
-            #   as part of non-translation maintenance, but this GHA would go red repeatedly
-            #   until a translation is added or the blank/fuzzy translations removed. We'd
-            #   rather only have the failure on one PR, then ignore these files later.
-            diff_v_master = system2("git", c("diff", "master", po_file), stdout=TRUE)
-            if (!length(diff_v_master)) next
-            for (linter in ls(linter_env)) linter_env[[linter]](po_file)
-          }
-        shell: Rscript {0}
+          Rscript .ci/lint.R .ci/linters/po po '[.]po$'
   lint-md:
+    needs: changes
+    if: needs.changes.outputs.md == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
       - name: Lint
-        run: for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
-        shell: Rscript {0}
+        run: Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
+  lint-rd:
+    needs: changes
+    if: needs.changes.outputs.rd == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: r-lib/actions/setup-r@v2
+      - name: Lint Rd files
+        run: Rscript .ci/lint.R .ci/linters/rd man '[.]Rd$'

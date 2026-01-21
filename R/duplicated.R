@@ -4,7 +4,7 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
-  if (is.na(fromLast) || !is.logical(fromLast)) stopf("'fromLast' must be TRUE or FALSE")
+  if (is.na(fromLast) || !is.logical(fromLast)) stopf("'%s' must be TRUE or FALSE", "fromLast")
   if (!length(by)) by = NULL  #4594
   query = .duplicated.helper(x, by)
 
@@ -49,7 +49,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
 
 # Test for #2013 unique() memory efficiency improvement in v1.10.5
 # set.seed(1)
-# Create unique 7.6GB DT on 16GB laptop
+# Create unique 7.6GiB DT on 16GiB laptop
 # DT = data.table(
 #  A = sample(1e8, 2e8, TRUE),
 #  B = sample(1e8, 2e8, TRUE),

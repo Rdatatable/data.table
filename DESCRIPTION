@@ -1,23 +1,24 @@
 Package: data.table
-Version: 1.16.99
+Version: 1.18.99
 Title: Extension of `data.frame`
-Depends: R (>= 3.3.0)
+Depends: R (>= 3.5.0)
 Imports: methods
-Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), R.utils, xts, zoo (>= 1.8-1), yaml, knitr, markdown
+Suggests: bit64 (>= 4.0.0), R.utils, xts, zoo (>= 1.8-1), yaml, litedown, codetools
+Enhances: knitr, xfun
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
 License: MPL-2.0 | file LICENSE
 URL: https://r-datatable.com, https://Rdatatable.gitlab.io/data.table, https://github.com/Rdatatable/data.table
 BugReports: https://github.com/Rdatatable/data.table/issues
-VignetteBuilder: knitr
+VignetteBuilder: litedown
 Encoding: UTF-8
 ByteCompile: TRUE
 Authors@R: c(
   person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com", comment = c(ORCID="0000-0002-2137-1391")),
   person("Matt","Dowle",           role="aut",          email="mattjdowle@gmail.com"),
   person("Arun","Srinivasan",      role="aut",          email="asrini@pm.me"),
-  person("Jan","Gorecki",          role="aut"),
-  person("Michael","Chirico",      role="aut", comment = c(ORCID="0000-0003-0787-087X")),
-  person("Toby","Hocking",         role="aut", comment = c(ORCID="0000-0002-3146-0865")),
+  person("Jan","Gorecki",          role="aut",          email="j.gorecki@wit.edu.pl"),
+  person("Michael","Chirico",      role="aut",          email="michaelchirico4@gmail.com", comment = c(ORCID="0000-0003-0787-087X")),
+  person("Toby","Hocking",         role="aut",          email="toby.hocking@r-project.org", comment = c(ORCID="0000-0002-3146-0865")),
   person("Benjamin","Schwendinger",role="aut", comment = c(ORCID="0000-0003-3315-8114")),
   person("Ivan", "Krylov",         role="aut",          email="ikrylov@disroot.org",   comment = c(ORCID="0000-0002-0172-3812")),
   person("Pasha","Stetsenko",      role="ctb"),
@@ -55,8 +56,8 @@ Authors@R: c(
   person("James","Sams",           role="ctb"),
   person("Martin","Morgan",        role="ctb"),
   person("Michael","Quinn",        role="ctb"),
-  person("@javrucebo","",          role="ctb"),
-  person("@marc-outins","",        role="ctb"),
+  person(given="@javrucebo",       role="ctb", comment="GitHub user"),
+  person("Marc","Halperin",        role="ctb"),
   person("Roy","Storey",           role="ctb"),
   person("Manish","Saraswat",      role="ctb"),
   person("Morgan","Jacob",         role="ctb"),
@@ -100,5 +101,11 @@ Authors@R: c(
   person("Vincent", "Rocher",      role="ctb"),
   person("Vijay", "Lulla",         role="ctb"),
   person("Aljaž", "Sluga",         role="ctb"),
-  person("Bill", "Evans",          role="ctb")
+  person("Bill", "Evans",          role="ctb"),
+  person("Reino", "Bruner",        role="ctb"),
+  person(given="@badasahog",       role="ctb", comment="GitHub user"),
+  person("Vinit", "Thakur",        role="ctb"),
+  person("Mukul", "Kumar",         role="ctb"),
+  person("Ildikó", "Czeller",      role="ctb"),
+  person("Manmita", "Das",         role="ctb")
   )

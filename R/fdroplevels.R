@@ -1,22 +1,21 @@
 # 647 fast droplevels.data.table method
 fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   stopifnot(inherits(x, "factor"))
+  if (!length(x)) return(structure(integer(), class='factor', levels=character())) # skip factor() overhead
   lev = which(tabulate(x, nlevels(x)) & (!match(levels(x), exclude, 0L)))
   ans = match(as.integer(x), lev)
   setattr(ans, 'levels', levels(x)[lev])
   setattr(ans, 'class', class(x))
-  return(ans)
+  ans
 }
 
-droplevels.data.table = function(x, except=NULL, exclude, in.place=NULL, ...){
-  if (!is.null(in.place)) stopf("droplevels() with in.place=TRUE is deprecated. Use setdroplevels() instead.")
+droplevels.data.table = function(x, except=NULL, exclude, ...){
   x = copy(x)
   if (missing(exclude)) exclude = NULL
   setdroplevels(x, except, exclude)[]
 }
 
 setdroplevels = function(x, except=NULL, exclude=NULL) {
-  if (!nrow(x)) return(invisible(x))
   ix = vapply_1b(x, is.factor)
   if (!is.null(except)) {
     stopifnot(is.numeric(except), except >= 1L, except <= length(x))

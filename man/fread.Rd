@@ -17,7 +17,7 @@ skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64", "integer64"),
 col.names,
 check.names=FALSE, encoding="unknown",
-strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
+strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="",
 key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
@@ -25,7 +25,7 @@ nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
-yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC"
+yaml=FALSE, tmpdir=tempdir(), tz="UTC"
 )
 }
 \arguments{
@@ -56,6 +56,7 @@ yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC"
   \item{strip.white}{ Logical, default \code{TRUE}, in which case leading and trailing whitespace is stripped from unquoted \code{"character"} fields. \code{"numeric"} fields are always stripped of leading and trailing whitespace.}
   \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. If \code{fill=Inf} then the whole file is read for detecting the number of columns. }
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
+  \item{comment.char}{Character vector of length one containing a single character of an empty string. Any text after the comment character in a line is ignored, including skipping comment-only lines. Use \code{""} to turn off the interpretation of comments altogether.}
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
@@ -65,15 +66,14 @@ yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC"
   \item{logicalYN}{If TRUE a column containing only Ys and Ns will be read as logical, otherwise as character.}
   \item{keepLeadingZeros}{If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric.}
   \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
-  \item{autostart}{ Deprecated. Please use \code{skip} instead. }
   \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls, e.g. when the input is a URL or a shell command. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base:tempfile]{base::tempdir}}. }
-  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
+  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs \code{""} is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
 }
 \details{
 
 A sample of 10,000 rows is used for a very good estimate of column types. 100 contiguous rows are read from 100 equally spaced points throughout the file including the beginning, middle and the very end. This results in a better guess when a column changes type later in the file (e.g. blank at the beginning/only populated near the end, or 001 at the start but 0A0 later on). This very good type guess enables a single allocation of the correct type up front once for speed, memory efficiency and convenience of avoiding the need to set \code{colClasses} after an error. Even though the sample is large and jumping over the file, it is almost instant regardless of the size of the file because a lazy on-demand memory map is used. If a jump lands inside a quoted field containing newlines, each newline is tested until 5 lines are found following it with the expected number of fields. The lowest type for each column is chosen from the ordered list: \code{logical}, \code{integer}, \code{integer64}, \code{double}, \code{character}. Rarely, the file may contain data of a higher type in rows outside the sample (referred to as an out-of-sample type exception). In this event \code{fread} will \emph{automatically} reread just those columns from the beginning so that you don't have the inconvenience of having to set \code{colClasses} yourself; particularly helpful if you have a lot of columns. Such columns must be read from the beginning to correctly distinguish "00" from "000" when those have both been interpreted as integer 0 due to the sample but 00A occurs out of sample. Set \code{verbose=TRUE} to see a detailed report of the logic deployed to read your file.
 
-There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. \code{sep2}) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in \code{fread}'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currently 2^31-1 bytes, 2GB).
+There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. \code{sep2}) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in \code{fread}'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currently 2^31-1 bytes, 2GiB).
 
 The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a set of different files which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{fread} through a set of files and as long as each file is regular and delimited, \code{fread} can read them all. Whether they all stack is another matter but at least each one is read quickly without you needing to vary \code{colClasses} in \code{read.table} or \code{read.csv}.
 
@@ -119,6 +119,15 @@ Currently, the \code{yaml} setting is somewhat inflexible with respect to incorp
 
 When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
 
+\bold{Automatic Decompression:}
+
+In many cases, \code{fread} can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
+
+  \itemize{
+    \item \code{.gz} and \code{.bz2} are supported out of the box.
+    \item \code{.zip} is also supported. If the archive contains a single data file, \code{fread} will read it. If the archive contains multiple files, \code{fread} will produce an error.
+  }
+
 \bold{Shell commands:}
 
 \code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{\link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
@@ -140,7 +149,7 @@ Background :\cr
 \url{https://stackoverflow.com/a/9818473/403310}\cr
 \url{https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
 
-finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
+finagle = "to obtain (something) by indirect or involved means", \url{https://www.merriam-webster.com/dictionary/finagler}
 
 On YAML, see \url{https://yaml.org/}.
 }
@@ -232,8 +241,8 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
-# 50 MB (1e6 rows x 6 columns)
+cat("File size (MiB):", round(file.info("test.csv")$size/1024^2),"\n")
+# 50 MiB (1e6 rows x 6 columns)
 
 system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
 # 5.4 sec (first time in fresh R session)
@@ -258,13 +267,15 @@ l = vector("list",10)
 for (i in 1:10) l[[i]] = DT
 DTbig = rbindlist(l)
 tables()
-write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
-# 500MB csv (10 million rows x 6 columns)
+write.table(DTbig, "testbig.csv", sep=",", row.names=FALSE, quote=FALSE)
+# ~500MiB csv (10 million rows x 6 columns)
 
-system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
+system.time({
+  DF <- read.table("testbig.csv", header=TRUE, sep=",",
+    quote="", stringsAsFactors=FALSE, comment.char="", nrows=1e7,
+    colClasses=c("integer", "integer", "numeric",
+                 "character", "numeric", "integer"))
+})
 # 17.0 sec (varies)
 
 system.time(DT <- fread("testbig.csv"))

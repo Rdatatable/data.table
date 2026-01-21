@@ -64,15 +64,12 @@ static char msg[1001];
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
- * We have to trap on exit anyway to call savetl_end().
  * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
  *     R_Calloc/R_Realloc needs to be R_Free'd, even before error() [R-exts$6.1.2]. An oom within R_Calloc causes a previous R_Calloc to leak so R_Calloc would still needs to be trapped anyway.
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
 static void free_ustr(void) {
-  for(int i=0; i<ustr_n; i++)
-    SET_TRUELENGTH(ustr[i],0);
   free(ustr); ustr=NULL;
   ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
 }
@@ -96,20 +93,21 @@ static void cleanup(void) {
   free_ustr();
   if (key!=NULL) { int i=0; while (key[i]!=NULL) free(key[i++]); }  // ==nradix, other than rare cases e.g. tests 1844.5-6 (#3940), and if a calloc fails
   free(key); key=NULL; nradix=0;
-  savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
+// # nocov start
 void internal_error_with_cleanup(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   cleanup();
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
+// # nocov end
 
 static void push(const int *x, const int n) {
   if (!retgrp) return;  // clearer to have the switch here rather than before each call
@@ -117,10 +115,10 @@ static void push(const int *x, const int n) {
   int newn = gs_thread_n[me] + n;
   if (gs_thread_alloc[me] < newn) {
     gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
-    gs_thread[me] = realloc(gs_thread[me], gs_thread_alloc[me]*sizeof(int));
+    gs_thread[me] = realloc(gs_thread[me], sizeof(*gs_thread[me])*gs_thread_alloc[me]);
     if (gs_thread[me]==NULL) STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);
   }
-  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
+  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(*gs_thread[me]));
   gs_thread_n[me] += n;
 }
 
@@ -128,13 +126,15 @@ static void flush(void) {
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
+  // normally doesn't happen, can be encountered under heavy load, #7051
+  if (!n) return; // # nocov
   int newn = gs_n + n;
   if (gs_alloc < newn) {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
-    gs = realloc(gs, gs_alloc*sizeof(int));
+    gs = realloc(gs, sizeof(*gs)*gs_alloc);
     if (gs==NULL) STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc);
   }
-  memcpy(gs+gs_n, gs_thread[me], n*sizeof(int));
+  memcpy(gs+gs_n, gs_thread[me], sizeof(*gs)*n);
   gs_n += n;
   gs_thread_n[me] = 0;
 }
@@ -242,6 +242,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 //   3) no need to maintain o.  Just simply reorder x. No grps or push.
 {
   if (n<=1) return;
+  while (TRUE) {
   int *thiscounts = cradix_counts + radix*256;
   uint8_t lastx = 0;  // the last x is used to test its bin
   for (int i=0; i<n; i++) {
@@ -249,9 +250,9 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[ lastx ]++;
   }
   if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {
-    cradix_r(xsub, n, radix+1);
     thiscounts[lastx] = 0;  // all x same value, the rest must be 0 already, save the memset
-    return;
+    radix++;                // tail recursion eliminated to avoid segfault when prefixes are long
+    continue;
   }
   int itmp = thiscounts[0];
   for (int i=1; i<256; i++) {
@@ -263,7 +264,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   }
   memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
   if (radix == ustr_maxlen-1) {
-    memset(thiscounts, 0, 256*sizeof(int));
+    memset(thiscounts, 0, 256*sizeof(*thiscounts));
     return;
   }
   if (thiscounts[0] != 0) STOP(_("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d"), thiscounts[0], radix);
@@ -276,12 +277,14 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to do this ready for this memory's reuse
   }
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
+  break;
+  }
 }
 
 static void cradix(SEXP *x, int n)
 {
-  cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
-  cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
+  cradix_counts = calloc(ustr_maxlen*256, sizeof(*cradix_counts));  // counts for the letters of left-aligned strings
+  cradix_xtmp = malloc(sizeof(*cradix_xtmp) * ustr_n);
   if (!cradix_counts || !cradix_xtmp) {
     free(cradix_counts); free(cradix_xtmp); // # nocov
     STOP(_("Failed to alloc cradix_counts and/or cradix_tmp")); // # nocov
@@ -291,15 +294,16 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8, hashtab **marks_)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
   bool anynotascii=false, anynotutf8=false;
   if (ustr_n!=0) internal_error_with_cleanup(__func__, "ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) internal_error_with_cleanup(__func__, "ustr_maxlen isn't 0 when starting range_str");  // # nocov
-  // savetl_init() has already been called at the start of forder
-  #pragma omp parallel for num_threads(getDTthreads(n, true))
+  bool fail = false;
+  hashtab *marks = *marks_;
+  #pragma omp parallel for num_threads(getDTthreads(n, true)) shared(marks, fail)
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
     if (s==NA_STRING) {
@@ -307,20 +311,27 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       na_count++;
       continue;
     }
-    if (TRUELENGTH(s)<0) continue;  // seen this group before
-    #pragma omp critical
-    if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
-      if (TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
-        savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
-      // now save unique SEXP in ustr so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
+    if (hash_lookup(marks,s,0)<0) continue; // seen this group before
+    #pragma omp critical(range_str_write)
+    if (hash_lookup(marks,s,0)>=0) {  // another thread may have set it while I was waiting, so check it again
+      // now save unique SEXP in ustr so we can loop sort uniques when sorting too
       if (ustr_alloc<=ustr_n) {
-        ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
+        ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KiB (32 pages)
         if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
-        ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+        ustr = realloc(ustr, sizeof(SEXP) * ustr_alloc);
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
-      SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
+      hashtab *new_marks = hash_set_shared(marks, s, -ustr_n); // unique in any order is fine. first-appearance order is achieved later in count_group
+      if (new_marks != marks) {
+        if (new_marks) {
+          // Under the OpenMP memory model, if the hash table is expanded, we have to explicitly update the pointer.
+          #pragma omp atomic write
+          marks = new_marks;
+        } else { // longjmp() from a non-main thread not allowed
+          fail = true;
+        }
+      }
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
             !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
@@ -331,6 +342,9 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       }
     }
   }
+  // if the hash table grew, propagate the changes to the caller
+  *marks_ = marks;
+  if (fail) internal_error_with_cleanup(__func__, "failed to grow the 'marks' hash table");
   *out_na_count = na_count;
   *out_anynotascii = anynotascii;
   *out_anynotutf8 = anynotutf8;
@@ -340,37 +354,32 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     return;
   }
   if (anynotutf8) {
+    void *vmax = vmaxget();
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
-    SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
-    if (!ustr3)
-      STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
+    SEXP *ustr3 = (SEXP *)R_alloc(sizeof(*ustr3), ustr_n);
+    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(*ustr3) * ustr_n);
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
       SEXP s = ustr3[i];
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (TRUELENGTH(s)>0) savetl(s);
     }
     cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
-    SET_TRUELENGTH(ustr3[0], -1);
+    hash_set(marks, ustr3[0], -1);
     int o = -1;
     for (int i=1; i<ustr_n; i++) {
       if (ustr3[i] == ustr3[i-1]) continue;  // use the same o for duplicates
-      SET_TRUELENGTH(ustr3[i], --o);
+      hash_set(marks, ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
-    int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl)
-      STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
+    int *tl = (int *)R_alloc(sizeof(*tl), ustr_n);
     const SEXP *tt = STRING_PTR_RO(ustr2);
-    for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
-    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
-    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
-    free(tl);
-    free(ustr3);
+    for (int i=0; i<ustr_n; i++) tl[i] = hash_lookup(marks, tt[i], 0);   // fetches the o in ustr3 into tl which is ordered by ustr
+    for (int i=0; i<ustr_n; i++) hash_set(marks, ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
+    for (int i=0; i<ustr_n; i++) hash_set(marks, ustr[i], tl[i]); // put back the o into ustr's tl
     UNPROTECT(1);
+    vmaxset(vmax);
     *out_min = 1;
     *out_max = -o;  // could be less than ustr_n if there are duplicates in the utf8s
   } else {
@@ -380,7 +389,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       // that this is always ascending; descending is done in WRITE_KEY using max-this
       cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.
       for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
-        SET_TRUELENGTH(ustr[i], -i-1);
+        hash_set(marks, ustr[i], -i-1);
     }
     // else group appearance order was already saved to tl in the first pass
   }
@@ -431,7 +440,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
   STOP(_("Unknown non-finite value; not NA, NaN, -Inf or +Inf"));  // # nocov
 }
 
-void radix_r(const int from, const int to, const int radix);
+void radix_r(const int from, const int to, int radix);
 
 /*
   OpenMP is used here to parallelize multiple operations that come together to
@@ -452,9 +461,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 {
 
 #ifdef TIMING_ON
-  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(double));
-  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(int));
-  memset(stat,   0, 257*sizeof(uint64_t));
+  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(*tblock));
+  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(*nblock));
+  memset(stat,   0, 257*sizeof(*stat));
   TBEG()
 #endif
 
@@ -545,13 +554,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   #pragma omp parallel for num_threads(getDTthreads(nrow, true))
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
   TEND(1)
-  savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
   int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
-  key = calloc(keyAlloc, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column.
+  key = calloc(keyAlloc, sizeof(*key));  // needs to be before loop because part II relies on part I, column-by-column.
   if (!key)
-    STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(uint8_t *));  // # nocov
+    STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(*key));  // # nocov
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
@@ -572,6 +580,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
         STOP(_("Item %d of order (ascending/descending) is %d. Must be +1 or -1."), col+1, sortType);
     }
     //Rprintf(_("sortType = %d\n"), sortType);
+    hashtab * marks = NULL; // only used for STRSXP below
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -608,7 +617,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
+      marks = hash_create(4096); // relatively small to allocate, can grow exponentially later
+      PROTECT(marks->prot); n_protect++;
+      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8, &marks);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
@@ -663,9 +674,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL) {
-        uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
-        if (!tt)
-          STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(uint8_t)); // # nocov
+        uint8_t *tt = calloc(nrow, sizeof(*tt));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+        if (!tt) {
+          free(key); // # nocov
+          STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(*tt)); // # nocov
+        }
         key[nradix+b] = tt;
       }
     }
@@ -765,7 +778,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
-          elem = -TRUELENGTH(xd[i]);
+          elem = -hash_lookup(marks, xd[i], 0);
         }
         WRITE_KEY
       }}
@@ -784,17 +797,17 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   // global nth, TMP & UGRP
   nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
-  TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
-  UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
+  TMP =  malloc(sizeof(*TMP)*nth*UINT16_MAX); // used by counting sort (my_n<=65536) in radix_r()
+  UGRP = malloc(sizeof(*UGRP)*nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
     free(TMP); free(UGRP); // # nocov
     STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth); // # nocov
   }
   
   if (retgrp) {
-    gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
-    gs_thread_alloc = calloc(nth, sizeof(int));
-    gs_thread_n = calloc(nth, sizeof(int));
+    gs_thread = calloc(nth, sizeof(*gs_thread));     // thread private group size buffers
+    gs_thread_alloc = calloc(nth, sizeof(*gs_thread_alloc));
+    gs_thread_n = calloc(nth, sizeof(*gs_thread_n));
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
       free(gs_thread); free(gs_thread_alloc); free(gs_thread_n); // # nocov
       STOP(_("Could not allocate (very tiny) group size thread buffers")); // # nocov
@@ -893,7 +906,8 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-void radix_r(const int from, const int to, const int radix) {
+void radix_r(const int from, const int to, int radix) {
+  for (;;) {
   TBEG();
   const int my_n = to-from+1;
   if (my_n==1) {  // minor TODO: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
@@ -913,7 +927,7 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
+    uint8_t *o = malloc(sizeof(*o) * my_n);
     if (!o)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o"); // # nocov
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
@@ -982,18 +996,18 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (!skip) {
       // reorder osub and each remaining ksub
-      int *TMP = malloc(my_n * sizeof(int));
+      int *TMP = malloc(sizeof(*TMP) * my_n);
       if (!TMP) {
         free(o); // # nocov
-        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP"); // # nocov
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*TMP) * my_n), "TMP"); // # nocov
       }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
-      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
+      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(*anso));
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
-        memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
+        memcpy((uint8_t *restrict)(key[r]+from), (const uint8_t *)TMP, my_n);
       }
       free(TMP);
       TEND(8)
@@ -1005,9 +1019,9 @@ void radix_r(const int from, const int to, const int radix) {
       return;
     }
     int ngrp=0; //minor TODO: could know number of groups with certainty up above
-    int *my_gs = malloc(my_n * sizeof(int));
+    int *my_gs = malloc(sizeof(*my_gs) * my_n);
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs"); // # nocov
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * my_n), "my_gs"); // # nocov
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -1017,6 +1031,11 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(9)
     if (radix+1==nradix || ngrp==my_n) {  // ngrp==my_n => unique groups all size 1 and we can stop recursing now
       push(my_gs, ngrp);
+    } else if (ngrp==1) {  // ngrp == 1 => all same byte at this radix; go to next radix with same splits #4300
+      // no need to push since gs stays the same
+      free(my_gs);
+      radix++;
+      continue;
     } else {
       for (int i=0, f=from; i<ngrp; i++) {
         radix_r(f, f+my_gs[i]-1, radix+1);
@@ -1086,7 +1105,7 @@ void radix_r(const int from, const int to, const int radix) {
       } else {
         const int *restrict osub = anso+from;
         for (int i=0; i<my_n; i++) my_TMP[my_starts[my_key[i]]++] = osub[i];
-        memcpy(anso+from, my_TMP, my_n*sizeof(int));
+        memcpy(anso+from, my_TMP, my_n*sizeof(*anso));
       }
       TEND(13)
 
@@ -1107,9 +1126,9 @@ void radix_r(const int from, const int to, const int radix) {
     if (!retgrp && radix+1==nradix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    int *my_gs = malloc(sizeof(*my_gs) * (ngrp==0 ? 256 : ngrp)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs"); // # nocov
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * (ngrp == 0 ? 256 : ngrp)), "my_gs"); // # nocov
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1120,6 +1139,11 @@ void radix_r(const int from, const int to, const int radix) {
     if (radix+1==nradix) {
       // aside: cannot be all size 1 (a saving used in my_n<=256 case above) because my_n>256 and ngrp<=256
       push(my_gs, ngrp);
+    } else if (ngrp==1) {  // ngrp == 1 => all same byte at this radix; go to next radix with same splits #4300
+      // no need to push since gs stays the same
+      free(my_gs);
+      radix++;
+      continue;
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
       for (int i=0, my_from=from; i<ngrp; i++) {
@@ -1135,9 +1159,9 @@ void radix_r(const int from, const int to, const int radix) {
   int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads(my_n, true));  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
   int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
-  uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
-  uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
-  int      *ngrps =  calloc(nBatch    ,sizeof(int));
+  uint16_t *counts = calloc(nBatch*256,sizeof(*counts));
+  uint8_t  *ugrps =  malloc(sizeof(*ugrps)*nBatch*256);
+  int      *ngrps =  calloc(nBatch    ,sizeof(*ngrps));
   if (!counts || !ugrps || !ngrps) {
     free(counts); free(ugrps); free(ngrps); // # nocov
     STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch); // # nocov
@@ -1148,11 +1172,11 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(16)
   #pragma omp parallel num_threads(getDTthreads(nBatch, false))
   {
-    int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
-    uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+    int     *my_otmp = malloc(sizeof(*my_otmp) * batchSize); // thread-private write
+    uint8_t *my_ktmp = malloc(sizeof(*my_ktmp) * batchSize * n_rem);
     if (!my_otmp || !my_ktmp) {
       free(my_otmp); free(my_ktmp);
-      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)(batchSize*(sizeof(int) + sizeof(uint8_t))));
+      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize));
     }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
@@ -1189,7 +1213,7 @@ void radix_r(const int from, const int to, const int radix) {
 
         // we haven't completed all batches, so we don't know where these groups should place yet
         // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
-        memcpy(anso+my_from, my_otmp, my_n*sizeof(int));
+        memcpy(anso+my_from, my_otmp, my_n*sizeof(*anso));
         for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+my_from, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
 
         // revert cumulate back to counts ready for vertical cumulate
@@ -1238,9 +1262,9 @@ void radix_r(const int from, const int to, const int radix) {
   // the counts are uint16_t but the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
-  int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
+  int *starts = calloc(nBatch*256, sizeof(*starts));  // keep starts the same shape and ugrp order as counts
   if (!starts)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(*starts)), "starts"); // # nocov
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];
@@ -1255,7 +1279,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   TEND(18 + notFirst*3)
   if (!skip) {
-    int *TMP = malloc(my_n * sizeof(int));
+    int *TMP = malloc(sizeof(*TMP) * my_n);
     if (!TMP)
       STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n); // # nocov
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
@@ -1267,11 +1291,11 @@ void radix_r(const int from, const int to, const int radix) {
       const int                my_ngrp = ngrps[batch];
       for (int i=0; i<my_ngrp; i++, byte++) {
         const uint16_t len = my_counts[*byte];
-        memcpy(TMP+my_starts[*byte], osub, len*sizeof(int));
+        memcpy(TMP+my_starts[*byte], osub, len*sizeof(*TMP));
         osub += len;
       }
     }
-    memcpy(anso+from, TMP, my_n*sizeof(int));
+    memcpy(anso+from, TMP, my_n*sizeof(*anso));
 
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
@@ -1287,16 +1311,16 @@ void radix_r(const int from, const int to, const int radix) {
           ksub += len;
         }
       }
-      memcpy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
+      memcpy(key[radix+1+r]+from, (const uint8_t *)TMP, my_n);
     }
     free(TMP);
   }
   TEND(19 + notFirst*3)
   notFirst = true;
 
-  int *my_gs = malloc(ngrp * sizeof(int));
+  int *my_gs = malloc(sizeof(*my_gs) * ngrp);
   if (!my_gs)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * ngrp), "my_gs"); // # nocov
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1304,6 +1328,16 @@ void radix_r(const int from, const int to, const int radix) {
     // aside: ngrp==my_n (all size 1 groups) isn't a possible short-circuit here similar to my_n>256 case above, my_n>65535 but ngrp<=256
     push(my_gs, ngrp);
     TEND(23)
+  }
+  else if (ngrp==1) {
+    // no need to push since gs stays the same
+    free(my_gs);
+    free(counts);
+    free(starts);
+    free(ugrps);
+    free(ngrps);
+    radix++;
+    continue;
   }
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
@@ -1356,7 +1390,8 @@ void radix_r(const int from, const int to, const int radix) {
   free(ugrps);
   free(ngrps);
   TEND(26)
-}
+  return;
+}}
 
 
 SEXP issorted(SEXP x, SEXP by)
@@ -1418,14 +1453,14 @@ SEXP issorted(SEXP x, SEXP by)
   const R_xlen_t nrow = xlength(VECTOR_ELT(x,0));
   // ncol>1
   // pre-save lookups to save deep switch later for each column type
-  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(size_t));
-  const char **ptrs = (const char **)R_alloc(ncol, sizeof(char *));
-  int *types =                (int *)R_alloc(ncol, sizeof(int));
+  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(*sizes));
+  const char **ptrs = (const char **)R_alloc(ncol, sizeof(*ptrs));
+  int *types =                (int *)R_alloc(ncol, sizeof(*types));
   for (int j=0; j<ncol; ++j) {
     int c = INTEGER(by)[j];
     if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));
     SEXP col = VECTOR_ELT(x, c-1);
-    sizes[j] = SIZEOF(col);
+    sizes[j] = RTYPE_SIZEOF(col);
     switch(TYPEOF(col)) {
     case INTSXP: case LGLSXP:
       types[j] = 0;
@@ -1616,7 +1651,7 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
 
 // isTRUE(getOption("datatable.use.index"))
 bool GetUseIndex(void) {
-  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  SEXP opt = GetOption1(install("datatable.use.index"));
   if (!IS_TRUE_OR_FALSE(opt))
     error(_("'datatable.use.index' option must be TRUE or FALSE")); // # nocov
   return LOGICAL(opt)[0];
@@ -1627,7 +1662,7 @@ bool GetAutoIndex(void) {
   // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
   // because it writes attr on .SD which is re-used by all groups leading to incorrect results
   // DT[, .(uN=uniqueN(.SD)), by=A]
-  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  SEXP opt = GetOption1(install("datatable.forder.auto.index"));
   if (isNull(opt))
     return false;
   if (!IS_TRUE_OR_FALSE(opt))

@@ -2,6 +2,7 @@
 # Don't use * or % like SQL's like.  Uses regexpr syntax - more powerful.
 # returns 'logical' so can be combined with other where clauses.
 like = function(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE) {
+  # TODO(R>=4.1.0): grepl itself has "smarter" logic for factor input.
   if (is.factor(vector)) {
     # indexing by factors is equivalent to indexing by the numeric codes, see ?`[` #4748
     ret = grepl(pattern, levels(vector), ignore.case = ignore.case, fixed = fixed, perl = perl)[vector]

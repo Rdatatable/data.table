@@ -44,8 +44,11 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
   int *ix = INTEGER(x);
-  for (int i=0; i<nx; ++i)
-    SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
+  const int nlevels = length(levels);
+  for (int i=0; i<nx; ++i) {
+    const int ixi = ix[i];
+    SET_STRING_ELT(xchar, i, (ixi >= 1 && ixi <= nlevels) ? STRING_ELT(levels, ix[i]-1) : NA_STRING);
+  }
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
   int *inewx = INTEGER(newx);
   for (int i=0; i<nx; ++i) ix[i] = inewx[i];
@@ -83,7 +86,7 @@ SEXP address(SEXP x)
 {
   // A better way than : http://stackoverflow.com/a/10913296/403310
   char buffer[32];
-  snprintf(buffer, 32, "%p", (void *)x); // # notranslate
+  snprintf(buffer, sizeof(buffer), "%p", (void*)x); // # notranslate
   return(mkString(buffer));
 }
 

@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 
 name: R-CMD-check
 
@@ -27,17 +28,19 @@ jobs:
           # GHA does run these jobs concurrently but even so reducing the load seems like a good idea.
           - {os: windows-latest, r: 'devel'}
           # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
-          # - {os: ubuntu-20.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", http-user-agent: "R/4.1.0 (ubuntu-20.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
+          # TODO(remotes>2.5.0): Use 24.04[noble?]
+          - {os: ubuntu-22.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"}
+          # - {os: ubuntu-22.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", http-user-agent: "R/4.1.0 (ubuntu-22.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
           #   GLCI covers R-devel; no need to delay contributors in dev due to changes in R-devel in recent days
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       RSPM: ${{ matrix.config.rspm }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      _R_CHECK_RD_CHECKRD_MINLEVEL_: -Inf
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -52,7 +55,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Restore R package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.R_LIBS_USER }}
           key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
@@ -64,7 +67,7 @@ jobs:
           while read -r cmd
           do
             eval sudo $cmd
-          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "22.04"))')
 
       - name: Install dependencies
         run: |

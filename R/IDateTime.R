@@ -40,13 +40,12 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz))
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   else
-    as.IDate(as.Date(x, tz =  if (is.null(tz)) '' else tz, ...))
+    as.IDate(as.Date(x, tz =  tz %||% '', ...))
 }
 
 as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
-  x = as.numeric(x)
   class(x) = "Date"
   x
 }
@@ -92,6 +91,8 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
           years = ISOdate(year(x), 1L, 1L)))
 }
 
+chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
+
 #Adapted from `+.Date`
 `+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
@@ -116,19 +117,22 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (storage.mode(e1) != "integer")
     internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stopf("unary - is not defined for \"IDate\" objects")
+    stopf('unary - is not defined for "IDate" objects')
   if (inherits(e2, "difftime"))
     internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
-    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
-    # i) ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
-    # ii) .Date was newly exposed in R some time after 3.4.4
+    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
+  if (inherits(e2, "Date")) {
+    setattr(ans, "class", "difftime")
+    setattr(ans, "units", "days")
+  } else {
+    setattr(ans, "class", c("IDate", "Date"))
+  }
   ans
 }
 
@@ -147,7 +151,7 @@ as.ITime.default = function(x, ...) {
 
 as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) as.ITime(unclass(x), ...)
-  else as.ITime(as.POSIXlt(x, tz = if (is.null(tz)) '' else tz, ...), ...)
+  else as.ITime(as.POSIXlt(x, tz = tz %||% '', ...), ...)
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
@@ -210,7 +214,7 @@ as.character.ITime = format.ITime = function(x, ...) {
   res
 }
 
-as.data.frame.ITime = function(x, ...) {
+as.data.frame.ITime = function(x, ..., optional=FALSE) {
   # This method is just for ggplot2, #1713
   # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
   # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.
@@ -220,7 +224,8 @@ as.data.frame.ITime = function(x, ...) {
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
   setattr(ans, "class", "data.frame")
   setattr(ans, "row.names", .set_row_names(length(x)))
-  setattr(ans, "names", "V1")
+  # require 'optional' support for passing back to e.g. data.frame() without overriding names there
+  if (!optional) setattr(ans, "names", "V1")
   ans
 }
 
@@ -342,7 +347,8 @@ yday    = function(x) convertDate(as.IDate(x), "yday")
 wday    = function(x) convertDate(as.IDate(x), "wday")
 mday    = function(x) convertDate(as.IDate(x), "mday")
 week    = function(x) convertDate(as.IDate(x), "week")
-isoweek = function(x) {
+# TODO(#3279): Investigate if improved as.IDate() makes our below implementation faster than this
+isoweek = function(x) as.integer(format(as.IDate(x), "%V"))
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
   # Approach:
@@ -350,11 +356,11 @@ isoweek = function(x) {
   # * Find the number of weeks having passed between
   #   January 1st of the year of the nearest Thursdays and x
 
-  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
-  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
-  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
-  1L + (nearest_thurs - year_start) %/% 7L
-}
+#  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
+#  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
+#  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
+#  1L + (nearest_thurs - year_start) %/% 7L
+isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
 
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")

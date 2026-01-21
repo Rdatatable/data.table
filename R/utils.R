@@ -1,15 +1,5 @@
 # all non-exported / unused internal (utility) functions
 
-# R 3.5.0 made isTRUE longer but more efficient :
-#   `is.logical(x) && length(x)==1L && !is.na(x) && x`
-# Before R 3.5.0, isTRUE was defined as simply:
-#   identical(TRUE,x)
-# See PR#3421 for timings.
-# It was changed in R so that isTRUE(c(a=TRUE)) returned TRUE: https://github.com/wch/r-source/commit/828997ac6ecfb73aaa0aae9d1d0584a4ffc50881#diff-b41e3f9f1d389bb6f7a842cd5a3308b8
-if (base::getRversion() < "3.5.0") {
-  isTRUE  = function(x) is.logical(x) && length(x)==1L && !is.na(x) && x    # backport R's new implementation of isTRUE
-  isFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x) && !x   # backport isFALSE that was added in R 3.5.0
-}
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
@@ -20,6 +10,12 @@ nan_is_na = function(x) {
   if (identical(x, NaN)) return(FALSE)
   stopf("Argument 'nan' must be NA or NaN")
 }
+
+# R 4.4.0
+if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
+
+# R 4.5.0
+if (!exists("grepv", "package:base")) grepv <- function(...) grep(..., value=TRUE)
 
 internal_error = function(...) {
   e1 = gettext("Internal error in")
@@ -80,7 +76,7 @@ which.last = function(x)
   if (!is.logical(x)) {
     stopf("x not boolean")
   }
-  length(x) - match(TRUE, rev(x)) + 1L
+  length(x) - match(TRUE, frev(x)) + 1L
 }
 
 require_bit64_if_needed = function(DT) {
@@ -206,9 +202,17 @@ edit.data.table = function(name, ...) {
 
 rss = function() {  #5515 #5517
   # nocov start
-  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
+  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KiB
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
-  round(ans / 1024.0, 1L)  # return MB
+  round(ans / 1024.0, 1L)  # return MiB
   # nocov end
+}
+
+formula_vars = function(f, x) { # .formula2varlist is not API and seems to have appeared after R-4.2, #6841
+  terms <- terms(f)
+  setNames(
+    eval(attr(terms, "variables"), x, environment(f)),
+    attr(terms, "term.labels")
+  )
 }

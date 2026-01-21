@@ -38,6 +38,7 @@
 \alias{mday}
 \alias{week}
 \alias{isoweek}
+\alias{isoyear}
 \alias{month}
 \alias{quarter}
 \alias{year}
@@ -69,13 +70,13 @@ as.IDate(x, \dots)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
-\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
+\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), ...)
 
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
 \method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
-\method{round}{ITime}(x, digits = c("hours", "minutes"), \ldots)
-\method{trunc}{ITime}(x, units = c("hours", "minutes"), \ldots)
+\method{round}{ITime}(x, digits = c("hours", "minutes"), ...)
+\method{trunc}{ITime}(x, units = c("hours", "minutes"), ...)
 
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
@@ -92,6 +93,7 @@ wday(x)
 mday(x)
 week(x)
 isoweek(x)
+isoyear(x)     
 month(x)
 quarter(x)
 year(x)
@@ -136,6 +138,11 @@ seconds in the day. \code{as.ITime} does not allow days longer than 24
 hours. Because \code{ITime} is stored in seconds, you can add it to a
 \code{POSIXct} object, but you should not add it to a \code{Date}
 object.
+
+For \code{as.ITime}, note that the string \code{"24:00:00"} is parsed as \code{"00:00:00"}.
+This is because the conversion uses \code{as.POSIXct}, which treats \code{"24:00:00"} as midnight of the next day. 
+This differs from ISO 8601 (which allows \code{"24:00:00"} to represent end-of-day), but aligns with POSIX standards.
+To represent end-of-day intervals, use \code{"23:59:59"} or arithmetic (e.g., \code{as.ITime("23:59:59") + 1L}).
 
 We also provide S3 methods to convert to and from \code{Date} and \code{POSIXct}.
 
@@ -182,6 +189,8 @@ which specify that the first week of the year is the one containing the first Th
 This convention ensures that week boundaries align consistently with year boundaries,
 accounting for both year transitions and varying day counts per week.
 
+Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO week.
+
 }
 
 \value{
@@ -195,12 +204,12 @@ accounting for both year transitions and varying day counts per week.
    \code{itime} in \code{IDate} and \code{ITime} format.
 
    \code{second}, \code{minute}, \code{hour}, \code{yday}, \code{wday},
-   \code{mday}, \code{week}, \code{month}, \code{quarter},
+   \code{mday}, \code{week}, \code{isoweek}, \code{isoyear}, \code{month}, \code{quarter},
    and \code{year} return integer values
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
    \code{yearmon} and \code{yearqtr} return double values representing
-   respectively `year + (month-1) / 12` and `year + (quarter-1) / 4`.
+   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}.
 
    \code{second}, \code{minute}, \code{hour} are taken directly from
    the \code{POSIXlt} representation.
@@ -212,7 +221,7 @@ accounting for both year transitions and varying day counts per week.
 }
 \references{
 
-  G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
+  G. Grothendieck and T. Petzoldt, \dQuote{Date and Time Classes in R},
   R News, vol. 4, no. 1, June 2004.
 
   H. Wickham, https://gist.github.com/hadley/10238.
@@ -245,6 +254,12 @@ identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 
 (t <- as.ITime("10:45:04", format = "\%H:\%M:\%S"))
 
+# "24:00:00" is parsed as "00:00:00"
+as.ITime("24:00:00")
+
+# Workaround for end-of-day: add 1 second to "23:59:59"
+as.ITime("23:59:59") + 1L
+
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 
 datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")
@@ -269,6 +284,17 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
+
+# Examples for isoyear() and isoweek()
+d1 = as.IDate("2019-12-30")
+year(d1)
+isoweek(d1)
+isoyear(d1)
+
+d2 = as.IDate("2016-01-01")
+year(d2)
+isoweek(d2)
+isoyear(d2)
 
 }
 \keyword{utilities}

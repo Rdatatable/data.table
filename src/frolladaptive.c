@@ -1,122 +1,224 @@
 #include "data.table.h"
 
-/* fast adaptive rolling mean - router
- * algo = 0: fadaptiverollmeanFast
- *   first pass cumsum based solution, second pass uses cumsum to calculate answer
- * algo = 1: fadaptiverollmeanExact
- *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
+/* rolling adaptive fun - router for fun and algo
+ * rfun enum rollfun_t routes to rolling function
+ * algo = 0: fast
+ *   adding/removing in/out of sliding window of observations
+ * algo = 1: exact
+ *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
-void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  if (algo==0) {
-    fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  switch (rfun) {
+  case MEAN :
+    if (algo==0) {
+      frolladaptivemeanFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frolladaptivemeanExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+  case SUM :
+    if (algo==0) {
+      frolladaptivesumFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frolladaptivesumExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+  case MAX :
+    if (algo==0 && verbose) {
+      //frolladaptivemaxFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemaxFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  case MIN :
+    if (algo==0 && verbose) {
+      //frolladaptiveminFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveminFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptiveminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  case PROD :
+    if (algo==0 && verbose) {
+      //frolladaptiveprodFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveprodFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptiveprodExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  case MEDIAN :
+    if (algo==0 && verbose) {
+      //frolladaptivemedianFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemedianFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  case VAR :
+    if (algo==0 && verbose) {
+      //frolladaptivevarFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivevarFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  case SD :
+    if (algo==0 && verbose) {
+      //frolladaptivesdFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivesdFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivesdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
+  default: // # nocov
+    internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
-  // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
 }
-/* fast adaptive rolling mean - fast
- * when no info on NA (hasNA argument) then assume no NAs run faster version
+
+#undef MEAN_WINDOW_STEP_VALUE
+#define MEAN_WINDOW_STEP_VALUE                                   \
+  if (wn>0) {                                                    \
+    if (narm) {                                                  \
+      if (wpinf > 0) {                                           \
+        if (wninf > 0) {                                         \
+          ans->dbl_v[i] = R_NaN;                                 \
+        } else {                                                 \
+          ans->dbl_v[i] = R_PosInf;                              \
+        }                                                        \
+      } else if (wninf > 0) {                                    \
+        ans->dbl_v[i] = R_NegInf;                                \
+      } else {                                                   \
+        int thisk = k[i] - ((int) wn);                           \
+        ans->dbl_v[i] = thisk==0 ? R_NaN : ws/thisk;             \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  } else {                                                       \
+    if (wpinf > 0) {                                             \
+      if (wninf > 0) {                                           \
+        ans->dbl_v[i] = R_NaN;                                   \
+      } else {                                                   \
+        ans->dbl_v[i] = R_PosInf;                                \
+      }                                                          \
+    } else if (wninf > 0) {                                      \
+      ans->dbl_v[i] = R_NegInf;                                  \
+    } else {                                                     \
+      ans->dbl_v[i] = ws/k[i]; /* for k[i]==0 it turns into 0/0, as expected */ \
+    }                                                            \
+  }
+
+/* fast rolling adaptive mean - fast
+ * when no info on NF (has.nf argument) then assume no NFs run faster version
  * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`
- * if NAs detected re-run rollmean implemented as cumsum with NA support
+ * if NFs detected re-run rollmean implemented as cumsum with NF support
  */
-void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frolladaptivemeanFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanFast", (uint64_t)nx, hasna, (int) narm);
-  bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemeanFast", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
-  double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
+  double *cs = malloc(sizeof(*cs) * nx);                       // cumsum vector, same as double cs[nx] but no segfault
   if (!cs) {                                                    // # nocov start
-    ans->status = 3;                                            // raise error
-    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
-    free(cs);
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumsum", __func__); // raise error
     return;
   }                                                             // # nocov end
-  if (!truehasna) {
+  if (!truehasnf) {
     for (uint64_t i=0; i<nx; i++) {                             // loop on every observation to calculate cumsum only
       w += x[i];                                                // cumulate in long double
       cs[i] = (double) w;
     }
-    if (R_FINITE((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasna==1
+    if (R_FINITE((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasnf==1
       #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {                           // loop over observations to calculate final answer
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i]/k[i];                           // current obs window width exactly same as obs position in a vector
         } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i];              // window width smaller than position so use cumsum to calculate diff
+          ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i];              // window width smaller than position so use cumsum to calculate diff, for k[i]==0 it turns into 0/0, as expected
         } else {
           ans->dbl_v[i] = fill;                                 // position in a vector smaller than obs window width - partial window
         }
       }
-    } else {                                                    // update truehasna flag if NAs detected
-      if (hasna==-1) {                                          // raise warning
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
+    } else {                                                    // update truehasnf flag if NAs detected
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-      w = 0.0;
-      truehasna = true;
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+      w = 0.0; truehasnf = true;
     }
   }
-  if (truehasna) {
-    uint64_t nc = 0;                                            // running NA counter
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
+  if (truehasnf) {
+    uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
+    uint64_t *cn = malloc(sizeof(*cn) * nx);                    // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
-      ans->status = 3;                                          // raise error
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
       free(cs);
-      free(cn);
       return;
     }                                                           // # nocov end
+    uint64_t *cpinf = malloc(sizeof(*cpinf) * nx);
+    if (!cpinf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
+      free(cs); free(cn);
+      return;
+    }                                                           // # nocov end
+    uint64_t *cninf = malloc(sizeof(*cninf) * nx);
+    if (!cninf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
+      free(cs); free(cn); free(cpinf);
+      return;
+    }                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) {
         w += x[i];                                              // add observation to running sum
-      } else {
+      } else if (ISNAN(x[i])) {
         nc++;                                                   // increment non-finite counter
+      } else if (x[i]==R_PosInf) {
+        pinf++;
+      } else if (x[i]==R_NegInf) {
+        ninf++;
       }
       cs[i] = (double) w;                                       // cumsum, na.rm=TRUE always, NAs handled using cum NA counter
       cn[i] = nc;                                               // cum NA counter
+      cpinf[i] = pinf;
+      cninf[i] = ninf;
     }
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate final answer
+      uint64_t wn, wpinf, wninf;
+      double ws;
       if (i+1 < k[i]) {                                         // partial window
         ans->dbl_v[i] = fill;
-      } else if (!narm) {                                       // this branch reduce number of branching in narm=1 below
-        if (i+1 == k[i]) {
-          ans->dbl_v[i] = cn[i]>0 ? NA_REAL : cs[i]/k[i];
-        } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : (cs[i]-cs[i-k[i]])/k[i];
-        }
-      } else if (i+1 == k[i]) {                                 // window width equal to observation position in vector
-        int thisk = k[i] - ((int) cn[i]);                       // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
-        ans->dbl_v[i] = thisk==0 ? R_NaN : cs[i]/thisk;         // handle all obs NAs and na.rm=TRUE
-      } else if (i+1 > k[i]) {                                  // window width smaller than observation position in vector
-        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));        // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
-        ans->dbl_v[i] = thisk==0 ? R_NaN : (cs[i]-cs[i-k[i]])/thisk; // handle all obs NAs and na.rm=TRUE
+      } else if (i+1 == k[i]) {                                 // first full window
+        wn = cn[i];
+        wpinf = cpinf[i];
+        wninf = cninf[i];
+        ws = cs[i];
+        MEAN_WINDOW_STEP_VALUE
+      } else {                                                  // all the remaining full windows
+        wn = cn[i] - cn[i-k[i]];                                // NAs in current window
+        wpinf = cpinf[i] - cpinf[i-k[i]];                       // Inf in current window
+        wninf = cninf[i] - cninf[i-k[i]];                       // -Inf in current window
+        ws = cs[i] - cs[i-k[i]];                                // cumsum in current window
+        MEAN_WINDOW_STEP_VALUE
       }
     }
-    free(cn);
-  } // end of truehasna
+    free(cninf); free(cpinf); free(cn);
+  } // end of truehasnf
   free(cs);
 }
-/* fast adaptive rolling mean exact
+/* fast rolling adaptive mean - exact
  * extra nested loop to calculate mean of each obs and error correction
  * requires much more cpu
  * uses multiple cores
  */
-void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frolladaptivemeanExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanExact", (uint64_t)nx, hasna, (int) narm);
-  bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
-  if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemeanExact", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;                                     // flag to re-run if NAs detected
+  if (!truehasnf || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=0; i<nx; i++) {                             // loop on every observation to produce final answer
-      if (narm && truehasna) {
+      if (narm && truehasnf) {
         continue;                                               // if NAs detected no point to continue
       }
       if (i+1 < k[i]) {
@@ -126,36 +228,36 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
         for (int j=-k[i]+1; j<=0; j++) {                        // sub-loop on window width
           w += x[i+j];                                          // sum of window for particular observation
         }
-        if (R_FINITE((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
+        if (R_FINITE((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasnf==1
           long double res = w / k[i];                           // keep results as long double for intermediate processing
           long double err = 0.0;                                // roundoff corrector
           for (int j=-k[i]+1; j<=0; j++) {                      // sub-loop on window width
             err += x[i+j] - res;                                // measure difference of obs in sub-loop to calculated fun for obs
           }
-          ans->dbl_v[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction
-        } else {
+          ans->dbl_v[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction, for k[i]==0 it turns into NaN + 0/0, as expected
+        } else if (ISNAN((double) w)) {
           if (!narm) {
-            ans->dbl_v[i] = (double) (w / k[i]);                // NAs should be propagated
+            ans->dbl_v[i] = (double) w;
           }
-          truehasna = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
+          #pragma omp atomic write
+          truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
+        } else {
+          ans->dbl_v[i] = (double) w;                           // Inf and -Inf
         }
       }
     }
-    if (truehasna) {
-      if (hasna==-1) {                                          // raise warning
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
+    if (truehasnf) {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose) {
-        if (narm) {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-        } else {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
-        }
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
       }
     }
   }
-  if (truehasna && narm) {
+  if (truehasnf && narm) {
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to produce final answer
       if (i+1 < k[i]) {
@@ -172,17 +274,13 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
             w += x[i+j];                                        // add observation to current window
           }
         }
-        if (w > DBL_MAX) {
-          ans->dbl_v[i] = R_PosInf;                             // handle Inf for na.rm=TRUE consistently to base R
-        } else if (w < -DBL_MAX) {
-          ans->dbl_v[i] = R_NegInf;
-        } else {
+        if (R_FINITE((double) w)) {
           if (nc == 0) {                                        // no NAs in current window
             res = w / k[i];
             for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
               err += x[i+j] - res;                              // measure roundoff for each obs in window
             }
-            ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correction
+            ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correctionfor k[i]==0 it turns into NaN + 0/0, as expected
           } else if (nc < k[i]) {
             res = w / (k[i]-nc);
             for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
@@ -194,38 +292,61 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
           } else {                                              // nc == k[i]
             ans->dbl_v[i] = R_NaN;                              // this branch assume narm so R_NaN always here
           }
+        } else {
+          ans->dbl_v[i] = (double) w;
         }
       }
     }
-  } // end of truehasna
+  } // end of truehasnf
 }
 
-/* fast adaptive rolling sum */
-void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  double tic = 0;
-  if (verbose)
-    tic = omp_get_wtime();
-  if (algo==0) {
-    fadaptiverollsumFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    fadaptiverollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
+#undef SUM_WINDOW_STEP_VALUE
+#define SUM_WINDOW_STEP_VALUE                                    \
+  if (wn>0) {                                                    \
+    if (narm) {                                                  \
+      if (wpinf > 0) {                                           \
+        if (wninf > 0) {                                         \
+          ans->dbl_v[i] = R_NaN;                                 \
+        } else {                                                 \
+          ans->dbl_v[i] = R_PosInf;                              \
+        }                                                        \
+      } else if (wninf > 0) {                                    \
+        ans->dbl_v[i] = R_NegInf;                                \
+      } else {                                                   \
+        int thisk = k[i] - ((int) wn);                           \
+        ans->dbl_v[i] = thisk==0 ? 0.0 : ws;                     \
+      }                                                          \
+    } else {                                                     \
+      ans->dbl_v[i] = NA_REAL;                                   \
+    }                                                            \
+  } else {                                                       \
+    if (wpinf > 0) {                                             \
+      if (wninf > 0) {                                           \
+        ans->dbl_v[i] = R_NaN;                                   \
+      } else {                                                   \
+        ans->dbl_v[i] = R_PosInf;                                \
+      }                                                          \
+    } else if (wninf > 0) {                                      \
+      ans->dbl_v[i] = R_NegInf;                                  \
+    } else {                                                     \
+      ans->dbl_v[i] = ws; /* for k[i]==0 it turns into 0, as expected */ \
+    }                                                            \
   }
+
+/* fast rolling adaptive sum - fast
+ * same as adaptive mean fast
+ */
+void frolladaptivesumFast(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
-}
-void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumFast", (uint64_t)nx, hasna, (int) narm);
-  bool truehasna = hasna>0;
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivesumFast", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
   long double w = 0.0;
-  double *cs = malloc(nx*sizeof(double));
+  double *cs = malloc(sizeof(*cs) * nx);
   if (!cs) {                                                    // # nocov start
-    ans->status = 3;
-    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
-    free(cs);
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumsum", __func__); // raise error
     return;
   }                                                             // # nocov end
-  if (!truehasna) {
+  if (!truehasnf) {
     for (uint64_t i=0; i<nx; i++) {
       w += x[i];
       cs[i] = (double) w;
@@ -236,71 +357,89 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i];
         } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = cs[i]-cs[i-k[i]];
+          ans->dbl_v[i] = cs[i]-cs[i-k[i]]; // for k[i]==0 it turns into 0, as expected
         } else {
           ans->dbl_v[i] = fill;
         }
       }
     } else {
-      if (hasna==-1) {
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-      w = 0.0;
-      truehasna = true;
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+      w = 0.0; truehasnf = true;
     }
   }
-  if (truehasna) {
-    uint64_t nc = 0;
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));
+  if (truehasnf) {
+    uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
+    uint64_t *cn = malloc(sizeof(*cn) * nx);                    // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
-      ans->status = 3;
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
       free(cs);
-      free(cn);
       return;
     }                                                           // # nocov end
-    for (uint64_t i=0; i<nx; i++) {
+    uint64_t *cpinf = malloc(sizeof(*cpinf) * nx);
+    if (!cpinf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
+      free(cs); free(cn);
+      return;
+    }                                                           // # nocov end
+    uint64_t *cninf = malloc(sizeof(*cninf) * nx);
+    if (!cninf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
+      free(cs); free(cn); free(cpinf);
+      return;
+    }                                                           // # nocov end
+    for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) {
-        w += x[i];
-      } else {
-        nc++;
+        w += x[i];                                              // add observation to running sum
+      } else if (ISNAN(x[i])) {
+        nc++;                                                   // increment non-finite counter
+      } else if (x[i]==R_PosInf) {
+        pinf++;
+      } else if (x[i]==R_NegInf) {
+        ninf++;
       }
-      cs[i] = (double) w;
-      cn[i] = nc;
+      cs[i] = (double) w;                                       // cumsum, na.rm=TRUE always, NAs handled using cum NA counter
+      cn[i] = nc;                                               // cum NA counter
+      cpinf[i] = pinf;
+      cninf[i] = ninf;
     }
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
-      if (i+1 < k[i]) {
+      uint64_t wn, wpinf, wninf;
+      double ws;
+      if (i+1 < k[i]) {                                         // partial window
         ans->dbl_v[i] = fill;
-      } else if (!narm) {
-        if (i+1 == k[i]) {
-          ans->dbl_v[i] = cn[i]>0 ? NA_REAL : cs[i];
-        } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : cs[i]-cs[i-k[i]];
-        }
-      } else if (i+1 == k[i]) {
-        int thisk = k[i] - ((int) cn[i]);
-        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i];
-      } else if (i+1 > k[i]) {
-        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));
-        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i]-cs[i-k[i]];
+      } else if (i+1 == k[i]) {                                 // first full window
+        wn = cn[i];
+        wpinf = cpinf[i];
+        wninf = cninf[i];
+        ws = cs[i];
+        SUM_WINDOW_STEP_VALUE
+      } else {                                                  // all the remaining full windows
+        wn = cn[i] - cn[i-k[i]];                                // NAs in current window
+        wpinf = cpinf[i] - cpinf[i-k[i]];                       // Inf in current window
+        wninf = cninf[i] - cninf[i-k[i]];                       // -Inf in current window
+        ws = cs[i] - cs[i-k[i]];                                // cumsum in current window
+        SUM_WINDOW_STEP_VALUE
       }
     }
-    free(cn);
+    free(cninf); free(cpinf); free(cn);
   }
   free(cs);
 }
-void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+/* fast rolling adaptive sum - exact
+ * same as adaptive mean exact
+ */
+void frolladaptivesumExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumExact", (uint64_t)nx, hasna, (int) narm);
-  bool truehasna = hasna>0;
-  if (!truehasna || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivesumExact", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
     for (uint64_t i=0; i<nx; i++) {
-      if (narm && truehasna) {
+      if (narm && truehasnf) {
         continue;
       }
       if (i+1 < k[i]) {
@@ -311,30 +450,30 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           w += x[i+j];
         }
         if (R_FINITE((double) w)) {
-          ans->dbl_v[i] = (double) w;
-        } else {
+          ans->dbl_v[i] = (double) w; // also k[i]==0 then w=0
+        } else if (ISNAN((double) w)) {
           if (!narm) {
             ans->dbl_v[i] = (double) w;
           }
-          truehasna = true;
+          #pragma omp atomic write
+          truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
+        } else {
+          ans->dbl_v[i] = (double) w;                           // Inf and -Inf
         }
       }
     }
-    if (truehasna) {
-      if (hasna==-1) {
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
+    if (truehasnf) {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose) {
-        if (narm) {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-        } else {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
-        }
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
       }
     }
   }
-  if (truehasna && narm) {
+  if (truehasnf && narm) {
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       if (i+1 < k[i]) {
@@ -357,10 +496,537 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           if (nc < k[i]) {
             ans->dbl_v[i] = (double) w;
           } else {
-            ans->dbl_v[i] = 0.0;
+            ans->dbl_v[i] = 0.0; // also k[i]==0
           }
         }
       }
     }
   }
+}
+
+/* fast rolling adaptive max - exact
+ * for has.nf=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
+ */
+void frolladaptivemaxExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemaxExact", (uint64_t)nx, hasnf, (int) narm);
+  if (narm || hasnf==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when has.nf=FALSE
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_NegInf;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (x[i+j] > w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w; // also k[i]==0 then -Inf
+      }
+    }
+  } else {
+    bool *isnan = malloc(sizeof(*isnan) * nx); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                    // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
+      return;
+    }                                                               // # nocov end
+    bool truehasnf = hasnf>0;
+    for (uint64_t i=0; i<nx; i++) { // no openmp as this is very fast
+      isnan[i] = ISNAN(x[i]);
+      truehasnf |= isnan[i];
+    }
+    if (!truehasnf) { // not found any NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (x[i+j] > w)
+              w = x[i+j];
+          }
+          ans->dbl_v[i] = w; // also k[i]==0 then -Inf
+        }
+      }
+    } else { // there are some NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_NegInf;
+          if (k[i] && isnan[i] && ISNA(x[i])) { // consider branch only when NOT k[i]==0
+            w = NA_REAL;
+          } else {
+            for (int j=-k[i]+1; j<=0; j++) {
+              if (isnan[i+j]) {
+                if (ISNA(x[i+j])) {
+                  w = NA_REAL;
+                  break;
+                } else {
+                  w = R_NaN;
+                }
+              } else if (x[i+j] > w)
+                w = x[i+j];
+            }
+          }
+          ans->dbl_v[i] = w;
+        }
+      }
+    }
+    free(isnan);
+  }
+}
+
+/* fast rolling adaptive min - exact
+ * for has.nf=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
+ */
+void frolladaptiveminExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveminExact", (uint64_t)nx, hasnf, (int) narm);
+  if (narm || hasnf==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when has.nf=FALSE
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_PosInf;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (x[i+j] < w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w; // also k[i]==0 then +Inf
+      }
+    }
+  } else {
+    bool *isnan = malloc(sizeof(*isnan) * nx); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                    // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
+      return;
+    }                                                               // # nocov end
+    bool truehasnf = hasnf>0;
+    for (uint64_t i=0; i<nx; i++) { // no openmp as this should be very fast
+      if (ISNAN(x[i])) {
+        truehasnf = true;
+        isnan[i] = true;
+      } else {
+        isnan[i] = false;
+      }
+    }
+    if (!truehasnf) { // not found any NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_PosInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (x[i+j] < w)
+              w = x[i+j];
+          }
+          ans->dbl_v[i] = w; // also k[i]==0 then +Inf
+        }
+      }
+    } else { // there are some NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_PosInf;
+          if (k[i] && isnan[i] && ISNA(x[i])) { // consider branch only when NOT k[i]==0
+            w = NA_REAL;
+          } else {
+            for (int j=-k[i]+1; j<=0; j++) {
+              if (isnan[i+j]) {
+                if (ISNA(x[i+j])) {
+                  w = NA_REAL;
+                  break;
+                } else {
+                  w = R_NaN;
+                }
+              } else if (x[i+j] < w)
+                w = x[i+j];
+            }
+          }
+          ans->dbl_v[i] = w; // also k[i]==0 then +Inf
+        }
+      }
+    }
+    free(isnan);
+  }
+}
+
+/* fast rolling adaptive prod - fast - now redirects to exact!
+ * it was same as adaptive mean fast in 5975ffdc9839d507f4cd9cbba960198e301cf604
+ * it was fast but not fully accurate and considering non-adaptive partial=TRUE falls back to adaptive we would like it to be as accurate as non-adaptive
+ * this could be implemented by tracking logsum rather than prod, together with zero and negative, as as non-adaptive fast roll prod
+ * for the current moment it will redirect to algo=exact, follow git hash for previous implementation if needed
+ */
+
+/* fast rolling adaptive prod - exact
+ * same as adaptive mean exact
+ */
+void frolladaptiveprodExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveprodExact", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
+    for (uint64_t i=0; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double w = 1.0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          w *= x[i+j];
+        }
+        if (R_FINITE((double) w)) {
+          ans->dbl_v[i] = (double) w; // k[i]==0 fills with 1.0
+        } else if (ISNAN((double) w)) {
+          if (!narm) {
+            ans->dbl_v[i] = (double) w;
+          }
+          #pragma omp atomic write
+          truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
+        } else {
+          ans->dbl_v[i] = (double) w;                           // Inf and -Inf
+        }
+      }
+    }
+    if (truehasnf) {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double w = 1.0;
+        int nc = 0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (ISNAN(x[i+j])) {
+            nc++;
+          } else {
+            w *= x[i+j];
+          }
+        }
+        if (w > DBL_MAX) {
+          ans->dbl_v[i] = R_PosInf;
+        } else if (w < -DBL_MAX) {
+          ans->dbl_v[i] = R_NegInf;
+        } else {
+          if (nc < k[i]) {
+            ans->dbl_v[i] = (double) w;
+          } else {
+            ans->dbl_v[i] = 1.0; // nc==0, k[i]==0 fills with 1.0
+          }
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive var - exact
+ */
+void frolladaptivevarExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivevarExact", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true)) shared(truehasnf)
+    for (uint64_t i=0; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      if (k[i] < 2) { // k[i]==0 as well as =1 which for var is NA
+        ans->dbl_v[i] = NA_REAL;
+      } else if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double wsum = 0.0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          wsum += x[i+j];
+        }
+        if (!R_FINITE((double) wsum)) {
+          if (ISNAN((double) wsum)) {
+            if (!narm) {
+              ans->dbl_v[i] = (double) wsum; // propagate NAs
+            }
+            #pragma omp atomic write
+            truehasnf = true;
+          } else {
+            ans->dbl_v[i] = R_NaN;
+          }
+        } else {
+          long double wmean = wsum / k[i];
+          long double xi = 0.0;
+          long double wsumxi = 0;
+          for (int j=-k[i]+1; j<=0; j++) {
+            xi = x[i+j] - wmean;
+            wsumxi += (xi * xi);
+          }
+          double ans_i = (wsumxi / (k[i] - 1));
+          ans->dbl_v[i] = MAX(0,ans_i);
+        }
+      }
+    }
+    if (truehasnf) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+          if (narm)
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+          else
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (k[i] < 2) { // k[i]==0 as well as =1 which for var is NA
+        ans->dbl_v[i] = NA_REAL;
+      } else if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double wsum = 0.0;
+        int nc = 0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (ISNAN(x[i+j])) {
+            nc++;
+          } else {
+            wsum += x[i+j];
+          }
+        }
+        if (R_FINITE((double) wsum)) {
+          if (nc == 0) {
+            long double wmean = wsum / k[i];
+            long double xi = 0.0;
+            long double wsumxi = 0;
+            for (int j=-k[i]+1; j<=0; j++) {
+              xi = x[i+j] - wmean;
+              wsumxi += (xi * xi);
+            }
+            ans->dbl_v[i] = (double) (wsumxi / (k[i] - 1));
+          } else if (nc < (k[i] - 1)) { // var(scalar) is also NA thats why k-1 so at least 2 numbers must be there
+            long double wmean = wsum / (k[i] - nc);
+            long double xi = 0.0;
+            long double wsumxi = 0;
+            for (int j=-k[i]+1; j<=0; j++) {
+              if (!ISNAN(x[i+j])) {
+                xi = x[i+j] - wmean;
+                wsumxi += (xi * xi);
+              }
+            }
+            ans->dbl_v[i] = (double) (wsumxi / (k[i] - nc - 1));
+          } else {
+            ans->dbl_v[i] = NA_REAL;
+          }
+        } else {
+          ans->dbl_v[i] = (double) R_NaN;
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive sd - exact
+ */
+void frolladaptivesdExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: calling sqrt(frolladaptivevarExact(...))\n"), "frolladaptivesdExact");
+  frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+  for (uint64_t i=0; i<nx; i++) {
+    if (i+1 >= k[i]) { // skip partial window: sqrt(fill)
+      ans->dbl_v[i] = sqrt(ans->dbl_v[i]);
+    }
+  }
+}
+
+/* fast rolling adaptive NA stats - fast
+ * online implementation
+ * returns total number of NA/NaN in x
+ * no nested loops, first loop cum NA count, second loop uses cum NA count to get rolling count
+ * updates:
+ *   nc for rolling NA count
+ *   isna for NA mask
+ */
+static int frolladaptiveNAFast(const double *x, uint64_t nx, const int *k, int *nc, bool *isna) {
+  int cnc = 0; // cumulative na count
+  for (uint64_t i=0; i<nx; i++) {
+    if (ISNAN(x[i])) {
+      isna[i] = true;
+      cnc++;
+    }
+    nc[i] = cnc;
+  }
+  if (cnc) {
+    for (int64_t i=nx-1; i>=0; i--) {
+      int ik = k[i];
+      if (i+1 == ik) {
+        // nc[i] = nc[i];
+      } else if (i+1 < ik) {
+        nc[i] = NA_INTEGER;
+      } else {
+        nc[i] = nc[i] - nc[i-ik]; // k[i]==0 results in nc[i]=0
+      }
+    }
+  }
+  return cnc;
+}
+/* fast rolling adaptive NA stats - exact
+ * it runs nested loop on contrary to fast which keep running NA count
+ * not used as of now, we should use this function when we will implement frolladaptivemedianFast, now because there is no frolladaptivemedianFast we need more optimized frolladaptivemedianExact, so we run at least NA stats in online fashion
+ * note that for using frolladaptiveNAExact we need calloc, for frolladaptiveNAFast malloc is ok
+ * returns total number of NA/NaN in x
+ * updates:
+ *   nc for rolling NA count
+ *   isna for NA mask
+ */
+/*static int frolladaptiveNAExact(const double *x, uint64_t nx, const int *k, int *nc, bool *isna) {
+  int NC = 0;
+  for (uint64_t i=0; i<nx; i++) {
+    if (ISNAN(x[i])) {
+      isna[i] = true;
+      NC++;
+    }
+  }
+  if (NC) {
+    for (uint64_t i=0; i<nx; i++) {
+      int ik = k[i];
+      if (i+1 < ik) { // k[0]==0: (uint64_t)ik turns into 18446744071562067968 so does not satisfy this IF
+        nc[i] = NA_INTEGER;
+      } else if (ik) { // escape k[i]==0, nc has to be preallocated with 0
+        bool *iisna = &isna[i-ik+1];
+        for (int j=0; j<ik; j++) {
+          if (iisna[j])
+            nc[i]++;
+        }
+      }
+    }
+  }
+  return NC;
+}*/
+/* fast rolling adaptive median - exact
+ * loop in parallel for each element of x and call quickselect
+ */
+void frolladaptivemedianExact(const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemedianExact", (uint64_t)nx, hasnf, (int) narm);
+  int maxk = k[0]; // find largest window size
+  for (uint64_t i=1; i<nx; i++) {
+    if (k[i] > maxk)
+      maxk = k[i];
+  }
+  if (maxk == 0) { // edge case of n=rep(0,lenght(x)) - needs to be here to avoid malloc(0)
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: adaptive window width of size 0, returning all NA vector\n"), __func__);
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = NA_REAL;
+    }
+    return;
+  }
+  if (hasnf == 0) {
+    for (uint64_t i=0; i<nx; i++) {
+      if (ISNAN(x[i])) {
+        hasnf = 1;
+        break;
+      }
+    }
+    if (hasnf == 0)
+      hasnf = -1;
+  } // detect NAs
+  int nth = getDTthreads(nx, true);
+  double *xx = malloc(sizeof(*xx) * maxk * nth); // quickselect sorts in-place so we need to copy
+  if (!xx) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
+    return;
+  } // # nocov end
+  if (hasnf == -1) {
+    #pragma omp parallel for num_threads(nth)
+    for (uint64_t i=0; i<nx; i++) {
+      int ik = k[i];
+      if (i+1 < ik) {
+        ans->dbl_v[i] = fill;
+      } else if (ik) { // escape k[0]==0
+        int th = omp_get_thread_num();
+        double *thx = &xx[th * maxk]; // thread-specific x
+        memcpy(thx, &x[i-ik+1], ik * sizeof(*thx));
+        ans->dbl_v[i] = dquickselect(thx, ik);
+      } else { // k[0]==0
+        ans->dbl_v[i] = NA_REAL;
+      }
+    }
+  } else {
+    //int *rollnc = cal_NOLINT_loc(nx, sizeof(*rollnc)); // use when frolladaptiveFast will be implemented - remove _NOLINT_ then
+    int *rollnc = malloc(sizeof(*rollnc) * nx); // for frolladaptiveNAExact we need calloc, for frolladaptiveNAFast malloc is ok
+    if (!rollnc) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for rollnc", __func__); // raise error
+      free(xx);
+      return;
+    } // # nocov end
+    bool *isna = calloc(nx, sizeof(*isna));
+    if (!isna) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isna", __func__); // raise error
+      free(rollnc); free(xx);
+      return;
+    } // # nocov end
+    //int nc = frolladaptiveNAExact(x, nx, k, rollnc, isna); // use when frolladaptiveFast will be implemented
+    int nc = frolladaptiveNAFast(x, nx, k, rollnc, isna);
+    if (!nc) { // total NA for x
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: no NAs detected, redirecting to itself using has.nf=FALSE\n"), "frolladaptivemedianExact");
+      free(isna); free(rollnc); free(xx);
+      frolladaptivemedianExact(x, nx, ans, k, fill, narm, /*hasnf=*/false, verbose);
+      return;
+    }
+    #pragma omp parallel for num_threads(nth)
+    for (uint64_t i=0; i<nx; i++) {
+      int ik = k[i];
+      if (i+1 < ik) {
+        ans->dbl_v[i] = fill;
+      } else {
+        const double *ix = &x[i-ik+1];
+        int th = omp_get_thread_num();
+        double *thx = &xx[th*maxk];
+        int inc = rollnc[i];
+        if (!inc) { // k[i]==0 lands here because there must have been 0 NAs in 0 length window
+          if (ik) {
+            memcpy(thx, ix, ik * sizeof(*thx));
+            ans->dbl_v[i] = dquickselect(thx, ik);
+          } else {
+            ans->dbl_v[i] = NA_REAL; // k[i]==0
+          }
+        } else {
+          if (!narm || inc == ik) {
+            ans->dbl_v[i] = NA_REAL;
+          } else {
+            bool *iisna = &isna[i-ik+1];
+            int thxn = 0;
+            for (int j=0; j<ik; j++) {
+              if (!iisna[j])
+                thx[thxn++] = ix[j];
+            }
+            ans->dbl_v[i] = dquickselect(thx, ik-inc);
+          }
+        }
+      }
+    }
+    free(isna); free(rollnc);
+  }
+  free(xx);
 }

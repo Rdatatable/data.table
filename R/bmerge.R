@@ -27,6 +27,13 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
+  if (roll != 0.0 && length(icols)) {
+    last_x_idx = tail(xcols, 1L)
+    last_i_idx = tail(icols, 1L)
+    if (is.factor(x[[last_x_idx]]) || is.factor(i[[last_i_idx]]))
+      stopf("Attempting roll join on factor column when joining x.%s to i.%s. Only integer, double or character columns may be roll joined.", names(x)[last_x_idx], names(i)[last_i_idx])
+  }
+
   callersi = i
   i = shallow(i)
   # Just before the call to bmerge() in [.data.table there is a shallow() copy of i to prevent coercions here
@@ -64,9 +71,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     iname = paste0("i.", names(i)[icol])
     if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
     if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
+    # we check factors first because they might have different levels
     if (x_merge_type=="factor" || i_merge_type=="factor") {
-      if (roll!=0.0 && a==length(icols))
-        stopf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname)
       if (x_merge_type=="factor" && i_merge_type=="factor") {
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=icol, value=chmatch(levels(i[[icol]]), levels(x[[xcol]]), nomatch=0L)[i[[icol]]])  # nomatch=0L otherwise a level that is missing would match to NA values
@@ -84,9 +90,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         }
       }
-      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
+      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type, class="dt_join_type_mismatch_error")
     }
-    # we check factors first to cater for the case when trying to do rolling joins on factors
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
@@ -101,15 +106,15 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
-      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
+      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type, class="dt_join_type_mismatch_error")
     }
     if (x_merge_type=="integer64" || i_merge_type=="integer64") {
       nm = c(iname, xname)
-      if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; nm=rev(nm) }  # w is which to coerce
+      if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; setfrev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && fitsInInt64(w[[wc]]))) {
         from_detail = if (wclass == "double") gettext(" (which has integer64 representation, e.g. no fractions)") else ""
         coerce_col(w, wc, wclass, "integer64", nm[1L], nm[2L], from_detail, verbose=verbose)
-      } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L])
+      } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L], class="dt_join_type_mismatch_error")
     } else {
       # just integer and double left
       ic_idx = which(icol == icols) # check if on is joined on multiple conditions, #6602

@@ -1,19 +1,28 @@
 ---
 title: "Использование data.table в других пакетах"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Использование data.table в других пакетах}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
+
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
 
 <style>
 h2 {
     font-size: 20px;
 }
 </style>
+
+```{r, echo=FALSE, file='../_translation_links.R'}
+```
+`{r} .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 Этот документ рассказывает об использовании `data.table` в качестве
 зависимости в других R-пакетах. Если вас интересует использование C-кода
@@ -112,7 +121,7 @@ stopifnot(nrow(dt2) < 100)
 При тестировании вашего пакета вы можете использовать команду `R CMD check
 --no-stop-on-test-error`, которая продолжит выполнение после ошибки и
 запустит все ваши тесты (в отличие от остановки на первой строке скрипта с
-ошибкой). Имейте в виду, что это требует R версии 3.4.0 или выше.
+ошибкой).
 
 ## Тестирование при помощи `testthat`
 
@@ -468,3 +477,7 @@ result <- merge(dt, other_dt, by = "x")
 - **Упрощение обслуживания**: Это упрощает задачи обслуживания по мере
   развития API Ваших зависимостей. Слишком сильная зависимость от `Depends`
   может со временем привести к конфликтам и проблемам совместимости.
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```

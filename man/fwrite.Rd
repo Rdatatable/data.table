@@ -12,7 +12,6 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
-  logicalAsInt = NULL,  # deprecated
   scipen = getOption('scipen', 0L),
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
@@ -22,7 +21,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   yaml = FALSE,
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
-  encoding = "")
+  encoding = "",
+  forceDecimal = FALSE)
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
@@ -42,7 +42,6 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
 	\item "double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.
       }}
   \item{logical01}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
-  \item{logicalAsInt}{Deprecated. Old name for `logical01`. Name change for consistency with `fread` for which `logicalAsInt` would not make sense.}
   \item{scipen}{ \code{integer} In terms of printing width, how much of a bias should there be towards printing whole numbers rather than scientific notation? See Details. }
   \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written.
       \itemize{
@@ -55,18 +54,19 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   This option applies to vectors of date/time in list column cells, too. \cr \cr
   A fully flexible format string (such as \code{"\%m/\%d/\%Y"}) is not supported. This is to encourage use of ISO standards and because that flexibility is not known how to make fast at C level. We may be able to support one or two more specific options if required.
   }
-  \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
+  \item{buffMB}{The buffer size (MiB) per thread in the range 1 to 1024, default 8MiB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
-  \item{compressLevel}{Level of compression between 1 and 9, 6 by default. See \url{https://linux.die.net/man/1/gzip} for details.}
+  \item{compressLevel}{Level of compression between 1 and 9, 6 by default. See \url{https://www.gnu.org/software/gzip/manual/html_node/Invoking-gzip.html} for details.}
   \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
   \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writing raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
+  \item{forceDecimal}{ Should decimal points be forced for whole numbers in numeric columns? When \code{FALSE}, the default, whole numbers like \code{c(1.0, 2.0, 3.0)} will be written as \samp{1, 2, 3} i.e., dropping \code{dec}. }
 }
 \details{
-\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://h2o.ai/blog/2016/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://web.archive.org/web/20250623031725/https://h2o.ai/blog/2016/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
 
 To save space, \code{fwrite} prefers to write wide numeric values in scientific notation -- e.g. \code{10000000000} takes up much more space than \code{1e+10}. Most file readers (e.g. \code{\link{fread}}) understand scientific notation, so there's no fidelity loss. Like in base R, users can control this by specifying the \code{scipen} argument, which follows the same rules as \code{\link[base]{options}('scipen')}. \code{fwrite} will see how much space a value will take to write in scientific vs. decimal notation, and will only write in scientific notation if the latter is more than \code{scipen} characters wider. For \code{10000000000}, then, \code{1e+10} will be written whenever \code{scipen<6}.
 
@@ -117,7 +117,7 @@ fwrite(DT, sep="|", sep2=c("{",",","}"))
 
 set.seed(1)
 DT = as.data.table( lapply(1:10, sample,
-         x=as.numeric(1:5e7), size=5e6))                            #     382MB
+         x=as.numeric(1:5e7), size=5e6))                            #    382MiB
 system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                        #      0.8s
 system.time(write.csv(DT, "/dev/shm/tmp2.csv",                      #     60.6s
                       quote=FALSE, row.names=FALSE))
@@ -137,7 +137,7 @@ DT = data.table(
   str6=sample(c("M","F"),N,TRUE),
   int1=sample(ceiling(rexp(1e6)), N, replace=TRUE),
   int2=sample(N,N,replace=TRUE)-N/2
-)                                                                   #     774MB
+)                                                                   #    775MiB
 system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
 system.time(write.csv(DT,"/dev/shm/tmp2.csv",                       #     63.2s
                       row.names=FALSE, quote=FALSE))

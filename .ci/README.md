@@ -1,6 +1,6 @@
 # data.table continuous integration and deployment
 
-On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our more thorough main CI pipeline runs nightly on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch every night. It tests more environments and different configurations. It publishes a variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html), including windows binaries for the dev version.
+On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our more thorough main CI pipeline runs nightly on GitLab CI. In addition to branches pushed directly, the GitLab repository automatically mirrors our GitHub repository and runs pipeline on the `master` branch every night. It tests more environments and different configurations. It publishes a variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html), including windows binaries for the dev version.
 
 ## Environments
 
@@ -12,11 +12,16 @@ Test jobs:
 - `test-lin-rel-cran` - `--as-cran` on Linux, strict test for final status of `R CMD check`.
 - `test-lin-dev-gcc-strict-cran` - `--as-cran` on Linux, `r-devel` built with `-enable-strict-barrier --disable-long-double`, test for compilation warnings, test for new NOTEs/WARNINGs from `R CMD check`.
 - `test-lin-dev-clang-cran` - same as `gcc-strict` job but R built with `clang` and  no `--enable-strict-barrier --disable-long-double` flags.
-- `test-lin-310-cran` - R 3.1.0 on Linux, stated R dependency version.
+- `test-lin-ancient-cran` - Stated R dependency version (currently 3.5.0) on Linux.
+- `test-lin-dev-clang-san` - `r-devel` on Linux built with `clang -fsanitize=address,undefined` (including LeakSanitizer), test for sanitizer output in tests and examples.
+- `test-lin-dev-gcc-san` - `r-devel` on Linux built with `gcc -fsanitize=address,undefined` (including LeakSanitizer), test for sanitizer output in tests and examples.
 - `test-win-rel` - `r-release` on Windows.
 - `test-win-dev` - `r-devel` on Windows.
 - `test-win-old` - `r-oldrel` on Windows.
-- `test-mac-rel` - macOS build not yet available, see [#3326](https://github.com/Rdatatable/data.table/issues/3326) for status
+- `test-mac-rel` - `r-release` on macOS.
+- `test-mac-old` - `r-oldrel` on macOS.
+
+The CI steps for the tests are [required](https://github.com/Rdatatable/data.table/blob/55eb0f160b169398d51f138131c14a66c86e5dc9/.ci/publish.R#L162-L168) to be named according to the pattern `test-(lin|win|mac)-<R version>[-<suffix>]*`, where `<R version>` is `rel`, `dev`, `old`, `ancient`, or three digits comprising an R version (e.g. `362` corresponding to R-3.6.2).
 
 Tests jobs are allowed to fail, summary and logs of test jobs are later published at _CRAN-like checks_ page, see artifacts below.
 
@@ -44,6 +49,23 @@ Base R implemented helper script, [originally proposed to base R](https://svn.r-
 ### [`publish.R`](./publish.R)
 
 Base R implemented helper script to orchestrate generation of most artifacts and to arrange them nicely. It is being used only in [_integration_ stage in GitLab CI pipeline](./../.gitlab-ci.yml).
+
+### [`lint.R`](./lint.R)
+
+Base R runner for the manual (non-`lintr`) lint checks to be run from GitHub Actions during the code quality check. The command line arguments are as follows:
+1. Path to the directory containing files defining the linters. A linter is a function that accepts one argument (typically the path to the file) and signals an error if it fails the lint check.
+2. Path to the directory containing files to check.
+3. A regular expression matching the files to check.
+
+One of the files in the linter directory may define the `.preprocess` function, which must accept one file path and return a value that other linter functions will understand. The function may also return `NULL` to indicate that the file must be skipped.
+
+Example command lines:
+
+```sh
+Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
+Rscript .ci/lint.R .ci/linters/po po '[.]po$'
+Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
+```
 
 ## GitLab Open Source Program
 

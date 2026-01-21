@@ -1,20 +1,23 @@
 cocci_linter = if (!nzchar(Sys.which("spatch"))) function(...) {} else function(c_obj) {
-  bad <- FALSE
+  bad = FALSE
+  tmp = tempfile(fileext = '.c')
+  on.exit(unlink(tmp))
+  writeLines(c_obj$preprocessed, tmp)
   for (spfile in list.files(".ci/linters/cocci", full.names = TRUE)) {
-    # Coccinelle parser gets confused sometimes, so ignore stderr and the exit code
-    out = suppressWarnings(system2(
+    out = system2(
       "spatch",
-      shQuote(c(
-        "--sp-file", spfile, c_obj$path, "--recursive-includes",
-        "-I", R.home("include"), "-I", "src"
-      )),
+      shQuote(c("--sp-file", spfile, tmp)),
       stdout = TRUE, stderr = FALSE
-    ))
+    )
     if (length(out) > 0) {
-      cat(sprintf("In file '%s', Coccinelle patch '%s' recommends the following changes:\n", c_obj$path, spfile))
+      cat(sprintf("In file '%s', Coccinelle linter '%s' located the following problems:\n", c_obj$path, spfile))
       writeLines(out)
-      bad <- TRUE
+      bad = TRUE
+    }
+    if (!is.null(status <- attr(out, 'status'))) {
+      cat(sprintf("While working on file '%s', Coccinelle linter '%s' failed with exit code %d:\n", c_obj$path, spfile, status))
+      bad = TRUE
     }
   }
-  if (bad) stop("Please apply the changes above or fix the linter")
+  if (bad) stop("Please investigate the problems above.")
 }

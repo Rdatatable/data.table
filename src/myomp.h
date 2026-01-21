@@ -26,4 +26,3 @@
   #define omp_get_wtime()        0
   #define MY_OPENMP              0
 #endif
-

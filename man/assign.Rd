@@ -6,6 +6,8 @@
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
+    Note that when using \samp{:=} inside a \code{{...}} block in \code{j}, the \samp{:=} call must be the only statement. For assigning to multiple columns, use the functional form: \code{DT[, `:=`(col1=val1, col2=val2)]}. 
+
     \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
     \code{let} is an alias for the functional form and behaves exactly like \code{`:=`}.
@@ -66,16 +68,17 @@ All of the following result in a friendly error (by design) :
     x := 1L
     DT[i, col] := val
     DT[i]$col := val
-    DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
+    DT[, {col1 := 1L; col2 := 2L}]                # Using `{}` in `j` is reserved for single `:=` expressions.
+                                                  # For multiple updates, use the functional form `:=`() instead.
 }
 
 For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{https://stackoverflow.com/questions/tagged/data.table/}{data.table tag}.
 
-\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
+\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
-Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given when fractional data is truncated. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening and it is clearer to readers of your code that you really do intend to change the column type; e.g., \code{DT[, colA:=as.integer(colA)]}. A plonk occurs whenever you provide a RHS value to `:=` which is \code{nrow} long. When a column is \emph{plonked}, the original column is not updated by reference because that would entail updating every single element of that column whereas the plonk is just one column pointer update.
+Unlike \samp{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given when fractional data is truncated. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening and it is clearer to readers of your code that you really do intend to change the column type; e.g., \code{DT[, colA:=as.integer(colA)]}. A plonk occurs whenever you provide a RHS value to \samp{:=} which is \code{nrow} long. When a column is \emph{plonked}, the original column is not updated by reference because that would entail updating every single element of that column whereas the plonk is just one column pointer update.
 
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
@@ -85,7 +88,7 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }
 \note{
-    \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.  Note that this does not apply when `i` is missing, i.e. \code{DT[]}.
+    \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.  Note that this does not apply when \code{i} is missing, i.e. \code{DT[]}.
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.
 }
