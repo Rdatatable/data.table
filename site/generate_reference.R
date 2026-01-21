@@ -2,6 +2,7 @@
 # Generate individual reference pages from .Rd files
 
 library(tools)
+library(xml2)
 
 # Create reference directory
 ref_dir = "site/reference"
@@ -34,57 +35,82 @@ get_rd_info = function(rd_file) {
 
 # Generate HTML for each .Rd file
 cat("Generating individual reference pages...\n")
-all_info = list()
+
+all_info = lapply(setNames(nm = rd_files), get_rd_info)
+topic_links = character()
+for (topic in all_info) topic_links[topic$aliases] = paste0('reference/', topic$name, '.html')
+
+html_meta = xfun::yaml_load(readLines('site/_litedown.yml'))$output$html$meta
 
 for (rd_file in rd_files) {
-  info = get_rd_info(rd_file)
-  all_info[[length(all_info) + 1]] <- info
+  info = all_info[[rd_file]]
 
   out_file = file.path(ref_dir, paste0(info$name, ".html"))
 
   temp_html = tempfile(fileext = ".html")
-  Rd2HTML(rd_file, out = temp_html, package = "data.table")
+  Rd2HTML(rd_file, out = temp_html, package = "data.table", Links = topic_links, Links2 = character())
+  html_root = read_html(temp_html)
 
-  html_content = readLines(temp_html, warn = FALSE)
-  navbar_html = readLines("site/_navbar.html", warn = FALSE)
-  navbar_html = gsub('href="index.html"', 'href="../index.html"', navbar_html)
-  navbar_html = gsub('href="news.html"', 'href="../news.html"', navbar_html)
-  navbar_html = gsub('href="manual.html"', 'href="../manual.html"', navbar_html)
-  navbar_html = gsub('href="articles/', 'href="../articles/', navbar_html)
-  navbar_html = gsub('href="assets/', 'href="../assets/', navbar_html)
+  if (!is.null(html_meta$lang))
+    xml_attr(html_root, 'lang') = html_meta$lang
 
-  wrapped_html = c(
-    '<!DOCTYPE html>',
-    '<html>',
-    '<head>',
-    '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">',
-    '<meta name="generator" content="litedown">',
-    sprintf('<title>%s — %s • data.table</title>', paste(info$aliases, collapse = ", "), info$title),
-    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">',
-    '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">',
-    '<link rel="stylesheet" href="../assets/style.css">',
-    '<style>',
-    'body { max-width: none !important; margin: 0 !important; padding: 0 !important; }',
-    '.frontmatter, .body { max-width: 1320px !important; width: 100% !important; margin: 0 auto !important; padding: 0 clamp(1.5rem, 3vw, 4rem) !important; }',
-    '.body { padding-top: 1.5rem; }',
-    'h2 { margin-top: 1.5em; border-bottom: 1px solid #dee2e6; padding-bottom: 0.3em; }',
-    'table { border-collapse: collapse; }',
-    'table td, table th { border: 1px solid #dee2e6; padding: 0.5rem; }',
-    '</style>',
-    '<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon/favicon-16x16.png"><link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon/favicon-32x32.png"><link rel="apple-touch-icon" sizes="60x60" href="../assets/favicon/apple-touch-icon-60x60.png"><link rel="apple-touch-icon" sizes="76x76" href="../assets/favicon/apple-touch-icon-76x76.png"><link rel="apple-touch-icon" sizes="120x120" href="../assets/favicon/apple-touch-icon-120x120.png"><link rel="apple-touch-icon" sizes="152x152" href="../assets/favicon/apple-touch-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="../assets/favicon/apple-touch-icon-180x180.png"><link rel="apple-touch-icon" sizes="180x180" href="../assets/favicon/apple-touch-icon.png"><link rel="icon" sizes="any" href="../assets/favicon/favicon.ico">',
-    '</head>',
-    '<body>',
-    navbar_html,
-    '<div class="body">',
-    html_content,
-    '</div>',
-    '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>',
-    '</body>',
-    '</html>'
-  )
+  html_title = xml_find_first(html_root, '/html/head/title')
+  xml_text(html_title) <- sprintf('%s — %s • data.table', paste(info$aliases, collapse = ", "), info$title)
 
-  writeLines(wrapped_html, out_file)
+  html_head = xml_find_first(html_root, '//head')
+
+  if (!is.null(add_head <- html_meta$header_includes)) {
+    add_head = xml_find_first(read_html(paste0('<head>', add_head, '</head>')), '//head')
+    for (tag in xml_children(add_head))
+      xml_add_child(html_head, tag)
+  }
+
+  for (css in html_meta$css2) {
+    link = xml_add_child(html_head, "link")
+    xml_set_attrs(link, list(
+      rel = "stylesheet",
+      href = css
+    ))
+  }
+
+  for (js in html_meta$js2) {
+    script = xml_add_child(html_head, "script")
+    xml_set_attr(script, 'src', js)
+  }
+
+  body = xml_find_first(html_root, '//body')
+  new_body = xml_add_child(html_root, 'body')
+  if (!is.null(include <- html_meta$include_before)) {
+    include = read_html(file.path('site', include))
+    include = xml_find_first(include, '//body')
+    for (node in xml_children(include))
+      xml_add_child(new_body, node)
+  }
+
+  new_body_div = xml_add_child(new_body, 'div')
+  xml_set_attr(new_body_div, 'class', 'body')
+  for (node in xml_children(body))
+    xml_add_child(new_body_div, node)
+
+  if (!is.null(include <- html_meta$include_after)) {
+    include = read_html(include)
+    include = xml_find_first(include, '//body')
+    for (node in xml_children(include))
+      xml_add_child(new_body, node)
+  }
+
+  xml_remove(body)
+
+  for (link in xml_find_all(html_root, '//a|//link')) {
+    href = xml_attr(link, 'href')
+    if (!is.na(href))
+      if (startsWith(href, '../../')) # \link[package]{topic}
+        xml_attr(link, 'href') <- NULL
+      else if (!grepl('^https?://', href))
+        xml_attr(link, 'href') <- paste0('../', href)
+  }
+
+  write_html(html_root, out_file)
   unlink(temp_html)
 
   cat(sprintf("  Generated %s\n", out_file))
