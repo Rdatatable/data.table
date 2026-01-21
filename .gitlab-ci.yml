@@ -357,8 +357,9 @@ integration:
   image: registry.gitlab.com/rdatatable/dockerfiles/r-litedown
   tags:
     - saas-linux-medium-amd64
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-clang-san","test-lin-dev-gcc-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
