@@ -364,6 +364,8 @@ integration:
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-litedown image
+    ## Install data.table from build artifacts (needed by litedown site generation)
+    - R CMD INSTALL bus/build/data.table_*.tar.gz
     ## Copy assets to site directory
     - mkdir -p ./site/assets/favicon/
     - cp .graphics/favicon/* ./site/assets/favicon/
