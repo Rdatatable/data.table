@@ -33,4 +33,3 @@ expressionE;
 @@
 -(constSEXP*)STRING_PTR(E)
 +STRING_PTR_RO(E)
-
