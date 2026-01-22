@@ -1,35 +1,35 @@
 @@
-expressionE;
+expression E;
 @@
--(constint*)INTEGER(E)
+-(const int*) INTEGER(E)
 +INTEGER_RO(E)
 
 @@
-expressionE;
+expression E;
 @@
--(constdouble*)REAL(E)
+-(const double*) REAL(E)
 +REAL_RO(E)
 
 @@
-expressionE;
+expression E;
 @@
--(constint*)LOGICAL(E)
+-(const int*) LOGICAL(E)
 +LOGICAL_RO(E)
 
 @@
-expressionE;
+expression E;
 @@
--(constRbyte*)RAW(E)
+-(const Rbyte*) RAW(E)
 +RAW_RO(E)
 
 @@
-expressionE;
+expression E;
 @@
--(constRcomplex*)COMPLEX(E)
+-(const Rcomplex*) COMPLEX(E)
 +COMPLEX_RO(E)
 
 @@
-expressionE;
+expression E;
 @@
--(constSEXP*)STRING_PTR(E)
+-(const SEXP*) STRING_PTR(E)
 +STRING_PTR_RO(E)
