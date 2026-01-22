@@ -235,13 +235,8 @@ void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const ch
   } break;
   case VECSXP: {
     const SEXP *xp = SEXPPTR_RO(src);
-    if (deep_copy) {
-      for (R_xlen_t i=0; i<n; ++i)
-        SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
-    } else {
-      for (R_xlen_t i=0; i<n; ++i)
-        SET_VECTOR_ELT(dst, i, xp[i]);
-    }
+    if (deep_copy) for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
+    else           for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, xp[i]);
   } break;
   default:                                                                                     // # nocov
     internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(src)), caller); // # nocov
