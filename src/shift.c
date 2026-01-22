@@ -30,7 +30,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
 
   int nx = length(x), nk = length(k);
   if (!isInteger(k)) internal_error(__func__, "k must be integer"); // # nocov
-  const int *kd = INTEGER(k);
+  const int *kd = INTEGER_RO(k);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
 
   const bool cycle = stype == CYCLIC;

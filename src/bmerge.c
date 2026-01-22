@@ -356,8 +356,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 
   switch (TYPEOF(xc)) {
   case LGLSXP : case INTSXP : {  // including factors
-    const int *icv = isDataCol ? INTEGER(ic) : NULL;
-    const int *xcv = INTEGER(xc);
+    const int *icv = isDataCol ? INTEGER_RO(ic) : NULL;
+    const int *xcv = INTEGER_RO(xc);
     const int ival = isDataCol ? icv[ir] : thisgrp;
     #define ISNAT(x) ((x)==NA_INTEGER)
     #define WRAP(x) (x)  // wrap not needed for int
@@ -388,8 +388,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #define WRAP(x) (x)
       DO(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival, int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, ival)
     } else {
-      const double *icv = REAL(ic);
-      const double *xcv = REAL(xc);
+      const double *icv = REAL_RO(ic);
+      const double *xcv = REAL_RO(xc);
       const double ival = icv[ir];
       const uint64_t ivalt = dtwiddle(ival); // TO: remove dtwiddle by dealing with NA, NaN, -Inf, +Inf up front
       #undef ISNAT

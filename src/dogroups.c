@@ -132,7 +132,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   iSD = PROTECT(R_getVar(install(".iSD"), env, false)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = PROTECT(R_getVar(install(".xSD"), env, false)); nprotect++;
   R_len_t maxGrpSize = 0;
-  const int *ilens = INTEGER(lens), n=LENGTH(lens);
+  const int *ilens = INTEGER_RO(lens), n=LENGTH(lens);
   for (R_len_t i=0; i<n; ++i) {
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
@@ -184,8 +184,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
 
   ansloc = 0;
-  const int *istarts = INTEGER(starts);
-  const int *iorder = INTEGER(order);
+  const int *istarts = INTEGER_RO(starts);
+  const int *iorder = INTEGER_RO(order);
 
   // We just want to set anyNA for later. We do it only once for the whole operation
   // because it is a rare edge case for it to be true. See #4892.

@@ -480,7 +480,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     if (selectRank) {
       SEXP tt = PROTECT(allocVector(INTSXP, ncol - ndrop));
       int *ttD = INTEGER(tt), rank = 1;
-      const int *rankD = INTEGER(selectRank);
+      const int *rankD = INTEGER_RO(selectRank);
       for (int i = 0; i < ncol; i++) if (type[i] != CT_DROP) ttD[rankD[i] - 1] = rank++;
       SET_VECTOR_ELT(RCHK, 3, selectRank = tt);
       // selectRank now holds the order not the rank (so its name is now misleading). setFinalNRow passes it to setcolorder

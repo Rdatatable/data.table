@@ -55,7 +55,7 @@ SEXP uniqlist(SEXP l, SEXP order)
     int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
-      const int *vd=INTEGER(v);
+      const int *vd=INTEGER_RO(v);
       int prev, elem;
       if (via_order) {
         // ad hoc by (order passed in)
@@ -221,7 +221,7 @@ SEXP rleid(SEXP l, SEXP cols) {
     SEXP jcol = VECTOR_ELT(l, icols[0]-1);
     switch (TYPEOF(jcol)) {
     case INTSXP : case LGLSXP : {
-      int *ijcol = INTEGER(jcol);
+      const int *ijcol = INTEGER_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = ijcol[i]==ijcol[i-1];
         ians[i] = (grp+=!same);
@@ -235,14 +235,14 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case REALSXP : {
-      long long *lljcol = (long long *)REAL(jcol);
+      const long long *lljcol = (const long long *)REAL_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = lljcol[i]==lljcol[i-1];
         ians[i] = (grp+=!same);
       }
     } break;
     case CPLXSXP: {
-      Rcomplex *pzjcol = COMPLEX(jcol);
+      const Rcomplex *pzjcol = COMPLEX_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = memcmp(&pzjcol[i], &pzjcol[i-1], sizeof(Rcomplex))==0;
         ians[i] = (grp += !same);
@@ -362,7 +362,7 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
     return ScalarInteger(0);  // empty vector
   int first = LOGICAL(x)[0];
   R_xlen_t i=0;
-  const int *ix = LOGICAL(x);
+  const int *ix = LOGICAL_RO(x);
   while (++i<n && ix[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value

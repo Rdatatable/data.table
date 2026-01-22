@@ -471,7 +471,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           }
           int *targetd = INTEGER(target);
           if (isFactor(thisCol)) {
-            const int *id = INTEGER(thisCol);
+            const int *id = INTEGER_RO(thisCol);
             if (length(thisCol)<=1) {
               // recycle length-1, or NA-fill length-0
               SEXP lev;

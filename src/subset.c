@@ -145,7 +145,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     internal_error(__func__, "allowNAArg must be TRUE/FALSE");  // # nocov
   const bool allowNA = LOGICAL(allowNAArg)[0];
 
-  const int *idxp = INTEGER(idx);
+  const int *idxp = INTEGER_RO(idx);
   bool stop = false;
   #pragma omp parallel for num_threads(getDTthreads(n, true))
   for (int i=0; i<n; ++i) {
@@ -309,7 +309,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   int ansn;
   if (isNull(rows)) {
     ansn = nrow;
-    const int *colD = INTEGER(cols);
+    const int *colD = INTEGER_RO(cols);
     for (int i=0; i<LENGTH(cols); i++) {
       SEXP thisCol = VECTOR_ELT(x, colD[i]-1);
       checkCol(thisCol, colD[i], nrow, x);
@@ -318,7 +318,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     }
   } else {
     ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
-    const int *colD = INTEGER(cols);
+    const int *colD = INTEGER_RO(cols);
     for (int i=0; i<LENGTH(cols); i++) {
       SEXP source = VECTOR_ELT(x, colD[i]-1);
       checkCol(source, colD[i], nrow, x);
