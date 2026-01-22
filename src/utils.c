@@ -243,8 +243,8 @@ void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const ch
         SET_VECTOR_ELT(dst, i, xp[i]);
     }
   } break;
-  default:                                                                                           // # nocov
-    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(src)), caller);        // # nocov
+  default:                                                                                     // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(src)), caller); // # nocov
   }
 }
 
