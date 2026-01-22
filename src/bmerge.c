@@ -356,7 +356,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 
   switch (TYPEOF(xc)) {
   case LGLSXP : case INTSXP : {  // including factors
-    const int *icv = isDataCol ? INTEGER(ic) : NULL;
+    const int *icv = isDataCol ? INTEGER_RO(ic) : NULL;
     const int *xcv = INTEGER_RO(xc);
     const int ival = isDataCol ? icv[ir] : thisgrp;
     #define ISNAT(x) ((x)==NA_INTEGER)
