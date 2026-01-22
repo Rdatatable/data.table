@@ -449,9 +449,11 @@ integration:
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
     ## Add backwards compatibility redirects
-    - mkdir -p website/news website/reference website/articles
+    - mkdir -p website/news website/reference
     - echo '<script>location.replace("../news.html")</script>' > website/news/index.html
     - echo '<script>location.replace("../manual.html")</script>' > website/reference/index.html
+    ## Render translated vignettes
+    - Rscript site/render_translations.R
     ## Symlink vignettes from library to articles (pkgdown convention)
     - ln -s library/data.table/doc website/articles || cp -r bus/integration/cran/library/data.table/doc/* website/articles/ 2>/dev/null || true
     ## litedown merge
