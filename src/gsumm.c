@@ -1266,17 +1266,12 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       }                                                                                                           \
     }
     switch(TYPEOF(x)) {
-      case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW,       ansd[ansi++]=val); } break;
-      case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
-      case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
-      case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+      case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW_RO,       ansd[ansi++]=val); } break;
+      case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL_RO,   ansd[ansi++]=val); } break;
+      case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER_RO,   ansd[ansi++]=val); } break;
+      case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL_RO,      ansd[ansi++]=val); } break;
                     // integer64 is shifted as if it's REAL; and assigning fill=NA_INTEGER64 is ok as REAL
-case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW_RO,       ansd[ansi++]=val); } break;
-case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL_RO,   ansd[ansi++]=val); } break;
-case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER_RO,   ansd[ansi++]=val); } break;
-case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL_RO,      ansd[ansi++]=val); } break;
-// integer64 is shifted as if it's REAL; and assigning fill=NA_INTEGER64 is ok as REAL
-case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX_RO,  ansd[ansi++]=val); } break;
+      case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX_RO,  ansd[ansi++]=val); } break;
       case STRSXP: { SHIFT(SEXP, STRING_PTR_RO,                       SET_STRING_ELT(tmp,ansi++,val)); } break;
       //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
       default:
