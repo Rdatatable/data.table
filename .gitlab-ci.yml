@@ -449,13 +449,13 @@ integration:
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
     ## Add backwards compatibility redirects
-    - mkdir -p website/news website/reference
+    - mkdir -p website/news website/reference website/articles
     - echo '<script>location.replace("../news.html")</script>' > website/news/index.html
     - echo '<script>location.replace("../manual.html")</script>' > website/reference/index.html
-    ## Render translated vignettes
+    ## Render translated vignettes into articles/<language>
     - Rscript site/render_translations.R
-    ## Symlink vignettes from library to articles (pkgdown convention)
-    - ln -s library/data.table/doc website/articles || cp -r bus/integration/cran/library/data.table/doc/* website/articles/ 2>/dev/null || true
+    ## Copy existing vignettes into articles/
+    - cp -r bus/integration/cran/library/data.table/doc/* website/articles/
     ## litedown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by litedown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from litedown artifacts"; message(msg); q("no")'
     - mv website/* bus/integration/cran/
