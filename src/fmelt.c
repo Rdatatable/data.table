@@ -522,7 +522,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         int thislen = 0;
         if (data->narm) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          ithisidx = INTEGER(thisidx);
+          ithisidx = INTEGER_RO(thisidx);
           thislen = length(thisidx);
         }
         size_t size = RTYPE_SIZEOF(thiscol);

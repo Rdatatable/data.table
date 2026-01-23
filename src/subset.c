@@ -110,7 +110,7 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
   if (!isInteger(idx)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
-  int *idxp = INTEGER(idx), n=LENGTH(idx);
+  const int *idxp = INTEGER_RO(idx), n=LENGTH(idx);
   for (int i=0; i<n; i++) {
     int elem = idxp[i];
     if (elem<=0 && elem!=NA_INTEGER) return "Internal inefficiency: idx contains negatives or zeros. Should have been dealt with earlier.";  // e.g. test 762  (TODO-fix)

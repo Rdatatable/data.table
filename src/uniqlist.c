@@ -85,7 +85,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           COMPARE1           COMPARE2
         }
       } else {
-        const double *vd=(const double *)REAL(v);
+        const double *vd=REAL_RO(v);
         double prev, elem;
         if (via_order) {
           COMPARE1_VIA_ORDER && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
