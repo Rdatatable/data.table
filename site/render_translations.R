@@ -12,7 +12,8 @@ for (f in translated) {
   out <- file.path("website/articles", sub("\\.Rmd$", ".html", sub("^vignettes/", "", f)))
   dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
   cat(sprintf("  Rendering: %s -> %s\n", f, out))
-  litedown::fuse(f, output = out)
+  src = litedown::fuse(f)
+  file.rename(src, out)
 }
 
 cat("Done\n")
