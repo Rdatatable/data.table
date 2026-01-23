@@ -113,7 +113,7 @@ If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
 \references{
   \url{https://en.wikipedia.org/wiki/Radix_sort}\cr
   \url{https://en.wikipedia.org/wiki/Counting_sort}\cr
-  \url{http://stereopsis.com/radix.html}\cr
+  \url{https://stereopsis.com/radix.html}\cr
   \url{https://codercorner.com/RadixSortRevisited.htm}\cr
   \url{https://medium.com/basecs/getting-to-the-root-of-sorting-with-radix-sort-f8e9240d4224}
 }

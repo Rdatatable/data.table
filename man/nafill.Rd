@@ -14,9 +14,9 @@ nafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA)
 setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x))
 }
 \arguments{
-  \item{x}{ Vector, list, data.frame or data.table of numeric columns. }
+  \item{x}{ Vector, list, data.frame or data.table of logical/numeric columns. }
   \item{type}{ Character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
-  \item{fill}{ Numeric value to be used to replace missing observations. See examples. }
+  \item{fill}{ Value to be used to replace missing observations. See examples. }
   \item{nan}{ Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement. See Examples. }
   \item{cols}{ Numeric or character vector specifying columns to be updated. }
 }
@@ -36,6 +36,11 @@ nafill(x, "locf")
 x = c(1, NA, NaN, 3, NaN, NA, 4)
 nafill(x, "locf")
 nafill(x, "locf", nan=NaN)
+
+# works for factors
+x = gl(3, 2, 10)
+is.na(x) = 1:2
+nafill(x, "nocb")
 
 # fill= applies to any leftover NA
 nafill(c(NA, x), "locf")

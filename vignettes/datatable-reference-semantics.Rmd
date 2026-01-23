@@ -62,7 +62,7 @@ DF
 
 When we did:
 
-```{r eval = FALSE}
+```r
 DF$c <- 18:13               # (1) -- replace entire column
 # or
 DF$c[DF$ID == "b"] <- 15:13 # (2) -- subassign in column 'c'
@@ -89,7 +89,7 @@ It can be used in `j` in two ways:
 
 (a) The `LHS := RHS` form
 
-```{r eval = FALSE}
+```r
 DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
 
 # when you have only one column to assign to you
@@ -99,7 +99,7 @@ DT[, colA := valA]
 
 (b) The functional form
 
-```{r eval = FALSE}
+```r
 DT[, `:=`(colA = valA, # valA is assigned to colA
           colB = valB, # valB is assigned to colB
           ...
@@ -209,7 +209,7 @@ head(flights)
 
 * When there is just one column to delete, we can drop the `c()` and double quotes and just use the column name *unquoted*, for convenience. That is:
 
-    ```{r eval = FALSE}
+    ```r
     flights[, delay := NULL]
     ```
 

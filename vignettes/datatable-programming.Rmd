@@ -219,7 +219,7 @@ DT[, sqrt(Sepal.Length)]
 ```
 
 If function name to be substituted needs to be namespace-qualified then namespace and function name can be substituted as any other symbol in the expression:
-```{r substitute_fun3, result='hide', eval=FALSE}
+```r
 DT[, ns::fun(Sepal.Length), env = list(ns="base", fun="sqrt"), verbose=TRUE]
 #Argument 'j' after substitute: base::sqrt(Sepal.Length)
 ## DT[, base::sqrt(Sepal.Length)]
