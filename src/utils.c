@@ -27,7 +27,7 @@ bool fitsInInt32(SEXP x) {
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
+  const double *dx = REAL_RO(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
@@ -44,7 +44,7 @@ bool fitsInInt64(SEXP x) {
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
+  const double *dx = REAL_RO(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
          (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
@@ -68,7 +68,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return false;
   case LGLSXP:
   case INTSXP: {
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
       return false;
     }
@@ -81,14 +81,14 @@ bool allNA(SEXP x, bool errorForBadType) {
         return false;
       }
     } else {
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
         return false;
       }
     }
     return true;
   case CPLXSXP: {
-    const Rcomplex *xd = COMPLEX(x);
+    const Rcomplex *xd = COMPLEX_RO(x);
     for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
@@ -161,7 +161,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-    int *icols = INTEGER(ricols);
+    const int *icols = INTEGER_RO(ricols);
     if (!bskip_absent) {
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
@@ -712,7 +712,7 @@ SEXP is_direct_child(SEXP pids) {
 #ifdef _WIN32
   internal_error(__func__, "not implemented on Windows");
 #else
-  int *ppids = INTEGER(pids);
+  const int *ppids = INTEGER_RO(pids);
   R_xlen_t len = xlength(pids);
   SEXP ret = allocVector(LGLSXP, len);
   int *pret = LOGICAL(ret);

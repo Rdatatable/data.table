@@ -146,7 +146,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   }
   SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
-  int *icols = INTEGER(ricols);
+  const int *icols = INTEGER_RO(ricols);
   bool any_char = false;
   for (int i=0; i<length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
@@ -189,13 +189,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       const void *p;
       switch (TYPEOF(ansi)) {
         case LGLSXP:
-          p = LOGICAL(ansi);
+          p = LOGICAL_RO(ansi);
           break;
         case INTSXP:
-          p = INTEGER(ansi);
+          p = INTEGER_RO(ansi);
           break;
         case REALSXP:
-          p = REAL(ansi);
+          p = REAL_RO(ansi);
           break;
         default:
           p = ansi;

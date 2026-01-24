@@ -587,7 +587,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case CPLXSXP : {
       // treat as if two separate columns of double
-      const Rcomplex *xd = COMPLEX(x);
+      const Rcomplex *xd = COMPLEX_RO(x);
       double *tmp = REAL(CplxPart);
       if (!complexRerun) {
         for (int i=0; i<nrow; ++i) tmp[i] = xd[i].r;  // extract the real part on the first time
@@ -723,7 +723,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {
-      int32_t *xd = INTEGER(x);
+      const int32_t *xd = INTEGER_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
@@ -738,7 +738,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case REALSXP :
       if (inherits(x, "integer64")) {
-        int64_t *xd = (int64_t *)REAL(x);
+        const int64_t *xd = (const int64_t *)REAL_RO(x);
         #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
@@ -751,7 +751,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           WRITE_KEY
         }
       } else {
-        double *xd = REAL(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
+        const double *xd = REAL_RO(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
         #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
@@ -1416,15 +1416,15 @@ SEXP issorted(SEXP x, SEXP by)
     int i=1;
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {
-      int *xd = INTEGER(x);
+      const int *xd = INTEGER_RO(x);
       while (i<n && xd[i]>=xd[i-1]) i++;
     } break;
     case REALSXP :
       if (inherits(x,"integer64")) {
-        int64_t *xd = (int64_t *)REAL(x);
+        const int64_t *xd = (int64_t *)REAL_RO(x);
         while (i<n && xd[i]>=xd[i-1]) i++;
       } else {
-        double *xd = REAL(x);
+        const double *xd = REAL_RO(x);
         while (i<n && dtwiddle(xd[i])>=dtwiddle(xd[i-1])) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
       }
       break;
@@ -1527,7 +1527,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
   if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error(_("nrow must be integer vector length 1"));
   const int nrow = INTEGER(nrowArg)[0];
   if (nrow<0) error(_("nrow==%d but must be >=0"), nrow);
-  const int *xd = INTEGER(x), xlen=LENGTH(x);
+  const int *xd = INTEGER_RO(x), xlen=LENGTH(x);
   for (int i=0, last=INT_MIN; i<xlen; ++i) {
     int elem = xd[i];
     if (elem==0) continue;
@@ -1565,7 +1565,7 @@ SEXP binary(SEXP x)
 static bool all1(SEXP x) {
   if (!isInteger(x))
     internal_error_with_cleanup(__func__, "all1 got non-integer"); // # nocov
-  int *xp = INTEGER(x);
+  const int *xp = INTEGER_RO(x);
   for (int i=0; i<LENGTH(x); ++i) if (xp[i] != 1) return false;
   return true;
 }
@@ -1583,7 +1583,7 @@ bool colsKeyHead(SEXP x, SEXP cols) {
   }
   SEXP keynames = PROTECT(chmatch(key, getAttrib(x, R_NamesSymbol), 0));
   UNPROTECT(1); // key
-  int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
+  const int *keynamesp = INTEGER_RO(keynames), *colsp = INTEGER_RO(cols);
   for (int i=0; i<LENGTH(cols); ++i) {
     if (colsp[i]!=keynamesp[i]) {
       UNPROTECT(1);
