@@ -212,6 +212,37 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
+void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller) {
+  switch (TYPEOF(src)) {
+  case RAWSXP:
+    memcpy(RAW(dst),     RAW_RO(src),     n*sizeof(Rbyte));
+    break;
+  case LGLSXP:
+    memcpy(LOGICAL(dst), LOGICAL_RO(src), n*sizeof(int));
+    break;
+  case INTSXP:
+    memcpy(INTEGER(dst), INTEGER_RO(src), n*sizeof(int));
+    break;
+  case REALSXP:
+    memcpy(REAL(dst),    REAL_RO(src),    n*sizeof(double));
+    break;
+  case CPLXSXP:
+    memcpy(COMPLEX(dst), COMPLEX_RO(src), n*sizeof(Rcomplex));
+    break;
+  case STRSXP: {
+    const SEXP *xp = STRING_PTR_RO(src);
+    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(dst, i, xp[i]);
+  } break;
+  case VECSXP: {
+    const SEXP *xp = SEXPPTR_RO(src);
+    if (deep_copy) for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
+    else           for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, xp[i]);
+  } break;
+  default:                                                                                     // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(src)), caller); // # nocov
+  }
+}
+
 SEXP copyAsPlain(SEXP x) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
@@ -240,33 +271,7 @@ SEXP copyAsPlain(SEXP x) {
     UNPROTECT(1);
     return ans;
   }
-  switch (TYPEOF(x)) {
-  case RAWSXP:
-    memcpy(RAW(ans),     RAW_RO(x),     n*sizeof(Rbyte));
-    break;
-  case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL_RO(x), n*sizeof(int));
-    break;
-  case INTSXP:
-    memcpy(INTEGER(ans), INTEGER_RO(x), n*sizeof(int));             // covered by 10:1 after test 178
-    break;
-  case REALSXP:
-    memcpy(REAL(ans),    REAL_RO(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
-    break;
-  case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX_RO(x), n*sizeof(Rcomplex));
-    break;
-  case STRSXP: {
-    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
-    for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
-  } break;
-  case VECSXP: {
-    const SEXP *xp=SEXPPTR_RO(x);
-    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
-  } break;
-  default:                                                                                           // # nocov
-    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
-  }
+  copyVectorElements(ans, x, n, /*deep_copy=*/true, __func__);
   DUPLICATE_ATTRIB(ans, x);
   UNPROTECT(1);
   return ans;
