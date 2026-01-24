@@ -1,4 +1,44 @@
 @@
+type T;
+const T *variable;
+expression E;
+@@
+- variable = REAL(E)
++ variable = REAL_RO(E)
+
+@@
+type T;
+const T *variable;
+expression E;
+@@
+- variable = INTEGER(E)
++ variable = INTEGER_RO(E)
+
+@@
+type T;
+const T *variable;
+expression E;
+@@
+- variable = COMPLEX(E)
++ variable = COMPLEX_RO(E)
+
+@@
+type T;
+const T *variable;
+expression E;
+@@
+- variable = RAW(E)
++ variable = RAW_RO(E)
+
+@@
+type T;
+const T *variable;
+expression E;
+@@
+- variable = LOGICAL(E)
++ variable = LOGICAL_RO(E)
+
+@@
 expression E;
 @@
 -(const int*) INTEGER(E)
@@ -18,18 +58,21 @@ expression E;
 
 @@
 expression E;
+type T;
 @@
--(const Rbyte*) RAW(E)
+-(const T*) RAW(E)
 +RAW_RO(E)
 
 @@
 expression E;
+type T;
 @@
--(const Rcomplex*) COMPLEX(E)
+-(const T*) COMPLEX(E)
 +COMPLEX_RO(E)
 
 @@
 expression E;
+type T;
 @@
--(const SEXP*) STRING_PTR(E)
+-(const T*) STRING_PTR(E)
 +STRING_PTR_RO(E)
