@@ -6,7 +6,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   const int n = length(idx);
   if (length(ans)!=n) internal_error(__func__, "length(ans)==%d n=%d", length(ans), n); // # nocov
 
-  const int *restrict idxp = INTEGER(idx);
+  const int *restrict idxp = INTEGER_RO(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied
   // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
   // here on idx in range [1,length(ans)].

@@ -83,7 +83,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
   grp = (int *)R_alloc(nrow, sizeof(*grp));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
-  const int *restrict fp = INTEGER(f);
+  const int *restrict fp = INTEGER_RO(f);
 
   nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
   batchSize = MAX(1, (nrow-1)/nBatch);
@@ -112,7 +112,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //  for (int j=0; j<grpsize[g]; j++)  grp[ elem[j]-1 ] = g;
     //}
 
-    const int *restrict op = INTEGER(o);  // o is a permutation of 1:nrow
+    const int *restrict op = INTEGER_RO(o);  // o is a permutation of 1:nrow
     int nb = nbit(nrow-1);
     int bitshift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>bitshift) + 1;
@@ -224,7 +224,7 @@ void *gather(SEXP x, bool *anyNA)
   const bool verbose = GetVerbose();
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
-    const int *restrict thisx = INTEGER(x);
+    const int *restrict thisx = INTEGER_RO(x);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
@@ -253,7 +253,7 @@ void *gather(SEXP x, bool *anyNA)
   } break;
   case REALSXP: {
     if (!INHERITS(x, char_integer64)) {
-      const double *restrict thisx = REAL(x);
+      const double *restrict thisx = REAL_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int b=0; b<nBatch; b++) {
         int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
@@ -309,7 +309,7 @@ void *gather(SEXP x, bool *anyNA)
     }
   } break;
   case CPLXSXP: {
-    const Rcomplex *restrict thisx = COMPLEX(x);
+    const Rcomplex *restrict thisx = COMPLEX_RO(x);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;

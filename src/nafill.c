@@ -189,13 +189,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       const void *p;
       switch (TYPEOF(ansi)) {
         case LGLSXP:
-          p = LOGICAL(ansi);
+          p = LOGICAL_RO(ansi);
           break;
         case INTSXP:
-          p = INTEGER(ansi);
+          p = INTEGER_RO(ansi);
           break;
         case REALSXP:
-          p = REAL(ansi);
+          p = REAL_RO(ansi);
           break;
         default:
           p = ansi;

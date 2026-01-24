@@ -56,8 +56,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) // We let through LENGTH(i) == 0 for tests 2126.*
     internal_error(__func__, "icols and xcols must be non-empty integer vectors");
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) internal_error(__func__, "length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
-  icols = INTEGER(icolsArg);
-  xcols = INTEGER(xcolsArg);
+  icols = INTEGER_RO(icolsArg);
+  xcols = INTEGER_RO(xcolsArg);
   xN = LENGTH(xdt) ? LENGTH(VECTOR_ELT(xdt,0)) : 0;
   iN = ilen = anslen = LENGTH(idt) ? LENGTH(VECTOR_ELT(idt,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join

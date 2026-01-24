@@ -235,7 +235,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
 {
   if (!length(items)) return;
   const SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP));
-  const int* const itemsD = INTEGER(itemsInt);
+  const int* const itemsD = INTEGER_RO(itemsInt);
   const int n = LENGTH(itemsInt);
   for (int j = 0; j < n; j++) {
     const int k = itemsD[j];
@@ -294,12 +294,12 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (length(selectSxp)) {
     const int n = length(selectSxp);
     if (isString(selectSxp)) {
-      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
+      selectInts = INTEGER_RO(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
       for (int i = 0; i < n; i++) if (selectInts[i] == NA_INTEGER)
         DTWARN(_("Column name '%s' not found in column name header (case sensitive), skipping."), CHAR(STRING_ELT(selectSxp, i)));
     } else {
       if (!isInteger(selectSxp)) { selectSxp = PROTECT(coerceVector(selectSxp, INTSXP)); nprotect++; }  // coerce numeric to int
-      selectInts = INTEGER(selectSxp);
+      selectInts = INTEGER_RO(selectSxp);
     }
     SET_VECTOR_ELT(RCHK, 3, selectRank = allocVector(INTSXP, ncol));
     int *selectRankD = INTEGER(selectRank), rank = 1;
