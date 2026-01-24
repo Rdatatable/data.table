@@ -977,12 +977,12 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
-  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val) } break;
-  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val) } break;
+  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL_RO, NA_LOGICAL,   ansd[ansi++]=val) } break;
+  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER_RO, NA_INTEGER,   ansd[ansi++]=val) } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
-           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
-           else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
-  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
+           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL_RO,    NA_INTEGER64, ansd[ansi++]=val) }
+           else { double      *ansd=REAL(ans); DO(double,   REAL_RO,    NA_REAL,      ansd[ansi++]=val) } break;
+  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX_RO, NA_CPLX,      ansd[ansi++]=val) } break;
   case STRSXP:  DO(SEXP, STRING_PTR_RO, NA_STRING,              SET_STRING_ELT(ans,ansi++,val))        break;
   case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
   default:
