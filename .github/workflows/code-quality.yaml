@@ -29,6 +29,7 @@ jobs:
             c:
               - '**/*.c'
               - '**/*.h'
+              - '.ci/linters/cocci/**/*.cocci'
             po:
               - 'po/**/*.po'
             md:
