@@ -1,6 +1,6 @@
 # build a link list of alternative languages (may be character(0))
 # idea is to look like 'Other languages: en | fr | de'
-.write.translation.links <- function(fmt) {
+.write.translation.links = function(fmt) {
     url = "https://rdatatable.gitlab.io/data.table/articles"
     path = dirname(litedown::get_context("input"))
     if (basename(path) == "vignettes") {
