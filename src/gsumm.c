@@ -83,7 +83,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
   grp = (int *)R_alloc(nrow, sizeof(*grp));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
-  const int *restrict fp = INTEGER(f);
+  const int *restrict fp = INTEGER_RO(f);
 
   nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
   batchSize = MAX(1, (nrow-1)/nBatch);
@@ -224,7 +224,7 @@ void *gather(SEXP x, bool *anyNA)
   const bool verbose = GetVerbose();
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
-    const int *restrict thisx = INTEGER(x);
+    const int *restrict thisx = INTEGER_RO(x);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
@@ -253,7 +253,7 @@ void *gather(SEXP x, bool *anyNA)
   } break;
   case REALSXP: {
     if (!INHERITS(x, char_integer64)) {
-      const double *restrict thisx = REAL(x);
+      const double *restrict thisx = REAL_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int b=0; b<nBatch; b++) {
         int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
@@ -309,7 +309,7 @@ void *gather(SEXP x, bool *anyNA)
     }
   } break;
   case CPLXSXP: {
-    const Rcomplex *restrict thisx = COMPLEX(x);
+    const Rcomplex *restrict thisx = COMPLEX_RO(x);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
@@ -881,8 +881,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   switch(TYPEOF(x)) {
   case REALSXP: {
     double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
-    const int64_t *xi64 = (const int64_t*)REAL_RO(x);
-    const double *xd = REAL_RO(x);
+    const int64_t *xi64 = (const int64_t *)REAL_RO(x);
+    const double  *xd = REAL_RO(x);
     for (int i=0; i<ngrp; ++i) {
       int thisgrpsize = grpsize[i], nacount=0;
       for (int j=0; j<thisgrpsize; ++j) {
@@ -978,12 +978,12 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   }
 
   switch(TYPEOF(x)) {
-  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val) } break;
-  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val) } break;
+  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL_RO, NA_LOGICAL,   ansd[ansi++]=val) } break;
+  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER_RO, NA_INTEGER,   ansd[ansi++]=val) } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
-           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
-           else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
-  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
+           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL_RO,    NA_INTEGER64, ansd[ansi++]=val) }
+           else { double      *ansd=REAL(ans); DO(double,   REAL_RO,    NA_REAL,      ansd[ansi++]=val) } break;
+  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX_RO, NA_CPLX,      ansd[ansi++]=val) } break;
   case STRSXP:  DO(SEXP, STRING_PTR_RO, NA_STRING,              SET_STRING_ELT(ans,ansi++,val))        break;
   case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
   default:
@@ -1267,12 +1267,12 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       }                                                                                                           \
     }
     switch(TYPEOF(x)) {
-      case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW,       ansd[ansi++]=val); } break;
-      case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
-      case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
-      case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+      case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW_RO,       ansd[ansi++]=val); } break;
+      case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL_RO,   ansd[ansi++]=val); } break;
+      case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER_RO,   ansd[ansi++]=val); } break;
+      case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL_RO,      ansd[ansi++]=val); } break;
                     // integer64 is shifted as if it's REAL; and assigning fill=NA_INTEGER64 is ok as REAL
-      case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
+      case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX_RO,  ansd[ansi++]=val); } break;
       case STRSXP: { SHIFT(SEXP, STRING_PTR_RO,                       SET_STRING_ELT(tmp,ansi++,val)); } break;
       //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
       default:

@@ -11,7 +11,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   SEXP vv, tt, lookup, type_lookup;
   R_len_t *idx,*count,*type_count,xrows=INTEGER_RO(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
   const int *from = INTEGER_RO(VECTOR_ELT(indices, 0));
-  const int *to = INTEGER_RO(VECTOR_ELT(indices, 1));
+  const int *to   = INTEGER_RO(VECTOR_ELT(indices, 1));
   clock_t pass1, pass2, pass3, start;
   enum {ALL, FIRST, LAST} mult = ALL;
   enum {ANY, WITHIN, START, END, EQUAL} type = ANY;

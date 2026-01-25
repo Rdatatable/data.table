@@ -587,7 +587,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case CPLXSXP : {
       // treat as if two separate columns of double
-      const Rcomplex *xd = COMPLEX(x);
+      const Rcomplex *xd = COMPLEX_RO(x);
       double *tmp = REAL(CplxPart);
       if (!complexRerun) {
         for (int i=0; i<nrow; ++i) tmp[i] = xd[i].r;  // extract the real part on the first time
@@ -738,7 +738,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case REALSXP :
       if (inherits(x, "integer64")) {
-        const int64_t *xd = (const int64_t*)REAL_RO(x);
+        const int64_t *xd = (const int64_t *)REAL_RO(x);
         #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
@@ -1416,7 +1416,7 @@ SEXP issorted(SEXP x, SEXP by)
     int i=1;
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {
-      int *xd = INTEGER(x);
+      const int *xd = INTEGER_RO(x);
       while (i<n && xd[i]>=xd[i-1]) i++;
     } break;
     case REALSXP :

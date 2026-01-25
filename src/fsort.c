@@ -145,7 +145,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     free(mins); free(maxs); // # nocov
     error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double))); // # nocov
   }
-  const double *restrict xp = REAL(x);
+  const double *restrict xp = REAL_RO(x);
   #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
   for (int batch=0; batch<nBatch; ++batch) {
     uint64_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
