@@ -1,3 +1,4 @@
+/* Ensure _RO accessors are used for assignment to 'const' variables */
 @@
 type T;
 const T *variable;
@@ -38,6 +39,7 @@ expression E;
 - variable = LOGICAL(E)
 + variable = LOGICAL_RO(E)
 
+/* Just use _RO accessors directly instead of 'const' casting the writeable one */
 @@
 expression E;
 @@
