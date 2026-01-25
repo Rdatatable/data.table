@@ -354,7 +354,7 @@ test-mac-old:
 # generating litedown website
 integration:
   stage: integration
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-litedown
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-data.table
   tags:
     - saas-linux-medium-amd64
   rules:
