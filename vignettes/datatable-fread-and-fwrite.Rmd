@@ -1,6 +1,6 @@
 ---
 title: "Fast Read and Fast Write"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output: litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Fast Read and Fast Write}
@@ -10,7 +10,7 @@ vignette: >
 
 ```{r echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
