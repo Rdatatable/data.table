@@ -6,7 +6,6 @@
     path = dirname(context)
     if (basename(path) == "vignettes") {
       lang = "en"
-      path = "."
     } else {
       lang = basename(path)
       path = ".."
