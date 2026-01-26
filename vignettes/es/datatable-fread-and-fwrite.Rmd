@@ -1,6 +1,6 @@
 ---
 title: "Lectura y escritura rápida: fread()/fwrite()"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output: litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Fast Read and Fast Write}
@@ -11,7 +11,7 @@ vignette: >
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
 
-`r .write.translation.links("Las traducciones de este documento están disponibles en: %s")`
+`{r} .write.translation.links("Las traducciones de este documento están disponibles en: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
