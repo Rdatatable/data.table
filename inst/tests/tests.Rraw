@@ -21422,10 +21422,10 @@ test(2359.1, nchar(fread(txt)$foo), 409600L)
 # rowwiseDT() valid and invalid handling of complex objects #7219
 test(2360.1, rowwiseDT(x =, y =, 1, 2, 3, 4), data.table(x = c(1, 3), y = c(2, 4)))
 test(2360.2, rowwiseDT(x =, func =,
-    1, list(\(x) x + 1),
+    1, list(function(x) x + 1),
     2, list(function(z) z * 2)),
-    data.table(x = c(1, 2), func = list(\(x) x + 1, function(z) z * 2)))
-test(2360.3, rowwiseDT(x =, func =, 1, \(x) x + 1),
+    data.table(x = c(1, 2), func = list(function(x) x + 1, function(z) z * 2)))
+test(2360.3, rowwiseDT(x =, func =, 1, function(x) x + 1),
   error = "Column 'func' is type 'function'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
 test(2360.4, rowwiseDT(x =, expr =, 1, quote(a + b)),
   error = "Column 'expr' is type 'call'. Non-atomic, non-list objects must be wrapped in list\\(\\)")
