@@ -21420,7 +21420,6 @@ txt = paste0("foo\n", strrep("a", 4096 * 100), "\x1A")
 test(2359.1, nchar(fread(txt)$foo), 409600L)
 
 # rowwiseDT() valid and invalid handling of complex objects #7219
-# NB \(x) only exists pre-parser and is changed to function(x) x during parsing
 test(2360.1, rowwiseDT(x =, y =, 1, 2, 3, 4), data.table(x = c(1, 3), y = c(2, 4)))
 test(2360.2, rowwiseDT(x =, func =,
     1, list(function(x) x + 1),
