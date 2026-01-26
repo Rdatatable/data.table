@@ -2,7 +2,7 @@
 title: "Быстрое изменение формы данных с помощью data.table"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Быстрое изменение формы данных с помощью data.table}
   %\VignetteEngine{litedown::vignette}
