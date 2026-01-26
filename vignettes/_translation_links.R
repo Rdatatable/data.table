@@ -3,8 +3,8 @@
 .write.translation.links = function(fmt) {
     url = "https://rdatatable.gitlab.io/data.table/articles"
     context = litedown::get_context("input")
-    path = normalizePath(dirname(context))
-    if (basename(path) == "vignettes") {
+    path = dirname(context)
+    if (basename(path) %in% c(".", "vignettes")) {
       lang = "en"
     } else {
       lang = basename(path)
