@@ -250,6 +250,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
 
 dcast = function(data, ...) {
   if (!is.data.frame(data)) stopf("'%s' must be a data.frame", "data")
-  data <- as.data.table(data)
+  data = as.data.table(data)
   dcast.data.table(data, ...)
 }
