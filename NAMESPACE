@@ -139,14 +139,11 @@ S3method(split, data.table)
 export(dcast, melt)
 S3method(dcast, data.table)
 S3method(melt, data.table)
-S3method(dcast, data.frame)
-S3method(melt, data.frame)
 
 # exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
 # and many packages on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
-export(melt.data.frame, dcast.data.frame)
 
 importFrom(utils, capture.output, contrib.url, download.file, flush.console, getS3method, head, packageVersion, tail, untar, unzip)
 export(update_dev_pkg)

@@ -12,6 +12,12 @@ dcast = function(
   data, formula, fun.aggregate = NULL, ..., margins = NULL,
   subset = NULL, fill = NULL, value.var = guess(data)
 ) {
+  if (!is.data.table(data) && is.data.frame(data)) 
+    return(
+      dcast.data.table(data, formula, fun.aggregate = fun.aggregate, ..., 
+      margins = margins, subset = subset, fill = fill, 
+      value.var = value.var)
+    )
   UseMethod("dcast", data)
 }
 
@@ -119,7 +125,6 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
 }
 
 dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose"), value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, value.var.in.RHSdots = value.var.in.dots) {
-  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
   drop = as.logical(rep_len(drop, 2L))
   if (anyNA(drop)) stopf("'drop' must be logical vector with no missing entries")
   if (!isTRUEorFALSE(value.var.in.dots))
@@ -246,10 +251,4 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   setDT(ans)
   setattr(ans, 'sorted', lhsnames)
   ans
-}
-
-dcast.data.frame = function(data, ...) {
-  if (!is.data.frame(data)) stopf("'%s' must be a data.frame", "data")
-  data = as.data.table(data)
-  dcast.data.table(data, ...)
 }
