@@ -248,7 +248,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   ans
 }
 
-dcast = function(data, ...) {
+dcast.data.frame = function(data, ...) {
   if (!is.data.frame(data)) stopf("'%s' must be a data.frame", "data")
   data = as.data.table(data)
   dcast.data.table(data, ...)
