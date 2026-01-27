@@ -21513,7 +21513,7 @@ rm(x, y)
 # test for data.frame reshape for melt
 df_melt = data.frame(a = 1:2, b = 3:4)
 dt_melt = data.table(a = 1:2, b = 3:4)
-test(2365.1, melt(df_melt, id.vars=1:2, measure.vars=3:4), melt(dt_melt, id.vars=1:2, measure.vars=3:4))
+test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 
 # test for data.frame reshape for dcast
 df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
