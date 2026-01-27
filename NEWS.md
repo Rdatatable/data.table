@@ -26,7 +26,7 @@
       - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))` will use GForce, saving the need to coerce `x` in a setup step) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
       - Arithmetic operation support in GForce (e.g., `max(x) - min(x)` will use GForce on both `max(x)` and `min(x)`, saving the need to do the subtraction in a follow-up step) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
 
-4. Added support for dcast/melt of data.frames, Thanks @MichaelChirico for the suggestion and @manmita for the PR.
+4. Added support for dcast/melt of data.frames, Thanks @MichaelChirico for the suggestion and @manmita for the PR. [#7614](https://github.com/Rdatatable/data.table/issues/7614)
 
 ### BUG FIXES
 
