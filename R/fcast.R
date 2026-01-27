@@ -247,3 +247,9 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   setattr(ans, 'sorted', lhsnames)
   ans
 }
+
+dcast = function(data, ...) {
+  if (!is.data.frame(data)) stopf("'%s' must be a data.frame", "data")
+  data <- as.data.table(data)
+  dcast.data.table(data, ...)
+}

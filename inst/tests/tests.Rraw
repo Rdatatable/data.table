@@ -21509,3 +21509,13 @@ setdroplevels(x)
 setdroplevels(y)
 test(2364.2, levels(x$a), levels(y$a))
 rm(x, y)
+
+# test for data.frame reshape for melt
+df_melt = data.frame(a = 1:2, b = 3:4)
+dt_melt = data.table(a = 1:2, b = 3:4)
+test(2365.1, melt(df_melt), melt(dt_melt))
+
+# test for data.frame reshape for dcast
+df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
+dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
+test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))

@@ -219,3 +219,8 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
   setattr(ans, 'sorted', NULL)
   ans
 }
+melt.data.frame = function(data, ...) {
+  if (!is.data.frame(data)) stopf("'%s' must be a data.frame", "data")
+  data <- as.data.table(data)
+  melt.data.table(data, ...)
+}
