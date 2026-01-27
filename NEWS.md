@@ -48,7 +48,7 @@
 
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
 
-## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/34?closed=1)  (22 January 2026)
+## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1)  (22 January 2026)
 
 ### BUG FIXES
 
@@ -68,7 +68,11 @@
 
 4. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#1831](https://github.com/Rdatatable/data.table/issues/1831) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to @zachokeeffe and @tyner for the report and @ben-schwen for the fix.
 
+<<<<<<< HEAD
 ## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  (23 December 2025)
+=======
+## data.table [v1.18.0](https://github.com/Rdatatable/data.table/milestone/37?closed=1)  23 December 2025
+>>>>>>> patch-1.18.2
 
 ### BREAKING CHANGE
 
