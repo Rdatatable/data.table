@@ -4,7 +4,7 @@
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
-  if (!is.data.table(data) && is.data.frame(data)) 
+  if (!is.data.table(data) && is.data.frame(data))
     return(melt.data.table(data, ..., na.rm = na.rm, value.name = value.name))
   UseMethod("melt", data)
 }
