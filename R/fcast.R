@@ -12,13 +12,14 @@ dcast = function(
   data, formula, fun.aggregate = NULL, ..., margins = NULL,
   subset = NULL, fill = NULL, value.var = guess(data)
 ) {
-  if (!is.data.table(data) && is.data.frame(data))
-    return(
-      dcast.data.table(data, formula, fun.aggregate = fun.aggregate, ...,
-      margins = margins, subset = subset, fill = fill,
-      value.var = value.var)
-    )
-  UseMethod("dcast", data)
+  if (!is.data.table(data) && is.data.frame(data)){
+    mc <- match.call()
+    mc[[1L]] <- as.name("dcast.data.table")
+    eval(mc, parent.frame())
+  }
+  else {
+    UseMethod("dcast", data)
+  }
 }
 
 check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {

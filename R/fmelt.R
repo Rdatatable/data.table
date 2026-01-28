@@ -4,9 +4,14 @@
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
-  if (!is.data.table(data) && is.data.frame(data))
-    return(melt.data.table(data, ..., na.rm = na.rm, value.name = value.name))
-  UseMethod("melt", data)
+  if (!is.data.table(data) && is.data.frame(data)){
+    mc <- match.call()
+    mc[[1L]] <- as.name("melt.data.table")
+    eval(mc, parent.frame())
+  }
+  else {
+    UseMethod("melt", data)
+  }
 }
 
 patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
