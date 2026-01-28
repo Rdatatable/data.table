@@ -139,7 +139,6 @@ S3method(split, data.table)
 export(dcast, melt)
 S3method(dcast, data.table)
 S3method(melt, data.table)
-S3method(melt, default)
 
 # exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
