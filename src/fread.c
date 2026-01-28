@@ -700,12 +700,12 @@ static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)
   }
 }
 
-static void StrtoI32(FieldParseContext *ctx)
+static void parse_i32(FieldParseContext *ctx)
 {
   str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)], false);
 }
 
-static void StrtoI64(FieldParseContext *ctx)
+static void parse_i64(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
   int64_t *target = ctx->targets[sizeof(int64_t)];
@@ -1188,7 +1188,7 @@ static void parse_empty(FieldParseContext *ctx)
 }
 
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
-static void parse_bool_numeric(FieldParseContext *ctx)
+static void parse_bool_10(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
   int8_t *target = ctx->targets[sizeof(int8_t)];
@@ -1254,7 +1254,7 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
 }
 
 /* Parse Y | y | N | n as boolean */
-static void parse_bool_yesno(FieldParseContext *ctx)
+static void parse_bool_yn(FieldParseContext *ctx)
 {
   const char *ch = *ctx->ch;
   int8_t *target = ctx->targets[sizeof(int8_t)];
@@ -1271,22 +1271,22 @@ static void parse_bool_yesno(FieldParseContext *ctx)
 
 /* How to register a new parser
  *  (1) Write the parser
- *  (2) Add it to fun array here
+ *  (2) Add it to parser_funs array here
  *  (3) Extend disabled_parsers, typeName, and typeSize here as appropriate
  *  (4) Extend colType typdef in fread.h as appropriate
  *  (5) Extend typeSxp, typeRName, typeEnum in freadR.c as appropriate
  */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
-static reader_fun_t fun[NUMTYPE] = {
+static const reader_fun_t parser_funs[NUMTYPE] = {
   &Field,        // CT_DROP
   &parse_empty,  // CT_EMPTY
-  &parse_bool_numeric,
+  &parse_bool_10,
   &parse_bool_uppercase,
   &parse_bool_titlecase,
   &parse_bool_lowercase,
-  &parse_bool_yesno,
-  &StrtoI32,
-  &StrtoI64,
+  &parse_bool_yn,
+  &parse_i32,
+  &parse_i64,
   &parse_double_regular,
   &parse_double_extended,
   &parse_double_hexadecimal,
@@ -1325,11 +1325,11 @@ static int detect_types(const char **pch, int ncol, bool *bumped)
         dec = '.';
       }
 
-      fun[tmpType[field]](&fctx);
+      parser_funs[tmpType[field]](&fctx);
       if (end_of_field(ch)) break;
       skip_white(&ch);
       if (end_of_field(ch)) break;
-      ch = end_NA_string(fieldStart);  // fieldStart here is correct (already after skip_white above); fun[]() may have part processed field so not ch
+      ch = end_NA_string(fieldStart);  // fieldStart here is correct (already after skip_white above); parser_funs[]() may have part processed field so not ch
       skip_white(&ch);
       if (end_of_field(ch)) break;
       ch = fieldStart;
@@ -1340,7 +1340,7 @@ static int detect_types(const char **pch, int ncol, bool *bumped)
       }
       if (*ch == quote && quote) {  // && quote to exclude quote='\0' (user passed quote="")
         ch++;
-        fun[tmpType[field]](&fctx);
+        parser_funs[tmpType[field]](&fctx);
         if (*ch == quote) {
           ch++;
           skip_white(&ch);
@@ -2593,7 +2593,7 @@ int freadMain(freadMainArgs _args)
               // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
               fieldStart = tch;
               int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-              fun[IGNORE_BUMP(thisType)](&fctx);
+              parser_funs[IGNORE_BUMP(thisType)](&fctx);
               if (*tch != sep) break;
               int8_t thisSize = size[j];
               if (thisSize) ((char**) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
@@ -2657,7 +2657,7 @@ int freadMain(freadMainArgs _args)
                 if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
                 if (*tch == quote && quote) { quoted = true; tch++; }
               } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
-              fun[IGNORE_BUMP(thisType)](&fctx);
+              parser_funs[IGNORE_BUMP(thisType)](&fctx);
     
               bool typeBump = false;
               if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
