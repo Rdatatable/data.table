@@ -26,7 +26,8 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 static const SEXP *idtVec, *xdtVec;
 static const int *icols, *xcols;
 static SEXP nqgrp;
-static int ncol, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
+static int ncol, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, ilen, anslen;
+static const int* rollends;
 static int *op, nqmaxgrp;
 static int ctr, nomatch; // populating matches for non-equi joins
 enum {ALL, FIRST, LAST, ERR} mult = ALL;
@@ -94,7 +95,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   rollabs = fabs(roll);
   if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2)
     error(_("rollends must be a length 2 logical vector"));
-  rollends = LOGICAL(rollendsArg);
+  rollends = LOGICAL_RO(rollendsArg);
 
   if (isNull(nomatchArg)) {
     nomatch=0;

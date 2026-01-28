@@ -12,17 +12,20 @@ ciura2001 = function(k) if (k==1) 1 else if (k==2) 4 else if (k==3) 10 else if (
 # Lee 2021
 lee = function(k, y=2.243609061420001) tokuda(k, y=y)
 */
-static const int sedgewick1982[17] = {
-  1073790977, 268460033, 67121153, 16783361, 4197377, 1050113,
-  262913, 65921, 16577, 4193, 1073, 281, 77, 23, 8, 1, 0
-};
-#define NGAPS 16
 
 /* shellsort
  * uses sedgewick1982 gap sequence formula as it turned out to be the most efficient - tested various n, k (for rnorm only!)
  * currently used in frollmedian algo="fast" when no NAs
 */
 void shellsort(const double *x, int n, int *o) {
+
+  static const int sedgewick1982[17] = {
+    1073790977, 268460033, 67121153, 16783361, 4197377, 1050113,
+    262913, 65921, 16577, 4193, 1073, 281, 77, 23, 8, 1, 0
+  };
+
+  static const int NGAPS = 16;
+  
   for (int i=0; i < n; i++) o[i] = i;
   int gap = 0;
   while (sedgewick1982[gap] > n) gap++;
