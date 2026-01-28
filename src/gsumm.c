@@ -21,13 +21,6 @@ static int *oo = NULL;
 static int *ff = NULL;
 static int isunsorted = 0;
 
-// from R's src/cov.c (for variance / sd)
-#ifdef HAVE_LONG_DOUBLE
-# define SQRTL sqrtl
-#else
-# define SQRTL sqrt
-#endif
-
 static int nbit(int n)
 {
   // returns position of biggest bit; i.e. floor(log2(n))+1 without using fpa
@@ -1061,7 +1054,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
           v += (subd[j]-(double)m) * (subd[j]-(double)m);
         }
         ansd[i] = (double)v/(nna-1);
-        if (isSD) ansd[i] = SQRTL(ansd[i]);
+        if (isSD) ansd[i] = (double)sqrtl((long double)ansd[i]);
       }
     }}
     break;
@@ -1092,7 +1085,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
           v += (subd[j]-(double)m) * (subd[j]-(double)m);
         }
         ansd[i] = (double)v/(nna-1);
-        if (isSD) ansd[i] = SQRTL(ansd[i]);
+        if (isSD) ansd[i] = (double)sqrtl((long double)ansd[i]);
       }
     }}
     break;
