@@ -26,6 +26,8 @@
       - Type conversion support in GForce expressions (e.g., `sum(as.numeric(x))` will use GForce, saving the need to coerce `x` in a setup step) [#2934](https://github.com/Rdatatable/data.table/issues/2934)
       - Arithmetic operation support in GForce (e.g., `max(x) - min(x)` will use GForce on both `max(x)` and `min(x)`, saving the need to do the subtraction in a follow-up step) [#3815](https://github.com/Rdatatable/data.table/issues/3815)
 
+4. Joins (`y[x, on=]` or `merge(x, y, ...)`) now display join statistics with `options(datatable.verbose=TRUE)`, showing row counts, matched rows, and join columns used, [#4677](https://github.com/Rdatatable/data.table/issues/4677). Thanks @thorek1 and @grantmcdermott for the suggestion and @ben-schwen for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
@@ -35,8 +37,6 @@
 3. `fread(text=)` could segfault when reading text input ending with a `\x1a` (ASCII SUB) character after a long line, [#7407](https://github.com/Rdatatable/data.table/issues/7407) which is solved by adding check for eof. Thanks @aitap for the report and @manmita for the fix.
 
 4. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
-
-2. Joins (`y[x, on=]` or `merge(x, y, ...)`) now display join statistics with `options(datatable.verbose=TRUE)`, showing row counts, matched rows, and join columns used, [#4677](https://github.com/Rdatatable/data.table/issues/4677). Thanks @thorek1 and @grantmcdermott for the suggestion and @ben-schwen for the implementation.
 
 ### Notes
 
