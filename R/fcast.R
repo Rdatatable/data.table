@@ -15,11 +15,9 @@ dcast = function(
   if (!is.data.table(data) && is.data.frame(data)){
     mc <- match.call()
     mc[[1L]] <- as.name("dcast.data.table")
-    eval(mc, parent.frame())
+    return(eval(mc, parent.frame()))
   }
-  else {
-    UseMethod("dcast", data)
-  }
+  UseMethod("dcast", data)
 }
 
 check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {
