@@ -4,6 +4,11 @@
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
+  if (!is.data.table(data) && is.data.frame(data)){
+    mc <- match.call()
+    mc[[1L]] <- as.name("melt.data.table")
+    return(eval(mc, parent.frame()))
+  }
   UseMethod("melt", data)
 }
 
@@ -176,7 +181,6 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
   for(type.vars in c("id.vars","measure.vars")){
     sub.lang <- substitute({
       if (missing(VAR)) VAR=NULL
