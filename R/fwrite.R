@@ -121,6 +121,16 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       x
     })
   }
+  
+  # ensure POSIXct columns are double for proper ISO formatting
+  x <- lapply(x, function(col) {
+    if (inherits(col, "POSIXt")) {
+      # coerce integer-backed to double
+      storage.mode(col) <- "double"
+    }
+    col
+  })
+  
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding, forceDecimal)
