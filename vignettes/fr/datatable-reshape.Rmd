@@ -2,7 +2,7 @@
 title: "Restructurer efficacement avec les data.tables"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Restructurer efficacement avec les data.tables}
   %\VignetteEngine{litedown::vignette}

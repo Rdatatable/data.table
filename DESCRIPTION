@@ -106,5 +106,6 @@ Authors@R: c(
   person(given="@badasahog",       role="ctb", comment="GitHub user"),
   person("Vinit", "Thakur",        role="ctb"),
   person("Mukul", "Kumar",         role="ctb"),
-  person("Ildikó", "Czeller",      role="ctb")
+  person("Ildikó", "Czeller",      role="ctb"),
+  person("Manmita", "Das",         role="ctb")
   )

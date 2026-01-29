@@ -12,9 +12,6 @@ dcast = function(
   data, formula, fun.aggregate = NULL, ..., margins = NULL,
   subset = NULL, fill = NULL, value.var = guess(data)
 ) {
-  # TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
-  if (!is.data.table(data))
-    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class1(data), deparse(substitute(data))) # nocov
   UseMethod("dcast", data)
 }
 
@@ -122,13 +119,15 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
 }
 
 dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose"), value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, value.var.in.RHSdots = value.var.in.dots) {
-  if (!is.data.table(data)) stopf("'data' must be a data.table.")
+  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
   drop = as.logical(rep_len(drop, 2L))
-  if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
+  if (anyNA(drop)) stopf("'drop' must be logical vector with no missing entries")
   if (!isTRUEorFALSE(value.var.in.dots))
-    stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
-  if (!isTRUEorFALSE(value.var.in.LHSdots) || !isTRUEorFALSE(value.var.in.RHSdots))
-    stopf("Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
+    stopf("'%s' must be TRUE or FALSE", "value.var.in.dots")
+  if (!isTRUEorFALSE(value.var.in.LHSdots))
+    stopf("'%s' must be TRUE or FALSE", "value.var.in.LHSdots")
+  if (!isTRUEorFALSE(value.var.in.RHSdots))
+    stopf("'%s' must be TRUE or FALSE", "value.var.in.RHSdots")
   # #2980 if explicitly providing fun.aggregate=length but not a value.var,
   #   just use the last column (as guess(data) would do) because length will be
   #   the same on all columns

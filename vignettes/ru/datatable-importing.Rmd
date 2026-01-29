@@ -2,7 +2,7 @@
 title: "Использование data.table в других пакетах"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Использование data.table в других пакетах}
   %\VignetteEngine{litedown::vignette}
