@@ -13042,9 +13042,7 @@ test(1953.2, melt(DT, id.vars = 'id', measure.vars = patterns(a = 'a', b = 'b', 
              error = 'Patterns not found')
 test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
              error = 'Input patterns must be of type character')
-setDF(DT)
-expected = data.table(id = rep(DT$id, 2), variable = factor(rep(c("a1", "a2"), each = 3)), value = c(DT$a1, DT$a2))
-test(1953.4, melt(DT, id.vars = "id", measure.vars = c("a1", "a2")), expected)
+# 1953.4 was a test of melt() erroring when passed a data.frame, no longer the case, #7614
 
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
@@ -13389,8 +13387,7 @@ test(1962.083, guess(DT), '(all)')
 setnames(DT, 'V')
 test(1962.084, guess(DT), 'V',
      message = 'Using.*value column.*override')
-## removed test of error case 1962.085 for dcast() passed a data.frame for #7614
-setDT(DT)
+# 1962.085 was a test of dcast() erroring when passed a data.frame, no longer the case, #7614
 test(1962.086, dcast(DT, a ~ a, drop = NA),
      error = "'drop' must be logical vector with no missing entries")
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
