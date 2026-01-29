@@ -1,5 +1,5 @@
-test(###
-  #"fwrite: POSIXct should be written as ISO-8601, not numeric seconds",
+test(
+  "fwrite: POSIXct should be written as ISO-8601, not numeric seconds",
   {
     oldtz = Sys.getenv("TZ", unset = NA)
     on.exit({
