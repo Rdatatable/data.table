@@ -571,17 +571,20 @@ msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
 msgstr ""
+"  'हेडर (header)' को true निर्धारित किया गया है क्योंकि सभी कॉलम (column) स्ट्रिंग (string) प्रकार के हैं और इससे बेहतर अनुमान संभव नहीं है\n"
 
 #: fread.c:2055
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
 msgstr ""
+"  'हेडर (header)' को false निर्धारित किया गया है क्योंकि यहाँ कुछ अंक कॉलम (column) हैं और उन\n"
+"कॉलम्स (columns) के शीर्ष पर कोई स्ट्रिंग (string) फ़ील्ड (field) नहीं है\n"
 
 #: fread.c:2071
 #, c-format
-msgid "  Type codes (first row)   : %s  Quote rule %d\n"
-msgstr ""
+msgid "  Type codes (first row)    : %s    Quote rule %d\n"
+msgstr "  टाइप कोड (Type codes) (पहली रो (row))    : %s    कोट नियम (quote rule) %d\n"
 
 #: fread.c:2080
 #, c-format
@@ -589,6 +592,8 @@ msgid ""
 "  All rows were sampled since file is small so we know nrow=%<PRIu64> "
 "exactly\n"
 msgstr ""
+"  क्योंकि फाइल (file) छोटी है इसलिए सभी रोज़(rows) का सैंपल (sample) लिया गया था, इसलिए हमें\n"
+"सटीक रूप से nrow=%<PRIu64> पता है\n"
 
 #: fread.c:2093
 #, c-format
@@ -596,22 +601,24 @@ msgid ""
 "  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
 "points\n"
 msgstr ""
+"  %2$d jump points पर %1$<PRIu64> रोज़(rows) का सैंपल (sample) लिया गया\n"
+"(कोटेड (quoted) फ़ील्ड्स (fields) के अंदर \\n को संभाला गया)\n"
 
 #: fread.c:2094
 #, c-format
 msgid ""
 "  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
-msgstr ""
+msgstr "  पंक्ति %d पर पहली डेटा (data) रो (row) से लेकर अंतिम रो (row) के अंत तक बाइट्स (bytes): %<PRIu64>\n"
 
 #: fread.c:2095
 #, c-format
 msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
-msgstr ""
+msgstr "  पंक्ति की लंबाई: मीन (mean)=%.2f एसडी (sd)=%.2f न्यूनतम=%.d अधिकतम=%d\n"
 
 #: fread.c:2096
 #, c-format
 msgid "  Estimated number of rows: %<PRIu64> / %.2f = %<PRIu64>\n"
-msgstr ""
+msgstr "  रोज़(rows) की अनुमानित संख्या: %<PRIu64> / %.2f = %<PRIu64>\n"
 
 #: fread.c:2097
 #, c-format
@@ -619,15 +626,18 @@ msgid ""
 "  Initial alloc = %<PRIu64> rows (%<PRIu64> + %d%%) using bytes/max(mean-2*sd,"
 "min) clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
+"  शुरुआती alloc = %1$<PRIu64> रोज़(rows) (%2$<PRIu64> + %3$d%%),\n"
+"bytes/max(mean-2*sd, min) का उपयोग करते हुए जिसे [1.1*estn, 2.0*estn] के बीच\n"
+"सीमित किया गया है\n"
 
 #: fread.c:2105
 #, c-format
 msgid "  Alloc limited to lower nrows=%<PRIu64> passed in.\n"
-msgstr ""
+msgstr "  Alloc को पास (pass) किए गए निचले nrows=%<PRIu64> तक सीमित किया गया है।\n"
 
 #: fread.c:2117
 msgid "[08] Assign column names\n"
-msgstr ""
+msgstr "[08] कॉलम (column) के नाम असाइन (assign) करें\n"
 
 #: fread.c:2126
 #, c-format
