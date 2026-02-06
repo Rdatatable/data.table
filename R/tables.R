@@ -30,7 +30,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   w = which(vapply_1b(obj, is.data.table))
 
   info = NULL
-  # we check if shallow_search is requested and add found tables to w
+  # we check if depth=1L is requested and add found tables to w
   if (depth == 1L) {
     is_list = vapply_1b(obj, is.list)
     is_df = vapply_1b(obj, is.data.frame)
@@ -99,8 +99,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
   }
   else {
-    # if depth is greater than 0, we will search for data.tables inside lists
-    # this part is not implemented yet, but the structure of the code would be similar to the shallow_search part
+    # for depth greater than 1L,recursion is not implemented yet
     stop("depth > 1L is not implemented yet")
   }
   for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
