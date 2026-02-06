@@ -100,7 +100,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   }
   else {
     # for depth greater than 1L,recursion is not implemented yet
-    stop("depth > 1L is not implemented yet")
+    stop("depth > 1L is not implemented yet", call. = FALSE)
   }
   for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = obj[[w[i]]]
