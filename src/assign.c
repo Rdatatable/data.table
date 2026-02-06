@@ -52,7 +52,7 @@ void setselfref(SEXP x) {
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
-  SEXP v, p, tag, prot, names;
+  SEXP v, p, tag, prot;
   v = getAttrib(x, SelfRefSymbol);
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
@@ -70,11 +70,11 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
-  names = getAttrib(x, R_NamesSymbol);
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
+  if (!checkNames) return x == R_ExternalPtrAddr(prot);
+  return getAttrib(x, R_NamesSymbol) == tag;
 }
 
 static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
@@ -403,7 +403,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency."), type2char(TYPEOF(rows)));
     targetlen = length(rows);
     numToDo = 0;
-    const int *rowsd = INTEGER(rows);
+    const int *rowsd = INTEGER_RO(rows);
     for (int i=0; i<targetlen; ++i) {
       if ((rowsd[i]<0 && rowsd[i]!=NA_INTEGER) || rowsd[i]>nrow)
         error(_("i[%d] is %d which is out of range [1,nrow=%d]"), i+1, rowsd[i], nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
@@ -660,7 +660,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (ndelete) {
     // delete any columns assigned NULL (there was a 'continue' earlier in loop above)
     int *tt = (int *)R_alloc(ndelete, sizeof(*tt));
-    const int *colsd=INTEGER(cols), ncols=length(cols), ndt=length(dt);
+    const int *colsd=INTEGER_RO(cols), ncols=length(cols), ndt=length(dt);
     for (int i=0, k=0; i<ncols; ++i) {   // find which ones to delete and put them in tt
       // Aside: a new column being assigned NULL (something odd to do) would have been warned above, added above, and now deleted. Just
       //        easier to code it this way; e.g. so that other columns may be added or removed ok by the same query.
@@ -743,7 +743,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         // allow assigning level numbers to factor columns; test 425, 426, 429 and 1945
         const int nlevel = length(getAttrib(target, R_LevelsSymbol));
         if (isInteger(source)) {
-          const int *sd = INTEGER(source);
+          const int *sd = INTEGER_RO(source);
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
@@ -754,7 +754,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             }
           }
         } else {
-          const double *sd = REAL(source);
+          const double *sd = REAL_RO(source);
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             // Since nlevel is an int, val < 1 || val > nlevel will deflect UB guarded against in PR #5832
@@ -800,7 +800,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         const int nSource = length(source);
         int *newSourceD = INTEGER(newSource);
         if (sourceIsFactor) {
-          const int *sourceD = INTEGER(source);
+          const int *sourceD = INTEGER_RO(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const int val = sourceD[i];
             newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks, sourceLevelsD[val-1], 0); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor

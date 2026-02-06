@@ -2,7 +2,7 @@
 title: "Sémantique de référence"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Sémantique de référence}
   %\VignetteEngine{litedown::vignette}

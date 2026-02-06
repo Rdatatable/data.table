@@ -82,9 +82,10 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
       SET_VECTOR_ELT(ans, ians, thisxcol);
       SET_STRING_ELT(names, ians, STRING_ELT(thisnames, j));
     }
-    mergeIndexAttrib(index, getAttrib(thisx, sym_index));
-    if (isNull(key)) // first key is retained
-      key = getAttrib(thisx, sym_sorted);
+    mergeIndexAttrib(index, PROTECT(getAttrib(thisx, sym_index))); protecti++;
+    if (isNull(key)) { // first key is retained
+      key = PROTECT(getAttrib(thisx, sym_sorted)); protecti++;
+    }
     UNPROTECT(protecti); // thisnames, thisxcol
   }
   if (!ANY_ATTRIB(index))
