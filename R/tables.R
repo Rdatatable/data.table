@@ -89,16 +89,14 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
         }
       }
     }
-  }
-  else if (depth == 0L) {
+  } else if (depth == 0L) {
     # if depth is 0
     if (!length(w)) {
       if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
       return(invisible(data.table(NULL)))
     }
     info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
-  }
-  else {
+  } else {
     # for depth greater than 1L,recursion is not implemented yet
     stop("depth > 1L is not implemented yet", call. = FALSE)
   }
