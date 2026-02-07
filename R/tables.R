@@ -39,7 +39,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     list_index = which(is_list & !is_dt & !is_df)
     # obj_list is a list of lists of data.tables found inside lists
     obj_list = vector("list", length(list_index))
-    #make a listof size list_index and add wl in it
+    # make a list of size list_index and add wl in it
     total_dt = 0L
     # filling obj_list and counting total_dt
     for (i in seq_along(list_index)) {
@@ -98,7 +98,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
   } else {
     # for depth greater than 1L,recursion is not implemented yet
-    stop("depth > 1L is not implemented yet", call. = FALSE)
+    stopf("depth > 1L is not implemented yet")
   }
   for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = obj[[w[i]]]
