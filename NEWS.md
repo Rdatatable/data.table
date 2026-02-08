@@ -38,6 +38,8 @@
 
 4. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
 
+5. `fread()` now messages when integer64 columns are produced and reminds how to adjust via `integer64=`, [#3611](https://github.com/Rdatatable/data.table/issues/3611). Thanks @stefanfritsch for the report and @AmanKashyap0807 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

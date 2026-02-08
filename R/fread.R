@@ -313,6 +313,11 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
   }
   setattr(ans, "colClassesAs", NULL)
+  # message for integer64 columns #3611
+  hasInt64 = any(vapply_1b(ans, inherits, "integer64"))
+  if (hasInt64) {
+    messagef("fread() created integer64 columns; base R may not fully support them. Consider integer64= to choose another type.")
+  }
 
   if (stringsAsFactors) {
     if (is.double(stringsAsFactors)) { #2025
