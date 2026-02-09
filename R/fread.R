@@ -67,11 +67,11 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       is_windows = identical(.Platform$OS.type, "windows")
       if (is_windows) {
         clip = tryCatch(utils::readClipboard(), error = identity)
-        # for errors due to permissions, clipboard locked or system errors 
+        # for errors due to permissions, clipboard locked or system errors
         if (inherits(clip, "error")) {
           stopf("Reading clipboard failed on Windows: %s", conditionMessage(clip))
         }
-        if (!length(clip) || all(!nzchar(trimws(clip)))) {
+        if (!length(clip) || !all(nzchar(trimws(clip)))) {
           stopf("Clipboard is empty.")
         }
         tmpFile = tempfile(tmpdir=tmpdir)
