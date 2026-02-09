@@ -63,6 +63,29 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       # input is data itself containing at least one \n or \r
     } else if (startsWith(input, " ")) {
       stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
+    } else if (grepl("^clipboard(-[0-9]+)?$", tolower(input))) {
+      is_windows = identical(.Platform$OS.type, "windows")
+      if (is_windows) {
+        clip = tryCatch(utils::readClipboard(), error = identity)
+        # for errors due to permissions, clipboard locked or system errors 
+        if (inherits(clip, "error")) {
+          stopf("Reading clipboard failed on Windows: %s", conditionMessage(clip))
+        }
+        if (!length(clip) || all(!nzchar(trimws(clip)))) {
+          stopf("Clipboard is empty.")
+        }
+        tmpFile = tempfile(tmpdir=tmpdir)
+        on.exit(unlink(tmpFile), add=TRUE)
+        tryCatch({
+          writeLines(paste(clip, collapse="\n"), tmpFile, useBytes=TRUE)
+          file = tmpFile
+        }, error = function(e) {
+          stopf("Writing clipboard to temporary file failed: %s. Check tmpdir=%s.", conditionMessage(e), tmpdir)
+        })
+      } else {
+        # Note: macOS (pbpaste) and Linux (xclip/xsel) support discussed in #1292
+        stopf("Clipboard reading is supported on Windows only.")
+      }
     } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(gsub("^file://", "", input))) {  # file name or path containing spaces is not a command. file.exists() doesn't understand file:// (#7550)
       cmd = input
       if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {

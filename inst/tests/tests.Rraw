@@ -21515,3 +21515,11 @@ test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
 dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
 test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))
+
+# Test fread clipboard input on Windows (issue #1292)
+if (.Platform$OS.type == "windows") local({
+  temp <- c("a\tb", "1\t2")
+  utils::writeClipboard(temp)
+  on.exit(utils::writeClipboard(""), add = TRUE)
+  test(2366, fread("clipboard-128"), data.table(a = 1L, b = 2L))
+})

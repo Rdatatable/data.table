@@ -38,6 +38,8 @@
 
 4. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
 
+5. `fread()` now recognizes Windows clipboard tokens such as `clipboard`, avoiding shell execution failures, [#1292](https://github.com/Rdatatable/data.table/issues/1292). Thanks @mbacou for the report and @AmanKashyap0807 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
