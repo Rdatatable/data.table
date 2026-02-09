@@ -2610,7 +2610,7 @@ if (test_bit64) {
                    c=sample(c("foo","bar","baz"),n,replace=TRUE) )
   fwrite(DT,f<-tempfile())
   test(897, class(DT$b), "integer64")
-  test(898, fread(f), DT)
+  test(898, suppressMessages(fread(f)), DT)  #3611 message not under test
   unlink(f)
   DT[ , a2 := as.integer64(a)][112L, a2 := as.integer64(12345678901234)]   # start on row 112 to avoid the first 100
   DT[ , a3 := as.double(a)   ][113L, a3 := 3.14]
@@ -2620,9 +2620,9 @@ if (test_bit64) {
   DT[ , r := a/100]
   DT[ , r2 := as.character(r)][117L, r2 := "3.14A"]
   fwrite(DT,f<-tempfile())
-  test(899.1, fread(f, verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
-  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"), integer64="a2", double=c("a3","b2")), verbose=TRUE),
-              DT, output="Rereading 0 columns due to out-of-sample type exceptions")
+  test(899.1, suppressMessages(fread(f, verbose=TRUE)), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")  # message regards integer64 creation #3611
+  test(899.2, suppressMessages(fread(f, colClasses=list(character=c("a4","b3","r2"), integer64="a2", double=c("a3","b2")), verbose=TRUE)),
+              DT, output="Rereading 0 columns due to out-of-sample type exceptions") 
   test(899.3, fread(f, integer64="character", select=c("a","b","c")), DT[, .(a, b=as.character(b), c)])
   # leaving integer64='character' version of 899.1,899.2 until #2749 is fixed
   unlink(f)
@@ -2993,13 +2993,13 @@ DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
 if (test_bit64) {
-  test(1016.1, sapply(fread(f,verbose=TRUE),"class"), c(A="integer64", B="integer"),
+  test(1016.1, sapply(suppressMessages(fread(f,verbose=TRUE)),"class"), c(A="integer64", B="integer"),  # message regarding integer64 creation (#3611)
                output="Rereading 1 columns.*Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>")
 }
 test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
-if (test_bit64) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
+if (test_bit64) test(1017.1, suppressMessages(fread(f)), copy(DT)[,A:=as.integer64(A)])  #3611 not testing message here
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
@@ -3012,6 +3012,11 @@ test(1017.3, fread(f, integer64="numeric"), fread(f, colClasses=c("integer", "nu
 test(1017.4, fread(f, integer64="character"), fread(f, colClasses=c("integer", "character")))
 
 unlink(f)
+# general message for integer64 columns #3611
+if (test_bit64) {
+  test(1017.5, fread("A\n123456789123456\n"), data.table(A=as.integer64("123456789123456")), message="integer64")
+}
+test(1017.6, fread("A\n123456789123456\n", integer64="character"), data.table(A="123456789123456"))
 
 # ERANGE errno handled, #106 #4165
 test(1018.1, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
@@ -7113,12 +7118,13 @@ test(1499, ans1, ans2)
 
 # Fix for #488
 if (test_bit64) {
-  test(1500.1, fread("x,y\n3,\n", colClasses = list(integer64 = "y")),
-          data.table(x=3L, y=as.integer64(NA)))
+    test(1500.1, suppressMessages(fread("x,y\n3,\n", colClasses = list(integer64 = "y"))),
+      data.table(x=3L, y=as.integer64(NA)))  #3611 message not under test
   # more tests after new fix
-  test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n"),
-      data.table(x=as.integer64(c(rep(0L, 5L), rep(NA, 11), 12345678901234, rep(0L,5L))),
-                 y=as.integer64(c(12345678901234, rep(NA,21)))))
+    test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n"),
+        data.table(x = as.integer64(c(rep(0L, 5L), rep(NA, 11), 12345678901234, rep(0L,5L))),
+                   y = as.integer64(c(12345678901234, rep(NA,21)))),
+                   message = "integer64"   #3611 integer64 message expected)
 
   x = c("12345678901234", rep("NA", 178), "a")
   y = sample(letters, length(x), TRUE)
