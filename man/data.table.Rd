@@ -111,7 +111,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         \item or of the form \code{startcol:endcol}: e.g., \code{DT[, sum(a), by=x:z]}
     }
 
-    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in \code{DT} that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
+    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in \code{DT} that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. Note that for rows in \code{i} with no match, the group of matching rows in \code{x} is empty. Special symbols that operate on rows (e.g., \code{.I} or \code{.N}) will therefore evaluate to \code{0} for such groups. This differs from selecting a column from \code{x} (e.g., \code{x$col}), which results in \code{NA} as governed by the \code{nomatch} argument. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
 
     \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.}
 
@@ -319,6 +319,13 @@ DT[x!="a", sum(v), by=x]                    # get sum(v) by "x" for each i != "a
 DT[!"a", sum(v), by=.EACHI, on="x"]         # same, but using subsets-as-joins
 DT[c("b","c"), sum(v), by=.EACHI, on="x"]   # same
 DT[c("b","c"), sum(v), by=.EACHI, on=.(x)]  # same, using on=.()
+
+#' # Why .I is 0 for non-matching rows with by=.EACHI:
+#' d1 = data.table(v = c("A", "B", "C", "A", "C"), val = 1:5)
+#' d2 = data.table(v = c("D", "A", "G", "C"))
+#' # Selecting a column 'val' returns NA for non-matches, per `nomatch=NA`
+#' d1[d2, on = .(v), .(val), by = .EACHI]
+#' d1[d2, on = .(v), .I, by = .EACHI]
 
 # joins as subsets
 X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
