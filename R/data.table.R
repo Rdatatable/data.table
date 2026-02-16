@@ -2940,6 +2940,12 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (!length(new)) return(invisible(x)) # no changes
     if (length(i) != length(new)) internal_error("length(i)!=length(new)") # nocov
   }
+
+  # NEW: Check for duplicates using the centralized helper in utils.R
+  full_names = names(x)
+  full_names[i] = new
+  warn_if_duplicate_names(full_names)
+
   # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))

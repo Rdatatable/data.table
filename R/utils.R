@@ -35,6 +35,16 @@ check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
         table_name, brackify(duplicate_names), domain=NA)
 }
 
+warn_if_duplicate_names = function(names_vec) {
+  # Use FALSE as the second argument so it defaults to OFF if not set
+  if (isTRUE(getOption("datatable.warn.duplicate.names", FALSE))) {
+    if (anyDuplicated(names_vec)) {
+      dups = unique(names_vec[duplicated(names_vec)])
+      warningf("Duplicate column names created: %s. This may cause ambiguity in future operations.", brackify(dups))
+    }
+  }
+}
+
 duplicated_values = function(x) {
   # fast anyDuplicated for the typical/non-error case; second duplicated() pass for (usually) error case
   if (!anyDuplicated(x)) return(vector(typeof(x)))
