@@ -66,22 +66,14 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     } else if (grepl("^clipboard(-[0-9]+)?$", tolower(input))) {
       is_windows = identical(.Platform$OS.type, "windows")
       if (is_windows) {
-        clip = tryCatch(utils::readClipboard(), error = identity)
         # for errors due to permissions, clipboard locked or system errors
-        if (inherits(clip, "error")) {
-          stopf("Reading clipboard failed on Windows: %s", conditionMessage(clip))
-        }
-        if (!length(clip) || !all(nzchar(trimws(clip)))) {
+        clip = tryCatch(utils::readClipboard(),
+          error = function(e) stopf("Reading clipboard failed on Windows: %s", conditionMessage(e))
+        )
+        if (!length(clip) || !any(nzchar(trimws(clip)))) {
           stopf("Clipboard is empty.")
         }
-        tmpFile = tempfile(tmpdir=tmpdir)
-        on.exit(unlink(tmpFile), add=TRUE)
-        tryCatch({
-          writeLines(paste(clip, collapse="\n"), tmpFile, useBytes=TRUE)
-          file = tmpFile
-        }, error = function(e) {
-          stopf("Writing clipboard to temporary file failed: %s. Check tmpdir=%s.", conditionMessage(e), tmpdir)
-        })
+        input = paste(clip, collapse="\n")
       } else {
         # Note: macOS (pbpaste) and Linux (xclip/xsel) support discussed in #1292
         stopf("Clipboard reading is supported on Windows only.")
