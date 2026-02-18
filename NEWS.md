@@ -4,6 +4,10 @@
 
 ## data.table [v1.18.3](https://github.com/Rdatatable/data.table/milestone/45?closed=1)
 
+### BUG FIXES
+
+1. Non-equi joins combining an equality condition with two inequality conditions on the same column (e.g., `on = .(id == id, val >= lo, val <= hi)`) no longer error, [#7641](https://github.com/Rdatatable/data.table/issues/7641). The internal `chmatchdup` remapping of duplicate `rightcols` was overwriting the original column indices, causing downstream code to reference non-existent columns. Thanks @tarun-t for the report and fix, and @aitap for the diagnosis.
+
 ## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1) 22 Jan 2026
 
 ### BUG FIXES
