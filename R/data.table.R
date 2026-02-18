@@ -1075,12 +1075,15 @@ replace_dot_alias = function(e) {
       if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
       if (length(duprightcols <- rightcols[duplicated(rightcols)])) {
         nx = c(names_x, names_x[duprightcols])
-        rightcols = chmatchdup(names_x[rightcols], nx)
+        ansrightcols = chmatchdup(names_x[rightcols], nx) # indices into result namespace nx, #7641
         nx = make.unique(nx)
-      } else nx = names_x
+      } else {
+        nx = names_x
+        ansrightcols = rightcols
+      }
       ansvars = make.unique(c(nx, jisvars))
       icols = c(leftcols, seq_along(i)[-leftcols])
-      icolsAns = c(rightcols, seq.int(length(nx)+1L, length.out=ncol(i)-length(unique(leftcols))))
+      icolsAns = c(ansrightcols, seq.int(length(nx)+1L, length.out=ncol(i)-length(unique(leftcols))))
       xcols = xcolsAns = seq_along(x)[-rightcols]
     }
     ansvals = chmatch(ansvars, nx)

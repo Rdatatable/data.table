@@ -6954,6 +6954,11 @@ DT1 <- data.table(a=1L, key='a')
 DT2 <- data.table(a=2.0, key='a')
 test(1483.83, DT1[DT2, roll='nearest'], data.table(a=2L, key='a'))
 
+# non-equi join with equi + 2 inequality conditions should not error, #7641
+dt_x = data.table(id = c("A","A","B","B"), val = c(1,5,2,4), key = c("id","val"))
+dt_i = data.table(id = c("A","B"), lo = c(2,1), hi = c(6,3))
+test(1483.91, nrow(dt_x[dt_i, on = .(id == id, val >= lo, val <= hi)]), 2L)
+
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
 # Then PR#3471 moved logic from data.table() into as.data.table.list() and now removes NULL items up front, so longer need for the branch
