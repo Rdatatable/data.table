@@ -20,22 +20,33 @@ cube = function(x, ...) {
   UseMethod("cube")
 }
 cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
-  # input data type basic validation
-  if (!is.data.table(x))
-    stopf("'%s' must be a data.table", "x", class="dt_invalid_input_error")
-  if (!is.character(by))
-    stopf("Argument 'by' must be a character vector of column names used in grouping.")
-  if (!is.logical(id))
-    stopf("Argument 'id' must be a logical scalar.")
-  if (missing(j))
-    stopf("Argument 'j' is required")
-  # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
-  n = length(by)
-  keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
-  sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
-  # redirect to workhorse function
-  jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label, enclos = parent.frame())
+ # input data type basic validation
+ if (!is.data.table(x))
+   stopf("Argument 'x' must be a data.table object", class="dt_invalid_input_error")
+ if (!is.character(by))
+   stopf("Argument 'by' must be a character vector of column names used in grouping.")
+ if (!is.logical(id))
+   stopf("Argument 'id' must be a logical scalar.")
+ if (missing(j))
+   stopf("Argument 'j' is required")
+ # Implementing NSE in cube using the helper, .processSDcols
+ jj = substitute(j)
+ sdcols_result = .processSDcols(SDcols_sub = substitute(.SDcols), SDcols_missing = missing(.SDcols), x = x, jsub = jj, by = by, enclos = parent.frame())
+ if (is.null(sdcols_result)) {
+   .SDcols = NULL
+ } else {
+   ansvars = sdcols_result$ansvars
+   sdvars = sdcols_result$sdvars
+   ansvals = sdcols_result$ansvals
+   .SDcols = sdvars
+ }
+ # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
+ n = length(by)
+ keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
+ sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
+ # redirect to workhorse function
+ jj = substitute(j)
+ groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label, enclos = parent.frame())
 }
 
 groupingsets = function(x, ...) {
