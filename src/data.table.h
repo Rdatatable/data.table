@@ -333,6 +333,9 @@ void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const ch
 SEXP copyAsPlain(SEXP x, R_xlen_t overalloc);
 SEXP allocrow(SEXP dt, R_xlen_t n);
 void copySharedColumns(SEXP x);
+
+// deleterows.c
+SEXP deleteRows(SEXP dt, SEXP rows_to_delete);
 SEXP lock(SEXP x);
 SEXP unlock(SEXP x);
 bool islocked(SEXP x);

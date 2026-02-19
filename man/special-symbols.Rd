@@ -9,10 +9,12 @@
 \alias{.EACHI}
 \alias{.NGRP}
 \alias{.NATURAL}
+\alias{.ROW}
 \title{ Special symbols }
 \description{
     \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. \code{.I} can be used in \code{by} as well. See the vignettes, Details and Examples here and in \code{\link{data.table}}.
     \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}, \code{.NATURAL} is a symbol passed to \code{on}; i.e. \code{on=.NATURAL}
+    \code{.ROW} is a symbol used with \code{:= NULL} to delete rows by reference. See also \code{\link{assign}}.
 }
 \details{
     The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{\link{copy}(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
@@ -31,6 +33,8 @@
     \code{.EACHI} is defined as \code{NULL} but its value is not used. Its usage is \code{by=.EACHI} (or \code{keyby=.EACHI}) which invokes grouping-by-each-row-of-i; see \code{\link{data.table}}'s \code{by} argument for more details.
 
     \code{.NATURAL} is defined as \code{NULL} but its value is not used. Its usage is \code{on=.NATURAL} (alternative of \code{X[on=Y]}) which joins two tables on their common column names, performing a natural join; see \code{\link{data.table}}'s \code{on} argument for more details.
+
+    \code{.ROW} is a symbol that can only be used with \code{:= NULL} to delete rows by reference. When you use \code{DT[i, .ROW := NULL]}, the rows matching the \code{i} expression are removed from \code{DT} in-place. This is an efficient way to delete rows without copying the entire data.table. The \code{i} argument is required and \code{by}/\code{keyby} are not supported. After deletion, any keys and indices on \code{DT} are cleared. See \code{\link{:=}} for more on reference semantics.
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 
@@ -72,5 +76,12 @@ DT[, .(min(.SD[,-1])), by=.I]
 # Do not expect this to correctly append the value of .BY in each group; copy(.BY) will work.
 by_tracker = list()
 DT[, { append(by_tracker, .BY); sum(v) }, by=x]
+
+# .ROW to delete rows by reference
+DT = data.table(a=1:5, b=letters[1:5])
+DT[c(2,4), .ROW := NULL]
+DT
+DT[a>2, .ROW := NULL]
+DT
 }
 \keyword{ data }

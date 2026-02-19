@@ -96,6 +96,7 @@ static const R_CallMethodDef callMethods[] = {
     {"Cfrank", (DL_FUNC)&frank, -1},
     {"Cdt_na", (DL_FUNC)&dt_na, -1},
     {"Callocrowwrapper", (DL_FUNC)&allocrowwrapper, 2},
+    {"CdeleteRows", (DL_FUNC)&deleteRows, 2},
     {"Clookup", (DL_FUNC)&lookup, -1},
     {"Coverlaps", (DL_FUNC)&overlaps, -1},
     {"Cwhichwrapper", (DL_FUNC)&whichwrapper, -1},

@@ -308,7 +308,7 @@ The `copy()` function *deep* copies the input object and therefore any subsequen
 
 #
 
-There are two particular places where `copy()` function is essential:
+There are three particular places where `copy()` function is essential:
 
 1. Contrary to the situation we have seen in the previous point, we may not want the input data.table to a function to be modified *by reference*. As an example, let's consider the task in the previous section, except we don't want to modify `flights` by reference.
 
@@ -358,6 +358,28 @@ However we could improve this functionality further by *shallow* copying instead
     ## DT_n doesn't get updated
     DT_n
     ```
+
+3. When two names refer to the same *data.table* (as in `DT2 = DT1`), their columns are *shared* in memory. Row deletion by reference with `.ROW := NULL` therefore affects both names simultaneously:
+
+    ```{r}
+    DT1 = data.table(i = 1:10)
+    DT2 = DT1                    ## shallow copy; same columns in memory
+
+    DT2[i > 5, .ROW := NULL]
+    nrow(DT1)                    ## 5 -- DT1 is modified too
+    ```
+
+    Use `copy()` to obtain an independent object first:
+
+    ```{r}
+    DT1 = data.table(i = 1:10)
+    DT2 = copy(DT1)              ## deep copy; independent object
+
+    DT2[i > 5, .ROW := NULL]
+    nrow(DT1)                    ## 10 -- unchanged
+    nrow(DT2)                    ## 5
+    ```
+
 ### c) Selecting columns: `$` / `[[...]]` vs `[, col]`
 
 When you extract a single column as a vector, there is a subtle but important difference between standard R methods ($ and [[...]]) and data.table's j expression. DT$col and DT[['col']] may return a reference to the column, while DT[, col] always returns a copy.
