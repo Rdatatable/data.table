@@ -74,14 +74,10 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
         clip_cmd = if (identical(sysname, "Darwin")) {
           "pbpaste"
         } else if (identical(sysname, "Linux")) {
-          has_wl = nzchar(Sys.which("wl-paste"))
-          if (nzchar(Sys.getenv("WAYLAND_DISPLAY")) && has_wl) "wl-paste --no-newline"
+          if (nzchar(Sys.which("wl-paste"))) "wl-paste --no-newline"
           else if (nzchar(Sys.which("xclip"))) "xclip -o -selection clipboard"
           else if (nzchar(Sys.which("xsel"))) "xsel --clipboard --output"
-          else if (has_wl) "wl-paste --no-newline"
           else stopf("Clipboard reading on Linux requires 'xclip', 'xsel', or 'wl-paste' to be installed and on PATH.")
-        } else {
-          stopf("Clipboard reading is not supported on this platform.")
         }
         clip = tryCatch(system(clip_cmd, intern = TRUE),
           error = function(e) stopf("Reading clipboard failed: %s", conditionMessage(e))
@@ -91,7 +87,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
           stopf("Reading clipboard failed (exit %d). Ensure '%s' is working.", status, clip_cmd)
         }
       } else {
-        stopf("Clipboard reading is not supported on this platform.")
+        warning("Clipboard reading is not supported on this platform.")
       }
       if (!length(clip) || !any(nzchar(trimws(clip)))) {
         stopf("Clipboard is empty.")
