@@ -21520,3 +21520,29 @@ test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
 dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
 test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))
+
+#2606 tables() depth=1 finds nested data.tables in lists
+# creating env so that the names are within it
+xenv2 = new.env()
+xenv2$DT = data.table(a = 1L)
+xenv2$L = list(data.table(a = 1, b = 4:6), data.table(a = 2, b = 7:10))
+xenv2$M = list(b = data.table(a = 1, b = 4:6), a = 1:5)
+xenv2$N = list(a = 1:5)
+test(2366.1, tables(env = xenv2, depth = 1L)[, .(NAME, NROW, NCOL)], 
+  data.table(
+    NAME = c("DT", "L[[1]]", "L[[2]]", "M$b"),
+    NROW = c(1L, 3L, 4L, 3L),
+    NCOL = c(1L, 2L, 2L, 2L)
+))
+setindex(xenv2$M$b, b)
+test(2366.2, tables(env = xenv2, depth = 1L, index = TRUE)$INDICES, list(NULL, NULL, NULL, "b"))
+setkey(xenv2$M$b, a)
+test(2366.3, tables(env = xenv2, depth = 1L, index = TRUE)$KEY, list(NULL, NULL, NULL, "a"))
+test(2366.4, tryCatch(tables(env = xenv2, depth = 2L), error = function(e) e$message), "depth > 1L is not implemented yet")
+rm(xenv2)
+
+# no data.table test and depth >1 test
+xenv_empty = new.env()
+test(2366.5, tables(env = xenv_empty, depth = 1L), invisible(data.table(NULL)))
+test(2366.6, tables(env = xenv_empty), invisible(data.table(NULL)))
+rm(xenv_empty)

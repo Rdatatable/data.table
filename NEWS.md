@@ -28,6 +28,8 @@
 
 4. `dcast()` and `melt()` "just work" when passed a data.frame, not just data.tables, with no need for coercion, [#7614](https://github.com/Rdatatable/data.table/issues/7614). Thanks @MichaelChirico for the suggestion and @manmita for the PR. Note that to avoid potential conflicts with {reshape2}'s data.frame methods, we do the dispatch to the data.table method manually.
 
+5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
