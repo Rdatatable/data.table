@@ -235,7 +235,7 @@ void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const ch
   } break;
   case VECSXP: {
     const SEXP *xp = SEXPPTR_RO(src);
-    if (deep_copy) for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
+    if (deep_copy) for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i], -1));
     else           for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, xp[i]);
   } break;
   default:                                                                                     // # nocov
@@ -243,7 +243,7 @@ void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const ch
   }
 }
 
-SEXP copyAsPlain(SEXP x) {
+SEXP copyAsPlain(SEXP x, R_xlen_t overalloc) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
   //      .Internal(inspect(x[[5]]))
@@ -252,6 +252,10 @@ SEXP copyAsPlain(SEXP x) {
   // For non-ALTREP this should do the same as R's duplicate().
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
+  //
+  // overalloc: additional rows to allocate beyond current length
+  //   == -1: non-resizable vector (exact size)
+  //   >= 0: resizable vector with capacity = length(x) + overalloc
 
   if (isNull(x)) {
     // deal with up front because isNewList(R_NilValue) is true
@@ -262,7 +266,14 @@ SEXP copyAsPlain(SEXP x) {
     return duplicate(x);
   }
   const int64_t n = XLENGTH(x);
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  SEXP ans;
+  if (overalloc == -1) {
+    ans = PROTECT(allocVector(TYPEOF(x), n));
+  } else {
+    const R_xlen_t capacity = n + overalloc;
+    ans = PROTECT(R_allocResizableVector(TYPEOF(x), capacity));
+    R_resizeVector(ans, n);
+  }
   // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
     internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
@@ -275,6 +286,57 @@ SEXP copyAsPlain(SEXP x) {
   DUPLICATE_ATTRIB(ans, x);
   UNPROTECT(1);
   return ans;
+}
+
+SEXP allocrow(SEXP dt, R_xlen_t n) {
+  if (!INHERITS(dt, char_datatable))
+    error(_("input to allocrow is not a data.table")); // #nocov
+
+  if (n < 0)
+    error(_("n must be non-negative in allocrow")); // #nocov
+
+  if (!xlength(dt)) return dt; // zero-column data.table
+
+  const bool verbose = GetVerbose();
+  int n_modified = 0;
+
+  for (R_xlen_t i = 0; i < length(dt); i++) {
+    SEXP col = VECTOR_ELT(dt, i);
+    if (!isVector(col))
+      error(_("Cannot make non-vector column %lld resizable"), (long long)(i + 1)); // #nocov
+
+    const R_xlen_t currentLength = length(col);
+    const R_xlen_t currentCapacity = R_isResizable(col) ? R_maxLength(col) : currentLength;
+    const R_xlen_t targetCapacity = currentLength + n;
+
+    // Only reallocate if not resizable, or capacity differs from target
+    if (!R_isResizable(col) || currentCapacity != targetCapacity) {
+      SEXP newcol = PROTECT(copyAsPlain(col, n));
+      SET_VECTOR_ELT(dt, i, newcol);
+      UNPROTECT(1);
+      n_modified++;
+    }
+  }
+
+  if (verbose) {
+    if (n_modified > 0) {
+      if (n > 0) {
+        Rprintf(Pl_(n_modified,
+          "Modified %d column (overallocated %lld rows)\n",
+          "Modified %d columns (overallocated %lld rows)\n"),
+          n_modified, (long long)n);
+      } else {
+        Rprintf(Pl_(n_modified,
+          "Modified %d column (shrunk to exact size)\n",
+          "Modified %d columns (shrunk to exact size)\n"),
+          n_modified);
+      }
+    } else {
+      Rprintf(_("allocrow had no effect, all columns already at target size\n"));
+    }
+  }
+
+  return dt;
 }
 
 void copySharedColumns(SEXP x) {
@@ -301,7 +363,7 @@ void copySharedColumns(SEXP x) {
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
-        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
+        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i], -1));
     }
     if (GetVerbose())
       Rprintf(Pl_(nShared,

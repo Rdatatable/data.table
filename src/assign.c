@@ -592,7 +592,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d ALTREP==%d, but then is being plonked. length(values)==%d; length(cols)==%d\n"),
                   i+1, MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue), ALTREP(thisvalue), length(values), length(cols));
         }
-        thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
+        thisvalue = copyAsPlain(thisvalue, -1);   // PROTECT not needed as assigned as element to protected list below.
       } else {
         if (verbose) Rprintf(_("Direct plonk of unnamed RHS, no copy. MAYBE_REFERENCED==%d, MAYBE_SHARED==%d\n"), MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.5
       }

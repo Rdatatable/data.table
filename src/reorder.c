@@ -24,7 +24,7 @@ SEXP reorder(SEXP x, SEXP order)
         error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
       if (RTYPE_SIZEOF(v) > maxSize)
         maxSize=RTYPE_SIZEOF(v);
-      if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v));
+      if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v, -1));
     }
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
@@ -40,7 +40,7 @@ SEXP reorder(SEXP x, SEXP order)
   if (length(order) != nrow)
     error("nrow(x)[%d]!=length(order)[%d]", nrow, length(order)); // # notranslate
   int nprotect = 0;
-  if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
+  if (ALTREP(order)) { order=PROTECT(copyAsPlain(order, -1)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
   const int *restrict idx = INTEGER_RO(order);
   int i=0;
