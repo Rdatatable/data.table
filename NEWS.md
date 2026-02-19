@@ -40,6 +40,8 @@
 
 5. Non-equi joins combining an equality condition with two inequality conditions on the same column (e.g., `on = .(id == id, val >= lo, val <= hi)`) no longer error, [#7641](https://github.com/Rdatatable/data.table/issues/7641). The internal `chmatchdup` remapping of duplicate `rightcols` was overwriting the original column indices, causing downstream code to reference non-existent columns. Thanks @tarun-t for the report and fix, and @aitap for the diagnosis.
 
+6. `fread("clipboard")` now works on Linux (via `xclip`, `xsel`, or `wl-paste`), macOS (via `pbpaste`), and Windows, [#1292](https://github.com/Rdatatable/data.table/issues/1292). Thanks @mbacou for the report, @ben-schwen for the suggestion, and @AmanKashyap0807 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
