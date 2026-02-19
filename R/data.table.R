@@ -2850,6 +2850,10 @@ setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbos
   ans
 }
 
+setallocrow = function(DT, n=0L) {
+  invisible(.Call(Callocrowwrapper, DT, as.integer(n)))
+}
+
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
   .Call(Cselfrefokwrapper,DT,verbose)
 }

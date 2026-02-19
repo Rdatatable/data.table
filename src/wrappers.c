@@ -103,10 +103,16 @@ SEXP expandAltRep(SEXP x)
   for (int i=0; i<LENGTH(x); i++) {
     SEXP col = VECTOR_ELT(x,i);
     if (ALTREP(col)) {
-      SET_VECTOR_ELT(x, i, copyAsPlain(col));
+      SET_VECTOR_ELT(x, i, copyAsPlain(col, -1));
     }
   }
   return R_NilValue;
+}
+
+SEXP allocrowwrapper(SEXP dt, SEXP n) {
+  if (!isInteger(n) || length(n)!=1 || INTEGER(n)[0]<0 || INTEGER(n)[0]==NA_INTEGER)
+    error(_("n must be a single non-negative non-NA integer")); // #nocov
+  return allocrow(dt, (R_xlen_t)INTEGER(n)[0]);
 }
 
 SEXP dim(SEXP x)
