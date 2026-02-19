@@ -87,7 +87,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
           stopf("Reading clipboard failed (exit %d). Ensure '%s' is working.", status, clip_cmd)
         }
       } else {
-        warning("Clipboard reading is not supported on this platform.")
+        warning("Clipboard reading is not supported on this platform.", call. = FALSE)
       }
       if (!length(clip) || !any(nzchar(trimws(clip)))) {
         stopf("Clipboard is empty.")
