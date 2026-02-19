@@ -64,20 +64,39 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     } else if (startsWith(input, " ")) {
       stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
     } else if (grepl("^clipboard(-[0-9]+)?$", tolower(input))) {
-      is_windows = identical(.Platform$OS.type, "windows")
-      if (is_windows) {
-        # for errors due to permissions, clipboard locked or system errors
+      os_type = .Platform$OS.type
+      if (identical(os_type, "windows")) {
         clip = tryCatch(utils::readClipboard(),
           error = function(e) stopf("Reading clipboard failed on Windows: %s", conditionMessage(e))
         )
-        if (!length(clip) || !any(nzchar(trimws(clip)))) {
-          stopf("Clipboard is empty.")
+      } else if (identical(os_type, "unix")) {
+        sysname = Sys.info()[["sysname"]]
+        clip_cmd = if (identical(sysname, "Darwin")) {
+          "pbpaste"
+        } else if (identical(sysname, "Linux")) {
+          has_wl = nzchar(Sys.which("wl-paste"))
+          if (nzchar(Sys.getenv("WAYLAND_DISPLAY")) && has_wl) "wl-paste --no-newline"
+          else if (nzchar(Sys.which("xclip"))) "xclip -o -selection clipboard"
+          else if (nzchar(Sys.which("xsel"))) "xsel --clipboard --output"
+          else if (has_wl) "wl-paste --no-newline"
+          else stopf("Clipboard reading on Linux requires 'xclip', 'xsel', or 'wl-paste' to be installed and on PATH.")
+        } else {
+          stopf("Clipboard reading is not supported on this platform.")
         }
-        input = paste(clip, collapse="\n")
+        clip = tryCatch(system(clip_cmd, intern = TRUE),
+          error = function(e) stopf("Reading clipboard failed: %s", conditionMessage(e))
+        )
+        status = attr(clip, "status")
+        if (!is.null(status) && status != 0L) {
+          stopf("Reading clipboard failed (exit %d). Ensure '%s' is working.", status, clip_cmd)
+        }
       } else {
-        # Note: macOS (pbpaste) and Linux (xclip/xsel) support discussed in #1292
-        stopf("Clipboard reading is supported on Windows only.")
+        stopf("Clipboard reading is not supported on this platform.")
       }
+      if (!length(clip) || !any(nzchar(trimws(clip)))) {
+        stopf("Clipboard is empty.")
+      }
+      input = paste(clip, collapse = "\n")
     } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(gsub("^file://", "", input))) {  # file name or path containing spaces is not a command. file.exists() doesn't understand file:// (#7550)
       cmd = input
       if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {

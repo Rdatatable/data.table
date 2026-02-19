@@ -21518,8 +21518,47 @@ test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, val
 
 # Test fread clipboard input on Windows (issue #1292)
 if (.Platform$OS.type == "windows") local({
-  temp <- c("a\tb", "1\t2")
+  temp = c("a\tb", "1\t2")
   utils::writeClipboard(temp)
   on.exit(utils::writeClipboard(""), add = TRUE)
   test(2366, fread("clipboard-128"), data.table(a = 1L, b = 2L))
+})
+
+# Test fread clipboard input on macOS (issue #1292)
+if (.Platform$OS.type == "unix" && identical(Sys.info()[["sysname"]], "Darwin")) local({
+  if (nzchar(Sys.which("pbcopy"))) {
+    con = pipe("pbcopy", "w")
+    writeLines(c("a\tb", "1\t2"), con)
+    close(con)
+    on.exit({
+      cl = pipe("pbcopy", "w")
+      writeLines("", cl)
+      close(cl)
+    }, add=TRUE)
+    test(2366.1, fread("clipboard"), data.table(a=1L, b=2L))
+  }
+})
+
+# Test fread clipboard input on Linux via xclip/xsel/wl-paste (issue #1292)
+if (.Platform$OS.type == "unix" && identical(Sys.info()[["sysname"]], "Linux")) local({
+  on_wayland = nzchar(Sys.getenv("WAYLAND_DISPLAY"))
+  has_wl     = nzchar(Sys.which("wl-copy")) && nzchar(Sys.which("wl-paste"))
+  has_xclip  = nzchar(Sys.which("xclip"))
+  has_xsel   = nzchar(Sys.which("xsel"))
+  writer = if (on_wayland && has_wl) "wl-copy"
+           else if (has_xclip)       "xclip -i -selection clipboard"
+           else if (has_xsel)        "xsel --clipboard --input"
+           else if (has_wl)          "wl-copy"
+           else                      ""
+  if (nzchar(writer)) {
+    con = pipe(writer, "w")
+    writeLines(c("a\tb", "1\t2"), con)
+    close(con)
+    on.exit({
+      cl = pipe(writer, "w")
+      writeLines("", cl)
+      close(cl)
+    }, add=TRUE)
+    test(2366.2, fread("clipboard"), data.table(a=1L, b=2L))
+  }
 })
