@@ -1,0 +1,180 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: test.data.table 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: test.data.table.R:17
+msgid "data.table package is loaded. Unload or start a fresh R session."
+msgstr "data.table पैकेज (package) लोडेड (loaded) है। इसे अनलोड (unload) करें या एक नई R सेशन (session) शुरू करें।"
+
+#: test.data.table.R:33
+msgid ""
+"script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
+"be found and used."
+msgstr ""
+"स्क्रिप्ट (script) को '.Rraw' पर समाप्त होना चाहिए। यदि '.Rraw.bz2' से समाप्त होने वाली फ़ाइल मौजूद है,"
+"वह पाई जाएगी और उपयोग की जाएगी।"
+
+#: test.data.table.R:63
+msgid "Neither %s nor %s exist in %s"
+msgstr "न तो %s और न ही %s %s में मौजूद है"
+
+#: test.data.table.R:114
+msgid "test.data.table() running: %s"
+msgstr "test.data.table() चल रहा है: %s"
+
+#: test.data.table.R:118
+msgid "object '%s' not found"
+msgstr "ऑब्जेक्ट (object) '%s' नहीं मिला"
+
+#: test.data.table.R:121
+msgid ""
+"**** This R session's language is not English. Each test will still check "
+"that the correct number of errors and/or\n"
+"**** warnings are produced. However, to test the text of each error/warning "
+"too, please restart R with LANGUAGE=en"
+msgstr ""
+"**** इस R सेशन (session) की भाषा अंग्रेज़ी नहीं है। प्रत्येक परीक्षण अभी भी यह जाँच करेगा"
+"कि त्रुटियों और/या\n"
+"**** चेतावनियों की सही संख्या उत्पन्न होती है। हालाँकि, प्रत्येक त्रुटि/चेतावनी के पाठ का परीक्षण करने के लिए"
+"कृपया LANGUAGE=en के साथ R को पुनः प्रारंभ करें।"
+
+#: test.data.table.R:141
+msgid ""
+"***\n"
+"*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R "
+"session for best results. Ctrl-C now if not.\n"
+"***"
+msgstr ""
+"***\n"
+"memtest=%d. सर्वश्रेष्ठ परिणामों के लिए यह एक नई R_GC_MEM_GROW=0 R सेशन (session) में पहली कॉल होनी चाहिए।"
+"यदि ऐसा नहीं है, तो अभी Ctrl-C दबाएँ।\n"
+"***"
+
+#: test.data.table.R:142
+msgid ""
+"memtest intended for Linux. Step through data.table:::rss() to see what went "
+"wrong."
+msgstr ""
+"memtest केवल Linux के लिए है। क्या गलत हुआ यह देखने के लिए data.table:::rss() के माध्यम से जाँच करें।"
+
+#: test.data.table.R:196
+msgid "Attempt to subset to %d tests matching '%s' failed, running full suite."
+msgstr "%d परीक्षणों को '%s' से मेल खाते हुए सबसेट (subset) करने का प्रयास विफल रहा, पूरी श्रृंखला चलाई जा रही है।"
+
+#: test.data.table.R:201
+msgid "Running %d of %d tests matching '%s'"
+msgstr "'%s' से मेल खाते हुए %d में से %d परीक्षण चलाए जा रहे हैं"
+
+#: test.data.table.R:245
+msgid "Failed in %s after test %s before the next test() call in %s"
+msgstr "%s में, अगले test() कॉल (call) से पहले %s परीक्षण के बाद %s में विफल"
+
+#: test.data.table.R:268
+msgid "Timings count mismatch: %d vs %d"
+msgstr "समय की गणना में असमानता: %d बनाम %d"
+
+#: test.data.table.R:270
+msgid "10 longest running tests took %ds (%d%% of %ds)"
+msgstr "10 सबसे लंबे चलने वाले परीक्षणों में %ds समाय लगा (%ds का %d%%)"
+
+#: test.data.table.R:275
+msgid "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
+msgstr "10 सबसे बड़े RAM वृद्धि (MB); संचयी प्रभाव (अगर कोई हो) के लिए प्लॉट (plot) देखें"
+
+#: test.data.table.R:285
+msgid "All %d tests (last %.8g) in %s completed ok in %s"
+msgstr "सभी %d परीक्षण (आखिरी %.8g) %s में ठीक से पूरे हुए %s"
+
+#: test.data.table.R:399
+msgid ""
+"Test %s is invalid: when error= is provided it does not make sense to pass y "
+"as well"
+msgstr ""
+"परिक्षण %s अमान्य है: जब error= दिया गया है, तो y को भी पास (pass) करना समझ में नहीं आता है"
+
+#: test.data.table.R:434
+msgid "Test id %s is not in increasing order"
+msgstr "परीक्षण संख्या %s बढ़ती क्रम में नहीं है"
+
+#: test.data.table.R:451
+msgid ""
+"Test %s produced %d %ss but expected %d\n"
+"%s\n"
+"%s"
+msgstr ""
+"परीक्षण %s ने %d %ss उत्पन्न किए लेकिन अपेक्षित %d थे"
+"%s\n"
+"%s"
+
+#: test.data.table.R:459
+msgid ""
+"Test %s didn't produce the correct %s:\n"
+"Expected: %s\n"
+"Observed: %s"
+msgstr ""
+"परीक्षण %s ने सही %s उत्पन्न नहीं किया:\n"
+"अपेक्षित: %s\n"
+"देखा गया: %s"
+
+#: test.data.table.R:468
+msgid "Output captured before unexpected warning/error/message:"
+msgstr "अप्रत्याशित चेतावनी/त्रुटि/संदेश से पहले अंकित किया गया आउटपुट (output):"
+
+#: test.data.table.R:478
+msgid "Test %s did not produce correct output:"
+msgstr "परीक्षण %s ने सही आउटपुट (output) उत्पन्न नहीं किया:"
+
+#: test.data.table.R:479
+msgid "Expected: <<%s>>"
+msgstr "अपेक्षित: <<%s>>"
+
+#: test.data.table.R:480 test.data.table.R:492
+msgid "Observed: <<%s>>"
+msgstr "देखा गया: <<%s>>"
+
+#: test.data.table.R:482
+msgid "Expected (raw): <<%s>>"
+msgstr "अपेक्षित (असंसाधित): <<%s>>"
+
+#: test.data.table.R:483 test.data.table.R:495
+msgid "Observed (raw): <<%s>>"
+msgstr "देखा गया (असंसाधित): <<%s>>"
+
+#: test.data.table.R:490
+msgid "Test %s produced output but should not have:"
+msgstr "परीक्षण %s ने आउटपुट (output) उत्पन्न किया लेकिन ऐसा नहीं होना चाहिए था:"
+
+#: test.data.table.R:491
+msgid "Expected absent (case insensitive): <<%s>>"
+msgstr "अनुपस्थित की अपेक्षा (केस (case) निरपेक्ष): <<%s>>"
+
+#: test.data.table.R:494
+msgid "Expected absent (raw): <<%s>>"
+msgstr "अनुपस्थित की अपेक्षा (असंसाधित): <<%s>>"
+
+#: test.data.table.R:508
+msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
+msgstr "परीक्षण %s बिना किसी त्रुटि के चला लेकिन selfrefok(%s) FALSE है"
+
+#: test.data.table.R:533
+msgid "Test %s ran without errors but failed check that x equals y:"
+msgstr "परीक्षण %s बिना किसी त्रुटि के चला लेकिन यह जाँच असफल रही कि x y के बराबर है:"
+
+#: test.data.table.R:538
+msgid "First %d of %d (type '%s'):"
+msgstr "पहले %d में से %d (प्रकार '%s'):"
+
+#: test.data.table.R:255
+msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
+msgid_plural "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
+msgstr[0] "%d त्रुटि %d में से। परीक्षण संख्या %s के लिए %s में खोजें। अवधि: %s।"
+msgstr[1] "%d त्रुटियाँ %d में से। परीक्षण संख्याओं %s के लिए %s में खोजें। अवधि: %s।"
