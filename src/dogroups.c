@@ -79,7 +79,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   int nprotect=0;
   SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
-  const bool verbose = LOGICAL(verboseArg)[0]==1;
+  const bool verbose = LOGICAL_RO(verboseArg)[0]==1;
   double tstart=0, tblock[10]={0}; int nblock[10]={0}; // For verbose printing, tstart is updated each block
   bool hasPrinted = false;
 
@@ -87,8 +87,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (TYPEOF(starts) != INTSXP) internal_error(__func__, "starts not integer"); // # nocov
   if (TYPEOF(lens) != INTSXP) internal_error(__func__, "lens not integer"); // # nocov
   // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error(_("starts[1]<0 or lens[1]<0"));
-  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) internal_error(__func__, "jiscols not NULL but o__ has length"); // # nocov
-  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) internal_error(__func__, "xjiscols not NULL but o__ has length"); // # nocov
+  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL_RO(on)[0]) internal_error(__func__, "jiscols not NULL but o__ has length"); // # nocov
+  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL_RO(on)[0]) internal_error(__func__, "xjiscols not NULL but o__ has length"); // # nocov
   if(!isEnvironment(env)) error(_("env is not an environment"));
   ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
   ngrpcols = length(grpcols);
@@ -97,7 +97,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP SDall = PROTECT(R_getVar(install(".SDall"), env, false)); nprotect++;  // PROTECT for rchk
   SEXP SD = PROTECT(R_getVar(install(".SD"), env, false)); nprotect++;
 
-  int updateTime = INTEGER(showProgressArg)[0];
+  int updateTime = INTEGER_RO(showProgressArg)[0];
   const bool showProgress = updateTime > 0 && ngrp > 1; // showProgress only if more than 1 group
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
   double nextTime = (showProgress) ? startTime + MAX(updateTime, 3) : 0; // wait at least 3 seconds before starting to print progress
@@ -108,7 +108,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
   SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
   for (int i=0; i<ngrpcols; ++i) {
-    int j = INTEGER(grpcols)[i]-1;
+    const int j = INTEGER_RO(grpcols)[i]-1;
     SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
       nrowgroups ? 1 : 0)); // TODO: might be able to be 1 always but 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
     // Fix for #36, by cols with attributes when also used in `j` lost the attribute.
@@ -146,7 +146,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // non data.table aware package that uses rownames
   SEXP rownames = PROTECT(R_mapAttrib(SD, findRowNames, NULL)); nprotect++;
   if (rownames == NULL) error(_("row.names attribute of .SD not found"));
-  if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
+  if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER_RO(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
@@ -163,7 +163,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       internal_error(__func__, "SDall %d length = %d != %d", i+1, LENGTH(this), maxGrpSize); // # nocov
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
-    copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
+    copyMostAttrib(VECTOR_ELT(dt,INTEGER_RO(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
     hash_set(specials, this, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   }
 
@@ -219,15 +219,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
 
     if (length(iSD) && length(VECTOR_ELT(iSD, 0))/*#4364*/) for (int j=0; j<length(iSD); ++j) {   // either this or the next for() will run, not both
-      memrecycle(VECTOR_ELT(iSD,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(jiscols)[j]-1), i, 1, j+1, "Internal error assigning to iSD");
+      memrecycle(VECTOR_ELT(iSD,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER_RO(jiscols)[j]-1), i, 1, j+1, "Internal error assigning to iSD");
       // we're just use memrecycle here to assign a single value
     }
     // igrp determines the start of the current group in rows of dt (0 based).
     // if jiscols is not null, we have a by = .EACHI, so the start is exactly i.
     // Otherwise, igrp needs to be determined from starts, potentially taking care about the order if present.
-    igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER(grporder)[istarts[i]-1]-1 : istarts[i]-1);
+    igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER_RO(grporder)[istarts[i]-1]-1 : istarts[i]-1);
     if (igrp>=0 && nrowgroups) for (int j=0; j<length(BY); ++j) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
-      memrecycle(VECTOR_ELT(BY,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error assigning to BY");
+      memrecycle(VECTOR_ELT(BY,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER_RO(grpcols)[j]-1), igrp, 1, j+1, "Internal error assigning to BY");
     }
     if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (int j=0; j<length(SDall); ++j) {
@@ -257,9 +257,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
         if (rownum>=0) {
           for (int j=0; j<length(SDall); ++j)
-            memrecycle(VECTOR_ELT(SDall,j), R_NilValue, 0, grpn, VECTOR_ELT(dt, INTEGER(dtcols)[j]-1), rownum, grpn, j+1, "Internal error assigning to SDall");
+            memrecycle(VECTOR_ELT(SDall,j), R_NilValue, 0, grpn, VECTOR_ELT(dt, INTEGER_RO(dtcols)[j]-1), rownum, grpn, j+1, "Internal error assigning to SDall");
           for (int j=0; j<length(xSD); ++j)
-            memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD");
+            memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER_RO(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD");
         }
         if (verbose) { tblock[0] += wallclock()-tstart; nblock[0]++; }
       } else {
@@ -267,7 +267,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int k=0; k<grpn; ++k) iI[k] = iorder[rownum+k];
         for (int j=0; j<length(SDall); ++j) {
           // this is the main non-contiguous gather, and is parallel (within-column) for non-SEXP
-          subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, anyNA);
+          subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER_RO(dtcols)[j]-1), I, anyNA);
         }
         if (verbose) { tblock[1] += wallclock()-tstart; nblock[1]++; }
         // The two blocks have separate timing statements to make sure which is running
@@ -303,7 +303,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (isArray(thiscol)) {
           SEXP dims = PROTECT(getAttrib(thiscol, R_DimSymbol));
           int nDimensions=0;
-          for (int d=0; d<LENGTH(dims); ++d) if (INTEGER(dims)[d] > 1) ++nDimensions;
+          for (int d=0; d<LENGTH(dims); ++d) if (INTEGER_RO(dims)[d] > 1) ++nDimensions;
           UNPROTECT(1);
           if (nDimensions > 1)
             error(_("Entry %d for group %d in j=list(...) is an array with %d dimensions > 1, which is disallowed. \"Break\" the array yourself with c() or as.vector() if that is intentional."), j+1, i+1, nDimensions);
@@ -319,14 +319,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           error(_("RHS of := is NULL during grouped assignment, but it's not possible to delete parts of a column."));
         int vlen = length(RHS);
         if (vlen>1 && vlen!=grpn) {
-          SEXP colname = INTEGER(lhs)[j] > LENGTH(dt) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
+          SEXP colname = INTEGER_RO(lhs)[j] > LENGTH(dt) ? STRING_ELT(newnames, INTEGER_RO(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER_RO(lhs)[j]-1);
           error(_("Supplied %d items to be assigned to group %d of size %d in column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."),vlen,i+1,grpn,CHAR(colname));
           // e.g. in #91 `:=` did not issue recycling warning during grouping. Now it is error not warning.
         }
       }
       int n = LENGTH(VECTOR_ELT(dt, 0));
       for (int j=0; j<length(lhs); ++j) {
-        int colj = INTEGER(lhs)[j]-1;
+        int colj = INTEGER_RO(lhs)[j]-1;
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (colj >= LENGTH(dt)) {
           // first time adding to new column
@@ -349,7 +349,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           RHS = PROTECT(copyAsPlain(RHS));
           copied = true;
         }
-        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
+        const char *warn = memrecycle(target, order, INTEGER_RO(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
         if (copied) UNPROTECT(1);
         if (warn)
@@ -387,7 +387,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         nprotect++;
         firstalloc=TRUE;
         for(int j=0; j<ngrpcols; ++j) {
-          thiscol = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);
+          thiscol = VECTOR_ELT(groups, INTEGER_RO(grpcols)[j]-1);
           SET_VECTOR_ELT(ans, j, allocVector(TYPEOF(thiscol), estn));
           copyMostAttrib(thiscol, VECTOR_ELT(ans,j));  // not names, otherwise test 778 would fail
         }
@@ -427,7 +427,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     // write the group values to ans, recycled to match the nrow of the result for this group ...
     for (int j=0; j<ngrpcols; ++j) {
-      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error recycling group values");
+      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER_RO(grpcols)[j]-1), igrp, 1, j+1, "Internal error recycling group values");
     }
     // Now copy jval into ans ...
     for (int j=0; j<njval; ++j) {

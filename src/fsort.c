@@ -96,7 +96,8 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
-static size_t shrinkMSB(size_t MSBsize, uint64_t *msbCounts, int *order, Rboolean verbose) {
+static size_t shrinkMSB(size_t MSBsize, const uint64_t msbCounts[], const int order[], Rboolean verbose)
+{
   size_t oldMSBsize = MSBsize;
   while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2)
     MSBsize--;
@@ -115,7 +116,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   t[0] = wallclock();
   if (!IS_TRUE_OR_FALSE(verboseArg))
     error(_("'%s' must be TRUE or FALSE"), "verbose");
-  int verbose = LOGICAL(verboseArg)[0];
+  int verbose = LOGICAL_RO(verboseArg)[0];
   if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 

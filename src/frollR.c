@@ -36,9 +36,9 @@ SEXP coerceK(SEXP obj, bool adaptive) {
     } else {
       error(_("'n' must be an integer"));
     }
-    int nk = length(obj);
+    const int nk = length(obj);
     R_len_t i = 0;
-    int *iik = INTEGER(ans);
+    const int *iik = INTEGER_RO(ans);
     while (i < nk && iik[i] >= 0) i++;
     if (i != nk)
       error(_("'n' must be non-negative integer values (>= 0)"));
@@ -53,7 +53,7 @@ SEXP coerceK(SEXP obj, bool adaptive) {
         error(_("'n' must be an integer vector or list of integer vectors"));
       }
     } else {
-      int nk = length(obj);
+      const int nk = length(obj);
       ans = PROTECT(allocVector(VECSXP, nk)); protecti++;
       for (int i=0; i<nk; i++) {
         if (isInteger(VECTOR_ELT(obj, i))) {
@@ -65,9 +65,9 @@ SEXP coerceK(SEXP obj, bool adaptive) {
         }
       }
     }
-    int nx = length(VECTOR_ELT(ans, 0));
+    const int nx = length(VECTOR_ELT(ans, 0));
     for (int i=0; i<length(ans); i++) {
-      int *iik = INTEGER(VECTOR_ELT(ans, i));
+      const int *iik = INTEGER_RO(VECTOR_ELT(ans, i));
       R_len_t ii = 0;
       while (ii < nx && iik[ii] >= 0) ii++;
       if (ii != nx)
@@ -95,7 +95,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
 
   if (!IS_TRUE_OR_FALSE(adaptive))
     error(_("'%s' must be TRUE or FALSE"), "adaptive");
-  bool badaptive = LOGICAL(adaptive)[0];
+  bool badaptive = LOGICAL_RO(adaptive)[0];
 
   SEXP k = PROTECT(coerceK(kobj, badaptive)); protecti++;
   int nk = length(k);
@@ -113,7 +113,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
 
   if (!isLogical(hasnf) || length(hasnf)!=1)
     error(_("has.nf must be TRUE, FALSE or NA"));
-  if (LOGICAL(hasnf)[0]==FALSE && LOGICAL(narm)[0])
+  if (LOGICAL_RO(hasnf)[0]==FALSE && LOGICAL_RO(narm)[0])
     error(_("using has.nf FALSE and na.rm TRUE does not make sense, if you know there are non-finite values then use has.nf TRUE, otherwise leave it as default NA"));
 
   int ialign=-2;                                                   // decode align to integer
@@ -175,15 +175,15 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
+  const double dfill = REAL_RO(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
   UNPROTECT(1); // as= input to coerceAs()
 
-  bool bnarm = LOGICAL(narm)[0];
+  bool bnarm = LOGICAL_RO(narm)[0];
 
-  int ihasnf =                                                  // plain C tri-state boolean as integer
-    LOGICAL(hasnf)[0]==NA_LOGICAL ? 0 :                         // hasnf NA, default, no info about NA
-    LOGICAL(hasnf)[0]==TRUE ? 1 :                               // hasnf TRUE, might be some NAs
-    -1;                                                         // hasnf FALSE, there should be no NAs // or there must be no NAs for rollmax #5441
+  const int ihasnf =                                               // plain C tri-state boolean as integer
+    LOGICAL_RO(hasnf)[0]==NA_LOGICAL ? 0 :                         // hasnf NA, default, no info about NA
+    LOGICAL_RO(hasnf)[0]==TRUE ? 1 :                               // hasnf TRUE, might be some NAs
+    -1;                                                            // hasnf FALSE, there should be no NAs // or there must be no NAs for rollmax #5441
 
   unsigned int ialgo=-1;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))
@@ -228,14 +228,14 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
 // helper called from R to generate adaptive window for irregularly spaced time series
 SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
 
-  bool p = LOGICAL(partial)[0];
-  int n = INTEGER(kobj)[0];
+  const bool p = LOGICAL_RO(partial)[0];
+  const int n = INTEGER_RO(kobj)[0];
   if (n == NA_INTEGER)
     error(_("'n' must not have NAs"));
   if (n < 1L)
     error(_("'n' must be positive integer values (>= 1)"));
   const int *x = INTEGER_RO(xobj);
-  int64_t len = XLENGTH(xobj); // can be 0
+  const int64_t len = XLENGTH(xobj); // can be 0
 
   if (len && x[0] == NA_INTEGER)
     error(_("index provided to 'x' must: be sorted, have no duplicates, have no NAs")); // error text for consistency to the one below

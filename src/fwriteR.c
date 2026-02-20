@@ -49,7 +49,7 @@ int getMaxCategLen(SEXP col) {
 
 const char *getCategString(SEXP col, int64_t row) {
   // the only writer that needs to have the header of the SEXP column, to get to the levels
-  int x = INTEGER(col)[row];
+  int x = INTEGER_RO(col)[row];
   return x == NA_INTEGER ? NULL : ENCODED_CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x - 1));
 }
 
@@ -75,7 +75,7 @@ static int32_t whichWriter(SEXP);
 
 void writeList(const void *col, int64_t row, char **pch) {
   SEXP v = ((const SEXP*)col)[row];
-  int32_t wf = whichWriter(v);
+  const int32_t wf = whichWriter(v);
   if (TYPEOF(v) == VECSXP || wf == INT32_MIN || isFactor(v)) {
     internal_error(__func__, "TYPEOF(v)!=VECSXP && wf!=INT32_MIN && !isFactor(v); getMaxListItem should have caught this up front");  // # nocov
   }
@@ -179,12 +179,12 @@ SEXP fwriteR(
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
 
   fwriteMainArgs args = { 0 };  // { 0 } to quieten valgrind's uninitialized, #4639
-  args.is_gzip = LOGICAL(is_gzip_Arg)[0];
-  args.gzip_level = INTEGER(gzip_level_Arg)[0];
-  args.bom = LOGICAL(bom_Arg)[0];
+  args.is_gzip = LOGICAL_RO(is_gzip_Arg)[0];
+  args.gzip_level = INTEGER_RO(gzip_level_Arg)[0];
+  args.bom = LOGICAL_RO(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
-  args.verbose = LOGICAL(verbose_Arg)[0];
-  args.forceDecimal = LOGICAL(forceDecimal_Arg)[0];
+  args.verbose = LOGICAL_RO(verbose_Arg)[0];
+  args.forceDecimal = LOGICAL_RO(forceDecimal_Arg)[0];
   args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
   if (args.ncol == 0) {
@@ -195,7 +195,7 @@ SEXP fwriteR(
 
   SEXP DFcoerced = DF;
   int protecti = 0;
-  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
+  dateTimeAs = INTEGER_RO(dateTimeAs_Arg)[0];
   if (dateTimeAs == DATETIMEAS_WRITECSV) {
     int i = 0;
     while(i < args.ncol && !INHERITS(VECTOR_ELT(DF,i), char_POSIXct)) i++;
@@ -232,9 +232,9 @@ SEXP fwriteR(
 
   // just for use at this level to control whichWriter() when called now for each column and
   // when called later for cell items of list columns (if any)
-  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
-  logical01 = LOGICAL(logical01_Arg)[0];
-  args.scipen = INTEGER(scipen_Arg)[0];
+  dateTimeAs = INTEGER_RO(dateTimeAs_Arg)[0];
+  logical01 = LOGICAL_RO(logical01_Arg)[0];
+  args.scipen = INTEGER_RO(scipen_Arg)[0];
   utf8 = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "UTF-8");
   native = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "native");
 
@@ -254,18 +254,18 @@ SEXP fwriteR(
   }
 
   SEXP cn = getAttrib(DF, R_NamesSymbol);
-  args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? DATAPTR_RO(cn) : NULL;
+  args.colNames = (LOGICAL_RO(colNames_Arg)[0] && isString(cn)) ? DATAPTR_RO(cn) : NULL;
 
   // user may want row names even when they don't exist (implied row numbers as row names)
   // so we need a separate boolean flag as well as the row names should they exist (rare)
-  args.doRowNames = LOGICAL(rowNames_Arg)[0];
+  args.doRowNames = LOGICAL_RO(rowNames_Arg)[0];
   args.rowNames = NULL;
   args.rowNameFun = 0;
   if (args.doRowNames) {
     SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
     protecti++;
     if (isInteger(rn)) {
-      if (xlength(rn) != 2 || INTEGER(rn)[0] == NA_INTEGER) {
+      if (xlength(rn) != 2 || INTEGER_RO(rn)[0] == NA_INTEGER) {
         // not R's default rownames c(NA,-nrow)
         if (xlength(rn) != args.nrow)
            // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work on M1
@@ -302,13 +302,13 @@ SEXP fwriteR(
 
   args.eol = CHAR(STRING_ELT(eol_Arg, 0));
   args.na = CHAR(STRING_ELT(na_Arg, 0));
-  args.doQuote = LOGICAL(quote_Arg)[0] == NA_LOGICAL ? INT8_MIN : LOGICAL(quote_Arg)[0] == 1;
-  args.qmethodEscape = LOGICAL(qmethodEscape_Arg)[0] == 1;
+  args.doQuote = LOGICAL_RO(quote_Arg)[0] == NA_LOGICAL ? INT8_MIN : LOGICAL_RO(quote_Arg)[0] == 1;
+  args.qmethodEscape = LOGICAL_RO(qmethodEscape_Arg)[0] == 1;
   args.squashDateTime = (dateTimeAs == 1);
-  args.append = LOGICAL(append_Arg)[0];
-  args.buffMB = INTEGER(buffMB_Arg)[0];
-  args.nth = INTEGER(nThread_Arg)[0];
-  args.showProgress = LOGICAL(showProgress_Arg)[0];
+  args.append = LOGICAL_RO(append_Arg)[0];
+  args.buffMB = INTEGER_RO(buffMB_Arg)[0];
+  args.nth = INTEGER_RO(nThread_Arg)[0];
+  args.showProgress = LOGICAL_RO(showProgress_Arg)[0];
 
   fwriteMain(args);
 

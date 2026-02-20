@@ -128,13 +128,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (verbose)
     tic = omp_get_wtime();
 
-  bool binplace = LOGICAL(inplace)[0];
+  const bool binplace = LOGICAL_RO(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
     error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
-  bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
+  bool nan_is_na = LOGICAL_RO(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
-  bool obj_scalar = isVectorAtomic(obj);
+  const bool obj_scalar = isVectorAtomic(obj);
   if (obj_scalar) {
     if (binplace)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));

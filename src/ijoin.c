@@ -9,7 +9,7 @@
 SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP multArg, SEXP typeArg, SEXP verbose) {
 
   SEXP vv, tt, lookup, type_lookup;
-  R_len_t *idx,*count,*type_count,xrows=INTEGER(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
+  R_len_t *idx,*count,*type_count,xrows=INTEGER_RO(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
   const int *from = INTEGER_RO(VECTOR_ELT(indices, 0));
   const int *to   = INTEGER_RO(VECTOR_ELT(indices, 1));
   clock_t pass1, pass2, pass3, start;
@@ -124,7 +124,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   default: internal_error(__func__, "unknown mult: %d", mult); // # nocov
   }
   pass1 = clock() - start;
-  if (LOGICAL(verbose)[0])
+  if (LOGICAL_RO(verbose)[0])
     Rprintf(_("First pass on calculating lengths in lookup ... done in %8.3f seconds\n"), 1.0*(pass1)/CLOCKS_PER_SEC);
   // second pass: allocate vectors
   start = clock();
@@ -137,7 +137,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     }
   }
   pass2 = clock() - start;
-  if (LOGICAL(verbose)[0])
+  if (LOGICAL_RO(verbose)[0])
     Rprintf(_("Second pass on allocation in lookup ... done in %8.3f seconds\n"), 1.0*(pass2)/CLOCKS_PER_SEC);
   // generate lookup
   start = clock();
@@ -169,7 +169,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         vv = VECTOR_ELT(lookup, i);
         tt = VECTOR_ELT(type_lookup, i);
         if (length(tt) && length(vv)) {            // length check added by Matt to avoid SEGV in #2767
-          INTEGER(tt)[0] = INTEGER(vv)[0];
+          INTEGER(tt)[0] = INTEGER_RO(vv)[0];
         }
       }
       break;
@@ -180,7 +180,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         vv = VECTOR_ELT(lookup, i);
         tt = VECTOR_ELT(type_lookup, i);
         if (length(tt) && length(vv)>=count[i]) {   // length check added by Matt to avoid SEGV in #2767
-          INTEGER(tt)[0] = INTEGER(vv)[count[i]-1];
+          INTEGER(tt)[0] = INTEGER_RO(vv)[count[i]-1];
         }
       }
 
@@ -197,7 +197,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           tt = VECTOR_ELT(type_lookup, i);
           int k=0;
           for (int j=count[i]-type_count[i]; j<count[i]; ++j)
-            INTEGER(tt)[k++] = INTEGER(vv)[j];
+            INTEGER(tt)[k++] = INTEGER_RO(vv)[j];
         }
         break;
 
@@ -216,7 +216,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     }
   }
   pass3 = clock() - start;
-  if (LOGICAL(verbose)[0])
+  if (LOGICAL_RO(verbose)[0])
     Rprintf(_("Final step in generating lookup ... done in %8.3f seconds\n"), 1.0*(pass3)/CLOCKS_PER_SEC);
   return(R_NilValue);
 }
@@ -224,7 +224,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
 SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchArg, SEXP verbose) {
 
   R_len_t uxcols=LENGTH(ux), rows=length(VECTOR_ELT(imatches,0)), xrows=length(VECTOR_ELT(ux,0));
-  int nomatch = INTEGER(nomatchArg)[0], totlen=0, thislen;
+  int nomatch = INTEGER_RO(nomatchArg)[0], totlen=0, thislen;
   const int *from   = INTEGER_RO(VECTOR_ELT(imatches, 0));
   const int *to     = INTEGER_RO(VECTOR_ELT(imatches, 1));
   const int *count   = INTEGER_RO(VECTOR_ELT(ux, uxcols-2));
@@ -270,9 +270,9 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           tmp1 = VECTOR_ELT(lookup, k-1);
           tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
           while (j<count[k-1] && m<type_count[to[i]-1]) {
-            if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
+            if ( INTEGER(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
               ++wlen; ++j; ++m;
-            } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
+            } else if ( INTEGER_RO(tmp1)[j] > INTEGER_RO(tmp2)[m] ) {
               ++m;
             } else ++j;
           }
@@ -308,9 +308,9 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
             while (j<count[k-1] && m<count[to[i]-1]) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
+              if ( INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
                 ++totlen; ++j; ++m;
-              } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
+              } else if ( INTEGER_RO(tmp1)[j] > INTEGER_RO(tmp2)[m] ) {
                 ++m;
               } else ++j;
             }
@@ -324,7 +324,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
     }
   } else totlen = rows;
   end1 = clock() - start;
-  if (LOGICAL(verbose)[0])
+  if (LOGICAL_RO(verbose)[0])
     Rprintf(_("First pass on calculating lengths in overlaps ... done in %8.3f seconds\n"), 1.0*(end1)/CLOCKS_PER_SEC);
 
   // ans[0] is the the position of 'query' and ans[1] is that of 'subject'
@@ -349,7 +349,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           tmp2 = VECTOR_ELT(type_lookup, k-1);
           for (int j=0; j<type_count[k-1]; ++j) {
             INTEGER(f1__)[thislen] = i+1;
-            INTEGER(f2__)[thislen] = INTEGER(tmp2)[j];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp2)[j];
             ++thislen;
           }
         }
@@ -371,7 +371,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
             for (int j=0; j<count[k-1]; ++j) {
               INTEGER(f1__)[thislen] = i+1;
-              INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+              INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
               ++thislen;
             }
           } else if (k < to[i]) {
@@ -379,11 +379,11 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
             while (j<count[k-1] && m<type_count[to[i]-1]) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
+              if ( INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
                 INTEGER(f1__)[thislen] = i+1;
-                INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
                  ++thislen; ++j; ++m;
-               } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
+               } else if ( INTEGER_RO(tmp1)[j] > INTEGER_RO(tmp2)[m] ) {
                  ++m;
                } else ++j;
              }
@@ -405,7 +405,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           tmp1 = VECTOR_ELT(lookup, k-1);
           for (int m=0; m<count[k-1]; ++m) {
             INTEGER(f1__)[thislen] = i+1;
-            INTEGER(f2__)[thislen] = INTEGER(tmp1)[m];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[m];
             ++thislen;
           }
         }
@@ -413,7 +413,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           tmp2 = VECTOR_ELT(type_lookup, j-1);
           for (int m=0; m<type_count[j-1]; ++m) {
             INTEGER(f1__)[thislen] = i+1;
-            INTEGER(f2__)[thislen] = INTEGER(tmp2)[m];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp2)[m];
             ++thislen;
           }
         }
@@ -435,7 +435,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
             tmp1 = VECTOR_ELT(lookup, k-1);
             for (int j=0; j<count[k-1]; ++j) {
               INTEGER(f1__)[thislen] = i+1;
-              INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+              INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
               ++thislen;
             }
           } else if (k < to[i]) {
@@ -443,11 +443,11 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
             while (j<count[k-1] && m<count[to[i]-1]) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
+              if ( INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
                 INTEGER(f1__)[thislen] = i+1;
-                INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
                  ++thislen; ++j; ++m;
-               } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
+               } else if ( INTEGER_RO(tmp1)[j] > INTEGER_RO(tmp2)[m] ) {
                  ++m;
                } else ++j;
              }
@@ -473,7 +473,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         const int k = (from[i]>0) ? from[i] : 1;
         if (k <= to[i]) { // count[k-1] is equal to type_count[k-1] and will always be >0, so no length check necessary.
           tmp1 = VECTOR_ELT(lookup, k-1);
-          INTEGER(f2__)[thislen] = INTEGER(tmp1)[0];
+          INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[0];
           ++thislen;
         }
         if (len == thislen) {
@@ -491,18 +491,18 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           const int k = from[i];
           if (k == to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
-            INTEGER(f2__)[thislen] = INTEGER(tmp1)[0];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[0];
             ++thislen;
           } else if (k < to[i]) {
             int j=0, m=0;
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
             while (j<count[k-1] && m<type_count[to[i]-1]) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
-                INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+              if ( INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
                  ++thislen; ++j; ++m;
                  break;
-               } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
+               } else if (INTEGER_RO(tmp1)[j] > INTEGER_RO(tmp2)[m]) {
                  ++m;
                } else ++j;
              }
@@ -523,7 +523,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         for (int j=k; j<=to[i]; ++j) {
           if (type_count[j-1]) {
             tmp2 = VECTOR_ELT(type_lookup, j-1);
-            INTEGER(f2__)[thislen] = INTEGER(tmp2)[0];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp2)[0];
             ++thislen;
             break;
           }
@@ -543,18 +543,18 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         if (k > 0) {
           if (k == to[i] && count[k-1]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
-            INTEGER(f2__)[thislen] = INTEGER(tmp1)[0];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[0];
             ++thislen;
           } else if (k < to[i]) {
             int j=0, m=0;
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
             while (j<count[k-1] && m<count[to[i]-1]) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
-                INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+              if ( INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
                  ++thislen; ++j; ++m;
                  break;
-               } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
+               } else if ( INTEGER_RO(tmp1)[j] > INTEGER_RO(tmp2)[m] ) {
                  ++m;
                } else ++j;
              }
@@ -579,7 +579,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         const int k = (from[i]>0) ? from[i] : 1;
         if (k <= to[i]) { // count[k-1] is equal to type_count[k-1] and will always be >0, so no length check necessary.
           tmp1 = VECTOR_ELT(lookup, k-1);
-          INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
+          INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[count[k-1]-1];
           ++thislen;
         }
         if (len == thislen) {
@@ -605,18 +605,18 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           const int k = from[i];
           if (k == to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
-            INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[count[k-1]-1];
             ++thislen;
           } else if (k < to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
             int j=count[k-1]-1, m=type_count[to[i]-1]-1; // bug fix, k=from[i] but should be to[i]
             while (j>=0 && m>=0) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
-                INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+              if (INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m]) {
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
                  ++thislen; --j; --m;
                  break;
-               } else if ( INTEGER(tmp1)[j] < INTEGER(tmp2)[m] ) {
+               } else if (INTEGER_RO(tmp1)[j] < INTEGER_RO(tmp2)[m]) {
                  --m;
                } else --j;
              }
@@ -659,19 +659,19 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         if (k <= to[i]) {
           if (k==to[i] && count[k-1]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
-            INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[count[k-1]-1];
             ++thislen;
           } else {
             for (int j=to[i]; j>k; --j) {
               if (type_count[j-1]) {
                 tmp2 = VECTOR_ELT(type_lookup, j-1);
-                INTEGER(f2__)[thislen] = INTEGER(tmp2)[0]; // tmp2 will be length 1
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp2)[0]; // tmp2 will be length 1
                 ++thislen; break;
               }
             }
             if (len == thislen && count[k-1]) {
               tmp1 = VECTOR_ELT(lookup, k-1);
-              INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
+              INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[count[k-1]-1];
               ++thislen;
             }
           }
@@ -691,18 +691,18 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         if (k > 0) {
           if (k == to[i] && count[k-1]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
-            INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
+            INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[count[k-1]-1];
             ++thislen;
           } else if (k < to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
             int j=count[k-1]-1, m=count[to[i]-1]-1;
             while (j>=0 && m>=0) {
-              if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
-                INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
+              if ( INTEGER_RO(tmp1)[j] == INTEGER_RO(tmp2)[m] ) {
+                INTEGER(f2__)[thislen] = INTEGER_RO(tmp1)[j];
                  ++thislen; --j; --m;
                  break;
-               } else if ( INTEGER(tmp1)[j] < INTEGER(tmp2)[m] ) {
+               } else if ( INTEGER_RO(tmp1)[j] < INTEGER_RO(tmp2)[m] ) {
                  --m;
                } else --j;
              }
@@ -724,7 +724,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
     for (R_len_t i = 0; i < totlen; ++i) f2i[i] = nomatch;
   }
   end2 = clock() - start;
-  if (LOGICAL(verbose)[0])
+  if (LOGICAL_RO(verbose)[0])
     Rprintf(_("Final step, fetching indices in overlaps ... done in %8.3f seconds\n"), 1.0*(end2)/CLOCKS_PER_SEC);
   UNPROTECT(1);
   return(ans);

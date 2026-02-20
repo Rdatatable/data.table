@@ -80,8 +80,8 @@ SEXP freadR(
   SEXP noTZasUTC
 )
 {
-  verbose = LOGICAL(verboseArg)[0];
-  warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
+  verbose = LOGICAL_RO(verboseArg)[0];
+  warningsAreErrors = LOGICAL_RO(warnings2errorsArg)[0];
 
   freadMainArgs args;
   ncol = 0;
@@ -92,7 +92,7 @@ SEXP freadR(
   const char *ch = (const char *)CHAR(STRING_ELT(inputArg, 0));
   if (!isLogical(isFileNameArg) || LENGTH(isFileNameArg) != 1 || LOGICAL(isFileNameArg)[0] == NA_LOGICAL)
     internal_error(__func__, "freadR isFileNameArg not TRUE or FALSE");  // # nocov
-  if (LOGICAL(isFileNameArg)[0]) {
+  if (LOGICAL_RO(isFileNameArg)[0]) {
     if (verbose) DTPRINT(_("freadR.c has been passed a filename: %s\n"), ch);
     args.filename = R_ExpandFileName(ch);  // for convenience so user doesn't have to call path.expand()
     args.input = NULL;
@@ -122,21 +122,21 @@ SEXP freadR(
   // header is the only boolean where NA is valid and means 'auto'.
   // LOGICAL in R is signed 32 bits with NA_LOGICAL==INT_MIN, currently.
   args.header = false;
-  if (LOGICAL(headerArg)[0] == NA_LOGICAL) args.header = NA_BOOL8;
-  else if (LOGICAL(headerArg)[0] == TRUE) args.header = true;
+  if (LOGICAL_RO(headerArg)[0] == NA_LOGICAL) args.header = NA_BOOL8;
+  else if (LOGICAL_RO(headerArg)[0] == TRUE) args.header = true;
 
   args.nrowLimit = INT64_MAX;
   if (!isReal(nrowLimitArg) || length(nrowLimitArg) != 1)
     internal_error(__func__, "nrows not a single real. R level catches this.");  // # nocov
-  if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0] >= 0.0)
-    args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
+  if (R_FINITE(REAL_RO(nrowLimitArg)[0]) && REAL_RO(nrowLimitArg)[0] >= 0.0)
+    args.nrowLimit = (int64_t)(REAL_RO(nrowLimitArg)[0]);
 
-  args.logical01 = LOGICAL(logical01Arg)[0];
-  args.logicalYN = LOGICAL(logicalYNArg)[0];
+  args.logical01 = LOGICAL_RO(logical01Arg)[0];
+  args.logicalYN = LOGICAL_RO(logicalYNArg)[0];
 
   {
     SEXP tt = PROTECT(GetOption1(sym_old_fread_datetime_character));
-    args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0] == TRUE;
+    args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL_RO(tt)[0] == TRUE;
     UNPROTECT(1);
   }
   args.skipNrow = -1;
@@ -157,19 +157,19 @@ SEXP freadR(
   args.NAstrings = NAstrings;
 
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
-  args.stripWhite = LOGICAL(stripWhiteArg)[0];
-  args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  args.stripWhite = LOGICAL_RO(stripWhiteArg)[0];
+  args.skipEmptyLines = LOGICAL_RO(skipEmptyLinesArg)[0];
   const char *commentStr = CHAR(STRING_ELT(commentCharArg, 0));
   args.comment = strlen(commentStr) == 0 ? '\0' : commentStr[0];
   args.fill = INTEGER(fillArg)[0];
-  args.showProgress = LOGICAL(showProgressArg)[0];
-  if (INTEGER(nThreadArg)[0] < 1)
-    error("nThread(%d)<1", INTEGER(nThreadArg)[0]); // # notranslate
-  args.nth = (uint32_t)INTEGER(nThreadArg)[0];
+  args.showProgress = LOGICAL_RO(showProgressArg)[0];
+  if (INTEGER_RO(nThreadArg)[0] < 1)
+    error("nThread(%d)<1", INTEGER_RO(nThreadArg)[0]); // # notranslate
+  args.nth = (uint32_t)INTEGER_RO(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
-  args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
-  args.noTZasUTC = LOGICAL(noTZasUTC)[0];
+  args.keepLeadingZeros = LOGICAL_RO(keepLeadingZerosArgs)[0];
+  args.noTZasUTC = LOGICAL_RO(noTZasUTC)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg) != 1) error(_("'integer64' must be a single character string"));
@@ -395,7 +395,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
         // UNPROTECTed directly just after this for loop. No nprotect++ here is correct.
         for (int j = 0; j < LENGTH(items); j++) {
-          const int colIdx = INTEGER(itemsInt)[j]; // NB: 1-based
+          const int colIdx = INTEGER_RO(itemsInt)[j]; // NB: 1-based
           if (colIdx == NA_INTEGER) {
             if (isString(items))
               DTWARN(_("Column name '%s' (colClasses[[%d]][%d]) not found"), CHAR(STRING_ELT(items, j)), i + 1, j + 1);

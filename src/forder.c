@@ -111,8 +111,8 @@ void internal_error_with_cleanup(const char *call_name, const char *format, ...)
 
 static void push(const int *x, const int n) {
   if (!retgrp) return;  // clearer to have the switch here rather than before each call
-  int me = omp_get_thread_num();
-  int newn = gs_thread_n[me] + n;
+  const int me = omp_get_thread_num();
+  const int newn = gs_thread_n[me] + n;
   if (gs_thread_alloc[me] < newn) {
     gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
     gs_thread[me] = realloc(gs_thread[me], sizeof(*gs_thread[me])*gs_thread_alloc[me]);
@@ -124,11 +124,11 @@ static void push(const int *x, const int n) {
 
 static void flush(void) {
   if (!retgrp) return;
-  int me = omp_get_thread_num();
-  int n = gs_thread_n[me];
+  const int me = omp_get_thread_num();
+  const int n = gs_thread_n[me];
   // normally doesn't happen, can be encountered under heavy load, #7051
   if (!n) return; // # nocov
-  int newn = gs_n + n;
+  const int newn = gs_n + n;
   if (gs_alloc < newn) {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
     gs = realloc(gs, sizeof(*gs)*gs_alloc);
@@ -170,7 +170,7 @@ static void range_i32(const int32_t *x, const int n, uint64_t *out_min, uint64_t
   int na_count = i;
   if (i<n) max = min = x[i++];
   for(; i<n; i++) {
-    int tmp = x[i];
+    const int tmp = x[i];
     if (tmp>max) max=tmp;
     else if (tmp<min) {
       if (tmp==NA_INTEGER) na_count++;
@@ -259,7 +259,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
   }
   for (int i=n-1; i>=0; i--) {
-    uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;
+    const uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;
     cradix_xtmp[--thiscounts[thisx]] = xsub[i];
   }
   memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
@@ -402,9 +402,9 @@ SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
-  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
+  if (INTEGER(droundArg)[0] < 0 || INTEGER_RO(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
   int oldRound = dround;
-  dround = INTEGER(droundArg)[0];
+  dround = INTEGER_RO(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
   return ScalarInteger(oldRound);
 }
@@ -499,7 +499,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
     SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
     for (int j=0; j<LENGTH(recycleAscArg); j++)
-      INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
+      INTEGER(recycleAscArg)[j] = INTEGER_RO(ascArg)[0];
     ascArg = recycleAscArg;
   }
   nrow = length(VECTOR_ELT(DT,0));
@@ -509,25 +509,25 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     if (by_i < 1 || by_i > length(DT))
       internal_error_with_cleanup(__func__, "'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
-      STOP(_("Column %d is length %d which differs from length of column 1 (%d), are you attempting to order by a list column?\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+      STOP(_("Column %d is length %d which differs from length of column 1 (%d), are you attempting to order by a list column?\n"), INTEGER_RO(by)[i], length(VECTOR_ELT(DT, INTEGER_RO(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
   if (!IS_TRUE_OR_FALSE(retGrpArg))
     STOP(_("retGrp must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
-  retgrp = LOGICAL(retGrpArg)[0]==TRUE;
+  retgrp = LOGICAL_RO(retGrpArg)[0]==TRUE;
   if (!IS_TRUE_OR_FALSE(retStatsArg))
     STOP(_("retStats must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
-  retstats = LOGICAL(retStatsArg)[0]==TRUE;
+  retstats = LOGICAL_RO(retStatsArg)[0]==TRUE;
   if (!retstats && retgrp)
     error(_("retStats must be TRUE whenever retGrp is TRUE")); // # nocov # covered in reuseSorting forder
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
     STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
-  sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
+  sortType = LOGICAL_RO(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
     STOP(_("At least one of retGrp= or sort= must be TRUE"));
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
     STOP(_("na.last must be logical TRUE, FALSE or NA of length 1")); // # nocov # covered in reuseSorting forder
-  nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
+  nalast = (LOGICAL_RO(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL_RO(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
     // empty vector or 0-row DT is always sorted
@@ -555,8 +555,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
   TEND(1)
 
-  int ncol=length(by);
-  int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
+  const int ncol=length(by);
+  const int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
   key = calloc(keyAlloc, sizeof(*key));  // needs to be before loop because part II relies on part I, column-by-column.
   if (!key)
     STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(*key));  // # nocov
@@ -570,12 +570,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf(_("Finding range of column %d ...\n"), col);
-    SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
+    SEXP x = VECTOR_ELT(DT,INTEGER_RO(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
     bool anynotascii=false, anynotutf8=false;
     if (sortType) {
-      sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+      sortType=INTEGER_RO(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
       if (sortType!=1 && sortType!=-1)
         STOP(_("Item %d of order (ascending/descending) is %d. Must be +1 or -1."), col+1, sortType);
     }
@@ -583,7 +583,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     hashtab * marks = NULL; // only used for STRSXP below
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
-      range_i32(INTEGER(x), nrow, &min, &max, &na_count);
+      range_i32(INTEGER_RO(x), nrow, &min, &max, &na_count);
       break;
     case CPLXSXP : {
       // treat as if two separate columns of double
@@ -1407,8 +1407,8 @@ SEXP issorted(SEXP x, SEXP by)
   if (isVectorAtomic(x) || length(by)==1) {
     // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
     if (length(by)==1) {
-      if (INTEGER(by)[0]<1 || INTEGER(by)[0]>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), INTEGER(by)[0], length(x));
-      x = VECTOR_ELT(x, INTEGER(by)[0]-1);
+      if (INTEGER(by)[0]<1 || INTEGER_RO(by)[0]>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), INTEGER_RO(by)[0], length(x));
+      x = VECTOR_ELT(x, INTEGER_RO(by)[0]-1);
     }
     const int n = length(x);
     if (n <= 1) return(ScalarLogical(TRUE));
@@ -1421,7 +1421,7 @@ SEXP issorted(SEXP x, SEXP by)
     } break;
     case REALSXP :
       if (inherits(x,"integer64")) {
-        const int64_t *xd = (int64_t *)REAL_RO(x);
+        const int64_t *xd = (const int64_t*)REAL_RO(x);
         while (i<n && xd[i]>=xd[i-1]) i++;
       } else {
         const double *xd = REAL_RO(x);
@@ -1464,11 +1464,11 @@ SEXP issorted(SEXP x, SEXP by)
     switch(TYPEOF(col)) {
     case INTSXP: case LGLSXP:
       types[j] = 0;
-      ptrs[j] = (const char *)INTEGER(col);
+      ptrs[j] = (const char *)INTEGER_RO(col);
       break;
     case REALSXP:
       types[j] = inherits(col, "integer64") ? 2 : 1;
-      ptrs[j] = (const char *)REAL(col);
+      ptrs[j] = (const char *)REAL_RO(col);
       break;
     case STRSXP:
       types[j] = 3;
@@ -1654,7 +1654,7 @@ bool GetUseIndex(void) {
   SEXP opt = GetOption1(install("datatable.use.index"));
   if (!IS_TRUE_OR_FALSE(opt))
     error(_("'datatable.use.index' option must be TRUE or FALSE")); // # nocov
-  return LOGICAL(opt)[0];
+  return LOGICAL_RO(opt)[0];
 }
 
 // isTRUE(getOption("datatable.auto.index"))
@@ -1667,12 +1667,12 @@ bool GetAutoIndex(void) {
     return false;
   if (!IS_TRUE_OR_FALSE(opt))
     error(_("'datatable.forder.auto.index' option must be TRUE or FALSE")); // # nocov
-  return LOGICAL(opt)[0];
+  return LOGICAL_RO(opt)[0];
 }
 
 // attr(idx, "anyna")>0 || attr(idx, "anyinfnan")>0
 bool idxAnyNF(SEXP idx) {
-  return INTEGER(getAttrib(idx, sym_anyna))[0]>0 || INTEGER(getAttrib(idx, sym_anyinfnan))[0]>0;
+  return INTEGER_RO(getAttrib(idx, sym_anyna))[0]>0 || INTEGER_RO(getAttrib(idx, sym_anyinfnan))[0]>0;
 }
 
 // forder, re-use existing key or index if possible, otherwise call forder
@@ -1686,23 +1686,23 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
     error(_("DT is NULL"));
   if (!IS_TRUE_OR_FALSE(retGrpArg))
     error(_("retGrp must be TRUE or FALSE"));
-  bool retGrp = (bool)LOGICAL(retGrpArg)[0];
+  bool retGrp = (bool)LOGICAL_RO(retGrpArg)[0];
   if (!IS_TRUE_OR_FALSE(retStatsArg))
     error(_("retStats must be TRUE or FALSE"));
-  bool retStats = (bool)LOGICAL(retStatsArg)[0];
+  bool retStats = (bool)LOGICAL_RO(retStatsArg)[0];
   if (!retStats && retGrp)
     error(_("retStats must be TRUE whenever retGrp is TRUE")); // retStats doesnt cost anything and it will be much easier to optimize use of index
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
     error(_("sort must be TRUE or FALSE"));
-  bool sortGroups = (bool)LOGICAL(sortGroupsArg)[0];
+  bool sortGroups = (bool)LOGICAL_RO(sortGroupsArg)[0];
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
     error(_("na.last must be logical TRUE, FALSE or NA of length 1"));
-  bool na = (bool)LOGICAL(naArg)[0];
+  bool na = (bool)LOGICAL_RO(naArg)[0];
   if (!isInteger(ascArg))
     error(_("order must be integer")); // # nocov # coerced to int in R
   if (!isLogical(reuseSortingArg) || LENGTH(reuseSortingArg) != 1)
     error(_("reuseSorting must be logical TRUE, FALSE or NA of length 1"));
-  int reuseSorting = LOGICAL(reuseSortingArg)[0];
+  int reuseSorting = LOGICAL_RO(reuseSortingArg)[0];
   if (!length(DT))
     return allocVector(INTSXP, 0);
   int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt

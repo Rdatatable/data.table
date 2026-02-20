@@ -8,7 +8,7 @@
 */
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, SEXP checkArg) {
   int nprotect = 0;
-  R_len_t nx = length(x), nl = length(lower), nu = length(upper);
+  const R_len_t nx = length(x), nl = length(lower), nu = length(upper);
   if (!nx || !nl || !nu)
     return (allocVector(LGLSXP, 0));
   const int longest = MAX(MAX(nx, nl), nu);
@@ -20,13 +20,13 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   const int longestBound = MAX(nl, nu);  // just for when check=TRUE
   if (!IS_TRUE_OR_FALSE(incbounds))
     error(_("'%s' must be TRUE or FALSE"), "incbounds");
-  const bool open = !LOGICAL(incbounds)[0];
-  if (!isLogical(NAboundsArg) || LOGICAL(NAboundsArg)[0]==FALSE)
+  const bool open = !LOGICAL_RO(incbounds)[0];
+  if (!isLogical(NAboundsArg) || LOGICAL_RO(NAboundsArg)[0]==FALSE)
     error(_("NAbounds must be TRUE or NA"));
-  const bool NAbounds = LOGICAL(NAboundsArg)[0]==TRUE;
+  const bool NAbounds = LOGICAL_RO(NAboundsArg)[0]==TRUE;
   if (!IS_TRUE_OR_FALSE(checkArg))
     error(_("'%s' must be TRUE or FALSE"), "check");
-  const bool check = LOGICAL(checkArg)[0];
+  const bool check = LOGICAL_RO(checkArg)[0];
   const bool verbose = GetVerbose();
 
   // check before potential coercion which ignores methods, #7164
@@ -70,7 +70,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   const int uppMask = recycleUpp ? 0 : INT_MAX;
   SEXP ans = PROTECT(allocVector(LGLSXP, longest)); nprotect++;
   int *restrict ansp = LOGICAL(ans);
-  double tic=omp_get_wtime();
+  const double tic=omp_get_wtime();
 
   switch (TYPEOF(x)) {
   case INTSXP: {
@@ -103,9 +103,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
 
   case REALSXP:
     if (INHERITS(x, char_integer64)) {
-      const int64_t *lp = (int64_t *)REAL(lower);
-      const int64_t *up = (int64_t *)REAL(upper);
-      const int64_t *xp = (int64_t *)REAL(x);
+      const int64_t *lp = (const int64_t*)REAL_RO(lower);
+      const int64_t* up = (const int64_t*)REAL_RO(upper);
+      const int64_t* xp = (const int64_t*)REAL_RO(x);
       if (check) for (int i=0; i<longestBound; ++i) {
         const int64_t l=lp[i & lowMask], u=up[i & uppMask];
         if (l!=NA_INTEGER64 && u!=NA_INTEGER64 && l>u)

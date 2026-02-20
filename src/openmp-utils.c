@@ -84,11 +84,11 @@ static const char *mygetenv(const char *name, const char *unset)
 
 SEXP getDTthreads_C(SEXP n, SEXP throttle)
 {
-  if(!isInteger(n) || INTEGER(n)[0] < 0)
+  if(!isInteger(n) || INTEGER_RO(n)[0] < 0)
     internal_error(__func__, "n must be non-negative integer");  // # nocov
   if(!IS_TRUE_OR_FALSE(throttle))
     internal_error(__func__, "throttle must be TRUE or FALSE");  // # nocov
-  return ScalarInteger(getDTthreads(INTEGER(n)[0], LOGICAL(throttle)[0]));
+  return ScalarInteger(getDTthreads(INTEGER_RO(n)[0], LOGICAL_RO(throttle)[0]));
 }
 
 SEXP getDTthreads_R(SEXP verbose)
@@ -126,12 +126,12 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
     if (!isLogical(restore_after_fork) || LOGICAL(restore_after_fork)[0] == NA_LOGICAL) {
       error(_("restore_after_fork= must be TRUE, FALSE, or NULL (default). getDTthreads(verbose=TRUE) reports the current setting.\n"));
     }
-    RestoreAfterFork = LOGICAL(restore_after_fork)[0];  // # nocov
+    RestoreAfterFork = LOGICAL_RO(restore_after_fork)[0];  // # nocov
   }
   if (length(throttle)) {
-    if (!isInteger(throttle) || LENGTH(throttle) != 1 || INTEGER(throttle)[0] < 1)
+    if (!isInteger(throttle) || LENGTH(throttle) != 1 || INTEGER_RO(throttle)[0] < 1)
       error(_("'throttle' must be a single number, non-NA, and >=1"));
-    DTthrottle = INTEGER(throttle)[0];
+    DTthrottle = INTEGER_RO(throttle)[0];
   }
   int old = DTthreads;
   if (!length(threads) && !length(throttle)) {
@@ -143,11 +143,11 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
     // reflect that and a call to setDTthreads(threads=NULL) will update DTthreads.
   } else if (length(threads)) {
     int n = 0;
-    if (length(threads) != 1 || !isInteger(threads) || (n = INTEGER(threads)[0]) < 0) {  // <0 catches NA too since NA is negative (INT_MIN)
+    if (length(threads) != 1 || !isInteger(threads) || (n = INTEGER_RO(threads)[0]) < 0) {  // <0 catches NA too since NA is negative (INT_MIN)
       error(_("threads= must be either NULL or a single number >= 0. See ?setDTthreads."));
     }
     int num_procs = imax(omp_get_num_procs(), 1); // max just in case omp_get_num_procs() returns <= 0 (perhaps error, or unsupported)
-    if (!isLogical(percent) || length(percent) != 1 || LOGICAL(percent)[0] == NA_LOGICAL) {
+    if (!isLogical(percent) || length(percent) != 1 || LOGICAL_RO(percent)[0] == NA_LOGICAL) {
       internal_error(__func__, "percent= must be TRUE or FALSE at C level");  // # nocov
     }
     if (LOGICAL(percent)[0]) {
