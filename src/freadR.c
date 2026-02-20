@@ -252,7 +252,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
 {
   if (!length(items)) return;
   const SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP));
-  const int* const itemsD = INTEGER(itemsInt);
+  const int* const itemsD = INTEGER_RO(itemsInt);
   const int n = LENGTH(itemsInt);
   for (int j = 0; j < n; j++) {
     const int k = itemsD[j];
@@ -282,8 +282,8 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N] != 1) internal_error(__func__, "typeSize[CT_BOOL8_N] != 1"); // # nocov
   if (typeSize[CT_STRING] != 8) internal_error(__func__, "typeSize[CT_STRING] != 8"); // # nocov
-  colNamesSxp = R_NilValue;
-  SET_VECTOR_ELT(RCHK, 1, colNamesSxp = allocVector(STRSXP, ncol));
+  colNamesSxp = R_allocResizableVector(STRSXP, ncol);
+  SET_VECTOR_ELT(RCHK, 1, colNamesSxp);
   for (int i = 0; i < ncol; i++) {
     if (colNames == NULL || colNames[i].len <= 0) {
       char buff[12];
@@ -311,12 +311,12 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (length(selectSxp)) {
     const int n = length(selectSxp);
     if (isString(selectSxp)) {
-      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
+      selectInts = INTEGER_RO(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
       for (int i = 0; i < n; i++) if (selectInts[i] == NA_INTEGER)
         DTWARN(_("Column name '%s' not found in column name header (case sensitive), skipping."), CHAR(STRING_ELT(selectSxp, i)));
     } else {
       if (!isInteger(selectSxp)) { selectSxp = PROTECT(coerceVector(selectSxp, INTSXP)); nprotect++; }  // coerce numeric to int
-      selectInts = INTEGER(selectSxp);
+      selectInts = INTEGER_RO(selectSxp);
     }
     SET_VECTOR_ELT(RCHK, 3, selectRank = allocVector(INTSXP, ncol));
     int *selectRankD = INTEGER(selectRank), rank = 1;
@@ -469,7 +469,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    SET_VECTOR_ELT(RCHK, 0, DT = allocVector(VECSXP, ncol - ndrop));
+    DT = R_allocResizableVector(VECSXP, ncol - ndrop);
+    SET_VECTOR_ELT(RCHK, 0, DT);
     if (ndrop == 0) {
       setAttrib(DT, R_NamesSymbol, colNamesSxp);  // colNames mkChar'd in userOverride step
       if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
@@ -496,7 +497,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     if (selectRank) {
       SEXP tt = PROTECT(allocVector(INTSXP, ncol - ndrop));
       int *ttD = INTEGER(tt), rank = 1;
-      const int *rankD = INTEGER(selectRank);
+      const int *rankD = INTEGER_RO(selectRank);
       for (int i = 0; i < ncol; i++) if (type[i] != CT_DROP) ttD[rankD[i] - 1] = rank++;
       SET_VECTOR_ELT(RCHK, 3, selectRank = tt);
       // selectRank now holds the order not the rank (so its name is now misleading). setFinalNRow passes it to setcolorder
@@ -529,8 +530,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     const bool typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
     const bool nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow) : growVector(col, allocNrow); // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
-      
+      SEXP thiscol = typeChanged ? R_allocResizableVector(typeSxp[type[i]], allocNrow) : growVector(col, allocNrow); // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
+
       SET_VECTOR_ELT(DT, resi, thiscol);
       if (type[i] == CT_INT64) {
         SEXP tt = PROTECT(ScalarString(char_integer64));
@@ -551,7 +552,6 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
-      SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += RTYPE_SIZEOF(thiscol) * allocNrow;
     }
     resi++;
@@ -568,9 +568,7 @@ void setFinalNrow(size_t nrow)
       return;
     const int ncol = LENGTH(DT);
     for (int i = 0; i < ncol; i++) {
-      SETLENGTH(VECTOR_ELT(DT, i), nrow);
-      SET_TRUELENGTH(VECTOR_ELT(DT, i), dtnrows);
-      SET_GROWABLE_BIT(VECTOR_ELT(DT, i));  // #3292
+      R_resizeVector(VECTOR_ELT(DT, i), nrow);
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
@@ -584,8 +582,9 @@ void dropFilledCols(int* dropArg, int ndelete)
     SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
     SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
   }
-  SETLENGTH(DT, ndt - ndelete);
-  SETLENGTH(colNamesSxp, ndt - ndelete);
+  R_resizeVector(DT, ndt - ndelete);
+  R_resizeVector(colNamesSxp, ndt - ndelete);
+  setAttrib(DT, R_NamesSymbol, colNamesSxp);  // reinstall after resize
 }
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)

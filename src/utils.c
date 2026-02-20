@@ -1,3 +1,12 @@
+#ifndef _WIN32
+#  if !defined(_POSIX_C_SOURCE) || _POSIX_C_SOURCE < 200809L
+#    undef _POSIX_C_SOURCE
+#    define _POSIX_C_SOURCE 200809L // required for POSIX (not standard C) features in is_direct_child e.g. 'siginfo_t'
+#  endif
+#  include <signal.h> // siginfo_t
+#  include <sys/wait.h> // waitid
+#endif
+
 #include "data.table.h"
 
 bool within_int32_repres(double x) {
@@ -18,7 +27,7 @@ bool fitsInInt32(SEXP x) {
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
+  const double *dx = REAL_RO(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
@@ -35,7 +44,7 @@ bool fitsInInt64(SEXP x) {
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
+  const double *dx = REAL_RO(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
          (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
@@ -59,7 +68,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return false;
   case LGLSXP:
   case INTSXP: {
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
       return false;
     }
@@ -72,14 +81,14 @@ bool allNA(SEXP x, bool errorForBadType) {
         return false;
       }
     } else {
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
         return false;
       }
     }
     return true;
   case CPLXSXP: {
-    const Rcomplex *xd = COMPLEX(x);
+    const Rcomplex *xd = COMPLEX_RO(x);
     for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
@@ -115,9 +124,9 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error(_("%s must be TRUE or FALSE"), "check_dups");
+    error(_("'%s' must be TRUE or FALSE"), "check_dups");
   if (!IS_TRUE_OR_FALSE(skip_absent))
-    error(_("%s must be TRUE or FALSE"), "skip_absent");
+    error(_("'%s' must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -152,7 +161,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-    int *icols = INTEGER(ricols);
+    const int *icols = INTEGER_RO(ricols);
     if (!bskip_absent) {
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
@@ -203,6 +212,37 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
+void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller) {
+  switch (TYPEOF(src)) {
+  case RAWSXP:
+    memcpy(RAW(dst),     RAW_RO(src),     n*sizeof(Rbyte));
+    break;
+  case LGLSXP:
+    memcpy(LOGICAL(dst), LOGICAL_RO(src), n*sizeof(int));
+    break;
+  case INTSXP:
+    memcpy(INTEGER(dst), INTEGER_RO(src), n*sizeof(int));
+    break;
+  case REALSXP:
+    memcpy(REAL(dst),    REAL_RO(src),    n*sizeof(double));
+    break;
+  case CPLXSXP:
+    memcpy(COMPLEX(dst), COMPLEX_RO(src), n*sizeof(Rcomplex));
+    break;
+  case STRSXP: {
+    const SEXP *xp = STRING_PTR_RO(src);
+    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(dst, i, xp[i]);
+  } break;
+  case VECSXP: {
+    const SEXP *xp = SEXPPTR_RO(src);
+    if (deep_copy) for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
+    else           for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, xp[i]);
+  } break;
+  default:                                                                                     // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(src)), caller); // # nocov
+  }
+}
+
 SEXP copyAsPlain(SEXP x) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
@@ -231,33 +271,7 @@ SEXP copyAsPlain(SEXP x) {
     UNPROTECT(1);
     return ans;
   }
-  switch (TYPEOF(x)) {
-  case RAWSXP:
-    memcpy(RAW(ans),     RAW_RO(x),     n*sizeof(Rbyte));
-    break;
-  case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL_RO(x), n*sizeof(int));
-    break;
-  case INTSXP:
-    memcpy(INTEGER(ans), INTEGER_RO(x), n*sizeof(int));             // covered by 10:1 after test 178
-    break;
-  case REALSXP:
-    memcpy(REAL(ans),    REAL_RO(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
-    break;
-  case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX_RO(x), n*sizeof(Rcomplex));
-    break;
-  case STRSXP: {
-    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
-    for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
-  } break;
-  case VECSXP: {
-    const SEXP *xp=SEXPPTR_RO(x);
-    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
-  } break;
-  default:                                                                                           // # nocov
-    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
-  }
+  copyVectorElements(ans, x, n, /*deep_copy=*/true, __func__);
   DUPLICATE_ATTRIB(ans, x);
   UNPROTECT(1);
   return ans;
@@ -267,36 +281,23 @@ void copySharedColumns(SEXP x) {
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
   bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
-  int *savetl = (int *)R_alloc(ncol, sizeof(*savetl));  // on R heap for convenience but could be a calloc
+  hashtab * marks = hash_create(ncol);
+  PROTECT(marks->prot);
   const SEXP *xp = SEXPPTR_RO(x);
-  // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
-  // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
-  for (int i=0; i<ncol; ++i) {
-    const SEXP thiscol = xp[i];
-    savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
-    SET_TRUELENGTH(thiscol, 0);
-  }
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (ALTREP(thiscol) || TRUELENGTH(thiscol)<0) {
+    if (ALTREP(thiscol) || hash_lookup(marks, thiscol, 0)<0) {
       shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
-      // do not copyAsPlain() here yet, as its alloc might fail. Must restore tl first to all columns before attempting any copies.
     } else {
-      shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even it is shared
+      shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even if is shared
                                       // 'shared' means a later column shares an earlier column
-      SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
+      hash_set(marks, thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
                                       // only that the 3rd column is shared with an earlier column, but which one too. Although
                                       // we don't use that information currently, we could do in future.
     }
   }
-  // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
-  for (int i=0; i<ncol; ++i) {
-    if (!shared[i]) SET_TRUELENGTH(xp[i], savetl[i]);
-    //  ^^^^^^^^^^ important because if there are shared columns, the dup will have savetl==0 but we want the first restore to stand
-  }
-  // now that truelength has been restored for all columns, we can finally call copyAsPlain()
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
@@ -309,6 +310,7 @@ void copySharedColumns(SEXP x) {
               nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
+  UNPROTECT(1);
 }
 
 // lock, unlock and islocked at C level :
@@ -545,7 +547,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!IS_TRUE_OR_FALSE(copyArg))
-    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
+    error(_("'%s' must be TRUE or FALSE."), "copy"); // # nocov
   bool copy = LOGICAL(copyArg)[0];
   R_xlen_t n = xlength(x);
   int nprotect = 0;
@@ -637,7 +639,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
     SEXP levels = PROTECT(getAttrib(x, R_LevelsSymbol));
     nprotect += 2;
     // swipe attributes from x
-    SET_ATTRIB(x, R_NilValue);
+    CLEAR_ATTRIB(x);
     setAttrib(x, R_NamesSymbol, names);
     setAttrib(x, R_ClassSymbol, klass);
     setAttrib(x, R_LevelsSymbol, levels);
@@ -659,3 +661,65 @@ void internal_error(const char *call_name, const char *format, ...) {
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
+
+#ifdef BACKPORT_RESIZABLE_API
+SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+  SEXP ret = allocVector(type, maxlen);
+  SET_TRUELENGTH(ret, maxlen);
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+SEXP R_duplicateAsResizable_(SEXP x) {
+  if (ALTREP(x)) internal_error(__func__, "Cannot duplicate an ALTREP object as resizable"); // # nocov
+  SEXP ret = duplicate(x);
+  SET_TRUELENGTH(ret, xlength(ret));
+  SET_GROWABLE_BIT(ret);
+  return ret;
+}
+
+void R_resizeVector_(SEXP x, R_xlen_t newlen) {
+  if (!R_isResizable(x))
+    internal_error(__func__, "attempt to resize a non-resizable vector"); // # nocov
+  if (newlen > XTRUELENGTH(x))
+    internal_error(__func__, "newlen=%g exceeds maxlen=%g", (double)newlen, (double)R_maxLength(x)); // # nocov
+  SETLENGTH(x, newlen);
+}
+#endif
+
+#ifdef BACKPORT_MAP_ATTRIB
+SEXP R_mapAttrib_(SEXP x, SEXP (*fun)(SEXP key, SEXP val, void *ctx), void *ctx) {
+  PROTECT_INDEX i;
+  SEXP a = ATTRIB(x);
+  PROTECT_WITH_INDEX(a, &i);
+
+  SEXP ret = NULL;
+  for (; !isNull(a); REPROTECT(a = CDR(a), i)) {
+    ret = fun(PROTECT(TAG(a)), PROTECT(CAR(a)), ctx);
+    UNPROTECT(2);
+    if (ret) break;
+  }
+
+  UNPROTECT(1);
+  return ret;
+}
+#endif
+// # nocov start
+#ifdef _WIN32
+NORET
+#endif
+SEXP is_direct_child(SEXP pids) {
+#ifdef _WIN32
+  internal_error(__func__, "not implemented on Windows");
+#else
+  const int *ppids = INTEGER_RO(pids);
+  R_xlen_t len = xlength(pids);
+  SEXP ret = allocVector(LGLSXP, len);
+  int *pret = LOGICAL(ret);
+  siginfo_t info;
+  for (R_xlen_t i = 0; i < len; ++i)
+    pret[i] = waitid(P_PID, ppids[i], &info, WCONTINUED | WEXITED | WNOHANG | WNOWAIT | WSTOPPED) == 0;
+  return ret;
+#endif
+}
+// # nocov end

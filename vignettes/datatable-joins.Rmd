@@ -1,30 +1,24 @@
 ---
 title: "Joins in data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Joins in data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 editor_options: 
   chunk_output_type: console
 ---
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+library(data.table)
+litedown::reactor(comment = "# ")
 ```
 
 ```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
 
@@ -148,7 +142,7 @@ As many things have changed, let's explain the new characteristics in the follow
 - **Column level**
   - The *first group* of columns in the new `data.table` comes from the `x` table.
   - The *second group* of columns in the new `data.table` comes from the `i` table.
-  - If the join operation presents a present any **name conflict** (both table have same column name) the ***prefix*** `i.` is added to column names from the **right-hand table** (table on `i` position).
+  - If the join operation presents any **name conflict** (both tables have same column name) the ***prefix*** `i.` is added to column names from the **right-hand table** (table on `i` position).
   
 - **Row level**
   - The missing `product_id` present on the `ProductReceived` table in row 1 was successfully matched with missing `id` of the `Products` table, so `NA` ***values are treated as any other value***.
@@ -164,14 +158,14 @@ To use this capacity, we have 2 equivalent alternatives:
 
 - Wrapping the related columns in the base R `list` function.
 
-```{r, eval=FALSE}
+```r
 Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
 - Wrapping the related columns in the `list` alias `.`.
 
-```{r, eval=FALSE}
+```r
 Products[ProductReceived,
          on = .(id = product_id)]
 ```

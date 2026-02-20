@@ -94,7 +94,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     error(_("n must be non 0 length"));
 
   if (!IS_TRUE_OR_FALSE(adaptive))
-    error(_("%s must be TRUE or FALSE"), "adaptive");
+    error(_("'%s' must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 
   SEXP k = PROTECT(coerceK(kobj, badaptive)); protecti++;
@@ -109,7 +109,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   }
 
   if (!IS_TRUE_OR_FALSE(narm))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("'%s' must be TRUE or FALSE"), "na.rm");
 
   if (!isLogical(hasnf) || length(hasnf)!=1)
     error(_("has.nf must be TRUE, FALSE or NA"));
@@ -193,12 +193,14 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   else
     internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "algo", "rolling"); // # nocov
 
-  bool par = nx*nk>1 && ialgo==0;
+  bool par = nx*nk>1 && ialgo==0 && !badaptive; // for algo=exact and !badaptive we parallelize inside
   if (verbose) {
     if (par) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) in parallel\n"), __func__, nx, nk);
     } else if (ialgo==1) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because algo='exact' is already parallelised within each rolling computation\n"), __func__, nx, nk);
+    } else if (badaptive) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because adaptive=TRUE is already parallelised within each rolling computation\n"), __func__, nx, nk);
     } else if (nx*nk==1) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially as there is only single rolling computation\n"), __func__, nx, nk);
     }

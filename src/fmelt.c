@@ -19,7 +19,7 @@ SEXP set_diff(SEXP x, int n) {
   if (n <= 0) error(_("'n' must be a positive integer"));
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
-  const int *ixmatch = INTEGER(xmatch);
+  const int *ixmatch = INTEGER_RO(xmatch);
   int *buf = (int *) R_alloc(n, sizeof(*buf));
   int j=0;
   for (int i=0; i<n; ++i) {
@@ -39,7 +39,7 @@ SEXP which(SEXP x, Rboolean val) {
   int j=0, n = length(x);
   SEXP ans;
   if (!isLogical(x)) error(_("Argument to 'which' must be logical"));
-  const int *ix = LOGICAL(x);
+  const int *ix = LOGICAL_RO(x);
   int *buf = (int *) R_alloc(n, sizeof(*buf));
   for (int i=0; i<n; ++i) {
     if (ix[i] == val) {
@@ -70,7 +70,7 @@ static const char *concat(SEXP vec, SEXP idx) {
   int nidx=length(idx), nvec=length(vec);
   ans[0]='\0';
   if (nidx==0) return ans;
-  const int *iidx = INTEGER(idx);
+  const int *iidx = INTEGER_RO(idx);
   for (int i=0; i<nidx; ++i) {
     if (iidx[i]<1 || iidx[i]>nvec)
       internal_error(__func__, "'idx' must take values between 1 and length(vec); 1 <= idx <= %d", nvec); // # nocov
@@ -150,7 +150,7 @@ static SEXP unlist_(SEXP xint) {
   int *ians = INTEGER(ans), k=0;
   for (int i=0; i<n; ++i) {
     SEXP tmp = VECTOR_ELT(xint, i);
-    const int *itmp = INTEGER(tmp), n2=length(tmp);
+    const int *itmp = INTEGER_RO(tmp), n2=length(tmp);
     for (int j=0; j<n2; ++j)
       ians[k++] = itmp[j];
   }
@@ -385,9 +385,8 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
 }
 
 static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType, Rboolean * isRowOrdered)
-// Finds unique levels directly in one pass with no need to create hash tables. Creates integer factor
-// too in the same single pass. Previous version called factor(x, levels=unique) where x was type character
-// and needed hash table.
+// Finds unique levels directly in one pass. Creates integer factor too in the same single pass. Previous
+// version called factor(x, levels=unique) where x was type character.
 // TODO keep the original factor columns as factor and use new technique in rbindlist.c. The calling
 // environments are a little difference hence postponed for now (e.g. rbindlist calls writeNA which
 // a general purpose combiner would need to know how many to write)
@@ -406,8 +405,11 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(*levelsRaw));  // allocate for worst-case all-unique levels
   int *ansd = INTEGER(ans);
   const SEXP *targetd = STRING_PTR_RO(target);
-  savetl_init();
-  // no alloc or any fail point until savetl_end()
+  R_xlen_t hl = 0;
+  for (R_xlen_t i = 0; i < nitem; ++i)
+    hl += xlength(VECTOR_ELT(factorLevels, i));
+  hashtab * marks = hash_create(hl);
+  PROTECT(marks->prot);
   int nlevel=0;
   for (int i=0; i<nitem; ++i) {
     const SEXP this = VECTOR_ELT(factorLevels, i);
@@ -416,10 +418,9 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     for (int k=0; k<thisn; ++k) {
       SEXP s = thisd[k];
       if (s==NA_STRING) continue;  // NA shouldn't be in levels but remove it just in case
-      int tl = TRUELENGTH(s);
+      int tl = hash_lookup(marks, s, 0);
       if (tl<0) continue;  // seen this level before
-      if (tl>0) savetl(s);
-      SET_TRUELENGTH(s,-(++nlevel));
+      hash_set(marks,s,-(++nlevel));
       levelsRaw[nlevel-1] = s;
     }
   }
@@ -427,13 +428,11 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     if (targetd[i]==NA_STRING) {
       *ansd++ = NA_INTEGER;
     } else {
-      int tl = TRUELENGTH(targetd[i]);
+      int tl = hash_lookup(marks,targetd[i],0);
       *ansd++ = tl<0 ? -tl : NA_INTEGER;
     }
   }
-  for (int i=0; i<nlevel; ++i) SET_TRUELENGTH(levelsRaw[i], 0);
-  savetl_end();
-  // now after savetl_end, we can alloc (which might fail)
+  // there used to be savetl_end, after which we can alloc (which might fail)
   SEXP levelsSxp;
   setAttrib(ans, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nlevel));
   for (int i=0; i<nlevel; ++i) SET_STRING_ELT(levelsSxp, i, levelsRaw[i]);
@@ -445,7 +444,7 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   } else {
     setAttrib(ans, R_ClassSymbol, ScalarString(char_factor));
   }
-  UNPROTECT(1);
+  UNPROTECT(2);
   return ans;
 }
 
@@ -523,7 +522,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         int thislen = 0;
         if (data->narm) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          ithisidx = INTEGER(thisidx);
+          ithisidx = INTEGER_RO(thisidx);
           thislen = length(thisidx);
         }
         size_t size = RTYPE_SIZEOF(thiscol);
@@ -601,7 +600,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
       if (!data->measure_is_list) {//one value column to output.
-        const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+        const int *thisvaluecols = INTEGER_RO(VECTOR_ELT(data->valuecols, 0));
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
@@ -623,7 +622,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
         int len = length(thisvaluecols);
         levels = PROTECT(allocVector(STRSXP, len)); protecti++;
-        const int *vd = INTEGER(thisvaluecols);
+        const int *vd = INTEGER_RO(thisvaluecols);
         for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
         SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
         int numRemove = 0;  // remove dups and any for which narm and all-NA
@@ -707,7 +706,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             dtarget[counter + k] = dthiscol[ithisidx[k]-1];
@@ -726,7 +725,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             itarget[counter + k] = ithiscol[ithisidx[k]-1];
@@ -741,7 +740,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
@@ -761,7 +760,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
@@ -788,12 +787,12 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   Rboolean narm=FALSE, verbose=FALSE;
 
   if (!isNewList(DT)) error(_("Input is not of type VECSXP, expected a data.table, data.frame or list"));
-  if (!isLogical(valfactor)) error(_("Argument 'value.factor' should be logical TRUE/FALSE"));
-  if (!isLogical(varfactor)) error(_("Argument 'variable.factor' should be logical TRUE/FALSE"));
-  if (!isLogical(narmArg)) error(_("Argument 'na.rm' should be logical TRUE/FALSE."));
-  if (!isString(varnames)) error(_("Argument 'variable.name' must be a character vector"));
-  if (!isString(valnames)) error(_("Argument 'value.name' must be a character vector"));
-  if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+  if (!IS_TRUE_OR_FALSE(valfactor)) error(_("'%s' must be TRUE or FALSE"), "value.factor");
+  if (!IS_TRUE_OR_FALSE(varfactor)) error(_("'%s' must be TRUE or FALSE"), "variable.factor");
+  if (!IS_TRUE_OR_FALSE(narmArg)) error(_("'%s' must be TRUE or FALSE"), "na.rm");
+  if (!isString(varnames)) error(_("'%s' must be a character vector"), "variable.name");
+  if (!isString(valnames)) error(_("'%s' must be a character vector"), "value.name");
+  if (!IS_TRUE_OR_FALSE(verboseArg)) error(_("'%s' must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {

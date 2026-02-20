@@ -10,9 +10,9 @@ variables:
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
   _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
   _R_CHECK_TESTS_NLINES_: "0"
-  TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
-             ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
+  TZ: "UTC"  ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
+  RUN_ALL_DATATABLE_TESTS: "yes"  ## run optional tests in CI
   R_REL_VERSION:  "4.5" # only raise when RTOOLS for REL is available
   R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.5.0/R-4.5.0-win.exe"
   R_DEV_VERSION:  "4.6"
@@ -48,9 +48,6 @@ mirror-packages:
   cache:
     paths:
       - bus/$CI_JOB_NAME/cran
-  variables:
-    # TODO(R-ancient>=3.5.0): remove this; let it save PACKAGES.rds in version-3 format
-    R_DEFAULT_SERIALIZE_VERSION: 2
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
@@ -182,7 +179,7 @@ test-lin-dev-gcc-strict-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (non-API calls, V8 package) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 1 NOTE"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (V8 package) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
 # R compiled with clang, flags removed: -flto=auto -fopenmp
@@ -205,12 +202,12 @@ test-lin-dev-clang-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (non-API calls, V8 package) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 1 NOTE"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (V8 package) but ", shQuote(l)) else q("no")'
 
 # stated dependency on R
 test-lin-ancient-cran:
   <<: *test-lin
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.4.0
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.5.0
   variables:
     _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
@@ -354,20 +351,32 @@ test-mac-old:
 # merging package tarballs and binaries into single R repository
 # rendering documentation
 # setting up CRAN-like structure
-# generating pkgdown website
+# generating litedown website
 integration:
   stage: integration
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-pkgdown
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-data.table
   tags:
     - saas-linux-medium-amd64
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-clang-san","test-lin-dev-gcc-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
-    - *install-deps ## markdown pkg not present in r-pkgdown image
-    - mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ ## copy favicons
-    - Rscript -e 'pkgdown::build_site(override=list(destination="./website"))'
+    - *install-deps ## markdown pkg not present in r-litedown image
+    ## Install data.table from build artifacts (needed by litedown site generation)
+    - R CMD INSTALL bus/build/data.table_*.tar.gz
+    ## Copy assets to site directory
+    - mkdir -p ./site/assets/favicon/
+    - cp .graphics/favicon/* ./site/assets/favicon/
+    ## Generate reference pages first (creates reference_index.rds needed by manual.Rmd)
+    - Rscript site/generate_reference.R
+    ## Build litedown site (now manual.Rmd can use reference_index.rds)
+    - cd site && Rscript -e 'litedown::fuse_site()' && cd ..
+    - mkdir -p website
+    - cp -r site/*.html website/
+    - cp -r site/reference website/ 2>/dev/null || true
+    - cp -r site/assets website/
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     ## list of available test-* jobs dynamically based on bus/test-* directories
@@ -439,8 +448,16 @@ integration:
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
-    ## pkgdown merge
-    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
+    ## Add backwards compatibility redirects
+    - mkdir -p website/news website/reference website/articles
+    - echo '<script>location.replace("../news.html")</script>' > website/news/index.html
+    - echo '<script>location.replace("../manual.html")</script>' > website/reference/index.html
+    ## Render translated vignettes into articles/<language>
+    - Rscript site/render_translations.R
+    ## Copy existing vignettes into articles/
+    - cp -r bus/integration/cran/library/data.table/doc/* website/articles/
+    ## litedown merge
+    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by litedown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from litedown artifacts"; message(msg); q("no")'
     - mv website/* bus/integration/cran/
     ## add plausible.io stats
     - find bus/integration/cran -type f -iname "*.html" | xargs sed -i 's!<head>!<head><script defer data-domain="rdatatable.gitlab.io/data.table" src="https://plausible.io/js/script.js"></script>!g'
@@ -450,7 +467,6 @@ integration:
 # R repository
 # test jobs summaries
 # html documentation of all packages in repo
-# pkgdown website
 pages:
   stage: deploy
   environment: production

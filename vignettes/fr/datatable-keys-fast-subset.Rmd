@@ -1,26 +1,21 @@
 ---
 title: "Extraire des sous-ensemble avec les clés et la recherche binaire rapide"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Extraire des sous-ensemble avec les clés et la recherche binaire rapide}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
+`{r} .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -35,7 +30,7 @@ Cette vignette s'adresse à ceux qui sont déjà familiers avec la syntaxe de *d
 
 Nous utiliserons les mêmes données `flights` que dans la [`vignette("datatable-intro", package="data.table")`](datatable-intro.html).
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(with = 100L)
 ```
 
@@ -91,7 +86,7 @@ autrement dit, les noms de lignes sont plus ou moins *un indice* des lignes d'un
 
 2. Et les noms de ligne doivent être *uniques*.
 
-    ```{r eval = FALSE}
+    ```r
     rownames(DF) = sample(LETTERS[1:5], 10, TRUE)
     
     # Warning: non-unique values when setting 'row.names': 'C', 'D'
@@ -175,13 +170,13 @@ flights[.("JFK")]
 
 * Pour une clé sur une seule colonne de type *caractère*, vous pouvez omettre la notation `.()` et utiliser les valeurs directement lors de l'extraction du sous-ensemble, comme si vous faisiez un sous-ensemble avec les noms de lignes dans un *data.frames*.
 
-    ```{r eval = FALSE}
+    ```r
     flights["JFK"] ## identique à flights[.("JFK")]
     ```
 
 * Nous pouvons extraire autant de valeurs que nécessaire 
 
-    ```{r eval = FALSE}
+    ```r
     flights[c("JFK", "LGA")] ## same as flights[.(c("JFK", "LGA"))]
     ```
     
@@ -270,7 +265,7 @@ flights[.("LGA", "TPA"), .(arr_delay)]
 
 * Nous aurions également pu renvoyer le résultat en utilisant `with = FALSE`.
 
-    ```{r eval = FALSE}
+    ```r
     flights[.("LGA", "TPA"), "arr_delay", with = FALSE]
     ```
 
@@ -389,14 +384,14 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
 
 Nous avons vu jusqu'à présent comment définir et utiliser des clés pour extraire des sous-ensembles. Mais quel est l'avantage ? Par exemple, au lieu de faire :
 
-```{r eval = FALSE}
+```r
 # clé par origin,dest columns
 flights[.("JFK", "MIA")]
 ```
 
 nous aurions pu faire :
 
-```{r eval = FALSE}
+```r
 flights[origin == "JFK" & dest == "MIA"]
 ```
 
@@ -404,7 +399,7 @@ Un avantage évident est d'avoir une syntaxe plus courte. Mais plus encore, *ext
 
 Au fil du temps, `data.table` bénéficie de nouvelles optimisations et actuellement, obtenir un sous-ensemble basé sur cette méthode applique automatiquement la *recherche binaire*. Afin d'utiliser la méthode lente par *balayage vectoriel*, la clé doit être supprimée.
 
-```{r eval = FALSE}
+```r
 setkey(flights, NULL)
 flights[origin == "JFK" & dest == "MIA"]
 ```

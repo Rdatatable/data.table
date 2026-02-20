@@ -56,8 +56,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) // We let through LENGTH(i) == 0 for tests 2126.*
     internal_error(__func__, "icols and xcols must be non-empty integer vectors");
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) internal_error(__func__, "length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
-  icols = INTEGER(icolsArg);
-  xcols = INTEGER(xcolsArg);
+  icols = INTEGER_RO(icolsArg);
+  xcols = INTEGER_RO(xcolsArg);
   xN = LENGTH(xdt) ? LENGTH(VECTOR_ELT(xdt,0)) : 0;
   iN = ilen = anslen = LENGTH(idt) ? LENGTH(VECTOR_ELT(idt,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
@@ -356,8 +356,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 
   switch (TYPEOF(xc)) {
   case LGLSXP : case INTSXP : {  // including factors
-    const int *icv = isDataCol ? INTEGER(ic) : NULL;
-    const int *xcv = INTEGER(xc);
+    const int *icv = isDataCol ? INTEGER_RO(ic) : NULL;
+    const int *xcv = INTEGER_RO(xc);
     const int ival = isDataCol ? icv[ir] : thisgrp;
     #define ISNAT(x) ((x)==NA_INTEGER)
     #define WRAP(x) (x)  // wrap not needed for int
@@ -388,8 +388,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #define WRAP(x) (x)
       DO(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival, int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, ival)
     } else {
-      const double *icv = REAL(ic);
-      const double *xcv = REAL(xc);
+      const double *icv = REAL_RO(ic);
+      const double *xcv = REAL_RO(xc);
       const double ival = icv[ir];
       const uint64_t ivalt = dtwiddle(ival); // TO: remove dtwiddle by dealing with NA, NaN, -Inf, +Inf up front
       #undef ISNAT
@@ -414,7 +414,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         if (mult==ALL)
           allLen1[0] = FALSE;                           // bmerge()$allLen1
         else if (mult==ERR)
-          error("mult='error' and multiple matches during merge");
+          error(_("mult='error' and multiple matches during merge"));
       }
       if (nqmaxgrp == 1) {
         const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // bmerge()$starts thus extra +1 for 1-based indexing at R level
