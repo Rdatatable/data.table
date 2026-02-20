@@ -1,0 +1,53 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: uniqlist 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: uniqlist.c:98 uniqlist.c:130 uniqlist.c:211 uniqlist.c:248 uniqlist.c:321
+#, c-format
+msgid "Type '%s' is not supported"
+msgstr "प्रकार '%s' समर्थित नहीं है"
+
+#: uniqlist.c:151
+msgid "Input argument 'x' to 'uniqlengths' must be an integer vector"
+msgstr "इनपुट (Input) तर्क 'x' को 'uniqlengths' में एक पूर्णांक वेक्टर (vector) होना चाहिए"
+
+#: uniqlist.c:152
+msgid ""
+"Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"
+msgstr ""
+"इनपुट (Input) तर्क 'n' को 'uniqlengths' में लेंथ (length) 1 का पूर्णांक वेक्टर (vector) होना चाहिए"
+
+#: uniqlist.c:170 uniqlist.c:267
+msgid "cols must be an integer vector with length >= 1"
+msgstr "cols को एक पूर्णांक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) >= 1 हो"
+
+#: uniqlist.c:174
+#, c-format
+msgid "Item %d of cols is %d which is outside the range [1,length(l)=%d]"
+msgstr "cols का आइटम (item) %d है जो कि सीमा [1, length(l)=%d] के बाहर है"
+
+#: uniqlist.c:177
+#, c-format
+msgid ""
+"All elements to input list must be of same length. Element [%d] has length "
+"%<PRIu64> != length of first element = %<PRIu64>."
+msgstr ""
+"इनपुट (Input) लिस्ट (list) के सभी तत्वों की लेंथ (length) समान होनी चाहिए।"
+"तत्व [%d] की लेंथ (length) "%<PRIu64> पहली तत्व की लेंथ (length) = %<PRIu64> से अलग है।"
+
+#: uniqlist.c:352
+msgid "x is not a logical vector"
+msgstr "x एक लॉजिकल (logical) वेक्टर (vector) नहीं है"
+
+#: uniqlist.c:354
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr "%s को TRUE या FALSE होना चाहिए"

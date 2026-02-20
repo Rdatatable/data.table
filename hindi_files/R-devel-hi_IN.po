@@ -1,0 +1,44 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: devel 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: devel.R:16
+msgid "There is no package %s in provided repository."
+msgstr "प्रदान किए गए रिपॉजिटरी (repository) में पैकेज (package) %s उपलब्ध नहीं है"
+
+#: devel.R:30
+msgid ""
+"No revision information found in DESCRIPTION file for %s package. Make sure "
+"that '%s' is correct field in PACKAGES file in your package repository '%s'. "
+"Otherwise package will be re-installed every time, proceeding to installation."
+msgstr ""
+"%s पैकेज (package) के लिए DESCRIPTION फ़ाइल (file) में कोई संशोधन जानकारी नहीं मिली।"
+"सुनिश्चित करें कि '%s' आपके पैकेज (package) रिपॉजिटरी (repository) '%s' में PACKAGES फ़ाइल (file) में सही फ़ील्ड (field) है।"
+"अन्यथा पैकेज (package) हर बार फिर से इंस्टॉल (install) किया जाएगा, इंस्टॉलेशन (installation) की प्रक्रिया जारी रहेगी।"
+
+#: devel.R:39
+msgid "R %s package has been updated to %s (%s)"
+msgstr "R %s पैकेज (package) को %s (%s) में अद्यतन किया गया है"
+
+#: devel.R:41
+msgid "R %s package is up-to-date at %s (%s)"
+msgstr "R %s पैकेज (package) %s (%s) पर अद्यतन है"
+
+#: devel.R:53
+msgid ""
+"Git revision is not available. Most likely data.table was installed from CRAN "
+"or local archive.\n"
+"Git revision is available when installing from our repositories 'https://"
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"table'."
+msgstr ""
+"Git संशोधन उपलब्ध नहीं है। सबसे अधिक संभावना है कि data.table CRAN से या स्थानीय संग्रह से इंस्टॉल (install) किया गया था।\n"
+"Git संशोधन उपलब्ध है जब हमारे रिपॉजिटरीज़ (repositories) 'https://Rdatatable.gitlab.io/data.table' और 'https://Rdatatable.github.io/data.table' से इंस्टॉल (install) किया जाता है।"

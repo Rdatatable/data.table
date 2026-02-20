@@ -1,0 +1,156 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fwrite 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fwrite.c:622
+#, c-format
+msgid "buffMB=%d outside [1,1024]"
+msgstr "buffMB=%d [1,1024] के बाहर है"
+
+#: fwrite.c:629
+#, c-format
+msgid ""
+"eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
+msgstr ""
+"eol 1 या अधिक बाइट्स (bytes) का होना चाहिए (आमतौर पर \\n या \\r\\n) लेकिन इसकी लेंथ (length) %d है"
+
+#: fwrite.c:632
+msgid "Column writers: "
+msgstr "कॉलम (column) लेखकों: "
+
+#: fwrite.c:683
+#, c-format
+msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
+msgstr "maxLineLen=%<PRIu64>. %.3fs में मिला\n"
+
+#: fwrite.c:703
+#, c-format
+msgid ""
+"%s: '%s'. Failed to open existing file for writing. Do you have write "
+"permission to it? Is this Windows and does another process such as Excel have "
+"it open?"
+msgstr ""
+"%s: '%s'. लिखने के लिए मौजूदा फाइल (file) खोलने में विफल। क्या आपके पास इसके लिए लिखने की अनुमति है? क्या यह Windows है और क्या Excel जैसी किसी अन्य प्रक्रिया ने इसे खोल रखा है?"
+
+#: fwrite.c:704
+#, c-format
+msgid ""
+"%s: '%s'. Unable to create new file for writing (it does not exist already). "
+"Do you have permission to write here, is there space on the disk and does the "
+"path exist?"
+msgstr ""
+"%s: '%s'. लिखने के लिए नई फाइल (file) बनाने में असमर्थ (यह पहले से मौजूद नहीं है)। क्या आपके पास यहाँ लिखने की अनुमति है, क्या डिस्क (disk) पर स्पेस (space) है और क्या पथ मौजूद है?"
+
+#: fwrite.c:711
+msgid ""
+"Compression in fwrite uses zlib library. Its header files were not found at "
+"the time data.table was compiled. To enable fwrite compression, please "
+"reinstall data.table and study the output for further guidance."
+msgstr ""
+"fwrite में कंप्रेशन (compression) zlib लाइब्रेरी (library) का उपयोग करता है। इसके हेडर (header) फाइल्स (files) उस समय नहीं मिली थीं जब data.table को संकलित किया गया था। fwrite कंप्रेशन (compression) को सक्षम करने के लिए, कृपया data.table को रीइंस्टॉल (reinstall) करें और आगे के मार्गदर्शन के लिए आउटपुट (output) का अध्ययन करें।"
+
+#: fwrite.c:716
+#, c-format
+msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+msgstr "bom (%s), yaml (%d कैरेक्टर्स (characters)) और कॉलम (column) नाम (%s) लिखे जा रहे हैं ... "
+
+#: fwrite.c:718
+msgid "\n"
+msgstr "\n"
+
+#: fwrite.c:730
+#, c-format
+msgid "Unable to allocate %zu MiB for header: %s"
+msgstr "हेडर (header) के लिए %zu MiB आवंटित करने में असमर्थ: %s"
+
+#: fwrite.c:764 fwrite.c:828
+msgid "Can't allocate gzip stream structure"
+msgstr "gzip प्रवाह संरचना आवंटित नहीं की जा सकती"
+
+#: fwrite.c:772
+#, c-format
+msgid "Unable to allocate %zu MiB for zbuffer: %s"
+msgstr "zbuffer के लिए %zu MiB आवंटित करने में असमर्थ: %s"
+
+#: fwrite.c:788
+#, c-format
+msgid "Compress gzip error: %d"
+msgstr "कंप्रेस (compress) gzip एरर (error): %d"
+
+#: fwrite.c:789 fwrite.c:797
+#, c-format
+msgid "%s: '%s'"
+msgstr "%s: '%s'"
+
+#: fwrite.c:794
+#, c-format
+msgid "done in %.3fs\n"
+msgstr "%.3fs में पूर्ण हुआ\n"
+
+#: fwrite.c:796
+msgid "No data rows present (nrow==0)\n"
+msgstr "कोई डेटा (data) रोज़ (rows) मौजूद नहीं हैं (nrow==0)\n"
+
+#: fwrite.c:814
+#, c-format
+msgid ""
+"Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
+"showProgress=%d, nth=%d)\n"
+msgstr ""
+"%<PRId64> रोज़ (rows) को %d रोज़ (rows) के %d बैचों में लिखा जा रहा है (प्रत्येक बफर (buffer) साइज %dMB, showProgress=%d, nth=%d)\n"
+
+#: fwrite.c:830
+#, c-format
+msgid "zbuffSize=%d returned from deflateBound\n"
+msgstr "deflateBound से zbuffSize=%d प्राप्त हुआ\n"
+
+#: fwrite.c:839
+#, c-format
+msgid ""
+"Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite "
+"for nThread, buffMB and verbose options."
+msgstr ""
+"%zu MB * %d थ्रेड (thread) बफर्स (buffers) आवंटित करने में असमर्थ; '%d: %s'। कृपया nThread, buffMB और verbose विकल्पों के लिए ?fwrite पढ़ें।"
+
+#: fwrite.c:850
+#, c-format
+msgid ""
+"Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please "
+"read ?fwrite for nThread, buffMB and verbose options."
+msgstr ""
+"%zu MB * %d थ्रेड (thread) कंप्रेस्ड (compressed) बफर्स (buffers) आवंटित करने में असमर्थ; '%d: %s'। कृपया nThread, buffMB और verbose विकल्पों के लिए ?fwrite पढ़ें।"
+
+#: fwrite.c:864
+#, c-format
+msgid "Failed to allocated %d bytes for '%s'."
+msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
+
+#: fwrite.c:1030
+#, c-format
+msgid ""
+"zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
+"Z_FINISH=%d Z_BLOCK=%d. %s"
+msgstr ""
+"zlib %s (zlib.h %s) deflate() से एरर (error) %d प्राप्त हुआ, z_stream->msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d के साथ। %s"
+
+#: fwrite.c:1032
+msgid ""
+"Please include the full output above and below this message in your data."
+"table bug report."
+msgstr ""
+"कृपया अपनी data.table बग (bug) रिपोर्ट (report) में इस संदेश के ऊपर और नीचे का पूर्ण आउटपुट (output) शामिल करें।"
+
+#: fwrite.c:1033
+msgid ""
+"Please retry fwrite() with verbose=TRUE and include the full output with your "
+"data.table bug report."
+msgstr ""
+"कृपया verbose=TRUE के साथ fwrite() का पुन: प्रयास करें और अपनी data.table बग (bug) रिपोर्ट (report) में पूर्ण आउटपुट (output) शामिल करें।"

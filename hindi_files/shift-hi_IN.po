@@ -1,0 +1,40 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: shift 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: shift.c:12
+msgid ""
+"shift input must not be matrix or array, consider wrapping it into data."
+"table() or c()"
+msgstr ""
+"shift इनपुट (input) मैट्रिक्स (matrix) या ऐरे (array) नहीं होना चाहिए, इसे डेटा (data) में रैप (wrap) करने का विचार करें।"
+"table() या c()"
+
+#: shift.c:17
+#, c-format
+msgid ""
+"type '%s' passed to shift(). Must be a vector, list, data.frame or data.table"
+msgstr ""
+"प्रकार '%s' पास किया गया shift() में। यह एक वेक्टर (vector), लिस्ट (list), data.frame, या data.table होना चाहिए"
+
+#: shift.c:21
+msgid "fill must be a vector of length 1"
+msgstr "fill एक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) 1 हो"
+
+#: shift.c:34
+#, c-format
+msgid "Item %d of n is NA"
+msgstr "n का आइटम (item) %d NA है"
+
+#: shift.c:171
+#, c-format
+msgid "Type '%s' is not supported"
+msgstr "प्रकार '%s' समर्थित नहीं है"
