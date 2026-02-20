@@ -1,0 +1,1099 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: data.table 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: data.table.R:55
+msgid "key argument of data.table() must be character"
+msgstr "data.table() का key आर्ग्युमेंट (argument) कैरेक्टर (character) होना चाहिए"
+
+#: data.table.R:121
+msgid "Object '%s' not found. Perhaps you intended %s"
+msgstr "ऑब्जेक्ट (Object) '%s' नहीं मिला। शायद आप %s का उपयोग करना चाहते थे"
+
+#: data.table.R:123
+msgid "Object '%s' not found amongst %s"
+msgstr "ऑब्जेक्ट (Object) '%s' %s में नहीं मिला"
+
+#: data.table.R:139
+msgid ""
+"[ was called on a data.table in an environment that is not data.table-aware "
+"(i.e. cedta()), but '%s' was used, implying the owner of this call really "
+"intended for data.table methods to be called. See vignette('datatable-"
+"importing') for details on properly importing data.table."
+msgstr ""
+"data.table में [ का कॉल (call) ऐसे वातावरण में किया गया जो data.table से अवगत नहीं है (जैसे cedta()), लेकिन '%s' का उपयोग किया गया है, जो दर्शाता है कि इस कॉल (call) के मालिक ने वास्तव में data.table विधि को कॉल (call) करने का इरादा किया था। सही तरीके से data.table को आयात करने के लिए vignette('datatable-importing') देखें।"
+
+#: data.table.R:150
+msgid "verbose must be logical or integer"
+msgstr "verbose लॉजिकल (logical) या पूर्णांक (integer) होना चाहिए।"
+
+#: data.table.R:151
+msgid "verbose must be length 1 non-NA"
+msgstr "verbose की length 1 होनी चाहिए और यह non-NA होना चाहिए।"
+
+#: data.table.R:159
+msgid "Ignoring by/keyby because 'j' is not supplied"
+msgstr "j' प्रदान नहीं किया गया है, इसलिए by/keyby को अनदेखा किया जा रहा है।"
+
+#: data.table.R:173
+msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
+msgstr "जब by और keyby दोनों प्रदान किए जाते हैं, तो keyby TRUE या FALSE होना चाहिए।"
+
+#: data.table.R:176 data.table.R:241 data.table.R:330
+msgid "Argument '%s' after substitute: %s"
+msgstr "सब्स्टिटूट (substitute) के बाद आर्ग्युमेंट (argument) '%s': %s"
+
+#: data.table.R:185
+msgid ""
+"When on= is provided but not i=, on= must be a named list or data.table|"
+"frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
+"on= which is '%s'."
+msgstr ""
+"जब on= प्रदान किया जाता है लेकिन i= नहीं, तो on= को एक नामांकित लिस्ट (named list) या data.table|फ्रेम (frame) होना चाहिए और एक प्राकृतिक जॉइन (join) को प्रेरित किया जाता है (जैसे सामान्य नामों पर जॉइन)। on= को अनदेखा किया जा रहा है, जो '%s' है।"
+
+#: data.table.R:198
+msgid ""
+"i and j are both missing so ignoring the other arguments. This warning will "
+"be upgraded to error in future."
+msgstr ""
+"i और j दोनों अनुपस्थित हैं, इसलिए अन्य आर्ग्युमेंट्स (arguments) को अनदेखा किया जा रहा है। यह चेतावनी भविष्य में एरर (error) में बदल दी जाएगी।"
+
+#: data.table.R:202
+msgid "mult argument can only be 'first', 'last' or 'all'"
+msgstr "mult आर्ग्युमेंट (argument) केवल 'first', 'last' या 'all' हो सकता है।"
+
+#: data.table.R:204
+msgid ""
+"roll must be a single TRUE, FALSE, positive/negative integer/double including "
+"+Inf and -Inf or 'nearest'"
+msgstr ""
+"roll एकल TRUE, FALSE, सकारात्मक/नकारात्मक पूर्णांक (integer)/डबल (double) होना चाहिए, जिसमें +Inf और -Inf शामिल हों, या 'nearest'।"
+
+#: data.table.R:206
+msgid "roll is '%s' (type character). Only valid character value is 'nearest'."
+msgstr "roll '%s' (प्रकार कैरेक्टर (character)) है। केवल मान्य कैरेक्टर (character) मान 'nearest' है।"
+
+#: data.table.R:211
+msgid "rollends must be a logical vector"
+msgstr "rollends एक लॉजिकल (logical) वेक्टर (vector) होना चाहिए।"
+
+#: data.table.R:212
+msgid "rollends must be length 1 or 2"
+msgstr "rollends की लेंथ length 1 या 2 होनी चाहिए।"
+
+#: data.table.R:220
+msgid ""
+"nomatch= must be either NA or NULL (or 0 for backwards compatibility which is "
+"the same as NULL but please use NULL)"
+msgstr ""
+"nomatch= या तो NA या NULL (या पिछड़े संगतता के लिए 0, जो NULL के समान है, लेकिन कृपया NULL का उपयोग करें) होना चाहिए।"
+
+#: data.table.R:223
+msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
+msgstr ""
+"which= एक लॉजिकल (logical) वेक्टर (vector) length 1 होना चाहिए। या तो FALSE, TRUE या NA।"
+
+#: data.table.R:224
+msgid ""
+"which==%s (meaning return row numbers) but j is also supplied. Either you "
+"need row numbers or the result of j, but only one type of result can be "
+"returned."
+msgstr ""
+"which==%s (अर्थात पंक्ति (row) संख्या लौटाना) लेकिन j भी प्रदान किया गया है। या तो आपको पंक्ति (row) संख्या चाहिए या j का परिणाम, लेकिन केवल एक प्रकार का परिणाम लौटाया जा सकता है।"
+
+#: data.table.R:225
+msgid ""
+"which=NA with nomatch=0|NULL would always return an empty vector. Please "
+"change or remove either which or nomatch."
+msgstr ""
+"which=NA और nomatch=0|NULL के साथ हमेशा एक खाली वेक्टर (vector) लौटाया जाएगा। कृपया which या nomatch को बदलें या हटा दें।"
+
+#: data.table.R:226
+msgid "j must be provided when with=FALSE"
+msgstr "जब with=FALSE होता है तो j प्रदान किया जाना चाहिए।"
+
+#: data.table.R:227
+msgid "%s must be TRUE or FALSE"
+msgstr "%s TRUE या FALSE होना चाहिए।"
+
+#: data.table.R:269
+msgid ""
+"The symbol .. is invalid. The .. prefix must be followed by at least one "
+"character."
+msgstr "प्रतीक .. अमान्य है। .. उपसर्ग के बाद कम से कम एक कैरेक्टर (character) होना चाहिए।"
+
+#: data.table.R:273
+msgid ""
+"Variable '..%s' does exist in calling scope though, so please just removed "
+"the .. prefix from that variable name in calling scope."
+msgstr ""
+"वेरिएबल (variable) '..%s' कॉलिंग (call) दायरा में मौजूद है, इसलिए कृपया उस वेरिएबल (variable) नाम से .. उपसर्ग को हटा दें।"
+
+#: data.table.R:277
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope because "
+"you used the .. prefix.%s"
+msgstr ""
+"वेरिएबल (variable) '%s' कॉलिंग (call) दायरा में नहीं मिला। कॉलिंग (call) दायरा में खोज की जा रही है क्योंकि आपने .. उपसर्ग का उपयोग किया है। %s"
+
+#: data.table.R:279
+msgid ""
+"Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' "
+"variable in calling scope for clarity."
+msgstr ""
+"कॉलिंग (call) दायरा में '%1$s' और '..%1$s' दोनों मौजूद हैं। कृपया स्पष्टता के लिए कॉलिंग (call) दायरा में '..%1$s' वेरिएबल (variable) को हटा दें।"
+
+#: data.table.R:287
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope because "
+"you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
+msgstr ""
+"वेरिएबल (variable) '%s' कॉलिंग (call) दायरा में नहीं मिला। कॉलिंग (call) दायरा में खोज की जा रही है क्योंकि आपने with=FALSE सेट किया है। साथ ही, कृपया .. प्रतीक उपसर्ग का उपयोग करें और with=FALSE को हटा दें।"
+
+#: data.table.R:295
+msgid ""
+"You have wrapped := with {} which is ok but then := must be the only thing "
+"inside {}. You have something else inside {} as well. Consider placing the {} "
+"on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;"
+"tmpVar1*tmpVar2}]"
+msgstr ""
+"आपने := को {} के साथ लपेटा है, जो ठीक है, लेकिन फिर := को {} के अंदर केवल एकमात्र चीज़ होना चाहिए। आपके पास {} के अंदर कुछ और भी है। इसके बजाय := के RHS पर {} रखने पर विचार करें; जैसे: DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1tmpVar2}]"
+
+#: data.table.R:313
+msgid ""
+":= with keyby is only possible when i is not supplied since you can't setkey "
+"on a subset of rows. Either change keyby to by or remove i"
+msgstr ""
+":= के साथ keyby केवल तभी संभव है जब i प्रदान नहीं किया गया हो क्योंकि आप पंक्ति (row)यों के सबसेट (subset) पर setkey नहीं कर सकते। या तो keyby को by में बदलें या i को हटा दें।"
+
+#: data.table.R:315
+msgid "nomatch isn't relevant together with :=, ignoring nomatch"
+msgstr "nomatch := के साथ प्रासंगिक नहीं है, nomatch को नजरअंदाज किया जा रहा है।"
+
+#: data.table.R:371
+msgid ""
+"not-join '!' prefix is present on i but nomatch is provided. Please remove "
+"nomatch."
+msgstr ""
+"i पर not-join '!' उपसर्ग मौजूद है लेकिन nomatch दिया गया है। कृपया nomatch को हटा दें।"
+
+#: data.table.R:399
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting the "
+"first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please "
+"double-check the syntax. Run traceback(), and debugger() to get a line number."
+msgstr ""
+"ऑपरेटर (operator) := i में पाया गया, DT[...] के अंदर पहला आर्ग्युमेंट (argument), लेकिन यह केवल दूसरे आर्ग्युमेंट (argument), j में मान्य है। अक्सर, यह पहले कॉमा (comma) को भूलने पर होता है (जैसे DT[newvar := 5] के बजाय DT[, new_var := 5])। कृपया सिंटैक्स (syntax) की दोबारा जांच करें। लाइन नंबर प्राप्त करने के लिए traceback() और debugger() चलाएं।"
+
+#: data.table.R:409
+msgid "'%s' is not found in calling scope and it is not a column name either"
+msgstr "%s' कॉलिंग (call) दायरा में नहीं पाया गया है और यह कॉलम (column) का नाम भी नहीं है।"
+
+#: data.table.R:412
+msgid ""
+"'%s' is not found in calling scope, but it is a column of type %s. If you "
+"wish to select rows where that column contains TRUE, or perhaps that column "
+"contains row numbers of itself to select, try DT[(col)], DT[DT$col], or "
+"DT[col==TRUE] is particularly clear and is optimized"
+msgstr ""
+"%s' कॉलिंग (call) दायरा में नहीं पाया गया, लेकिन यह प्रकार %s का कॉलम (column) है। यदि आप पंक्ति (row)यों का चयन करना चाहते हैं जहां वह कॉलम (column) TRUE हो, या शायद वह कॉलम (column) अपनी पंक्ति (row) संख्या शामिल करता है, तो DT[(col)], DT[DT$col], या DT[col==TRUE] का उपयोग करें, यह विशेष रूप से स्पष्ट है और अनुकूलित है।"
+
+#: data.table.R:415
+msgid ""
+"%s. When the first argument inside DT[...] is a single symbol (e.g. DT[var]), "
+"data.table looks for var in calling scope."
+msgstr ""
+"%s। जब DT[...] के अंदर पहला आर्ग्युमेंट (argument) एकल प्रतीक होता है (जैसे DT[var]), data.table कॉलिंग (call) दायरा में var की तलाश करता है।"
+
+#: data.table.R:427
+msgid ""
+"i is invalid type (matrix). Perhaps in future a 2 column matrix could return "
+"a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report "
+"to data.table issue tracker if you'd like this, or add your comments to FR "
+"#657."
+msgstr ""
+"i अमान्य प्रकार (मैट्रिक्स (matrix)) है। शायद भविष्य में 2 कॉलम (column) मैट्रिक्स (matrix) DT के तत्वों की लिस्ट (list) लौटा सकती है (FAQ 2.14 में A[B] की भावना में)। यदि आप इसे चाहें, तो कृपया data.table इशू ट्रैकर (tracker) पर रिपोर्ट करें, या FR #657 पर अपनी टिप्पणियां जोड़ें।"
+
+#: data.table.R:450
+msgid ""
+"When i is a data.table (or character vector), the columns to join by must be "
+"specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, "
+"and, marked as sorted, see ?setkey), or by sharing column names between x and "
+"i (i.e., a natural join). Keyed joins might have further speed benefits on "
+"very large data due to x being sorted in RAM."
+msgstr ""
+"जब i एक data.table (या कैरेक्टर वेक्टर (character vector)) होता है, तो कॉलम (column) को 'on=' आर्ग्युमेंट (argument) का उपयोग करके निर्दिष्ट किया जाना चाहिए (देखें ?data.table), x को key बनाकर (यानी, सॉर्ट किया गया और, सॉर्ट किया गया चिह्नित, ?setkey देखें), या x और i के बीच कॉलम (column) नाम साझा करके (यानी, एक प्राकृतिक जॉइन)। बहुत बड़े डेटा पर key-आधारित जॉइन RAM में x के सॉर्ट किए जाने के कारण आगे की गति लाभ प्रदान कर सकते हैं।"
+
+#: data.table.R:458
+msgid "Attempting to do natural join but no common columns in provided tables"
+msgstr "प्राकृतिक जॉइन (join) करने का प्रयास किया जा रहा है, लेकिन दिए गए टेबल में कोई सामान्य कॉलम (column) नहीं है।"
+
+#: data.table.R:461
+msgid "Joining but 'x' has no key, natural join using all 'x' columns"
+msgstr "जॉइन (join) कर रहा है लेकिन 'x' में कोई key नहीं है, सभी 'x' कॉलम (column) का उपयोग करके प्राकृतिक जॉइन (join)।"
+
+#: data.table.R:463
+msgid "Joining but 'x' has no key, natural join using: %s"
+msgstr "जॉइन (join) कर रहा है लेकिन 'x' में कोई key नहीं है, प्राकृतिक जॉइन (join) का उपयोग कर रहा है: %s।"
+
+#: data.table.R:492
+msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
+msgstr "not-join 'by=.EACHI' के साथ कॉल (call) किया गया; !i को i=setdiff_(x,i) से बदल रहा है ..."
+
+#: data.table.R:495
+msgid "done in %s"
+msgstr "%s में पूरा हुआ।"
+
+#: data.table.R:522
+msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
+msgstr "!byjoin || nqbyjoin' के लिए irows का निर्माण कर रहा है ..."
+
+#: data.table.R:561
+msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
+msgstr "mult=='all' && !allGrp1' के लिए irows को पुनः व्यवस्थित कर रहा है ..."
+
+#: data.table.R:573
+msgid "Reordering %d rows after bmerge done in ..."
+msgstr "bmerge के बाद %d पंक्ति (row)यों का पुनः क्रमबद्ध कर रहा है ..."
+
+#: data.table.R:590
+msgid "logical error. i is not a data.table, but 'on' argument is provided."
+msgstr "लॉजिकल एरर (logical error)। i एक data.table नहीं है, लेकिन 'on' आर्ग्युमेंट (argument) दिया गया है।"
+
+#: data.table.R:594
+msgid "i has evaluated to type %s. Expecting logical, integer or double."
+msgstr "i का प्रकार %s के रूप में मूल्यांकन किया गया है। लॉजिकल, पूर्णांक (integer) या डबल (double) की अपेक्षा है।"
+
+#: data.table.R:616
+msgid ""
+"i evaluates to a logical vector length %d but there are %d rows. Recycling of "
+"logical i is no longer allowed as it hides more bugs than is worth the rare "
+"convenience. Explicitly use rep(...,length=.N) if you really need to recycle."
+msgstr ""
+"i को लॉजिकल (logical) वेक्टर (vector) लेंथ (length) %d के रूप में मूल्यांकित किया गया है, लेकिन %d पंक्ति (row)याँ हैं। लॉजिकल (logical) i का पुनः उपयोग अब अनुमति नहीं है क्योंकि यह दुर्लभ सुविधा से अधिक बग छुपाता है। यदि आपको पुनः उपयोग करना आवश्यक है, तो स्पष्ट रूप से rep(...,length=.N) का उपयोग करें।"
+
+#: data.table.R:619
+msgid ""
+"Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan "
+"2019)"
+msgstr "कृपया nomatch=0 के बजाय nomatch=NULL का उपयोग करें; v1.12.0 (जनवरी 2019) में समाचार आइटम (item) 5 देखें।"
+
+#: data.table.R:634
+msgid "Inverting irows for notjoin done in ..."
+msgstr "notjoin के लिए irows को उलटने का कार्य पूरा हुआ ..."
+
+#: data.table.R:691
+msgid ""
+"with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
+"Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] "
+"to assign to column name(s) held in variable myVar. See ?':=' for other "
+"examples. As warned in 2014, this is now a warning."
+msgstr ""
+"v1.9.4 (अक्टूबर 2014) में with=FALSE और := को साथ में प्रयोग करना अप्रचलित कर दिया गया था। कृपया := के LHS को कोष्ठकों में रखें; जैसे, DT[,(myVar):=sum(b),by=a] का उपयोग करके कॉलम (column) नाम को वैरिएबल (variable) myVar में असाइन (assign) करें। अन्य उदाहरणों के लिए ?':=' देखें। 2014 में चेतावनी दी गई थी, यह अब एक चेतावनी है।"
+
+#: data.table.R:694
+msgid ""
+"with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+msgstr "with=FALSE को अनदेखा कर दिया गया है, := का उपयोग करते समय इसकी आवश्यकता नहीं है। उदाहरणों के लिए ?':=' देखें।"
+
+#: data.table.R:741
+msgid "Item %d of j is %d which is outside the column number range [1,ncol=%d]"
+msgstr "j का आइटम (item) %d, %d है जो कॉलम (column) नंबर रेंज [1,ncol=%d] के बाहर है।"
+
+#: data.table.R:744
+msgid "j mixes positives and negatives"
+msgstr "j सकारात्मक और नकारात्मक को मिलाता है।"
+
+#: data.table.R:752
+msgid ""
+"When with=FALSE, j-argument should be of type logical/character/integer "
+"indicating the columns to select."
+msgstr ""
+"जब with=FALSE होता है, तो j-आर्ग्युमेंट (argument) लॉजिकल (logical)/कैरेक्टर "
+"(character)/पूर्णांक प्रकार का होना चाहिए जो चयनित कॉलम (column) को इंगित करता है।"
+
+#: data.table.R:766
+msgid ""
+"'by' contains .I but only the following are currently supported: by=.I, by=.(."
+"I), by=c(.I), by=list(.I)"
+msgstr ""
+"by' में .I शामिल है, लेकिन वर्तमान में केवल निम्नलिखित का समर्थन है: by=.I, "
+"by=.(.I), by=c(.I), by=list(.I)"
+
+#: data.table.R:790
+msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
+msgstr "by=c(...), key(...) या names(...) का मूल्यांकन 'कैरेक्टर (character)' में होना चाहिए।"
+
+#: data.table.R:800
+msgid ""
+"'by' is a character vector length %d but one or more items include a comma. "
+"Either pass a vector of column names (which can contain spaces, but no "
+"commas), or pass a vector length 1 containing comma separated column names. "
+"See ?data.table for other possibilities."
+msgstr ""
+"by' एक कैरेक्टर (character) वेक्टर (vector) लेंथ (length) %d है, लेकिन एक या अधिक आइटम (item) "
+"में कॉमा (comma) शामिल है। या तो कॉलम (column) नामों वाला वेक्टर (vector) पास करें (जिसमें स्पेस हो "
+"सकते हैं, लेकिन कॉमा (comma) नहीं), या कॉमा (comma) सेपरेटेड (separated) कॉलम (column) नामों वाली "
+"लेंथ (length) 1 का वेक्टर (vector) पास करें। अन्य संभावनाओं के लिए ?data.table देखें।"
+
+#: data.table.R:807
+msgid "At least one entry of by is empty"
+msgstr "by में कम से कम एक प्रविष्टि खाली है।"
+
+#: data.table.R:834
+msgid "by index '%s' but that index has 0 length. Ignoring."
+msgstr "by index '%s' है लेकिन उस index की लेंथ (length) 0 है। इसे अनदेखा कर रहा है।"
+
+#: data.table.R:857
+msgid "i clause present and columns used in by detected, only these subset: %s"
+msgstr ""
+"i क्लॉज (clause) मौजूद है और by में उपयोग किए गए कॉलम (column) का पता लगाया गया है, केवल "
+"यह सबसेट (subset): %s।"
+
+#: data.table.R:860
+msgid ""
+"i clause present but columns used in by not detected. Having to subset all "
+"columns before evaluating 'by': '%s'"
+msgstr ""
+"i क्लॉज (clause) मौजूद है लेकिन by में उपयोग किए गए कॉलम (column) का पता नहीं चला। 'by' का "
+"मूल्यांकन करने से पहले सभी कॉलम (column) को सबसेट (subset) बनाना होगा: '%s'।"
+
+#: data.table.R:882
+msgid ""
+"'by' appears to evaluate to column names but isn't c() or key(). Use "
+"by=list(...) if you can. Otherwise, by=eval%s should work. This is for "
+"efficiency so data.table can detect which columns are needed."
+msgstr ""
+"by' कॉलम (column) नामों का मूल्यांकन करता प्रतीत होता है, लेकिन यह c() या key() नहीं है। "
+"यदि संभव हो, तो by=list(...) का उपयोग करें। अन्यथा, by=eval%s कार्य करना चाहिए। यह दक्षता के लिए है ताकि "
+"data.table यह पहचान सके कि किन कॉलमों (column) की आवश्यकता है।"
+
+#: data.table.R:893
+msgid ""
+"'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
+"includes data.table and data.frame which are lists, too)"
+msgstr ""
+"by' या 'keyby' का मूल्यांकन एक वेक्टर (vector) या वेक्टरों (vector) की सूची के रूप में होना चाहिए "
+"(जहां 'लिस्ट' में data.table और data.frame भी शामिल हैं, जो लिस्ट (list) हैं)।"
+
+#: data.table.R:897
+msgid ""
+"Column or expression %d of 'by' or 'keyby' is type '%s' which is not "
+"currently supported. If you have a compelling use case, please add it to "
+"https://github.com/Rdatatable/data.table/issues/1597. As a workaround, "
+"consider converting the column to a supported type, e.g. by=sapply(list_col, "
+"toString), whilst taking care to maintain distinctness in the process."
+msgstr ""
+"by' या 'keyby' का कॉलम (column) या अभिव्यक्ति %d प्रकार '%s' है, जो वर्तमान में समर्थित नहीं है। "
+"यदि आपके पास एक महत्वपूर्ण उपयोग का मामला है, तो कृपया इसे "
+"https://github.com/Rdatatable/data.table/issues/1597 पर जोड़ें। एक कारगर युक्ति के रूप में, कॉलम (column) को "
+"समर्थित प्रकार में बदलने पर विचार करें, उदाहरण के लिए by=sapply(list_col, toString), इस प्रक्रिया में विशिष्टता बनाए रखने का ध्यान रखते हुए।"
+
+#: data.table.R:903
+msgid ""
+"%s Each must be length %d; the same length as there are rows in x (after "
+"subsetting if i is provided)."
+msgstr ""
+"%s प्रत्येक की लेंथ (length) %d होनी चाहिए; x में पंक्तियों (row) की समान लेंथ (length) (यदि i दिया गया है तो "
+"सबसेट (subset) बनाने के बाद)।"
+
+#: data.table.R:923
+msgid ""
+"by-expression '%s' is not named, and the auto-generated name '%s' clashed "
+"with variable(s) in j. Therefore assigning the entire by-expression as name."
+msgstr ""
+"by-अभिव्यक्ति '%s' का नाम नहीं है, और स्वचालित रूप से उत्पन्न नाम '%s' j में वैरिएबल (variable)(s) "
+"के साथ टकरा गया। इसलिए संपूर्ण by-अभिव्यक्ति को नाम के रूप में असाइन (assign) कर रहा है।"
+
+#: data.table.R:957
+msgid "Item %d of the .() or list() passed to j is missing"
+msgstr ".() या list() का आइटम (item) %d, जो j को पास किया गया है, गायब है।"
+
+#: data.table.R:963
+msgid ""
+"j may not evaluate to the same number of columns for each group; if you're "
+"sure this warning is in error, please put the branching logic outside of "
+"[ for efficiency"
+msgstr ""
+"j प्रत्येक समूह के लिए समान संख्या में कॉलम (column) का मूल्यांकन नहीं कर सकता; यदि आपको यकीन है "
+"कि यह चेतावनी त्रुटि में है, तो कृपया शाखा-तर्क को दक्षता के लिए [ के बाहर रखें।"
+
+#: data.table.R:965
+msgid ""
+"Different branches of j expression produced different auto-named columns: %s; "
+"using the most \"last\" names. If this was intentional (e.g., you know only "
+"one branch will ever be used in a given query because the branch is "
+"controlled by a function argument), please (1) pull this branch out of the "
+"call; (2) explicitly provide missing defaults for each branch in all cases; "
+"or (3) use the same name for each branch and re-name it in a follow-up call."
+msgstr ""
+"j अभिव्यक्ति की विभिन्न शाखाओं ने विभिन्न स्वचालित नामित कॉलम (column) बनाए: %s; सबसे \"अंतिम\" "
+"नामों का उपयोग कर रहा है। यदि यह जानबूझकर किया गया था (उदाहरण के लिए, आपको पता है कि किसी "
+"दिए गए क्वेरी (query) में केवल एक शाखा का ही उपयोग किया जाएगा क्योंकि शाखा को एक फ़ंक्शन "
+"(function) आर्ग्युमेंट (argument) द्वारा नियंत्रित किया जाता है), तो कृपया (1) इस शाखा को कॉल (call) से बाहर "
+"निकालें; (2) प्रत्येक मामले में प्रत्येक शाखा के लिए स्पष्ट रूप से गायब डिफ़ॉल्ट्स (default) प्रदान करें; या "
+"(3) प्रत्येक शाखा के लिए समान नाम का उपयोग करें और इसे एक अनुवर्ती कॉल (call) में पुनः नामित करें।"
+
+#: data.table.R:1035
+msgid ""
+"When .SDcols is a function, it is applied to each column; the output of this "
+"function must be a non-missing boolean scalar signalling inclusion/exclusion "
+"of the column. However, these conditions were not met for: %s"
+msgstr ""
+"जब .SDcols एक फ़ंक्शन (function) है, तो इसे प्रत्येक कॉलम (column) पर लागू किया जाता है; इस फ़ंक्शन "
+"(function) का आउटपुट (output) एक गैर-गायब बूलियन (boolean) स्केलर (scalar) होना चाहिए जो कॉलम (column) के "
+"सम्मिलन/बहिष्करण का संकेत देता हो। हालांकि, ये शर्तें इसके लिए पूरी नहीं हुईं: %s।"
+
+#: data.table.R:1041
+msgid ".SDcols missing at the following indices: %s"
+msgstr ".SDcols निम्नलिखित इंडेक्स (indices) पर गायब है: %s।"
+
+#: data.table.R:1043
+msgid ".SDcols is a logical vector of length %d but there are %d columns"
+msgstr ""
+".SDcols की लेंथ (length) %d का एक लॉजिकल (logical) वेक्टर (vector) है, लेकिन कॉलम (column) की संख्या %d "
+"है।"
+
+#: data.table.R:1049
+msgid ".SDcols is numeric but has both +ve and -ve indices"
+msgstr ".SDcols संख्यात्मक है लेकिन इसमें सकारात्मक और नकारात्मक दोनों इंडेक्स (indices) हैं।"
+
+#: data.table.R:1051
+msgid ".SDcols is numeric but out of bounds [1, %d] at: %s"
+msgstr ".SDcols संख्यात्मक है लेकिन [1, %d] की सीमा से बाहर है: %s।"
+
+#: data.table.R:1055
+msgid ".SDcols should be column numbers or names"
+msgstr ".SDcols कॉलम (column) संख्या या नाम होना चाहिए।"
+
+#: data.table.R:1057
+msgid "Some items of .SDcols are not column names: %s"
+msgstr ".SDcols के कुछ आइटम (item) कॉलम (column) नाम नहीं हैं: %s।"
+
+#: data.table.R:1070
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+"(m)get' j में पाया गया। ansvars को सभी कॉलम (column) पर सेट किया जा रहा है। इसके बजाय .SDcols या "
+"एकल j=eval(macro) का उपयोग करें। दोनों उपयोग किए गए कॉलम (column) का पता लगाएंगे जो दक्षता के लिए "
+"महत्वपूर्ण हैं।\nपुराने ansvars: %s।"
+
+#: data.table.R:1090
+msgid "New ansvars: %s"
+msgstr "नए ansvars: %s।"
+
+#: data.table.R:1099
+msgid ""
+"This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
+"data.table."
+msgstr ""
+"यह j .SD का उपयोग नहीं करता है, लेकिन .SDcols प्रदान किया गया है। .SDcols को अनदेखा कर रहा है। "
+"देखें ?data.table।"
+
+#: data.table.R:1102
+msgid "Detected that j uses these columns: %s"
+msgstr "पता चला कि j इन कॉलम (column) का उपयोग करता है: %s।"
+
+#: data.table.R:1115
+msgid ""
+".SD is locked. Using := in .SD's j is reserved for possible future use; a "
+"tortuously flexible way to modify by group. Use := in j directly to modify by "
+"group by reference."
+msgstr ""
+".SD लॉक है। .SD के j में := का उपयोग संभावित भविष्य के उपयोग के लिए आरक्षित है; समूह द्वारा संशोधित "
+"करने का एक जटिल लचीला तरीका। समूह द्वारा संदर्भ से संशोधित करने के लिए j में सीधे := का उपयोग करें।"
+
+#: data.table.R:1126
+msgid "In %s(col1=val1, col2=val2, ...) form, all arguments must be named."
+msgstr "%s(col1=val1, col2=val2, ...) रूप में, सभी आर्ग्युमेंट (argument) का नाम होना चाहिए।"
+
+#: data.table.R:1149
+msgid ""
+"In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the "
+"last argument has no name. Did you forget a trailing comma?"
+msgstr ""
+"%s(col1=val1, col2=val2, ...) रूप में, सभी आर्ग्युमेंट (argument) का नाम होना चाहिए, लेकिन अंतिम "
+"आर्ग्युमेंट (argument) का नाम नहीं है। क्या आपने अंतिम कॉमा (comma) जोड़ना भूल गए?"
+
+#: data.table.R:1151
+msgid ""
+"In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but these "
+"arguments lack names: %s."
+msgstr ""
+"%s(col1=val1, col2=val2, ...) रूप में, सभी आर्ग्युमेंट (argument) का नाम होना चाहिए, लेकिन इन "
+"आर्ग्युमेंट (argument) में नाम नहीं है: %s।"
+
+#: data.table.R:1158
+msgid ""
+"LHS of := must be a symbol, or an atomic vector (column names or positions)."
+msgstr ""
+":= का LHS एक प्रतीक, या एक एटॉमिक (atomic) वेक्टर (vector) (कॉलम (column) नाम या स्थिति) होना चाहिए।"
+
+#: data.table.R:1163
+msgid ""
+"LHS of := appears to be column positions but are outside [1,ncol] range. New "
+"columns can only be added by name."
+msgstr ""
+":= का LHS कॉलम (column) की स्थिति प्रतीत होता है लेकिन [1,ncol] सीमा से बाहर है। नए कॉलम (column) "
+"केवल नाम द्वारा जोड़े जा सकते हैं।"
+
+#: data.table.R:1166
+msgid ""
+"LHS of := isn't column names ('character') or positions ('integer' or "
+"'numeric')"
+msgstr ""
+":= का LHS कॉलम (column) नाम ('कैरेक्टर (character)') या स्थिति ('पूर्णांक' या 'संख्यात्मक') नहीं है।"
+
+#: data.table.R:1182
+msgid ""
+"No rows match i. No new columns to add so not evaluating RHS of :=\n"
+"Assigning to 0 row subset of %d rows"
+msgstr ""
+"कोई पंक्ति (row)यां i से मेल नहीं खाती हैं। कोई नया कॉलम (column) जोड़ने के लिए नहीं है, इसलिए := के RHS "
+"का मूल्यांकन नहीं किया जा रहा है\n%d पंक्तियों (row) के 0 पंक्ति (row) उपसमूह को असाइन (assign) किया जा "
+"रहा है।"
+
+#: data.table.R:1197
+msgid ""
+"Invalid .internal.selfref detected and fixed by taking a (shallow) copy of "
+"the data.table so that := can add this new column by reference. At an earlier "
+"point, this data.table has been copied by R (or was created manually using "
+"structure() or similar). Avoid names<- and attr<- which in R currently (and "
+"oddly) may copy the whole data.table. Use set* syntax instead to avoid "
+"copying: ?set, ?setnames and ?setattr. If this message doesn't help, please "
+"report your use case to the data.table issue tracker so the root cause can be "
+"fixed or this message improved."
+msgstr ""
+"अवैध .internal.selfref का पता चला और इसे data.table की एक (शैलो (shallow)) कॉपी (copy) लेने से ठीक किया गया ताकि "
+":= इस नए कॉलम (column) को संदर्भ द्वारा जोड़ सके। पहले के किसी बिंदु पर, इस data.table को R द्वारा कॉपी (copy) "
+"किया गया था (या structure() या इसी तरह के उपयोग से मैन्युअल (manually) रूप से बनाया गया था)। नाम<- और attr<- से "
+"बचें जो वर्तमान में R में (और अजीब तरीके से) पूरे data.table की कॉपी (copy) कर सकते हैं। कॉपी (copy) करने से बचने "
+"के लिए set* सिंटैक्स (syntax) का उपयोग करें: ?set, ?setnames और ?setattr। यदि यह संदेश मदद नहीं करता है, तो "
+"कृपया अपने उपयोग के मामले को data.table इशू ट्रैकर (tracker) में रिपोर्ट करें ताकि मूल कारण को ठीक किया जा सके या "
+"इस संदेश को बेहतर किया जा सके।"
+
+#: data.table.R:1205
+msgid ""
+"Growing vector of column pointers from truelength %d to %d. A shallow copy "
+"has been taken, see ?setalloccol. Only a potential issue if two variables "
+"point to the same data (we can't yet detect that well) and if not you can "
+"safely ignore this. To avoid this message you could setalloccol() first, deep "
+"copy first using copy(), wrap with suppressWarnings() or increase the "
+"'datatable.alloccol' option."
+msgstr ""
+"कॉलम (column) पॉइंटर्स (pointers) के ट्रूलेंथ %d से %d तक बढ़ने के कारण शैलो (shallow) कॉपी (copy) ली गई है, देखें "
+"?setalloccol। केवल संभावित मुद्दा अगर दो वेरिएबल्स एक ही डेटा की ओर इशारा करते हैं (हम अभी तक इसे अच्छी तरह से "
+"नहीं पकड़ सकते हैं) और यदि ऐसा नहीं है तो आप इसे सुरक्षित रूप से अनदेखा कर सकते हैं। इस संदेश से बचने के लिए आप "
+"पहले setalloccol() का उपयोग कर सकते हैं, पहले कॉपी (copy)() का उपयोग करके गहरी कॉपी (copy) करें, suppressWarnings() "
+"के साथ रैप करें या 'datatable.alloccol' विकल्प को बढ़ाएं।"
+
+#: data.table.R:1207
+msgid ""
+"Note that the shallow copy will assign to the environment from which := was "
+"called. That means for example that if := was called within a function, the "
+"original table may be unaffected."
+msgstr ""
+"ध्यान दें कि शैलो (shallow) कॉपी (copy) उस वातावरण को असाइन (assign) करेगी जिससे := को कॉल (call) किया गया था। "
+"इसका मतलब है कि यदि := को किसी फ़ंक्शन (function) के भीतर कॉल (call) किया गया था, तो मूल तालिका अप्रभावित रह सकती है।"
+
+#: data.table.R:1228
+msgid ""
+"Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] "
+"syntax is only valid when i is length 1, but its length is %d"
+msgstr ""
+"कम-आवंटित पुनरावर्ती अनुक्रमित लिस्ट (list) को असाइन (assign) नहीं किया जा सकता है -- L[[i]][,:=] सिंटैक्स "
+"(syntax) केवल तब मान्य होता है जब i की लेंथ (length) 1 हो, लेकिन इसकी लेंथ (length) %d है।"
+
+#: data.table.R:1297
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope because "
+"this symbol was prefixed with .. in the j= parameter."
+msgstr ""
+"कॉलिंग (call) दायरा में वैरिएबल (variable) '%s' नहीं मिला। j= पैरामीटर (parameter) में इस प्रतीक के साथ .. उपसर्ग "
+"होने के कारण कॉलिंग (call) दायरा में देख रहा हूं।"
+
+#: data.table.R:1383
+msgid ""
+"j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' "
+"is not found. If you intended to select columns using a variable in calling "
+"scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar to "
+"a file system path."
+msgstr ""
+"j ( [... ] के भीतर दूसरा तर्क) एक एकल प्रतीक है, लेकिन कॉलम (column) नाम '%1$s' नहीं मिला। यदि आपने "
+"कॉलिंग (call) दायरा में वैरिएबल (variable) का उपयोग करके कॉलम (column) चुनने का इरादा किया था, तो कृपया "
+"DT[, ..%1$s] का प्रयास करें। .. उपसर्ग एक फाइल (file) सिस्टम (system) पथ के समान एक स्तर ऊपर का संकेत देता है।"
+
+#: data.table.R:1471
+msgid ""
+"The column '.N' can't be grouped because it conflicts with the special .N "
+"variable. Try setnames(DT,'.N','N') first."
+msgstr ""
+"कॉलम (column) '.N' को समूहबद्ध नहीं किया जा सकता क्योंकि यह विशेष .N वैरिएबल (variable) के साथ टकराता है। "
+"पहले setnames(DT,'.N','N') आज़माएं।"
+
+#: data.table.R:1472
+msgid ""
+"The column '.I' can't be grouped because it conflicts with the special .I "
+"variable. Try setnames(DT,'.I','I') first."
+msgstr ""
+"कॉलम (column) '.I' को समूहबद्ध नहीं किया जा सकता क्योंकि यह विशेष .I वैरिएबल (variable) के साथ टकराता है। "
+"पहले setnames(DT,'.I','I') आज़माएं।"
+
+#: data.table.R:1491
+msgid ""
+"Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
+"explicitly to choose custom units"
+msgstr ""
+"नोट: समूह द्वारा अंतर्निहित difftime पर units=\"secs\" को लागू करना; कस्टम (custom) यूनिट्स (unit) चुनने के लिए "
+"difftime को स्पष्ट रूप से कॉल (call) करें।"
+
+#: data.table.R:1500
+msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
+msgstr ""
+"तार्किक त्रुटि। i data.table नहीं है, लेकिन mult='all' और 'by'=.EACHI।"
+
+#: data.table.R:1527
+msgid "Finding groups using forderv ..."
+msgstr ""
+"forderv का उपयोग करके समूह खोज रहा है ...।"
+
+#: data.table.R:1541 data.table.R:1573
+msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
+msgstr ""
+"स्थितियों से समूह आकार ढूंढना (RAM बचाने के लिए इसे टाला जा सकता है) ...।"
+
+#: data.table.R:1549
+msgid "Getting back original order ..."
+msgstr ""
+"मूल क्रम में वापस आना ...।"
+
+#: data.table.R:1561
+msgid "Finding groups using uniqlist on key ..."
+msgstr ""
+"key पर uniqlist का उपयोग करके समूहों की खोज करना ...।"
+
+#: data.table.R:1565
+msgid "Finding groups using uniqlist on index '%s' ..."
+msgstr ""
+"इंडेक्स (indices) '%s' पर uniqlist का उपयोग करके समूहों की खोज करना ...।"
+
+#: data.table.R:1784
+msgid "lapply optimization changed j from '%s' to '%s'"
+msgstr ""
+"lapply अनुकूलन ने j को '%s' से '%s' में बदल दिया।"
+
+#: data.table.R:1786
+msgid "lapply optimization is on, j unchanged as '%s'"
+msgstr ""
+"lapply अनुकूलन चालू है, j '%s' के रूप में अपरिवर्तित है।"
+
+#: data.table.R:1795 data.table.R:1819
+msgid "GForce optimized j to '%s' (see ?GForce)"
+msgstr ""
+"GForce ने j को '%s' में अनुकूलित किया (देखें ?GForce)।"
+
+#: data.table.R:1820
+msgid ""
+"GForce is on, but not activated for this query; left j unchanged (see ?GForce)"
+msgstr ""
+"GForce चालू है, लेकिन इस क्वेरी के लिए सक्रिय नहीं है; j को अपरिवर्तित छोड़ दिया गया (देखें ?GForce)।"
+
+#: data.table.R:1839
+msgid ""
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
+msgstr ""
+"mean() के कॉल (call) को अनुकूलित करने में असमर्थ और यह बहुत धीमा हो सकता है। आपको 'na.rm' को इस तरह से नाम देना "
+"चाहिए अन्यथा यदि आप mean(x,TRUE) करते हैं तो TRUE का अर्थ 'trim' के रूप में लिया जाता है जो mean का दूसरा तर्क है। "
+"'trim' अभी तक अनुकूलित नहीं है।"
+
+#: data.table.R:1843
+msgid "Old mean optimization changed j from '%s' to '%s'"
+msgstr ""
+"पुराने mean अनुकूलन ने j को '%s' से '%s' में बदल दिया।"
+
+#: data.table.R:1845
+msgid "Old mean optimization is on, left j unchanged."
+msgstr ""
+"पुराना mean अनुकूलन चालू है, j को अपरिवर्तित छोड़ दिया गया है।"
+
+#: data.table.R:1855
+msgid "All optimizations are turned off"
+msgstr ""
+"सभी अनुकूलन बंद कर दिए गए हैं।"
+
+#: data.table.R:1856
+msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
+msgstr ""
+"अनुकूलन चालू है लेकिन j को अपरिवर्तित छोड़ दिया गया (सिंगल प्लेन प्रतीक): '%s'।"
+
+#: data.table.R:1885
+msgid "Making each group and running j (GForce %s) ..."
+msgstr ""
+"प्रत्येक समूह बना रहा है और j को चला रहा है (GForce %s) ...।"
+
+#: data.table.R:1981
+msgid "setkey() after the := with keyby= ..."
+msgstr ""
+":= के साथ keyby= के बाद setkey() ...।"
+
+#: data.table.R:1985
+msgid ""
+"The setkey() normally performed by keyby= has been skipped (as if by= was "
+"used) because := is being used together with keyby= but the keyby= contains "
+"some expressions. To avoid this warning, use by= instead, or provide existing "
+"column names to keyby=."
+msgstr ""
+"keyby= द्वारा सामान्य रूप से निष्पादित setkey() को छोड़ दिया गया है (मानो by= का उपयोग किया गया हो) क्योंकि := "
+"का उपयोग keyby= के साथ किया जा रहा है लेकिन keyby= में कुछ अभिव्यक्तियां हैं। इस चेतावनी से बचने के लिए, इसके बजाय "
+"by= का उपयोग करें, या keyby= के लिए मौजूदा कॉलम (column) नाम प्रदान करें।"
+
+#: data.table.R:2011
+msgid "setkey() afterwards for keyby=.EACHI ..."
+msgstr ""
+"keyby=.EACHI के बाद setkey() ...।"
+
+#: data.table.R:2077
+msgid "rownames and rownames.value cannot both be used at the same time"
+msgstr ""
+"rownames और rownames.value को एक ही समय में दोनों का उपयोग नहीं किया जा सकता।"
+
+#: data.table.R:2082
+msgid ""
+"length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a "
+"single column name or number. Consider rownames.value= instead."
+msgstr ""
+"length(rownames)==%d लेकिन nrow(DT)==%d। rownames तर्क एकल कॉलम (column) नाम या संख्या निर्दिष्ट करता है। इसके बजाय "
+"rownames.value= पर विचार करें।"
+
+#: data.table.R:2086
+msgid ""
+"length(rownames)==0 but should be a single column name or number, or NULL"
+msgstr ""
+"length(rownames)==0 है लेकिन इसे एकल कॉलम (column) नाम या संख्या, या NULL होना चाहिए।"
+
+#: data.table.R:2090
+msgid ""
+"rownames is TRUE but key has multiple columns %s; taking first column x[,1] "
+"as rownames"
+msgstr ""
+"rownames TRUE है लेकिन key में कई कॉलम (column) %s हैं; पहले कॉलम (column) x[,1] को rownames के रूप में लिया जा रहा है।"
+
+#: data.table.R:2100
+msgid "'%s' is not a column of x"
+msgstr ""
+"%s' x का एक कॉलम (column) नहीं है।"
+
+#: data.table.R:2106
+msgid ""
+"as.integer(rownames)==%d which is outside the column number range [1,ncol=%d]."
+msgstr ""
+"as.integer(rownames)==%d जो कॉलम (column) नंबर सीमा [1,ncol=%d] के बाहर है।"
+
+#: data.table.R:2111
+msgid "length(rownames.value)==%d but should be nrow(x)==%d"
+msgstr ""
+"length(rownames.value)==%d है लेकिन इसे nrow(x)==%d होना चाहिए।"
+
+#: data.table.R:2207
+msgid ""
+"When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
+msgstr ""
+"जब i DT[i]<-value सिंटैक्स (syntax) में एक मैट्रिक्स (matrix) होता है, तो j प्रदान करना तर्कसंगत नहीं है।"
+
+#: data.table.R:2217
+msgid "j must be an atomic vector, see ?is.atomic"
+msgstr ""
+"j एक एटॉमिक (atomic) वेक्टर (vector) होना चाहिए, देखें ?is.atomic।"
+
+#: data.table.R:2218
+msgid "NA in j"
+msgstr ""
+"j में NA।"
+
+#: data.table.R:2224
+msgid "j must be vector of column name or positions"
+msgstr ""
+"j को कॉलम (column) नाम या पोजिशन का वेक्टर (vector) होना चाहिए।"
+
+#: data.table.R:2225
+msgid ""
+"Attempt to assign to column position greater than ncol(x). Create the column "
+"by name, instead. This logic intends to catch (most likely) user errors."
+msgstr ""
+"ncol(x) से अधिक कॉलम (column) स्थिति को असाइन (assign) करने का प्रयास। इसके बजाय कॉलम (column) को नाम से बनाएं। "
+"यह लॉजिक (logical) (संभवतः) उपयोगकर्ता त्रुटियों को पकड़ने के लिए है।"
+
+#: data.table.R:2292
+msgid ""
+"data.table inherits from data.frame (from v1.5), but this data.table does "
+"not. Has it been created manually (e.g. by using 'structure' rather than "
+"'data.table') or saved to disk using a prior version of data.table?"
+msgstr ""
+"data.table data.frame (v1.5 से) से विरासत में प्राप्त होता है, लेकिन यह data.table नहीं करता। क्या इसे मैन्युअल "
+"(manually) रूप से बनाया गया है (जैसे 'structure' का उपयोग करके 'data.table' के बजाय) या data.table के पुराने संस्करण "
+"का उपयोग करके डिस्क (disk) में सहेजा गया है?"
+
+#: data.table.R:2301
+msgid "attempting to assign invalid object to dimnames of a data.table"
+msgstr ""
+"data.table के dimnames को अमान्य ऑब्जेक्ट (object) असाइन (assign) करने का प्रयास।"
+
+#: data.table.R:2302
+msgid "data.tables do not have rownames"
+msgstr ""
+"data.tables में rownames नहीं होते।"
+
+#: data.table.R:2303 data.table.R:2672
+msgid "Can't assign %d names to a %d-column data.table"
+msgstr ""
+"%d नामों को %d-कॉलम (column) data.table में असाइन (assign) नहीं कर सकते।"
+
+#: data.table.R:2367
+msgid "'subset' must evaluate to logical"
+msgstr ""
+"'subset' को लॉजिकल (logical) के रूप में मूल्यांकित होना चाहिए।"
+
+#: data.table.R:2410
+msgid "Argument 'invert' must be logical TRUE/FALSE"
+msgstr ""
+"तर्क 'invert' को लॉजिकल (logical) TRUE/FALSE होना चाहिए।"
+
+#: data.table.R:2451
+msgid "x argument must be a data.table"
+msgstr ""
+"x तर्क एक data.table होना चाहिए।"
+
+#: data.table.R:2456
+msgid "group length is 0 but data nrow > 0"
+msgstr ""
+"समूह की लेंथ (length) 0 है लेकिन डेटा (data) nrow > 0।"
+
+#: data.table.R:2458
+msgid ""
+"passing 'f' argument together with 'by' is not allowed, use 'by' when split "
+"by column in data.table and 'f' when split by external factor"
+msgstr ""
+"'by' के साथ 'f' तर्क को पास करना अनुमति नहीं है, कॉलम (column) द्वारा विभाजन के लिए data.table में 'by' का उपयोग करें और बाहरी कारक द्वारा विभाजन के लिए 'f' का उपयोग करें।"
+
+#: data.table.R:2466
+msgid "Either 'by' or 'f' argument must be supplied"
+msgstr ""
+"या तो 'by' या 'f' तर्क प्रदान किया जाना चाहिए।"
+
+#: data.table.R:2468
+msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
+msgstr ""
+"कॉलम (column) '.ll.tech.split' को split.data.table प्रोसेसिंग (process) के लिए आरक्षित किया गया है।"
+
+#: data.table.R:2469
+msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
+msgstr ""
+"कॉलम (column) '.nm.tech.split' को split.data.table प्रोसेसिंग (process) के लिए आरक्षित किया गया है।"
+
+#: data.table.R:2470
+msgid "Argument 'by' must refer to column names in x"
+msgstr ""
+"तर्क 'by' को x में कॉलम (column) नामों का संदर्भ देना चाहिए।"
+
+#: data.table.R:2471
+msgid ""
+"Argument 'by' must refer only to atomic-type columns, but the following "
+"columns are non-atomic: %s"
+msgstr ""
+"तर्क 'by' को केवल एटॉमिक (atomic)-प्रकार के कॉलम (column) का संदर्भ देना चाहिए, लेकिन निम्नलिखित कॉलम (column) गैर-एटॉमिक (atomic) हैं: %s।"
+
+#: data.table.R:2518
+msgid "Processing split.data.table with: %s"
+msgstr ""
+"split.data.table को प्रोसेस (process) किया जा रहा है: %s।"
+
+#: data.table.R:2603
+msgid ""
+"x is not a data.table|frame. Shallow copy is a copy of the vector of column "
+"pointers (only), so is only meaningful for data.table|frame"
+msgstr ""
+"x data.table|फ्रेम नहीं है। शैलो (shallow) कॉपी (copy) कॉलम (column) पॉइंटर्स (pointers) के वेक्टर (vector) की कॉपी (copy) (केवल) है, इसलिए यह केवल data.table|फ्रेम के लिए सार्थक है।"
+
+#: data.table.R:2612
+msgid "setalloccol attempting to modify `*tmp*`"
+msgstr ""
+"setalloccol *tmp* को संशोधित करने का प्रयास कर रहा है।"
+
+#: data.table.R:2647
+msgid ""
+"Input is a length=1 logical that points to the same address as R's global "
+"value. Therefore the attribute has not been set by reference, rather on a "
+"copy. You will need to assign the result back to a variable. See issue #1281."
+msgstr ""
+"इनपुट एक लेंथ (length)=1 लॉजिकल (logical) है जो R के ग्लोबल (global) मान के समान पते की ओर इशारा करता है। इसलिए विशेषता को संदर्भ द्वारा सेट नहीं किया गया है, बल्कि एक कॉपी (copy) पर किया गया है। आपको परिणाम को एक वैरिएबल (variable) में वापस असाइन (assign) करने की आवश्यकता होगी। समस्या #1281 देखें।"
+
+#: data.table.R:2662
+msgid "x is not a data.table or data.frame"
+msgstr ""
+"x एक data.table या data.frame नहीं है।"
+
+#: data.table.R:2664
+msgid "x has %d columns but its names are length %d"
+msgstr ""
+"x में %d कॉलम (column) हैं लेकिन इसके नाम की लेंथ (length) %d है।"
+
+#: data.table.R:2671
+msgid "Passed a vector of type '%s'. Needs to be type 'character'."
+msgstr ""
+"प्रकार '%s' का वेक्टर (vector) पास किया गया। इसे प्रकार 'कैरेक्टर (character)' होना चाहिए।"
+
+#: data.table.R:2684
+msgid "'new' is not a character vector or a function"
+msgstr ""
+"new' एक कैरेक्टर (character) वेक्टर (vector) या फ़ंक्शन (function) नहीं है।"
+
+#: data.table.R:2686
+msgid "NA in 'new' at positions %s"
+msgstr ""
+"new' में %s पर NA।"
+
+#: data.table.R:2687
+msgid "Some duplicates exist in 'old': %s"
+msgstr ""
+"old' में कुछ डुप्लिकेट (duplicate) मौजूद हैं: %s।"
+
+#: data.table.R:2964
+msgid "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
+msgstr ""
+"setDT' के तर्क 'x' को 'लिस्ट (list)', 'data.frame' या 'data.table' होना चाहिए।"
+
+#: data.table.R:2979
+msgid "Item '%s' not found in names of input list"
+msgstr ""
+"इनपुट (input) लिस्ट (list) के नामों में आइटम (item) '%s' नहीं मिला।"
+
+#: data.table.R:3004 data.table.R:3029
+msgid "'prefix' must be NULL or a character vector of length 1."
+msgstr ""
+"'prefix' NULL या लेंथ (length) 1 का कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+
+#: data.table.R:3007 data.table.R:3032
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
+msgstr ""
+"x एकल वेक्टर (vector) है, गैर-NULL 'cols' का कोई मतलब नहीं है।"
+
+#: data.table.R:3011 data.table.R:3036
+msgid "x is a list, 'cols' cannot be 0-length."
+msgstr ""
+"x एक लिस्ट (list) है, 'cols' की लेंथ (length) 0 नहीं हो सकती।"
+
+#: data.table.R:3173
+msgid ""
+"It looks like you re-used `:=` in argument %d a functional assignment call -- "
+"use `=` instead: %s(col1=val1, col2=val2, ...)"
+msgstr ""
+"ऐसा प्रतीत होता है कि आपने तर्क %d में := को पुनः उपयोग किया है, एक फंक्शनल (function) कार्यभार कॉल (call) के रूप में -- "
+"इसके बजाय = का उपयोग करें: %s(col1=val1, col2=val2, ...)।"
+
+#: data.table.R:3239
+msgid ""
+"RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no "
+"recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
+msgstr ""
+"%s का RHS लेंथ (length) %d है, जो 1 या nrow (%d) नहीं है। मजबूतता के लिए, पुनरावृत्ति की अनुमति नहीं है (लेंथ (length) 1 RHS को छोड़कर)। "
+"इसके बजाय %%in%% पर विचार करें।"
+
+#: data.table.R:3271
+msgid ""
+"Subsetting optimization disabled because the cross-product of RHS values "
+"exceeds 1e4, causing memory problems."
+msgstr ""
+"सबसेटिंग (subsetting) अनुकूलन को निष्क्रिय कर दिया गया है क्योंकि RHS मानों का गुणनफल 1e4 से अधिक है, जिससे स्मृति की समस्या उत्पन्न हो रही है।"
+
+#: data.table.R:3289
+msgid "Optimized subsetting with key %s"
+msgstr ""
+"key %s के साथ अनुकूलन सबसेटिंग (subsetting)।"
+
+#: data.table.R:3308 data.table.R:3320
+msgid "Optimized subsetting with index '%s'"
+msgstr ""
+"सूचकांक '%s' के साथ अनुकूलन सबसेटिंग (subsetting)।"
+
+#: data.table.R:3315
+msgid "Creating new index '%s'"
+msgstr ""
+"नया सूचकांक '%s' बनाया जा रहा है।"
+
+#: data.table.R:3316
+msgid "Creating index %s done in ..."
+msgstr ""
+"सूचकांक %s को बनाया गया ...।"
+
+#: data.table.R:3354
+msgid ""
+"'on' argument should be a named atomic vector of column names indicating "
+"which columns in 'i' should be joined with which columns in 'x'."
+msgstr ""
+"'on' तर्क को कॉलम (column) नामों का नामांकित एटॉमिक (atomic) वेक्टर (vector) होना चाहिए, "
+"जो इंगित करता है कि 'i' में कौन से कॉलम (column) 'x' में कौन से कॉलमों (column) के साथ जोड़े जाने चाहिए।"
+
+#: data.table.R:3395
+msgid ""
+"Found more than one operator in one 'on' statement: %s. Please specify a "
+"single operator."
+msgstr ""
+"'on' कथन में एक से अधिक ऑपरेटर (operator) पाए गए: %s। कृपया एक ही ऑपरेटर (operator) निर्दिष्ट करें।"
+
+#: data.table.R:3418
+msgid ""
+"'on' contains no column name: %s. Each 'on' clause must contain one or two "
+"column names."
+msgstr ""
+"'on' में कोई कॉलम (column) नाम नहीं है: %s। प्रत्येक 'on' खंड में एक या दो कॉलम (column) नाम होने चाहिए।"
+
+#: data.table.R:3420
+msgid ""
+"'on' contains more than 2 column names: %s. Each 'on' clause must contain one "
+"or two column names."
+msgstr ""
+"'on' में 2 से अधिक कॉलम (column) नाम हैं: %s। प्रत्येक 'on' खंड में एक या दो कॉलम (column) नाम होने चाहिए।"
+
+#: data.table.R:3425
+msgid "Invalid join operators %s. Only allowed operators are %s."
+msgstr ""
+"अमान्य जॉइन (join) ऑपरेटर (operator) %s। केवल अनुमत ऑपरेटर (operator) हैं %s।"
+
+#: data.table.R:719
+msgid "column not removed because not found: %s"
+msgid_plural "columns not removed because not found: %s"
+msgstr[0] ""
+"कॉलम (column) को नहीं हटाया गया क्योंकि नहीं मिला: %s।"
+msgstr[1] ""
+"कॉलमों (columns) को नहीं हटाया गया क्योंकि नहीं मिले: %s।"
+
+#: data.table.R:734
+msgid "column not found: %s"
+msgid_plural "columns not found: %s"
+msgstr[0] ""
+"कॉलम (column) नहीं मिला: %s।"
+msgstr[1] ""
+"कॉलम (columns) नहीं मिले: %s।"
+
+#: data.table.R:902
+msgid "The item in the 'by' or 'keyby' list is length %s."
+msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
+msgstr[0] ""
+"by' या 'keyby' लिस्ट (list) में आइटम (item) की लेंथ (length) %s है।"
+msgstr[1] ""
+"by' या 'keyby' लिस्ट (list) में आइटम्स (items) की लेंथ (lengths) %s हैं।"
