@@ -1,0 +1,75 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: between 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: between.R:3
+msgid "between has been passed an argument x of type logical"
+msgstr ""
+
+#: between.R:13 between.R:15
+msgid ""
+"The 'x' argument of the 'between' function is POSIXct while '%s' was not, "
+"coercion to POSIXct failed with: %s"
+msgstr ""
+
+#: between.R:27
+msgid ""
+"'between' lower= and upper= are both POSIXct but have different tzone "
+"attributes: %s. Please align their time zones."
+msgstr ""
+
+#: between.R:31
+msgid ""
+"'between' arguments are all POSIXct but have mismatched tzone attributes: "
+"%s. The UTC times will be compared."
+msgstr ""
+
+#: between.R:36
+msgid "trying to use integer64 class when 'bit64' package is not installed"
+msgstr ""
+
+#: between.R:47
+msgid ""
+"optimised between not available for this data type, fallback to slow R "
+"routine"
+msgstr ""
+
+#: between.R:48
+msgid ""
+"Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
+msgstr ""
+
+#: between.R:49
+msgid "Some lower>upper for this non-numeric and non-character type"
+msgstr ""
+
+#: between.R:63
+#, c-format
+msgid "Perhaps you meant %s?"
+msgstr ""
+
+#: between.R:64
+msgid ""
+"RHS has length() %d; expecting length 2. %sThe first element should be the "
+"lower bound(s); the second element should be the upper bound(s)."
+msgstr ""
+
+#: between.R:77
+msgid "forderv(query) took ..."
+msgstr ""
+
+#: between.R:85
+msgid "Generating final logical vector ..."
+msgstr ""
+
+#: between.R:87
+msgid "done in %s"
+msgstr ""
