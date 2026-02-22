@@ -21526,7 +21526,7 @@ if (.Platform$OS.type == "windows") local({
   temp = c("a\tb", "1\t2")
   utils::writeClipboard(temp)
   on.exit(utils::writeClipboard(""), add = TRUE)
-  test(2366, fread("clipboard-128"), data.table(a = 1L, b = 2L))
+  test(2366, fread("clipboard"), data.table(a = 1L, b = 2L))
 })
 
 # Test fread clipboard input on macOS (issue #1292)

@@ -63,21 +63,24 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       # input is data itself containing at least one \n or \r
     } else if (startsWith(input, " ")) {
       stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
-    } else if (grepl("^clipboard(-[0-9]+)?$", tolower(input))) {
+    } else if (identical(tolower(input), "clipboard")) {
       os_type = .Platform$OS.type
       if (identical(os_type, "windows")) {
         clip = tryCatch(utils::readClipboard(),
           error = function(e) stopf("Reading clipboard failed on Windows: %s", conditionMessage(e))
         )
       } else if (identical(os_type, "unix")) {
-        sysname = Sys.info()[["sysname"]]
-        clip_cmd = if (identical(sysname, "Darwin")) {
+        # Valid on macOS, Linux, BSD, etc.
+        clip_cmd = if (nzchar(Sys.which("pbpaste"))) {
           "pbpaste"
-        } else if (identical(sysname, "Linux")) {
-          if (nzchar(Sys.which("wl-paste"))) "wl-paste --no-newline"
-          else if (nzchar(Sys.which("xclip"))) "xclip -o -selection clipboard"
-          else if (nzchar(Sys.which("xsel"))) "xsel --clipboard --output"
-          else stopf("Clipboard reading on Linux requires 'xclip', 'xsel', or 'wl-paste' to be installed and on PATH.")
+        } else if (nzchar(Sys.which("wl-paste"))) {
+          "wl-paste --no-newline"
+        } else if (nzchar(Sys.which("xclip"))) {
+          "xclip -o -selection clipboard"
+        } else if (nzchar(Sys.which("xsel"))) {
+          "xsel --clipboard --output"
+        } else {
+          stopf("Clipboard reading on Unix-like systems requires 'pbpaste', 'wl-paste', 'xclip', or 'xsel' to be installed.")
         }
         clip = tryCatch(system(clip_cmd, intern = TRUE),
           error = function(e) stopf("Reading clipboard failed: %s", conditionMessage(e))
@@ -88,11 +91,14 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
         }
       } else {
         warning("Clipboard reading is not supported on this platform.", call. = FALSE)
+        return(data.table())
       }
       if (!length(clip) || !any(nzchar(trimws(clip)))) {
         stopf("Clipboard is empty.")
       }
-      input = paste(clip, collapse = "\n")
+      writeLines(clip, tmpFile <- tempfile(tmpdir=tmpdir))
+      file = tmpFile
+      on.exit(unlink(tmpFile), add=TRUE)
     } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(gsub("^file://", "", input))) {  # file name or path containing spaces is not a command. file.exists() doesn't understand file:// (#7550)
       cmd = input
       if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
