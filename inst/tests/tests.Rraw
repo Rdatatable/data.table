@@ -11188,6 +11188,16 @@ if (test_bit64) {
 }
 # end Grouping Sets
 
+# extra cube tests
+test(1750.49,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(NA_character_, "amount")),
+  error = "\\.SDcols missing at the following indices: \\[1\\]"
+)
+test(1750.50,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L)),
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("amount", "value"))
+)
+
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
 test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
