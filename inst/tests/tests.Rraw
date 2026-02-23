@@ -21520,3 +21520,95 @@ test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
 dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
 test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))
+
+# delete rows by reference #635
+# atomic types and list columns
+dt = data.table(
+  int = 1:5,
+  real = c(1.1, 2.2, 3.3, 4.4, 5.5),
+  char = letters[1:5],
+  lgl = c(TRUE, FALSE, TRUE, FALSE, TRUE),
+  cplx = as.complex(1:5),
+  raw_col = as.raw(1:5),
+  list_col = list(1L, 1:2, 1:3, 1:4, 1:5)
+)
+test(2366.01, copy(dt)[1L, .ROW := NULL], dt[-1])
+test(2366.02, copy(dt)[1, .ROW := NULL], dt[-1])
+test(2366.03, copy(dt)[c(TRUE, FALSE, FALSE, TRUE, FALSE), .ROW := NULL], dt[-c(1,4)])
+test(2366.04, copy(dt)[int==1L, .ROW := NULL], dt[-1])
+test(2366.05, copy(dt)[int<2L, .ROW := NULL], dt[-1])
+test(2366.06, copy(dt)[-1, .ROW := NULL], dt[1])
+# zero row or empty data.tables
+dt = data.table()
+test(2366.07, dt[logical(0), .ROW := NULL], dt)
+dt = data.table(a=integer(0), b=character(0))
+test(2366.08, dt[logical(0), .ROW := NULL], dt)
+# multirow
+dt = data.table(a=1:5, b=letters[1:5])
+test(2366.09, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2366.11, copy(dt)[1:2, .ROW := NULL], dt[3:5])
+test(2366.12, copy(dt)[1:5, .ROW := NULL], dt[0])
+# NA handling and edges case
+dt = data.table(a=1:5, b=letters[1:5])
+test(2366.13, copy(dt)[c(1L, NA_integer_, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2366.14, copy(dt)[c(NA_integer_, NA_integer_), .ROW := NULL], dt)
+test(2366.15, copy(dt)[c(TRUE, NA, FALSE, NA, TRUE), .ROW := NULL], dt[c(2,3,4)])
+test(2366.16, copy(dt)[integer(0), .ROW := NULL], dt)
+test(2366.17, copy(dt)[logical(0), .ROW := NULL], dt)
+test(2366.18, copy(dt)[c(FALSE, FALSE, FALSE, FALSE, FALSE), .ROW := NULL], dt)
+test(2366.19, copy(dt)[a > 100, .ROW := NULL], dt)  # no matches
+# Duplicate indices
+dt = data.table(a=1:5, b=letters[1:5])
+test(2366.20, copy(dt)[c(1L, 1L), .ROW := NULL], dt[-1])
+test(2366.21, copy(dt)[c(1L, 1L, 2L, 2L), .ROW := NULL], dt[3:5])
+test(2366.22, copy(dt)[c(3L, 1L, 3L, 1L), .ROW := NULL], dt[c(2,4,5)])
+# integer64
+if (test_bit64) {
+  dt = data.table(a=1:5, b=as.integer64(11:15))
+  test(2366.23, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
+  test(2366.24, copy(dt)[1:5, .ROW := NULL], data.table(a=integer(0), b=integer64(0)))
+}
+# Date/IDate/ITime columns
+dt = data.table(a=1:5, d=as.Date("2024-01-01") + 0:4, t=as.ITime(paste0(10:14, ":00:00")), dt=as.POSIXct("2024-01-01 12:00:00") + 3600*0:4)
+test(2366.25, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2366.26, copy(dt)[c(2L, 4L), .ROW := NULL]$d, as.Date("2024-01-01") + c(0,2,4))
+# Factor columns
+dt = data.table(a=1:5, f=factor(letters[1:5], levels=letters[1:10]))
+test(2366.27, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
+test(2366.28, levels(copy(dt)[c(1L, 3L), .ROW := NULL]$f), letters[1:10])
+dt = data.table(a=1:5, of=ordered(letters[1:5], levels=letters[5:1]))
+test(2366.29, copy(dt)[c(2L, 4L), .ROW := NULL], dt[-c(2L,4L)])
+test(2366.30, is.ordered(copy(dt)[c(2, 4L), .ROW := NULL]$of))
+# Keys - should be cleared after deletion
+dt = data.table(a=5:1, b=letters[1:5], key="a")
+test(2366.31, key(copy(dt)[1L, .ROW := NULL]), NULL)
+test(2366.32, haskey(copy(dt)[1L, .ROW := NULL]), FALSE)
+# Indices - should be cleared after deletion
+dt = data.table(a=1:5, b=letters[1:5], c=5:1)
+setindex(dt, b)
+test(2366.33, indices(copy(dt)[1L, .ROW := NULL]), NULL)
+# row names
+dt = data.table(a=1:5, b=letters[1:5])
+test(2366.34, attr(copy(dt)[c(1L, 3L), .ROW := NULL], "row.names"), 1:3)
+# selfref check
+test(2366.35, selfrefok(copy(dt)[1L, .ROW := NULL]), 1L)
+# errors
+dt = data.table(a=1:4, g=1:2)
+test(2366.36, dt[1L, .ROW := 1L], error=".ROW can only be used with := NULL")
+test(2366.37, dt[1L, .ROW := "delete"], error=".ROW can only be used with := NULL")
+test(2366.38, dt[1L, .ROW := FALSE], error=".ROW can only be used with := NULL")
+test(2366.39, dt[, .ROW := NULL], error=".ROW := NULL requires i= condition")
+test(2366.40, dt[1L, .ROW := NULL, by=g], error=".ROW := NULL does not support 'by' or 'keyby'")
+# large table
+dt = data.table(a=1:20000, b=rep(letters, length.out=20000))
+idx = seq(1L, 20000L, by=2L)
+test(2366.41, copy(dt)[idx, .ROW := NULL], dt[-idx])
+# Chaining and complexer i expressions
+dt = data.table(a=1:10, b=letters[1:10])
+test(2366.42, copy(dt)[a>2, .ROW := NULL][b=="a"], data.table(a=1L, b="a"))
+test(2366.43, copy(dt)[a %% 2 == 0, .ROW := NULL], dt[a %% 2 != 0])
+test(2366.44, copy(dt)[!(a < 5 & b != "d"), .ROW := NULL], dt[1:3])
+# make columns resizable
+dt = data.table(a=1:3)
+test(2366.91, truelength(dt$a), 0L)
+test(2366.92, {setallocrow(dt); truelength(dt$a)}, 3L)

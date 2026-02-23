@@ -56,11 +56,15 @@ set(x, i = NULL, j, value)
     DT[i, colC := mean(colB), by = colA]          # update (or add) column called "colC" by reference by group. A major feature of `:=`.
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
     DT[, let(new1 = sum(colB), new2 = sum(colC))] # New alias for functional form.
+    DT[i, .ROW := NULL]                           # delete rows by reference.
 }
 
 The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
 
 Note that for efficiency no check is performed for duplicate assignments, i.e. if multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially; for a given use case, consider whether it makes sense to create your own test for duplicates, e.g. in production code.
+
+Note that \code{.ROW := NULL} is a special case used to delete rows by reference. Unlike column assignment, this requires an \code{i} expression to specify which rows to delete, and does not support \code{by} or \code{keyby}.
+To delete rows using a per-group condition, first compute the indices (\code{rows = DT[, .I[cond], by=grp]$V1}) then delete \code{DT[rows, .ROW := NULL]}. See \code{\link{.ROW}} or \code{\link{special-symbols}} for details.
 
 All of the following result in a friendly error (by design) :
 
@@ -157,6 +161,13 @@ set(DT, NULL, "b", 100L) # equivalent
 set(DT, j = c("b", "d"), value = list(200L, 300L))
 ## Set values for multiple columns with multiple specified rows.
 set(DT, c(1L, 3L), c("b", "d"), value = list(500L, 800L))
+
+# Delete rows by reference
+DT = data.table(a=1:10, b=letters[1:10])
+DT[c(2,4,6), .ROW := NULL]      # delete rows 2, 4, and 6
+DT
+DT[a>5, .ROW := NULL]           # delete rows where a>5
+DT
 
 \dontrun{
 # Speed example:
