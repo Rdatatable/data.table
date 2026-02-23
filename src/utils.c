@@ -292,8 +292,8 @@ SEXP allocrow(SEXP dt, R_xlen_t n) {
   if (!INHERITS(dt, char_datatable))
     error(_("input to allocrow is not a data.table")); // #nocov
 
-  if (n < 0)
-    error(_("n must be non-negative in allocrow")); // #nocov
+  if (n < -1)
+    error(_("n must be >= -1 in allocrow")); // #nocov
 
   if (!xlength(dt)) return dt; // zero-column data.table
 
@@ -307,11 +307,13 @@ SEXP allocrow(SEXP dt, R_xlen_t n) {
 
     const R_xlen_t currentLength = length(col);
     const R_xlen_t currentCapacity = R_isResizable(col) ? R_maxLength(col) : currentLength;
-    const R_xlen_t targetCapacity = currentLength + n;
+    // n == -1: shrink to exact size; n >= 0: set total capacity to n
+    const R_xlen_t targetCapacity = n < 0 ? currentLength : n;
+    const R_xlen_t overalloc = targetCapacity > currentLength ? targetCapacity - currentLength : 0;
 
     // Only reallocate if not resizable, or capacity differs from target
     if (!R_isResizable(col) || currentCapacity != targetCapacity) {
-      SEXP newcol = PROTECT(copyAsPlain(col, n));
+      SEXP newcol = PROTECT(copyAsPlain(col, overalloc));
       SET_VECTOR_ELT(dt, i, newcol);
       UNPROTECT(1);
       n_modified++;
@@ -320,10 +322,11 @@ SEXP allocrow(SEXP dt, R_xlen_t n) {
 
   if (verbose) {
     if (n_modified > 0) {
-      if (n > 0) {
+      const R_xlen_t nrow = length(VECTOR_ELT(dt, 0));
+      if (n > nrow) {
         Rprintf(Pl_(n_modified,
-          "Modified %d column (overallocated %lld rows)\n",
-          "Modified %d columns (overallocated %lld rows)\n"),
+          "Modified %d column (allocated %lld rows total)\n",
+          "Modified %d columns (allocated %lld rows total)\n"),
           n_modified, (long long)n);
       } else {
         Rprintf(Pl_(n_modified,

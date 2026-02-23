@@ -2850,7 +2850,7 @@ setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbos
   ans
 }
 
-setallocrow = function(DT, n=0L) {
+setallocrow = function(DT, n=-1L) {
   invisible(.Call(Callocrowwrapper, DT, as.integer(n)))
 }
 
