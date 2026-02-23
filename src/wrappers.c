@@ -110,8 +110,8 @@ SEXP expandAltRep(SEXP x)
 }
 
 SEXP allocrowwrapper(SEXP dt, SEXP n) {
-  if (!isInteger(n) || length(n)!=1 || INTEGER(n)[0]<0 || INTEGER(n)[0]==NA_INTEGER)
-    error(_("n must be a single non-negative non-NA integer")); // #nocov
+  if (!isInteger(n) || length(n)!=1 || INTEGER(n)[0]<-1 || INTEGER(n)[0]==NA_INTEGER)
+    error(_("n must be a single integer >= -1 and non-NA")); // #nocov
   return allocrow(dt, (R_xlen_t)INTEGER(n)[0]);
 }
 

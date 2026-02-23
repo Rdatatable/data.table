@@ -15,14 +15,14 @@ setalloccol(DT,
 alloc.col(DT,
     n = getOption("datatable.alloccol"),        # default: 1024L
     verbose = getOption("datatable.verbose"))   # default: FALSE
-setallocrow(DT, n = 0L)
+setallocrow(DT, n = -1L)
 }
 \arguments{
 \item{x}{ Any type of vector, including \code{data.table} which is a \code{list} vector of column pointers. }
 \item{DT}{ A \code{data.table}. }
 \item{n}{ For \code{setalloccol} and \code{alloc.col}: the number of spare column pointer slots to ensure are available. If \code{DT} is a 1,000 column \code{data.table} with 24 spare slots remaining, \code{n=1024L} means grow the 24 spare slots to be 1024. \code{truelength(DT)} will then be 2024 in this example.
 
-  For \code{setallocrow}: the number of rows to over-allocate. If \code{n > 0}, allocates capacity for current rows plus \code{n} additional rows. If \code{n == 0} (default), shrinks columns to exact current size to free excess memory. }
+  For \code{setallocrow}: the total number of rows to allocate. If \code{n >= 0}, allocates capacity for exactly \code{n} rows in total. If \code{n == -1} (default), shrinks columns to exact current size to free excess memory. }
 \item{verbose}{ Output status and information. }
 }
 \details{
@@ -42,8 +42,8 @@ setallocrow(DT, n = 0L)
     \code{setallocrow} is a utility function that prepares columns for fast row operations (delete or insert) by reference and manages row capacity. (Note that 'insert' by reference is not yet implemented)
     Before deleting or inserting rows by reference, columns must be resizable.
     \code{setallocrow} ensures all columns are in the appropriate state by converting ALTREP columns to materialized form and reallocating
-    columns to have the target capacity. When \code{n > 0}, columns are over-allocated with extra capacity for future row additions.
-    When \code{n == 0}, columns are shrunk to exact size to free unused memory. This operation modifies \code{DT} by reference.
+    columns to have the target capacity. When \code{n >= 0}, columns are allocated to hold exactly \code{n} rows in total, providing capacity for future row additions up to that count.
+    When \code{n == -1} (default), columns are shrunk to exact size to free unused memory. This operation modifies \code{DT} by reference.
 }
 \value{
     \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is just the list vector of column
