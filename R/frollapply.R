@@ -278,8 +278,11 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     cpy = copy
     ansMask = function(len, n) {
       mask = rep(TRUE, len)
-      if (n) ## handle n==0
+      if (n) { ## handle n==0
+        if (n > len)
+          n = len + 1L ## bugfix #7646
         mask[seq_len(n-1L)] = FALSE
+      }
       mask
     }
     tight0 = function(i, dest, src, n) FUN(dest, ...) ## skip memcpy when n==0
