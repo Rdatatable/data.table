@@ -21540,7 +21540,7 @@ test(2366.2, tables(env=xenv, depth=1L, index=TRUE)$INDICES, list(NULL, NULL, NU
 setkey(xenv$M$b, a)
 test(2366.3, tables(env=xenv, depth=1L, index=TRUE)$KEY, list(NULL, NULL, NULL, "a"))
 # test for depth>1L
-test(2366.4, tables(env=xenv, depth=2L), error=depth>1L is not implemented yet")
+test(2366.4, tables(env=xenv, depth=2L), error="depth>1L is not implemented yet")
 rm(xenv)
 
 # no data.table test
