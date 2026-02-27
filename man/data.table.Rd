@@ -115,13 +115,9 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
         
-    When \code{by} is supplied, \code{j} is evaluated once per group and
-    the per-group results are then combined row-wise. Internally this
-    combination uses \code{rbindlist} with \code{use.names = FALSE}, so
-    columns are matched by position and the column names from the first
-    group are retained. If different groups return columns with different
-    names in the same positions, the names from later groups may be ignored
-    and the resulting column names can depend on the order of groups.
+     When \code{by} is supplied, per-group \code{j} results are combined using
+    \code{\link{rbindlist}}; see its help for details on how columns and names
+    are handled.
 }
 
     \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use \code{keyby=} routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
