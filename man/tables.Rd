@@ -15,7 +15,7 @@ tables(mb=type_size, order.col="NAME", width=80,
   \item{env}{ An \code{environment}, typically the \code{.GlobalEnv} by default, see Details. }
   \item{silent}{ \code{logical}; should the output be printed? }
   \item{index}{ \code{logical}; if \code{TRUE}, the column \code{INDICES} is added to indicate the indices assorted with each object, see \code{\link{indices}}. }
-  \item{depth}{\code{integer}; if \code{1L}, searches for \code{data.table} objects inside top-level lists. If depth = 0L it accepts data.table and Values greater than \code{1L} are not implemented yet.}
+  \item{depth}{\code{integer}, default \code{0L}. Larger values govern the depth of search in recursive objects like lists or environments. For example, \code{depth=1L} will find all data.tables in the global environment as well as all data.tables in lists (but in lists of lists). NB: \code{depth > 1L} is not yet supported.}
 }
 \details{
 Usually \code{tables()} is executed at the prompt, where \code{parent.frame()} returns \code{.GlobalEnv}. \code{tables()} may also be useful inside functions where \code{parent.frame()} is the local scope of the function; in such a scenario, simply set it to \code{.GlobalEnv} to get the same behaviour as at prompt.
