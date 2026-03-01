@@ -52,7 +52,7 @@
 
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
 
-6. `dcast()` for `data.frame` for character column return factors as type unless we specify `stringsAsFactors = FALSE`.
+6. `dcast()` for `data.frame` for character column return factors as type unless we specify `stringsAsFactors = FALSE`. Thanks @aitap for reporting.
 
 ## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1)  (22 January 2026)
 
