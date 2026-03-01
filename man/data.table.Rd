@@ -113,8 +113,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in \code{DT} that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
 
-    \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
-    }
+    \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.}
 
     \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use \code{keyby=} routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
 
