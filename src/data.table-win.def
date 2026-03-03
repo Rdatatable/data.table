@@ -1,0 +1,3 @@
+LIBRARY data.table.dll
+EXPORTS
+ R_init_data_table

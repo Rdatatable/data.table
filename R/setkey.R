@@ -32,7 +32,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     on.exit(options(oldverbose))
   }
   if (!is.data.table(x)) stopf("x is not a data.table")
-  if (!is.character(cols)) stopf("cols is not a character vector. Please see further information in ?setkey.")
+  if (!is.character(cols)) stopf("cols is not a character vector. Please see further information in ?%s.", "setkey")
   if (physical && .Call(C_islocked, x)) stopf("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
     warningf("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
@@ -257,7 +257,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   if (!is.data.frame(x)) stopf("x must be a data.frame or data.table")
   na.last = as.logical(na.last)
   if (is.na(na.last) || !length(na.last)) stopf('na.last must be logical TRUE/FALSE')
-  if (!is.character(cols)) stopf("cols is not a character vector. Please see further information in ?setorder.")
+  if (!is.character(cols)) stopf("cols is not a character vector. Please see further information in ?%s.", "setorder")
   if (!length(cols)) {
     warningf("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     return(x)

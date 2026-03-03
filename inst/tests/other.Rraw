@@ -11,9 +11,12 @@ pkgs = c("DBI", "RSQLite", "bit64", "caret", "dplyr", "gdata", "ggplot2", "hexbi
 #  "yaml"            # for fread's yaml argument (csvy capability)
 #  # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
 
-if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE) ||
     !"package:data.table" %in% search()) {
-  stop("Usage: R CMD INSTALL; require(data.table); test.data.table('other.Rraw')")
+  stop(
+    "Usage: R CMD INSTALL; require(data.table); test.data.table('other.Rraw')\n",
+    "  Did you try running it under cc()?"
+  )
   # running other.Raw in dev mode (i.e. when data.table is not installed) is not intended to work
 }
 
@@ -47,7 +50,7 @@ cat("\n")
 print(sessionInfo())
 cat("\n")
 
-if (all(c("package:reshape","package:reshape2") %in% search())) {
+if (all(c("package:reshape", "package:reshape2") %in% search())) {
   warning("Packages 'reshape' and 'reshape2' are both loaded. There have been problems before when you don't use the :: namespace prefix to disambiguate. Probably best to either remove.packages('reshape') and use reshape2 instead, or always use :: when packages mask non-generic names.")
 }
 
@@ -181,10 +184,14 @@ if (loaded[["knitr"]]) {
   # kable in knitr v1.6 uses DF[...] syntax inside it but the user might have passed a data.table.
   # Which is fine and works thanks to cedta().
   DT = data.table(x=1, y=2)
-  test(11, kable(DT), output="x.*y.*1.*2")
-  invisible(knit(testDir("knitr.Rmd"), quiet=TRUE))
-  cat(readLines("knitr.md"), sep="\n")
-  invisible(file.remove("knitr.md"))
+  test(11.1, kable(DT), output="x.*y.*1.*2")
+  local({
+    old = options(datatable.print.class=TRUE)
+    tmp = tempfile()
+    on.exit({unlink(tmp); options(old)})
+    invisible(knit(testDir("knitr.Rmd"), tmp, quiet=TRUE))
+    test(11.2, tools::Rdiff(tmp, testDir("knitr.md.save")), 0L)
+  })
 }
 
 if (loaded[["parallel"]]) {
@@ -531,6 +538,9 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 # was 2108 in tests.Rraw, #5516
 # first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
 # stopifnot("xts"%in%installed.packages(), !isNamespaceLoaded("xts")); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!isNamespaceLoaded("xts"))
+# in case the search path is wrong
+if (!identical(last, data.table::last)) last = data.table::last
+if (!identical(first, data.table::first)) first = data.table::first
 local({
   x = as.POSIXct("2019-09-09")+0:1
   old = options(datatable.verbose=TRUE); on.exit(options(old))
@@ -686,6 +696,8 @@ if (loaded[["nanotime"]]) {
   # was 2080.01-05 in tests.Rraw, #5516
   n = nanotime(1:4)
   n[2L] = NA
+  # in case the search path is wrong
+  if (!identical(between, data.table::between)) between = data.table::between
   local({
     old = options(datatable.verbose=TRUE); on.exit(options(old))
     test(24.1, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
@@ -779,15 +791,15 @@ if (loaded[["nanotime"]]) {
 
 # tables() with large environment #6607
 .e <- new.env() ## to not populate the .GlobalEnv
-.e[["DT"]] <- as.data.table(lapply(1:15,function(i) runif(20e6)))
-res <- tables(env=.e)
+.e[["DT"]] <- setDT(replicate(15L, runif(2e7), simplify=FALSE))
+invisible(capture.output(res <- tables(env=.e)))
 test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288.0))
 rm(.e, res)
 
 if (loaded[["vctrs"]]) {
   # vctrs::list_of() columns are treated the same as other list() columns
   DT = data.table(a = 1, b = list_of(mtcars))
-  test(33, DT, output="<vctrs_list_of>.*<data\\.frame\\[32x11\\]>")
+  test(33, options=c(datatable.print.class=TRUE), DT, output="<vctrs_list_of>.*<data\\.frame\\[32x11\\]>")
 }
 
 # NB: currently, RSQLite requires DBI, so partially redundant, but future-proof.

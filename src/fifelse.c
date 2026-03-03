@@ -60,34 +60,34 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   
   if (!na_a && !na_b) {
     if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(b,R_ClassSymbol)), 0))
-      error(_("'yes' has different class than 'no'. Please make sure that both arguments have the same class."));
+      error(_("'%s' has different class than '%s'. Please make sure that both arguments have the same class."), "yes", "no");
     UNPROTECT(2);
   }
   if (!na_a && !na_n) {
     if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
-      error(_("'yes' has different class than 'na'. Please make sure that both arguments have the same class."));
+      error(_("'%s' has different class than '%s'. Please make sure that both arguments have the same class."), "yes", "na");
     UNPROTECT(2);
   }
   if (!na_b && !na_n) {
     if (!R_compute_identical(PROTECT(getAttrib(b,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
-      error(_("'no' has different class than 'na'. Please make sure that both arguments have the same class."));
+      error(_("'%s' has different class than '%s'. Please make sure that both arguments have the same class."), "no", "na");
     UNPROTECT(2);
   }
   
   if (isFactor(a) || isFactor(b)) {
     if (!na_a && !na_b) {
       if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(b,R_LevelsSymbol)), 0))
-        error(_("'yes' and 'no' are both type factor but their levels are different."));
+        error(_("'%s' and '%s' are both type factor but their levels are different."), "yes", "no");
       UNPROTECT(2);  
     }
     if (!na_a && !na_n) {
       if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
-        error(_("'yes' and 'na' are both type factor but their levels are different."));
+        error(_("'%s' and '%s' are both type factor but their levels are different."), "yes", "na");
       UNPROTECT(2);
     }
     if (!na_b && !na_n) {
       if (!R_compute_identical(PROTECT(getAttrib(b,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
-        error(_("'no' and 'na' are both type factor but their levels are different."));
+        error(_("'%s' and '%s' are both type factor but their levels are different."), "no", "na");
       UNPROTECT(2);
     }
   }
@@ -96,7 +96,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
   const int64_t nmask = len3>1 ? INT64_MAX : 0;
 
-  const int *restrict pl = LOGICAL(l);
+  const int *restrict pl = LOGICAL_RO(l);
   SEXP ans = PROTECT(allocVector(tans, len0)); nprotect++;
   if (!na_a) 
     copyMostAttrib(a, ans);
@@ -237,7 +237,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     if (!isLogical(whens)) {
       error(_("Argument #%d must be logical but was of type %s."), 2*i+1, type2char(TYPEOF(whens)));
     }
-    const int *restrict pwhens = LOGICAL(whens);
+    const int *restrict pwhens = LOGICAL_RO(whens);
     l = 0;
     if (i == 0) {
       n_ans = xlength(whens);
@@ -306,7 +306,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     switch(TYPEOF(ans)) {
     case LGLSXP: {
       const int *restrict pthens;
-      if (!naout) pthens = LOGICAL(thens); // the content is not useful if out is NA_LOGICAL scalar
+      if (!naout) pthens = LOGICAL_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       int *restrict pans = LOGICAL(ans);
       const int pna = NA_LOGICAL;
       for (int64_t j=0; j<n_undecided; ++j) {
@@ -323,7 +323,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     } break;
     case INTSXP: {
       const int *restrict pthens;
-      if (!naout) pthens = INTEGER(thens); // the content is not useful if out is NA_LOGICAL scalar
+      if (!naout) pthens = INTEGER_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       int *restrict pans = INTEGER(ans);
       const int pna = NA_INTEGER;
       for (int64_t j=0; j<n_undecided; ++j) {
@@ -340,7 +340,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     } break;
     case REALSXP: {
       const double *restrict pthens;
-      if (!naout) pthens = REAL(thens); // the content is not useful if out is NA_LOGICAL scalar
+      if (!naout) pthens = REAL_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       double *restrict pans = REAL(ans);
       const double na_double = INHERITS(ans, char_integer64) ? NA_INT64_D : NA_REAL;
       const double pna = na_double;
@@ -358,7 +358,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     } break;
     case CPLXSXP: {
       const Rcomplex *restrict pthens;
-      if (!naout) pthens = COMPLEX(thens); // the content is not useful if out is NA_LOGICAL scalar
+      if (!naout) pthens = COMPLEX_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       Rcomplex *restrict pans = COMPLEX(ans);
       const Rcomplex pna = NA_CPLX;
       for (int64_t j=0; j<n_undecided; ++j) {
@@ -404,7 +404,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       }
     } break;
     default:
-      error(_("Type '%s' is not supported."), type2char(TYPEOF(ans)));
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(ans)));
     }
     if (l==0) {
       break;  // stop early as nothing left to do

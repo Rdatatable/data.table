@@ -110,7 +110,7 @@ reference.
 \references{
   \url{https://en.wikipedia.org/wiki/Radix_sort}\cr
   \url{https://en.wikipedia.org/wiki/Counting_sort}\cr
-  \url{http://stereopsis.com/radix.html}\cr
+  \url{https://stereopsis.com/radix.html}\cr
   \url{https://codercorner.com/RadixSortRevisited.htm}\cr
   \url{https://cran.r-project.org/package=bit64}\cr
   \url{https://github.com/Rdatatable/data.table/wiki/Presentations}

@@ -16,8 +16,8 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
     error(_("len must be an integer vector")); // # nocov
   if (LENGTH(x) != LENGTH(len))
     error(_("x and len must be the same length")); // # nocov
-  const int *ix = INTEGER(x);
-  const int *ilen = INTEGER(len), nlen=LENGTH(len);
+  const int *ix = INTEGER_RO(x);
+  const int *ilen = INTEGER_RO(len), nlen=LENGTH(len);
   int reslen = 0;
   for (int i=0; i<nlen; ++i) {
     if (INT_MAX-reslen < ilen[i])

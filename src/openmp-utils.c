@@ -94,7 +94,7 @@ SEXP getDTthreads_C(SEXP n, SEXP throttle)
 SEXP getDTthreads_R(SEXP verbose)
 {
   if(!IS_TRUE_OR_FALSE(verbose))
-    error(_("%s must be TRUE or FALSE"), "verbose");
+    error(_("'%s' must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
       Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));

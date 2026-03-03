@@ -47,6 +47,7 @@ groupingsets(x, \dots)
 \url{https://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE}
 }
 \examples{
+\dontshow{.dt_threads <- setDTthreads(2)}
 n = 24L
 set.seed(25)
 DT <- data.table(
@@ -83,5 +84,6 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 # groupingsets
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
+\dontshow{setDTthreads(.dt_threads); rm(.dt_threads)}
 }
 \keyword{ data }
