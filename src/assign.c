@@ -806,7 +806,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks, sourceLevelsD[val-1], 0); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
-          const SEXP *sourceD = STRING_PTR_RO(source);
+          // for character input, "levels" correspond to the source vector pre-converted to UTF-8
+          const SEXP *sourceD = sourceLevelsD;
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const SEXP val = sourceD[i];
             newSourceD[i] = val==NA_STRING ? NA_INTEGER : -hash_lookup(marks, val, 0);
