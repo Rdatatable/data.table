@@ -20671,9 +20671,11 @@ DT = data.table(factor(rep("\uf8", 3)))
 # identical() to V1's only level but stored in a different CHARSXP
 samelevel = iconv(levels(DT$V1), from = "UTF-8", to = "latin1")
 DT[1, V1 := samelevel]
-test(2311.1, nlevels(DT$V1), 1L) # used to be 2
+# used to fail to look up the new level, resulting in an invalid factor, #7648
+test(2311.1, as.integer(DT$V1), rep(1L, 3))
+test(2311.2, nlevels(DT$V1), 1L) # used to be 2
 DT[1, V1 := factor("a", levels = c("a", samelevel))]
-test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+test(2311.3, nlevels(DT$V1), 2L) # used to be 3
 
 # avoid translateChar*() in OpenMP threads, #6883
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
@@ -21517,7 +21519,7 @@ dt_melt = data.table(a = 1:2, b = 3:4)
 test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 
 # test for data.frame reshape for dcast
-df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
+df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4, stringsAsFactors = FALSE)
 dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
 test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))
 
@@ -21529,16 +21531,23 @@ xenv$L = list(data.table(a=1, b=4:6), data.table(a=2, b=7:10))
 xenv$LL = list(list(data.table(a=1L, b=4:6)))
 xenv$M = list(b=data.table(a=1, b=4:6), a=1:5)
 xenv$N = list(a=1:5)
-test(2366.1, tables(env=xenv, depth=1L)[, .(NAME, NROW, NCOL)], 
-  data.table(
-    NAME = c("DT", "L[[1]]", "L[[2]]", "M$b"),
-    NROW = c(1L, 3L, 4L, 3L),
-    NCOL = c(1L, 2L, 2L, 2L)
-))
+test(2366.1,
+     tables(env=xenv, depth=1L)[, .(NAME, NROW, NCOL)], 
+     data.table(
+       NAME = c("DT", "L[[1]]", "L[[2]]", "M$b"),
+       NROW = c(1L, 3L, 4L, 3L),
+       NCOL = c(1L, 2L, 2L, 2L),
+       INDICES = list(NULL, NULL, NULL, NULL),
+       KEY = list(NULL, NULL, NULL, NULL)
+     ))
 setindex(xenv$M$b, b)
-test(2366.2, tables(env=xenv, depth=1L, index=TRUE)$INDICES, list(NULL, NULL, NULL, "b"))
+test(2366.2,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
+     data.table(INDICES = list(NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL)))
 setkey(xenv$M$b, a)
-test(2366.3, tables(env=xenv, depth=1L, index=TRUE)$KEY, list(NULL, NULL, NULL, "a"))
+test(2366.3,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
+     data.table(INDICES = list(NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, "a")))
 # test for depth>1L
 test(2366.4, tables(env=xenv, depth=2L), error="depth>1L is not implemented yet")
 rm(xenv)
