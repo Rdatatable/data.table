@@ -54,7 +54,6 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
       L = obj[[list_index[i]]]
       wl = which(vapply_1b(L, is.data.table))
       total_dt = total_dt + length(wl)
-      obj_list[[i]] = L[wl]
     }
     name_count = length(w) + total_dt
     # initialize info data.table with total number of data.tables found
@@ -70,19 +69,21 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     }
     # now fill in the data.tables found inside lists
     cnt = 1L
-    if (total_dt>0L) {
+    if (total_dt > 0L) {
       for (i in seq_along(list_index)) {
-        if (length(obj_list[[i]])==0L) next
-        # get the parent list name
+        L = obj[[list_index[i]]]
+        wl = which(vapply_1b(L, is.data.table))
         parent_name = names[list_index[i]]
-        for (j in seq_along(obj_list[[i]])) {
-          elem_names = names(obj[[list_index[i]]])
-          if (!is.null(elem_names) && nzchar(elem_names[j])) {
-            new_name = paste0(parent_name, "$", elem_names[j])
+        elem_names = names(L)
+        if( is.data.frame(L)){print(elem_names)}
+        for (j in seq_along(wl)) {
+          idx = wl[j]
+          if (!is.null(elem_names) && nzchar(elem_names[idx])) {
+            new_name = paste0(parent_name, "$", elem_names[idx])
           } else {
-            new_name = paste0(parent_name, "[[", j, "]]")
+            new_name = paste0(parent_name, "[[", idx, "]]")
           }
-          DT = obj_list[[i]][[j]]
+          DT = L[[idx]]
           k = cnt + length(w) # row number in info data.table
           cnt = cnt + 1L
           set(info, k, "NAME", new_name)

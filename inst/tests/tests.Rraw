@@ -21531,23 +21531,25 @@ xenv$L = list(data.table(a=1, b=4:6), data.table(a=2, b=7:10))
 xenv$LL = list(list(data.table(a=1L, b=4:6)))
 xenv$M = list(b=data.table(a=1, b=4:6), a=1:5)
 xenv$N = list(a=1:5)
+xenv$DF = data.frame(a = 1:2)
+xenv$DF$b = data.table(c = 3:4, d = 5:6)
 test(2366.1,
      tables(env=xenv, depth=1L, index=TRUE)[, .(NAME, NROW, NCOL, INDICES, KEY)], 
      data.table(
-       NAME = c("DT", "L[[1]]", "L[[2]]", "M$b"),
-       NROW = c(1L, 3L, 4L, 3L),
-       NCOL = c(1L, 2L, 2L, 2L),
-       INDICES = list(NULL, NULL, NULL, NULL),
-       KEY = list(NULL, NULL, NULL, NULL)
+       NAME = c("DF$b", "DT", "L[[1]]", "L[[2]]", "M$b"),
+       NROW = c(2L, 1L, 3L, 4L, 3L),
+       NCOL = c(2L, 1L, 2L, 2L, 2L),
+       INDICES = list(NULL, NULL, NULL, NULL, NULL),
+       KEY = list(NULL, NULL, NULL, NULL, NULL)
      ))
 setindex(xenv$M$b, b)
 test(2366.2,
      tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
-     data.table(INDICES = list(NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL)))
+     data.table(INDICES = list(NULL, NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL, NULL)))
 setkey(xenv$M$b, a)
 test(2366.3,
      tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
-     data.table(INDICES = list(NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, "a")))
+     data.table(INDICES = list(NULL, NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL, "a")))
 # test for depth>1L
 test(2366.4, tables(env=xenv, depth=2L), error="depth>1L is not implemented yet")
 rm(xenv)
