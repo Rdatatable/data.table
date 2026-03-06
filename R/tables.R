@@ -18,6 +18,15 @@ type_size = function(DT) {
   ans + ncol(DT)*.Machine$sizeof.pointer  # column name pointers
 }
 
+fill_info_row = function(info, i, DT, mb, index) {
+  set(info, i, "NROW", nrow(DT))
+  set(info, i, "NCOL", ncol(DT))
+  if (is.function(mb)) set(info, i, "MB", as.integer(mb(DT)/1048576L)) # i.e. 1024**2
+  if (!is.null(tt<-names(DT))) set(info, i, "COLS", tt)
+  if (!is.null(tt<-key(DT))) set(info, i, "KEY", tt)
+  if (index && !is.null(tt<-indices(DT))) set(info, i, "INDICES", tt)
+}
+
 tables = function(mb=type_size, order.col="NAME", width=80L,
                   env=parent.frame(), silent=FALSE, index=FALSE,
                   depth=0L)
@@ -33,9 +42,9 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   # we check if depth=1L is requested and add found tables to w
   if (depth == 1L) {
     is_list = vapply_1b(obj, is.list)
-    is_df = vapply_1b(obj, is.data.frame)
-    # list_index is a index of list which is not data.frame or data.table
-    list_index = which(is_list & !is_df)
+    is_dt = vapply_1b(obj, is.data.table)
+    # list_index is a index of list which is not data.table
+    list_index = which(is_list & !is_dt)
     # obj_list is a list of lists of data.tables found inside lists
     obj_list = vector("list", length(list_index))
     # make a list of size list_index and add wl in it
@@ -50,7 +59,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     name_count = length(w) + total_dt
     # initialize info data.table with total number of data.tables found
     if (name_count==0L) {
-      if (!silent) catf("No objects of class data.table exist in %s\n")
+      if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
       return(invisible(data.table(NULL)))
     }
     # create info data.table with total rows equal to number of data.tables found
@@ -77,16 +86,11 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
           k = cnt + length(w) # row number in info data.table
           cnt = cnt + 1L
           set(info, k, "NAME", new_name)
-          set(info, k, "NROW", nrow(DT))
-          set(info, k, "NCOL", ncol(DT))
-          if (is.function(mb)) set(info, k, "MB", as.integer(mb(DT)/1048576L)) # i.e. 1024**2
-          if (!is.null(tt<-names(DT))) set(info, k, "COLS", tt)  # TODO: don't need these if()s when #5526 is done
-          if (!is.null(tt<-key(DT))) set(info, k, "KEY", tt)
-          if (index && !is.null(tt<-indices(DT))) set(info, k, "INDICES", tt)
+          fill_info_row(info, k, DT, mb, index)
         }
       }
     }
-  } else if (depth==0L) {
+  } else if (depth == 0L) {
     # if depth is 0
     if (!length(w)) {
       if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
@@ -99,12 +103,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   }
   for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = obj[[w[i]]]
-    set(info, i, "NROW", nrow(DT))
-    set(info, i, "NCOL", ncol(DT))
-    if (is.function(mb)) set(info, i, "MB", as.integer(mb(DT)/1048576L)) # i.e. 1024**2
-    if (!is.null(tt<-names(DT))) set(info, i, "COLS", tt)  # TODO: don't need these if()s when #5526 is done
-    if (!is.null(tt<-key(DT))) set(info, i, "KEY", tt)
-    if (index && !is.null(tt<-indices(DT))) set(info, i, "INDICES", tt)
+    fill_info_row(info, i, DT, mb, index)
   }
   if (!is.function(mb)) info[,MB:=NULL]
   if (!index)           info[,INDICES:=NULL]
