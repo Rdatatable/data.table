@@ -98,13 +98,13 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
       return(invisible(data.table(NULL)))
     }
     info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
+    for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
+      DT = obj[[w[i]]]
+      fill_info_row(info, i, DT, mb, index)
+    }
   } else {
     # for depth greater than 1L,recursion is not implemented yet
     stopf("depth>1L is not implemented yet")
-  }
-  for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
-    DT = obj[[w[i]]]
-    fill_info_row(info, i, DT, mb, index)
   }
   if (!is.function(mb)) info[,MB:=NULL]
   if (!index)           info[,INDICES:=NULL]
