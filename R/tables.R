@@ -31,7 +31,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
 
   info = NULL
   # we check if depth=1L is requested and add found tables to w
-  if (depth==1L) {
+  if (depth == 1L) {
     is_list = vapply_1b(obj, is.list)
     is_df = vapply_1b(obj, is.data.frame)
     is_dt = vapply_1b(obj, is.data.table)
