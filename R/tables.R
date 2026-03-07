@@ -71,9 +71,9 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     if (total_dt > 0L) {
       for (i in seq_along(list_index)) {
         L = obj[[list_index[i]]]
-        wl = which(vapply_1b(L, is.data.table))
         parent_name = names[list_index[i]]
         elem_names = names(L)
+        wl = which(vapply_1b(L, is.data.table))
         for (j in seq_along(wl)) {
           idx = wl[j]
           if (!is.null(elem_names) && nzchar(elem_names[idx])) {
