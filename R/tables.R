@@ -46,11 +46,9 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     is_dt = vapply_1b(obj, is.data.table)
     # list_index is a index of list which is not data.table
     list_index = which(is_list & !is_dt)
-    # obj_list is a list of lists of data.tables found inside lists
-    obj_list = vector("list", length(list_index))
     # make a list of size list_index and add wl in it
     total_dt = 0L
-    # filling obj_list and counting total_dt
+    # counting total_dt
     for (i in seq_along(list_index)) {
       L = obj[[list_index[i]]]
       total_dt = total_dt + sum(vapply_1b(L, is.data.table))
