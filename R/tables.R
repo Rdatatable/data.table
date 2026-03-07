@@ -53,8 +53,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     # filling obj_list and counting total_dt
     for (i in seq_along(list_index)) {
       L = obj[[list_index[i]]]
-      wl = which(vapply_1b(L, is.data.table))
-      total_dt = total_dt + length(wl)
+      total_dt = total_dt + sum(vapply_1b(L, is.data.table))
     }
     name_count = length(w) + total_dt
     # initialize info data.table with total number of data.tables found
@@ -69,9 +68,9 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     if (total_dt > 0L) {
       for (i in seq_along(list_index)) {
         L = obj[[list_index[i]]]
-        wl = which(vapply_1b(L, is.data.table))
         parent_name = names[list_index[i]]
         elem_names = names(L)
+        wl = which(vapply_1b(L, is.data.table))
         for (j in seq_along(wl)) {
           idx = wl[j]
           if (!is.null(elem_names) && nzchar(elem_names[idx])) {
