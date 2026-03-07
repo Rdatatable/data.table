@@ -18,7 +18,8 @@ type_size = function(DT) {
   ans + ncol(DT)*.Machine$sizeof.pointer  # column name pointers
 }
 
-fill_info_row = function(info, i, DT, mb, index) {
+fill_info_row = function(info, i, DT, mb, index, name) {
+  set(info, i, "NAME", name)
   set(info, i, "NROW", nrow(DT))
   set(info, i, "NCOL", ncol(DT))
   if (is.function(mb)) set(info, i, "MB", as.integer(mb(DT)/1048576L)) # i.e. 1024**2
@@ -63,10 +64,6 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
     }
     # create info data.table with total rows equal to number of data.tables found
     info = data.table(NAME=character(name_count), NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
-    # fill in the names of data.tables found in w
-    for (i in seq_along(w)) {  # names of w items
-      set(info, i, "NAME", names[w[i]])
-    }
     # now fill in the data.tables found inside lists
     cnt = 1L
     if (total_dt > 0L) {
@@ -85,8 +82,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
           DT = L[[idx]]
           k = cnt + length(w) # row number in info data.table
           cnt = cnt + 1L
-          set(info, k, "NAME", new_name)
-          fill_info_row(info, k, DT, mb, index)
+          fill_info_row(info, k, DT, mb, index, new_name)
         }
       }
     }
@@ -103,7 +99,7 @@ tables = function(mb=type_size, order.col="NAME", width=80L,
   }
   for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = obj[[w[i]]]
-    fill_info_row(info, i, DT, mb, index)
+    fill_info_row(info, i, DT, mb, index, names[w[i]])
   }
   if (!is.function(mb)) info[,MB:=NULL]
   if (!index)           info[,INDICES:=NULL]
