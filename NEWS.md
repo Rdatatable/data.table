@@ -28,6 +28,8 @@
 
 4. `dcast()` and `melt()` "just work" when passed a data.frame, not just data.tables, with no need for coercion, [#7614](https://github.com/Rdatatable/data.table/issues/7614). Thanks @MichaelChirico for the suggestion and @manmita for the PR. Note that to avoid potential conflicts with {reshape2}'s data.frame methods, we do the dispatch to the data.table method manually.
 
+5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
@@ -39,6 +41,8 @@
 4. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
 
 5. Non-equi joins combining an equality condition with two inequality conditions on the same column (e.g., `on = .(id == id, val >= lo, val <= hi)`) no longer error, [#7641](https://github.com/Rdatatable/data.table/issues/7641). The internal `chmatchdup` remapping of duplicate `rightcols` was overwriting the original column indices, causing downstream code to reference non-existent columns. Thanks @tarun-t for the report and fix, and @aitap for the diagnosis.
+
+6. By-reference sub-assignments of strings to factor columns now _actually_ match the levels in UTF-8 when required and now don't result in invalid factors being created, [#7648](https://github.com/Rdatatable/data.table/issues/7648), amending a previous incomplete fix to [#6886](https://github.com/Rdatatable/data.table/issues/6886) in v1.17.2. Thanks @BASS-JN for the report and @aitap for the fix.
 
 ### Notes
 

@@ -10525,7 +10525,7 @@ if (test_bit64) {
     "+9223372036854775807",  # integer64 max
     "-9223372036854775806","+9223372036854775806",  # 1 below extreme just to check
     "0","-1","1",
-    "NA",NA,
+    NA,
     "-2147483646", # 1 below extreme to check
     "-2147483647", # smallest integer in R
     "-2147483648", # NA_INTEGER == INT_MIN but valid integer64
@@ -10536,7 +10536,7 @@ if (test_bit64) {
     "+2147483649"
   )))
   ans = c('"V1"',"-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
-          "0","-1","1","__NA__","__NA__",
+          "0","-1","1","__NA__",
           "-2147483646","-2147483647","-2147483648","-2147483649",
           "2147483646","2147483647","2147483648","2147483649")
   test(1731.1, class(DT[[1L]]), "integer64")
@@ -20671,9 +20671,11 @@ DT = data.table(factor(rep("\uf8", 3)))
 # identical() to V1's only level but stored in a different CHARSXP
 samelevel = iconv(levels(DT$V1), from = "UTF-8", to = "latin1")
 DT[1, V1 := samelevel]
-test(2311.1, nlevels(DT$V1), 1L) # used to be 2
+# used to fail to look up the new level, resulting in an invalid factor, #7648
+test(2311.1, as.integer(DT$V1), rep(1L, 3))
+test(2311.2, nlevels(DT$V1), 1L) # used to be 2
 DT[1, V1 := factor("a", levels = c("a", samelevel))]
-test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+test(2311.3, nlevels(DT$V1), 2L) # used to be 3
 
 # avoid translateChar*() in OpenMP threads, #6883
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
@@ -21512,11 +21514,48 @@ test(2364.2, levels(x$a), levels(y$a))
 rm(x, y)
 
 # test for data.frame reshape for melt
-df_melt = data.frame(a = 1:2, b = 3:4)
-dt_melt = data.table(a = 1:2, b = 3:4)
+df_melt = data.frame(a=1:2, b=3:4)
+dt_melt = data.table(a=1:2, b=3:4)
 test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 
 # test for data.frame reshape for dcast
-df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
-dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
-test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))
+df_dcast = data.frame(a=c("x", "y"), b=1:2, v=3:4, stringsAsFactors=FALSE)
+dt_dcast = data.table(a=c("x", "y"), b=1:2, v=3:4)
+test(2365.2, dcast(df_dcast, a~b, value.var="v"), dcast(dt_dcast, a~b, value.var="v"))
+
+#2606 tables() depth=1 finds nested data.tables in lists
+# creating env so that the names are within it
+xenv = new.env()
+xenv$DT = data.table(a=1L)
+xenv$L = list(data.table(a=1, b=4:6), data.table(a=2, b=7:10))
+xenv$LL = list(list(data.table(a=1L, b=4:6)))
+xenv$M = list(b=data.table(a=1, b=4:6), a=1:5)
+xenv$N = list(a=1:5)
+xenv$DF = data.frame(a = 1:2)
+xenv$DF$b = data.table(c = 3:4, d = 5:6)
+test(2366.1,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(NAME, NROW, NCOL, INDICES, KEY)], 
+     data.table(
+       NAME = c("DF$b", "DT", "L[[1]]", "L[[2]]", "M$b"),
+       NROW = c(2L, 1L, 3L, 4L, 3L),
+       NCOL = c(2L, 1L, 2L, 2L, 2L),
+       INDICES = list(NULL, NULL, NULL, NULL, NULL),
+       KEY = list(NULL, NULL, NULL, NULL, NULL)
+     ))
+setindex(xenv$M$b, b)
+test(2366.2,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
+     data.table(INDICES = list(NULL, NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL, NULL)))
+setkey(xenv$M$b, a)
+test(2366.3,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
+     data.table(INDICES = list(NULL, NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL, "a")))
+# test for depth>1L
+test(2366.4, tables(env=xenv, depth=2L), error="depth>1L is not implemented yet")
+rm(xenv)
+
+# no data.table test
+xenv_empty = new.env()
+test(2366.5, tables(env=xenv_empty, depth=1L), invisible(data.table(NULL)))
+test(2366.6, tables(env=xenv_empty), invisible(data.table(NULL)))
+rm(xenv_empty)
