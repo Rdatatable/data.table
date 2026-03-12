@@ -180,7 +180,7 @@ SEXP freadR(
   if (!isNull(connectionSpillArg)) {
     if (!isReal(connectionSpillArg) || LENGTH(connectionSpillArg) != 2)
       internal_error(__func__, "connectionSpillArg must be length-2 real vector"); // # nocov
-    const double *spill = REAL(connectionSpillArg);
+    const double *spill = REAL_RO(connectionSpillArg);
     args.connectionSpillSeconds = spill[0];
     args.connectionSpillBytes = spill[1];
     if (!R_FINITE(args.connectionSpillSeconds) || args.connectionSpillSeconds < 0) args.connectionSpillSeconds = 0.0;
