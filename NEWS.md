@@ -44,6 +44,8 @@
 
 6. By-reference sub-assignments of strings to factor columns now _actually_ match the levels in UTF-8 when required and now don't result in invalid factors being created, [#7648](https://github.com/Rdatatable/data.table/issues/7648), amending a previous incomplete fix to [#6886](https://github.com/Rdatatable/data.table/issues/6886) in v1.17.2. Thanks @BASS-JN for the report and @aitap for the fix.
 
+7. Grouping operations with constant `list()` expressions in `j` are now optimized to avoid per-group allocation overhead, [#712](https://github.com/Rdatatable/data.table/issues/712). Thanks @macrakis for the report and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

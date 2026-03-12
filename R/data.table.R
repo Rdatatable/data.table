@@ -189,6 +189,16 @@ replace_dot_alias = function(e) {
   list(jsub=jsub, jvnames=jvnames, funi=funi+1L)
 }
 
+# Optimize constant list() expressions to avoid per-group allocation overhead
+# e.g., list(1) -> 1, where the value is a simple atomic constant, #712
+# return NULL for no optimization possible
+.optimize_constant_list = function(jsub) {
+  if (!jsub %iscall% "list") return(NULL)
+  if (length(jsub) != 2L) return(NULL)
+  if (!is_constantish(jsub[[2L]])) return(NULL)
+  jsub[[2L]]
+}
+
 # Optimize .SD subsetting patterns like .SD[1], head(.SD), first(.SD)
 # return NULL for no optimization possible
 .optimize_sd_subset = function(jsub, sdvars, SDenv, envir) {
@@ -503,6 +513,12 @@ replace_dot_alias = function(e) {
   if (!(is.call(jsub) || (is.name(jsub) && jsub %chin% c(".SD", ".N")))) {
     if (verbose) catf("Optimization is on but left j unchanged (single plain symbol): '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
     return(list(GForce=FALSE, jsub=jsub, jvnames=jvnames))
+  }
+
+  # Step 0: Unwrap constant list() to avoid per-group allocation, #712
+  if (!is.null(unwrapped_consts <- .optimize_constant_list(jsub))) {
+    if (verbose) catf("Optimized j from '%s' to bare constant '%s'\n", deparse(jsub), deparse(unwrapped_consts, width.cutoff=200L, nlines=1L))
+    jsub = unwrapped_consts
   }
 
   # Step 1: Apply lapply(.SD) optimization
