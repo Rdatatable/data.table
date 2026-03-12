@@ -80,9 +80,20 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           if clang --version | grep 'clang version 17'; then
-            curl -O https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
-            sudo tar fvvxz openmp-19.1.0-darwin20-Release.tar.gz -C /
-            rm -f openmp-19.1.0-darwin20-Release.tar.gz
+            if ! openmp_tarball=$(
+              apple_clang_series=$(clang --version | sed -nE 's/.*\(clang-([0-9]{4})\..*/\1/p')
+              APPLE_CLANG_SERIES="${apple_clang_series}" \
+              curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 180 \
+                https://mac.r-project.org/openmp/ |
+              perl -0ne 'if (m{<tr>\s*<td[^>]*>.*?Apple clang \Q$ENV{APPLE_CLANG_SERIES}\E\.x.*?</td>\s*<td[^>]*>.*?<a[^>]*href="(openmp-[^"]+-darwin[^"]*-Release\.tar\.gz)"[^>]*>}si) { print $1; exit 0 } exit 1;'
+            ); then
+              echo "Failed to resolve OpenMP runtime from https://mac.r-project.org/openmp/"
+              exit 1
+            fi
+            curl --fail --location --retry 3 --retry-all-errors --connect-timeout 20 --max-time 180 \
+              -O "https://mac.r-project.org/openmp/${openmp_tarball}"
+            sudo tar fvxz "${openmp_tarball}" -C /
+            rm -f "${openmp_tarball}"
           fi # otherwise R-bundled runtime is fine
 
       - name: Install dependencies
