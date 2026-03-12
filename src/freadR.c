@@ -841,7 +841,7 @@ SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit
 
   return R_ExecWithCleanup(do_spill, &state, spill_cleanup, &state);
 #else // R_CONNECTIONS_VERSION != 1
-  INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d", R_CONNECTIONS_VERSION)); // # nocov
+  INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d"), R_CONNECTIONS_VERSION); // # nocov
 #endif
 }
 
