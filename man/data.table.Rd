@@ -97,7 +97,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     See \href{../doc/datatable-intro.html}{\code{vignette("datatable-intro")}} and \code{example(data.table)}.}
 
-    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
+    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. The results are combined using \code{\link{rbindlist}} with \code{use.names=FALSE}. \code{by} accepts:
 
     \itemize{
         \item A single unquoted column name: e.g., \code{DT[, .(sa=sum(a)), by=x]}
@@ -181,7 +181,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
   \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
 
-  \item{showProgress}{ \code{TRUE} shows progress indicator with estimated time to completion for lengthy "by" operations. }
+  \item{showProgress}{ \code{TRUE} (default when \code{interactive()}) shows a progress indicator with estimated time to completion for lengthy "by" operations, updating every 3 seconds. An integer value controls the update interval in seconds (minimum 3). \code{FALSE} disables the progress indicator. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr

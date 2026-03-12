@@ -19,7 +19,7 @@ SEXP set_diff(SEXP x, int n) {
   if (n <= 0) error(_("'n' must be a positive integer"));
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
-  const int *ixmatch = INTEGER(xmatch);
+  const int *ixmatch = INTEGER_RO(xmatch);
   int *buf = (int *) R_alloc(n, sizeof(*buf));
   int j=0;
   for (int i=0; i<n; ++i) {
@@ -39,7 +39,7 @@ SEXP which(SEXP x, Rboolean val) {
   int j=0, n = length(x);
   SEXP ans;
   if (!isLogical(x)) error(_("Argument to 'which' must be logical"));
-  const int *ix = LOGICAL(x);
+  const int *ix = LOGICAL_RO(x);
   int *buf = (int *) R_alloc(n, sizeof(*buf));
   for (int i=0; i<n; ++i) {
     if (ix[i] == val) {
@@ -70,7 +70,7 @@ static const char *concat(SEXP vec, SEXP idx) {
   int nidx=length(idx), nvec=length(vec);
   ans[0]='\0';
   if (nidx==0) return ans;
-  const int *iidx = INTEGER(idx);
+  const int *iidx = INTEGER_RO(idx);
   for (int i=0; i<nidx; ++i) {
     if (iidx[i]<1 || iidx[i]>nvec)
       internal_error(__func__, "'idx' must take values between 1 and length(vec); 1 <= idx <= %d", nvec); // # nocov
@@ -150,7 +150,7 @@ static SEXP unlist_(SEXP xint) {
   int *ians = INTEGER(ans), k=0;
   for (int i=0; i<n; ++i) {
     SEXP tmp = VECTOR_ELT(xint, i);
-    const int *itmp = INTEGER(tmp), n2=length(tmp);
+    const int *itmp = INTEGER_RO(tmp), n2=length(tmp);
     for (int j=0; j<n2; ++j)
       ians[k++] = itmp[j];
   }
@@ -522,7 +522,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         int thislen = 0;
         if (data->narm) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          ithisidx = INTEGER(thisidx);
+          ithisidx = INTEGER_RO(thisidx);
           thislen = length(thisidx);
         }
         size_t size = RTYPE_SIZEOF(thiscol);
@@ -600,7 +600,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
       if (!data->measure_is_list) {//one value column to output.
-        const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+        const int *thisvaluecols = INTEGER_RO(VECTOR_ELT(data->valuecols, 0));
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
@@ -622,7 +622,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
         int len = length(thisvaluecols);
         levels = PROTECT(allocVector(STRSXP, len)); protecti++;
-        const int *vd = INTEGER(thisvaluecols);
+        const int *vd = INTEGER_RO(thisvaluecols);
         for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
         SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
         int numRemove = 0;  // remove dups and any for which narm and all-NA
@@ -706,7 +706,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             dtarget[counter + k] = dthiscol[ithisidx[k]-1];
@@ -725,7 +725,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             itarget[counter + k] = ithiscol[ithisidx[k]-1];
@@ -740,7 +740,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
@@ -760,7 +760,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-          const int *ithisidx = INTEGER(thisidx);
+          const int *ithisidx = INTEGER_RO(thisidx);
           const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
@@ -787,12 +787,12 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   Rboolean narm=FALSE, verbose=FALSE;
 
   if (!isNewList(DT)) error(_("Input is not of type VECSXP, expected a data.table, data.frame or list"));
-  if (!isLogical(valfactor)) error(_("Argument 'value.factor' should be logical TRUE/FALSE"));
-  if (!isLogical(varfactor)) error(_("Argument 'variable.factor' should be logical TRUE/FALSE"));
-  if (!isLogical(narmArg)) error(_("Argument 'na.rm' should be logical TRUE/FALSE."));
-  if (!isString(varnames)) error(_("Argument 'variable.name' must be a character vector"));
-  if (!isString(valnames)) error(_("Argument 'value.name' must be a character vector"));
-  if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+  if (!IS_TRUE_OR_FALSE(valfactor)) error(_("'%s' must be TRUE or FALSE"), "value.factor");
+  if (!IS_TRUE_OR_FALSE(varfactor)) error(_("'%s' must be TRUE or FALSE"), "variable.factor");
+  if (!IS_TRUE_OR_FALSE(narmArg)) error(_("'%s' must be TRUE or FALSE"), "na.rm");
+  if (!isString(varnames)) error(_("'%s' must be a character vector"), "variable.name");
+  if (!isString(valnames)) error(_("'%s' must be a character vector"), "value.name");
+  if (!IS_TRUE_OR_FALSE(verboseArg)) error(_("'%s' must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {
