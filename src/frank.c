@@ -28,12 +28,12 @@ SEXP dt_na(SEXP x, SEXP cols)
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
     case LGLSXP: {
-      const int *iv = LOGICAL(v);
+      const int *iv = LOGICAL_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_LOGICAL);
     }
       break;
     case INTSXP: {
-      const int *iv = INTEGER(v);
+      const int *iv = INTEGER_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_INTEGER);
     }
       break;
@@ -47,7 +47,7 @@ SEXP dt_na(SEXP x, SEXP cols)
         const int64_t *dv = (int64_t *)REAL(v);
         for (int j=0; j<n; ++j) ians[j] |= (dv[j] == NA_INTEGER64);
       } else {
-        const double *dv = REAL(v);
+        const double *dv = REAL_RO(v);
         for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
       }
     }
@@ -110,7 +110,7 @@ SEXP dt_na(SEXP x, SEXP cols)
 }
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
-  const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
+  const int *xstart = INTEGER_RO(xstartArg), *xlen = INTEGER_RO(xlenArg), *xorder = INTEGER_RO(xorderArg);
   enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
 
   const char *pties = CHAR(STRING_ELT(ties_method, 0));
@@ -205,11 +205,11 @@ SEXP anyNA(SEXP x, SEXP cols) {
     j=0;
     switch (TYPEOF(v)) {
     case LGLSXP: {
-      const int *iv = LOGICAL(v);
+      const int *iv = LOGICAL_RO(v);
       while(j<n && iv[j]!=NA_LOGICAL) j++;
     } break;
     case INTSXP: {
-      const int *iv = INTEGER(v);
+      const int *iv = INTEGER_RO(v);
       while(j<n && iv[j]!=NA_INTEGER) j++;
     } break;
     case STRSXP: {
@@ -221,7 +221,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
         const int64_t *dv = (int64_t *)REAL(v);
         while (j<n && dv[j]!=NA_INTEGER64) j++;
       } else {
-        const double *dv = REAL(v);
+        const double *dv = REAL_RO(v);
         while (j<n && !ISNAN(dv[j])) j++;
       }
       break;
@@ -230,7 +230,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       j = n;
       break;
     case CPLXSXP: {
-      const Rcomplex *cv = COMPLEX(v);
+      const Rcomplex *cv = COMPLEX_RO(v);
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       while (j<n && !ISNAN(cv[j].r) && !ISNAN(cv[j].i)) j++;
     } break;

@@ -30,7 +30,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
 
   int nx = length(x), nk = length(k);
   if (!isInteger(k)) internal_error(__func__, "k must be integer"); // # nocov
-  const int *kd = INTEGER(k);
+  const int *kd = INTEGER_RO(k);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
 
   const bool cycle = stype == CYCLIC;
@@ -53,7 +53,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(TYPEOF(elem), xrows) );
-        const int *restrict ielem = INTEGER(elem);
+        const int *restrict ielem = INTEGER_RO(elem);
         int *restrict itmp = INTEGER(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
@@ -79,7 +79,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
-        const double *restrict delem = REAL(elem);
+        const double *restrict delem = REAL_RO(elem);
         double *restrict dtmp = REAL(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
@@ -102,7 +102,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
-        const Rcomplex *restrict celem = COMPLEX(elem);
+        const Rcomplex *restrict celem = COMPLEX_RO(elem);
         Rcomplex *restrict ctmp = COMPLEX(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
@@ -155,7 +155,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(RAWSXP, xrows) );
-        const Rbyte *restrict delem = RAW(elem);
+        const Rbyte *restrict delem = RAW_RO(elem);
         Rbyte *restrict dtmp = RAW(tmp);
         size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;

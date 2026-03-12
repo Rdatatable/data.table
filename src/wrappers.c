@@ -50,7 +50,7 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
     SET_STRING_ELT(xchar, i, (ixi >= 1 && ixi <= nlevels) ? STRING_ELT(levels, ix[i]-1) : NA_STRING);
   }
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
-  int *inewx = INTEGER(newx);
+  const int *inewx = INTEGER_RO(newx);
   for (int i=0; i<nx; ++i) ix[i] = inewx[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);

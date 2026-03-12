@@ -416,7 +416,7 @@ test(15.22, nafill(x, fill=y26), replace(x, c(1L, 3L, 5L), y26))
 test(15.23, nafill(x, fill=as.POSIXct(y26, tz='Asia/Singapore')), replace(x, c(1L, 3L, 5L), y26))
 
 test(15.24, nafill(as.Date(NA), fill=as.IDate("2025-01-01")), as.Date("2025-01-01"))
-test(15.25, nafill(as.Date(NA_integer_), fill=as.IDate("2025-01-01")), as.Date("2025-01-01"))
+test(15.25, nafill(as.Date(NA_integer_, origin='1970-01-01'), fill=as.IDate("2025-01-01")), as.Date("2025-01-01"))
 test(15.26, nafill(as.IDate(NA), fill=as.Date("2025-01-01")), as.IDate("2025-01-01"))
 
 ## setnafill

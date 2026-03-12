@@ -27,7 +27,7 @@ bool fitsInInt32(SEXP x) {
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
+  const double *dx = REAL_RO(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
@@ -44,7 +44,7 @@ bool fitsInInt64(SEXP x) {
   if (!isReal(x) || INHERITS(x, char_integer64))
     return false;
   R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
+  const double *dx = REAL_RO(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
          (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
@@ -68,7 +68,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return false;
   case LGLSXP:
   case INTSXP: {
-    const int *xd = INTEGER(x);
+    const int *xd = INTEGER_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
       return false;
     }
@@ -81,14 +81,14 @@ bool allNA(SEXP x, bool errorForBadType) {
         return false;
       }
     } else {
-      const double *xd = REAL(x);
+      const double *xd = REAL_RO(x);
       for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
         return false;
       }
     }
     return true;
   case CPLXSXP: {
-    const Rcomplex *xd = COMPLEX(x);
+    const Rcomplex *xd = COMPLEX_RO(x);
     for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
@@ -161,7 +161,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-    int *icols = INTEGER(ricols);
+    const int *icols = INTEGER_RO(ricols);
     if (!bskip_absent) {
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
@@ -212,6 +212,37 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
+void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller) {
+  switch (TYPEOF(src)) {
+  case RAWSXP:
+    memcpy(RAW(dst),     RAW_RO(src),     n*sizeof(Rbyte));
+    break;
+  case LGLSXP:
+    memcpy(LOGICAL(dst), LOGICAL_RO(src), n*sizeof(int));
+    break;
+  case INTSXP:
+    memcpy(INTEGER(dst), INTEGER_RO(src), n*sizeof(int));
+    break;
+  case REALSXP:
+    memcpy(REAL(dst),    REAL_RO(src),    n*sizeof(double));
+    break;
+  case CPLXSXP:
+    memcpy(COMPLEX(dst), COMPLEX_RO(src), n*sizeof(Rcomplex));
+    break;
+  case STRSXP: {
+    const SEXP *xp = STRING_PTR_RO(src);
+    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(dst, i, xp[i]);
+  } break;
+  case VECSXP: {
+    const SEXP *xp = SEXPPTR_RO(src);
+    if (deep_copy) for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, copyAsPlain(xp[i]));
+    else           for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(dst, i, xp[i]);
+  } break;
+  default:                                                                                     // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(src)), caller); // # nocov
+  }
+}
+
 SEXP copyAsPlain(SEXP x) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
@@ -240,33 +271,7 @@ SEXP copyAsPlain(SEXP x) {
     UNPROTECT(1);
     return ans;
   }
-  switch (TYPEOF(x)) {
-  case RAWSXP:
-    memcpy(RAW(ans),     RAW_RO(x),     n*sizeof(Rbyte));
-    break;
-  case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL_RO(x), n*sizeof(int));
-    break;
-  case INTSXP:
-    memcpy(INTEGER(ans), INTEGER_RO(x), n*sizeof(int));             // covered by 10:1 after test 178
-    break;
-  case REALSXP:
-    memcpy(REAL(ans),    REAL_RO(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
-    break;
-  case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX_RO(x), n*sizeof(Rcomplex));
-    break;
-  case STRSXP: {
-    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
-    for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
-  } break;
-  case VECSXP: {
-    const SEXP *xp=SEXPPTR_RO(x);
-    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
-  } break;
-  default:                                                                                           // # nocov
-    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
-  }
+  copyVectorElements(ans, x, n, /*deep_copy=*/true, __func__);
   DUPLICATE_ATTRIB(ans, x);
   UNPROTECT(1);
   return ans;
@@ -707,7 +712,7 @@ SEXP is_direct_child(SEXP pids) {
 #ifdef _WIN32
   internal_error(__func__, "not implemented on Windows");
 #else
-  int *ppids = INTEGER(pids);
+  const int *ppids = INTEGER_RO(pids);
   R_xlen_t len = xlength(pids);
   SEXP ret = allocVector(LGLSXP, len);
   int *pret = LOGICAL(ret);
