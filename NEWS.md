@@ -44,7 +44,7 @@
 
 6. By-reference sub-assignments of strings to factor columns now _actually_ match the levels in UTF-8 when required and now don't result in invalid factors being created, [#7648](https://github.com/Rdatatable/data.table/issues/7648), amending a previous incomplete fix to [#6886](https://github.com/Rdatatable/data.table/issues/6886) in v1.17.2. Thanks @BASS-JN for the report and @aitap for the fix.
 
-2. `fread()` can now read from connections directly by spilling to a temporary file first, [#561](https://github.com/Rdatatable/data.table/issues/561). For the best throughput, point `tmpdir=` (or the global temp directory) to fast storage like an SSD or RAM. Thanks to Chris Neff for the report and @ben-schwen for the implementation.
+7. `fread()` can now read from connections directly by spilling to a temporary file first, [#561](https://github.com/Rdatatable/data.table/issues/561). For the best throughput, point `tmpdir=` (or the global temp directory) to fast storage like an SSD or RAM. Thanks to Chris Neff for the report and @ben-schwen for the implementation.
 
 ### Notes
 
