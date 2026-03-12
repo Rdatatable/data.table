@@ -27,7 +27,8 @@ jobs:
           # jobs (mainly test-coverage) to run on every commit in PRs so as to not slow down dev.
           # GHA does run these jobs concurrently but even so reducing the load seems like a good idea.
           - {os: windows-latest, r: 'devel'}
-          # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
+          - {os: macos-15-intel, r: 'release'}    
+          - {os: macos-15, r: 'release'}    
           # TODO(remotes>2.5.0): Use 24.04[noble?]
           - {os: ubuntu-22.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"}
           # - {os: ubuntu-22.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", http-user-agent: "R/4.1.0 (ubuntu-22.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
@@ -58,8 +59,8 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/R-version') }}-1-
 
       - name: Install system dependencies
         if: runner.os == 'Linux'
@@ -68,6 +69,21 @@ jobs:
           do
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "22.04"))')
+
+      - name: Install R Package Build Dependencies on MacOS, from https://github.com/stan-dev/cmdstanr/pull/1072/files
+        if: runner.os == 'macOS'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
+      - name: Install and configure OpenMP runtime
+        if: runner.os == 'macOS'
+        run: |
+          if clang --version | grep 'clang version 17'; then
+            curl -O https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
+            sudo tar fvvxz openmp-19.1.0-darwin20-Release.tar.gz -C /
+            rm -f openmp-19.1.0-darwin20-Release.tar.gz
+          fi # otherwise R-bundled runtime is fine
 
       - name: Install dependencies
         run: |
