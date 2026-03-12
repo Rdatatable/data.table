@@ -6,6 +6,14 @@
     - The replacement of NAs with non-NA values from subsequent vectors
     - The conditional checks within parallelized loops
 */
+static bool compatibleDateTypes(SEXP x, SEXP y) {
+  if (!INHERITS(x, char_Date) || !INHERITS(y, char_Date)) return false;
+  const SEXPTYPE xType = TYPEOF(x), yType = TYPEOF(y);
+  if ((xType != INTSXP && xType != REALSXP) || (yType != INTSXP && yType != REALSXP)) return false;
+  if (xType == INTSXP && yType == REALSXP && !fitsInInt32(y)) return false;
+  return true;
+}
+
 SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
   if (TYPEOF(x)!=VECSXP) internal_error(__func__, "input is list(...) at R level"); // # nocov
   if (!IS_TRUE_OR_FALSE(inplaceArg)) internal_error(__func__, "argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
@@ -31,6 +39,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
   if (nval==0) return first;
   const bool factor = isFactor(first);
   const int nrow = length(first);
+  SEXP items = PROTECT(allocVector(VECSXP, nval)); nprotect++;
   for (int i=0; i<nval; ++i) {
     SEXP item = VECTOR_ELT(x, i+off);
     if (factor) {
@@ -43,13 +52,22 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
       if (isFactor(item))
         error(_("Item %d is a factor but item 1 is not a factor. When factors are involved, all items must be factor."), i+2);
     }
+    bool sameClass = R_compute_identical(PROTECT(getAttrib(first, R_ClassSymbol)), PROTECT(getAttrib(item, R_ClassSymbol)), 0);
+    UNPROTECT(2);
+    const bool dateCompatible = compatibleDateTypes(first, item);
+    if (dateCompatible && (TYPEOF(first) != TYPEOF(item) || !sameClass)) {
+      SEXP coerced = PROTECT(coerceAs(item, first, ScalarLogical(TRUE)));
+      item = coerced;
+      sameClass = true;
+      UNPROTECT(1);
+    }
     if (TYPEOF(first) != TYPEOF(item))
       error(_("Item %d is type %s but the first item is type %s. Please coerce before coalescing."), i+2, type2char(TYPEOF(item)), type2char(TYPEOF(first)));
-    if (!R_compute_identical(PROTECT(getAttrib(first, R_ClassSymbol)), PROTECT(getAttrib(item, R_ClassSymbol)), 0))
+    if (!sameClass)
       error(_("Item %d has a different class than item 1."), i+2);
-    UNPROTECT(2);
     if (length(item)!=1 && length(item)!=nrow)
       error(_("Item %d is length %d but the first item is length %d. Only singletons are recycled."), i+2, length(item), nrow);
+    SET_VECTOR_ELT(items, i, item);
   }
   if (!inplace) {
     first = PROTECT(copyAsPlain(first)); nprotect++;
@@ -61,7 +79,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
   case INTSXP: {
     int *xP = INTEGER(first), k=0, finalVal=NA_INTEGER;
     for (int j=0; j<nval; ++j) {
-      SEXP item = VECTOR_ELT(x, j+off);
+      SEXP item = VECTOR_ELT(items, j);
       if (length(item)==1) {
         int tt = INTEGER(item)[0];
         if (tt==NA_INTEGER) continue;  // singleton NA can be skipped
@@ -84,7 +102,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
       int64_t *xP=(int64_t *)REAL(first), finalVal=NA_INTEGER64;
       int k=0;
       for (int j=0; j<nval; ++j) {
-        SEXP item = VECTOR_ELT(x, j+off);
+        SEXP item = VECTOR_ELT(items, j);
         if (length(item)==1) {
           int64_t tt = ((int64_t *)REAL(item))[0];
           if (tt==NA_INTEGER64) continue;
@@ -106,7 +124,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
       int k=0;
       if (nan_is_na) {
         for (int j=0; j<nval; ++j) {
-          SEXP item = VECTOR_ELT(x, j+off);
+          SEXP item = VECTOR_ELT(items, j);
           if (length(item)==1) {
             double tt = REAL(item)[0];
             if (ISNAN(tt)) continue;
@@ -125,7 +143,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
         }
       } else {
         for (int j=0; j<nval; ++j) {
-          SEXP item = VECTOR_ELT(x, j+off);
+          SEXP item = VECTOR_ELT(items, j);
           if (length(item)==1) {
             double tt = REAL(item)[0];
             if (ISNA(tt)) continue;
@@ -149,7 +167,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
     Rcomplex *xP = COMPLEX(first), finalVal=NA_CPLX;
     int k=0;
     for (int j=0; j<nval; ++j) {
-      SEXP item = VECTOR_ELT(x, j+off);
+      SEXP item = VECTOR_ELT(items, j);
       if (length(item)==1) {
         Rcomplex tt = COMPLEX(item)[0];
         if (ISNAN(tt.r) && ISNAN(tt.i)) continue;
@@ -172,7 +190,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg, SEXP nan_is_na_arg) {
     SEXP finalVal=NA_STRING;
     int k=0;
     for (int j=0; j<nval; ++j) {
-      SEXP item = VECTOR_ELT(x, j+off);
+      SEXP item = VECTOR_ELT(items, j);
       if (length(item)==1) {
         SEXP tt = STRING_ELT(item,0);
         if (tt==NA_STRING) continue;

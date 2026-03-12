@@ -44,6 +44,8 @@
 
 6. By-reference sub-assignments of strings to factor columns now _actually_ match the levels in UTF-8 when required and now don't result in invalid factors being created, [#7648](https://github.com/Rdatatable/data.table/issues/7648), amending a previous incomplete fix to [#6886](https://github.com/Rdatatable/data.table/issues/6886) in v1.17.2. Thanks @BASS-JN for the report and @aitap for the fix.
 
+7. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
