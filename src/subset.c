@@ -136,14 +136,14 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     internal_error(__func__, "'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
   if (!isInteger(maxArg) || length(maxArg)!=1)
     internal_error(__func__, "'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
-  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL)
+  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL_RO(allowOverMax)[0]==NA_LOGICAL)
     internal_error(__func__, "allowOverMax must be TRUE/FALSE");  // # nocov
-  const int max = INTEGER(maxArg)[0], n=LENGTH(idx);
+  const int max = INTEGER_RO(maxArg)[0], n=LENGTH(idx);
   if (max<0)
     internal_error(__func__, "max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
-  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL)
+  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL_RO(allowNAArg)[0]==NA_LOGICAL)
     internal_error(__func__, "allowNAArg must be TRUE/FALSE");  // # nocov
-  const bool allowNA = LOGICAL(allowNAArg)[0];
+  const bool allowNA = LOGICAL_RO(allowNAArg)[0];
 
   const int *idxp = INTEGER_RO(idx);
   bool stop = false;
@@ -291,9 +291,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   }
 
   if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
+  
+  const int *this = INTEGER_RO(cols);
   for (int i=0; i<LENGTH(cols); i++) {
-    int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
+    if (this[i]<1 || this[i]>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this[i], LENGTH(x));
   }
 
   int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));

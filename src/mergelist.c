@@ -7,7 +7,7 @@ SEXP copyCols(SEXP x, SEXP cols) {
     internal_error(__func__, "'x' must be a data.table"); // # nocov
   if (!isInteger(cols))
     internal_error(__func__, "'cols' must be integer"); // # nocov
-  int nx = length(x), ncols = LENGTH(cols), *colsp = INTEGER(cols);
+  const int nx = length(x), ncols = LENGTH(cols), *colsp = INTEGER_RO(cols);
   if (!nx || !ncols)
     return R_NilValue;
   for (int i=0; i<ncols; ++i) {
@@ -37,7 +37,7 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
 SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (!isNewList(x) || isDataFrame(x))
     error(_("'%s' must be a list"), "x");
-  bool copy = (bool)LOGICAL(copyArg)[0];
+  const bool copy = (bool)LOGICAL_RO(copyArg)[0];
   const bool verbose = GetVerbose();
   double tic = 0;
   if (verbose)
