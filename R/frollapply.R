@@ -279,8 +279,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     ansMask = function(len, n) {
       mask = rep(TRUE, len)
       if (n) { ## handle n==0
-        if (n > len)
-          n = len + 1L ## bugfix #7646
+        n = min(n, len + 1L) # cap at len (bugfix #7646)
         mask[seq_len(n-1L)] = FALSE
       }
       mask
