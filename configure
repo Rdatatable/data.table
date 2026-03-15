@@ -68,89 +68,89 @@ fi
 # Aside: ${SHLIB_OPENMP_CFLAGS} does not appear to be defined at this point according to Matt's testing on
 # Linux, and R CMD config SHLIB_OPENMP_CFLAGS also returns 'no information for variable'. That's not
 # inconsistent with R-exts$1.2.1.1, though, which states it's 'available for use in Makevars' (so not
-# necessarily here in configure). Hence use -fopenmp directly for this detection step.
+# necessarily here in configure).
 # printf not echo to pass checkbashisms w.r.t. to the \n
+# Specifically use schedule(dynamic) to distinguish incompatibilities in OpenMP runtime on macOS, #7318
 
 cat <<EOF > test-omp.c
+#ifdef _OPENMP
 #include <omp.h>
-int main() {
-  return omp_get_num_threads();
+#endif
+void test_openmp(int * result) {
+ int sum = 0;
+#ifdef _OPENMP
+ #pragma omp parallel for reduction(+:sum) num_threads(2) schedule(dynamic)
+ for (int i = 1; i <= 2; ++i) sum += i;
+#endif
+ *result = sum;
 }
 EOF
 
+test_openmp_variant () {
+  # Observed in GitHub Actions: if test_openmp_variant is too fast to compile the next object file,
+  # Make (invoked by R CMD SHLIB) will not consider the previous shared object old enough and won't
+  # link it anew. --preclean only removes the object files; remove the target as well.
+  "${R_HOME}"/bin/Rscript -e 'unlink(paste0("test-omp", .Platform$dynlib.ext))'
+
+  cflags="${PKG_CFLAGS:+${PKG_CFLAGS} }$1"
+  libs="${PKG_LIBS:+${PKG_LIBS} }$2"
+  printf "%s" "* checking if OpenMP works with CFLAGS='$cflags' LIBS='$libs'... "
+  if ! PKG_CFLAGS="$cflags" PKG_LIBS="$libs" "${R_HOME}"/bin/R CMD SHLIB --preclean --clean test-omp.c >>config.log 2>&1; then
+    echo "no"
+    return 1
+  fi
+
+  if ! "${R_HOME}"/bin/Rscript -e '
+dll <- paste0("test-omp", .Platform$dynlib.ext)
+dyn.load(dll)
+ans <- .C("test_openmp", ans = integer(1))$ans
+stopifnot(identical(ans, 3L))
+' >> config.log 2>&1; then
+    echo "no"
+    return 1
+  fi
+
+  export PKG_CFLAGS="${PKG_CFLAGS} ${1}"
+  export PKG_LIBS="${PKG_LIBS} ${2}"
+  export R_OPENMP_ENABLED=1
+  echo "yes"
+  return 0
+}
+
 detect_openmp () {
+  # OpenMP flags provided in environment variables or specified when configuring R? Does -fopenmp work?
+  test_openmp_variant "" "" \
+  || test_openmp_variant '$(SHLIB_OPENMP_CFLAGS)' '$(SHLIB_OPENMP_CFLAGS)' \
+  || test_openmp_variant -fopenmp -fopenmp \
+  && return
 
-  if [ "$(uname)" = "Linux" ]; then
-
-    printf "%s" "* checking if R installation supports OpenMP without any extra hints... "
-    if "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
-
-
-    printf "%s" "* checking if R installation supports openmp with \"-fopenmp\" flag... "
-    if ${CC} ${CFLAGS} -fopenmp test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
-  fi # uname=Linux
-
-  if [ "$(uname)" = "Darwin" ]; then
-
+  case "$(uname)" in
+  Darwin)
     # https://mac.r-project.org/openmp
-    printf "%s" "* checking if R installation supports OpenMP with \"-Xclang -fopenmp\" ... "
-    if CPPFLAGS="${CPPFLAGS} -Xclang -fopenmp" PKG_LIBS="-lomp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export PKG_CFLAGS="${PKG_CFLAGS} -Xclang -fopenmp"
-      export PKG_LIBS="${PKG_LIBS} -lomp"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
-
-    # https://github.com/Rdatatable/data.table/issues/6409
-    printf "%s" "* checking if R installation supports OpenMP with \"-fopenmp\" ... "
-    if CPPFLAGS="${CPPFLAGS} -fopenmp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
-      export PKG_LIBS="${PKG_LIBS} -fopenmp"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
+    test_openmp_variant "-Xclang -fopenmp" "-lomp" && return
 
     if [ "$(uname -m)" = "arm64" ]; then
       HOMEBREW_PREFIX=/opt/homebrew
     else
       HOMEBREW_PREFIX=/usr/local
     fi
+    test -e "${HOMEBREW_PREFIX}/opt/libomp" \
+    && test_openmp_variant \
+      "-I${HOMEBREW_PREFIX}/opt/libomp/include -Xclang -fopenmp" \
+      "-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp" \
+    && return
 
-    if [ -e "${HOMEBREW_PREFIX}/opt/libomp" ]; then
-      printf "%s" "* checking if libomp installation at ${HOMEBREW_PREFIX}/opt/libomp can be used... "
-      LIBOMP_INCLUDE="-I${HOMEBREW_PREFIX}/opt/libomp/include -Xclang -fopenmp"
-      LIBOMP_LINK="-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp"
-      if ${CC} ${CFLAGS} ${LIBOMP_INCLUDE} ${LIBOMP_LINK} test-omp.c >> config.log 2>&1; then
-        echo "yes"
-        export PKG_CFLAGS="${PKG_CFLAGS} ${LIBOMP_INCLUDE}"
-        export PKG_LIBS="${PKG_LIBS} ${LIBOMP_LINK}"
-        export R_OPENMP_ENABLED=1
-        return
-      else
-        echo "no"
-      fi
+    if test -e /usr/local/lib/libomp.dylib \
+      && test_openmp_variant "-Xclang -fopenmp" "/usr/local/lib/libomp.dylib"; then
+      echo "*** Using the OpenMP runtime from /usr/local/lib/libomp.dylib."
+      echo "*** Please be careful when mixing the result with CRAN binaries."
+      return
     fi
 
-  fi # uname=Darwin
+    echo "*** All OpenMP tests failed and you're running macOS."
+    echo "*** Do you need an OpenMP runtime from <https://mac.r-project.org/openmp/>?"
+    ;;
+  esac
 
   # No support for OpenMP available
   export R_OPENMP_ENABLED=0
@@ -168,14 +168,10 @@ if [ "${R_OPENMP_ENABLED}" = "0" ]; then
   echo "***   https://github.com/Rdatatable/data.table/wiki/Installation"
   echo "*** Continuing installation without OpenMP support..."
   echo "***"
-  sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
-else
-  sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
 fi
 
 # retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
-sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
-sed -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars.in > src/Makevars
 
 # optional dependency on zlib
 if [ "$NOZLIB" = "1" ]; then
