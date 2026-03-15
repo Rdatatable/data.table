@@ -12,6 +12,8 @@
 
 3. `fread()` no longer misreads dates with negative years, [#7704](https://github.com/Rdatatable/data.table/issues/7704). Thanks to @kevinushey for the report and @aitap for the fix.
 
+4. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
+
 ## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1) 22 Jan 2026
 
 ### BUG FIXES
