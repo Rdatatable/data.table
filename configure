@@ -175,12 +175,38 @@ sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars.i
 
 # optional dependency on zlib
 if [ "$NOZLIB" = "1" ]; then
-  echo "*** Compilation without compression support in fwrite"
+  echo "*** Compilation without gzip compression support in fwrite"
   sed -e "s|@zlib_cflags@|-DNOZLIB|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
   sed -e "s|@zlib_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 else
   sed -e "s|@zlib_cflags@|${cflag}|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
   sed -e "s|@zlib_libs@|${lib}|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+fi
+
+# optional dependency on zstd
+NOZSTD=1
+pkg-config --exists libzstd
+if [ $? -ne 0 ]; then
+  echo "*** pkg-config cannot find libzstd; zstd compression will be disabled."
+  echo "*** To enable zstd support, install the zstd development library:"
+  echo "***   deb: libzstd-dev (Debian, Ubuntu, ...)"
+  echo "***   rpm: libzstd-devel (Fedora, EPEL, ...)"
+  echo "***   brew: zstd (macOS)"
+else
+  NOZSTD=0
+  zstd_lib=`pkg-config --libs libzstd`
+  zstd_cflag=`pkg-config --cflags libzstd`
+  zstd_version=`pkg-config --modversion libzstd`
+  echo "zstd ${zstd_version} is available ok"
+fi
+
+if [ "$NOZSTD" = "1" ]; then
+  echo "*** Compilation without zstd compression support in fwrite/fread"
+  sed -e "s|@zstd_cflags@|-DNOZSTD|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zstd_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+else
+  sed -e "s|@zstd_cflags@|${zstd_cflag}|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zstd_libs@|${zstd_lib}|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 fi
 
 exit 0

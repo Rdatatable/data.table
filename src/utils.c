@@ -431,6 +431,96 @@ SEXP dt_has_zlib(void) {
 #endif
 }
 
+#ifndef NOZSTD
+#include <zstd.h>
+#include <stdio.h>
+#endif
+SEXP dt_zstd_version(void) {
+  char out[70];
+#ifndef NOZSTD
+  snprintf(out, sizeof(out), "ZSTD_VERSION_STRING==%s runtime==%s", ZSTD_VERSION_STRING, ZSTD_versionString()); // # notranslate
+#else
+  snprintf(out, sizeof(out), _("zstd header files were not found when data.table was compiled"));
+#endif
+  return ScalarString(mkChar(out));
+}
+SEXP dt_has_zstd(void) {
+#ifndef NOZSTD
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
+}
+SEXP dt_zstd_decompress(SEXP infile_sexp, SEXP outfile_sexp) {
+#ifndef NOZSTD
+  const char *infile = CHAR(STRING_ELT(infile_sexp, 0));
+  const char *outfile = CHAR(STRING_ELT(outfile_sexp, 0));
+
+  FILE *fin = fopen(infile, "rb");
+  if (!fin) error(_("Cannot open input file for zstd decompression: '%s'"), infile);
+
+  FILE *fout = fopen(outfile, "wb");
+  if (!fout) {
+    fclose(fin);
+    error(_("Cannot open output file for zstd decompression: '%s'"), outfile);
+  }
+
+  size_t const buffInSize = ZSTD_DStreamInSize();
+  void *buffIn = malloc(buffInSize);
+  size_t const buffOutSize = ZSTD_DStreamOutSize();
+  void *buffOut = malloc(buffOutSize);
+
+  if (!buffIn || !buffOut) {
+    // # nocov start
+    free(buffIn); free(buffOut);
+    fclose(fin); fclose(fout);
+    error(_("Failed to allocate buffers for zstd decompression"));
+    // # nocov end
+  }
+
+  ZSTD_DStream *dstream = ZSTD_createDStream();
+  if (!dstream) {
+    // # nocov start
+    free(buffIn); free(buffOut);
+    fclose(fin); fclose(fout);
+    error(_("Failed to create zstd decompression stream"));
+    // # nocov end
+  }
+  ZSTD_initDStream(dstream);
+
+  size_t read;
+  while ((read = fread(buffIn, 1, buffInSize, fin)) > 0) {
+    ZSTD_inBuffer input = { buffIn, read, 0 };
+    while (input.pos < input.size) {
+      ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+      size_t ret = ZSTD_decompressStream(dstream, &output, &input);
+      if (ZSTD_isError(ret)) {
+        ZSTD_freeDStream(dstream);
+        free(buffIn); free(buffOut);
+        fclose(fin); fclose(fout);
+        error(_("zstd decompression error: %s"), ZSTD_getErrorName(ret));
+      }
+      if (fwrite(buffOut, 1, output.pos, fout) != output.pos) {
+        // # nocov start
+        ZSTD_freeDStream(dstream);
+        free(buffIn); free(buffOut);
+        fclose(fin); fclose(fout);
+        error(_("Failed to write decompressed data to '%s'"), outfile);
+        // # nocov end
+      }
+    }
+  }
+
+  ZSTD_freeDStream(dstream);
+  free(buffIn); free(buffOut);
+  fclose(fin); fclose(fout);
+  return R_NilValue;
+#else
+  error(_("zstd header files were not found when data.table was compiled")); // # nocov
+  return R_NilValue; // # nocov
+#endif
+}
+
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   // for is_url in fread.R added in #5097
   // basically any(startsWith()), short and simple ascii-only

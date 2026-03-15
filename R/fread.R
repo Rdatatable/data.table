@@ -135,6 +135,20 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       })
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
     }
+
+    zstdsig = FALSE
+    if ((endsWithAny(file, ".zst")) || (zstdsig <- is_zstd(file_signature))) {
+      if (!haszstd())
+        stopf("To read .zst files, fread() requires zstd library support. data.table was compiled without zstd. Please reinstall data.table after installing the zstd development library (libzstd-dev on Debian/Ubuntu, libzstd-devel on Fedora/EPEL, zstd on Homebrew).") # nocov
+      decompFile = tempfile(tmpdir=tmpdir)
+      on.exit(unlink(decompFile), add=TRUE)
+      tryCatch({
+        .Call(Cdt_zstd_decompress, file, decompFile)
+      }, error = function(e) {
+        stopf("zstd decompression of file '%s' failed:\n  %s\nThis can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+      })
+      file = decompFile
+    }
     file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
 
     input = file
@@ -396,7 +410,8 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 known_signatures = list(
   zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
   gzip = as.raw(c(0x1F, 0x8B)),
-  bzip = as.raw(c(0x42, 0x5A, 0x68))
+  bzip = as.raw(c(0x42, 0x5A, 0x68)),
+  zstd = as.raw(c(0x28, 0xB5, 0x2F, 0xFD))  # zstd frame magic (little-endian 0xFD2FB528)
 )
 
 # https://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
@@ -415,6 +430,11 @@ is_gzip = function(file_signature) {
 is_bzip = function(file_signature) {
   identical(file_signature[1:3], known_signatures$bzip) &&
     isTRUE(file_signature[4L] %in% charToRaw('123456789')) # for #6304
+}
+
+# https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#zstandard-frames
+is_zstd = function(file_signature) {
+  identical(file_signature[1:4], known_signatures$zstd)
 }
 
 # simplified but faster version of `factor()` for internal use.
