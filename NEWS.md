@@ -44,7 +44,11 @@
 
 6. By-reference sub-assignments of strings to factor columns now _actually_ match the levels in UTF-8 when required and now don't result in invalid factors being created, [#7648](https://github.com/Rdatatable/data.table/issues/7648), amending a previous incomplete fix to [#6886](https://github.com/Rdatatable/data.table/issues/6886) in v1.17.2. Thanks @BASS-JN for the report and @aitap for the fix.
 
-7. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
+7. `fread()` can now read from connections directly by spilling to a temporary file first, [#561](https://github.com/Rdatatable/data.table/issues/561). For the best throughput, point `tmpdir=` (or the global temp directory) to fast storage like an SSD or RAM. Thanks to Chris Neff for the report and @ben-schwen for the implementation.
+
+8. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
+
+9. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
 
 ### Notes
 
@@ -379,7 +383,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     #   user  system elapsed
     #  0.028   0.000   0.005
     ```
-    20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
+
+20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
 
 ### BUG FIXES
 
