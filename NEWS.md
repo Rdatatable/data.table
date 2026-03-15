@@ -46,6 +46,8 @@
 
 7. `fread()` can now read from connections directly by spilling to a temporary file first, [#561](https://github.com/Rdatatable/data.table/issues/561). For the best throughput, point `tmpdir=` (or the global temp directory) to fast storage like an SSD or RAM. Thanks to Chris Neff for the report and @ben-schwen for the implementation.
 
+8. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
