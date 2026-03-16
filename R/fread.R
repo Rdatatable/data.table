@@ -119,35 +119,33 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     }
 
     gzsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
-      if (!requireNamespace("R.utils", quietly = TRUE))
-        stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
-      # not worth doing a behavior test here, so just use getRversion().
-      if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
-        stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
-      FUN = if (w<=2L || gzsig) gzfile else bzfile
-      decompFile = tempfile(tmpdir=tmpdir)
-      on.exit(unlink(decompFile), add=TRUE)
-      tryCatch({
-        R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
-      }, error = function(e) {
-        stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
-      })
-      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
-    }
-
     zstdsig = FALSE
-    if ((endsWithAny(file, ".zst")) || (zstdsig <- is_zstd(file_signature))) {
-      if (!haszstd())
-        stopf("To read .zst files, fread() requires zstd library support. data.table was compiled without zstd. Please reinstall data.table after installing the zstd development library (libzstd-dev on Debian/Ubuntu, libzstd-devel on Fedora/EPEL, zstd on Homebrew).") # nocov
+    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2", ".zst"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature) ||
+        (zstdsig <- is_zstd(file_signature))) {
       decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
-      tryCatch({
-        .Call(Cdt_zstd_decompress, file, decompFile)
-      }, error = function(e) {
-        stopf("zstd decompression of file '%s' failed:\n  %s\nThis can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
-      })
-      file = decompFile
+      if (w==4L || zstdsig) {
+        if (!haszstd())
+          stopf("To read .zst files, fread() requires zstd library support. data.table was compiled without zstd. Please reinstall data.table after installing the zstd development library (libzstd-dev on Debian/Ubuntu, libzstd-devel on Fedora/EPEL, zstd on Homebrew).") # nocov
+        tryCatch({
+          .Call(Cdt_zstd_decompress, file, decompFile)
+        }, error = function(e) {
+          stopf("zstd decompression of file '%s' failed:\n  %s\nThis can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+        })
+      } else {
+        if (!requireNamespace("R.utils", quietly = TRUE))
+          stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
+        # not worth doing a behavior test here, so just use getRversion().
+        if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
+          stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
+        FUN = if (w<=2L || gzsig) gzfile else bzfile
+        tryCatch({
+          R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+        }, error = function(e) {
+          stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+        })
+      }
+      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
     }
     file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
 
