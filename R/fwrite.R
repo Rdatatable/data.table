@@ -126,7 +126,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, compressLevel, is_zstd, bom, yaml, verbose, encoding, forceDecimal)
+        showProgress, is_gzip, is_zstd, compressLevel, bom, yaml, verbose, encoding, forceDecimal)
   invisible()
 }
 

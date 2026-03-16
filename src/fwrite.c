@@ -45,8 +45,7 @@ static bool qmethodEscape=false;       // when quoting fields, how to escape dou
 static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
-static int gzip_level;
-static int zstd_level;
+static int compress_level;
 static bool forceDecimal=false;       // force writing decimal points for numeric columns
 
 extern const char *getString(const void *, int64_t);
@@ -593,7 +592,7 @@ int init_stream(z_stream *stream) {
   // Now we manage header and trailer. gzip file is slighty lower with -15 because no header/trailer are
   // written for each chunk.
   // For memLevel, 8 is the default value (128 KiB). memLevel=9 uses maximum memory for optimal speed. To be tested ?
-  int err = deflateInit2(stream, gzip_level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
+  int err = deflateInit2(stream, compress_level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
   return err;  // # nocov
 }
 
@@ -634,8 +633,7 @@ void fwriteMain(fwriteMainArgs args)
   doQuote = args.doQuote;
   int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
-  gzip_level = args.gzip_level;
-  zstd_level = args.zstd_level;
+  compress_level = args.compress_level;
   forceDecimal = args.forceDecimal;
 
   size_t len;
@@ -959,7 +957,7 @@ void fwriteMain(fwriteMainArgs args)
       if (args.is_zstd) {
         char* zbuff = zbuffPool;
         size_t mylen_hdr = (size_t)(ch - buff);
-        size_t zbuffUsed = ZSTD_compress(zbuff, zbuffSize, buff, mylen_hdr, zstd_level);
+        size_t zbuffUsed = ZSTD_compress(zbuff, zbuffSize, buff, mylen_hdr, compress_level);
         if (ZSTD_isError(zbuffUsed)) {
           ret1 = (int)ZSTD_getErrorCode(zbuffUsed); // # nocov
         } else {
@@ -1100,7 +1098,7 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZSTD
     if (args.is_zstd && !failed) {
       myzstd_uncompressed = (size_t)(ch - myBuff);
-      size_t zstd_result = ZSTD_compress(myzBuff, zbuffSize, myBuff, myzstd_uncompressed, zstd_level);
+      size_t zstd_result = ZSTD_compress(myzBuff, zbuffSize, myBuff, myzstd_uncompressed, compress_level);
       if (ZSTD_isError(zstd_result)) {
         failed = true;
         my_failed_compress = (int)ZSTD_getErrorCode(zstd_result);

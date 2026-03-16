@@ -168,9 +168,8 @@ SEXP fwriteR(
   SEXP nThread_Arg,
   SEXP showProgress_Arg,
   SEXP is_gzip_Arg,
-  SEXP gzip_level_Arg,
   SEXP is_zstd_Arg,
-  SEXP zstd_level_Arg,
+  SEXP compress_level_Arg,
   SEXP bom_Arg,
   SEXP yaml_Arg,
   SEXP verbose_Arg,
@@ -182,9 +181,8 @@ SEXP fwriteR(
 
   fwriteMainArgs args = { 0 };  // { 0 } to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
-  args.gzip_level = INTEGER(gzip_level_Arg)[0];
   args.is_zstd = LOGICAL(is_zstd_Arg)[0];
-  args.zstd_level = INTEGER(zstd_level_Arg)[0];
+  args.compress_level = INTEGER(compress_level_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
   args.verbose = LOGICAL(verbose_Arg)[0];
