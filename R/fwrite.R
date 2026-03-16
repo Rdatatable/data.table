@@ -9,8 +9,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            buffMB=8L, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
            compress = c("auto", "none", "gzip", "zstd"),
-           compressLevel = 6L,
-           zstd_level = 3L,
+           compressLevel = NULL,
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
@@ -27,8 +26,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
-  compressLevel = as.integer(compressLevel)
-  zstd_level = as.integer(zstd_level)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
@@ -51,8 +48,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip", "zstd"),
-    length(compressLevel) == 1L && 0L <= compressLevel && compressLevel <= 9L,
-    length(zstd_level) == 1L && 1L <= zstd_level && zstd_level <= 22L,
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
     isTRUEorFALSE(bom), isTRUEorFALSE(forceDecimal),
@@ -64,6 +59,10 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
 
   is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
   is_zstd = compress == "zstd" || (compress == "auto" && endsWithAny(file, ".zst"))
+  if (is.null(compressLevel)) compressLevel = if (is_zstd) 3L else 6L
+  compressLevel = as.integer(compressLevel)
+  if (is_zstd) { if (compressLevel < 1L || compressLevel > 22L) stopf("compressLevel must be between 1 and 22 for zstd compression.") }
+  else         { if (compressLevel < 0L || compressLevel >  9L) stopf("compressLevel must be between 0 and 9 for gzip compression.") }
 
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
@@ -127,7 +126,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, compressLevel, is_zstd, zstd_level, bom, yaml, verbose, encoding, forceDecimal)
+        showProgress, is_gzip, compressLevel, is_zstd, bom, yaml, verbose, encoding, forceDecimal)
   invisible()
 }
 
