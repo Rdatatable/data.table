@@ -7,35 +7,14 @@ body:
       value: |
         Use this template to report a new revdep check failure found via
         [revdep checks](https://github.com/Rdatatable/data.table/wiki/Revdep-checks).
-        Please verify the failure is real before filing; see checklist below.
-
-  - type: checkboxes
-    id: verification
-    attributes:
-      label: Pre-filing verification
-      description: |
-        Confirm the issue is real per the
-        [wiki guidelines](https://github.com/Rdatatable/data.table/wiki/Revdep-checks#steps-to-report-a-new-revdep-check-problem).
-      options:
-        - label: Found in more than one recent check (e.g. previous day)
-          required: false
-        - label: Occurs in both R-devel and R-release, or noted which one
-          required: false
-        - label: Result for data.table release matches result from CRAN
-          required: false
-        - label: "`git bisect` found a non-trivial first bad commit"
-          required: false
-        - label: Issue is in master (not only in release)
-          required: false
-        - label: Searched existing issues for this package and commit/PR
-          required: false
+        Please verify the failure is real before filing; see checklist on that page.
 
   - type: input
     id: package
     attributes:
       label: Affected package
-      description: Name of the revdep package that fails with data.table master.
-      placeholder: e.g. mlr3
+      description: Link to package dev on github.
+      placeholder: e.g. https://github.com/NorskRegnesentral/shapr
     validations:
       required: true
 
@@ -47,9 +26,7 @@ body:
         Brief description of the check failure. Include what kind of failure
         it is (ERROR, WARNING, NOTE) and which check stage fails
         (tests, examples, vignettes, etc.).
-      placeholder: |
-        revdep shapr has new test failures due to warnings when
-        data.table master is installed.
+      placeholder: revdep shapr has new test failures.
     validations:
       required: true
 
@@ -75,18 +52,6 @@ body:
         first bad commit (from the `first.bad.commit` column in the
         Monsoon significant differences table).
       placeholder: "https://github.com/Rdatatable/data.table/pull/1234"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: r-version
-    attributes:
-      label: R version(s) affected
-      description: Which R version(s) show this failure?
-      options:
-        - Both R-devel and R-release
-        - R-devel only
-        - R-release only
     validations:
       required: true
 
