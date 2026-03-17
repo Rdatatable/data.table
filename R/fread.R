@@ -120,8 +120,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 
     gzsig = FALSE
     zstdsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2", ".zst"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature) ||
-        (zstdsig <- is_zstd(file_signature))) {
+    xzsig = FALSE
+    if ((w <- endsWithAny(file, c(".gz", ".bgz", ".bz2", ".zst", ".xz"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature) ||
+        (zstdsig <- is_zstd(file_signature)) || (xzsig <- is_xz(file_signature))) {
       decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
       if (w==4L || zstdsig) {
@@ -133,12 +134,13 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
           stopf("zstd decompression of file '%s' failed:\n  %s\nThis can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
         })
       } else {
+        fmt = if (w<=2L || gzsig) "gz" else if (w==5L || xzsig) "xz" else "bz2"
         if (!requireNamespace("R.utils", quietly = TRUE))
-          stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
+          stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", fmt) # nocov
         # not worth doing a behavior test here, so just use getRversion().
         if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
           stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
-        FUN = if (w<=2L || gzsig) gzfile else bzfile
+        FUN = if (w<=2L || gzsig) gzfile else if (w==5L || xzsig) xzfile else bzfile
         tryCatch({
           R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
         }, error = function(e) {
@@ -409,7 +411,8 @@ known_signatures = list(
   zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
   gzip = as.raw(c(0x1F, 0x8B)),
   bzip = as.raw(c(0x42, 0x5A, 0x68)),
-  zstd = as.raw(c(0x28, 0xB5, 0x2F, 0xFD))  # zstd frame magic (little-endian 0xFD2FB528)
+  zstd = as.raw(c(0x28, 0xB5, 0x2F, 0xFD)), # zstd frame magic (little-endian 0xFD2FB528)
+  xz   = as.raw(c(0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00)) # https://tukaani.org/xz/xz-file-format.txt
 )
 
 # https://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
@@ -433,6 +436,11 @@ is_bzip = function(file_signature) {
 # https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#zstandard-frames
 is_zstd = function(file_signature) {
   identical(file_signature[1:4], known_signatures$zstd)
+}
+
+# https://tukaani.org/xz/xz-file-format.txt section 2.1.1.1
+is_xz = function(file_signature) {
+  identical(file_signature[1:6], known_signatures$xz)
 }
 
 # simplified but faster version of `factor()` for internal use.
