@@ -451,70 +451,63 @@ SEXP dt_has_zstd(void) {
   return ScalarLogical(0);
 #endif
 }
-SEXP dt_zstd_decompress(SEXP infile_sexp, SEXP outfile_sexp) {
 #ifndef NOZSTD
-  const char *infile = CHAR(STRING_ELT(infile_sexp, 0));
-  const char *outfile = CHAR(STRING_ELT(outfile_sexp, 0));
+typedef struct {
+  const char *infile;
+  const char *outfile;
+  FILE *fin;
+  FILE *fout;
+  void *buffIn;
+  void *buffOut;
+  ZSTD_DStream *dstream;
+} zstd_decompress_ctx;
 
-  FILE *fin = fopen(infile, "rb");
-  if (!fin) error(_("Cannot open input file for zstd decompression: '%s'"), infile);
+static void zstd_decompress_cleanup(void *data) {
+  zstd_decompress_ctx *ctx = (zstd_decompress_ctx *)data;
+  free(ctx->buffIn);
+  free(ctx->buffOut);
+  if (ctx->dstream) ZSTD_freeDStream(ctx->dstream);
+  if (ctx->fin)     fclose(ctx->fin);
+  if (ctx->fout)    fclose(ctx->fout);
+}
 
-  FILE *fout = fopen(outfile, "wb");
-  if (!fout) {
-    fclose(fin);
-    error(_("Cannot open output file for zstd decompression: '%s'"), outfile);
-  }
+static SEXP zstd_decompress_impl(void *data) {
+  zstd_decompress_ctx *ctx = (zstd_decompress_ctx *)data;
 
-  size_t const buffInSize = ZSTD_DStreamInSize();
-  void *buffIn = malloc(buffInSize);
-  size_t const buffOutSize = ZSTD_DStreamOutSize();
-  void *buffOut = malloc(buffOutSize);
+  ctx->fin = fopen(ctx->infile, "rb");
+  if (!ctx->fin) error(_("Cannot open input file for zstd decompression: '%s'"), ctx->infile);
 
-  if (!buffIn || !buffOut) {
-    // # nocov start
-    free(buffIn); free(buffOut);
-    fclose(fin); fclose(fout);
-    error(_("Failed to allocate buffers for zstd decompression"));
-    // # nocov end
-  }
+  ctx->fout = fopen(ctx->outfile, "wb");
+  if (!ctx->fout) error(_("Cannot open output file for zstd decompression: '%s'"), ctx->outfile);
 
-  ZSTD_DStream *dstream = ZSTD_createDStream();
-  if (!dstream) {
-    // # nocov start
-    free(buffIn); free(buffOut);
-    fclose(fin); fclose(fout);
-    error(_("Failed to create zstd decompression stream"));
-    // # nocov end
-  }
-  ZSTD_initDStream(dstream);
+  ctx->buffIn  = malloc(ZSTD_DStreamInSize());
+  ctx->buffOut = malloc(ZSTD_DStreamOutSize());
+  if (!ctx->buffIn || !ctx->buffOut) error(_("Failed to allocate buffers for zstd decompression")); // # nocov
+
+  ctx->dstream = ZSTD_createDStream();
+  if (!ctx->dstream) error(_("Failed to create zstd decompression stream")); // # nocov
+  ZSTD_initDStream(ctx->dstream);
 
   size_t read;
-  while ((read = fread(buffIn, 1, buffInSize, fin)) > 0) {
-    ZSTD_inBuffer input = { buffIn, read, 0 };
+  while ((read = fread(ctx->buffIn, 1, ZSTD_DStreamInSize(), ctx->fin)) > 0) {
+    ZSTD_inBuffer input = { ctx->buffIn, read, 0 };
     while (input.pos < input.size) {
-      ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
-      size_t ret = ZSTD_decompressStream(dstream, &output, &input);
-      if (ZSTD_isError(ret)) {
-        ZSTD_freeDStream(dstream);
-        free(buffIn); free(buffOut);
-        fclose(fin); fclose(fout);
+      ZSTD_outBuffer output = { ctx->buffOut, ZSTD_DStreamOutSize(), 0 };
+      size_t ret = ZSTD_decompressStream(ctx->dstream, &output, &input);
+      if (ZSTD_isError(ret))
         error(_("zstd decompression error: %s"), ZSTD_getErrorName(ret));
-      }
-      if (fwrite(buffOut, 1, output.pos, fout) != output.pos) {
-        // # nocov start
-        ZSTD_freeDStream(dstream);
-        free(buffIn); free(buffOut);
-        fclose(fin); fclose(fout);
-        error(_("Failed to write decompressed data to '%s'"), outfile);
-        // # nocov end
-      }
+      if (fwrite(ctx->buffOut, 1, output.pos, ctx->fout) != output.pos)
+        error(_("Failed to write decompressed data to '%s'"), ctx->outfile); // # nocov
     }
   }
-
-  ZSTD_freeDStream(dstream);
-  free(buffIn); free(buffOut);
-  fclose(fin); fclose(fout);
   return R_NilValue;
+}
+#endif
+
+SEXP dt_zstd_decompress(SEXP infile_sexp, SEXP outfile_sexp) {
+#ifndef NOZSTD
+  zstd_decompress_ctx ctx = { CHAR(STRING_ELT(infile_sexp, 0)), CHAR(STRING_ELT(outfile_sexp, 0)), NULL, NULL, NULL, NULL, NULL };
+  return R_ExecWithCleanup(zstd_decompress_impl, &ctx, zstd_decompress_cleanup, &ctx);
 #else
   error(_("zstd header files were not found when data.table was compiled")); // # nocov
   return R_NilValue; // # nocov
