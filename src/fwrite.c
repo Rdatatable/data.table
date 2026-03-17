@@ -821,13 +821,13 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   // init compress variables (shared across gzip and zstd)
+#ifndef NOZLIB
+  z_stream strm;
   // NB: fine to free() this even if unallocated (free(NULL) is safe)
   char *zbuffPool = NULL;
   size_t zbuffSize = 0;
   size_t compress_len = 0;
 
-#ifndef NOZLIB
-  z_stream strm;
   if (args.is_gzip) {
     // compute zbuffSize which is the same for each thread
     if (init_stream(&strm) != Z_OK) {
