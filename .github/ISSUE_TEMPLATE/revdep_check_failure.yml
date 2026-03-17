@@ -1,0 +1,109 @@
+name: Revdep check failure
+description: Report a reverse dependency (revdep) check failure that should be fixed before next CRAN release
+labels: ["revdep"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to report a new revdep check failure found via
+        [revdep checks](https://github.com/Rdatatable/data.table/wiki/Revdep-checks).
+        Please verify the failure is real before filing; see checklist below.
+
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: Pre-filing verification
+      description: |
+        Confirm the issue is real per the
+        [wiki guidelines](https://github.com/Rdatatable/data.table/wiki/Revdep-checks#steps-to-report-a-new-revdep-check-problem).
+      options:
+        - label: Found in more than one recent check (e.g. previous day)
+          required: false
+        - label: Occurs in both R-devel and R-release, or noted which one
+          required: false
+        - label: Result for data.table release matches result from CRAN
+          required: false
+        - label: "`git bisect` found a non-trivial first bad commit"
+          required: false
+        - label: Issue is in master (not only in release)
+          required: false
+        - label: Searched existing issues for this package and commit/PR
+          required: false
+
+  - type: input
+    id: package
+    attributes:
+      label: Affected package
+      description: Name of the revdep package that fails with data.table master.
+      placeholder: e.g. mlr3
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem description
+      description: |
+        Brief description of the check failure. Include what kind of failure
+        it is (ERROR, WARNING, NOTE) and which check stage fails
+        (tests, examples, vignettes, etc.).
+      placeholder: |
+        revdep shapr has new test failures due to warnings when
+        data.table master is installed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: check-output
+    attributes:
+      label: Failing check output
+      description: |
+        Paste the relevant `R CMD check` output showing the failure.
+        The output can be found in the
+        [Monsoon results](https://rcdata.nau.edu/genomic-ml/data.table-revdeps/analyze/)
+        or from a local revdep check.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: first-bad-commit
+    attributes:
+      label: First bad commit/PR
+      description: |
+        Link to the commit or PR identified by `git bisect` as the
+        first bad commit (from the `first.bad.commit` column in the
+        Monsoon significant differences table).
+      placeholder: "https://github.com/Rdatatable/data.table/pull/1234"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: r-version
+    attributes:
+      label: R version(s) affected
+      description: Which R version(s) show this failure?
+      options:
+        - Both R-devel and R-release
+        - R-devel only
+        - R-release only
+    validations:
+      required: true
+
+  - type: textarea
+    id: mre
+    attributes:
+      label: Minimal reproducible example
+      description: |
+        Optional. A minimal example reproducing the failure outside
+        the revdep package. Useful as a potential data.table test case.
+      render: r
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: |
+        Any other relevant information: @mentions of the commit/PR
+        author(s), links to Monsoon result pages, whether the fix
+        should come from data.table or from the revdep package, etc.
