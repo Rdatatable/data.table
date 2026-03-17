@@ -18501,10 +18501,14 @@ if (test_R.utils) {
   R.utils::bzip2(tmp, tmp2 <- tempfile(), remove=FALSE) # _not_ with .bz2 extension
   test(2273.4, fread(tmp2), DT)
   file.remove(tmp2)
-  R.utils::xz(tmp, tmp2 <- tempfile(fileext=".xz"), remove=FALSE)
-  test(2273.5, fread(tmp2), DT)                          # by .xz extension
-  R.utils::xz(tmp, tmp3 <- tempfile(), remove=FALSE)     # _not_ with .xz extension
-  test(2273.6, fread(tmp3), DT)                          # by signature
+  con = xzfile(tmp2 <- tempfile(fileext=".xz"), open="wt")
+  write.table(DT, con, sep = ",", row.names = FALSE, col.names = TRUE, quote = FALSE)
+  close(con)
+  test(2273.5, fread(tmp2), DT)
+  con = xzfile(tmp3 <- tempfile(), open="wt")
+  write.table(DT, con, sep = ",", row.names = FALSE, col.names = TRUE, quote = FALSE)
+  close(con)
+  test(2273.6, fread(tmp3), DT)
   file.remove(c(tmp2, tmp3))
 }
 file.remove(tmp)
