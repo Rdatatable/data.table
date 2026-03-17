@@ -66,6 +66,7 @@ static const R_CallMethodDef callMethods[] = {
     {"Cchmatchdup", (DL_FUNC)&chmatchdup_R, -1},
     {"Cchin", (DL_FUNC)&chin_R, -1},
     {"CfreadR", (DL_FUNC)&freadR, -1},
+    {"CspillConnectionToFile", (DL_FUNC) &spillConnectionToFile, -1},
     {"CfwriteR", (DL_FUNC)&fwriteR, -1},
     {"Creorder", (DL_FUNC)&reorder, -1},
     {"Crbindlist", (DL_FUNC)&rbindlist, -1},

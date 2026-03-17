@@ -2317,3 +2317,6 @@ test(6015.907, frolladapt(c(1L,3L,2L), 2L), error="be sorted, have no duplicates
 test(6015.908, frolladapt(c(1L,2L,2L), 2L), error="be sorted, have no duplicates, have no NAs")
 test(6015.909, frolladapt(c(1L,2L,NA_integer_), 2L), error="be sorted, have no duplicates, have no NAs") ## loop that checks for sorted will detect NAs as well, except for first element
 test(6015.910, frolladapt(c(NA_integer_,1L,2L), 2L), error="be sorted, have no duplicates, have no NAs") ## first NA is detected by extra check
+
+# frollapply can produce output longer than the input when the window-length is also longer than the input #7646
+test(6100.1, frollapply(c(1,2,3,4,5),N=7,FUN=sum), rep(NA, 5L))
