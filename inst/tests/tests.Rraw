@@ -21523,11 +21523,19 @@ test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, val
 
 #4044
 DT = as.data.table(iris)
-options(datatable.unique.names = "off")
-test(2366.1, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"))
-options(datatable.unique.names = "warn")
-test(2366.2, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), warning = "Duplicate column names created")
-options(datatable.unique.names = "error")
-test(2366.3, setnames(copy(DT), "Petal.Length", "Sepal.Length"), error = "Duplicate column names created")
-options(datatable.unique.names = "rename")
-test(2366.4, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), c("Sepal.Length", "Sepal.Width", "Sepal.Length.1", "Petal.Width", "Species"))
+test(2366.1, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), 
+     options = list(datatable.unique.names = "off"))
+
+test(2366.2, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), 
+     warning = "Duplicate column names created", 
+     options = list(datatable.unique.names = "warn"))
+
+test(2366.3, setnames(copy(DT), "Petal.Length", "Sepal.Length"), 
+     error = "Duplicate column names created", 
+     options = list(datatable.unique.names = "error"))
+
+test(2366.4, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length.1", "Petal.Width", "Species"), 
+     options = list(datatable.unique.names = "rename"))

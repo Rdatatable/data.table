@@ -36,8 +36,7 @@ check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
 }
 
 process_name_policy = function(names_vec) {
-  policy = getOption("datatable.unique.names", "off")
-  
+  policy = getOption("datatable.unique.names")
   if (is.null(policy) || policy == "off") return(names_vec)
 
   allowed = c("warn", "error", "rename")
@@ -48,17 +47,15 @@ process_name_policy = function(names_vec) {
 
   if (anyDuplicated(names_vec)) {
     dups = unique(names_vec[duplicated(names_vec)])
-    msg = sprintf("Duplicate column names created: %s. This may cause ambiguity.", brackify(dups))
+    msg = paste0("Duplicate column names created: ", brackify(dups), ". This may cause ambiguity.")
 
-    if (policy == "warn") {
-      warningf(msg)
-    } else if (policy == "error") {
-      stopf(msg)
-    } else if (policy == "rename") {
-      return(make.unique(names_vec))
-    }
+    switch(policy,
+      warn = warningf(msg),
+      error = stopf(msg),
+      rename = return(make.unique(names_vec))
+    )
   }
-  return(names_vec)
+  names_vec
 }
 
 duplicated_values = function(x) {

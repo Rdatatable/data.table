@@ -2944,16 +2944,19 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (length(i) != length(new)) internal_error("length(i)!=length(new)") # nocov
   }
 
+  # NEW: Check for duplicates using the centralized helper in utils.R
   full_names = names(x)
   full_names[i] = new
   full_names = process_name_policy(full_names)
   new = full_names[i]
 
+  # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))
   if (length(w))
     .Call(Csetcharvec, attr(x, "sorted", exact=TRUE), m[w], new[w])
-
+  
+  # update secondary keys
   idx = attr(x, "index", exact=TRUE)
   for (k in names(attributes(idx))) {
     tt = strsplit(k,split="__")[[1L]][-1L]
