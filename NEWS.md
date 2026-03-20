@@ -32,6 +32,8 @@
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
+7. `setnames()` now supports a global option `datatable.unique.names` to control the creation of duplicate column names. Users can choose between `"off"` (default), `"warn"`, `"error"`, or `"rename"`. This addresses long-standing ambiguity issues when duplicate names were created silently, [#4044](https://github.com/Rdatatable/data.table/issues/4044). Thanks to @venom1204 for the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

@@ -21641,3 +21641,22 @@ test(2374.08, key(DT[, .(a, a)]), NULL)
 test(2374.09, key(subset(DT, select=c(a, a))), NULL)
 DT = data.table(a=1:2, a.1=3:4, val=10:11)
 test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
+
+#4044
+DT = as.data.table(iris)
+test(2375.1, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), 
+     options = list(datatable.unique.names = "off"))
+
+test(2375.2, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), 
+     warning = "Duplicate column names created", 
+     options = list(datatable.unique.names = "warn"))
+
+test(2375.3, setnames(copy(DT), "Petal.Length", "Sepal.Length"), 
+     error = "Duplicate column names created", 
+     options = list(datatable.unique.names = "error"))
+
+test(2375.4, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length.1", "Petal.Width", "Species"), 
+     options = list(datatable.unique.names = "rename"))
