@@ -99,7 +99,7 @@
     datatable.use.index=TRUE,           # global switch to address #1422
     datatable.prettyprint.char=NULL,    # FR #1091
     datatable.old.matrix.autoname=FALSE, # #7145: how data.table(x=1, matrix(1)) is auto-named set to change
-    datatable.unique.names = NULL 
+    datatable.unique.names = NULL
   )
   opts = opts[!names(opts) %chin% names(options())]
   options(opts)
