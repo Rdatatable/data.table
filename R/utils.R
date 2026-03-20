@@ -35,6 +35,30 @@ check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
         table_name, brackify(duplicate_names), domain=NA)
 }
 
+process_name_policy = function(names_vec) {
+  policy = getOption("datatable.unique.names")
+  if (is.null(policy) || policy == "off") return(names_vec)
+
+  allowed = c("warn", "error", "rename")
+  if (!policy %in% allowed) {
+    warningf("Invalid value for 'datatable.unique.names': [%s]. Falling back to 'off'. Allowed values are: 'off', 'warn', 'error', 'rename'.", as.character(policy))
+    return(names_vec)
+  }
+
+  if (anyDuplicated(names_vec)) {
+    dups = unique(names_vec[duplicated(names_vec)])
+    # Use paste0 to avoid sprintf issues with column names containing '%'
+    msg = paste0("Duplicate column names created: ", brackify(dups), ". This may cause ambiguity.")
+
+    switch(policy,
+      warn = warningf(msg),
+      error = stopf(msg),
+      rename = return(make.unique(names_vec))
+    )
+  }
+  names_vec
+}
+
 duplicated_values = function(x) {
   # fast anyDuplicated for the typical/non-error case; second duplicated() pass for (usually) error case
   if (!anyDuplicated(x)) return(vector(typeof(x)))

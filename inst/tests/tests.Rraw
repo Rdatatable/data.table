@@ -21577,3 +21577,22 @@ close(con)
 file.create(f <- tempfile())
 test(2367.6, fread(file(f)), data.table(), warning="Connection has size 0.")
 unlink(f)
+
+#4044
+DT = as.data.table(iris)
+test(2368.1, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), 
+     options = list(datatable.unique.names = "off"))
+
+test(2368.2, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length", "Petal.Width", "Species"), 
+     warning = "Duplicate column names created", 
+     options = list(datatable.unique.names = "warn"))
+
+test(2368.3, setnames(copy(DT), "Petal.Length", "Sepal.Length"), 
+     error = "Duplicate column names created", 
+     options = list(datatable.unique.names = "error"))
+
+test(2368.4, names(setnames(copy(DT), "Petal.Length", "Sepal.Length")), 
+     c("Sepal.Length", "Sepal.Width", "Sepal.Length.1", "Petal.Width", "Species"), 
+     options = list(datatable.unique.names = "rename"))
