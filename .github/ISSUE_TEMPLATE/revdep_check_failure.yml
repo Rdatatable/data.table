@@ -1,5 +1,6 @@
 name: Revdep check failure
 description: Report a reverse dependency (revdep) check failure that should be fixed before next CRAN release
+title: "PACKAGE check TYPE fails after PR_DESCRIPTION"
 labels: ["revdep"]
 body:
   - type: markdown
@@ -15,18 +16,6 @@ body:
       label: Affected package
       description: Link to package dev on github.
       placeholder: e.g. https://github.com/NorskRegnesentral/shapr
-    validations:
-      required: true
-
-  - type: textarea
-    id: description
-    attributes:
-      label: Problem description
-      description: |
-        Brief description of the check failure. Include what kind of failure
-        it is (ERROR, WARNING, NOTE) and which check stage fails
-        (tests, examples, vignettes, etc.).
-      placeholder: revdep shapr has new test failures.
     validations:
       required: true
 
@@ -56,15 +45,6 @@ body:
       required: true
 
   - type: textarea
-    id: mre
-    attributes:
-      label: Minimal reproducible example
-      description: |
-        Optional. A minimal example reproducing the failure outside
-        the revdep package. Useful as a potential data.table test case.
-      render: r
-
-  - type: textarea
     id: additional-context
     attributes:
       label: Additional context
@@ -72,3 +52,4 @@ body:
         Any other relevant information: @mentions of the commit/PR
         author(s), links to Monsoon result pages, whether the fix
         should come from data.table or from the revdep package, etc.
+        Minimal reproducible examples (MRE) can also be included here.
