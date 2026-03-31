@@ -120,6 +120,11 @@ test.list <- atime::atime_test_list(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),
       paste0("R_init_", gsub("[.]", "_", new.Package_)))
+    # allow compilation with strict type checking, #7689
+    pkg_find_replace(
+      file.path("src", "fwrite.c"),
+      "write(.*?)\\(.*? *col,",
+      "write\\1(const void *col,")
     # allow compilation on new R versions where 'Calloc' is not defined
     pkg_find_replace(
       file.path("src", "*.c"),
@@ -199,10 +204,10 @@ test.list <- atime::atime_test_list(
         v2 = sample(5L, N, TRUE)
       )
     },
-    expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id),
     Before = "7a9eaf62ede487625200981018d8692be8c6f134", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/515de90a6068911a148e54343a3503043b8bb87c) in the PR (https://github.com/Rdatatable/data.table/pull/4164/commits) that introduced the regression
     Regression = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
-    Fixed = "f750448a2efcd258b3aba57136ee6a95ce56b302"), # Second commit of the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
+    Fixed = "f750448a2efcd258b3aba57136ee6a95ce56b302", # Second commit of the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
+    expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id)),
 
   # Issue with sorting again when already sorted, as reported in https://github.com/Rdatatable/data.table/issues/4498
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4501#issue-625311918 which is the fix PR.
