@@ -8,7 +8,9 @@ HEAD <- grep("HEAD", names(pr.sha.list), value=TRUE)
 tcall[c("Before", "Regression", "Fixed")] <- NULL
 tcall$sha.vec <- c(hist.sha.list, pr.sha.list)[c(HEAD, "Before")]
 names(tcall$sha.vec) <- c("HEAD","Before")
+##tcall$seconds.limit <- 1
 tres <- eval(tcall)
+saveRDS(tres, "run-7687.rds")
 library(data.table)
 print(meas_wide <- dcast(
   tres$meas, N ~ expr.name, value.var="kilobytes"
