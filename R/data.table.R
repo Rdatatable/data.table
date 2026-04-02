@@ -569,8 +569,6 @@ replace_dot_alias = function(e) {
       stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(names_x))
     ansvals = which(.SDcols)
     ansvars = sdvars = names_x[ansvals]
-  } else {
-    stopf(".SDcols must be character, numeric, or logical")
   }
   list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals)
 }

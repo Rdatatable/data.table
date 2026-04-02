@@ -11124,7 +11124,11 @@ test(1750.37,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(TRUE, FALSE)),
   error = "\\.SDcols is a logical vector of length"
 )
-test(1750.40,
+test(1750.38,
+  cube(dt, j = lapply(.SD, mean), by = "color", .SDcols = c(FALSE, FALSE, FALSE, TRUE, FALSE), id=TRUE)[grouping==0L, .(color, amount)],
+  dt[, lapply(.SD, mean), by = "color", .SDcols = "amount"]
+)
+test(1750.39,
   cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = c(1, 99)),
   error = "out of bounds"
 )
@@ -11179,8 +11183,8 @@ test(1750.49,
   error = "\\.SDcols missing at the following indices: \\[1\\]"
 )
 test(1750.50,
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L)),
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("amount", "value"))
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L), id=TRUE)[grouping==0L, .(year, amount, value)],
+  dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
 )
 
 # for completeness, added test for NA problem to close #1837.
