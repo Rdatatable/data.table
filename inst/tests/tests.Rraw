@@ -11186,6 +11186,10 @@ test(1750.50,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L), id=TRUE)[grouping==0L, .(year, amount, value)],
   dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
 )
+test(1750.52,
+  cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = c(4L, 5L), id=TRUE)[grouping==0L, .(color, amount, value)],
+  dt[, lapply(.SD, sum), by = "color", .SDcols = c("amount", "value")]
+)
 
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
