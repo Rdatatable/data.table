@@ -522,47 +522,57 @@ replace_dot_alias = function(e) {
 }
 
 # Helper function to process SDcols
-.processSDcols = function(SDcols_sub, SDcols_missing, x, jsub, by, enclos = parent.frame()) {
- names_x = names(x)
- bysub = substitute(by)
- allbyvars = intersect(all.vars(bysub), names_x)
- usesSD = ".SD" %chin% all.vars(jsub)
- if (!usesSD) {
-   return(NULL)
- }
- if (SDcols_missing) {
-   ansvars = sdvars = setdiff(unique(names_x), union(by, allbyvars))
-   ansvals = match(ansvars, names_x)
-   return(list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals))
- }
- sub.result = SDcols_sub
- if (sub.result %iscall% "patterns") {
-   .SDcols = eval_with_cols(sub.result, names_x)
- } else {
-   .SDcols = eval(sub.result, enclos)
- }
- if (anyNA(.SDcols))
-   stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
- if (is.character(.SDcols)) {
-   idx = .SDcols %chin% names_x
-   if (!all(idx))
-     stopf("Some items of .SDcols are not column names: %s", toString(.SDcols[!idx]))
-   ansvars = sdvars = .SDcols
-   ansvals = match(ansvars, names_x)
- } else if (is.numeric(.SDcols)) {
-     ansvals = as.integer(.SDcols)
-   if (any(ansvals < 1L | ansvals > length(names_x)))
-     stopf(".SDcols contains indices out of bounds")
-   ansvars = sdvars = names_x[ansvals]
- } else if (is.logical(.SDcols)) {
-   if (length(.SDcols) != length(names_x))
-     stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(names_x))
-   ansvals = which(.SDcols)
-   ansvars = sdvars = names_x[ansvals]
- } else {
-   stopf(".SDcols must be character, numeric, or logical")
- }
- list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals)
+.processSDcols = function(SDcols_sub, SDcols_missing, x, jsub, by, enclos = parent.frame(), bynames = character(0L)) {
+  names_x = names(x)
+  allbyvars = intersect(all.vars(by), names_x)
+  usesSD = ".SD" %chin% all.vars(jsub)
+  if (!usesSD) {
+    return(NULL)
+  }
+  if (SDcols_missing) {
+    ansvars = sdvars = setdiff(unique(names_x), union(by, allbyvars))
+    ansvals = match(ansvars, names_x)
+    return(list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals))
+  }
+  sub.result = SDcols_sub
+  if (sub.result %iscall% ':' && length(sub.result) == 3L) {
+    return(NULL)
+  }
+  if (sub.result %iscall% c("!", "-") && length(sub.result) == 2L) {
+    negate_sdcols = TRUE
+    sub.result = sub.result[[2L]]
+  } else negate_sdcols = FALSE
+  if (sub.result %iscall% "patterns") {
+    .SDcols = eval_with_cols(sub.result, names_x)
+  } else {
+    .SDcols = eval(sub.result, enclos)
+  }
+  if (!is.character(.SDcols) && !is.numeric(.SDcols) && !is.logical(.SDcols)) {
+    return(NULL)
+  }
+  if (anyNA(.SDcols))
+    stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
+  if (is.character(.SDcols)) {
+    idx = .SDcols %chin% names_x
+    if (!all(idx))
+      stopf("Some items of .SDcols are not column names: %s", toString(.SDcols[!idx]))
+    ansvars = sdvars = .SDcols
+    ansvals = match(ansvars, names_x)
+  } else if (is.numeric(.SDcols)) {
+      ansvals = as.integer(.SDcols)
+      if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
+      if (any(idx <- abs(.SDcols) > ncol(x) | abs(.SDcols) < 1L)) stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
+    ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else as.integer(.SDcols)
+    ansvars = sdvars = names_x[ansvals]
+  } else if (is.logical(.SDcols)) {
+    if (length(.SDcols) != length(names_x))
+      stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(names_x))
+    ansvals = which(.SDcols)
+    ansvars = sdvars = names_x[ansvals]
+  } else {
+    stopf(".SDcols must be character, numeric, or logical")
+  }
+  list(ansvars = ansvars, sdvars = sdvars, ansvals = ansvals)
 }
 
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
@@ -1457,10 +1467,28 @@ replace_dot_alias = function(e) {
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
           # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
           # NB: _unary_ '-', not _binary_ '-' (#5826). Test for '!' length-2 should be redundant but low-cost & keeps code concise.
-          if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
-            negate_sdcols = TRUE
-            colsub = colsub[[2L]]
-          } else negate_sdcols = FALSE
+          try_processSDcols = !(colsub %iscall% c("!", "-") && length(colsub) == 2L) && !(colsub %iscall% ':') && !(colsub %iscall% 'patterns')
+          if (try_processSDcols) {
+            sdcols_result = .processSDcols(
+              SDcols_sub = colsub,
+              SDcols_missing = FALSE,
+              x = x,
+              jsub = jsub,
+              by = substitute(by),
+              enclos = parent.frame()
+            )
+            if (!is.null(sdcols_result)) {
+              ansvars = sdvars = sdcols_result$ansvars
+              ansvals = sdcols_result$ansvals
+            } else {
+              try_processSDcols = FALSE
+            }
+          }
+          if (!try_processSDcols) {
+            if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
+              negate_sdcols = TRUE
+              colsub = colsub[[2L]]
+            } else negate_sdcols = FALSE
           # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
           if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
@@ -1509,6 +1537,7 @@ replace_dot_alias = function(e) {
             ansvals = chmatch(ansvars, names_x)
           }
         }
+      }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
         non_sdvars = setdiff(intersect(av, allcols), c(bynames, ansvars))

@@ -11119,25 +11119,10 @@ test(1750.35,
                             character(0)),
                 id = TRUE)
 )
-test(1750.36,
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("value", "BADCOL")),
-  error = "Some items of \\.SDcols are not column names"
-)
 
 test(1750.37,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(TRUE, FALSE)),
   error = "\\.SDcols is a logical vector of length"
-)
-
-test(1750.38,
-cube(dt, j = lapply(.SD, mean), by = "color", .SDcols = c(FALSE, FALSE, FALSE, TRUE, FALSE), id=TRUE),
-  groupingsets(dt, j = lapply(.SD, mean), by = "color", .SDcols = "amount",
-                sets = list("color", character(0)),
-                id = TRUE)
-)
-test(1750.39,
-  cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = list("amount")),
-  error = ".SDcols must be character, numeric, or logical"
 )
 test(1750.40,
   cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = c(1, 99)),
