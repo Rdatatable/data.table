@@ -11119,7 +11119,11 @@ test(1750.35,
                             character(0)),
                 id = TRUE)
 )
-
+test(1750.36,
+  names(cube(dt, j = lapply(.SD, sum), by = "color",
+             .SDcols = -c(1L, 2L, 3L), id = TRUE)),
+  c("grouping", "color", "amount", "value")
+)
 test(1750.37,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(TRUE, FALSE)),
   error = "\\.SDcols is a logical vector of length"
@@ -11186,11 +11190,15 @@ test(1750.50,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L), id=TRUE)[grouping==0L, .(year, amount, value)],
   dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
 )
-test(1750.52,
-  cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = c(4L, 5L), id=TRUE)[grouping==0L, .(color, amount, value)],
-  dt[, lapply(.SD, sum), by = "color", .SDcols = c("amount", "value")]
+test(1750.51,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L), id = TRUE)[grouping == 0L, .(year, amount, value)],
+  dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
 )
-
+test(1750.52,
+  names(cube(dt, j = lapply(.SD, sum), by = "color",
+             .SDcols = -(1:3), id = TRUE)),
+  c("grouping", "color", "amount", "value", "id1", "id2")
+)
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
 test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
