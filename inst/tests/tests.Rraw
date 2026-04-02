@@ -11205,7 +11205,11 @@ test(1750.53,
 )
 test(1750.54,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("amount", "nonexistent")),
-  error = "Some items of .SDcols are not column names"
+  error = "Some items of .SDcols are not column names: nonexistent"
+)
+test(1750.55,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(1L, 99L)),
+  error = "out of bounds"
 )
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
