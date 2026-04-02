@@ -11199,6 +11199,10 @@ test(1750.52,
   data.table:::.processSDcols(quote(a:b), FALSE, dt, quote(lapply(.SD, sum)), "color"),
   NULL
 )
+test(1750.53, cube(dt, j=lapply(.SD,sum), by="color", .SDcols=c(4L,NA,5L)), error="\\.SDcols missing at the following indices")
+test(1750.54, cube(dt, j=lapply(.SD,sum), by="color", .SDcols=c(1L,-2L)), error="\\.SDcols is numeric but has both")
+test(1750.55, cube(dt, j=lapply(.SD,sum), by="color", .SDcols=99L), error="\\.SDcols is numeric but out of bounds")
+test(1750.56, cube(dt, j=lapply(.SD,sum), by="color", .SDcols=c("amount","notacol")), error="Some items of \\.SDcols are not column names")
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
 test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
