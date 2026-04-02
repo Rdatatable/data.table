@@ -11191,13 +11191,13 @@ test(1750.50,
   dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
 )
 test(1750.51,
-  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L), id = TRUE)[grouping == 0L, .(year, amount, value)],
-  dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
-)
-test(1750.52,
   names(cube(dt, j = lapply(.SD, sum), by = "color",
              .SDcols = -(1:3), id = TRUE)),
   c("grouping", "color", "amount", "value", "id1", "id2")
+)
+test(1750.52,
+  data.table:::.processSDcols(quote(a:b), FALSE, dt, quote(lapply(.SD, sum)), "color"),
+  NULL
 )
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
