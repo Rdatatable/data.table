@@ -48,6 +48,8 @@
 
 8. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
 
+9. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
