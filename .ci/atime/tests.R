@@ -120,11 +120,13 @@ test.list <- atime::atime_test_list(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),
       paste0("R_init_", gsub("[.]", "_", new.Package_)))
-    # allow compilation with strict type checking, #7689
-    pkg_find_replace(
-      file.path("src", "fwrite.c"),
-      "write(.*?)\\(.*? *col,",
-      "write\\1(const void *col,")
+    # require C<23 for empty prototype declarations to work, #7689
+    descfile = file.path(new.pkg.path, "DESCRIPTION")
+    desc = as.data.frame(read.dcf(descfile))
+    desc$SystemRequirements = paste(
+      c(desc$SystemRequirements, "USE_C99"),
+      collapse = "; ")
+    write.dcf(desc, descfile)
     # allow compilation on new R versions where 'Calloc' is not defined
     pkg_find_replace(
       file.path("src", "*.c"),
