@@ -15,7 +15,7 @@ variables:
   RUN_ALL_DATATABLE_TESTS: "yes"  ## run optional tests in CI
   R_REL_VERSION:  "4.5" # only raise when RTOOLS for REL is available
   R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.5.0/R-4.5.0-win.exe"
-  R_DEV_VERSION:  "4.6"
+  R_DEV_VERSION:  "4.7"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
   R_OLD_VERSION:  "4.4"
   R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.3/R-4.4.3-win.exe"
