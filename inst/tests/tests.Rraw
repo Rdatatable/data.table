@@ -4249,7 +4249,7 @@ test(1163, last(x), character(0))
 # Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
 a = c("a","\u00E4","\u00DF","z")
 au = iconv(a,"UTF8","latin1")
-test(1164.1, requires_utf8=c("\u00E4", "\u00DF"), chmatch(a, au), match(a, au))
+test(1164.1, chmatch(a, au), match(a, au))
 
 # Bug fix for #73 - segfault when rbindlist on empty data.tables
 x <- as.data.table(BOD)
@@ -13512,7 +13512,7 @@ alloc.col(ans)
 test(1965.3, setDT(list(1:2, M)), ans, warning='Some columns are a multi-column type.*for example column 2')
 
 # fread/fwrite file name in native and utf-8 encoding, #3078
-if (.Platform$OS.type=="windows") {
+if (.Platform$OS.type=="windows" && utf8_check("\u00c3\u00b6\u00fc")) {
   f = tempfile("\u00f6"); cat("3.14", file = f)
   fn = enc2native(f); f8 = enc2utf8(f)
   test(1966.1, fread(fn), data.table(V1=3.14))
