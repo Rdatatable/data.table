@@ -188,12 +188,12 @@ test.list <- atime::atime_test_list(
       L <- replicate(N, 1, simplify = FALSE)
       setDT(L)
     },
+    Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
+    Fast = "2487c61656335764980e478c323f7e6ce4e6d4ca", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/5427) that fixes the issue
     expr = {
       data.table:::setattr(L, "class", NULL)
       data.table:::setDT(L)
-    },
-    Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
-    Fast = "af48a805e7a5026a0c2d0a7fd9b587fea5cfa3c4"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
+    }),
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
