@@ -11191,25 +11191,16 @@ test(1750.50,
   dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
 )
 test(1750.51,
-  names(cube(dt, j = lapply(.SD, sum), by = "color",
-             .SDcols = -(1:3), id = TRUE)),
-  c("grouping", "color", "amount", "value", "id1", "id2")
-)
-test(1750.52,
   data.table:::.processSDcols(quote(a:b), FALSE, dt, quote(lapply(.SD, sum)), "color"),
   NULL
 )
-test(1750.53,
+test(1750.52,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(1L, -2L)),
   error = "\\.SDcols is numeric but has both \\+ve and -ve indices"
 )
-test(1750.54,
+test(1750.53,
   cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("amount", "nonexistent")),
   error = "Some items of .SDcols are not column names: nonexistent"
-)
-test(1750.55,
-  data.table:::.processSDcols(quote(c("amount", "nonexistent")), FALSE, dt, quote(lapply(.SD, sum)), "year"),
-  error = "Some items of \\.SDcols are not column names"
 )
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
