@@ -144,6 +144,11 @@ if (!test_longdouble) {
   cat("\n**** Full long double accuracy is not available. Tests using this will be skipped.\n\n")
   # e.g. under valgrind, longdouble.digits==53; causing these to fail: 1262, 1729.04, 1729.08, 1729.09, 1729.11, 1729.13, 1830.7; #4639
 }
+exact_NA = identical(NA_real_ + 0, NA_real_)
+if (!exact_NA) {
+  cat("\n**** NaN payload does not propagate through arithmetic operations. Tests requiring NA not to decay to NaN will be skipped.\n\n")
+  # e.g. on riscv64
+}
 
 tt = Sys.getenv("TZ", unset=NA)
 TZnotUTC = !identical(tt,"") && !is_utc(tt)
@@ -1957,12 +1962,9 @@ basemean = base::mean  # to isolate time of `::` itself
 ans3 = DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)]
 test(646, ans1, ans2)
 test(647, ans1, ans3)
-if (test_longdouble) {
+if (exact_NA) {
   test(648, anyNA(ans1$V1) && !any(is.nan(ans1$V1)))
-  # used to error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
-  # it doesn't seem to error under valgrind anymore so the test_longdouble may be removable
-  # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
-  # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
+  # Valgrind may have had NaN payload propagation problems in the past; RISC-V will in the future
 }
 ans1 = DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)]
 ans2 = DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)]
