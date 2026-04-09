@@ -11,7 +11,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
 exact_NaN = identical(NA_real_+0, NA_real_)
 if (!exact_NaN) {
-  cat("\n**** Skipping 10 NaN/NA algo='exact' tests because NaN payload doesn't propagate through numeric operations\n\n")
+  cat("\n**** Skipping 10 NaN/NA algo='exact' tests because NaN payload doesn't propagate through arithmetic operations\n\n")
 }
 
 ## rolling features
