@@ -209,20 +209,34 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     }
 
     gzsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
-      if (!requireNamespace("R.utils", quietly = TRUE))
-        stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
-      # not worth doing a behavior test here, so just use getRversion().
-      if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
-        stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
-      FUN = if (w<=2L || gzsig) gzfile else bzfile
+    zstdsig = FALSE
+    xzsig = FALSE
+    if ((w <- endsWithAny(file, c(".gz", ".bgz", ".bz2", ".zst", ".xz"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature) ||
+        (zstdsig <- is_zstd(file_signature)) || (xzsig <- is_xz(file_signature))) {
       decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
-      tryCatch({
-        R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
-      }, error = function(e) {
-        stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
-      })
+      if (w==4L || zstdsig) {
+        if (!haszstd())
+          stopf("To read .zst files, fread() requires zstd library support. data.table was compiled without zstd. Please reinstall data.table after installing the zstd development library (libzstd-dev on Debian/Ubuntu, libzstd-devel on Fedora/EPEL, zstd on Homebrew).") # nocov
+        tryCatch({
+          .Call(Cdt_zstd_decompress, file, decompFile)
+        }, error = function(e) {
+          stopf("zstd decompression of file '%s' failed:\n  %s\nThis can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+        })
+      } else {
+        fmt = if (w<=2L || gzsig) "gz" else if (w==5L || xzsig) "xz" else "bz2"
+        if (!requireNamespace("R.utils", quietly = TRUE))
+          stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", fmt) # nocov
+        # not worth doing a behavior test here, so just use getRversion().
+        if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
+          stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
+        FUN = if (w<=2L || gzsig) gzfile else if (w==5L || xzsig) xzfile else bzfile
+        tryCatch({
+          R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+        }, error = function(e) {
+          stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+        })
+      }
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
     }
     file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
@@ -486,7 +500,9 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 known_signatures = list(
   zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
   gzip = as.raw(c(0x1F, 0x8B)),
-  bzip = as.raw(c(0x42, 0x5A, 0x68))
+  bzip = as.raw(c(0x42, 0x5A, 0x68)),
+  zstd = as.raw(c(0x28, 0xB5, 0x2F, 0xFD)), # zstd frame magic (little-endian 0xFD2FB528)
+  xz   = as.raw(c(0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00)) # https://tukaani.org/xz/xz-file-format.txt
 )
 
 # https://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
@@ -505,6 +521,16 @@ is_gzip = function(file_signature) {
 is_bzip = function(file_signature) {
   identical(file_signature[1:3], known_signatures$bzip) &&
     isTRUE(file_signature[4L] %in% charToRaw('123456789')) # for #6304
+}
+
+# https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#zstandard-frames
+is_zstd = function(file_signature) {
+  identical(file_signature[1:4], known_signatures$zstd)
+}
+
+# https://tukaani.org/xz/xz-file-format.txt section 2.1.1.1
+is_xz = function(file_signature) {
+  identical(file_signature[1:6], known_signatures$xz)
 }
 
 # simplified but faster version of `factor()` for internal use.

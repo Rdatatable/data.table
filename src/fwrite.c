@@ -10,6 +10,10 @@
 #ifndef NOZLIB
 #include <zlib.h>      // for compression to .gz
 #endif
+#ifndef NOZSTD
+#include <zstd.h>         // for compression to .zst
+#include <zstd_errors.h>  // for ZSTD_ErrorCode, ZSTD_getErrorString
+#endif
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -41,7 +45,7 @@ static bool qmethodEscape=false;       // when quoting fields, how to escape dou
 static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
-static int gzip_level;
+static int compress_level;
 static bool forceDecimal=false;       // force writing decimal points for numeric columns
 
 extern const char *getString(const void *, int64_t);
@@ -588,7 +592,7 @@ int init_stream(z_stream *stream) {
   // Now we manage header and trailer. gzip file is slighty lower with -15 because no header/trailer are
   // written for each chunk.
   // For memLevel, 8 is the default value (128 KiB). memLevel=9 uses maximum memory for optimal speed. To be tested ?
-  int err = deflateInit2(stream, gzip_level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
+  int err = deflateInit2(stream, compress_level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
   return err;  // # nocov
 }
 
@@ -629,7 +633,7 @@ void fwriteMain(fwriteMainArgs args)
   doQuote = args.doQuote;
   int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
-  gzip_level = args.gzip_level;
+  compress_level = args.compress_level;
   forceDecimal = args.forceDecimal;
 
   size_t len;
@@ -639,6 +643,10 @@ void fwriteMain(fwriteMainArgs args)
 #ifdef NOZLIB
   if (args.is_gzip)
     STOP(_("Compression in fwrite uses zlib library. Its header files were not found at the time data.table was compiled. To enable fwrite compression, please reinstall data.table and study the output for further guidance.")); // # nocov
+#endif
+#ifdef NOZSTD
+  if (args.is_zstd)
+    STOP(_("Compression in fwrite uses zstd library. Its header files were not found at the time data.table was compiled. To enable zstd compression, please reinstall data.table and study the output for further guidance.")); // # nocov
 #endif
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
@@ -721,6 +729,7 @@ void fwriteMain(fwriteMainArgs args)
   if (*args.filename == '\0') {
     f = -1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
+    args.is_zstd = false; // zstd is only for file
   } else {
 #ifdef WIN32
     f = _open(args.filename, _O_WRONLY | _O_BINARY | _O_CREAT | (args.append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
@@ -811,13 +820,14 @@ void fwriteMain(fwriteMainArgs args)
          buffSize / MEGA, nth, errno, strerror(errno)); // # nocov
   }
 
-  // init compress variables
+  // init compress variables (shared across gzip and zstd)
 #ifndef NOZLIB
   z_stream strm;
-  // NB: fine to free() this even if unallocated
+  // NB: fine to free() this even if unallocated (free(NULL) is safe)
   char *zbuffPool = NULL;
   size_t zbuffSize = 0;
   size_t compress_len = 0;
+
   if (args.is_gzip) {
     // compute zbuffSize which is the same for each thread
     if (init_stream(&strm) != Z_OK) {
@@ -829,25 +839,40 @@ void fwriteMain(fwriteMainArgs args)
     zbuffSize = deflateBound(&strm, buffSize);
     if (verbose)
       DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
+  }
+#endif // #NOZLIB
 
-    // alloc nth zlib buffers
+#ifndef NOZSTD
+  if (args.is_zstd) {
+    zbuffSize = ZSTD_compressBound(buffSize);
+    if (verbose)
+      DTPRINT(_("zbuffSize=%d returned from ZSTD_compressBound\n"), (int)zbuffSize);
+  }
+#endif // #NOZSTD
+
+  if (zbuffSize) {
+    // alloc nth compressed-output buffers (one per thread)
     // if headerLen > nth * zbuffSize (long variable names and 1 thread), alloc headerLen
     alloc_size = nth * zbuffSize < headerLen ? headerLen : nth * zbuffSize;
-    if (verbose) {
+    if (verbose)
       DTPRINT(_("Allocate %zu bytes (%zu MiB) for zbuffPool\n"), alloc_size, alloc_size / MEGA);
-    }
     zbuffPool = malloc(alloc_size);
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      deflateEnd(&strm);
+#ifndef NOZLIB
+      if (args.is_gzip) deflateEnd(&strm);
+#endif
       STOP(_("Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
            zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
     }
+  }
+
+#ifndef NOZLIB
+  if (args.is_gzip) {
     len = 0;
     crc = crc32(0L, Z_NULL, 0);
-
     if (f != -1) {
       // write minimal gzip header, but not on the console
       static const char header[] = "\037\213\10\0\0\0\0\0\0\3";
@@ -867,6 +892,11 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
 #endif // #NOZLIB
+
+#ifndef NOZSTD
+  if (args.is_zstd)
+    len = 0;
+#endif
 
   // write header
 
@@ -912,7 +942,6 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
       if (args.is_gzip) {
         char* zbuff = zbuffPool;
-
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
         crc = crc32(crc, (unsigned char*)buff, len);
@@ -922,21 +951,35 @@ void fwriteMain(fwriteMainArgs args)
           ret2 = WRITE(f, zbuff, (int)zbuffUsed);
           compress_len += zbuffUsed;
         }
-      } else {
+      } else
 #endif
-        ret2 = WRITE(f,  buff, (int)(ch - buff));
-#ifndef NOZLIB
+#ifndef NOZSTD
+      if (args.is_zstd) {
+        char* zbuff = zbuffPool;
+        size_t mylen_hdr = (size_t)(ch - buff);
+        size_t zbuffUsed = ZSTD_compress(zbuff, zbuffSize, buff, mylen_hdr, compress_level);
+        if (ZSTD_isError(zbuffUsed)) {
+          ret1 = (int)ZSTD_getErrorCode(zbuffUsed); // # nocov
+        } else {
+          len += mylen_hdr;
+          ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+          compress_len += zbuffUsed;
+        }
+      } else
+#endif
+      {
+        ret2 = WRITE(f, buff, (int)(ch - buff));
       }
-#endif
       if (ret1 || ret2 == -1) {
         // # nocov start
         int errwrite = errno; // capture write errno now in case close fails with a different errno
         CLOSE(f);
         free(buffPool);
-#ifndef NOZLIB
         free(zbuffPool);
+#ifndef NOZLIB
+        if (args.is_gzip) deflateEnd(&strm);
 #endif
-        if (ret1) STOP(_("Failed to compress gzip. compressbuff() returned %d"), ret1);
+        if (ret1) STOP(_("Failed to compress header. Error code: %d"), ret1);
         else STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
@@ -956,9 +999,7 @@ void fwriteMain(fwriteMainArgs args)
     if (verbose)
       DTPRINT(_("No data rows present (nrow==0)\n"));
     free(buffPool);
-#ifndef NOZLIB
-    free(zbuffPool);
-#endif
+    free(zbuffPool);  // free(NULL) is safe
     if (f != -1 && CLOSE(f))
       STOP(_("%s: '%s'"), strerror(errno), args.filename); // # nocov
     return;
@@ -983,18 +1024,25 @@ void fwriteMain(fwriteMainArgs args)
     char* myBuff = buffPool + me * buffSize;
     char* ch = myBuff;
 
+    // shared compression output pointer (used by both gzip and zstd)
+    void *myzBuff = NULL;
+    size_t myzbuffUsed = 0;
 #ifndef NOZLIB
     z_stream mystream;
     size_t mylen = 0;
     int mycrc = 0;
-    void *myzBuff = NULL;
-    size_t myzbuffUsed = 0;
     if (args.is_gzip) {
       myzBuff = zbuffPool + me * zbuffSize;
       if (init_stream(&mystream) != Z_OK) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
+    }
+#endif
+#ifndef NOZSTD
+    size_t myzstd_uncompressed = 0;
+    if (args.is_zstd) {
+      myzBuff = zbuffPool + me * zbuffSize;
     }
 #endif
     if (failed)
@@ -1047,6 +1095,20 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
 #endif
+#ifndef NOZSTD
+    if (args.is_zstd && !failed) {
+      myzstd_uncompressed = (size_t)(ch - myBuff);
+      size_t zstd_result = ZSTD_compress(myzBuff, zbuffSize, myBuff, myzstd_uncompressed, compress_level);
+      if (ZSTD_isError(zstd_result)) {
+        failed = true;
+        my_failed_compress = (int)ZSTD_getErrorCode(zstd_result);
+        myzbuffUsed = 0;
+        myzstd_uncompressed = 0;
+      } else {
+        myzbuffUsed = zstd_result;
+      }
+    }
+#endif
 
       // ordered region ----
 #pragma omp ordered
@@ -1068,6 +1130,12 @@ void fwriteMain(fwriteMainArgs args)
           compress_len += myzbuffUsed;
         } else
 #endif
+#ifndef NOZSTD
+        if (args.is_zstd) {
+          ret = WRITE(f, myzBuff, (int)myzbuffUsed);
+          compress_len += myzbuffUsed;
+        } else
+#endif
       {
         ret = WRITE(f, myBuff,  (int)(ch - myBuff));
       }
@@ -1080,6 +1148,11 @@ void fwriteMain(fwriteMainArgs args)
       if (args.is_gzip) {
           crc = crc32_combine(crc, mycrc, mylen);
           len += mylen;
+      }
+#endif
+#ifndef NOZSTD
+      if (args.is_zstd) {
+          len += myzstd_uncompressed;
       }
 #endif
 
@@ -1112,10 +1185,9 @@ void fwriteMain(fwriteMainArgs args)
   } // end of parallel for loop
 
   free(buffPool);
+  free(zbuffPool);  // free(NULL) is safe
 
 #ifndef NOZLIB
-  free(zbuffPool);
-
 /* put a 4-byte integer into a byte array in LSB order */
 #define PUT4(a,b) ((a)[0] = (b), (a)[1] = (b) >> 8, (a)[2] = (b) >> 16, (a)[3] = (b) >> 24)
 
@@ -1132,6 +1204,7 @@ void fwriteMain(fwriteMainArgs args)
       STOP(_("Failed to write gzip trailer")); // # nocov
   }
 #endif
+  // no trailer needed for zstd: each chunk is a complete self-contained frame
 
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
@@ -1146,12 +1219,15 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   if (verbose) {
+    if (args.is_gzip || args.is_zstd) {
+      DTPRINT(_("%s: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%"),
+              args.is_gzip ? "zlib" : "zstd",  // # notranslate
+              len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0);
 #ifndef NOZLIB
-    if (args.is_gzip) {
-      DTPRINT(_("zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%, crc=%x\n"),
-              len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
-    }
+      if (args.is_gzip) DTPRINT(_(", crc=%x"), crc);
 #endif
+      DTPRINT("\n"); // # notranslate
+    }
     DTPRINT(Pl_(nth, Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d thread. MaxBuffUsed=%d%%\n",
                                     "Wrote %"PRId64" rows in %.3f secs using %d thread. MaxBuffUsed=%d%%\n"),
                      Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d threads. MaxBuffUsed=%d%%\n",
@@ -1168,9 +1244,16 @@ void fwriteMain(fwriteMainArgs args)
   if (failed) {
     // # nocov start
 #ifndef NOZLIB
-    if (failed_compress)
+    if (failed_compress && args.is_gzip)
       STOP(_("zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"),
            zlibVersion(), ZLIB_VERSION, failed_compress, Z_FINISH, Z_BLOCK,
+           verbose ? _("Please include the full output above and below this message in your data.table bug report.")
+                   : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
+#endif
+#ifndef NOZSTD
+    if (failed_compress && args.is_zstd)
+      STOP(_("zstd %s compress failed (error code %d): %s. %s"),
+           ZSTD_versionString(), failed_compress, ZSTD_getErrorString((ZSTD_ErrorCode)failed_compress),
            verbose ? _("Please include the full output above and below this message in your data.table bug report.")
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
 #endif

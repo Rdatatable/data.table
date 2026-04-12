@@ -85,6 +85,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
   haszlib = data.table:::haszlib
+  haszstd = data.table:::haszstd
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -9775,6 +9776,29 @@ if (haszlib()) {
   unlink(f)
 }
 
+# fwrite/fread zstd compress # mirror tests from above
+if (!haszstd()) {
+  test(1658.541, fwrite(data.table(a=1), file=tempfile(), compress="zstd"), error="header files were not found at the time data.table was compiled")
+} else {
+  test(1658.541, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="zstd"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
+  DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
+  test(1658.5421, fwrite(DT, file=f1<-tempfile(fileext=".zst"), verbose=TRUE), NULL,
+                 output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")
+  test(1658.5422, fwrite(DT, file=f2<-tempfile()), NULL)
+  test(1658.5423, file.info(f1)$size < file.info(f2)$size)
+  test(1658.543, fread(f1), DT)
+  fwrite(DT, file=f3<-tempfile(), compress="zstd")
+  fwrite(DT, file=f4<-tempfile(), compress="zstd", compressLevel=1)
+  fwrite(DT, file=f5<-tempfile(), compress="zstd", compressLevel=22)
+  fwrite(DT, file=f6<-tempfile(), compress="zstd", col.names=FALSE)
+  test(1658.5441, file.info(f3)$size, file.info(f1)$size)
+  test(1658.5442, file.info(f4)$size >= file.info(f1)$size)
+  test(1658.5443, file.info(f1)$size >= file.info(f5)$size)
+  test(1658.5444, fread(f6, col.names=c("a","b")), DT)
+  test(1658.5445, fread(f3), DT)
+  unlink(c(f1,f2,f3,f4,f5,f6))
+}
+
 # complex column support for fwrite, part of #3690
 DT = data.table(a=1:3, z=0:2 - (2:0)*1i)
 test(1658.55, fwrite(DT), output='a,z\n1,0-2i\n2,1-1i\n3,2+0i')
@@ -18489,6 +18513,15 @@ if (test_R.utils) {
   R.utils::bzip2(tmp, tmp2 <- tempfile(), remove=FALSE) # _not_ with .bz2 extension
   test(2273.4, fread(tmp2), DT)
   file.remove(tmp2)
+  con = xzfile(tmp2 <- tempfile(fileext=".xz"), open="wt")
+  write.table(DT, con, sep = ",", row.names = FALSE, col.names = TRUE, quote = FALSE)
+  close(con)
+  test(2273.5, fread(tmp2), DT)
+  con = xzfile(tmp3 <- tempfile(), open="wt")
+  write.table(DT, con, sep = ",", row.names = FALSE, col.names = TRUE, quote = FALSE)
+  close(con)
+  test(2273.6, fread(tmp3), DT)
+  file.remove(c(tmp2, tmp3))
 }
 file.remove(tmp)
 

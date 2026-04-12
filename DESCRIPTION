@@ -12,6 +12,7 @@ BugReports: https://github.com/Rdatatable/data.table/issues
 VignetteBuilder: litedown
 Encoding: UTF-8
 ByteCompile: TRUE
+SystemRequirements: libzstd (optional)
 Authors@R: c(
   person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com", comment = c(ORCID="0000-0002-2137-1391")),
   person("Matt","Dowle",           role="aut",          email="mattjdowle@gmail.com"),
