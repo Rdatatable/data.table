@@ -1946,6 +1946,10 @@ int freadMain(freadMainArgs _args)
           }
         }
       }
+      if (!prevStart && topStart && topSkip > 0)
+      {
+        DTWARN(_("The rows in this file appear to be separated by blank lines. This resulted in most rows being skipped. If this was not the intended outcome, please consider setting 'blank.lines.skip' to TRUE.\n"));
+      }
       if (!firstJumpEnd) {
         if (verbose) DTPRINT(_("  No sep and quote rule found a block of 2x2 or greater. Single column input.\n"));
         topNumFields = 1;
