@@ -576,7 +576,16 @@ test = function(num, x, y=TRUE,
     }
     if (length(expected) != length(observed) && (!foreign || is.null(ignore.warning))) {
       # nocov start
-      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
+      align_messages = function(label, x) paste(
+        c(
+          paste0(label, x[1L]),
+          if (length(x) > 1L) paste0(strrep(" ", nchar(label)), x[-1L])
+        ),
+        collapse = "\n"
+      )
+      expected_text = align_messages("Expected: ", expected)
+      observed_text = align_messages("Observed: ", observed)
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), expected_text, observed_text)
       fail = TRUE
       # nocov end
     } else if (!foreign) {

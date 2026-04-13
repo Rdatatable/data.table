@@ -50,6 +50,8 @@
 
 9. `fread()` no longer replaces a literal header column name `"NA"` with an auto-generated `Vn` name when `na.strings` includes `"NA"`, [#5124](https://github.com/Rdatatable/data.table/issues/5124). Data rows still continue to parse `"NA"` as missing. Thanks @Mashin6 for the report and @shrektan for the fix.
 
+10. `test()` now reports multiple expected warnings more clearly when `warning=` has length greater than 1L, instead of printing a collapsed or repeated mismatch summary after messages like `Test 1 produced 1 warnings but expected 2`, [#7092](https://github.com/Rdatatable/data.table/issues/7092). Expected and observed warnings are now printed on separate aligned lines, making small differences easier to spot. Thanks @MichaelChirico for the report,@ben-schwen for assistance, and @lucaslarson25 @tjdavis51 @D3VTHSTVR @car723 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
