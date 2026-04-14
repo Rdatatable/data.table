@@ -1087,9 +1087,13 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month - 1] : normYearDays[month - 1])))
     return;
 
+  int32_t cycle_year = year % 400;
+  if (cycle_year < 0) cycle_year += 400;
+  int32_t cycle = (year - cycle_year) / 400;
+
   *target =
-    (year / 400 - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
-    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (cycle - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[cycle_year] + // days to beginning of year within 400-year cycle
     (isLeapYear ? cumDaysCycleMonthsLeap[month - 1] : cumDaysCycleMonthsNorm[month - 1]) + // days to beginning of month within year
     day - 1; // day within month (subtract 1: 1970-01-01 -> 0)
 
