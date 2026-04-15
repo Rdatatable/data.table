@@ -62,6 +62,8 @@
 
 6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
 
+7. setnafill() old non-numeric input error message removed from all .po and .pot files.[#7449](https://github.com/Rdatatable/data.table/issues/7449) This reduces clutter and improves file readability, while keeping the new errors in place.  Thanks to @MichaelChirico for the issue and @deh277 for the fix.
+
 ## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1)  (22 January 2026)
 
 ### BUG FIXES
