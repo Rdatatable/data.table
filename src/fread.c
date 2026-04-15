@@ -2325,6 +2325,12 @@ int freadMain(freadMainArgs _args)
         .targets = targets,
         .anchor = colNamesAnchor,
       };
+      const char * const* savedNAstrings = NAstrings;
+      const bool savedBlankIsNAString = blank_is_a_NAstring;
+      // Column names should preserve literal header text, even when it matches na.strings.
+      // Blank headers still keep len==0 from Field() and are assigned default V<n> names later.
+      NAstrings = NULL;
+      blank_is_a_NAstring = false;
       ch--;
       for (int i = 0; i < ncol; i++) {
         // Use Field() here as it handles quotes, leading space etc inside it
@@ -2345,6 +2351,8 @@ int freadMain(freadMainArgs _args)
           if (ch[1] == '\r' || ch[1] == '\n' || ch[1] == '\0') { ch++; break; }
         }
       }
+      NAstrings = savedNAstrings;
+      blank_is_a_NAstring = savedBlankIsNAString;
       if (eol(&ch)) pos = ++ch;
       else if (*ch == '\0') pos = ch;
       else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
