@@ -811,7 +811,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   // edge case no measure.vars
   if (!data.lmax) {
     SEXP tt = PROTECT(shallowwrapper(DT, data.idcols)); protecti++;
-    ans = PROTECT(copyAsPlain(tt)); protecti++;
+    ans = PROTECT(copyAsPlain(tt, -1)); protecti++;
   } else {
     ansvals = PROTECT(getvaluecols(DT, dtnames, LOGICAL(valfactor)[0], verbose, &data)); protecti++;
     ansvars = PROTECT(getvarcols(DT, dtnames, LOGICAL(varfactor)[0], verbose, &data)); protecti++;
