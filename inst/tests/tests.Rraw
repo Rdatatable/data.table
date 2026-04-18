@@ -21585,3 +21585,9 @@ close(con)
 file.create(f <- tempfile())
 test(2367.6, fread(file(f)), data.table(), warning="Connection has size 0.")
 unlink(f)
+
+# multiple expected/observed warnings in test() are printed on aligned lines, #7092
+test(2368.1, test(0, {warning("a"); 2L}, 2L, warning=c("a", "b")), FALSE,
+             output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
+test(2368.2, test(0, {warning("a"); warning("b"); 2L}, 2L, warning="a"), FALSE,
+             output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
