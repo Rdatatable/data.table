@@ -11114,6 +11114,36 @@ test(1750.34,
                            character(0)),
                id = TRUE)
 )
+test(1750.35,
+  cube(dt, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols=patterns("value")),
+  groupingsets(dt, j = lapply(.SD, sum), by = c("color","year","status"), .SDcols = "value", 
+                sets = list(c("color","year","status"),
+                            c("color","year"),
+                            c("color","status"),
+                            "color",
+                            c("year","status"),
+                            "year",
+                            "status",
+                            character(0)),
+                id = TRUE)
+)
+test(1750.36,
+  names(cube(dt, j = lapply(.SD, sum), by = "color",
+             .SDcols = -c(1L, 2L, 3L), id = TRUE)),
+  c("grouping", "color", "amount", "value")
+)
+test(1750.37,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(TRUE, FALSE)),
+  error = "\\.SDcols is a logical vector of length"
+)
+test(1750.38,
+  cube(dt, j = lapply(.SD, mean), by = "color", .SDcols = c(FALSE, FALSE, FALSE, TRUE, FALSE), id=TRUE)[grouping==0L, .(color, amount)],
+  dt[, lapply(.SD, mean), by = "color", .SDcols = "amount"]
+)
+test(1750.39,
+  cube(dt, j = lapply(.SD, sum), by = "color", .SDcols = c(1, 99)),
+  error = "out of bounds"
+)
 # grouping sets with integer64
 if (test_bit64) {
   set.seed(26)
@@ -11159,6 +11189,27 @@ if (test_bit64) {
 }
 # end Grouping Sets
 
+# extra cube tests
+test(1750.49,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(NA_character_, "amount")),
+  error = "\\.SDcols missing at the following indices: \\[1\\]"
+)
+test(1750.50,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(4L, 5L), id=TRUE)[grouping==0L, .(year, amount, value)],
+  dt[, lapply(.SD, sum), by = "year", .SDcols = c("amount", "value")]
+)
+test(1750.51,
+  data.table:::.processSDcols(quote(a:b), FALSE, dt, quote(lapply(.SD, sum)), "color"),
+  NULL
+)
+test(1750.52,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c(1L, -2L)),
+  error = "\\.SDcols is numeric but has both \\+ve and -ve indices"
+)
+test(1750.53,
+  cube(dt, j = lapply(.SD, sum), by = "year", .SDcols = c("amount", "nonexistent")),
+  error = "Some items of .SDcols are not column names: nonexistent"
+)
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
 test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
@@ -13085,7 +13136,10 @@ test(1956.3, DT[, .SD, .SDcols = NA_real_], error = 'missing at the following')
 test(1956.4, DT[, .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
 test(1956.5, DT[, .SD, .SDcols = 'b'], error = 'not column names')
 test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers or names')
-
+test(1956.7, DT[, .SD, .SDcols = -c(1L, NA_integer_)], error = 'missing at the following')
+test(1956.8, DT[, .SD, .SDcols = 1:-1], error = 'both.*ve and.*ve')
+test(1956.9, DT[, .SD, .SDcols = 1:99], error = 'out of bounds')
+test(1956.91, DT[, .SD, .SDcols = -c("a", "nonexistent")], error = 'not column names')
 # added brackify to utils for #3116
 test(1957.1, brackify(1:3), '[1, 2, 3]')
 test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
