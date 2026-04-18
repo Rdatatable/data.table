@@ -4024,11 +4024,6 @@ msgstr ""
 " El argumento 'x' es un vector atómico, la actualización in situ solo se "
 "admite para list/data.table"
 
-#: nafill.c:117 nafill.c:128
-msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr ""
-"'x' argumento debe ser de tipo numérico, o lista/datos.tabla de tipos "
-"numéricos"
 
 #: nafill.c:185
 msgid ""

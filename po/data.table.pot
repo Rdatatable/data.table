@@ -3296,9 +3296,6 @@ msgid ""
 "data.table"
 msgstr ""
 
-#: nafill.c:117 nafill.c:128
-msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr ""
 
 #: nafill.c:185
 msgid ""

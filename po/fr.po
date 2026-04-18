@@ -4128,12 +4128,6 @@ msgstr ""
 "l'argument 'x' est un vecteur atomique, la mise à jour sur place n'est "
 "possible que pour list/data.table"
 
-#: nafill.c:117 nafill.c:128
-msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr ""
-"l'argument 'x' doit être un type numérique ou une liste/data.table de types "
-"numériques"
-
 #: nafill.c:185
 msgid ""
 "fill must be a vector of length 1 or a list of length of x. Consider "

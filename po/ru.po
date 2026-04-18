@@ -4020,10 +4020,6 @@ msgstr ""
 "Аргумент 'x' - атомарный вектор; обновление на месте поддерживается только "
 "для списка/data.table"
 
-#: nafill.c:117 nafill.c:128
-msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr ""
-"Аргумент 'x' должен быть численным или списком/data.table численных векторов"
 
 #: nafill.c:185
 msgid ""

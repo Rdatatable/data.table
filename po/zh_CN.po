@@ -3801,10 +3801,6 @@ msgid ""
 "data.table"
 msgstr "参数'x'是一个原子型矢量，原位的更新只为list 或 data.table提供"
 
-#: nafill.c:117 nafill.c:128
-msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr "参数'x'必须是数字类型，或者是数字类型的list/data.table"
-
 #: nafill.c:185
 #, fuzzy
 #| msgid "fill must be a vector of length 1 or a list of length of x"
