@@ -188,12 +188,12 @@ test.list <- atime::atime_test_list(
       L <- replicate(N, 1, simplify = FALSE)
       setDT(L)
     },
+    Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
+    Fast = "2487c61656335764980e478c323f7e6ce4e6d4ca", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/5427) that fixes the issue
     expr = {
       data.table:::setattr(L, "class", NULL)
       data.table:::setDT(L)
-    },
-    Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
-    Fast = "af48a805e7a5026a0c2d0a7fd9b587fea5cfa3c4"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
+    }),
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
@@ -209,7 +209,7 @@ test.list <- atime::atime_test_list(
     PR7401="0216983c51e03e3f61d5e6f08f4ba0c42cceb22c", # Merge commit (https://github.com/Rdatatable/data.table/commit/0216983c51e03e3f61d5e6f08f4ba0c42cceb22c) of a PR (https://github.com/Rdatatable/data.table/pull/7401) which increased speed and memory usage of this test (https://github.com/Rdatatable/data.table/issues/7687)
     Before = "7a9eaf62ede487625200981018d8692be8c6f134", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/515de90a6068911a148e54343a3503043b8bb87c) in the PR (https://github.com/Rdatatable/data.table/pull/4164/commits) that introduced the regression
     Regression = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
-    Fixed = "f750448a2efcd258b3aba57136ee6a95ce56b302", # Second commit of the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
+    Fixed = "ba32f3cba38ec270587e395f6e6c26a80be36be6", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4558) that fixes the regression
     expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id)),
 
   # Issue with sorting again when already sorted, as reported in https://github.com/Rdatatable/data.table/issues/4498
