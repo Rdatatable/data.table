@@ -25,13 +25,11 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     if (nth>1) {                                                  \
       _Pragma("omp parallel for num_threads(nth)")                \
       for (int i=0; i<n; ++i) {                                   \
-        int elem = idxp[i];                                       \
-        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+        ap[i] = idxp[i]==NA_INTEGER ? _NAVAL_ : sp[idxp[i]-1];    \
       }                                                           \
     } else {                                                      \
       for (int i=0; i<n; ++i) {                                   \
-        int elem = idxp[i];                                       \
-        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+        ap[i] = idxp[i]==NA_INTEGER ? _NAVAL_ : sp[idxp[i]-1];    \
       }                                                           \
     }                                                             \
   } else {                                                        \
@@ -74,17 +72,17 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     // Aside: setkey() is a separate special case (a permutation) and does do this in parallel without using SET_*.
     const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
-      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_STRING_ELT(ans, i, elem==NA_INTEGER ? NA_STRING : sp[elem-1]); }
+      for (int i=0; i<n; i++) { SET_STRING_ELT(ans, i, idxp[i] ==NA_INTEGER ? NA_STRING : sp[idxp[i] -1]); }
     } else {
-      for (int i=0; i<n; i++) {                     SET_STRING_ELT(ans, i, sp[idxp[i]-1]); }
+      for (int i=0; i<n; i++) { SET_STRING_ELT(ans, i, sp[idxp[i]-1]); }
     }
   } break;
   case VECSXP: case EXPRSXP: {
     const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
-      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }
+      for (int i=0; i<n; i++) { SET_VECTOR_ELT(ans, i, idxp[i]==NA_INTEGER ? R_NilValue : sp[idxp[i]-1]); }
     } else {
-      for (int i=0; i<n; i++) {                     SET_VECTOR_ELT(ans, i, sp[idxp[i]-1]); }
+      for (int i=0; i<n; i++) { SET_VECTOR_ELT(ans, i, sp[idxp[i]-1]); }
     }
   } break;
   case CPLXSXP : {
@@ -112,15 +110,14 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
   int last = INT32_MIN;
   const int *idxp = INTEGER_RO(idx), n=LENGTH(idx);
   for (int i=0; i<n; i++) {
-    int elem = idxp[i];
-    if (elem<=0 && elem!=NA_INTEGER) return "Internal inefficiency: idx contains negatives or zeros. Should have been dealt with earlier.";  // e.g. test 762  (TODO-fix)
-    if (elem>max) return "Internal inefficiency: idx contains an item out-of-range. Should have been dealt with earlier.";                   // e.g. test 1639.64
-    anyNA |= elem==NA_INTEGER;
-    anyLess |= elem<last;
-    last = elem;
+    if (idxp[i]<=0 && idxp[i]!=NA_INTEGER) return "Internal inefficiency: idx contains negatives or zeros. Should have been dealt with earlier.";  // e.g. test 762  (TODO-fix)
+    if (idxp[i]>max) return "Internal inefficiency: idx contains an item out-of-range. Should have been dealt with earlier.";                   // e.g. test 1639.64
+    anyNA |= idxp[i]==NA_INTEGER;
+    anyLess |= idxp[i]<last;
+    last = idxp[i];
   }
   *anyNA_out = anyNA;
-  *orderedSubset_out = !anyLess; // for the purpose of ordered keys elem==last is allowed
+  *orderedSubset_out = !anyLess; // for the purpose of ordered keys idxp[i]==last is allowed
   return NULL;
 }
 
@@ -150,8 +147,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
   #pragma omp parallel for num_threads(getDTthreads(n, true))
   for (int i=0; i<n; ++i) {
     if (stop) continue;
-    int elem = idxp[i];
-    if ((elem<1 && (elem!=NA_INTEGER || !allowNA)) || elem>max) stop=true;
+    if ((idxp[i]<1 && (idxp[i]!=NA_INTEGER || !allowNA)) || idxp[i]>max) stop=true;
   }
   if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA (if allowNA) or in range [1-max]
 
@@ -160,11 +156,10 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
 
   int countNeg=0, countZero=0, countNA=0, firstOverMax=0, countOverMax=0;
   for (int i=0; i<n; ++i) {
-    int elem = idxp[i];
-    if (elem==NA_INTEGER) countNA++;
-    else if (elem<0) countNeg++;
-    else if (elem==0) countZero++;
-    else if (elem>max && ++countOverMax && firstOverMax==0) firstOverMax=i+1;
+    if (idxp[i]==NA_INTEGER) countNA++;
+    else if (idxp[i]<0) countNeg++;
+    else if (idxp[i]==0) countZero++;
+    else if (idxp[i]>max && ++countOverMax && firstOverMax==0) firstOverMax=i+1;
   }
   if (firstOverMax && LOGICAL(allowOverMax)[0]==FALSE) {
     error(_("i[%d] is %d which is out of range [1,nrow=%d]"), firstOverMax, idxp[firstOverMax-1], max);
@@ -174,9 +169,8 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
   if (countPos && countNeg) {
     int i=0, firstNeg=0, firstPos=0;
     while (i<n && (firstNeg==0 || firstPos==0)) {
-      int elem = idxp[i];
-      if (firstPos==0 && elem>0) firstPos=i+1;
-      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
+      if (firstPos==0 && idxp[i]>0) firstPos=i+1;
+      if (firstNeg==0 && idxp[i]<0 && idxp[i]!=NA_INTEGER) firstNeg=i+1;
       i++;
     }
     error(_("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."), firstNeg, idxp[firstNeg-1], firstPos, idxp[firstPos-1]);
@@ -184,9 +178,8 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
   if (countNeg && countNA) {
     int i=0, firstNeg=0, firstNA=0;
     while (i<n && (firstNeg==0 || firstNA==0)) {
-      int elem = idxp[i];
-      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
-      if (firstNA==0 && elem==NA_INTEGER) firstNA=i+1;
+      if (firstNeg==0 && idxp[i]<0 && idxp[i]!=NA_INTEGER) firstNeg=i+1;
+      if (firstNA==0 && idxp[i]==NA_INTEGER) firstNA=i+1;
       i++;
     }
     error(_("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."), firstNeg, idxp[firstNeg-1], firstNA);
@@ -199,18 +192,16 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
       ans = PROTECT(allocVector(INTSXP, n-countZero));
       int *ansp = INTEGER(ans);
       for (int i=0, ansi=0; i<n; ++i) {
-        int elem = idxp[i];
-        if (elem==0) continue;
-        ansp[ansi++] = elem>max ? NA_INTEGER : elem;
+        if (idxp[i]==0) continue;
+        ansp[ansi++] = idxp[i]>max ? NA_INTEGER : idxp[i];
       }
     } else {
       // remove zeros, NA and >max
       ans = PROTECT(allocVector(INTSXP, n-countZero-countNA-countOverMax));
       int *ansp = INTEGER(ans);
       for (int i=0, ansi=0; i<n; ++i) {
-        int elem = idxp[i];
-        if (elem<1 || elem>max) continue;
-        ansp[ansi++] = elem;
+        if (idxp[i]<1 || idxp[i]>max) continue;
+        ansp[ansi++] = idxp[i];
       }
     }
   } else {
@@ -220,18 +211,17 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
     for (int i=0; i<n; i++) {
-      int elem = -idxp[i];
-      if (elem==0) continue;
-      if (elem>max) {
+      if (!idxp[i]) continue;
+      if (-idxp[i]>max) {
         countBeyond++;
         if (firstBeyond==0) firstBeyond=i+1;
         continue;
       }
-      if (!keep[elem-1]) {
+      if (!keep[-idxp[i]-1]) {
         countDup++;
         if (firstDup==0) firstDup=i+1;
       } else {
-        keep[elem-1] = false;
+        keep[-idxp[i]-1] = false;
         countRemoved++;
       }
     }
