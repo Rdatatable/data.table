@@ -139,6 +139,16 @@ test-lin-rel-vanilla:
     - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
+## alpine linux
+test-lin-alp-rel:
+  <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-alpine
+  script:
+    - *install-deps
+    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+
 ## R-release on Linux
 # strict checks for 0 NOTEs
 # extra NOTEs check and build pdf manual thus not from cran-lin template
