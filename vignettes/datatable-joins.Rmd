@@ -253,6 +253,42 @@ dt2 = ProductReceived[
 identical(dt1, dt2)
 ```
 
+##### Understanding `j` Evaluation with `by=.EACHI` for Non-Matches
+
+A common point of confusion arises when using special symbols like `.I` in `j` with `by=.EACHI`. The behavior for non-matching rows differs from what you might expect when selecting a regular column.
+
+Let's illustrate with a simple example:
+```{r by-eachi-special-symbols}
+d1 = data.table(v = c("A", "B", "C", "A", "C"), i_col = 1:5)
+d2 = data.table(v = c("D", "A", "G", "C"))
+```
+
+*Case 1: Selecting a regular column*
+
+When we select a column from `x (d1)`, non-matching rows from `i (d2)` result in `NA`. This is the standard behavior governed by `nomatch = NA`.
+```{r}
+d1[d2, on = .(v), .(i_col), by = .EACHI]
+```
+
+For the rows `D` and `G` in `d2`, there is no matching row in `d1`, so the value for `i_col` is missing `(NA)`.
+
+*Case 2: Evaluating the special symbol `.I`*
+
+However, when we use the special symbol `.I`, non-matching rows evaluate to `0`.
+```{r}
+d1[d2, on = .(v), .I, by = .EACHI]
+```
+
+The reason for this difference is crucial:
+- In Case 1, we are performing a value lookup. A failed lookup results in a missing value (`NA`).
+- In Case 2, we are performing an evaluation. The symbol `.I` is defined as "the row indices in `x` for the current group". For non-matching rows like `D`, the group of matching rows in d1 is empty. The set of indices for an empty group is integer(0). data.table represents this zero-length result as a single `0` in the output.
+
+This logic is consistent with other special symbols like `.N` (the number of rows in a group), which also correctly evaluates to `0` for non-matching groups.
+
+```{r}
+d1[d2, on = .(v), .N, by = .EACHI]
+```
+
 #### 3.1.4. Joining based on several columns
 
 So far we have just joined `data.table`s based on 1 column, but it's important to know that the package can join tables matching several columns.
