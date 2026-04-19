@@ -124,6 +124,7 @@ static int32_t whichWriter(SEXP column) {
   case LGLSXP:
     return logical01 ? WF_Bool32 : WF_Bool32AsString;
   case INTSXP:
+    if (INHERITS(column, char_POSIXct))    return WF_POSIXct;
     if (isFactor(column))                  return WF_CategString;
     if (dateTimeAs == DATETIMEAS_EPOCH)    return WF_Int32;
     if (INHERITS(column, char_ITime))      return WF_ITime;
