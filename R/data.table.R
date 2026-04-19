@@ -2943,6 +2943,12 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (!length(new)) return(invisible(x)) # no changes
     if (length(i) != length(new)) internal_error("length(i)!=length(new)") # nocov
   }
+
+  full_names = names(x)
+  full_names[i] = new
+  full_names = process_name_policy(full_names)
+  new = full_names[i]
+
   # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))

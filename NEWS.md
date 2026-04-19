@@ -30,6 +30,8 @@
 
 5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
 
+6. `setnames()` now supports a global option `datatable.unique.names` to control the creation of duplicate column names. Users can choose between `"off"` (default), `"warn"`, `"error"`, or `"rename"`. This addresses long-standing ambiguity issues when duplicate names were created silently, [#4044](https://github.com/Rdatatable/data.table/issues/4044). Thanks to @venom1204 for the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
