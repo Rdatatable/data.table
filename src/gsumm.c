@@ -489,10 +489,10 @@ SEXP gsum(SEXP x, SEXP narmArg)
             const uint16_t *my_low = low + b*batchSize + pos;
             for (int i=0; i<howMany; i++) {
               const int64_t a = _ans[my_low[i]];
-              const int64_t b = my_gx[i];
+              const int64_t c = my_gx[i];
 
-              if((a>0 && b>MAX_INTEGER64-a) || (a<0 && b<NA_INTEGER64+1-a)) overflow = true;
-              else _ans[my_low[i]] += b; // does not propagate INT64 for !narm
+              if((a>0 && c>MAX_INTEGER64-a) || (a<0 && c<NA_INTEGER64+1-a)) overflow = true;
+              else _ans[my_low[i]] += c; // does not propagate INT64 for !narm
             }
           }
         }
@@ -509,14 +509,14 @@ SEXP gsum(SEXP x, SEXP narmArg)
               for (int i=0; i<howMany; i++) {
                 const int64_t a = _ans[my_low[i]];
                 if (a == INT64_MIN) continue;
-                const int64_t b = my_gx[i];
-                if (b == INT64_MIN) {
+                const int64_t c = my_gx[i];
+                if (c == INT64_MIN) {
                   if (!narm) _ans[my_low[i]] = INT64_MIN;
                   continue;
                 }
 
-                if((a>0 && b>MAX_INTEGER64-a) || (a<0 && b<NA_INTEGER64+1-a)) overflow = true;
-                else _ans[my_low[i]] += b;
+                if((a>0 && c>MAX_INTEGER64-a) || (a<0 && c<NA_INTEGER64+1-a)) overflow = true;
+                else _ans[my_low[i]] += c;
               }
             }
           }
@@ -545,7 +545,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     }
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      warning(_("The sum of an integer_64 column for a group was more than type 'integer_64' can hold so the result has been coerced to 'numeric' automatically for convenience"));
+      warning(_("The sum of an integer_64 column for a group was more than type 'integer_64' can hold so the result has been coerced to 'numeric' automatically for convenience. Precision has been lost in the result. Consider using 'as.numeric' on the column beforehand to avoid this warning."));
       const int64_t *restrict gx = gather(x, &anyNA);
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
@@ -560,7 +560,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
             const int64_t *my_gx = gx + b*batchSize + pos;
             const uint16_t *my_low = low + b*batchSize + pos;
             for (int i=0; i<howMany; i++) {
-              _ans[my_low[i]] += my_gx[i];
+              _ans[my_low[i]] += (double) my_gx[i];
             }
           }
         }
