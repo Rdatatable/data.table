@@ -436,6 +436,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     }
   } break;
   case REALSXP: {
+    bool overflow=false;
     if (!INHERITS(x, char_integer64)) {
       const double *restrict gx = gather(x, &anyNA);
       ans = PROTECT(allocVector(REALSXP, ngrp));
@@ -478,7 +479,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
       int64_t *restrict ansp = (int64_t *)REAL(ans);
       memset(ansp, 0, ngrp*sizeof(*ansp));
       if (!anyNA) {
-        #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+        #pragma omp parallel for num_threads(getDTthreads(highSize, false)) reduction(||:overflow)
         for (int h=0; h<highSize; h++) {
           int64_t *restrict _ans = ansp + (h<<bitshift);
           for (int b=0; b<nBatch; b++) {
@@ -487,13 +488,17 @@ SEXP gsum(SEXP x, SEXP narmArg)
             const int64_t *my_gx = gx + b*batchSize + pos;
             const uint16_t *my_low = low + b*batchSize + pos;
             for (int i=0; i<howMany; i++) {
-              _ans[my_low[i]] += my_gx[i]; // does not propagate INT64 for !narm
+              const int64_t a = _ans[my_low[i]];
+              const int64_t b = my_gx[i];
+
+              if((a>0 && b>MAX_INTEGER64-a) || (a<0 && b<NA_INTEGER64+1-a)) overflow = true;
+              else _ans[my_low[i]] += b; // does not propagate INT64 for !narm
             }
           }
         }
       } else { // narm==true/false and anyNA==true
         if (!narm) {
-          #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+          #pragma omp parallel for num_threads(getDTthreads(highSize, false)) reduction(||:overflow)
           for (int h=0; h<highSize; h++) {
             int64_t *restrict _ans = ansp + (h<<bitshift);
             for (int b=0; b<nBatch; b++) {
@@ -502,18 +507,21 @@ SEXP gsum(SEXP x, SEXP narmArg)
               const int64_t *my_gx = gx + b*batchSize + pos;
               const uint16_t *my_low = low + b*batchSize + pos;
               for (int i=0; i<howMany; i++) {
-                if (_ans[my_low[i]] == INT64_MIN) continue;
+                const int64_t a = _ans[my_low[i]];
+                if (a == INT64_MIN) continue;
                 const int64_t b = my_gx[i];
                 if (b == INT64_MIN) {
                   if (!narm) _ans[my_low[i]] = INT64_MIN;
                   continue;
                 }
-                _ans[my_low[i]] += b;
+
+                if((a>0 && b>MAX_INTEGER64-a) || (a<0 && b<NA_INTEGER64+1-a)) overflow = true;
+                else _ans[my_low[i]] += b;
               }
             }
           }
         } else {
-          #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+          #pragma omp parallel for num_threads(getDTthreads(highSize, false)) reduction(||:overflow)
           for (int h=0; h<highSize; h++) {
             int64_t *restrict _ans = ansp + (h<<bitshift);
             for (int b=0; b<nBatch; b++) {
@@ -523,8 +531,36 @@ SEXP gsum(SEXP x, SEXP narmArg)
               const uint16_t *my_low = low + b*batchSize + pos;
               for (int i=0; i<howMany; i++) {
                 const int64_t elem = my_gx[i];
-                if (elem!=INT64_MIN) _ans[my_low[i]] += elem;
+                const int64_t a = _ans[my_low[i]];
+                if (elem!=INT64_MIN){
+                  if((a>0 && elem>MAX_INTEGER64-a) || (a<0 && elem<NA_INTEGER64+1-a)) overflow = true;
+                  else _ans[my_low[i]] += elem;
+                }
+                  
               }
+            }
+          }
+        }
+      }
+    }
+    if (overflow) {
+      UNPROTECT(1); // discard the result with overflow
+      warning(_("The sum of an integer_64 column for a group was more than type 'integer_64' can hold so the result has been coerced to 'numeric' automatically for convenience"));
+      const int64_t *restrict gx = gather(x, &anyNA);
+      ans = PROTECT(allocVector(REALSXP, ngrp));
+      double *restrict ansp = REAL(ans);
+      memset(ansp, 0, ngrp*sizeof(double));
+      if (!anyNA) {
+        #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+        for (int h=0; h<highSize; h++) {
+          double *restrict _ans = ansp + (h<<bitshift);
+          for (int b=0; b<nBatch; b++) {
+            const int pos = counts[ b*highSize + h ];
+            const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+            const int64_t *my_gx = gx + b*batchSize + pos;
+            const uint16_t *my_low = low + b*batchSize + pos;
+            for (int i=0; i<howMany; i++) {
+              _ans[my_low[i]] += my_gx[i];
             }
           }
         }
