@@ -366,7 +366,15 @@ month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")
 year    = function(x) convertDate(as.IDate(x), "year")
 yearmon = function(x) convertDate(as.IDate(x), "yearmon")
-yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
+yearqtr = function(x, format=c("numeric", "character")) {
+  format = match.arg(format)
+  if (format == "numeric") return(convertDate(as.IDate(x), "yearqtr"))
+  yr = convertDate(as.IDate(x), "year")
+  qtr = convertDate(as.IDate(x), "quarter")
+  ans = paste0(yr, "Q", qtr)
+  ans[is.na(as.IDate(x))] = NA_character_
+  ans
+}
 
 convertDate = function(x, type) {
   type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))

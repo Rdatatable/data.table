@@ -21577,3 +21577,12 @@ close(con)
 file.create(f <- tempfile())
 test(2367.6, fread(file(f)), data.table(), warning="Connection has size 0.")
 unlink(f)
+
+# yearqtr() could optionally output 2025Q4 format #7694
+x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01", NA)
+test(2368.1, yearqtr(x, format="numeric"), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100, NA))
+test(2368.2, yearqtr(x, format="numeric"), yearqtr(x))  # numeric is the default, preserves backwards compatibility
+test(2368.3, yearqtr(x, format="character"), c("1111Q4", "2019Q1", "2019Q1", "2019Q1", "2019Q4", "2020Q1", "2020Q1", "2020Q4", "2040Q1", "2040Q4", "2100Q1", NA_character_))
+test(2368.4, yearqtr("2016-08-03 01:02:03.45", format="character"), "2016Q3")
+test(2368.5, yearqtr(NA, format="character"), NA_character_)
+test(2368.6, yearqtr(x, format="invalid"), error="should be one of")

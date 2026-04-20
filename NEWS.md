@@ -48,6 +48,8 @@
 
 8. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
 
+9. `yearqtr()` now accepts an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the deafult, which preserves the original behavior, but 'character' formats the date like so: YYYYQ# (e.g. 2025Q2). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation. 
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
