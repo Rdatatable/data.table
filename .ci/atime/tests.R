@@ -26,14 +26,6 @@ for (extra.arg in extra.args.6107){
 for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   "forderv(retGrp=%s) improved in #4386", retGrp_chr
 )]] <- list(
-  setup = quote({
-    dt <- data.table(group = rep(1:2, l=N))
-  }),
-  expr = substitute({
-    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
-    data.table:::forderv(dt, "group", retGrp = RETGRP)
-    options(old.opt) # so the option does not affect other tests.
-  }, list(RETGRP=eval(str2lang(retGrp_chr)))),
   ## From ?bench::mark, "Each expression will always run at least twice,
   ## once to measure the memory allocation and store results
   ## and one or more times to measure timing."
@@ -44,7 +36,15 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   ## Timings should be constant if the cached index is used (Fast),
   ## and (log-)linear if the index is re-computed (Slow).
   Slow = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/b0efcf59442a7d086c6df17fa6a45c81b082322e) in the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
-  Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93" # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+  Fast = "1a84514f6d20ff1f9cc614ea9b92ccdee5541506", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+  setup = quote({
+    dt <- data.table(group = rep(1:2, l=N))
+  }),
+  expr = substitute({
+    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
+    data.table:::forderv(dt, "group", retGrp = RETGRP)
+    options(old.opt) # so the option does not affect other tests.
+  }, list(RETGRP=eval(str2lang(retGrp_chr))))
 )
 
 # A list of performance tests.
