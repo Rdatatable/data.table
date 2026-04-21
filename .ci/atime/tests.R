@@ -226,7 +226,6 @@ test.list <- atime::atime_test_list(
     ## New DT can safely retain key.
     expr = data.table:::`[.data.table`(L, , .SD)),
 
-
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/6286#issue-2412141289 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/6296
   "DT[by,verbose=TRUE] improved in #6296" = atime::atime_test(
@@ -234,9 +233,9 @@ test.list <- atime::atime_test_list(
       dt = data.table(a = 1:N)
       dt_mod <- copy(dt)
     },
-    expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE),
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
-    Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
+    Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
+    expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE)),
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/5492#issue-1416598382 which is where the issue was reported,
   # and from https://github.com/Rdatatable/data.table/pull/5493#issue-1416656788 which is the fix PR.
