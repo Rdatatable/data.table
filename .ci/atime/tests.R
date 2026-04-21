@@ -285,14 +285,15 @@ test.list <- atime::atime_test_list(
     Fast = "2715663fcf0344c3f7c73241d391d8de347bdb9d",  # Merge commit of the PR that improves efficiency
     expr = data.table:::as.data.table.array(arr, na.rm=FALSE)),
 
+  # https://github.com/Rdatatable/data.table/pull/7144 added the speedup code and this performance test.
   "isoweek improved in #7144" = atime::atime_test(
     setup = {
       set.seed(349)
       x = sample(Sys.Date() - 0:5000, N, replace=TRUE)
     },
-    expr = data.table::isoweek(x),
-    Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
-    Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
+    Slow = "038e7f8c2bed60f38c3faa2cc2c4e339c3570b94", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/c0b32a60466bed0e63420ec105bc75c34590865e) in the PR
+    Fast = "ed2df986da6d3a4ff35bec1b0f75db2b767e3eb2", # Merge commit of the PR that uses a much faster implementation
+    expr = data.table::isoweek(x)),
 
   # Regression introduced in #7404 (grouped by factor).
   "DT[by] max regression fixed in #7480" = atime::atime_test(
