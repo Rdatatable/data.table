@@ -176,10 +176,10 @@ test.list <- atime::atime_test_list(
         key = "g")
       dt_mod <- copy(dt)
     },
-    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g),
-    Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # Parent of the regression causing commit (https://github.com/Rdatatable/data.table/commit/e793f53466d99f86e70fc2611b708ae8c601a451) in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
-    Regression = "e793f53466d99f86e70fc2611b708ae8c601a451", # Commit responsible for regression in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
-    Fixed = "58409197426ced4714af842650b0cc3b9e2cb842"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5463/commits) that fixed the regression
+    Before = "d47a83fb2e25582e508f191f87a31ca81b736b57", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/196f420b50181b92036538776956ddf2c5b7a5a1) in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
+    Regression = "85adf09e3463838d547977ae9bc75e3b37f9cbaf", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4491) that introduced the issue
+    Fixed = "19b7866112614db53eb3e909c097407d91cd6738", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5463) that fixed the regression
+    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g))
 
   # Issue reported in https://github.com/Rdatatable/data.table/issues/5426
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/5427#issue-1323678063 which is the fix PR.
