@@ -69,7 +69,7 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
 # nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- atime::atime_test_list(
   # Common N and pkg.edit.fun are defined here, and inherited in all test cases below which do not re-define them.
-  N = as.integer(10^seq(1, 7, by=0.25)),
+  N = as.integer(10^seq(1, 7, by=0.5)),
   # A function to customize R package metadata and source files to facilitate version-specific installation and testing.
   #
   # This is specifically tailored for handling data.table which requires specific changes in non-standard files (such as the object file name in Makevars and version checking code in onLoad.R)
@@ -145,9 +145,9 @@ test.list <- atime::atime_test_list(
     setup = {
       fwrite(iris[1], iris.csv <- tempfile())
     },
-    expr = replicate(N, data.table::fread(iris.csv)),
-    Fast = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
-    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+    Fast = "b70d0267ae89d3fffe8f4a5a6041dcb131709e97", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6925) that reduced time usage
+    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+    expr = replicate(N, data.table::fread(iris.csv))
   ),
 
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
@@ -296,7 +296,6 @@ test.list <- atime::atime_test_list(
 
   # Regression introduced in #7404 (grouped by factor).
   "DT[by] max regression fixed in #7480" = atime::atime_test(
-    N = as.integer(10^seq(3, 5, by=0.5)),
     setup = {
       dt = data.table(
         id = as.factor(rep(seq_len(N), each = 100L)),
