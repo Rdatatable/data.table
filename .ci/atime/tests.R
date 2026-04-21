@@ -179,7 +179,7 @@ test.list <- atime::atime_test_list(
     Before = "d47a83fb2e25582e508f191f87a31ca81b736b57", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/196f420b50181b92036538776956ddf2c5b7a5a1) in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
     Regression = "85adf09e3463838d547977ae9bc75e3b37f9cbaf", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4491) that introduced the issue
     Fixed = "19b7866112614db53eb3e909c097407d91cd6738", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5463) that fixed the regression
-    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g))
+    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g)),
 
   # Issue reported in https://github.com/Rdatatable/data.table/issues/5426
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/5427#issue-1323678063 which is the fix PR.
@@ -220,11 +220,12 @@ test.list <- atime::atime_test_list(
       L = as.data.table(as.character(rnorm(N, 1, 0.5)))
       setkey(L, V1)
     },
-    ## New DT can safely retain key.
-    expr = data.table:::`[.data.table`(L, , .SD),
-    Fast = "353dc7a6b66563b61e44b2fa0d7b73a0f97ca461", # Close-to-last merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Fast = "680b5e8e6d3f16a09dfb2f86ac7b2ce5ce70c3f1", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
-    Slower = "cacdc92df71b777369a217b6c902c687cf35a70d"), # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Slower = "cacdc92df71b777369a217b6c902c687cf35a70d", # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue
+    ## New DT can safely retain key.
+    expr = data.table:::`[.data.table`(L, , .SD)),
+
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/6286#issue-2412141289 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/6296
