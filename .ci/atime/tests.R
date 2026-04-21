@@ -244,9 +244,9 @@ test.list <- atime::atime_test_list(
       df <- data.frame(x = runif(N))
       dt <- as.data.table(df)
     },
-    expr = data.table:::transform.data.table(dt, y = round(x)),
     Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
-    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+    expr = data.table:::transform.data.table(dt, y = round(x))),
 
   # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
   "melt improved in #5054" = atime::atime_test(
@@ -258,9 +258,9 @@ test.list <- atime::atime_test_list(
         x
       })  
     },
-    expr = data.table:::melt(DT, measure.vars = measure.vars),
     Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
-    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
+    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
+    expr = data.table:::melt(DT, measure.vars = measure.vars)),
 
   # Test case created from @tdhock's comment https://github.com/Rdatatable/data.table/pull/6393#issuecomment-2327396833, in turn adapted from @philippechataignon's comment https://github.com/Rdatatable/data.table/pull/6393#issuecomment-2326714012
   "fwrite refactored in #6393" = atime::atime_test(
@@ -271,19 +271,19 @@ test.list <- atime::atime_test_list(
       L[, paste0("V", 1:NC) := replicate(NC, rnorm(N), simplify=FALSE)]
       out.csv <- tempfile()
     },
-    expr = data.table::fwrite(L, out.csv, compress="gzip"),
     Before = "f339aa64c426a9cd7cf2fcb13d91fc4ed353cd31", # Parent of the first commit https://github.com/Rdatatable/data.table/commit/fcc10d73a20837d0f1ad3278ee9168473afa5ff1 in the PR https://github.com/Rdatatable/data.table/pull/6393/commits with major change to fwrite with gzip.
-    PR = "3630413ae493a5a61b06c50e80d166924d2ef89a"), # Close-to-last merge commit in the PR.
+    PR = "3630413ae493a5a61b06c50e80d166924d2ef89a", # Close-to-last merge commit in the PR.
+    expr = data.table::fwrite(L, out.csv, compress="gzip")),
 
-  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
-  "as.data.table.array improved in #7010" = atime::atime_test(
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7019
+  "as.data.table.array improved in #7019" = atime::atime_test(
     setup = {
       dims = c(N, 1, 1)
       arr = array(seq_len(prod(dims)), dim=dims)
     },
-    expr = data.table:::as.data.table.array(arr, na.rm=FALSE),
-    Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
-    Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that removes inefficiency
+    Slow = "73d79edf8ff8c55163e90631072192301056e336",  # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc) in the PR that improves efficiency
+    Fast = "2715663fcf0344c3f7c73241d391d8de347bdb9d",  # Merge commit of the PR that improves efficiency
+    expr = data.table:::as.data.table.array(arr, na.rm=FALSE)),
 
   "isoweek improved in #7144" = atime::atime_test(
     setup = {
