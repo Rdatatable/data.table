@@ -444,6 +444,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 
 28. `rbindlist()` now avoids the crash when working with many non-UTF-8 column names, [#7452](https://github.com/Rdatatable/data.table/issues/7452). Thanks @aitap for the report and the fix.
 
+29. `gsum()` now handles correctly handles integer64 overflow in data.table aggregations (e.g `DT = data.table(i = c(1L, 1L), x = lim.integer64()`), [#7574](https://github.com/Rdatatable/data.table/issues/7574). Thanks @MichaelChirico for reporting and @Will-78 for the fix.
+
 ### NOTES
 
 1. The following in-progress deprecations have proceeded:
