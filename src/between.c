@@ -74,9 +74,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
 
   switch (TYPEOF(x)) {
   case INTSXP: {
-    const int *lp = INTEGER(lower);
-    const int *up = INTEGER(upper);
-    const int *xp = INTEGER(x);
+    const int *lp = INTEGER_RO(lower);
+    const int *up = INTEGER_RO(upper);
+    const int *xp = INTEGER_RO(x);
     if (check) for (int i=0; i<longestBound; ++i) {
       const int l=lp[i & lowMask], u=up[i & uppMask];
       if (l!=NA_INTEGER && u!=NA_INTEGER && l>u)
@@ -128,9 +128,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       }
       if (verbose) Rprintf(_("between parallel processing of integer64 took %8.3fs\n"), omp_get_wtime()-tic);
     } else {
-      const double *lp = REAL(lower);
-      const double *up = REAL(upper);
-      const double *xp = REAL(x);
+      const double *lp = REAL_RO(lower);
+      const double *up = REAL_RO(upper);
+      const double *xp = REAL_RO(x);
       if (check) for (int i=0; i<longestBound; ++i) {
         const double l=lp[i & lowMask], u=up[i & uppMask];
         if (!isnan(l) && !isnan(u) && l>u)

@@ -2,7 +2,7 @@
 title: "Indices secondaires et auto-indexation"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Indices secondaires et auto-indexation}
   %\VignetteEngine{litedown::vignette}

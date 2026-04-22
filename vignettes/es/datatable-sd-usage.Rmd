@@ -45,11 +45,11 @@ El uso más simple de `.SD` es para la subagrupación de columnas (es decir, cua
 Para darle una sensación más realista, en lugar de inventar datos, carguemos algunos conjuntos de datos sobre béisbol desde la [base de datos Lahman](https://github.com/cdalzell/Lahman). En el uso típico de R, simplemente cargaríamos estos conjuntos de datos desde el paquete R `Lahman`; en este ejemplo, los hemos descargado previamente directamente desde la página de GitHub del paquete.
 
 ```{r download_lahman}
-load('Teams.RData')
+load('../Teams.RData')
 setDT(Teams)
 Teams
 
-load('Pitching.RData')
+load('../Pitching.RData')
 setDT(Pitching)
 Pitching
 ```

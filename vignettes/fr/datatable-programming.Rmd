@@ -2,7 +2,7 @@
 title: "Programmation avec data.table"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Programmation avec data.table}
   %\VignetteEngine{litedown::vignette}

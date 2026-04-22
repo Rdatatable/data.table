@@ -1,8 +1,7 @@
 ---
 title: "Lecture et écriture rapides"
-date: "`r Sys.Date()`"
-output: 
-  markdown::html_format
+date: "`{r} Sys.Date()`"
+output: litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Lecture et écriture rapides}
   %\VignetteEngine{litedown::vignette}

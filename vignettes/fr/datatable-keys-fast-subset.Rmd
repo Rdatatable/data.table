@@ -2,7 +2,7 @@
 title: "Extraire des sous-ensemble avec les clés et la recherche binaire rapide"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Extraire des sous-ensemble avec les clés et la recherche binaire rapide}
   %\VignetteEngine{litedown::vignette}
