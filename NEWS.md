@@ -28,6 +28,8 @@
 
 4. `dcast()` and `melt()` "just work" when passed a data.frame, not just data.tables, with no need for coercion, [#7614](https://github.com/Rdatatable/data.table/issues/7614). Thanks @MichaelChirico for the suggestion and @manmita for the PR. Note that to avoid potential conflicts with {reshape2}'s data.frame methods, we do the dispatch to the data.table method manually.
 
+5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
@@ -37,6 +39,16 @@
 3. `fread(text=)` could segfault when reading text input ending with a `\x1a` (ASCII SUB) character after a long line, [#7407](https://github.com/Rdatatable/data.table/issues/7407) which is solved by adding check for eof. Thanks @aitap for the report and @manmita for the fix.
 
 4. `rowwiseDT()` now provides a helpful error message when a complex object that is not a list (e.g., a function) is provided as a cell value, instructing the user to wrap it in `list()`, [#7219](https://github.com/Rdatatable/data.table/issues/7219). Thanks @kylebutts for the report and @venom1204 for the fix.
+
+5. Non-equi joins combining an equality condition with two inequality conditions on the same column (e.g., `on = .(id == id, val >= lo, val <= hi)`) no longer error, [#7641](https://github.com/Rdatatable/data.table/issues/7641). The internal `chmatchdup` remapping of duplicate `rightcols` was overwriting the original column indices, causing downstream code to reference non-existent columns. Thanks @tarun-t for the report and fix, and @aitap for the diagnosis.
+
+6. By-reference sub-assignments of strings to factor columns now _actually_ match the levels in UTF-8 when required and now don't result in invalid factors being created, [#7648](https://github.com/Rdatatable/data.table/issues/7648), amending a previous incomplete fix to [#6886](https://github.com/Rdatatable/data.table/issues/6886) in v1.17.2. Thanks @BASS-JN for the report and @aitap for the fix.
+
+7. `fread()` can now read from connections directly by spilling to a temporary file first, [#561](https://github.com/Rdatatable/data.table/issues/561). For the best throughput, point `tmpdir=` (or the global temp directory) to fast storage like an SSD or RAM. Thanks to Chris Neff for the report and @ben-schwen for the implementation.
+
+8. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
+
+9. `fread()` no longer replaces a literal header column name `"NA"` with an auto-generated `Vn` name when `na.strings` includes `"NA"`, [#5124](https://github.com/Rdatatable/data.table/issues/5124). Data rows still continue to parse `"NA"` as missing. Thanks @Mashin6 for the report and @shrektan for the fix.
 
 ### Notes
 
@@ -49,6 +61,8 @@
 4. The data.table test suite is a bit more robust to lacking UTF-8 support via a new `requires_utf8` argument to `test()` to skip tests when UTF-8 support is not available, [#7336](https://github.com/Rdatatable/data.table/issues/7336). Thanks @MichaelChirico for the suggestion and @ben-schwen for the implementation.
 
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
+
+6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
 
 ## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1)  (22 January 2026)
 
@@ -106,7 +120,7 @@
 
 5. Negative and missing values of `n` argument of adaptive rolling functions trigger an error.
 
-### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES 
+### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES
 
 1. `data.table(x=1, <expr>)`, where `<expr>` is an expression resulting in a 1-column matrix without column names, will eventually have names `x` and `V2`, not `x` and `V1`, consistent with `data.table(x=1, <expr>)` where `<expr>` results in an atomic vector, for example `data.table(x=1, cbind(1))` and `data.table(x=1, 1)` will both have columns named `x` and `V2`. In this release, the matrix case continues to be named `V1`, but the new behavior can be activated by setting `options(datatable.old.matrix.autoname)` to `FALSE`. See point 5 under Bug Fixes for more context; this change will provide more internal consistency as well as more consistency with `data.frame()`.
 
@@ -114,7 +128,7 @@
     *   `"sequential"`: Opt-in to the new, sequential behavior (no warning).
     *   `"legacy"`: Continue using the legacy behavior but suppress the deprecation warning.
 See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. Thanks @MichaelChirico for the report and @venom1204 for the implementation.
-    
+
 ### NEW FEATURES
 
 1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also matches `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
@@ -369,7 +383,8 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
     #   user  system elapsed
     #  0.028   0.000   0.005
     ```
-    20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
+
+20. `fread()` now supports the `comment.char` argument to skip trailing comments or comment-only lines, consistent with `read.table()`, [#856](https://github.com/Rdatatable/data.table/issues/856). The default remains `comment.char = ""` (no comment parsing) for backward compatibility and performance, in contrast to `read.table(comment.char = "#")`. Thanks to @arunsrinivasan and many others for the suggestion and @ben-schwen for the implementation.
 
 ### BUG FIXES
 
@@ -392,7 +407,7 @@ See [#2611](https://github.com/Rdatatable/data.table/issues/2611) for details. T
 9. Fixed incorrect sorting of merges where the first column of a key is a factor with non-`sort()`-ed levels (e.g. `factor(1:2, 2:1)` and it is joined to a character column, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report, Benjamin Schwendinger for the fix, and @MichaelChirico for a follow-up fix caught by revdep testing.
 
 10. Spurious warnings from internal code in `cube()`, `rollup()`, and `groupingsets()` are no longer surfaced to the caller, [#6964](https://github.com/Rdatatable/data.table/issues/6964). Thanks @ferenci-tamas for the report and @venom1204 for the fix.
- 
+
 11. `droplevels()` works on 0-row data.tables, [#7043](https://github.com/Rdatatable/data.table/issues/7043). The result will have factor columns `factor(character())`, consistent with the data.frame method. Thanks @advieser for the report and @MichaelChirico for the fix.
 
 12. `print(..., col.names = 'none')` now correctly adapts column widths to the data content, ignoring the original column names and producing a more compact output, [#6882](https://github.com/Rdatatable/data.table/issues/6882). Thanks to @brooksambrose for the report and @venom1204 for the PR.
@@ -574,7 +589,7 @@ rowwiseDT(
 3. Tagging/naming arguments of `c()` in `j=c()` should now more closely follow base R conventions for concatenation of named lists during grouping, [#2311](https://github.com/Rdatatable/data.table/issues/2311). Naming an `lapply(.SD, FUN)` call as an argument of `c()` in `j` will now always cause that tag to get prepended (with a single dot separator) to the resulting column names. Additionally, naming a `list()` call as an argument of `c()` in `j` will now always cause that tag to get prepended to any names specified within the list call. This bug only affected queries with (1) `by=` grouping (2) `getOption("datatable.optimize") >= 1L` and (3) `lapply(.SD, FUN)` in `j`.
 
     While the names returned by `data.table` when `j=c()` will now mostly follow base R conventions for concatenating lists, note that names which are completely unspecified will still be named positionally, matching the typical behavior in `j` and `data.table()`. according to position in `j` (e.g. `V1`, `V2`).
-    
+
     Thanks to @franknarf1 for reporting and @myoung3 for the PR.
 
     ```r
