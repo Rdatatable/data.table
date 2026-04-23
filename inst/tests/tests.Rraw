@@ -22037,3 +22037,8 @@ setdroplevels(x)
 setdroplevels(y)
 test(2364.2, levels(x$a), levels(y$a))
 rm(x, y)
+
+x = fread("x\n-1-01-01")$x
+test(2368.1, year(x), -1L)
+test(2368.2, month(x), 1L)
+test(2368.3, mday(x),  1L)
