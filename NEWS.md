@@ -50,6 +50,8 @@
 
 9. `fread()` no longer replaces a literal header column name `"NA"` with an auto-generated `Vn` name when `na.strings` includes `"NA"`, [#5124](https://github.com/Rdatatable/data.table/issues/5124). Data rows still continue to parse `"NA"` as missing. Thanks @Mashin6 for the report and @shrektan for the fix.
 
+10. `fread()` no longer misreads dates with negative years, [#7704](https://github.com/Rdatatable/data.table/issues/7704). Thanks to @kevinushey for the report and @aitap for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
