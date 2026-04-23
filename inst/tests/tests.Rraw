@@ -21591,3 +21591,17 @@ x = fread("x\n-1-01-01")$x
 test(2368.1, year(x), -1L)
 test(2368.2, month(x), 1L)
 test(2368.3, mday(x),  1L)
+
+# yearqtr() and yearmon() could optionally output 2025Q4 format #7694
+x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01", NA)
+test(2369.1, yearqtr(x, format="numeric"), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100, NA))
+test(2369.2, yearqtr(x, format="numeric"), yearqtr(x))  # numeric is the default, preserves backwards compatibility
+test(2369.3, yearqtr(x, format="character"), c("1111Q4", "2019Q1", "2019Q1", "2019Q1", "2019Q4", "2020Q1", "2020Q1", "2020Q4", "2040Q1", "2040Q4", "2100Q1", NA_character_))
+test(2369.4, yearqtr("2016-08-03 01:02:03.45", format="character"), "2016Q3")
+test(2369.5, yearqtr(NA, format="character"), NA_character_)
+
+test(2370.1, yearmon(x, format="numeric"), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12, NA))
+test(2370.2, yearmon(x, format="numeric"), yearmon(x))  # numeric is the default, preserves backwards compatibility
+test(2370.3, yearmon(x, format="character"), c("1111M11", "2019M01", "2019M02", "2019M03", "2019M12", "2020M02", "2020M03", "2020M12", "2040M01", "2040M12", "2100M03", NA_character_))
+test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
+test(2370.5, yearmon(NA, format="character"), NA_character_)
