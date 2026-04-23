@@ -21585,3 +21585,6 @@ close(con)
 file.create(f <- tempfile())
 test(2367.6, fread(file(f)), data.table(), warning="Connection has size 0.")
 unlink(f)
+
+# negative years caused UB in leap year calculation, #7704
+test(2368, format(fread("a\n-1-01-01")$a), "-1-01-01")
