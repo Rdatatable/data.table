@@ -21588,5 +21588,5 @@ unlink(f)
 
 # test for correct reponse for Datatable sum int64 overflow #7574
 DT = data.table(i = c(1L, 1L), x = lim.integer64()[2L])
-test(2368.1, DT[, sum(x), by=i], warning="The sum of an integer_64 column for a group was more than type 'integer_64' can hold so the result has been coerced to 'numeric' automatically for convenience. Precision has been lost in the result. Consider using 'as.numeric' on the column beforehand to avoid this warning.")
+test(2368.1, DT[, sum(x), by = i],data.table(i = 1L, V1 = as.integer64("4895412794951729152")),warning = "The sum of an integer_64 column for a group was more than type 'integer_64' can hold so the result has been coerced to 'numeric' automatically for convenience. Precision has been lost in the result. Consider using 'as.numeric' on the column beforehand to avoid this warning.")
 rm(DT)
