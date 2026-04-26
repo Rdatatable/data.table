@@ -21585,3 +21585,20 @@ close(con)
 file.create(f <- tempfile())
 test(2367.6, fread(file(f)), data.table(), warning="Connection has size 0.")
 unlink(f)
+# fwrite ignores dateTimeAs for integer-backed POSIXct created by seq() #3535
+oldtz = Sys.getenv('TZ')
+Sys.setenv(TZ = 'UTC')
+tmp <- tempfile()
+on.exit(Sys.setenv(TZ = oldtz), add = TRUE)
+DT <- data.table(x = seq(as.POSIXct('1970-01-01'), by = '1 sec', length = 6))
+fwrite(DT, tmp)
+test(2368.1, capture.output(cat(readLines(tmp), sep = '\n')), c(
+  "x",
+  "1970-01-01T00:00:00Z",
+  "1970-01-01T00:00:01Z",
+  "1970-01-01T00:00:02Z",
+  "1970-01-01T00:00:03Z",
+  "1970-01-01T00:00:04Z",
+  "1970-01-01T00:00:05Z"
+))
+rm(DT, tmp, oldtz)

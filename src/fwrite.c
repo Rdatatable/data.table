@@ -480,6 +480,16 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
+void writePOSIXctInt(const void *col, int64_t row, char **pch)
+{
+  // integer-backed POSIXct
+  // before formatting, since writePOSIXct expects double storage
+  int32_t xi = ((const int32_t*)col)[row];
+  double x = (xi == INT32_MIN) ? NAN : (double)xi;
+  const void *tmp = &x;
+  writePOSIXct(tmp, 0, pch);
+}
+
 // # nocov start. Covered in other.Rraw test 22, not the main suite.
 void writeNanotime(const void *col, int64_t row, char **pch)
 {

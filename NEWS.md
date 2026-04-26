@@ -50,6 +50,8 @@
 
 9. `fread()` no longer replaces a literal header column name `"NA"` with an auto-generated `Vn` name when `na.strings` includes `"NA"`, [#5124](https://github.com/Rdatatable/data.table/issues/5124). Data rows still continue to parse `"NA"` as missing. Thanks @Mashin6 for the report and @shrektan for the fix.
 
+10. `fwrite` with a `POSIXct` column backed by integer storage (e.g. created via `seq()`) would write epoch integers instead of ISO datetime strings, [#3535](https://github.com/Rdatatable/data.table/issues/3535). Thanks to @alistaire47 for reporting and @tjc234 and @rmwood0908 for fixing.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

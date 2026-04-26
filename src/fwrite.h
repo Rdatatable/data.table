@@ -23,6 +23,7 @@ writer_fun_t writeITime;
 writer_fun_t writeDateInt32;
 writer_fun_t writeDateFloat64;
 writer_fun_t writePOSIXct;
+writer_fun_t writePOSIXctInt;
 writer_fun_t writeNanotime;
 writer_fun_t writeString;
 writer_fun_t writeCategString;
@@ -42,6 +43,7 @@ typedef enum {   // same order as fun[] above
   WF_DateInt32,
   WF_DateFloat64,
   WF_POSIXct,
+  WF_POSIXctInt,
   WF_Nanotime,
   WF_String,
   WF_CategString,
@@ -60,6 +62,7 @@ static const int writerMaxLen[] = {  // same order as fun[] and WFs above; max f
   16, //&writeDateInt32
   16, //&writeDateFloat64
   32, //&writePOSIXct
+  32, //&writePOSIXctInt
   48, //&writeNanotime
   0,  //&writeString
   0,  //&writeCategString
