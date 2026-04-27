@@ -304,7 +304,7 @@ test.list <- atime::atime_test_list(
       )
     },
     Before = "2cb03162a21328cc5f68a8c3b0e554f5edfcb5b9", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/4cc77c617435b46a0faac35c56e7fb7b81c629fc) in the regression PR (https://github.com/Rdatatable/data.table/pull/6890/commits)
-    Regression = "e5e10a09b32f851465790cef98526ab63d5cee3a", # Parent of first commit (https://github.com/Rdatatable/data.table/commit/4acabf0bf8541f6db629bccc6d5f7c806199416a) of fix PR (https://github.com/Rdatatable/data.table/pull/7480/commits), another choice would be 6f49bf1935a3009e85ea1e6f9752ff68ffa47d9b which is merge commit in regression PR https://github.com/Rdatatable/data.table/pull/6890
+    Regression = "6f49bf1935a3009e85ea1e6f9752ff68ffa47d9b", # Merge commit of the regression PR https://github.com/Rdatatable/data.table/pull/6890
     Fixed = "b6ad1a4bc2e44d47f3e86c296c924a809a26bf58", # Merge commit of the fix PR (https://github.com/Rdatatable/data.table/pull/7480)
     seconds.limit = 1,
     expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id)),
