@@ -212,7 +212,7 @@ Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO w
    \code{yearmon} and \code{yearqtr} return double values representing
    respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}
    when \code{format = "numeric"} (the default). When \code{format = "character"},
-   they return character vectors of the form \code{"YYYYMMM"} (e.g. \code{"2025M04"},
+   they return character vectors of the form \code{"YYYYM##"} (e.g. \code{"2025M04"},
    zero-padded for sortability) and \code{"YYYYQN"} (e.g. \code{"2025Q2"}) respectively,
    with \code{NA} input returned as \code{NA_character_}.
 
