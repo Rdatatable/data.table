@@ -365,7 +365,7 @@ isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")
 year    = function(x) convertDate(as.IDate(x), "year")
-yearmon = function(x, format=c("numeric", "character")) {
+yearmon = function(x, format = c("numeric", "character")) {
   format = match.arg(format)
   x_as_idate = as.IDate(x)
   ymon = convertDate(x_as_idate, "yearmon")
