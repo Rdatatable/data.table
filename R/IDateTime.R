@@ -377,7 +377,7 @@ yearmon = function(x, format = c("numeric", "character")) {
   ans[ok] = sprintf("%dM%02d", as.integer(yr), as.integer(mon))
   ans
 }
-yearqtr = function(x, format=c("numeric", "character")) {
+yearqtr = function(x, format = c("numeric", "character")) {
   format = match.arg(format)
   x_as_idate = as.IDate(x)
   yqtr = convertDate(x_as_idate, "yearqtr")
