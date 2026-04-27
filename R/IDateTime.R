@@ -386,7 +386,7 @@ yearqtr = function(x, format = c("numeric", "character")) {
   ok = !is.na(x_as_idate)
   yr = floor(yqtr[ok])
   qtr = round((yqtr[ok] - yr) * 4) + 1L
-  ans[ok] = paste0(yr, "Q", qtr)
+  ans[ok] = sprintf("%dQ%d", as.integer(yr), as.integer(qtr))
   ans
 }
 
