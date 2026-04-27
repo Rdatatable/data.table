@@ -272,7 +272,7 @@ test.list <- atime::atime_test_list(
       out.csv <- tempfile()
     },
     Before = "f339aa64c426a9cd7cf2fcb13d91fc4ed353cd31", # Parent of the first commit https://github.com/Rdatatable/data.table/commit/fcc10d73a20837d0f1ad3278ee9168473afa5ff1 in the PR https://github.com/Rdatatable/data.table/pull/6393/commits with major change to fwrite with gzip.
-    PR = "3630413ae493a5a61b06c50e80d166924d2ef89a", # Close-to-last merge commit in the PR.
+    PR = "e0abdfcd79ba30efcf679e33cbb8eba897a46f9c", # merge commit of PR6393
     expr = data.table::fwrite(L, out.csv, compress="gzip")),
 
   # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7019
