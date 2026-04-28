@@ -1087,9 +1087,13 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month - 1] : normYearDays[month - 1])))
     return;
 
+  int32_t cycle_year = year % 400;
+  if (cycle_year < 0) cycle_year += 400;
+  int32_t cycle = (year - cycle_year) / 400;
+
   *target =
-    (year / 400 - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
-    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (cycle - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[cycle_year] + // days to beginning of year within 400-year cycle
     (isLeapYear ? cumDaysCycleMonthsLeap[month - 1] : cumDaysCycleMonthsNorm[month - 1]) + // days to beginning of month within year
     day - 1; // day within month (subtract 1: 1970-01-01 -> 0)
 
@@ -1576,9 +1580,16 @@ int freadMain(freadMainArgs _args)
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
     #endif
-      int nbit = 8 * sizeof(char*); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
-           nbit <= 32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
+      // # nocov start
+      int nbit = 8 * sizeof(char*);
+      if (nrowLimit < INT64_MAX) {
+        STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. Since you specified nrows=%"PRId64", try wrapping the file in a connection: fread(file('filename'), nrows=%"PRId64")."),
+             filesize_to_str(fileSize), nbit, nrowLimit, nrowLimit);
+      } else {
+        STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
+             nbit <= 32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available"));
+      }
+      // # nocov end
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
@@ -2318,6 +2329,12 @@ int freadMain(freadMainArgs _args)
         .targets = targets,
         .anchor = colNamesAnchor,
       };
+      const char * const* savedNAstrings = NAstrings;
+      const bool savedBlankIsNAString = blank_is_a_NAstring;
+      // Column names should preserve literal header text, even when it matches na.strings.
+      // Blank headers still keep len==0 from Field() and are assigned default V<n> names later.
+      NAstrings = NULL;
+      blank_is_a_NAstring = false;
       ch--;
       for (int i = 0; i < ncol; i++) {
         // Use Field() here as it handles quotes, leading space etc inside it
@@ -2338,6 +2355,8 @@ int freadMain(freadMainArgs _args)
           if (ch[1] == '\r' || ch[1] == '\n' || ch[1] == '\0') { ch++; break; }
         }
       }
+      NAstrings = savedNAstrings;
+      blank_is_a_NAstring = savedBlankIsNAString;
       if (eol(&ch)) pos = ++ch;
       else if (*ch == '\0') pos = ch;
       else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
@@ -2970,7 +2989,10 @@ int freadMain(freadMainArgs _args)
 
   if (verbose) {
     DTPRINT("=============================\n"); // # notranslate
+    tTot = tTot + (args.connectionSpillActive ? args.connectionSpillSeconds : 0.0);
     if (tTot < 0.000001) tTot = 0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
+    if (args.connectionSpillActive)
+      DTPRINT(_("%8.3fs (%3.0f%%) Spill connection to tempfile (%.3fGiB)\n"), args.connectionSpillSeconds, 100.0 * args.connectionSpillSeconds / tTot, args.connectionSpillBytes / (1024.0 * 1024.0 * 1024.0));
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout - tMap, 100.0 * (tLayout - tMap) / tTot);
       DTPRINT(sep == '\t' ? "'\\t'" : (sep == '\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
