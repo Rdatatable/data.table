@@ -45,6 +45,12 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
 
+      - name: Install R Package Build Dependencies on MacOS, from https://github.com/stan-dev/cmdstanr/pull/1072/files
+        if: runner.os == 'macOS'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
       - name: Install and configure OpenMP runtime
         if: runner.os == 'macOS'
         run: |
