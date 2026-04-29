@@ -143,6 +143,7 @@ test.list <- atime::atime_test_list(
         void SET_GROWABLE_BIT(SEXP);
         int LEVELS(SEXP);
         int NAMED(SEXP);
+        #define REFCNT(x) NAMED(x)
         SEXP ATTRIB(SEXP);
         void SET_ATTRIB(SEXP, SEXP);
         int OBJECT(SEXP);
