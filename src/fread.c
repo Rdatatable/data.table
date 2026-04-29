@@ -1087,9 +1087,13 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month - 1] : normYearDays[month - 1])))
     return;
 
+  int32_t cycle_year = year % 400;
+  if (cycle_year < 0) cycle_year += 400;
+  int32_t cycle = (year - cycle_year) / 400;
+
   *target =
-    (year / 400 - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
-    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (cycle - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[cycle_year] + // days to beginning of year within 400-year cycle
     (isLeapYear ? cumDaysCycleMonthsLeap[month - 1] : cumDaysCycleMonthsNorm[month - 1]) + // days to beginning of month within year
     day - 1; // day within month (subtract 1: 1970-01-01 -> 0)
 
@@ -2325,6 +2329,12 @@ int freadMain(freadMainArgs _args)
         .targets = targets,
         .anchor = colNamesAnchor,
       };
+      const char * const* savedNAstrings = NAstrings;
+      const bool savedBlankIsNAString = blank_is_a_NAstring;
+      // Column names should preserve literal header text, even when it matches na.strings.
+      // Blank headers still keep len==0 from Field() and are assigned default V<n> names later.
+      NAstrings = NULL;
+      blank_is_a_NAstring = false;
       ch--;
       for (int i = 0; i < ncol; i++) {
         // Use Field() here as it handles quotes, leading space etc inside it
@@ -2345,6 +2355,8 @@ int freadMain(freadMainArgs _args)
           if (ch[1] == '\r' || ch[1] == '\n' || ch[1] == '\0') { ch++; break; }
         }
       }
+      NAstrings = savedNAstrings;
+      blank_is_a_NAstring = savedBlankIsNAString;
       if (eol(&ch)) pos = ++ch;
       else if (*ch == '\0') pos = ch;
       else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
