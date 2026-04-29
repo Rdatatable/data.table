@@ -150,6 +150,10 @@ test.list <- atime::atime_test_list(
         #define GetOption(x, none) GetOption1(x)
         #undef findVar // Rf_ mapping remains
         #define findVar(sym, env) R_getVar(sym, env, FALSE)
+        #define STRING_PTR(x) ((SEXP *)STRING_PTR_RO(x))
+        int IS_S4_OBJECT(SEXP);
+        void SET_S4_OBJECT(SEXP);
+        void UNSET_S4_OBJECT(SEXP);
         #endif
       ',
       "src/backports.c" = '
@@ -213,6 +217,16 @@ test.list <- atime::atime_test_list(
         }
         void SET_ATTRIB(SEXP x, SEXP att) {
           ((VECSEXP)x)->attrib = att;
+        }
+        #define S4_OBJECT (1<<4)
+        int IS_S4_OBJECT(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.gp & S4_OBJECT;
+        }
+        void SET_S4_OBJECT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp |= S4_OBJECT;
+        }
+        void UNSET_S4_OBJECT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp &= ~S4_OBJECT;
         }
         #endif
       ')
