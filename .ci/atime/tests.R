@@ -154,6 +154,7 @@ test.list <- atime::atime_test_list(
         int IS_S4_OBJECT(SEXP);
         void SET_S4_OBJECT(SEXP);
         void UNSET_S4_OBJECT(SEXP);
+        void SET_TYPEOF(SEXP, int);
         #endif
       ',
       "src/backports.c" = '
@@ -227,6 +228,9 @@ test.list <- atime::atime_test_list(
         }
         void UNSET_S4_OBJECT(SEXP x) {
           ((VECSEXP)x)->sxpinfo.gp &= ~S4_OBJECT;
+        }
+        void SET_TYPEOF(SEXP x, int type) {
+          ((VECSEXP)x)->sxpinfo.type = type;
         }
         #endif
       ')
