@@ -158,6 +158,8 @@ test.list <- atime::atime_test_list(
         void SET_TYPEOF(SEXP, int);
         #define VECTOR_ELT(x, i) VECTOR_ELT_(x, i)
         SEXP VECTOR_ELT_(SEXP, R_xlen_t);
+        #define VECTOR_PTR(x) ((SEXP*)DATAPTR_RO(x))
+        #define DATAPTR(x) ((void*)DATAPTR_RO(x))
         #endif
       ',
       "src/backports.c" = '
