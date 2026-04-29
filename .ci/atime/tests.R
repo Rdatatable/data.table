@@ -129,6 +129,9 @@ test.list <- atime::atime_test_list(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
+    pkg_find_replace(
+      file.path("src", "Makevars.*in"),
+      "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
     backports = c(
       "src/data.table.h" = '
         #if R_VERSION >= R_Version(4, 6, 0)
