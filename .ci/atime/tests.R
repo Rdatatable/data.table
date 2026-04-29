@@ -134,6 +134,7 @@ test.list <- atime::atime_test_list(
       "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
     backports = c(
       "src/data.table.h" = '
+        #include <Rversion.h>
         #if R_VERSION >= R_Version(4, 6, 0)
         // backports.c
         void SETLENGTH(SEXP x, R_xlen_t n);
