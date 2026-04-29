@@ -144,6 +144,8 @@ test.list <- atime::atime_test_list(
         int NAMED(SEXP);
         SEXP ATTRIB(SEXP);
         void SET_ATTRIB(SEXP, SEXP);
+        int OBJECT(SEXP);
+        void SET_OBJECT(SEXP, int);
         #define isFrame(x) isDataFrame(x)
         #define GetOption(x, none) GetOption1(x)
         #endif
@@ -197,6 +199,12 @@ test.list <- atime::atime_test_list(
         }
         int NAMED(SEXP x) {
           return ((VECSEXP)x)->sxpinfo.named;
+        }
+        int OBJECT(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.obj;
+        }
+        void SET_OBJECT(SEXP x, int o) {
+          ((VECSEXP)x)->sxpinfo.obj = o;
         }
         SEXP ATTRIB(SEXP x) {
           return ((VECSEXP)x)->attrib;
