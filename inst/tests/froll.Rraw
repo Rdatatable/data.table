@@ -9,11 +9,9 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   froll = data.table:::froll
 }
 
-exact_NaN = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
+exact_NaN = identical(NA_real_+0, NA_real_)
 if (!exact_NaN) {
-  cat("\n**** Skipping 8 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
-  # for Matt when he runs valgrind it is 53, but 64 when running regular R
-  # froll.c uses long double and appears to require full long double accuracy in the algo='exact'
+  cat("\n**** Skipping 10 NaN/NA algo='exact' tests because NaN payload doesn't propagate through arithmetic operations\n\n")
 }
 
 ## rolling features
@@ -1456,8 +1454,10 @@ test(6001.731, between(frollvar(y, 3)[4L], 0, 1e-7))
 test(6001.732, between(frollsd(y, 3)[4L], 0, 1e-7))
 test(6001.733, frollvar(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
 test(6001.734, frollsd(y, c(3,3,3,3), adaptive=TRUE)[4L], 0)
-test(6001.740, frollvar(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.25,NA), c(NA,NA,0.25,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # ensure no nested parallelism in rolling functions #7352
-test(6001.741, frollsd(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.5,NA), c(NA,NA,0.5,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+if (exact_NaN) {
+  test(6001.740, frollvar(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.25,NA), c(NA,NA,0.25,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # ensure no nested parallelism in rolling functions #7352
+  test(6001.741, frollsd(c(1.5,2.5,2,NA), c(3,3)), list(c(NA,NA,0.5,NA), c(NA,NA,0.5,NA)), output="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
+}
 test(6001.742, frollvar(c(1.5,2.5,2,1.5), c(3,3)), list(c(NA,NA,0.25,0.25), c(NA,NA,0.25,0.25)), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # no NA - no fallback to exact
 test(6001.743, frollsd(c(1.5,2.5,2,1.5), c(3,3)), list(c(NA,NA,0.5,0.5), c(NA,NA,0.5,0.5)), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE))
 test(6001.744, frollvar(c(1.5,2.5,2,NA), 3), c(NA,NA,0.25,NA), notOutput="running sequentially, because outer parallelism has been used", options=c(datatable.verbose=TRUE)) # not vectorized - no outer parallelism
