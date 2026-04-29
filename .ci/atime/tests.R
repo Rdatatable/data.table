@@ -142,6 +142,8 @@ test.list <- atime::atime_test_list(
         void SET_GROWABLE_BIT(SEXP);
         int LEVELS(SEXP);
         int NAMED(SEXP);
+        SEXP ATTRIB(SEXP);
+        void SET_ATTRIB(SEXP, SEXP);
         #define isFrame(x) isDataFrame(x)
         #define GetOption(x, none) GetOption1(x)
         #endif
@@ -195,6 +197,12 @@ test.list <- atime::atime_test_list(
         }
         int NAMED(SEXP x) {
           return ((VECSEXP)x)->sxpinfo.named;
+        }
+        SEXP ATTRIB(SEXP x) {
+          return ((VECSEXP)x)->attrib;
+        }
+        void SET_ATTRIB(SEXP x, SEXP att) {
+          ((VECSEXP)x)->attrib = att;
         }
         #endif
       ')
