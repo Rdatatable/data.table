@@ -148,6 +148,8 @@ test.list <- atime::atime_test_list(
         void SET_OBJECT(SEXP, int);
         #define isFrame(x) isDataFrame(x)
         #define GetOption(x, none) GetOption1(x)
+        #undef findVar // Rf_ mapping remains
+        #define findVar(sym, env) R_getVar(sym, env, FALSE)
         #endif
       ',
       "src/backports.c" = '
