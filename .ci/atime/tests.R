@@ -155,6 +155,8 @@ test.list <- atime::atime_test_list(
         void SET_S4_OBJECT(SEXP);
         void UNSET_S4_OBJECT(SEXP);
         void SET_TYPEOF(SEXP, int);
+        #define VECTOR_ELT(x, i) VECTOR_ELT_(x, i)
+        SEXP VECTOR_ELT_(SEXP, R_xlen_t);
         #endif
       ',
       "src/backports.c" = '
@@ -231,6 +233,9 @@ test.list <- atime::atime_test_list(
         }
         void SET_TYPEOF(SEXP x, int type) {
           ((VECSEXP)x)->sxpinfo.type = type;
+        }
+        SEXP VECTOR_ELT_(SEXP x, R_xlen_t i) {
+          return ALTREP(x) ? (VECTOR_ELT)(x, i) : ((SEXP*)DATAPTR_RO(x))[i];
         }
         #endif
       ')
