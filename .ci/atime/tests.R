@@ -136,6 +136,125 @@ test.list <- atime::atime_test_list(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
+    pkg_find_replace(
+      file.path("src", "Makevars.*in"),
+      "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
+    backports = c(
+      "src/data.table.h" = '
+        #include <Rversion.h>
+        #if R_VERSION >= R_Version(4, 6, 0)
+        // backports.c
+        void SETLENGTH(SEXP x, R_xlen_t n);
+        R_xlen_t TRUELENGTH(SEXP x);
+        void SET_TRUELENGTH(SEXP x, R_xlen_t n);
+        void SET_GROWABLE_BIT(SEXP);
+        int LEVELS(SEXP);
+        int NAMED(SEXP);
+        #define REFCNT(x) NAMED(x)
+        SEXP ATTRIB(SEXP);
+        void SET_ATTRIB(SEXP, SEXP);
+        int OBJECT(SEXP);
+        void SET_OBJECT(SEXP, int);
+        #define isFrame(x) isDataFrame(x)
+        #define GetOption(x, none) GetOption1(x)
+        #undef findVar // Rf_ mapping remains
+        #define findVar(sym, env) R_getVar(sym, env, FALSE)
+        #define STRING_PTR(x) ((SEXP *)STRING_PTR_RO(x))
+        int IS_S4_OBJECT(SEXP);
+        void SET_S4_OBJECT(SEXP);
+        void UNSET_S4_OBJECT(SEXP);
+        void SET_TYPEOF(SEXP, int);
+        #define VECTOR_ELT(x, i) VECTOR_ELT_(x, i)
+        SEXP VECTOR_ELT_(SEXP, R_xlen_t);
+        #define VECTOR_PTR(x) ((SEXP*)DATAPTR_RO(x))
+        #define DATAPTR(x) ((void*)DATAPTR_RO(x))
+        #endif
+      ',
+      "src/backports.c" = '
+        #include "data.table.h"
+        #if R_VERSION >= R_Version(4, 6, 0)
+        #define NAMED_BITS 16
+        struct sxpinfo_struct {
+          SEXPTYPE type      :  TYPE_BITS; // in Rinternals.h
+          unsigned int scalar:  1;
+          unsigned int obj   :  1;
+          unsigned int alt   :  1;
+          unsigned int gp    : 16;
+          unsigned int mark  :  1;
+          unsigned int debug :  1;
+          unsigned int trace :  1;
+          unsigned int spare :  1;
+          unsigned int gcgen :  1;
+          unsigned int gccls :  3;
+          unsigned int named : NAMED_BITS;
+          unsigned int extra : 32 - NAMED_BITS;
+        };
+
+        struct vecsxp_struct {
+          R_xlen_t length;
+          R_xlen_t truelength;
+        };
+
+        typedef struct VECTOR_SEXPREC {
+          struct sxpinfo_struct sxpinfo;
+          SEXP attrib;
+          SEXP gengc_next_node, gengc_prev_node;
+          struct vecsxp_struct vecsxp;
+        } *VECSEXP;
+
+        void SETLENGTH(SEXP x, R_xlen_t n) {
+          ((VECSEXP)x)->vecsxp.length = n;
+        }
+        R_xlen_t TRUELENGTH(SEXP x) {
+          return ((VECSEXP)x)->vecsxp.truelength;
+        }
+        void SET_TRUELENGTH(SEXP x, R_xlen_t n) {
+          ((VECSEXP)x)->vecsxp.truelength = n;
+        }
+        void SET_GROWABLE_BIT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp |= 0x20;
+        }
+        int LEVELS(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.gp;
+        }
+        int NAMED(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.named;
+        }
+        int OBJECT(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.obj;
+        }
+        void SET_OBJECT(SEXP x, int o) {
+          ((VECSEXP)x)->sxpinfo.obj = o;
+        }
+        SEXP ATTRIB(SEXP x) {
+          return ((VECSEXP)x)->attrib;
+        }
+        void SET_ATTRIB(SEXP x, SEXP att) {
+          ((VECSEXP)x)->attrib = att;
+        }
+        #define S4_OBJECT (1<<4)
+        int IS_S4_OBJECT(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.gp & S4_OBJECT;
+        }
+        void SET_S4_OBJECT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp |= S4_OBJECT;
+        }
+        void UNSET_S4_OBJECT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp &= ~S4_OBJECT;
+        }
+        void SET_TYPEOF(SEXP x, int type) {
+          ((VECSEXP)x)->sxpinfo.type = type;
+        }
+        SEXP VECTOR_ELT_(SEXP x, R_xlen_t i) {
+          return ALTREP(x) ? (VECTOR_ELT)(x, i) : ((SEXP*)DATAPTR_RO(x))[i];
+        }
+        #endif
+      ')
+    for (n in names(backports)) {
+      f = file(file.path(new.pkg.path, n), "a")
+      writeLines(backports[[n]], f)
+      close(f)
+    }
   },
 
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
