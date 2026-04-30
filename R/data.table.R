@@ -845,10 +845,14 @@ replace_dot_alias = function(e) {
           stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
-        naturaljoin = TRUE
-      }
+  		common_names = intersect(names_x, names(i))
+  		if (!length(common_names))
+    			stopf("Attempting to do natural join but no common columns in provided tables")
+  		on = common_names
+	}
       if (naturaljoin) { # natural join #629
         common_names = intersect(names_x, names(i))
+	print(common_names)
         len_common_names = length(common_names)
         if (!len_common_names) stopf("Attempting to do natural join but no common columns in provided tables")
         if (verbose) {
