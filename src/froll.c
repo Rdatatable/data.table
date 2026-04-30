@@ -21,8 +21,16 @@
  */
 void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par) {
   double tic = 0;
-  if (verbose)
+  char rfunStr[7];   
+
+  const char *rfunNames[] = {
+  "MEAN", "SUM", "MAX", "MIN", "PROD", "MEDIAN", "VAR", "SD"}; 
+
+  if (verbose){
     tic = omp_get_wtime();
+    snprintf(rfunStr, sizeof(rfunStr), "%s", rfunNames[rfun]);
+  }
+
   if (nx < k) {                      // if window width bigger than input just return vector of fill values
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
@@ -103,8 +111,12 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
       ans->dbl_v[i] = fill;
     }
   }
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
+  if (verbose) {
+    if(algo == 0)
+      snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, "fast", omp_get_wtime()-tic);
+    else
+      snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, "exact", omp_get_wtime()-tic);
+  }
 }
 
 #undef SUM_WINDOW_STEP_FRONT
