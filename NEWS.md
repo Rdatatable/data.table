@@ -29,12 +29,10 @@
 4. `dcast()` and `melt()` "just work" when passed a data.frame, not just data.tables, with no need for coercion, [#7614](https://github.com/Rdatatable/data.table/issues/7614). Thanks @MichaelChirico for the suggestion and @manmita for the PR. Note that to avoid potential conflicts with {reshape2}'s data.frame methods, we do the dispatch to the data.table method manually.
 
 5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
+6. 
+7. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
-<<<<<<< HEAD
-6. `frolladaptivefun()` and `frollfun()` adjusted print statements for verbose messages to be more user friendly, [#7021](https://github.com/Rdatatable/data.table/issues/7021) Thanks @jangorecki for initiating the issue.
-=======
-6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
->>>>>>> be1b189a3d2ae59238c6bde09bf63296d8d849d9
+8. `frolladaptivefun()` and `frollfun()` adjusted print statements for verbose messages to be more user friendly, [#7021](https://github.com/Rdatatable/data.table/issues/7021) Thanks @jangorecki for initiating the issue.
 
 ### BUG FIXES
 
