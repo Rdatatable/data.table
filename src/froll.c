@@ -112,10 +112,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     }
   }
   if (verbose) {
-    if(algo == 0)
-      snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, "fast", omp_get_wtime()-tic);
-    else
-      snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, "exact", omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
   }
 }
 
