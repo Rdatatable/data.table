@@ -40,6 +40,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     if (algo==0 && verbose) {
       //frolladaptivemaxFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemaxFast does not exists as of now
       snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (line 93)
       algo = 1;
     }
     frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
@@ -48,6 +49,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     if (algo==0 && verbose) {
       //frolladaptiveminFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveminFast does not exists as of now
       snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (line 93)
       algo = 1;
     }
     frolladaptiveminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
@@ -88,11 +90,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
   }
   if (verbose) {
-    if(algo == 0)
-      snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, "fast", omp_get_wtime()-tic);
-    else
-      snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, "exact", omp_get_wtime()-tic);
-  }
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
 }
 
 
