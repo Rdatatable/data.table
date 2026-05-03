@@ -310,7 +310,7 @@ test(6000.0671, frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5,
   "frollmeanFast: non-finite values are present in input, skip non-finite unaware attempt and run with extra care for NFs straighaway",
   "frollfun: processing fun MEAN algo fast took.*",
   "frollfunR: processing.*took.*"
-))  
+)) 
 test(6000.0672, frollmean(c(1:2,NA,4:10), 4, has.nf=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: .*sequentially.*single rolling computation.*",
