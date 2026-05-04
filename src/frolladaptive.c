@@ -8,19 +8,9 @@
  *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
 void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, const int *k, double fill, bool narm, int hasnf, bool verbose) {
-  
   double tic = 0;
-  char rfunStr[7];   
-
-  // enum ordered based from the file src/data.table.h
-  const char *rfunNames[] = {
-  "MEAN", "SUM", "MAX", "MIN", "PROD", "MEDIAN", "VAR", "SD"}; 
-
-  if (verbose){
+  if (verbose)
     tic = omp_get_wtime();
-    snprintf(rfunStr, sizeof(rfunStr), "%s", rfunNames[rfun]);
-  }
-  
   switch (rfun) {
   case MEAN :
     if (algo==0) {
@@ -89,8 +79,8 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
   }
-  if (verbose) {
-    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
+  if (verbose) 
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
 }
 
 
