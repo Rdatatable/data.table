@@ -105,9 +105,8 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
       ans->dbl_v[i] = fill;
     }
   }
-  if (verbose) {
+  if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
-  }
 }
 
 #undef SUM_WINDOW_STEP_FRONT
