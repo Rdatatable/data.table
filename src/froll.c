@@ -1,5 +1,7 @@
 #include "data.table.h"
 
+const char *const rfunNames[] = {
+  "MEAN", "SUM", "MAX", "MIN", "PROD", "MEDIAN", "VAR", "SD"}; //constant definition of froll functions
 /*
   OpenMP is used here to parallelize the loops in most of the
     implementations of rolling functions.
@@ -21,16 +23,8 @@
  */
 void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par) {
   double tic = 0;
-  char rfunStr[7];   
-
-  const char *rfunNames[] = {
-  "MEAN", "SUM", "MAX", "MIN", "PROD", "MEDIAN", "VAR", "SD"}; 
-
-  if (verbose){
+  if (verbose)
     tic = omp_get_wtime();
-    snprintf(rfunStr, sizeof(rfunStr), "%s", rfunNames[rfun]);
-  }
-
   if (nx < k) {                      // if window width bigger than input just return vector of fill values
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
@@ -112,7 +106,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     }
   }
   if (verbose) {
-    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunStr, (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
   }
 }
 
