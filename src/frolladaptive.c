@@ -30,7 +30,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     if (algo==0 && verbose) {
       //frolladaptivemaxFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemaxFast does not exists as of now
       snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
-      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (line 93)
+      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (Last snprintf in this function)
       algo = 1;
     }
     frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
@@ -39,7 +39,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     if (algo==0 && verbose) {
       //frolladaptiveminFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveminFast does not exists as of now
       snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
-      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (line 93)
+      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (Last snprintf in this function)
       algo = 1;
     }
     frolladaptiveminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
