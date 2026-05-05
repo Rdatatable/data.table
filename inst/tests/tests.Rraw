@@ -21605,3 +21605,6 @@ test(2370.2, yearmon(x, format="numeric"), yearmon(x))  # numeric is the default
 test(2370.3, yearmon(x, format="character"), c("1111M11", "2019M01", "2019M02", "2019M03", "2019M12", "2020M02", "2020M03", "2020M12", "2040M01", "2040M12", "2100M03", NA_character_))
 test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
 test(2370.5, yearmon(NA, format="character"), NA_character_)
+
+## validation of dec argument
+test(7737.1, fread(input = "whatever.csv", dec = NA_character_), error="nchar(dec) == 1L is not TRUE")
