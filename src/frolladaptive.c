@@ -79,7 +79,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
   default: // # nocov
     internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
   }
-  if (verbose) 
+  if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
 }
 
