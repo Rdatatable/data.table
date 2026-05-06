@@ -55,7 +55,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
   stopifnot( is.character(dec), length(dec)==1L)
-  if (!is.na(dec) && dec == "auto") dec = "" else stopifnot(nchar(dec) == 1L)
+  if (identical(dec, "auto")) dec = "" else stopifnot(nchar(dec) == 1L)
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")

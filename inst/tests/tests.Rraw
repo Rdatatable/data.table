@@ -21607,4 +21607,4 @@ test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
 test(2370.5, yearmon(NA, format="character"), NA_character_)
 
 ## validation of dec argument
-test(7737.1, fread(input = "whatever.csv", dec = NA_character_), error="nchar(dec) == 1L is not TRUE")
+test(7737.1, fread(input = "whatever.csv", dec = NA_character_), error=base_messages$stopifnot("nchar(dec) == 1L"))
