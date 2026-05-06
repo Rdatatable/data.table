@@ -83,7 +83,6 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
 }
 
-
 #undef MEAN_WINDOW_STEP_VALUE
 #define MEAN_WINDOW_STEP_VALUE                                   \
   if (wn>0) {                                                    \
