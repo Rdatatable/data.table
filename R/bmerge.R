@@ -25,7 +25,7 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
   set(dt, j=col, value=cast_with_attrs(dt[[col]], cast_fun))
 }
 
-bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
+bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose, notjoin=FALSE)
 {
   if (roll != 0.0 && length(icols)) {
     last_x_idx = tail(xcols, 1L)
@@ -223,6 +223,41 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {catf("bmerge done in %s\n",timetaken(last.started.at)); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
+
+  # join statistics
+  if (verbose) {
+    nrow_x = nrow(x)
+    nrow_i = nrow(i)
+    inner_join = is.null(nomatch) || identical(nomatch, 0L)
+    idx = if (inner_join) ans$starts != 0L else !is.na(ans$starts)
+    matched_i = sum(idx)
+
+    if (notjoin) {
+      # Anti-join: count rows in x that were NOT matched
+      result_rows = if (matched_i > 0L) nrow_x - length(unique(ans$starts[idx])) else nrow_x
+    } else if (inner_join) {
+      # Inner join: sum lengths for matched rows only
+      result_rows = if (matched_i > 0L) sum(ans$lens[idx]) else 0L
+    } else {
+      # Left join: sum all lengths (includes NAs for unmatched)
+      result_rows = sum(ans$lens)
+    }
+
+    op_symbols = if (length(ops)) c("==", "<=", "<", ">=", ">")[ops] else strrep("==", length(icols))
+    join_str = toString(sprintf("%s %s %s", names(x)[xcols], op_symbols, names(i)[icols]))
+    num_width = max(vapply_1i(list(nrow_x, nrow_i, matched_i, result_rows, join_str), nchar))
+    # nchar("rows in x:    ") == 14L
+    separator = strrep("-", 14L + num_width)
+
+    catf("Join summary:\n")
+    catf("  rows in x:    %*d\n", num_width, nrow_x)
+    catf("  rows in i:    %*d\n", num_width, nrow_i)
+    catf("  matched rows: %*d\n", num_width, matched_i)
+    catf("  join columns: %s\n", join_str)
+    catf("  %s\n", separator)
+    catf("  result rows:  %*d\n", num_width, result_rows)
+    flush.console()
+  }
 
   ans$xo = xo  # for further use by [.data.table
   ans

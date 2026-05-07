@@ -32,6 +32,8 @@
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
+7. Joins (`y[x, on=]` or `merge(x, y, ...)`) now display join statistics with `options(datatable.verbose=TRUE)`, showing row counts, matched rows, and join columns used, [#4677](https://github.com/Rdatatable/data.table/issues/4677). Thanks @thorek1 and @grantmcdermott for the suggestion and @ben-schwen for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
