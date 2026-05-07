@@ -1,0 +1,11 @@
+---
+title: "News"
+output:
+  html:
+    options:
+      toc: true
+---
+
+```{r, echo=FALSE, results='asis'}
+litedown::pkg_news()
+```

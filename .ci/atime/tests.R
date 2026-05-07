@@ -9,15 +9,15 @@ extra.args.6107 <- c(
 extra.test.list <- list()
 for (extra.arg in extra.args.6107){
   this.test <- atime::atime_test(
+    FasterIO = "b70d0267ae89d3fffe8f4a5a6041dcb131709e97", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6925) that reduced time usage
+    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
+    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
     setup = {
       set.seed(1)
       DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
       tmp_csv = tempfile()
       fwrite(DT, tmp_csv)
-    },
-    FasterIO = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
-    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
-    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
+    })
   this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
   extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
 }
@@ -26,14 +26,6 @@ for (extra.arg in extra.args.6107){
 for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   "forderv(retGrp=%s) improved in #4386", retGrp_chr
 )]] <- list(
-  setup = quote({
-    dt <- data.table(group = rep(1:2, l=N))
-  }),
-  expr = substitute({
-    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
-    data.table:::forderv(dt, "group", retGrp = RETGRP)
-    options(old.opt) # so the option does not affect other tests.
-  }, list(RETGRP=eval(str2lang(retGrp_chr)))),
   ## From ?bench::mark, "Each expression will always run at least twice,
   ## once to measure the memory allocation and store results
   ## and one or more times to measure timing."
@@ -44,7 +36,15 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   ## Timings should be constant if the cached index is used (Fast),
   ## and (log-)linear if the index is re-computed (Slow).
   Slow = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/b0efcf59442a7d086c6df17fa6a45c81b082322e) in the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
-  Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93" # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+  Fast = "1a84514f6d20ff1f9cc614ea9b92ccdee5541506", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+  setup = quote({
+    dt <- data.table(group = rep(1:2, l=N))
+  }),
+  expr = substitute({
+    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
+    data.table:::forderv(dt, "group", retGrp = RETGRP)
+    options(old.opt) # so the option does not affect other tests.
+  }, list(RETGRP=eval(str2lang(retGrp_chr))))
 )
 
 # A list of performance tests.
@@ -69,7 +69,7 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
 # nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- atime::atime_test_list(
   # Common N and pkg.edit.fun are defined here, and inherited in all test cases below which do not re-define them.
-  N = as.integer(10^seq(1, 7, by=0.25)),
+  N = as.integer(10^seq(1, 7, by=0.5)),
   # A function to customize R package metadata and source files to facilitate version-specific installation and testing.
   #
   # This is specifically tailored for handling data.table which requires specific changes in non-standard files (such as the object file name in Makevars and version checking code in onLoad.R)
@@ -120,6 +120,13 @@ test.list <- atime::atime_test_list(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),
       paste0("R_init_", gsub("[.]", "_", new.Package_)))
+    # require C<23 for empty prototype declarations to work, #7689
+    descfile = file.path(new.pkg.path, "DESCRIPTION")
+    desc = as.data.frame(read.dcf(descfile))
+    desc$SystemRequirements = paste(
+      c(desc$SystemRequirements, "USE_C99"),
+      collapse = "; ")
+    write.dcf(desc, descfile)
     # allow compilation on new R versions where 'Calloc' is not defined
     pkg_find_replace(
       file.path("src", "*.c"),
@@ -129,6 +136,125 @@ test.list <- atime::atime_test_list(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
+    pkg_find_replace(
+      file.path("src", "Makevars.*in"),
+      "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
+    backports = c(
+      "src/data.table.h" = '
+        #include <Rversion.h>
+        #if R_VERSION >= R_Version(4, 6, 0)
+        // backports.c
+        void SETLENGTH(SEXP x, R_xlen_t n);
+        R_xlen_t TRUELENGTH(SEXP x);
+        void SET_TRUELENGTH(SEXP x, R_xlen_t n);
+        void SET_GROWABLE_BIT(SEXP);
+        int LEVELS(SEXP);
+        int NAMED(SEXP);
+        #define REFCNT(x) NAMED(x)
+        SEXP ATTRIB(SEXP);
+        void SET_ATTRIB(SEXP, SEXP);
+        int OBJECT(SEXP);
+        void SET_OBJECT(SEXP, int);
+        #define isFrame(x) isDataFrame(x)
+        #define GetOption(x, none) GetOption1(x)
+        #undef findVar // Rf_ mapping remains
+        #define findVar(sym, env) R_getVar(sym, env, FALSE)
+        #define STRING_PTR(x) ((SEXP *)STRING_PTR_RO(x))
+        int IS_S4_OBJECT(SEXP);
+        void SET_S4_OBJECT(SEXP);
+        void UNSET_S4_OBJECT(SEXP);
+        void SET_TYPEOF(SEXP, int);
+        #define VECTOR_ELT(x, i) VECTOR_ELT_(x, i)
+        SEXP VECTOR_ELT_(SEXP, R_xlen_t);
+        #define VECTOR_PTR(x) ((SEXP*)DATAPTR_RO(x))
+        #define DATAPTR(x) ((void*)DATAPTR_RO(x))
+        #endif
+      ',
+      "src/backports.c" = '
+        #include "data.table.h"
+        #if R_VERSION >= R_Version(4, 6, 0)
+        #define NAMED_BITS 16
+        struct sxpinfo_struct {
+          SEXPTYPE type      :  TYPE_BITS; // in Rinternals.h
+          unsigned int scalar:  1;
+          unsigned int obj   :  1;
+          unsigned int alt   :  1;
+          unsigned int gp    : 16;
+          unsigned int mark  :  1;
+          unsigned int debug :  1;
+          unsigned int trace :  1;
+          unsigned int spare :  1;
+          unsigned int gcgen :  1;
+          unsigned int gccls :  3;
+          unsigned int named : NAMED_BITS;
+          unsigned int extra : 32 - NAMED_BITS;
+        };
+
+        struct vecsxp_struct {
+          R_xlen_t length;
+          R_xlen_t truelength;
+        };
+
+        typedef struct VECTOR_SEXPREC {
+          struct sxpinfo_struct sxpinfo;
+          SEXP attrib;
+          SEXP gengc_next_node, gengc_prev_node;
+          struct vecsxp_struct vecsxp;
+        } *VECSEXP;
+
+        void SETLENGTH(SEXP x, R_xlen_t n) {
+          ((VECSEXP)x)->vecsxp.length = n;
+        }
+        R_xlen_t TRUELENGTH(SEXP x) {
+          return ((VECSEXP)x)->vecsxp.truelength;
+        }
+        void SET_TRUELENGTH(SEXP x, R_xlen_t n) {
+          ((VECSEXP)x)->vecsxp.truelength = n;
+        }
+        void SET_GROWABLE_BIT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp |= 0x20;
+        }
+        int LEVELS(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.gp;
+        }
+        int NAMED(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.named;
+        }
+        int OBJECT(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.obj;
+        }
+        void SET_OBJECT(SEXP x, int o) {
+          ((VECSEXP)x)->sxpinfo.obj = o;
+        }
+        SEXP ATTRIB(SEXP x) {
+          return ((VECSEXP)x)->attrib;
+        }
+        void SET_ATTRIB(SEXP x, SEXP att) {
+          ((VECSEXP)x)->attrib = att;
+        }
+        #define S4_OBJECT (1<<4)
+        int IS_S4_OBJECT(SEXP x) {
+          return ((VECSEXP)x)->sxpinfo.gp & S4_OBJECT;
+        }
+        void SET_S4_OBJECT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp |= S4_OBJECT;
+        }
+        void UNSET_S4_OBJECT(SEXP x) {
+          ((VECSEXP)x)->sxpinfo.gp &= ~S4_OBJECT;
+        }
+        void SET_TYPEOF(SEXP x, int type) {
+          ((VECSEXP)x)->sxpinfo.type = type;
+        }
+        SEXP VECTOR_ELT_(SEXP x, R_xlen_t i) {
+          return ALTREP(x) ? (VECTOR_ELT)(x, i) : ((SEXP*)DATAPTR_RO(x))[i];
+        }
+        #endif
+      ')
+    for (n in names(backports)) {
+      f = file(file.path(new.pkg.path, n), "a")
+      writeLines(backports[[n]], f)
+      close(f)
+    }
   },
 
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
@@ -138,9 +264,9 @@ test.list <- atime::atime_test_list(
     setup = {
       fwrite(iris[1], iris.csv <- tempfile())
     },
-    expr = replicate(N, data.table::fread(iris.csv)),
-    Fast = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
-    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+    Fast = "b70d0267ae89d3fffe8f4a5a6041dcb131709e97", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6925) that reduced time usage
+    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+    expr = replicate(N, data.table::fread(iris.csv))
   ),
 
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
@@ -151,10 +277,10 @@ test.list <- atime::atime_test_list(
       dt <- data.table(a = sample.int(N))
       setindexv(dt, "a")
     },
-    expr = data.table:::shallow(dt),
     # Before = "", This needs to be updated later as there are two issues here: A) The source of regression (or the particular commit that led to it) is not clear; B) Older versions of data.table are having problems when being installed in this manner (This includes commits from before March 20 2020, when the issue that discovered or first mentioned the regression was created)
     Regression = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/0f0e7127b880df8459b0ed064dc841acd22f5b73) in the PR (https://github.com/Rdatatable/data.table/pull/4440/commits) that fixes the regression
-    Fixed = "9d3b9202fddb980345025a4f6ac451ed26a423be"), # Merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440)
+    Fixed = "9d3b9202fddb980345025a4f6ac451ed26a423be", # Merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440)
+    expr = data.table:::shallow(dt)),
 
   # Test based on https://github.com/Rdatatable/data.table/issues/5424
   # Performance regression introduced from a commit in https://github.com/Rdatatable/data.table/pull/4491
@@ -169,10 +295,10 @@ test.list <- atime::atime_test_list(
         key = "g")
       dt_mod <- copy(dt)
     },
-    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g),
-    Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # Parent of the regression causing commit (https://github.com/Rdatatable/data.table/commit/e793f53466d99f86e70fc2611b708ae8c601a451) in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
-    Regression = "e793f53466d99f86e70fc2611b708ae8c601a451", # Commit responsible for regression in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
-    Fixed = "58409197426ced4714af842650b0cc3b9e2cb842"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5463/commits) that fixed the regression
+    Before = "d47a83fb2e25582e508f191f87a31ca81b736b57", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/196f420b50181b92036538776956ddf2c5b7a5a1) in the PR (https://github.com/Rdatatable/data.table/pull/4491/commits) that introduced the issue
+    Regression = "85adf09e3463838d547977ae9bc75e3b37f9cbaf", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4491) that introduced the issue
+    Fixed = "19b7866112614db53eb3e909c097407d91cd6738", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5463) that fixed the regression
+    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g)),
 
   # Issue reported in https://github.com/Rdatatable/data.table/issues/5426
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/5427#issue-1323678063 which is the fix PR.
@@ -181,12 +307,12 @@ test.list <- atime::atime_test_list(
       L <- replicate(N, 1, simplify = FALSE)
       setDT(L)
     },
+    Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
+    Fast = "2487c61656335764980e478c323f7e6ce4e6d4ca", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/5427) that fixes the issue
     expr = {
       data.table:::setattr(L, "class", NULL)
       data.table:::setDT(L)
-    },
-    Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
-    Fast = "af48a805e7a5026a0c2d0a7fd9b587fea5cfa3c4"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
+    }),
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
@@ -199,10 +325,11 @@ test.list <- atime::atime_test_list(
         v2 = sample(5L, N, TRUE)
       )
     },
-    expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id),
+    PR7401="0216983c51e03e3f61d5e6f08f4ba0c42cceb22c", # Merge commit (https://github.com/Rdatatable/data.table/commit/0216983c51e03e3f61d5e6f08f4ba0c42cceb22c) of a PR (https://github.com/Rdatatable/data.table/pull/7401) which increased speed and memory usage of this test (https://github.com/Rdatatable/data.table/issues/7687)
     Before = "7a9eaf62ede487625200981018d8692be8c6f134", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/515de90a6068911a148e54343a3503043b8bb87c) in the PR (https://github.com/Rdatatable/data.table/pull/4164/commits) that introduced the regression
     Regression = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
-    Fixed = "f750448a2efcd258b3aba57136ee6a95ce56b302"), # Second commit of the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
+    Fixed = "ba32f3cba38ec270587e395f6e6c26a80be36be6", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4558) that fixes the regression
+    expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id)),
 
   # Issue with sorting again when already sorted, as reported in https://github.com/Rdatatable/data.table/issues/4498
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4501#issue-625311918 which is the fix PR.
@@ -212,11 +339,11 @@ test.list <- atime::atime_test_list(
       L = as.data.table(as.character(rnorm(N, 1, 0.5)))
       setkey(L, V1)
     },
-    ## New DT can safely retain key.
-    expr = data.table:::`[.data.table`(L, , .SD),
-    Fast = "353dc7a6b66563b61e44b2fa0d7b73a0f97ca461", # Close-to-last merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Fast = "680b5e8e6d3f16a09dfb2f86ac7b2ce5ce70c3f1", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
-    Slower = "cacdc92df71b777369a217b6c902c687cf35a70d"), # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Slower = "cacdc92df71b777369a217b6c902c687cf35a70d", # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue
+    ## New DT can safely retain key.
+    expr = data.table:::`[.data.table`(L, , .SD)),
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/6286#issue-2412141289 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/6296
@@ -225,9 +352,9 @@ test.list <- atime::atime_test_list(
       dt = data.table(a = 1:N)
       dt_mod <- copy(dt)
     },
-    expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE),
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
-    Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
+    Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
+    expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE)),
 
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/5492#issue-1416598382 which is where the issue was reported,
   # and from https://github.com/Rdatatable/data.table/pull/5493#issue-1416656788 which is the fix PR.
@@ -236,9 +363,9 @@ test.list <- atime::atime_test_list(
       df <- data.frame(x = runif(N))
       dt <- as.data.table(df)
     },
-    expr = data.table:::transform.data.table(dt, y = round(x)),
     Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
-    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+    expr = data.table:::transform.data.table(dt, y = round(x))),
 
   # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
   "melt improved in #5054" = atime::atime_test(
@@ -250,9 +377,9 @@ test.list <- atime::atime_test_list(
         x
       })  
     },
-    expr = data.table:::melt(DT, measure.vars = measure.vars),
     Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
-    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
+    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
+    expr = data.table:::melt(DT, measure.vars = measure.vars)),
 
   # Test case created from @tdhock's comment https://github.com/Rdatatable/data.table/pull/6393#issuecomment-2327396833, in turn adapted from @philippechataignon's comment https://github.com/Rdatatable/data.table/pull/6393#issuecomment-2326714012
   "fwrite refactored in #6393" = atime::atime_test(
@@ -263,42 +390,43 @@ test.list <- atime::atime_test_list(
       L[, paste0("V", 1:NC) := replicate(NC, rnorm(N), simplify=FALSE)]
       out.csv <- tempfile()
     },
-    expr = data.table::fwrite(L, out.csv, compress="gzip"),
     Before = "f339aa64c426a9cd7cf2fcb13d91fc4ed353cd31", # Parent of the first commit https://github.com/Rdatatable/data.table/commit/fcc10d73a20837d0f1ad3278ee9168473afa5ff1 in the PR https://github.com/Rdatatable/data.table/pull/6393/commits with major change to fwrite with gzip.
-    PR = "3630413ae493a5a61b06c50e80d166924d2ef89a"), # Close-to-last merge commit in the PR.
+    PR = "e0abdfcd79ba30efcf679e33cbb8eba897a46f9c", # merge commit of PR6393
+    expr = data.table::fwrite(L, out.csv, compress="gzip")),
 
-  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
-  "as.data.table.array improved in #7010" = atime::atime_test(
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7019
+  "as.data.table.array improved in #7019" = atime::atime_test(
     setup = {
       dims = c(N, 1, 1)
       arr = array(seq_len(prod(dims)), dim=dims)
     },
-    expr = data.table:::as.data.table.array(arr, na.rm=FALSE),
-    Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
-    Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that removes inefficiency
+    Slow = "73d79edf8ff8c55163e90631072192301056e336",  # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc) in the PR that improves efficiency
+    Fast = "2715663fcf0344c3f7c73241d391d8de347bdb9d",  # Merge commit of the PR that improves efficiency
+    expr = data.table:::as.data.table.array(arr, na.rm=FALSE)),
 
+  # https://github.com/Rdatatable/data.table/pull/7144 added the speedup code and this performance test.
   "isoweek improved in #7144" = atime::atime_test(
     setup = {
       set.seed(349)
       x = sample(Sys.Date() - 0:5000, N, replace=TRUE)
     },
-    expr = data.table::isoweek(x),
-    Slow = "548410d23dd74b625e8ea9aeb1a5d2e9dddd2927",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/548410d23dd74b625e8ea9aeb1a5d2e9dddd2927)
-    Fast = "c0b32a60466bed0e63420ec105bc75c34590865e"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7144/commits) that uses a much faster implementation
+    Slow = "038e7f8c2bed60f38c3faa2cc2c4e339c3570b94", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/c0b32a60466bed0e63420ec105bc75c34590865e) in the PR
+    Fast = "ed2df986da6d3a4ff35bec1b0f75db2b767e3eb2", # Merge commit of the PR that uses a much faster implementation
+    expr = data.table::isoweek(x)),
 
-  # Regression introduced in #7404 (grouped by factor).
+  # Regression introduced by https://github.com/Rdatatable/data.table/pull/6890 and discussed in https://github.com/Rdatatable/data.table/issues/7404 (grouped by factor).
   "DT[by] max regression fixed in #7480" = atime::atime_test(
-    N = as.integer(10^seq(3, 5, by=0.5)),
     setup = {
       dt = data.table(
         id = as.factor(rep(seq_len(N), each = 100L)),
         V1 = 1L
       )
     },
-    expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id),
-    Before = "476de7e3",
-    Regression = "6f49bf1",
-    Fixed = "b6ad1a4",
-    seconds.limit = 1),
+    Before = "2cb03162a21328cc5f68a8c3b0e554f5edfcb5b9", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/4cc77c617435b46a0faac35c56e7fb7b81c629fc) in the regression PR (https://github.com/Rdatatable/data.table/pull/6890/commits)
+    Regression = "6f49bf1935a3009e85ea1e6f9752ff68ffa47d9b", # Merge commit of the regression PR https://github.com/Rdatatable/data.table/pull/6890
+    Fixed = "b6ad1a4bc2e44d47f3e86c296c924a809a26bf58", # Merge commit of the fix PR (https://github.com/Rdatatable/data.table/pull/7480)
+    seconds.limit = 1,
+    expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id)),
+
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

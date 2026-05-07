@@ -2,7 +2,7 @@
 title: "Analyse comparative (benchmark) de data.table"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format:
+  litedown::html_format:
     options:
       toc: true
       number_sections: true

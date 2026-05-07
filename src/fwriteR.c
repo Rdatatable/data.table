@@ -270,7 +270,7 @@ SEXP fwriteR(
         if (xlength(rn) != args.nrow)
            // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work on M1
           error(_("input has specific integer rownames but their length (%lld) != nrow (%"PRId64")"), (long long)xlength(rn), args.nrow);  // # nocov
-        args.rowNames = INTEGER(rn);
+        args.rowNames = INTEGER_RO(rn);
         args.rowNameFun = WF_Int32;
       }
     } else if (isString(rn)) {

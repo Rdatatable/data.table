@@ -2,16 +2,12 @@
 title: "Быстрое изменение формы данных с помощью data.table"
 date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Быстрое изменение формы данных с помощью data.table}
   %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
-
-```{r echo=FALSE, file='../_translation_links.R'}
-```
-`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)

@@ -4,12 +4,12 @@
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
+  if (!is.data.table(data) && is.data.frame(data)){
+    mc <- match.call()
+    mc[[1L]] <- as.name("melt.data.table")
+    return(eval(mc, parent.frame()))
+  }
   UseMethod("melt", data)
-}
-
-# TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
-melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
-  stopf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), deparse(substitute(data))) # nocov
 }
 
 patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
@@ -181,7 +181,6 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(data)) stopf("'%s' must be a data.table", "data")
   for(type.vars in c("id.vars","measure.vars")){
     sub.lang <- substitute({
       if (missing(VAR)) VAR=NULL

@@ -132,7 +132,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   iSD = PROTECT(R_getVar(install(".iSD"), env, false)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = PROTECT(R_getVar(install(".xSD"), env, false)); nprotect++;
   R_len_t maxGrpSize = 0;
-  const int *ilens = INTEGER(lens), n=LENGTH(lens);
+  const int *ilens = INTEGER_RO(lens), n=LENGTH(lens);
   for (R_len_t i=0; i<n; ++i) {
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
@@ -184,8 +184,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
 
   ansloc = 0;
-  const int *istarts = INTEGER(starts);
-  const int *iorder = INTEGER(order);
+  const int *istarts = INTEGER_RO(starts);
+  const int *iorder = INTEGER_RO(order);
 
   // We just want to set anyNA for later. We do it only once for the whole operation
   // because it is a rare edge case for it to be true. See #4892.
@@ -526,25 +526,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
     UNPROTECT(1);
     return newx;
   }
-  switch (TYPEOF(x)) {
-  case RAWSXP:  memcpy(RAW(newx),     RAW_RO(x),     len*RTYPE_SIZEOF(x)); break;
-  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL_RO(x), len*RTYPE_SIZEOF(x)); break;
-  case INTSXP:  memcpy(INTEGER(newx), INTEGER_RO(x), len*RTYPE_SIZEOF(x)); break;
-  case REALSXP: memcpy(REAL(newx),    REAL_RO(x),    len*RTYPE_SIZEOF(x)); break;
-  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX_RO(x), len*RTYPE_SIZEOF(x)); break;
-  case STRSXP : {
-    const SEXP *xd = SEXPPTR_RO(x);
-    for (int i=0; i<len; ++i)
-      SET_STRING_ELT(newx, i, xd[i]);
-  } break;
-  case VECSXP : {
-    const SEXP *xd = SEXPPTR_RO(x);
-    for (int i=0; i<len; ++i)
-      SET_VECTOR_ELT(newx, i, xd[i]);
-  } break;
-  default : // # nocov
-    internal_error(__func__, "type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
-  }
+  copyVectorElements(newx, x, (R_xlen_t)len, false, __func__);
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
   SHALLOW_DUPLICATE_ATTRIB(newx, x);
