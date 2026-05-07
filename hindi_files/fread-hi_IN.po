@@ -642,20 +642,20 @@ msgstr "[08] कॉलम (column) के नाम असाइन (assign) क
 #: fread.c:2126
 #, c-format
 msgid "Unable to allocate %d*%d bytes for column name pointers: %s"
-msgstr ""
+msgstr "कॉलम (column) के नाम के पॉइंटर्स (pointers) के लिए %d*%d बाइट्स (bytes) आवंटित करने में असमर्थ: %s"
 
 #: fread.c:2166
 msgid "[09] Apply user overrides on column types\n"
-msgstr ""
+msgstr "[09] कॉलम (column) के types पर यूजर ओवरराइड्स (user overrides) लागू करें\n"
 
 #: fread.c:2170
 msgid "  Cancelled by user: userOverride() returned false."
-msgstr ""
+msgstr "  यूजर (user) द्वारा रद्द किया गया: userOverride() ने false लौटाया।"
 
 #: fread.c:2181
 #, c-format
 msgid "Failed to allocate %d bytes for '%s': %s"
-msgstr ""
+msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल: %s"
 
 #: fread.c:2188
 #, c-format
@@ -664,35 +664,41 @@ msgid ""
 "ignored. Only overrides to a higher type are currently supported. If this was "
 "intended, please coerce to the lower type afterwards."
 msgstr ""
+"अंतर्निहित (inherent) प्रकार '%s' के कॉलम (column) %d%s%.*s%s को '%s' तक\n"
+"ओवरराइड (override) करने के प्रयास को नजरअंदाज कर दिया गया। वर्तमान में केवल उच्च प्रकार के\n"
+"ओवरराइड्स (overrides) समर्थित हैं। यदि यह जानबूझकर किया गया था, तो कृपया बाद में\n"
+"लोअर टाइप (lower type) के लिए coerce करें।"
 
 #: fread.c:2203
 #, c-format
 msgid "  After %d type and %d drop user overrides : %s\n"
-msgstr ""
+msgstr "  %d type और %d drop यूजर ओवरराइड्स (user overrides) के बाद : %s\n"
 
 #: fread.c:2211
 msgid "[10] Allocate memory for the datatable\n"
-msgstr ""
+msgstr "[10] datatable के लिए मेमोरी (memory) आवंटित करें\n"
 
 #: fread.c:2212
 #, c-format
 msgid "  Allocating %d column slots (%d - %d dropped) with %<PRIu64> rows\n"
-msgstr ""
+msgstr "  %d कॉलम (column) स्लॉट्स (slots) (%d - %d dropped) को %<PRIu64> रोज़(rows) के साथ आवंटित किया जा रहा है\n"
 
 #: fread.c:2267
 #, c-format
 msgid "Buffer size %<PRId64> is too large\n"
-msgstr ""
+msgstr "बफर (buffer) का आकार (size) %<PRId64> बहुत बड़ा है\n"
 
 #: fread.c:2270
 msgid "[11] Read the data\n"
-msgstr ""
+msgstr "[11] डेटा (data) पढ़ें\n"
 
 #: fread.c:2499
 #, c-format
 msgid ""
 "Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %<PRIu64>\n"
 msgstr ""
+"रो (row) %<PRIu64> पर <<%.*s>> के कारण कॉलम (column) %d%s%.*s%s को '%s' से\n"
+"'%s' पर अपग्रेड (bumped) किया गया\n"
 
 #: fread.c:2617
 #, c-format
