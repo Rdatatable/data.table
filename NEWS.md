@@ -32,8 +32,6 @@
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
-7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
-
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
@@ -61,6 +59,8 @@
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
 
 6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
+
+7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
 
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 
