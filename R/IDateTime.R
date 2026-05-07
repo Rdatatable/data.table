@@ -365,8 +365,30 @@ isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")
 year    = function(x) convertDate(as.IDate(x), "year")
-yearmon = function(x) convertDate(as.IDate(x), "yearmon")
-yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
+yearmon = function(x, format = c("numeric", "character")) {
+  format = match.arg(format)
+  x_as_idate = as.IDate(x)
+  ymon = convertDate(x_as_idate, "yearmon")
+  if (format == "numeric") return(ymon)
+  ans = rep(NA_character_, length(x_as_idate))
+  ok = !is.na(x_as_idate)
+  yr = floor(ymon[ok])
+  mon = round((ymon[ok] - yr) * 12) + 1L
+  ans[ok] = sprintf("%dM%02d", as.integer(yr), as.integer(mon))
+  ans
+}
+yearqtr = function(x, format = c("numeric", "character")) {
+  format = match.arg(format)
+  x_as_idate = as.IDate(x)
+  yqtr = convertDate(x_as_idate, "yearqtr")
+  if (format == "numeric") return(yqtr)
+  ans = rep(NA_character_, length(x_as_idate))
+  ok = !is.na(x_as_idate)
+  yr = floor(yqtr[ok])
+  qtr = round((yqtr[ok] - yr) * 4) + 1L
+  ans[ok] = sprintf("%dQ%d", as.integer(yr), as.integer(qtr))
+  ans
+}
 
 convertDate = function(x, type) {
   type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
