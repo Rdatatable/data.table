@@ -397,7 +397,43 @@ print(j)
 DT[, j, env = list(j = j)]
 ```
 
-### Common mistakes
+### Good practices
+
+When using meta-programming interfaces, not only data.table `env` argument, user is also in control of how call stack will look like. We control what will go into errors call stack, or extra call stack reporting routines. It is either reference to named function or it an anonymous function.
+
+```{r report_from_where_and_add_one, eval = FALSE}
+report_from_where_and_add_one = function(x) {
+  print(sys.calls())
+  invisible(x + 1L)
+}
+do.call(report_from_where_and_add_one, list(x = 1L))
+# [[1]]
+# do.call(report_from_where_and_add_one, list(x = 1L))
+
+# [[2]]
+# (function(x) {
+#   print(sys.calls())
+#   x + 1L
+# })(x = 1L)
+do.call("report_from_where_and_add_one", list(x = 1L))
+# [[1]]
+# do.call("report_from_where_and_add_one", list(x = 1L))
+
+# [[2]]
+# report_from_where_and_add_one(x = 1L)
+```
+
+```{r raise_exception, eval = FALSE}
+raise_exception = function(x) {
+  stop("a1")
+}
+do.call(raise_exception, list(x = 1L))
+# Error in (function (x)  : a1
+do.call("raise_exception", list(x = 1L))
+# Error in raise_exception(x = 1L) : a1
+```
+
+And data.table use case...
 
 It is important to understand the difference between passing an object and a name that points to an object. See the verbose output of following examples.
 
