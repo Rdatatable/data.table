@@ -1087,9 +1087,13 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month - 1] : normYearDays[month - 1])))
     return;
 
+  int32_t cycle_year = year % 400;
+  if (cycle_year < 0) cycle_year += 400;
+  int32_t cycle = (year - cycle_year) / 400;
+
   *target =
-    (year / 400 - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
-    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (cycle - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[cycle_year] + // days to beginning of year within 400-year cycle
     (isLeapYear ? cumDaysCycleMonthsLeap[month - 1] : cumDaysCycleMonthsNorm[month - 1]) + // days to beginning of month within year
     day - 1; // day within month (subtract 1: 1970-01-01 -> 0)
 
@@ -1843,6 +1847,7 @@ int freadMain(freadMainArgs _args)
       int topNumFields = 1;               // how many fields that was, to resolve ties
       enum quote_rule_t topQuoteRule = -1;   // which quote rule that was
       int topSkip = 0;                    // how many rows to auto-skip
+      // #7707 'topSkip' accumulates as blank lines are encountered; can be used to differentiate between a file where the header and data are separated by a blank line and a file where block(s) of lines or each line is separated by a blank line
       const char *topStart = NULL;
     
       for (quoteRule = quote ? QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED : QUOTE_RULE_IGNORE_QUOTES; quoteRule < QUOTE_RULE_COUNT; quoteRule++) { // #loop_counter_not_local_scope_ok
@@ -1945,6 +1950,10 @@ int freadMain(freadMainArgs _args)
             }
           }
         }
+      }
+      if (!prevStart && topSkip > 1 && !skipEmptyLines)
+      {
+        DTWARN(_("The rows in this file appear to be separated by blank lines. This resulted in most rows being skipped. If this was not the intended outcome, please consider setting 'blank.lines.skip' to TRUE.\n"));
       }
       if (!firstJumpEnd) {
         if (verbose) DTPRINT(_("  No sep and quote rule found a block of 2x2 or greater. Single column input.\n"));

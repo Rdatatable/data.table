@@ -97,8 +97,8 @@ isoyear(x)
 month(x)
 quarter(x)
 year(x)
-yearmon(x)
-yearqtr(x)
+yearmon(x, format = c("numeric", "character"))
+yearqtr(x, format = c("numeric", "character"))
 
 }
 
@@ -115,6 +115,7 @@ yearqtr(x)
   the S3 generic.}
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
+  \item{format}{For \code{yearmon} and \code{yearqtr}, either \code{"numeric"} (default) or \code{"character"}. \code{"character"} formats the result as \code{"2025M04"} for \code{yearmon} and \code{"2025Q2"} for \code{yearqtr}.}
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -209,7 +210,11 @@ Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO w
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
    \code{yearmon} and \code{yearqtr} return double values representing
-   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}.
+   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}
+   when \code{format = "numeric"} (the default). When \code{format = "character"},
+   they return character vectors of the form \code{"YYYYM##"} (e.g. \code{"2025M04"},
+   zero-padded for sortability) and \code{"YYYYQN"} (e.g. \code{"2025Q2"}) respectively,
+   with \code{NA} input returned as \code{NA_character_}.
 
    \code{second}, \code{minute}, \code{hour} are taken directly from
    the \code{POSIXlt} representation.
@@ -295,6 +300,11 @@ d2 = as.IDate("2016-01-01")
 year(d2)
 isoweek(d2)
 isoyear(d2)
+
+# Character format for yearmon() and yearqtr()
+d3 = as.IDate(c("2019-01-01", "2019-12-31"))
+yearmon(d3, format = "character") # "2019M01" "2019M12"
+yearqtr(d3, format = "character") # "2019Q1"  "2019Q4"
 
 }
 \keyword{utilities}
