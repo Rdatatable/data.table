@@ -46,7 +46,7 @@
 
 6. `fread()` no longer replaces a literal header column name `"NA"` with an auto-generated `Vn` name when `na.strings` includes `"NA"`, [#5124](https://github.com/Rdatatable/data.table/issues/5124). Data rows still continue to parse `"NA"` as missing. Thanks @Mashin6 for the report and @shrektan for the fix.
 
-11. `fread()` would not give a warning when every second line of input was empty, [#3339](https://github.com/Rdatatable/data.table/issues/3339). Now, a warning message 'The rows in this file appear to be separated by blank lines.' is given and suggests to set `blank.lines.skip` to `TRUE`. Thanks to @Henrik-P for the report and @Asa-Henry for the fix.
+7. `fread()` would not give a warning when every second line of input was empty, [#3339](https://github.com/Rdatatable/data.table/issues/3339). Now, a warning message 'The rows in this file appear to be separated by blank lines.' is given and suggests to set `blank.lines.skip` to `TRUE`. Thanks to @Henrik-P for the report and @Asa-Henry for the fix.
 
 ### Notes
 
