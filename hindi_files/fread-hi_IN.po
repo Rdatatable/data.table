@@ -703,22 +703,22 @@ msgstr ""
 #: fread.c:2617
 #, c-format
 msgid "  Provided number of fill columns: %d but only found %d\n"
-msgstr ""
+msgstr "  प्रदान की गई fill कॉलम्स (columns) की संख्या: %d लेकिन केवल %d प्राप्त हुए\n"
 
 #: fread.c:2618
 #, c-format
 msgid "  Dropping %d overallocated columns\n"
-msgstr ""
+msgstr "  %d अत्यधिक आवंटित कॉलम्स (columns) को हटाया जा रहा है\n"
 
 #: fread.c:2622
 #, c-format
 msgid "Failed to allocate %d bytes for '%s'."
-msgstr ""
+msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
 
 #: fread.c:2636
 #, c-format
 msgid "Internal error in %s: %s. Please report to the data.table issues tracker"
-msgstr ""
+msgstr "आंतरिक (internal) एरर (error) %s में: %s। कृपया इसे data.table के इश्यू ट्रैकर (issue tracker) पर रिपोर्ट (report) करें"
 
 #: fread.c:2643
 #, c-format
@@ -726,30 +726,33 @@ msgid ""
 "  Too few rows allocated. Allocating additional %<PRIu64> rows (now "
 "nrows=%<PRIu64>) and continue reading from jump %d\n"
 msgstr ""
+"  बहुत कम रोज़(rows) आवंटित किए गए। अतिरिक्त %<PRIu64> रोज़(rows) आवंटित किए जा रहे हैं\n"
+"(अब nrows=%<PRIu64>) और जंप (jump) %d से पढ़ना जारी रखें\n"
 
 #: fread.c:2650
 #, c-format
 msgid "  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"
-msgstr ""
+msgstr "  जंप (jump) %d से टीम (team) को पुनः आरंभ किया जा रहा है। nSwept==%d quoteRule==%d\n"
 
 #: fread.c:2670
 #, c-format
 msgid "  %d out-of-sample type bumps: %s\n"
-msgstr ""
+msgstr "  %d out-of-sample टाइप (type) परिवर्तन: %s\n"
 
 #: fread.c:2705
 #, c-format
 msgid ""
 "Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock time\n"
 msgstr ""
+"%s फाइल (file) से %<PRIu64> रोज़(rows) x %d कॉलम्स (columns) को %02d:%06.3f wall clock time में पढ़ा गया\n"
 
 #: fread.c:2712
 msgid "[12] Finalizing the datatable\n"
-msgstr ""
+msgstr "[12] datatable को अंतिम रूप दिया जा रहा है\n"
 
 #: fread.c:2713
 msgid "  Type counts:\n"
-msgstr ""
+msgstr "  प्रकार (Type) गणना:\n"
 
 #: fread.c:2715
 #, c-format
