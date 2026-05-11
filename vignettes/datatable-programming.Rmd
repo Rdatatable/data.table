@@ -399,7 +399,7 @@ DT[, j, env = list(j = j)]
 
 ### Good practices
 
-When using meta-programming interfaces, not only data.table `env` argument, user is also in control of how call stack will look like. We control what will go into errors call stack, or extra call stack reporting routines. It is either reference to named function or it an anonymous function.
+When using meta-programming interfaces, not only data.table's `env` argument, the user is also in control of how the call stack will look like. This affects what appears in error messages and other call stack reportings. The call target is either a named function or an anonymous function.
 
 ```{r report_from_where_and_add_one, eval = FALSE}
 report_from_where_and_add_one = function(x) {
