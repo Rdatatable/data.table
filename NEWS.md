@@ -46,7 +46,11 @@
 
 6. `fread()` no longer replaces a literal header column name `"NA"` with an auto-generated `Vn` name when `na.strings` includes `"NA"`, [#5124](https://github.com/Rdatatable/data.table/issues/5124). Data rows still continue to parse `"NA"` as missing. Thanks @Mashin6 for the report and @shrektan for the fix.
 
-11. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
+7. `fread()` would not give a warning when every second line of input was empty, [#3339](https://github.com/Rdatatable/data.table/issues/3339). Now, a warning message 'The rows in this file appear to be separated by blank lines.' is given and suggests to set `blank.lines.skip` to `TRUE`. Thanks to @Henrik-P for the report and @Asa-Henry for the fix.
+
+8. `test()` now reports multiple expected warnings more clearly when `warning=` has length greater than 1L, instead of printing a collapsed or repeated mismatch summary after messages like `Test 1 produced 1 warnings but expected 2`, [#7092](https://github.com/Rdatatable/data.table/issues/7092). Expected and observed warnings are now printed on separate aligned lines, making small differences easier to spot. Thanks @MichaelChirico for the report, @ben-schwen for assistance, and @lucaslarson25, @tjdavis51, @D3VTHSTVR, and @car723 for the fix.
+
+9. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
 
 ### Notes
 
@@ -61,6 +65,8 @@
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
 
 6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
+
+7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
 
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 
