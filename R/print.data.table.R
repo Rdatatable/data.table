@@ -22,6 +22,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   stopifnot(isTRUEorFALSE(class))
   if (col.names == "none" && class)
     warningf("Column classes will be suppressed when col.names is 'none'")
+
   if (!shouldPrint(x)) {
     #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
     # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
@@ -31,7 +32,26 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS = sys.calls()
-    if (identical(SYS[[1L]][[1L]], print) || # this is what auto-print looks like, i.e. '> DT' and '> DT[, a:=b]' in the terminal; see #3029.
+
+    # TODO(R>=3.6): Remove this branch once the minimal supported R version is raised. No need for is_print_call. Just
+    # identical(SYS[[1L]][[1L]], print)
+
+    # is_print_call detects whether print() was called either explicitly or through autoprint,
+    # is wrapped in a promise or not to account for R 3.4/3.5.
+    is_print_call = FALSE
+    if (identical(SYS[[1L]][[1L]], print)) {
+      is_print_call = TRUE
+    }
+      # nocov start
+      else if (typeof(SYS[[1L]][[1L]]) == "promise") {
+       # in R 3.4 and R 3.5, auto-print uses a promise to reference base::print due to lazy loading
+       # safely evaluate promise to get the actual function
+      evaluated = tryCatch(eval(SYS[[1L]][[1L]]), error = function(e) NULL)
+      if (identical(evaluated, print)) {
+        is_print_call = TRUE
+      }
+    } # nocov end
+    if (is_print_call || # this is what auto-print looks like, i.e. '> DT' and '> DT[, a:=b]' in the terminal; see #3029.
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
           as.character(thisSYS) == 'source') ) { # suppress printing from source(echo = TRUE) calls, #2369
       return(invisible(x))
