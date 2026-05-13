@@ -203,11 +203,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       }
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
-  } else if (any_char) {
-    error(_("In-place filling of character columns is not yet supported."));
   } else {
     for (R_len_t i=0; i<nx; i++) {
-      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .status=0, .message={"\0","\0","\0","\0"} });
+      SEXP xi = VECTOR_ELT(x, i);
+      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .char_v=isString(xi) ? xi : R_NilValue, .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
 

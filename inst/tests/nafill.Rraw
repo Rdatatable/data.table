@@ -452,10 +452,15 @@ test(16.07, setnafill(copy(DT), fill="a", cols='f1')$f1,
 test(16.08, setnafill(copy(DT), fill="a", cols=c('f1', 'f2'))[, .(f1, f2)],
             data.table(f1=as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")),
                        f2=as.factor(c("a", "a", "c", "b", "a", "a", "b", "a", "a", "a"))))
-test(16.09, setnafill(DT, fill="z", cols='c1'), error="not yet supported")
-# test(16.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
-#             data.table(c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
-#                        c2=c("z", "z", "d", "c", "z", "z", "b", "a", "z", "z")))
+test(16.09, setnafill(copy(DT), fill="z", cols='c1')$c1,
+            c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"))
+test(16.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
+            data.table(c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
+                       c2=c("z", "z", "d", "c", "z", "z", "b", "a", "z", "z")))
+test(16.101, setnafill(copy(DT), type="locf", cols='c1')$c1,
+            c(NA, NA, "a", "b", "b", "b", "c", "d", "d", "d"))
+test(16.102, setnafill(copy(DT), type="nocb", cols='c1')$c1,
+            c("a", "a", "a", "b", "c", "c", "c", "d", NA, NA))
 test(16.11, setnafill(copy(DT), fill=as.POSIXct("2027-01-01"), cols='t1')$t1,
             replace(DT$t1, c(1:2, 5:6, 9:10), as.POSIXct("2027-01-01")))
 test(16.12, setnafill(copy(DT), fill=as.POSIXct("2027-01-01"), cols=c('t1', 't2'))[, .(t1, t2)],
@@ -467,7 +472,9 @@ test(16.13, setnafill(copy(DT), fill=list(TRUE, 9L, 9.0, "a", as.POSIXct("2027-0
                        d1=c(9.0, 9L, 0L, 1L, 9L, 9L, 2:3, 9L, 9L),
                        f1=as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")),
                        t1=replace(DT$t1, c(1:2, 5:6, 9:10), as.POSIXct("2027-01-01"))))
-test(16.14, setnafill(DT, cols=c("l1", "c1")), error="not yet supported")
+test(16.14, setnafill(copy(DT), fill=list(TRUE, "z"), cols=c("l1", "c1"))[, .(l1, c1)],
+            data.table(l1=c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
+                       c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z")))
 DT = data.table(l=c(NA, FALSE), i=c(NA, 0L))
 setnafill(DT, fill=list(TRUE, 1L))
 test(16.15, DT, data.table(l=c(TRUE, FALSE), i=1:0))
