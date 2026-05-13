@@ -234,7 +234,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
 
     if (notjoin) {
       # Anti-join: count rows in x that were NOT matched
-      result_rows = if (matched_i > 0L) nrow_x - length(unique(ans$starts[idx])) else nrow_x
+      result_rows = if (matched_i > 0L) nrow_x - sum(ans$lens[idx][!duplicated(ans$starts[idx])]) else nrow_x
     } else if (inner_join) {
       # Inner join: sum lengths for matched rows only
       result_rows = if (matched_i > 0L) sum(ans$lens[idx]) else 0L
