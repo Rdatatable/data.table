@@ -50,6 +50,8 @@
 
 8. `test()` now reports multiple expected warnings more clearly when `warning=` has length greater than 1L, instead of printing a collapsed or repeated mismatch summary after messages like `Test 1 produced 1 warnings but expected 2`, [#7092](https://github.com/Rdatatable/data.table/issues/7092). Expected and observed warnings are now printed on separate aligned lines, making small differences easier to spot. Thanks @MichaelChirico for the report, @ben-schwen for assistance, and @lucaslarson25, @tjdavis51, @D3VTHSTVR, and @car723 for the fix.
 
+9. `fcoalesce()` and `setcoalesce()` could fail for inputs during implicit type coercions when items had different but still compatible underlying storage types (e.g., `Date` and `IDate`), #7545 (https://github.com/Rdatatable/data.table/issues/7545). This was particularly unexpected because `Date` objects may be stored as either integer or double. Thanks to @ethanbsmith for the report and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
