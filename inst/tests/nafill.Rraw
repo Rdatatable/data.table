@@ -478,6 +478,21 @@ test(16.14, setnafill(copy(DT), fill=list(TRUE, "z"), cols=c("l1", "c1"))[, .(l1
 DT = data.table(l=c(NA, FALSE), i=c(NA, 0L))
 setnafill(DT, fill=list(TRUE, 1L))
 test(16.15, DT, data.table(l=c(TRUE, FALSE), i=1:0))
+# setnafill truly works in-place
+DT = data.table(l1=c(NA, TRUE, NA), i1=c(NA, 1L, NA), d1=c(NA, 1.5, NA),
+                f1=as.factor(c(NA, "a", NA)), c1=c(NA, "a", NA),
+                t1=as.POSIXct(c(NA, "2025-01-01", NA)))
+setnafill(DT, fill=list(TRUE, 9L, 9.0, "a", "z", as.POSIXct("2027-01-01")),
+          cols=c("l1", "i1", "d1", "f1", "c1", "t1"))
+test(16.16, DT, data.table(l1=c(TRUE, TRUE, TRUE), i1=c(9L, 1L, 9L), d1=c(9.0, 1.5, 9.0),
+                           f1=as.factor(c("a", "a", "a")), c1=c("z", "a", "z"),
+                           t1=as.POSIXct(c("2027-01-01", "2025-01-01", "2027-01-01"))))
+DT = data.table(x=c(NA, "a", NA, "b", NA))
+setnafill(DT, type="locf", cols="x")
+test(16.17, DT, data.table(x=c(NA, "a", "a", "b", "b")))
+DT = data.table(x=c(NA, "a", NA, "b", NA))
+setnafill(DT, type="nocb", cols="x")
+test(16.18, DT, data.table(x=c("a", "a", "b", "b", NA)))
 
 # related to !is.integer(verbose)
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")
