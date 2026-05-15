@@ -26,7 +26,7 @@ msgstr "आंतरिक एरर (error)"
 
 #: utils.R:28
 msgid "Please report to the data.table issues tracker."
-msgstr "कृपया data.table मुद्दों के ट्रैकर पर रिपोर्ट करें"
+msgstr "कृपया data.table मुद्दों के ट्रैकर पर रिपोर्ट करें।"
 
 #: utils.R:72 utils.R:81
 msgid "x not boolean"
