@@ -505,7 +505,7 @@ msgstr ""
 
 #: data.table.R:1102
 msgid "Detected that j uses these columns: %s"
-msgstr "पता चला कि j इन कॉलम (column) का उपयोग करता है: %s।"
+msgstr "पता चला कि j इन कॉलम (column) का उपयोग करता है: %s"
 
 #: data.table.R:1115
 msgid ""
