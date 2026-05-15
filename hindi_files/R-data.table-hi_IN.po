@@ -674,8 +674,7 @@ msgstr "स्थितियों से समूह आकार ढूं�
 
 #: data.table.R:1549
 msgid "Getting back original order ..."
-msgstr ""
-"मूल क्रम में वापस आना ...।"
+msgstr "मूल क्रम में वापस आना ..."
 
 #: data.table.R:1561
 msgid "Finding groups using uniqlist on key ..."
