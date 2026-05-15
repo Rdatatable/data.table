@@ -50,6 +50,8 @@
 
 8. `test()` now reports multiple expected warnings more clearly when `warning=` has length greater than 1L, instead of printing a collapsed or repeated mismatch summary after messages like `Test 1 produced 1 warnings but expected 2`, [#7092](https://github.com/Rdatatable/data.table/issues/7092). Expected and observed warnings are now printed on separate aligned lines, making small differences easier to spot. Thanks @MichaelChirico for the report, @ben-schwen for assistance, and @lucaslarson25, @tjdavis51, @D3VTHSTVR, and @car723 for the fix.
 
+9. Grouping operations on empty (0-row, 0-column) data.tables work as intended, [#7749](https://github.com/Rdatatable/data.table/issues/7749). Thanks @rickhelmus for the report and @MichaelChirico for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

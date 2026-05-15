@@ -190,7 +190,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // We just want to set anyNA for later. We do it only once for the whole operation
   // because it is a rare edge case for it to be true. See #4892.
   bool anyNA=false, orderedSubset=false;
-  check_idx(order, length(VECTOR_ELT(dt, 0)), &anyNA, &orderedSubset);
+  check_idx(order, length(dt) ? length(VECTOR_ELT(dt, 0)) : 0, &anyNA, &orderedSubset);
   for(int i=0; i<ngrp; ++i) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
     if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;

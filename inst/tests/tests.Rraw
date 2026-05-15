@@ -21613,3 +21613,9 @@ test(2371.1, test(0, {warning("a"); 2L}, 2L, warning=c("a", "b")), FALSE,
              output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
 test(2372.2, test(0, {warning("a"); warning("b"); 2L}, 2L, warning="a"), FALSE,
              output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
+
+# group-by on empty table works
+empty_dt = data.table()
+test(2373.1, empty_dt[, 1, by = numeric()], data.table(numeric=numeric(), V1=numeric()))
+test(2373.2, empty_dt[, 1L, by = numeric()], data.table(numeric=numeric(), V1=integer()))
+test(2373.3, empty_dt[, .(x=1), by = .(b=numeric())], data.table(b=numeric(), x=numeric()))
