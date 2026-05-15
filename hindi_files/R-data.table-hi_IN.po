@@ -690,19 +690,17 @@ msgstr "lapply अनुकूलन ने j को '%s' से '%s' में 
 
 #: data.table.R:1786
 msgid "lapply optimization is on, j unchanged as '%s'"
-msgstr ""
-"lapply अनुकूलन चालू है, j '%s' के रूप में अपरिवर्तित है।"
+msgstr "lapply अनुकूलन चालू है, j '%s' के रूप में अपरिवर्तित है"
 
 #: data.table.R:1795 data.table.R:1819
 msgid "GForce optimized j to '%s' (see ?GForce)"
-msgstr ""
-"GForce ने j को '%s' में अनुकूलित किया (देखें ?GForce)।"
+msgstr "GForce ने j को '%s' में अनुकूलित किया (देखें ?GForce)"
 
 #: data.table.R:1820
 msgid ""
 "GForce is on, but not activated for this query; left j unchanged (see ?GForce)"
 msgstr ""
-"GForce चालू है, लेकिन इस क्वेरी के लिए सक्रिय नहीं है; j को अपरिवर्तित छोड़ दिया गया (देखें ?GForce)।"
+"GForce चालू है, लेकिन इस क्वेरी के लिए सक्रिय नहीं है; j को अपरिवर्तित छोड़ दिया गया (देखें ?GForce)"
 
 #: data.table.R:1839
 msgid ""
@@ -716,8 +714,7 @@ msgstr ""
 
 #: data.table.R:1843
 msgid "Old mean optimization changed j from '%s' to '%s'"
-msgstr ""
-"पुराने mean अनुकूलन ने j को '%s' से '%s' में बदल दिया।"
+msgstr "पुराने mean अनुकूलन ने j को '%s' से '%s' में बदल दिया"
 
 #: data.table.R:1845
 msgid "Old mean optimization is on, left j unchanged."
