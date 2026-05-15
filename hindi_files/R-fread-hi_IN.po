@@ -120,7 +120,7 @@ msgid ""
 "as opposed to dropping every column."
 msgstr ""
 "colClasses=\"NULL\" (उद्धृत) को colClasses=NULL (डिफ़ॉल्ट) के रूप में लिया जाता है,"
-" हर कॉलम को हटाने के विपरीत"
+" हर कॉलम को हटाने के विपरीत।"
 
 #: fread.R:148
 #, c-format
@@ -149,7 +149,7 @@ msgid ""
 "strings=\"\" to turn any number of spaces in string columns into <NA>"
 msgstr ""
 "%s. लेकिन strip.white=FALSE है। strip.white=TRUE (डिफ़ॉल्ट (default)) का उपयोग na.strings="" के साथ करें ताकि स्ट्रिंग (string) कॉलम (column) में"
-" किसी भी संख्या में स्पेस (space) को <NA> में परिवर्तित किया जा सके।"
+" किसी भी संख्या में स्पेस (space) को <NA> में परिवर्तित किया जा सके"
 
 #: fread.R:164
 msgid ""
