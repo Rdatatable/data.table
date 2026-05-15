@@ -678,18 +678,15 @@ msgstr "मूल क्रम में वापस आना ..."
 
 #: data.table.R:1561
 msgid "Finding groups using uniqlist on key ..."
-msgstr ""
-"key पर uniqlist का उपयोग करके समूहों की खोज करना ...।"
+msgstr "key पर uniqlist का उपयोग करके समूहों की खोज करना ..."
 
 #: data.table.R:1565
 msgid "Finding groups using uniqlist on index '%s' ..."
 msgstr "इंडेक्स (indices) '%s' पर uniqlist का उपयोग करके समूहों की खोज करना ..."
-"इंडेक्स (indices) '%s' पर uniqlist का उपयोग करके समूहों की खोज करना ...।"
 
 #: data.table.R:1784
 msgid "lapply optimization changed j from '%s' to '%s'"
-msgstr ""
-"lapply अनुकूलन ने j को '%s' से '%s' में बदल दिया।"
+msgstr "lapply अनुकूलन ने j को '%s' से '%s' में बदल दिया"
 
 #: data.table.R:1786
 msgid "lapply optimization is on, j unchanged as '%s'"
