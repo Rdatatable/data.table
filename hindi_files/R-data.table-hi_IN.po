@@ -685,7 +685,7 @@ msgstr ""
 
 #: data.table.R:1565
 msgid "Finding groups using uniqlist on index '%s' ..."
-msgstr ""
+msgstr "इंडेक्स (indices) '%s' पर uniqlist का उपयोग करके समूहों की खोज करना ..."
 "इंडेक्स (indices) '%s' पर uniqlist का उपयोग करके समूहों की खोज करना ...।"
 
 #: data.table.R:1784
