@@ -773,12 +773,11 @@ msgid ""
 "rownames is TRUE but key has multiple columns %s; taking first column x[,1] "
 "as rownames"
 msgstr ""
-"rownames TRUE है लेकिन key में कई कॉलम (column) %s हैं; पहले कॉलम (column) x[,1] को rownames के रूप में लिया जा रहा है।"
+"rownames TRUE है लेकिन key में कई कॉलम (column) %s हैं; पहले कॉलम (column) x[,1] को rownames के रूप में लिया जा रहा है"
 
 #: data.table.R:2100
 msgid "'%s' is not a column of x"
-msgstr ""
-"%s' x का एक कॉलम (column) नहीं है।"
+msgstr "%s' x का एक कॉलम (column) नहीं है"
 
 #: data.table.R:2106
 msgid ""
@@ -788,29 +787,25 @@ msgstr ""
 
 #: data.table.R:2111
 msgid "length(rownames.value)==%d but should be nrow(x)==%d"
-msgstr ""
-"length(rownames.value)==%d है लेकिन इसे nrow(x)==%d होना चाहिए।"
+msgstr "length(rownames.value)==%d है लेकिन इसे nrow(x)==%d होना चाहिए"
 
 #: data.table.R:2207
 msgid ""
 "When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
 msgstr ""
-"जब i DT[i]<-value सिंटैक्स (syntax) में एक मैट्रिक्स (matrix) होता है, तो j प्रदान करना तर्कसंगत नहीं है।"
+"जब i DT[i]<-value सिंटैक्स (syntax) में एक मैट्रिक्स (matrix) होता है, तो j प्रदान करना तर्कसंगत नहीं है"
 
 #: data.table.R:2217
 msgid "j must be an atomic vector, see ?is.atomic"
-msgstr ""
-"j एक एटॉमिक (atomic) वेक्टर (vector) होना चाहिए, देखें ?is.atomic।"
+msgstr "j एक एटॉमिक (atomic) वेक्टर (vector) होना चाहिए, देखें ?is.atomic"
 
 #: data.table.R:2218
 msgid "NA in j"
-msgstr ""
-"j में NA।"
+msgstr "j में NA"
 
 #: data.table.R:2224
 msgid "j must be vector of column name or positions"
-msgstr ""
-"j को कॉलम (column) नाम या पोजिशन का वेक्टर (vector) होना चाहिए।"
+msgstr "j को कॉलम (column) नाम या पोजिशन का वेक्टर (vector) होना चाहिए"
 
 #: data.table.R:2225
 msgid ""
@@ -832,38 +827,31 @@ msgstr ""
 
 #: data.table.R:2301
 msgid "attempting to assign invalid object to dimnames of a data.table"
-msgstr ""
-"data.table के dimnames को अमान्य ऑब्जेक्ट (object) असाइन (assign) करने का प्रयास।"
+msgstr "data.table के dimnames को अमान्य ऑब्जेक्ट (object) असाइन (assign) करने का प्रयास"
 
 #: data.table.R:2302
 msgid "data.tables do not have rownames"
-msgstr ""
-"data.tables में rownames नहीं होते।"
+msgstr "data.tables में rownames नहीं होते"
 
 #: data.table.R:2303 data.table.R:2672
 msgid "Can't assign %d names to a %d-column data.table"
-msgstr ""
-"%d नामों को %d-कॉलम (column) data.table में असाइन (assign) नहीं कर सकते।"
+msgstr "%d नामों को %d-कॉलम (column) data.table में असाइन (assign) नहीं कर सकते"
 
 #: data.table.R:2367
 msgid "'subset' must evaluate to logical"
-msgstr ""
-"'subset' को लॉजिकल (logical) के रूप में मूल्यांकित होना चाहिए।"
+msgstr "'subset' को लॉजिकल (logical) के रूप में मूल्यांकित होना चाहिए"
 
 #: data.table.R:2410
 msgid "Argument 'invert' must be logical TRUE/FALSE"
-msgstr ""
-"तर्क 'invert' को लॉजिकल (logical) TRUE/FALSE होना चाहिए।"
+msgstr "तर्क 'invert' को लॉजिकल (logical) TRUE/FALSE होना चाहिए"
 
 #: data.table.R:2451
 msgid "x argument must be a data.table"
-msgstr ""
-"x तर्क एक data.table होना चाहिए।"
+msgstr "x तर्क एक data.table होना चाहिए"
 
 #: data.table.R:2456
 msgid "group length is 0 but data nrow > 0"
-msgstr ""
-"समूह की लेंथ (length) 0 है लेकिन डेटा (data) nrow > 0।"
+msgstr "समूह की लेंथ (length) 0 है लेकिन डेटा (data) nrow > 0"
 
 #: data.table.R:2458
 msgid ""
