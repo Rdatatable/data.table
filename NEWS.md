@@ -50,6 +50,8 @@
 
 8. `test()` now reports multiple expected warnings more clearly when `warning=` has length greater than 1L, instead of printing a collapsed or repeated mismatch summary after messages like `Test 1 produced 1 warnings but expected 2`, [#7092](https://github.com/Rdatatable/data.table/issues/7092). Expected and observed warnings are now printed on separate aligned lines, making small differences easier to spot. Thanks @MichaelChirico for the report, @ben-schwen for assistance, and @lucaslarson25, @tjdavis51, @D3VTHSTVR, and @car723 for the fix.
 
+9. `between()` now supports `Date` and `IDate` bounds with default `NAbounds=TRUE`, avoiding errors like "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type" when date bounds contain `NA`, [#7281](https://github.com/Rdatatable/data.table/issues/7281). Thanks @grcatlin for the report and fix, and @aitap for assistance.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
