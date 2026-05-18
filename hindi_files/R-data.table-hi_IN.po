@@ -462,7 +462,6 @@ msgstr ".SDcols निम्नलिखित इंडेक्स (indices) �
 msgid ".SDcols is a logical vector of length %d but there are %d columns"
 msgstr ""
 ".SDcols की लेंथ (length) %d का एक लॉजिकल (logical) वेक्टर (vector) है, लेकिन कॉलम (column) की संख्या %d है।"
-है"
 
 #: data.table.R:1049
 msgid ".SDcols is numeric but has both +ve and -ve indices"
@@ -749,13 +748,11 @@ msgstr ""
 
 #: data.table.R:2011
 msgid "setkey() afterwards for keyby=.EACHI ..."
-msgstr ""
-"keyby=.EACHI के बाद setkey() ...।"
+msgstr "keyby=.EACHI के बाद setkey() ..."
 
 #: data.table.R:2077
 msgid "rownames and rownames.value cannot both be used at the same time"
-msgstr ""
-"rownames और rownames.value को एक ही समय में दोनों का उपयोग नहीं किया जा सकता।"
+msgstr "rownames और rownames.value को एक ही समय में दोनों का उपयोग नहीं किया जा सकता"
 
 #: data.table.R:2082
 msgid ""
@@ -769,7 +766,7 @@ msgstr ""
 msgid ""
 "length(rownames)==0 but should be a single column name or number, or NULL"
 msgstr ""
-"length(rownames)==0 है लेकिन इसे एकल कॉलम (column) नाम या संख्या, या NULL होना चाहिए।"
+"length(rownames)==0 है लेकिन इसे एकल कॉलम (column) नाम या संख्या, या NULL होना चाहिए"
 
 #: data.table.R:2090
 msgid ""
