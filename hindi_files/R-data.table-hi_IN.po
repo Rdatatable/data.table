@@ -858,51 +858,45 @@ msgid ""
 "passing 'f' argument together with 'by' is not allowed, use 'by' when split "
 "by column in data.table and 'f' when split by external factor"
 msgstr ""
-"'by' के साथ 'f' तर्क को पास करना अनुमति नहीं है, कॉलम (column) द्वारा विभाजन के लिए data.table में 'by' का उपयोग करें और बाहरी कारक द्वारा विभाजन के लिए 'f' का उपयोग करें।"
+"'by' के साथ 'f' तर्क को पास करना अनुमति नहीं है, कॉलम (column) द्वारा विभाजन के लिए data.table में 'by' का उपयोग करें और बाहरी कारक द्वारा विभाजन के लिए 'f' का उपयोग करें"
 
 #: data.table.R:2466
 msgid "Either 'by' or 'f' argument must be supplied"
-msgstr ""
-"या तो 'by' या 'f' तर्क प्रदान किया जाना चाहिए।"
+msgstr "या तो 'by' या 'f' तर्क प्रदान किया जाना चाहिए"
 
 #: data.table.R:2468
 msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
-msgstr ""
-"कॉलम (column) '.ll.tech.split' को split.data.table प्रोसेसिंग (process) के लिए आरक्षित किया गया है।"
+msgstr "कॉलम (column) '.ll.tech.split' को split.data.table प्रोसेसिंग (process) के लिए आरक्षित किया गया है"
 
 #: data.table.R:2469
 msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
-msgstr ""
-"कॉलम (column) '.nm.tech.split' को split.data.table प्रोसेसिंग (process) के लिए आरक्षित किया गया है।"
+msgstr "कॉलम (column) '.nm.tech.split' को split.data.table प्रोसेसिंग (process) के लिए आरक्षित किया गया है"
 
 #: data.table.R:2470
 msgid "Argument 'by' must refer to column names in x"
-msgstr ""
-"तर्क 'by' को x में कॉलम (column) नामों का संदर्भ देना चाहिए।"
+msgstr "तर्क 'by' को x में कॉलम (column) नामों का संदर्भ देना चाहिए"
 
 #: data.table.R:2471
 msgid ""
 "Argument 'by' must refer only to atomic-type columns, but the following "
 "columns are non-atomic: %s"
 msgstr ""
-"तर्क 'by' को केवल एटॉमिक (atomic)-प्रकार के कॉलम (column) का संदर्भ देना चाहिए, लेकिन निम्नलिखित कॉलम (column) गैर-एटॉमिक (atomic) हैं: %s।"
+"तर्क 'by' को केवल एटॉमिक (atomic)-प्रकार के कॉलम (column) का संदर्भ देना चाहिए, लेकिन निम्नलिखित कॉलम (column) गैर-एटॉमिक (atomic) हैं: %s"
 
 #: data.table.R:2518
 msgid "Processing split.data.table with: %s"
-msgstr ""
-"split.data.table को प्रोसेस (process) किया जा रहा है: %s।"
+msgstr "split.data.table को प्रोसेस (process) किया जा रहा है: %s"
 
 #: data.table.R:2603
 msgid ""
 "x is not a data.table|frame. Shallow copy is a copy of the vector of column "
 "pointers (only), so is only meaningful for data.table|frame"
 msgstr ""
-"x data.table|फ्रेम नहीं है। शैलो (shallow) कॉपी (copy) कॉलम (column) पॉइंटर्स (pointers) के वेक्टर (vector) की कॉपी (copy) (केवल) है, इसलिए यह केवल data.table|फ्रेम के लिए सार्थक है।"
+"x data.table|फ्रेम नहीं है। शैलो (shallow) कॉपी (copy) कॉलम (column) पॉइंटर्स (pointers) के वेक्टर (vector) की कॉपी (copy) (केवल) है, इसलिए यह केवल data.table|फ्रेम के लिए सार्थक है"
 
 #: data.table.R:2612
 msgid "setalloccol attempting to modify `*tmp*`"
-msgstr ""
-"setalloccol *tmp* को संशोधित करने का प्रयास कर रहा है।"
+msgstr "setalloccol *tmp* को संशोधित करने का प्रयास कर रहा है"
 
 #: data.table.R:2647
 msgid ""
@@ -914,58 +908,47 @@ msgstr ""
 
 #: data.table.R:2662
 msgid "x is not a data.table or data.frame"
-msgstr ""
-"x एक data.table या data.frame नहीं है।"
+msgstr "x एक data.table या data.frame नहीं है"
 
 #: data.table.R:2664
 msgid "x has %d columns but its names are length %d"
-msgstr ""
-"x में %d कॉलम (column) हैं लेकिन इसके नाम की लेंथ (length) %d है।"
+msgstr "x में %d कॉलम (column) हैं लेकिन इसके नाम की लेंथ (length) %d है"
 
 #: data.table.R:2671
 msgid "Passed a vector of type '%s'. Needs to be type 'character'."
-msgstr ""
-"प्रकार '%s' का वेक्टर (vector) पास किया गया। इसे प्रकार 'कैरेक्टर (character)' होना चाहिए।"
+msgstr "प्रकार '%s' का वेक्टर (vector) पास किया गया। इसे प्रकार 'कैरेक्टर (character)' होना चाहिए।"
 
 #: data.table.R:2684
 msgid "'new' is not a character vector or a function"
-msgstr ""
-"new' एक कैरेक्टर (character) वेक्टर (vector) या फ़ंक्शन (function) नहीं है।"
+msgstr "new' एक कैरेक्टर (character) वेक्टर (vector) या फ़ंक्शन (function) नहीं है"
 
 #: data.table.R:2686
 msgid "NA in 'new' at positions %s"
-msgstr ""
-"new' में %s पर NA।"
+msgstr "new' में %s पर NA"
 
 #: data.table.R:2687
 msgid "Some duplicates exist in 'old': %s"
-msgstr ""
-"old' में कुछ डुप्लिकेट (duplicate) मौजूद हैं: %s।"
+msgstr "'old' में कुछ डुप्लिकेट (duplicate) मौजूद हैं: %s"
 
 #: data.table.R:2964
 msgid "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
-msgstr ""
-"setDT' के तर्क 'x' को 'लिस्ट (list)', 'data.frame' या 'data.table' होना चाहिए।"
+msgstr "'setDT' के तर्क 'x' को 'लिस्ट (list)', 'data.frame' या 'data.table' होना चाहिए"
 
 #: data.table.R:2979
 msgid "Item '%s' not found in names of input list"
-msgstr ""
-"इनपुट (input) लिस्ट (list) के नामों में आइटम (item) '%s' नहीं मिला।"
+msgstr "इनपुट (input) लिस्ट (list) के नामों में आइटम (item) '%s' नहीं मिला"
 
 #: data.table.R:3004 data.table.R:3029
 msgid "'prefix' must be NULL or a character vector of length 1."
-msgstr ""
-"'prefix' NULL या लेंथ (length) 1 का कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+msgstr "'prefix' NULL या लेंथ (length) 1 का कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
 
 #: data.table.R:3007 data.table.R:3032
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
-msgstr ""
-"x एकल वेक्टर (vector) है, गैर-NULL 'cols' का कोई मतलब नहीं है।"
+msgstr "x एकल वेक्टर (vector) है, गैर-NULL 'cols' का कोई मतलब नहीं है।"
 
 #: data.table.R:3011 data.table.R:3036
 msgid "x is a list, 'cols' cannot be 0-length."
-msgstr ""
-"x एक लिस्ट (list) है, 'cols' की लेंथ (length) 0 नहीं हो सकती।"
+msgstr "x एक लिस्ट (list) है, 'cols' की लेंथ (length) 0 नहीं हो सकती।"
 
 #: data.table.R:3173
 msgid ""
@@ -973,7 +956,7 @@ msgid ""
 "use `=` instead: %s(col1=val1, col2=val2, ...)"
 msgstr ""
 "ऐसा प्रतीत होता है कि आपने तर्क %d में := को पुनः उपयोग किया है, एक फंक्शनल (function) कार्यभार कॉल (call) के रूप में -- "
-"इसके बजाय = का उपयोग करें: %s(col1=val1, col2=val2, ...)।"
+"इसके बजाय = का उपयोग करें: %s(col1=val1, col2=val2, ...)"
 
 #: data.table.R:3239
 msgid ""
@@ -992,18 +975,15 @@ msgstr ""
 
 #: data.table.R:3289
 msgid "Optimized subsetting with key %s"
-msgstr ""
-"key %s के साथ अनुकूलन सबसेटिंग (subsetting)।"
+msgstr "key %s के साथ अनुकूलन सबसेटिंग (subsetting)"
 
 #: data.table.R:3308 data.table.R:3320
 msgid "Optimized subsetting with index '%s'"
-msgstr ""
-"सूचकांक '%s' के साथ अनुकूलन सबसेटिंग (subsetting)।"
+msgstr "सूचकांक '%s' के साथ अनुकूलन सबसेटिंग (subsetting)"
 
 #: data.table.R:3315
 msgid "Creating new index '%s'"
-msgstr ""
-"नया सूचकांक '%s' बनाया जा रहा है।"
+msgstr "नया सूचकांक '%s' बनाया जा रहा है"
 
 #: data.table.R:3316
 msgid "Creating index %s done in ..."

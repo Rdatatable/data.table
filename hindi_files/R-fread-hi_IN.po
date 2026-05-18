@@ -194,7 +194,8 @@ msgstr ""
 #: fread.R:201
 msgid ""
 "Processed %d lines of YAML metadata with the following top-level fields: %s"
-msgstr "निम्नलिखित उच्च-स्तरीय फ़ील्ड (field) के साथ YAML मेटाडेटा (metadata) की %d पंक्तियां प्रोसेस की गईं: %s"
+msgstr ""
+"निम्नलिखित उच्च-स्तरीय फ़ील्ड (field) के साथ YAML मेटाडेटा (metadata) की %d पंक्तियां प्रोसेस की गईं: %s"
 
 #: fread.R:204
 msgid "User-supplied 'header' will override that found in metadata."
