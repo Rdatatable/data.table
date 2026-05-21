@@ -292,3 +292,21 @@ result <- merge(dt, other_dt, by = "x")
 ```{r, echo = FALSE, message = FALSE}
 data.table::setDTthreads(.old.th)
 ```
+
+## List columns with special class in litedown vignettes
+
+If you print a table with a list column that contain objects with a special class, then the class name is enclosed in angle brackets:
+
+```{r}
+data.table(list_col = list(structure(list(), class = "TaskRegr:mtcars")))
+```
+
+This happens with some packages like `mlr3` which use `data.table`.
+If a table like this is rendered by litedown, then `<TaskRegr:mtcars[0]>` is incorrectly converted to `<a href="TaskRegr:mtcars[0]">`, which can cause CRAN check issues (invalid link).
+To fix, [there are several options](https://github.com/yihui/litedown/issues/131):
+
+* Use `print=NA` chunk option, to render table as text rather than default html.
+* If you have `packageVersion("xfun") >= '0.57.9'`,
+  * Turn on html escaping for all tables via `options(xfun.md_table.escape = TRUE)`
+  * Use `print.args = list(data.table = list(escape = TRUE))` to turn on escaping for only `data.table`,
+  * Use `print.args = list(data.table = list(escape = "list_col"))` to turn on escaping for only column named `list_col`.
