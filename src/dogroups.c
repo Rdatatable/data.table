@@ -324,7 +324,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // e.g. in #91 `:=` did not issue recycling warning during grouping. Now it is error not warning.
         }
       }
-      int n = LENGTH(VECTOR_ELT(dt, 0));
+      int n = length(dt) ? LENGTH(VECTOR_ELT(dt, 0)) : 0;
       for (int j=0; j<length(lhs); ++j) {
         int colj = INTEGER(lhs)[j]-1;
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
