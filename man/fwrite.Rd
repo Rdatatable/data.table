@@ -16,8 +16,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
-  compress = c("auto", "none", "gzip"),
-  compressLevel = 6L,
+  compress = c("auto", "none", "gzip", "zstd"),
+  compressLevel = NULL,
   yaml = FALSE,
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
@@ -58,7 +58,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
-  \item{compressLevel}{Level of compression between 1 and 9, 6 by default. See \url{https://www.gnu.org/software/gzip/manual/html_node/Invoking-gzip.html} for details.}
+  \item{compressLevel}{Level of compression. For gzip, an integer between 0 and 9 (default 6). For zstd, an integer between 1 and 22 (default 3). When \code{NULL} (default), the format default is used. See \url{https://www.gnu.org/software/gzip/manual/html_node/Invoking-gzip.html} or \url{https://facebook.github.io/zstd/zstd_manual.html} for details.}
   \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}

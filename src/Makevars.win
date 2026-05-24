@@ -1,5 +1,13 @@
-PKG_CFLAGS = $(SHLIB_OPENMP_CFLAGS)
-PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) -lz
+ifeq "" "$(shell pkg-config --libs libzstd)"
+  ZSTD_CFLAGS = -DNOZSTD
+  ZSTD_LIBS =
+else
+  ZSTD_CFLAGS = $(shell pkg-config --cflags libzstd)
+  ZSTD_LIBS = $(shell pkg-config --libs libzstd)
+endif
+
+PKG_CFLAGS = $(SHLIB_OPENMP_CFLAGS) $(ZSTD_CFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) -lz $(ZSTD_LIBS)
 
 all: $(SHLIB)
 	mv $(SHLIB) data_table$(SHLIB_EXT)
