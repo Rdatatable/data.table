@@ -9443,7 +9443,7 @@ construct <- function(cols, vals, ops, x, y) {
   expr = lapply(seq_along(cols), function(i) {
     GT_or_LT = ops[i]==">" || ops[i]=="<"
     if (inherits(vals[[i]], "integer64")) {
-      if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+      if (is.na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na), as.name(cols[[i]])))
       else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
       # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
     } else {
@@ -21613,3 +21613,10 @@ test(2371.1, test(0, {warning("a"); 2L}, 2L, warning=c("a", "b")), FALSE,
              output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
 test(2372.2, test(0, {warning("a"); warning("b"); 2L}, 2L, warning="a"), FALSE,
              output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
+
+# group-by on empty table works
+empty_dt = data.table()
+test(2373.1, empty_dt[, 1, by = numeric()], data.table(numeric=numeric(), V1=numeric()))
+test(2373.2, empty_dt[, 1L, by = numeric()], data.table(numeric=numeric(), V1=integer()))
+test(2373.3, empty_dt[, .(x=1), by = .(b=numeric())], data.table(b=numeric(), x=numeric()))
+test(2373.4, data.table()[, x := 1, by=numeric()], data.table(x=numeric()))

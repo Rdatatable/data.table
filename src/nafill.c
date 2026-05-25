@@ -128,7 +128,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (verbose)
     tic = omp_get_wtime();
 
-  bool binplace = LOGICAL(inplace)[0];
+  bool copy = !LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
     error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
@@ -136,7 +136,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   SEXP x = R_NilValue;
   bool obj_scalar = isVectorAtomic(obj);
   if (obj_scalar) {
-    if (binplace)
+    if (!copy)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
     else if (!isReal(obj) && TYPEOF(obj) != INTSXP && !isLogical(obj) && !isString(obj))
       error(_("'x' argument (type %s) not supported."), type2char(TYPEOF(obj)));
@@ -181,7 +181,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
   SEXP ans = R_NilValue;
-  if (!binplace) {
+  if (copy) {
     ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
@@ -203,11 +203,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       }
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
-  } else if (any_char) {
-    error(_("In-place filling of character columns is not yet supported."));
   } else {
     for (R_len_t i=0; i<nx; i++) {
-      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .status=0, .message={"\0","\0","\0","\0"} });
+      SEXP xi = VECTOR_ELT(x, i);
+      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .char_v=isString(xi) ? xi : R_NilValue, .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
 
@@ -247,6 +246,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
   }
+  // need any_char guard to avoid parallelizing on character columns
   #pragma omp parallel for if (nx>1 && !any_char) num_threads(getDTthreads(nx, true))
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
@@ -266,7 +266,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  if (!binplace) {
+  if (copy) {
     for (R_len_t i=0; i<nx; i++) {
       SEXP xi = VECTOR_ELT(x, i);
       if (ANY_ATTRIB(xi)) {
@@ -298,9 +298,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
             __func__, nx, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
-  if (binplace) {
-    return obj;
-  } else {
+  if (copy) {
     return obj_scalar && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+  } else {
+    return obj;
   }
 }
