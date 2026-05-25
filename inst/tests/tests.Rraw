@@ -21677,3 +21677,20 @@ test(2374.08, key(DT[, .(a, a)]), NULL)
 test(2374.09, key(subset(DT, select=c(a, a))), NULL)
 DT = data.table(a=1:2, a.1=3:4, val=10:11)
 test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
+
+# issue 7718
+# print.data.table truncates long character columns based on width
+options(width=10, datatable.prettyprint.char=NULL)
+test(2374.1, capture.output(print(data.table(x="12345678901234567890"))), output="12345...")
+# list columns are truncated to fit console width
+options(width=15, datatable.prettyprint.char=NULL)
+test(2374.2, capture.output(print(data.table(L=list(1:20)))) , output="1,2,3,4,5,...")
+# long strings are truncated while short strings are preserved
+options(width=20, datatable.prettyprint.char=NULL)
+test(2374.3, capture.output(print(data.table(x=c("short", "abcdefghijklmnopqrstuvwxyz")))), output="abcdefghijklmno...")
+# large widths print full character values without truncation
+options(width=200, datatable.prettyprint.char=NULL)
+test(2374.4, capture.output(print(data.table(x="abcdefghijklmnopqrstuvwxyz"))), output="abcdefghijklmnopqrstuvwxyz")
+# mixed numeric and character columns preserve formatting while truncating long text
+options(width=20, datatable.prettyprint.char=NULL)
+test(2374.5, capture.output(print(data.table(id=1L, score=99.12345, txt="abcdefghijklmnopqrstuvwxyz"))), output="abcdefghijklmno...")
