@@ -52,6 +52,8 @@
 
 9. Grouping operations on empty (0-row, 0-column) data.tables work as intended, [#7749](https://github.com/Rdatatable/data.table/issues/7749). Thanks @rickhelmus for the report and @MichaelChirico for the fix.
 
+10. `print.data.table()` now correctly truncates long character columns and list-column summaries to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated as `getOption("width") - 5L`. Thanks @tdhock for the report and @venom1204 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
