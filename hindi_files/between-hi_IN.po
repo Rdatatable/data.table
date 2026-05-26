@@ -48,7 +48,7 @@ msgstr "x integer64 है लेकिन lower और/या upper नही�
 msgid ""
 "Item %d of lower (%<PRId64>) is greater than item %d of upper (%<PRId64>)"
 msgstr ""
-"lower (%<PRId64>) का आइटम (item) %d (%<PRId64>) upper (%<PRId64>) के आइटम (item) %d (%<PRId64>) से बड़ा है"
+"lower (%<PRId64>) का आइटम (item) %d (%<PRId64>) upper (%<PRId64>) के आइटम (item) %d (%<PRId64>) से बड़ा है।"
 
 #: between.c:118
 #, c-format
