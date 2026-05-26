@@ -255,7 +255,7 @@ msgid ""
 "RAM. %s.\n"
 msgstr ""
 "  फाइल (file) अचानक '%c' के साथ समाप्त होती है। अंतिम अंत गायब है। फाइल (file) को "
-"RAM में कॉपी (copy) किया जा रहा है। %s.\n"
+"RAM में कॉपी (copy) किया जा रहा है %s।\n"
 
 #: fread.c:1546 fread.c:1830
 #, c-format
@@ -323,8 +323,7 @@ msgstr "[06] सेपरेटर (separator), कोटिंग नियम,
 
 #: fread.c:1653
 msgid "  sep='\\n' passed in meaning read lines as single character column\n"
-msgstr ""
-"  sep='\\n' पास किया गया जिसका अर्थ है पंक्तियों को सिंगल (single) कैरेक्टर (character) कॉलम (column) के रूप में पढ़ना\n"
+msgstr "sep='\\n' पास किया गया जिसका अर्थ है पंक्तियों को सिंगल (single) कैरेक्टर (character) कॉलम (column) के रूप में पढ़ना\n"
 
 #: fread.c:1672
 msgid "  Detecting sep automatically ...\n"
@@ -464,8 +463,8 @@ msgid ""
 "  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
-"  सैंपल (sample) जंप (jump) %4$d की पंक्ति %3$d पर बहुत कम फ़ील्ड्स (fields) (%1$d/%2$d) वाली\n"
-"एक पंक्ति मिली। %5$s\n"
+"  सैंपल (sample) जंप (jump) %d की पंक्ति %d पर बहुत कम फ़ील्ड्स (fields) (%d/%d) वाली\n"
+"एक पंक्ति मिली। %s\n"
 
 #: fread.c:1942
 #, c-format
@@ -473,7 +472,7 @@ msgid ""
 "  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
-"  सैंपल (sample) जंप (jump) %4$d की पंक्ति %3$d पर बहुत अधिक फ़ील्ड्स (fields) (%1$d/%2$d) वाली\n"
+"  सैंपल (sample) जंप (jump) %d की पंक्ति %d पर बहुत अधिक फ़ील्ड्स (fields) (%d/%d) वाली\n"
 "एक पंक्ति मिली। %5$s\n"
 
 #: fread.c:1943
@@ -571,7 +570,8 @@ msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
 msgstr ""
-"  'हेडर (header)' को true निर्धारित किया गया है क्योंकि सभी कॉलम (column) स्ट्रिंग (string) प्रकार के हैं और इससे बेहतर अनुमान संभव नहीं है\n"
+"  'हेडर (header)' को true निर्धारित किया गया है क्योंकि सभी कॉलम (column) स्ट्रिंग (string) प्रकार के हैं और"
+इससे बेहतर अनुमान संभव नहीं है\n
 
 #: fread.c:2055
 msgid ""
@@ -608,7 +608,8 @@ msgstr ""
 #, c-format
 msgid ""
 "  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
-msgstr "  पंक्ति %d पर पहली डेटा (data) रो (row) से लेकर अंतिम रो (row) के अंत तक बाइट्स (bytes): %<PRIu64>\n"
+msgstr ""
+"पंक्ति %d पर पहली डेटा (data) रो (row) से लेकर अंतिम रो (row) के अंत तक बाइट्स (bytes): %<PRIu64>\n"
 
 #: fread.c:2095
 #, c-format

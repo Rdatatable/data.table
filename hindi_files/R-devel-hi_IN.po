@@ -12,7 +12,7 @@ msgstr ""
 
 #: devel.R:16
 msgid "There is no package %s in provided repository."
-msgstr "प्रदान किए गए रिपॉजिटरी (repository) में पैकेज (package) %s उपलब्ध नहीं है"
+msgstr "प्रदान किए गए रिपॉजिटरी (repository) में पैकेज (package) %s उपलब्ध नहीं है।"
 
 #: devel.R:30
 msgid ""

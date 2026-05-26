@@ -18,8 +18,7 @@ msgstr ""
 
 #: rowwiseDT.R:7
 msgid "Named arguments must be empty"
-msgstr "
-नामित तर्क (arguments) रिक्त होने चाहिए"
+msgstr "नामित तर्क (arguments) रिक्त होने चाहिए"
 
 #: rowwiseDT.R:9
 msgid "Header must be the first N arguments"

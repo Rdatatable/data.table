@@ -41,7 +41,7 @@ msgstr "समांतर प्रोसेसिंग (processing) में
 
 #: between.c:94
 msgid "x is integer64 but lower and/or upper are not."
-msgstr "x integer64 है लेकिन lower और/या upper नहीं हैं"
+msgstr "x integer64 है लेकिन lower और/या upper नहीं हैं।"
 
 #: between.c:101
 #, c-format
