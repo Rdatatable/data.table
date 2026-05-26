@@ -109,8 +109,6 @@ msgstr ""
 "'data' में रोज़(rows) को अद्वितीय रूप से पहचान नहीं सकते। ऐसे मामलों में, 'fun.aggregate' का उपयोग "
 "आउटपुट (output) data.table में प्रत्येक संयोजन के लिए सिंगल (single) प्रतिनिधि मान प्राप्त करने के लिए किया जाता है, "
 "उदाहरण के लिए summing या averaging (fun.aggregate=sum या fun.aggregate=mean, क्रमशः)। "
-“1 से बड़ी मानों के लिए परिणामी तालिका की जांच करें ताकि यह पता चल सके कि कौन से संयोजन अद्वितीय नहीं थे।”
-“अधिक जानकारी के लिए ?dcast.data.table देखें।"
 
 #: fcast.R:195
 msgid ""
@@ -118,6 +116,5 @@ msgid ""
 "(length=1), but they do not, so the result is undefined. Please fix by "
 "modifying your function so that a single value is always returned."
 msgstr ""
-“Aggregating फंक्शन्स (functions) को एक वेक्टर (vector) को इनपुट (input) के रूप में लेना चाहिए और सिंगल (single) मान"
 "(length=1) लौटाना चाहिए, लेकिन वे ऐसा नहीं करते हैं, इसलिए परिणाम अज्ञात है|”
 "कृपया अपने फ़ंक्शन (function) को संशोधित करें ताकि हमेशा सिंगल (single) मान लौटाया जा सके।"
