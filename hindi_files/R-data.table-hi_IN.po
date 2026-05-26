@@ -1020,8 +1020,7 @@ msgstr ""
 
 #: data.table.R:3425
 msgid "Invalid join operators %s. Only allowed operators are %s."
-msgstr ""
-"अमान्य जॉइन (join) ऑपरेटर (operator) %s। केवल अनुमत ऑपरेटर (operator) हैं %s।"
+msgstr "अमान्य जॉइन (join) ऑपरेटर (operator) %s। केवल अनुमत ऑपरेटर (operator) हैं %s।"
 
 #: data.table.R:719
 msgid "column not removed because not found: %s"
