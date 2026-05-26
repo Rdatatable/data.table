@@ -841,9 +841,10 @@ replace_dot_alias = function(e) {
 
     if (is.data.frame(i)) {
       if (missing(on)) {
-        if (!haskey(x)) {
-          stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
-        }
+        if (haskey(x)) check_duplicate_key(x)
+        else stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+
+        if (haskey(i)) check_duplicate_key(i)
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
         naturaljoin = TRUE
       }
@@ -2946,6 +2947,15 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))
+  if (haskey(x)) {
+    check_duplicate_key(x)
+    k = key(x)
+    if (length(w)) k[m[w]] = new[w]
+    newnames = names(x)
+    newnames[i] = new
+    duplicate_key = unique(c(k[duplicated(k)], k[k %chin% duplicated_values(newnames)]))
+    if (length(duplicate_key)) stopf("The new names would result in duplicated key columns: %s", brackify(duplicate_key))
+  }
   if (length(w))
     .Call(Csetcharvec, attr(x, "sorted", exact=TRUE), m[w], new[w])
 
