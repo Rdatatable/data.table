@@ -113,7 +113,7 @@ msgstr ""
 
 #: setkey.R:206
 msgid "Internal code should not be being called on type double"
-msgstr "आंतरिक कोड (code) को प्रकार डबल (double) पर नहीं चलाना चाहिए।"
+msgstr "आंतरिक कोड (code) को प्रकार डबल (double) पर नहीं चलाना चाहिए"
 
 #: setkey.R:214
 msgid ""
