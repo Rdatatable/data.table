@@ -15,34 +15,42 @@ as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
 }
 
 as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
+  nm = names(x)  # Capture names
   if (origin=="1970-01-01") {
-    # standard epoch
     x = as.integer(x)
     class(x) = c("IDate", "Date")
     # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
     # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
+    if (!is.null(nm)) setattr(x, "names", nm)  # Restore names
     x
   } else {
     # only call expensive as.IDate.character if we have to
-    as.IDate(origin, ...) + as.integer(x)
+    ans = as.IDate(origin, ...) + as.integer(x)
+    if (!is.null(nm)) setattr(ans, "names", nm)  # Restore names
+    ans
   }
 }
 
 as.IDate.Date = function(x, ...) {
+  nm = names(x)  # Capture names
   x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
   class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
+  if (!is.null(nm)) setattr(x, "names", nm)  # Restore names
   x                                 # always return a new object
 }
 
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
-  if (is_utc(tz))
-    (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
-  else
+  if (is_utc(tz)) {
+    ans = as.integer(as.numeric(x) %/% 86400L)
+    setattr(ans, "class", c("IDate", "Date"))
+    setattr(ans, "names", names(x))  # Restore names
+    ans
+  } else {
     as.IDate(as.Date(x, tz =  tz %||% '', ...))
+  }
 }
-
 as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
@@ -155,8 +163,11 @@ as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
+  nm = names(x)
   secs = clip_msec(x, ms) %% 86400L # the %% here ensures a local copy is obtained; the truncate as.integer() may not copy
-  (setattr(secs, "class", "ITime"))
+  setattr(secs, "class", "ITime")
+  if (!is.null(nm)) setattr(secs, "names", nm)
+  secs
 }
 
 as.ITime.character = function(x, format, ...) {
