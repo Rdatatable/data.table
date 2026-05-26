@@ -201,7 +201,7 @@ has_format_method = function(x) {
 format_col.default = function(x, ...) {
   if (!is.null(dim(x))) return("<multi-column>")
   if (is.list(x)) x = vapply_1c(x, format_list_item, ...)
-  format(char.trunc(x), ...)
+  format(char.trunc(x), ...) # relevant to #37
 }
 
 # #2842 -- different columns can have different tzone, so force usage in output
@@ -247,11 +247,14 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   if (is.null(trunc.char)) trunc.char = getOption("width") - 5L
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
-  nchar_width = nchar(x, 'width', allowNA=TRUE) # Check whether string is full-width or half-width, #5096
+  nchar_width = nchar(x, 'width', allowNA=TRUE)
   nchar_chars = nchar(x, 'char', allowNA=TRUE)
-  is_full_width = nchar_width > nchar_chars
-  idx = !is.na(x) & !is.na(nchar_width) & pmin(nchar_width, nchar_chars) > trunc.char
-  x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
+  idx = which(!is.na(x) & pmin(nchar_width, nchar_chars, na.rm = TRUE) > trunc.char)
+  if (length(idx)) {
+    is_full_width = nchar_width[idx] > nchar_chars[idx]
+    width_mult = fifelse(is_full_width, 2L, 1L, na = 1L)
+    x[idx] = paste0(strtrim(x[idx], trunc.char * width_mult), "...")
+  }
   x
 }
 
