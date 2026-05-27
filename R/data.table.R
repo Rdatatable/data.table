@@ -2189,8 +2189,8 @@ replace_dot_alias = function(e) {
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
-    if (!any(names(ans)[seq_along(grpcols)] %chin% duplicated_values(names(ans))))
-      setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
+    grpnames = names(ans)[seq_along(grpcols)]
+    if (!any(grpnames %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", grpnames)
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
