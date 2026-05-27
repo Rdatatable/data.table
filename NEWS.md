@@ -54,6 +54,8 @@
 
 10. `print.data.table()` now correctly truncates long character columns and list-column summaries to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated as `getOption("width") - 5L`. Thanks @tdhock for the report and @venom1204 for the fix.
 
+10. `setkey()`, `setindex()`, `CJ()`, and `setnames()` now prevent creating ambiguous keys from duplicated column names, and keyed joins now error on existing duplicated key columns rather than silently giving incorrect results, [#4888](https://github.com/Rdatatable/data.table/issues/4888) and [#4891](https://github.com/Rdatatable/data.table/issues/4891). Thanks @magerton and @MichaelChirico for the reports, and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
