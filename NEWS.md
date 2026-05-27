@@ -52,6 +52,8 @@
 
 9. Grouping operations on empty (0-row, 0-column) data.tables work as intended, [#7749](https://github.com/Rdatatable/data.table/issues/7749). Thanks @rickhelmus for the report and @MichaelChirico for the fix.
 
+10. `setkey()`, `setindex()`, `CJ()`, and `setnames()` now prevent creating ambiguous keys from duplicated column names, and keyed joins now error on existing duplicated key columns rather than silently giving incorrect results, [#4888](https://github.com/Rdatatable/data.table/issues/4888) and [#4891](https://github.com/Rdatatable/data.table/issues/4891). Thanks @magerton and @MichaelChirico for the reports, and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
