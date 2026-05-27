@@ -12365,9 +12365,9 @@ children = data.table(parent=c("Sarah", "Max", "Max"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
 joined = merge(parents, children, by.x="name", by.y="parent")
 test(1880.1, length(names(joined)), length(unique(names(joined))))
-test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
+test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""), sort=FALSE)), 3L,
              warning = "column names.*are duplicated in the result")
-joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE))
+joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE, sort=FALSE))
 test(1880.3, anyDuplicated(names(joined)) > 0L, TRUE)
 
 # out-of-sample quote rule bump, #2265
@@ -12385,7 +12385,7 @@ unlink(f)
 test(1882.1, .Machine$integer.max, 2147483647L)  # same on all platforms and very unlikely to change in R (which is good)
 test(1882.2, ceiling(.Machine$integer.max^(1/3)), 1291)
 v = seq_len(1291L)
-test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
+test(1882.3, CJ(v, v, v, sorted=FALSE), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
 
 # no re-read for particular file, #2509
 if (test_R.utils) test(1883, fread(testDir("SA2-by-DJZ.csv.gz"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
@@ -13600,7 +13600,7 @@ test(1967.26, foverlaps(x, y, by.x = c('start', 'END')),
      error = "Elements listed in 'by.x' must be valid names")
 test(1967.27, foverlaps(x, y, by.x = c('start', 'start')),
      error = 'Duplicate columns are not allowed')
-setkey(y, start, start)
+setattr(y, 'sorted', c('start', 'start'))
 test(1967.28, foverlaps(x, y, by.y = c('start', 'start')),
      error = 'Duplicate columns are not allowed')
 setkey(y, start, end)
@@ -13694,7 +13694,7 @@ test(1967.69,optimize=0L, x[order(a), .N, verbose = TRUE], output='[1] 5', notOu
 # test 1967.69 subsumes 1967.69 and 1967.70
 test(1967.71,optimize=1L, x[order(a), .N, verbose = TRUE], 5L,
      output = "forder.c received 5 rows and 1 column")
-setkey(x)
+setattr(x, 'sorted', c('a', 'a'))
 test(1967.72,optimize=1L, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
 
@@ -16101,10 +16101,10 @@ g = function(x) { if (x==1L) factor(c("a","b")) else factor(c("a","b","c")) }
 test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a","b","a","b","c"))))
 # original test verbatim from the same issue #2199
 set.seed(2)
-ids   = sample(letters, 10)   # reduced from 20 to 10
-dates = 1:10                  #   and 40 to 10 to save ram, #5517
-dt = data.table(CJ(dates, ids, ids))
-setnames(dt, c("date", "id1", "id2"))
+id1  = sample(letters, 10)   # reduced from 20 to 10
+id2  = id1
+date = 1:10                  #   and 40 to 10 to save ram, #5517
+dt = setkey(data.table(CJ(date, id1, id2)), NULL)
 dt[, value := rnorm(length(date))]
 dt = dt[!(date == 1 & (id1 == "a" | id2 == "a"))]
 dt = dt[!(date == 4 & (id1 == "e" | id2 == "e"))]
