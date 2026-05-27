@@ -16101,10 +16101,11 @@ g = function(x) { if (x==1L) factor(c("a","b")) else factor(c("a","b","c")) }
 test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a","b","a","b","c"))))
 # original test verbatim from the same issue #2199
 set.seed(2)
-id1  = sample(letters, 10)   # reduced from 20 to 10
-id2  = id1
-date = 1:10                  #   and 40 to 10 to save ram, #5517
-dt = setkey(data.table(CJ(date, id1, id2)), NULL)
+ids   = sample(letters, 10)   # reduced from 20 to 10
+dates = 1:10                  #   and 40 to 10 to save ram, #5517
+dt = data.table(CJ(dates, ids, ids, sorted=FALSE))
+setnames(dt, c("date", "id1", "id2"))
+setorder(dt, date, id1, id2)
 dt[, value := rnorm(length(date))]
 dt = dt[!(date == 1 & (id1 == "a" | id2 == "a"))]
 dt = dt[!(date == 4 & (id1 == "e" | id2 == "e"))]
