@@ -1872,10 +1872,10 @@ replace_dot_alias = function(e) {
       }
       shared_keys = get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
       if (is.null(irows) && !is.null(shared_keys)) {
-        setattr(jval, 'sorted', shared_keys)
+        if (!any(shared_keys %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', shared_keys)
         # potentially inefficient backup -- check if jval is sorted by key(x)
       } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
-        setattr(jval, 'sorted', key(x))
+        if (!any(key(x) %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', key(x))
       }
       if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
     }
@@ -2189,7 +2189,8 @@ replace_dot_alias = function(e) {
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
-    setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
+    if (!any(names(ans)[seq_along(grpcols)] %chin% duplicated_values(names(ans))))
+      setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
@@ -2611,6 +2612,7 @@ subset.data.table = function(x, subset, select, ...)
   } else {
     setkey(ans,NULL)
   }
+  if (haskey(ans) && any(key(ans) %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", NULL)
   ans
 }
 
