@@ -7266,7 +7266,7 @@ test(1514.9, fitsInInt64(9L), FALSE)
 # #1091
 options(datatable.prettyprint.char = 5L)
 DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
-test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
+test(1515.1, grep("abcde\u2026", capture.output(print(DT))), 2L)
 options(datatable.prettyprint.char = NULL)
 
 # test 1516: chain setnames() - used while mapping source to target columns
@@ -18147,7 +18147,7 @@ ja_ko = "\u3053"
 ja_n = "\u3093"
 nc = c(accented_a, ja_ichi, ja_ni, ja_ko, ja_n)
 if (utf8_check(nc)) {
-  dots = "..."
+  dots = "\u2026"
   clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
   # Tests for combining character latin a and acute accent, single row
   DT = data.table(strrep(accented_a, 4L))
@@ -18173,8 +18173,8 @@ if (utf8_check(nc)) {
   DT = data.table(paste0(ja_ichi), strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa")
   test(2253.13, options=list(datatable.prettyprint.char = 4L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
   test(2253.14, options=list(datatable.prettyprint.char = 3L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
-  test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa..."))
-  test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a..."))
+  test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa\u2026"))
+  test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a\u2026"))
   # Tests for multiple columns, multiple rows
   DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
   test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
