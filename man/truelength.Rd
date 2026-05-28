@@ -39,11 +39,8 @@ setallocrow(DT, n = -1L)
 
     Please note: over-allocation of the column pointer vector is not for efficiency \emph{per se}; it is so that \code{:=} can add columns by reference without a shallow copy.
 
-    \code{setallocrow} is a utility function that prepares columns for fast row operations (delete or insert) by reference and manages row capacity. (Note that 'insert' by reference is not yet implemented)
-    Before deleting or inserting rows by reference, columns must be resizable.
-    \code{setallocrow} ensures all columns are in the appropriate state by converting ALTREP columns to materialized form and reallocating
-    columns to have the target capacity. When \code{n >= 0}, columns are allocated to hold exactly \code{n} rows in total, providing capacity for future row additions up to that count.
-    When \code{n == -1} (default), columns are shrunk to exact size to free unused memory. This operation modifies \code{DT} by reference.
+    \code{setallocrow} prepares columns for fast row operations (delete or insert) by reference. (Note that 'insert' by reference is not yet implemented.)
+    Before such operations, columns must be resizable: ALTREP columns are materialized and all columns are made resizable (this might trigger reallocation).
 }
 \value{
     \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is just the list vector of column
@@ -54,7 +51,7 @@ setallocrow(DT, n = -1L)
     \code{setalloccol} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop.
     It also returns the new \code{DT}, for convenience in compound queries.
 
-    \code{setallocrow} modifies \code{DT} by reference to ensure all columns are resizable.
+    \code{setallocrow} modifies \code{DT} by reference to ensure all columns are resizable. Note that unlike typical by-reference operations, the underlying memory of each column vector is likely to be reallocated and relocated, if necessary. This means the memory addresses of the column vectors themselves may change, even though the \code{data.table} object \code{DT} is modified in place.
 }
 \seealso{ \code{\link{copy}} }
 \examples{
