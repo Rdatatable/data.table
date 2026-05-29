@@ -841,9 +841,10 @@ replace_dot_alias = function(e) {
 
     if (is.data.frame(i)) {
       if (missing(on)) {
-        if (!haskey(x)) {
-          stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
-        }
+        if (haskey(x)) check_duplicate_key(x)
+        else stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+
+        if (haskey(i)) check_duplicate_key(i)
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
         naturaljoin = TRUE
       }
@@ -1871,10 +1872,10 @@ replace_dot_alias = function(e) {
       }
       shared_keys = get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
       if (is.null(irows) && !is.null(shared_keys)) {
-        setattr(jval, 'sorted', shared_keys)
+        if (!any(shared_keys %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', shared_keys)
         # potentially inefficient backup -- check if jval is sorted by key(x)
       } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
-        setattr(jval, 'sorted', key(x))
+        if (!any(key(x) %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', key(x))
       }
       if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
     }
@@ -2188,7 +2189,8 @@ replace_dot_alias = function(e) {
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
-    setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
+    grpnames = names(ans)[seq_along(grpcols)]
+    if (!any(grpnames %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", grpnames)
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
@@ -2610,6 +2612,7 @@ subset.data.table = function(x, subset, select, ...)
   } else {
     setkey(ans,NULL)
   }
+  if (haskey(ans) && any(key(ans) %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", NULL)
   ans
 }
 
@@ -2850,6 +2853,10 @@ setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbos
   ans
 }
 
+setallocrow = function(DT, n=-1L) {
+  invisible(.Call(Callocrowwrapper, DT, as.integer(n)))
+}
+
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
   .Call(Cselfrefokwrapper,DT,verbose)
 }
@@ -2946,6 +2953,15 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))
+  if (haskey(x)) {
+    check_duplicate_key(x)
+    k = key(x)
+    if (length(w)) k[m[w]] = new[w]
+    newnames = names(x)
+    newnames[i] = new
+    duplicate_key = unique(c(k[duplicated(k)], k[k %chin% duplicated_values(newnames)]))
+    if (length(duplicate_key)) stopf("The new names would result in duplicated key columns: %s", brackify(duplicate_key))
+  }
   if (length(w))
     .Call(Csetcharvec, attr(x, "sorted", exact=TRUE), m[w], new[w])
 

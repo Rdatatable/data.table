@@ -35,6 +35,17 @@ check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
         table_name, brackify(duplicate_names), domain=NA)
 }
 
+check_duplicate_key = function(x) {
+  k = key(x)
+  duplicate_key = unique(c(k[duplicated(k)], k[k %chin% duplicated_values(names(x))]))
+  if (length(duplicate_key))
+    stopf(ngettext(length(duplicate_key),
+                   "%s has duplicated key column %s. Please remove or rename the duplicate and try again.",
+                   "%s has duplicated key columns %s. Please remove or rename the duplicates and try again."),
+          deparse(substitute(x)), brackify(duplicate_key), domain=NA)
+  invisible()
+}
+
 duplicated_values = function(x) {
   # fast anyDuplicated for the typical/non-error case; second duplicated() pass for (usually) error case
   if (!anyDuplicated(x)) return(vector(typeof(x)))
