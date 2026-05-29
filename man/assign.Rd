@@ -40,8 +40,8 @@ set(x, i = NULL, j, value)
 \item{i}{ Optional. Indicates the rows on which the values must be updated. If not \code{NULL}, implies \emph{all rows}. Missing or zero values are ignored. The \code{:=} form is more powerful as it allows adding/updating columns by reference based on \emph{subsets} and \code{joins}. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
-\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
-\item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
+\item{j}{ Column name(s) (character) or number(s) (integer). For \code{set}, these specify the columns of \code{x} to be updated. }
+\item{value}{ A list or vector of replacement values to be assigned by reference to \code{x[i, j]}. For \code{set}, if multiple columns are specified in \code{j}, \code{value} should be a list. }
 }
 \details{
 \code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Please read \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and follow with examples. Some typical usages are:
