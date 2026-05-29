@@ -18182,15 +18182,15 @@ if (utf8_check(nc)) {
     paste0(strrep(ja_ko, 2L), "   ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
     paste(strrep(ja_ko, 3L), strrep(ja_n, 4L), strrep(accented_a, 3L))))
   test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-    c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
-    paste0(strrep(ja_ko, 2L), "    ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
+    c(paste0(ja_ko, "    ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
+    paste0(strrep(ja_ko, 2L), "  ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
     paste(strrep(ja_ko, 3L), paste0(strrep(ja_n, 3L), dots), strrep(accented_a, 3L))))
   test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
     c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
   # test for data.table with NA, #6441
-  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
+  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1:   a\u2026\n2: <NA>")
 } else {
   cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 }})
