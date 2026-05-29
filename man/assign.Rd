@@ -54,6 +54,7 @@ set(x, i = NULL, j, value)
     DT[i, colvector := val, with = FALSE]         # OLD syntax. The contents of "colvector" in calling scope determine the column(s).
     DT[i, (colvector) := val]                     # same (NOW PREFERRED) shorthand syntax. The parens are enough to stop the LHS being a symbol; same as c(colvector).
     DT[i, colC := mean(colB), by = colA]          # update (or add) column called "colC" by reference by group. A major feature of `:=`.
+    DT[, x := if (.N > 2) sum(v) else integer(0), by = g]          # zero-length RHS is treated as a no-op for groups with <= 2 rows
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
     DT[, let(new1 = sum(colB), new2 = sum(colC))] # New alias for functional form.
 }
