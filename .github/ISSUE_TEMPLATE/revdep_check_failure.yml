@@ -19,7 +19,7 @@ body:
     validations:
       required: true
 
-  - type: markdown
+  - type: input
     id: check-output
     attributes:
       label: Failing check output
@@ -28,7 +28,6 @@ body:
         The output can be found in the
         [Monsoon results](https://rcdata.nau.edu/genomic-ml/data.table-revdeps/analyze/)
         or from a local revdep check.
-      render: text
     validations:
       required: true
 
