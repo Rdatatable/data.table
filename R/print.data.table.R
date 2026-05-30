@@ -252,8 +252,8 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_width = nchar(x, 'width') # Check whether string is full-width or half-width, #5096
   nchar_chars = nchar(x, 'char')
   is_full_width = nchar_width > nchar_chars
-  idx = !is.na(x) & pmin(nchar_width, nchar_chars) > trunc.char 
-  dots = if (l10n_info()$'UTF-8') "\u2026" else "..." 
+  idx = !is.na(x) & pmin(nchar_width, nchar_chars) > trunc.char
+  dots = if (l10n_info()$'UTF-8') "\u2026" else "..."
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), dots)
   x
 }
