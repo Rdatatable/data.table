@@ -43,7 +43,7 @@ body:
     validations:
       required: true
 
-  - type: markdown
+  - type: input
     id: additional-context
     attributes:
       label: Additional context
