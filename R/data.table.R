@@ -2893,6 +2893,29 @@ setattr = function(x,name,value) {
   invisible(x)
 }
 
+process_name_policy = function(names_vec) {
+  policy = getOption("datatable.unique.names", "off")
+  if (policy == "off") return(names_vec)
+
+  allowed = c("warn", "error", "rename")
+  if (!policy %in% allowed) {
+    warningf("Invalid value for 'datatable.unique.names': [%s]. Falling back to 'off'. Allowed values are: 'off', 'warn', 'error', 'rename'.", as.character(policy))
+    return(names_vec)
+  }
+
+  if (anyDuplicated(names_vec)) {
+    dups = unique(names_vec[duplicated(names_vec)])
+    msg = paste0("Duplicate column names created: ", brackify(dups), ". This may cause ambiguity.")
+    
+    switch(policy,
+      warn = warningf("%s", msg),
+      error = stopf("%s", msg),
+      rename = return(make.unique(names_vec))
+    )
+  }
+  names_vec
+}
+
 setnames = function(x,old,new,skip_absent=FALSE) {
   # Sets by reference, maintains truelength, no copy of table at all.
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
