@@ -19,7 +19,7 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: check-output
     attributes:
       label: Failing check output
@@ -43,7 +43,7 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: additional-context
     attributes:
       label: Additional context
