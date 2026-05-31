@@ -47,8 +47,8 @@ check_duplicate_key = function(x) {
 }
 
 process_name_policy = function(names_vec) {
-  policy = getOption("datatable.unique.names")
-  if (is.null(policy) || policy == "off") return(names_vec)
+  policy = getOption("datatable.unique.names", "off")
+  if (policy == "off") return(names_vec)
 
   allowed = c("warn", "error", "rename")
   if (!policy %in% allowed) {
@@ -58,12 +58,11 @@ process_name_policy = function(names_vec) {
 
   if (anyDuplicated(names_vec)) {
     dups = unique(names_vec[duplicated(names_vec)])
-    # Use paste0 to avoid sprintf issues with column names containing '%'
     msg = paste0("Duplicate column names created: ", brackify(dups), ". This may cause ambiguity.")
 
     switch(policy,
-      warn = warningf(msg),
-      error = stopf(msg),
+      warn = warningf("%s", msg),
+      error = stopf("%s", msg),
       rename = return(make.unique(names_vec))
     )
   }
