@@ -21650,3 +21650,4 @@ test(2375.3, setnames(copy(DT), "b", "a"), error = "Duplicate column names creat
 test(2375.4, names(setnames(copy(DT), "b", "a")), c("a", "a.1"), options = list(datatable.unique.names = "rename"))
 DT_pct = data.table("a%d"=1, b=2)
 test(2375.5, names(setnames(copy(DT_pct), "b", "a%d")), c("a%d", "a%d"), warning = "Duplicate column names created", options = list(datatable.unique.names = "warn"))
+test(2375.6, names(setnames(copy(DT), "b", "a")), c("a", "a"), warning = "Invalid value for 'datatable.unique.names'", options = list(datatable.unique.names = "wrong_choice"))
