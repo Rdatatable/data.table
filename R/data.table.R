@@ -2906,7 +2906,6 @@ process_name_policy = function(names_vec) {
   if (anyDuplicated(names_vec)) {
     dups = unique(names_vec[duplicated(names_vec)])
     msg = paste0("Duplicate column names created: ", brackify(dups), ". This may cause ambiguity.")
-    
     switch(policy,
       warn = warningf("%s", msg),
       error = stopf("%s", msg),
