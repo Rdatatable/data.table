@@ -25,6 +25,7 @@ body:
       label: Failing check output
       description: |
         Write markdown describing the relevant `R CMD check` output showing the failure.
+        Paste check output inside a fenced code block (triple backticks).
         The output can be found in the
         [Monsoon results](https://rcdata.nau.edu/genomic-ml/data.table-revdeps/analyze/)
         or from a local revdep check.
