@@ -234,8 +234,6 @@ head(flights)
 
 #### Note on zero-length RHS and `by`
 
-#### Note on zero-length RHS and `by`
-
 * If the `RHS` of a `:=` assignment evaluates to a zero-length vector, an error is normally raised. When `:=` is used with `by`, however, a zero-length result for a group is treated as a no-op for that group and no error is thrown. This allows grouped operations to continue even when some groups produce no result.
 
 #
