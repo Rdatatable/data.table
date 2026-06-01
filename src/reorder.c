@@ -66,7 +66,14 @@ SEXP reorder(SEXP x, SEXP order)
   void *TMP = R_alloc(nmid, maxSize);
 
   for (int i=0; i<ncol; ++i) {
-    const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
+    SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
+    // If this column is shared with another R object (e.g. a shallow-copied table),
+    // materialise a copy first so the in-place memcpy below only affects this
+    // data.table and not the original. Fixes #5230
+    if (isNewList(x) && MAYBE_SHARED(v)) {
+      v = copyAsPlain(v, -1);
+      SET_VECTOR_ELT(x, i, v);
+    }
     const size_t size = RTYPE_SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
 
     switch (size)
