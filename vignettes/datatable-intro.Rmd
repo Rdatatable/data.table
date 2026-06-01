@@ -99,8 +99,8 @@ You can also convert existing objects to a `data.table` using `setDT()` (for `da
 
     ```{r}
     old = options(datatable.prettyprint.char = 5L)
-    DT = data.table(x = 1:2, y = c("abcdefghij", "klmnopqrstuv"))
-    DT
+    DT2 = data.table(x = 1:2, y = c("abcdefghij", "klmnopqrstuv"))
+    DT2
     options(old)  # reset to default
     ```
 
