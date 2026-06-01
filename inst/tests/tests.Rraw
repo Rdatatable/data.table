@@ -14688,6 +14688,25 @@ test(2038.34, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between
 test(2038.35, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
 
+# `between` supports Date/IDate with missing bounds, #7281
+x = data.table(
+  Date       = as.Date("2020-01-01") + 0:5,
+  Active     = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE),
+  InRange    = c(TRUE, NA, FALSE, NA, TRUE, NA),
+  RangeBegin = as.Date("2020-01-01") + c(-1L, NA,  3L, NA,  3L, NA),
+  RangeEnd   = as.Date("2020-01-01") + c( 1L, NA,  4L, NA,  5L, NA)
+)
+test(2038.36, x[Active == TRUE & between(Date, RangeBegin, RangeEnd), Date], as.Date(c("2020-01-01", "2020-01-05")))
+# Date character bounds coercion
+test(2038.37, between(x$Date, "2020-01-02", "2020-01-04"), c(FALSE, TRUE, TRUE, TRUE, FALSE, FALSE))
+x[, c("Date", "RangeBegin", "RangeEnd") := lapply(.SD, as.IDate), .SDcols = c("Date", "RangeBegin", "RangeEnd")]
+test(2038.38, x[Active == TRUE & between(Date, RangeBegin, RangeEnd), Date], as.IDate(c("2020-01-01", "2020-01-05")))
+
+# errors name the bound that failed coercion
+x = as.Date("2020-01-01") + 0:4
+test(2038.39, between(x, "not-a-date", "2020-01-04"), error="Date while 'lower' was not, coercion to Date failed")
+test(2038.40, between(x, "2020-01-02", "not-a-date"), error="Date while 'upper' was not, coercion to Date failed")
+
 # between int64 support
 if (test_bit64) {
   as.i64 = bit64::as.integer64
