@@ -192,7 +192,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
   //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
-  const R_len_t tl = TRUELENGTH(dt);
+  const R_len_t tl = R_maxLength(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
