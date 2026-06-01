@@ -247,6 +247,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
   // need any_char guard to avoid parallelizing on character columns
+  (void)any_char; // used only by OpenMP-enabled builds; avoid -Wunused-but-set-variable otherwise
   #pragma omp parallel for if (nx>1 && !any_char) num_threads(getDTthreads(nx, true))
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {

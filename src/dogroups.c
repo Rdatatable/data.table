@@ -346,7 +346,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           target = VECTOR_ELT(dt, colj);
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(RHS, specials)) {  // see comments in anySpecialStatic()
-          RHS = PROTECT(copyAsPlain(RHS));
+          RHS = PROTECT(copyAsPlain(RHS, -1));
           copied = true;
         }
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
@@ -452,7 +452,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(source, specials)) {  // see comments in anySpecialStatic()
-          source = PROTECT(copyAsPlain(source));
+          source = PROTECT(copyAsPlain(source, -1));
           copied = true;
         }
         memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");

@@ -54,6 +54,8 @@
 
 10. `setkey()`, `setindex()`, `CJ()`, and `setnames()` now prevent creating ambiguous keys from duplicated column names, and keyed joins now error on existing duplicated key columns rather than silently giving incorrect results, [#4888](https://github.com/Rdatatable/data.table/issues/4888) and [#4891](https://github.com/Rdatatable/data.table/issues/4891). Thanks @magerton and @MichaelChirico for the reports, and @ben-schwen for the fix.
 
+11. `between()` now supports `Date` and `IDate` bounds with default `NAbounds=TRUE`, avoiding errors like "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type" when date bounds contain `NA`, [#7281](https://github.com/Rdatatable/data.table/issues/7281). Thanks @grcatlin for the report and fix, and @ben-schwen and @aitap for assistance.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
