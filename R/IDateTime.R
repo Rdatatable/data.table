@@ -124,9 +124,7 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
   if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
-    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
-    # i) ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
-    # ii) .Date was newly exposed in R some time after 3.4.4
+    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
   }
   ans = as.integer(unclass(e1) - unclass(e2))
   if (inherits(e2, "Date")) {
@@ -367,8 +365,30 @@ isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")
 year    = function(x) convertDate(as.IDate(x), "year")
-yearmon = function(x) convertDate(as.IDate(x), "yearmon")
-yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
+yearmon = function(x, format = c("numeric", "character")) {
+  format = match.arg(format)
+  x_as_idate = as.IDate(x)
+  ymon = convertDate(x_as_idate, "yearmon")
+  if (format == "numeric") return(ymon)
+  ans = rep(NA_character_, length(x_as_idate))
+  ok = !is.na(x_as_idate)
+  yr = floor(ymon[ok])
+  mon = round((ymon[ok] - yr) * 12) + 1L
+  ans[ok] = sprintf("%dM%02d", as.integer(yr), as.integer(mon))
+  ans
+}
+yearqtr = function(x, format = c("numeric", "character")) {
+  format = match.arg(format)
+  x_as_idate = as.IDate(x)
+  yqtr = convertDate(x_as_idate, "yearqtr")
+  if (format == "numeric") return(yqtr)
+  ans = rep(NA_character_, length(x_as_idate))
+  ok = !is.na(x_as_idate)
+  yr = floor(yqtr[ok])
+  qtr = round((yqtr[ok] - yr) * 4) + 1L
+  ans[ok] = sprintf("%dQ%d", as.integer(yr), as.integer(qtr))
+  ans
+}
 
 convertDate = function(x, type) {
   type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))

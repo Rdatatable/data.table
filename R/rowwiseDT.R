@@ -13,6 +13,14 @@ rowwiseDT = function(...) {
   nrows = length(body) %/% ncols
   if (length(body) != nrows * ncols)
     stopf("There are %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body))
+  is_problematic = vapply_1b(body, function(v) !(is.atomic(v) || is.null(v) || typeof(v) == "list"))
+  if (any(is_problematic)) {
+    idx = which(is_problematic)[1L]
+    col_idx = (idx - 1L) %% ncols + 1L
+    col_name = header[col_idx]
+    obj_type = class1(body[[idx]])
+    stopf("Column '%s' is type '%s'. Non-atomic, non-list objects must be wrapped in list(), e.g., list(f) instead of f", col_name, obj_type)
+  }
   # make all the non-scalar elements to a list
   needs_list = lengths(body) != 1L
   body[needs_list] = lapply(body[needs_list], list)

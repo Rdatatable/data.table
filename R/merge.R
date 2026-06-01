@@ -1,9 +1,9 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
-  if (!sort %in% c(TRUE, FALSE))
-    stopf("Argument 'sort' should be logical TRUE/FALSE")
-  if (!no.dups %in% c(TRUE, FALSE))
-    stopf("Argument 'no.dups' should be logical TRUE/FALSE")
+  if (!isTRUEorFALSE(sort))
+    stopf("'%s' must be TRUE or FALSE", "sort")
+  if (!isTRUEorFALSE(no.dups))
+    stopf("'%s' must be TRUE or FALSE", "no.dups")
   class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
@@ -122,21 +122,23 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
 }
 
 .maybe_warn_merge_dots <- function(...) {
-  # TODO(R >= 3.5.0): use ...length()
-  n_dots <- length(dots <- list(...))
+  n_dots <- ...length()
   if (!n_dots) return(invisible())
 
-  nm <- names(dots)
+  # TODO(R>=4.1.0): Use ...names()
+  nm <- names(list(...))
   if (is.null(nm)) {
     warningf(ngettext(n_dots, "merge.data.table() received %d unnamed argument in '...' which will be ignored.",
                               "merge.data.table() received %d unnamed arguments in '...' which will be ignored."),
-              n_dots)
+              n_dots,
+              domain=NA)
   } else {
     named_idx = nzchar(nm)
     if (all(named_idx)) {
       warningf(ngettext(n_dots, "merge.data.table() received %d unknown keyword argument which will be ignored: %s",
                                 "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
-                n_dots, brackify(nm))
+                n_dots, brackify(nm),
+               domain=NA)
     } else {
       n_named <- sum(named_idx)
       unnamed_clause <- sprintf(ngettext(n_dots - n_named, "%d unnamed argument in '...'", "%d unnamed arguments in '...'"), n_dots - n_named)

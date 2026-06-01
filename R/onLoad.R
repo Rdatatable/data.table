@@ -67,6 +67,12 @@
     setHook(packageEvent("knitr", "onLoad"), function(...) {
       registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
     })
+    if (isNamespaceLoaded("xfun")) {
+      registerS3method("record_print", "data.table", record_print.data.table, envir = asNamespace("xfun"))
+    }
+    setHook(packageEvent("xfun", "onLoad"), function(...) {
+      registerS3method("record_print", "data.table", record_print.data.table, envir = asNamespace("xfun"))
+    })
   }
 
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
@@ -92,7 +98,7 @@
     datatable.auto.index=TRUE,          # DT[col=="val"] to auto add index so 2nd time faster
     datatable.use.index=TRUE,           # global switch to address #1422
     datatable.prettyprint.char=NULL,    # FR #1091
-    datatable.old.matrix.autoname=TRUE  # #7145: how data.table(x=1, matrix(1)) is auto-named set to change
+    datatable.old.matrix.autoname=FALSE # #7145: how data.table(x=1, matrix(1)) is auto-named set to change
   )
   opts = opts[!names(opts) %chin% names(options())]
   options(opts)

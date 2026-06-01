@@ -616,3 +616,10 @@ test(202.2, f(dt, params=jpar), data.table(y=2:1))
 "." = function(...) list(.j=list("x"))
 test(202.3, dt[, .j, env=.(.j=list("y"))], data.table(x=1:2))
 rm(list=".")
+x = 2L ## no NSE, tests explicitly : ! -
+y = 2L
+test(202.4, dt[, .j, env = list(.j = x:y)], data.table(y=2:1))
+col = "x"
+test(202.5, dt[, .j, env = list(.j = !col)], error = "invalid argument type")
+test(202.6, dt[, .j, env = list(.j = -col)], error = "invalid argument to unary operator")
+rm(x, y, col)

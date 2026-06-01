@@ -20,7 +20,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   } else {
     cols = colnamesInt(x, cols, check_dups=TRUE)
     if (!length(cols))
-      stopf("x is a list, 'cols' can not be 0-length")
+      stopf("x is a list, 'cols' cannot be 0-length.")
   }
   # need to unlock for #4429
   x = .shallow(x, cols, unlock = TRUE) # shallow copy even if list..

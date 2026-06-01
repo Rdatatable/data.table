@@ -1,13 +1,18 @@
 ---
 title: "Importation dans data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Importation dans data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::litedown}
   \usepackage[utf8]{inputenc}
 ---
+
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
 
 <style>
 h2 {
@@ -15,9 +20,9 @@ h2 {
 }
 </style>
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Une traduction de ce document est disponible en : %s")`
+`{r} .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 Ce document se concentre sur l'utilisation de `data.table` comme dépendance dans d'autres packages R. Si vous souhaitez utiliser le code C de `data.table` à partir d'une application non-R, ou appeler directement ses fonctions C, passez à la [dernière section](#non-r-API) de cette vignette.
 
@@ -285,3 +290,7 @@ result <- merge(dt, other_dt, by = "x")
 - **Gestion de l'espace de noms** : Seules les fonctions que votre package importe explicitement sont disponibles, ce qui réduit le risque de conflit de noms de fonctions.
 - **Chargement de package plus propre** : Les dépendances de votre package ne sont pas attachées au chemin de recherche, ce qui rend le processus de chargement plus propre et potentiellement plus rapide.
 - **Maintenance plus facile** : Cela simplifie les tâches de maintenance au fur et à mesure que les API des dépendances en amont évoluent. Trop dépendre de `Depends` peut conduire à des conflits et des problèmes de compatibilité au fil du temps.
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```

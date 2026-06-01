@@ -1,16 +1,5 @@
 # all non-exported / unused internal (utility) functions
 
-# R 3.5.0 made isTRUE longer but more efficient :
-#   `is.logical(x) && length(x)==1L && !is.na(x) && x`
-# Before R 3.5.0, isTRUE was defined as simply:
-#   identical(TRUE,x)
-# See PR#3421 for timings.
-# It was changed in R so that isTRUE(c(a=TRUE)) returned TRUE: https://github.com/wch/r-source/commit/828997ac6ecfb73aaa0aae9d1d0584a4ffc50881#diff-b41e3f9f1d389bb6f7a842cd5a3308b8
-if (base::getRversion() < "3.5.0") {
-  isTRUE  = function(x) is.logical(x) && length(x)==1L && !is.na(x) && x    # backport R's new implementation of isTRUE
-  isFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x) && !x   # backport isFALSE that was added in R 3.5.0
-  suspendInterrupts = function(expr) expr
-}
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
@@ -44,6 +33,17 @@ check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
                  "%s has duplicated column name %s. Please remove or rename the duplicate and try again.",
                  "%s has duplicated column names %s. Please remove or rename the duplicates and try again."),
         table_name, brackify(duplicate_names), domain=NA)
+}
+
+check_duplicate_key = function(x) {
+  k = key(x)
+  duplicate_key = unique(c(k[duplicated(k)], k[k %chin% duplicated_values(names(x))]))
+  if (length(duplicate_key))
+    stopf(ngettext(length(duplicate_key),
+                   "%s has duplicated key column %s. Please remove or rename the duplicate and try again.",
+                   "%s has duplicated key columns %s. Please remove or rename the duplicates and try again."),
+          deparse(substitute(x)), brackify(duplicate_key), domain=NA)
+  invisible()
 }
 
 duplicated_values = function(x) {

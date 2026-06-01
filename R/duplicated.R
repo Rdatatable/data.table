@@ -4,7 +4,7 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
-  if (is.na(fromLast) || !is.logical(fromLast)) stopf("'fromLast' must be TRUE or FALSE")
+  if (is.na(fromLast) || !is.logical(fromLast)) stopf("'%s' must be TRUE or FALSE", "fromLast")
   if (!length(by)) by = NULL  #4594
   query = .duplicated.helper(x, by)
 

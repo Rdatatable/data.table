@@ -83,7 +83,7 @@ melt(who, measure.vars = measure(diagnosis, gender, ages, pattern="new_?(.*)_(.)
 print(melt(who, measure.vars = measure(
   diagnosis, gender, ages,
   ymin=as.numeric,
-  ymax=function(y)ifelse(y=="", Inf, as.numeric(y)),
+  ymax=function(y)ifelse(nzchar(y), as.numeric(y), Inf),
   pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
 )), class=TRUE)
 }
