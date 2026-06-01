@@ -177,7 +177,7 @@ SEXP setdt_nrows(SEXP x)
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
   if (isNull(dt)) error(_("alloccol has been passed a NULL dt"));
-  if (TYPEOF(dt) != VECSXP) error(_("dt passed to alloccol isn't type VECSXP"));
+  if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "alloccol");
   SEXP klass = getAttrib(dt, R_ClassSymbol);// klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   if (isNull(klass)) error(_("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker."));
   const R_len_t l = LENGTH(dt);
