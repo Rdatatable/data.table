@@ -18188,12 +18188,17 @@ if (utf8_check(nc)) {
   test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
     c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
-    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
+    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "))) 
   # test for data.table with NA, #6441
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1:   a\u2026\n2: <NA>")
 } else {
   cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 }})
+
+# Test that char.trunc in prettyprint falls back to three dots if ellipsis is not supported in non UTF-8 encoding
+DT = data.table(a = c("abcd", NA, "f"))
+test(2253.24, options = list(datatable.prettyprint.char = 3L,Sys.setlocale("LC_CTYPE", "C")),
+  DT, output = "        a\n1: abc...\n2:   <NA>\n3:      f")
 
 # allow 1-D matrix in j for consistency, #783
 DT=data.table(a = rep(1:2, 3), b = 1:6)
