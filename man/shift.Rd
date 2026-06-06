@@ -67,6 +67,17 @@ DT[, lag_wrong := shift(v1, 1L)]
 DT[order(year), lag_right := shift(v1, 1L)]
 DT
 
+# panel data: lag within groups respecting time order
+# (equivalent to Stata's: xtset firm year; gen lag_sales = L.sales)
+DT = data.table(
+  firm = rep(c("A", "B"), each = 3),
+  year = rep(2010:2012, 2),
+  sales = c(100, 110, 125, 200, 215, 230)
+)
+# sort by firm + year, then lag sales within each firm
+DT[order(firm, year), lag_sales := shift(sales, 1L), by = firm]
+DT
+
 # while grouping
 DT = data.table(year=rep(2010:2011, each=3), v1=1:6)
 DT[, c("lag1", "lag2") := shift(.SD, 1:2), by=year]
