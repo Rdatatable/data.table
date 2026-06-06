@@ -27,6 +27,8 @@ shift(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.names=FALSE)
   \code{shift} is designed mainly for use in data.tables along with \code{:=} or \code{set}. Therefore, it returns an unnamed list by default as assigning names for each group over and over can be quite time consuming with many groups. It may be useful to set names automatically in other cases, which can be done by setting \code{give.names} to \code{TRUE}.
 
   Note that when using \code{shift} with a list, it should be a list of lists rather than a flattened list. The function was not designed to handle flattened lists directly. This also applies to the use of list columns in a data.table. For example, \code{DT = data.table(x=as.list(1:4))} is a data.table with four rows. Applying \code{DT[, shift(x)]} now lags every entry individually, rather than shifting the full columns like \code{DT[, shift(as.integer(x))]} does. Using \code{DT = data.table(x=list(1:4))} creates a data.table with one row. Now \code{DT[, shift(x)]} returns a data.table with four rows where x is lagged. To get a shifted data.table with the same number of rows, wrap the \code{shift} function in \code{list} or \code{dot}, e.g., \code{DT[, .(shift(x))]}.
+
+  \code{shift} operates on positional order (row order), not on any inherent time ordering. For time-series or panel data, the data must be sorted by the time variable \emph{before} calling \code{shift}; otherwise the lag/lead will be computed over the wrong observations. Use \code{DT[order(timevar), shift(x), by=groupvar]} to lag within groups respecting time order. Users migrating from Stata should note that Stata's \code{L.var} (after \code{xtset}) automatically respects time order within panels, whereas \code{shift} requires explicit sorting.
 }
 \value{
   A list containing the lead/lag of input \code{x}.
@@ -57,14 +59,13 @@ DT[, (anscols) := shift(.SD, 1, 0, "lead"), .SDcols=cols]
 DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])
 DT[, shift(.SD, 1:2, NA, "lead", TRUE), .SDcols=2:4]
 
-# lag/lead in the right order
-DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])
-DT = DT[sample(nrow(DT))]
-# add lag=1 for columns 'v1,v2,v3' in increasing order of 'year'
-cols = c("v1","v2","v3")
-anscols = paste("lag", cols, sep="_")
-DT[order(year), (cols) := shift(.SD, 1, type="lag"), .SDcols=cols]
-DT[order(year)]
+# shift operates on row position, not time order
+DT = data.table(year=c(2012, 2010, 2011), v1=c(30, 10, 20))
+# WRONG: lag by row position (2010's value becomes lag of 2011)
+DT[, lag_wrong := shift(v1, 1L)]
+# RIGHT: sort by year first, then lag
+DT[order(year), lag_right := shift(v1, 1L)]
+DT
 
 # while grouping
 DT = data.table(year=rep(2010:2011, each=3), v1=1:6)

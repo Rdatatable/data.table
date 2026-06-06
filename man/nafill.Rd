@@ -42,6 +42,11 @@ x = gl(3, 2, 10)
 is.na(x) = 1:2
 nafill(x, "nocb")
 
+# works for character
+x = c("a", NA, "b", NA, "c")
+nafill(x, "locf")
+nafill(x, "const", fill="z")
+
 # fill= applies to any leftover NA
 nafill(c(NA, x), "locf")
 nafill(c(NA, x), "locf", fill=0)
