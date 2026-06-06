@@ -35,6 +35,19 @@ dt
 n34 = frolladapt(idx, c(small=3, big=4), give.names=TRUE)
 n34
 dt[, frollmean(value, n34, adaptive=TRUE, give.names=TRUE)]
+
+## panel data: rolling mean within groups, respecting irregular date gaps
+## equivalent to Stata: rangestat (mean) rollmean3 = sales, int(date -2 0) by(firm)
+dt = data.table(
+  firm = rep(c("A", "B"), each = 4),
+  date = as.Date(c("2020-01-01", "2020-01-02", "2020-01-05", "2020-01-06",
+                    "2020-01-01", "2020-01-03", "2020-01-04", "2020-01-07")),
+  sales = c(10, 12, 15, 13, 20, 22, 18, 25)
+)
+setorder(dt, firm, date)
+dt[, rollmean3 := frollmean(sales, frolladapt(date, n=3L, partial=TRUE),
+                            adaptive=TRUE), by = firm]
+dt
 }
 \seealso{
   \code{\link{froll}}, \code{\link{frollapply}}
