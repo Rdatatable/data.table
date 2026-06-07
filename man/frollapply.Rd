@@ -34,7 +34,7 @@
   }
 }
 \section{\code{by.column} argument}{
-  Setting \code{by.column} to \code{FALSE} allows to apply function on multiple variables rather than a single vector. Then \code{X} expects to be data.table, data.frame or a list of equal length vectors, and window size provided in \code{N} refers to number of rows (or length of a vectors in a list). See examples for use cases. Error \emph{"incorrect number of dimensions"} can be commonly observed when \code{by.column} was not set to \code{FALSE} when \code{FUN} expects its input to be a data.table or data.frame.
+  Setting \code{by.column} to \code{FALSE} allows applying function on multiple variables rather than a single vector. Then \code{X} expects to be data.table, data.frame or a list of equal length vectors, and window size provided in \code{N} refers to number of rows (or length of vectors in a list). See examples for use cases. Error \emph{"incorrect number of dimensions"} can be commonly observed when \code{by.column} was not set to \code{FALSE} when \code{FUN} expects its input to be a data.table or data.frame.
 }
 \section{\code{simplify} argument}{
   When set to \code{TRUE} (default), then results from rolling function which are normally stored in a list may be simplified either with \code{unlist} or \code{rbindlist}. It also attempts to match type, size and names of \code{fill} argument to the results of a function.
