@@ -56,8 +56,7 @@ more than once and the same column can be both as id and measure variables.
 variables.
 
 When all \code{measure.vars} are not of the same type, they'll be coerced
-according to the hierarchy \code{list} > \code{character} > \code{numeric >
-integer > logical}. For example, if any of the measure variables is a
+according to the hierarchy \code{list} > \code{character} > \code{numeric} > \code{integer} > \code{logical}. For example, if any of the measure variables is a
 \code{list}, then entire value column will be coerced to a list. 
 
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars}
