@@ -12,9 +12,9 @@
 \item{default}{ Default return value, \code{NA} by default, for when all of the logical conditions \code{when1, when2, ..., whenN} are \code{FALSE} or missing for some entries. }
 }
 \details{
-\code{fcase} evaluates each when-value pair in order, until it finds a \code{when} that is \code{TRUE}. It then returns the corresponding \code{value}. During evaluation, \code{value} will be evaluated regardless of whether the corresponding \code{when} is \code{TRUE} or not, which means recursive calls should be placed in the last when-value pair, see \code{Examples}.
+\code{fcase} evaluates each when-value pair in order, until it finds a \code{when} that is \code{TRUE}. It then returns the corresponding \code{value}. Each \code{value} is evaluated eagerly when its pair is reached, regardless of whether the corresponding \code{when} is \code{TRUE} for any element. However, \code{fcase} stops processing once every element has been assigned, so later pairs may not be reached at all. This is why recursive calls should be placed in the last when-value pair, see \code{Examples}.
 
-\code{default} is always evaluated, regardless of whether it is returned or not.
+\code{default} is evaluated only when some elements remain undecided after processing all when-value pairs.
 }
 \value{
   Vector with the same length as the logical conditions (\code{when}) in \code{...}, filled with the corresponding values (\code{value}) from \code{...}, or eventually \code{default}. Attributes of output values \code{value1, value2, ...valueN} in \code{...} are preserved.
@@ -34,7 +34,7 @@ fcase(
 	x > 5L, 3L:12L
 )
 
-# Lazy evaluation example
+# Short-circuit: last value not evaluated when all elements are already decided
 fcase(
 	x < 5L, 1L,
 	x >= 5L, 3L,
