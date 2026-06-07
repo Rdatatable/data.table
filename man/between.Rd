@@ -8,7 +8,7 @@
 Intended for use in \code{i} in \code{[.data.table}.
 
 \code{between} is equivalent to \code{lower<=x & x<=upper} when
-\code{incbounds=TRUE}, or \code{lower<x & y<upper} when \code{FALSE}. With a caveat that
+\code{incbounds=TRUE}, or \code{lower<x & x<upper} when \code{FALSE}. With a caveat that
 \code{NA} in \code{lower} or \code{upper} are taken as unlimited bounds not \code{NA}.
 This can be changed by setting \code{NAbounds} to \code{NA}.
 
