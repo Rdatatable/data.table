@@ -259,6 +259,7 @@ typedef enum { // adding rolling functions here and in frollfunR in frollR.c
   VAR = 6,
   SD = 7
 } rollfun_t;
+extern const char *const rfunNames[]; // Array of roll function names defined in froll.c
 // froll.c
 void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par);
 void frollmeanFast(const double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
@@ -330,7 +331,8 @@ bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller);
-SEXP copyAsPlain(SEXP x);
+SEXP copyAsPlain(SEXP x, R_xlen_t overalloc);
+SEXP allocrow(SEXP dt, R_xlen_t n);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
 SEXP unlock(SEXP x);
@@ -406,6 +408,7 @@ SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
 SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
+SEXP allocrowwrapper(SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
 SEXP setcharvec(SEXP, SEXP, SEXP);

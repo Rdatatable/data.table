@@ -97,9 +97,9 @@ test.list <- atime::atime_test_list(
     pkg_find_replace <- function(glob, FIND, REPLACE) {
       atime::glob_find_replace(file.path(new.pkg.path, glob), FIND, REPLACE)
     }
-    Package_regex <- gsub(".", "_?", old.Package, fixed = TRUE)
-    Package_ <- gsub(".", "_", old.Package, fixed = TRUE)
-    new.Package_ <- paste0(Package_, "_", sha)
+    Package_regex <- gsub(".", "([_.]?)", old.Package, fixed = TRUE)
+    Package_ <- gsub(".", "\\1", old.Package, fixed = TRUE)
+    new.Package_ <- paste0(Package_, "\\1", sha)
     pkg_find_replace(
       "DESCRIPTION",
       paste0("Package:\\s+", old.Package),
@@ -112,10 +112,6 @@ test.list <- atime::atime_test_list(
       file.path("R", "onLoad.R"),
       Package_regex,
       new.Package_)
-    pkg_find_replace(
-      file.path("R", "onLoad.R"),
-      sprintf('packageVersion\\("%s"\\)', old.Package),
-      sprintf('packageVersion\\("%s"\\)', new.Package))
     pkg_find_replace(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),

@@ -1,5 +1,7 @@
 #include "data.table.h"
 
+const char *const rfunNames[] = {
+  "MEAN", "SUM", "MAX", "MIN", "PROD", "MEDIAN", "VAR", "SD"}; //constant definition of froll functions
 /*
   OpenMP is used here to parallelize the loops in most of the
     implementations of rolling functions.
@@ -104,7 +106,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, const double *x, uint64_t nx, a
     }
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
 }
 
 #undef SUM_WINDOW_STEP_FRONT

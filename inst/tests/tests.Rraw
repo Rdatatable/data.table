@@ -2405,7 +2405,8 @@ b=data.table('User ID'=c(1,2,3), 'Yadda Yadda'=c(1,2,3), key='User ID')
 test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
-setnames(DT2,"b","a")
+DT2 = data.table(a=letters[1:5], a=6L)
+setattr(DT2, "sorted", "a")
 test(828, setcolorder(DT2,c("a","b")), error="x has duplicated column name [a]. Please remove or rename")
 test(829, merge(DT1,DT2), error="y has duplicated column name [a]. Please remove or rename")
 test(830, merge(DT2,DT1), error="x has duplicated column name [a]. Please remove or rename")
@@ -8059,20 +8060,22 @@ test(1577.3, levels(X$b), character(0))
 
 # FR #530, skip blank lines
 input = "Header not 2 columns\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(V1=1:2, V2=3:4))
+test(1578.01, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.2, fread(input), data.table(V1=1:2, V2=3:4))  # the block of 2x2 dominates the one line with sep in auto-removed header section
-test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+test(1578.02, fread(input), data.table(V1=1:2, V2=3:4))  # the block of 2x2 dominates the one line with sep in auto-removed header section
+test(1578.03, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n2,4"
-test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+test(1578.04, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n\n2,4\n\n"
-test(1578.5, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+test(1578.05, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
-test(1578.6, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
-test(1578.7, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
-test(1578.8, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
-test(1578.9, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
+test(1578.06, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
+test(1578.07, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
+test(1578.08, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+test(1578.09, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
+input = "x y\n\n1 a\n\n2 b\n\n3 c"
+test(1578.10, fread(input), data.table(V1=3L, V2="c"), warning="The rows in this file appear to be separated by blank lines. This resulted in most rows being skipped. If this was not the intended outcome, please consider setting 'blank.lines.skip' to TRUE.")
 
 # test 1579 moved to optimize.Rraw
 
@@ -9441,7 +9444,7 @@ construct <- function(cols, vals, ops, x, y) {
   expr = lapply(seq_along(cols), function(i) {
     GT_or_LT = ops[i]==">" || ops[i]=="<"
     if (inherits(vals[[i]], "integer64")) {
-      if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+      if (is.na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na), as.name(cols[[i]])))
       else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
       # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
     } else {
@@ -12413,9 +12416,9 @@ children = data.table(parent=c("Sarah", "Max", "Max"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
 joined = merge(parents, children, by.x="name", by.y="parent")
 test(1880.1, length(names(joined)), length(unique(names(joined))))
-test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
+test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""), sort=FALSE)), 3L,
              warning = "column names.*are duplicated in the result")
-joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE))
+joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE, sort=FALSE))
 test(1880.3, anyDuplicated(names(joined)) > 0L, TRUE)
 
 # out-of-sample quote rule bump, #2265
@@ -12433,7 +12436,7 @@ unlink(f)
 test(1882.1, .Machine$integer.max, 2147483647L)  # same on all platforms and very unlikely to change in R (which is good)
 test(1882.2, ceiling(.Machine$integer.max^(1/3)), 1291)
 v = seq_len(1291L)
-test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
+test(1882.3, CJ(v, v, v, sorted=FALSE), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
 
 # no re-read for particular file, #2509
 if (test_R.utils) test(1883, fread(testDir("SA2-by-DJZ.csv.gz"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
@@ -13651,7 +13654,7 @@ test(1967.26, foverlaps(x, y, by.x = c('start', 'END')),
      error = "Elements listed in 'by.x' must be valid names")
 test(1967.27, foverlaps(x, y, by.x = c('start', 'start')),
      error = 'Duplicate columns are not allowed')
-setkey(y, start, start)
+setattr(y, 'sorted', c('start', 'start'))
 test(1967.28, foverlaps(x, y, by.y = c('start', 'start')),
      error = 'Duplicate columns are not allowed')
 setkey(y, start, end)
@@ -13745,7 +13748,7 @@ test(1967.69,optimize=0L, x[order(a), .N, verbose = TRUE], output='[1] 5', notOu
 # test 1967.69 subsumes 1967.69 and 1967.70
 test(1967.71,optimize=1L, x[order(a), .N, verbose = TRUE], 5L,
      output = "forder.c received 5 rows and 1 column")
-setkey(x)
+setattr(x, 'sorted', c('a', 'a'))
 test(1967.72,optimize=1L, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
 
@@ -14738,6 +14741,25 @@ test(2038.33, between(1:5, 2, 4L), output="between parallel processing of intege
 test(2038.34, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
 test(2038.35, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
+
+# `between` supports Date/IDate with missing bounds, #7281
+x = data.table(
+  Date       = as.Date("2020-01-01") + 0:5,
+  Active     = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE),
+  InRange    = c(TRUE, NA, FALSE, NA, TRUE, NA),
+  RangeBegin = as.Date("2020-01-01") + c(-1L, NA,  3L, NA,  3L, NA),
+  RangeEnd   = as.Date("2020-01-01") + c( 1L, NA,  4L, NA,  5L, NA)
+)
+test(2038.36, x[Active == TRUE & between(Date, RangeBegin, RangeEnd), Date], as.Date(c("2020-01-01", "2020-01-05")))
+# Date character bounds coercion
+test(2038.37, between(x$Date, "2020-01-02", "2020-01-04"), c(FALSE, TRUE, TRUE, TRUE, FALSE, FALSE))
+x[, c("Date", "RangeBegin", "RangeEnd") := lapply(.SD, as.IDate), .SDcols = c("Date", "RangeBegin", "RangeEnd")]
+test(2038.38, x[Active == TRUE & between(Date, RangeBegin, RangeEnd), Date], as.IDate(c("2020-01-01", "2020-01-05")))
+
+# errors name the bound that failed coercion
+x = as.Date("2020-01-01") + 0:4
+test(2038.39, between(x, "not-a-date", "2020-01-04"), error="Date while 'lower' was not, coercion to Date failed")
+test(2038.40, between(x, "2020-01-02", "not-a-date"), error="Date while 'upper' was not, coercion to Date failed")
 
 # between int64 support
 if (test_bit64) {
@@ -16154,8 +16176,9 @@ test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a",
 set.seed(2)
 ids   = sample(letters, 10)   # reduced from 20 to 10
 dates = 1:10                  #   and 40 to 10 to save ram, #5517
-dt = data.table(CJ(dates, ids, ids))
+dt = data.table(CJ(dates, ids, ids, sorted=FALSE))
 setnames(dt, c("date", "id1", "id2"))
+setorder(dt, date, id1, id2)
 dt[, value := rnorm(length(date))]
 dt = dt[!(date == 1 & (id1 == "a" | id2 == "a"))]
 dt = dt[!(date == 4 & (id1 == "e" | id2 == "e"))]
@@ -18473,7 +18496,7 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
   suppressPackageStartupMessages(unloadNamespace("bit64"))
-  on.exit(suppressPackageStartupMessages(library(bit64, pos="package:base")))
+  on.exit(suppressWarnings(suppressPackageStartupMessages(library(bit64, pos="package:base"))))
   test(2265, DT, output="abc\\s*1$")
 })
 
@@ -21659,3 +21682,35 @@ test(2370.2, yearmon(x, format="numeric"), yearmon(x))  # numeric is the default
 test(2370.3, yearmon(x, format="character"), c("1111M11", "2019M01", "2019M02", "2019M03", "2019M12", "2020M02", "2020M03", "2020M12", "2040M01", "2040M12", "2100M03", NA_character_))
 test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
 test(2370.5, yearmon(NA, format="character"), NA_character_)
+
+# multiple expected/observed warnings in test() are printed on aligned lines, #7092
+test(2371.1, test(0, {warning("a"); 2L}, 2L, warning=c("a", "b")), FALSE,
+             output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
+test(2372.2, test(0, {warning("a"); warning("b"); 2L}, 2L, warning="a"), FALSE,
+             output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
+
+# group-by on empty table works
+empty_dt = data.table()
+test(2373.1, empty_dt[, 1, by = numeric()], data.table(numeric=numeric(), V1=numeric()))
+test(2373.2, empty_dt[, 1L, by = numeric()], data.table(numeric=numeric(), V1=integer()))
+test(2373.3, empty_dt[, .(x=1), by = .(b=numeric())], data.table(b=numeric(), x=numeric()))
+test(2373.4, data.table()[, x := 1, by=numeric()], data.table(x=numeric()))
+
+# prohibit duplicated column names as key columns, #4888 and #4891
+DT = data.table(a=1:3, a=4:6)
+test(2374.01, setkey(DT, a, a), error="cols contains duplicate column names")
+test(2374.02, setindex(DT, a, a), error="cols contains duplicate column names")
+test(2374.03, setkey(DT, a), error="duplicated column names in the columns to key by")
+DT = data.table(a=1:2, b=3:4, key=c("a", "b"))
+test(2374.04, setnames(DT, "b", "a"), error="duplicated key columns")
+test(2374.05, key(DT), c("a", "b"))
+test(2374.06, CJ(a=1:3, a=4:5), error="duplicated column names")
+DT1 = CJ(a=1:3, b=c('a','b'), c=6)
+DT2 = data.table(a=rep(1:3, each=2L), a=rep(4:5, 3L), d=6)
+setattr(DT2, "sorted", c("a", "a", "d"))
+test(2374.07, DT1[DT2], error="i has duplicated key column")
+DT = data.table(a=1:2, b=3:4, key="a")
+test(2374.08, key(DT[, .(a, a)]), NULL)
+test(2374.09, key(subset(DT, select=c(a, a))), NULL)
+DT = data.table(a=1:2, a.1=3:4, val=10:11)
+test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
