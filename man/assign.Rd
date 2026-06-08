@@ -92,6 +92,7 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
     \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.  Note that this does not apply when \code{i} is missing, i.e. \code{DT[]}.
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.
+    Note that \samp{:=} modifications are cumulative. When reusing a \code{data.table} in loops or multi-level tests, use \code{\link{copy}} to ensure a fresh state.
 }
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
@@ -180,4 +181,3 @@ system.time(for (i in 1:1000) set(DT, i, 1L, i))
 
 }
 \keyword{ data }
-
