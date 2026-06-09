@@ -390,7 +390,7 @@ To select a single column as a vector, remember:
 
 ### d) Side effects and testing
 
-Because `:=` modifies by reference, changes are cumulative. If the same *data.table* is reused—for example, in a loop or when using `test()` with multiple `optimization` levels—subsequent runs will start with the modified table from the previous run. Use `copy()` to ensure each run starts with the same data.
+Because `:=` modifies by reference, changes are cumulative. If the same *data.table* is reused for example, in a loop or when using `test()` with multiple `optimization` levels, subsequent runs will start with the modified table from the previous run. Use `copy()` to ensure each run starts with the same data.
 
 ```{r}
 DT = data.table(a = 1L)
