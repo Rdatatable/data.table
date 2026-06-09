@@ -82,7 +82,7 @@ Authors@R: c(
   person("Boniface Christian","Kamgang", role="ctb"),
   person("Olivier","Delmarcell",   role="ctb"),
   person("Josh","O'Brien",         role="ctb"),
-  person("Dereck","de Mezquita",   role="ctb"),
+  person("Dereck","Mezquita",      role="ctb", comment = c(ORCID="0000-0002-9307-6762")),
   person("Michael","Czekanski",    role="ctb"),
   person("Dmitry", "Shemetov",     role="ctb"),
   person("Nitish", "Jha",          role="ctb"),
