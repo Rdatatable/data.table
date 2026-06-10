@@ -238,7 +238,6 @@ format_col.expression = function(x, ...) {
 format_list_item.default = function(x, ...) {
   dots = list(...)
   trunc.char = if ("trunc.char" %in% names(dots)) dots$trunc.char else getOption("datatable.prettyprint.char")
-  
   res = if (is.null(x))  # NULL item in a list column
     "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
