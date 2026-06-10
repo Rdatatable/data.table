@@ -93,6 +93,7 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.
     Note that \samp{:=} modifies its input in-place. When reusing a \code{data.table} in loops or multi-level tests, use \code{\link{copy}} to ensure a fresh state.
+}
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
