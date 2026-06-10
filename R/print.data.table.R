@@ -233,9 +233,9 @@ format_col.expression = function(x, ..., trunc.char = getOption("datatable.prett
 
 format_list_item.default = function(x, ..., trunc.char = getOption("datatable.prettyprint.char")) {
   res = if (is.null(x))  # NULL item in a list column
-    "[NULL]" 
-  else if (is.atomic(x) || inherits(x, "formula")) 
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) sprintf("...[%d]", length(x))), collapse=",") 
+    "[NULL]"
+  else if (is.atomic(x) || inherits(x, "formula"))
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) sprintf("...[%d]", length(x))), collapse=",")
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
     formatted
   } else {
