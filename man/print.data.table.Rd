@@ -30,17 +30,18 @@
     timezone=FALSE, \dots)
 
   format_col(x, \dots)
-  \method{format_col}{default}(x, \dots)
+  \method{format_col}{default}(x, \dots, trunc.char = getOption("datatable.prettyprint.char"))
   \method{format_col}{POSIXct}(x, \dots, timezone=FALSE)
-  \method{format_col}{expression}(x, \dots)
+  \method{format_col}{expression}(x, \dots, trunc.char = getOption("datatable.prettyprint.char"))
 
   format_list_item(x, \dots)
-  \method{format_list_item}{default}(x, \dots)
+  \method{format_list_item}{default}(x, \dots, trunc.char = getOption("datatable.prettyprint.char"))
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
   \item{topn}{ The number of rows to be printed from the beginning and end of tables with more than \code{nrows} rows. }
   \item{nrows}{ The number of rows which will be printed before truncation is enforced. }
+  \item{trunc.char}{The number of characters at which character columns and list-column summaries are truncated. If \code{NULL} (the default), it is dynamically calculated based on the available console width.}
   \item{class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). When combined with \code{col.names="auto"} and tables >20 rows, classes will also appear at the bottom.}
   \item{row.names}{ If \code{TRUE}, row indices will be printed alongside \code{x}. }
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20} (when \code{class=TRUE}, column classes will also appear at the bottom). \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }

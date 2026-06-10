@@ -21667,3 +21667,4 @@ test(2375.2, capture.output(print(data.table(L=list(1:20)))), output="1,2,3,4,..
 test(2375.3, capture.output(print(data.table(x=c("short", "abcdefghijklmnopqrstuvwxyz")))), output="abcdefghijklmn...", options=list(width=20, datatable.prettyprint.char=NULL))
 test(2375.4, capture.output(print(data.table(x="abcdefghijklmnopqrstuvwxyz"))), output="abcdefghijklmnopqrstuvwxyz", options=list(width=200, datatable.prettyprint.char=NULL))
 test(2375.5, capture.output(print(data.table(id=1L, score=99.1, txt="abcdefghijklmnopqrstuvwxyz"))), output="abcdefghijklmn...", options=list(width=20, datatable.prettyprint.char=NULL))
+test(2375.6, tail(capture.output(print(data.table(x=rep("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1000000)), topn=1)), 1), output="1000000: ABCDEFGHIJKLM...", options=list(width=25, datatable.prettyprint.char=NULL))
