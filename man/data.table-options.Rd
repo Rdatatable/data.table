@@ -105,6 +105,15 @@
     \item{\code{datatable.enlist}}{Experimental feature. Default is \code{NULL}. If set to a function
       (e.g., \code{list}), the \code{j} expression can return a \code{list}, which will then
       be "enlisted" into columns in the result.}
+    \item{\code{datatable.unique.names}}{A character string, default \code{"off"}. 
+      Controls the behavior when \code{setnames} would result in duplicate column names. 
+      Possible values:
+      \itemize{
+        \item \code{"off"}: (default) Duplicates are allowed silently.
+        \item \code{"warn"}: A warning is issued if duplicates are created.
+        \item \code{"error"}: An error is raised, preventing the change.
+        \item \code{"rename"}: Duplicate names are made unique via \code{make.unique}.
+      }}
   }
 }
 
