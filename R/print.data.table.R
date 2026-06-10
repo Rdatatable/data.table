@@ -207,7 +207,6 @@ has_format_method = function(x) {
 format_col.default = function(x, ...) {
   dots = list(...)
   trunc.char = if ("trunc.char" %in% names(dots)) dots$trunc.char else getOption("datatable.prettyprint.char")
-  
   if (!is.null(dim(x)))
     "<multi-column>"
   else if (is.list(x))
