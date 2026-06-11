@@ -180,7 +180,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     } else {
       idx = which(idx) # which() returns indices of TRUE, ignores FALSE and NA
     }
-    
     dat = .Call(CsubsetDT, dat, idx, seq_along(dat))
   }
   fun.call = m[["fun.aggregate"]]
