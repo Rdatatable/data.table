@@ -168,10 +168,19 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   setDT(dat)
 
   m = as.list(match.call()[-1L])
-  subset = m[["subset"]][[2L]]
+  subset = m[["subset"]]
   if (!is.null(subset)) {
+    if (is.call(subset) && (subset[[1L]] == quote(.) || subset[[1L]] == quote(list))) {
+      subset = subset[[2L]]
+    }
     if (is.name(subset)) subset = as.call(list(quote(`(`), subset))
-    idx = which(eval(subset, data, parent.frame())) # any advantage thro' secondary keys?
+    idx = eval(subset, data, parent.frame())
+    if (is.logical(idx) && length(idx) == 1L) {
+      idx = if (!is.na(idx) && idx) seq_len(nrow(data)) else integer(0)
+    } else {
+      idx = which(idx) # which() returns indices of TRUE, ignores FALSE and NA
+    }
+    
     dat = .Call(CsubsetDT, dat, idx, seq_along(dat))
   }
   fun.call = m[["fun.aggregate"]]
