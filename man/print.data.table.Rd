@@ -135,5 +135,13 @@
   iris_agg = iris[ , .(reg = list(lm(Sepal.Length ~ Petal.Length))), by = Species]
   format_list_item.lm = function(x, ...) sprintf('<lm:\%s>', format(x$call$formula))
   print(iris_agg)
+
+  # Truncation based on console width
+  old = options(width = 25, datatable.prettyprint.char = NULL)
+  data.table(x = "abcdefghijklmnopqrstuvwxyz", L = list(1:25))
+  
+  # Dynamic truncation: Content shrinks as row labels grow
+  print(data.table(x = rep("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1e6)), topn = 1)
+  options(old)
 }
 
