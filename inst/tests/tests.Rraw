@@ -21660,3 +21660,13 @@ test(2374.08, key(DT[, .(a, a)]), NULL)
 test(2374.09, key(subset(DT, select=c(a, a))), NULL)
 DT = data.table(a=1:2, a.1=3:4, val=10:11)
 test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
+
+# dcast() subset supports base-style logical expressions, #4325
+DT = data.table( a = rep(1:5, 3), b = rep(1:3, each = 5), v = 1:15)
+y = data.table(a=2:5, `1`=2:5, `2`=7:10, `3`=12:15)
+setkey(y, a)
+test(2375.1, dcast(DT, a ~ b, value.var="v", subset=a > 1), y)
+test(2375.2, dcast(DT, a ~ b, value.var="v", subset=.(a > 1)), y)
+test(2375.3, identical( dcast(DT, a ~ b, value.var="v", subset=a > 2 & b != 2), dcast(DT, a ~ b, value.var="v", subset=.(a > 2 & b != 2)) ), TRUE)
+test(2375.4, dcast(DT, a ~ b, value.var="v", subset=TRUE), dcast(DT, a ~ b, value.var="v"))
+test(2375.5, nrow(dcast(DT, a ~ b, value.var="v", subset=FALSE)), 0L)
