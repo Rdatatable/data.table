@@ -21663,6 +21663,7 @@ test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
 
 # print.data.table truncates long character columns based on width
 test(2375.1, capture.output(print(data.table(x="1234567890"))), output="1234...", options=list(width=10, datatable.prettyprint.char=NULL))
+test(2375.11, print(data.table(x="1234567890")), output="1234567890", options=list(width=10, datatable.prettyprint.char=Inf))
 test(2375.2, capture.output(print(data.table(L=list(1:20)))), output="1,2,3,4,...", options=list(width=15, datatable.prettyprint.char=NULL))
 test(2375.3, capture.output(print(data.table(x=c("short", "abcdefghijklmnopqrstuvwxyz")))), output="abcdefghijklmn...", options=list(width=20, datatable.prettyprint.char=NULL))
 test(2375.4, capture.output(print(data.table(x="abcdefghijklmnopqrstuvwxyz"))), output="abcdefghijklmnopqrstuvwxyz", options=list(width=200, datatable.prettyprint.char=NULL))
