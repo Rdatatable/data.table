@@ -56,7 +56,7 @@
 
 11. `between()` now supports `Date` and `IDate` bounds with default `NAbounds=TRUE`, avoiding errors like "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type" when date bounds contain `NA`, [#7281](https://github.com/Rdatatable/data.table/issues/7281). Thanks @grcatlin for the report and fix, and @ben-schwen and @aitap for assistance.
 
-12. `print.data.table()` now truncates long character columns and list-column summaries by default to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated based on the available console width. Thanks @tdhock for the report and @venom1204 for the fix.
+12. `print.data.table()` now truncates long character columns and list-column summaries by default to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated based on the available console width. Use `options(datatable.prettyprint.char=Inf` for the old default behavior (never truncate). Thanks @tdhock for the report and @venom1204 for the fix.
 
 ### Notes
 
