@@ -88,7 +88,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
-
   trunc.char = getOption("datatable.prettyprint.char")
   if (is.null(trunc.char)) {
     rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
