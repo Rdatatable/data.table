@@ -8,6 +8,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                show.indices=getOption("datatable.show.indices"),
+               show.ncols=getOption("datatable.show.ncols", FALSE),
                quote=FALSE,
                na.print=NULL,
                timezone=FALSE, ...) {
@@ -51,6 +52,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       ngettext(length(ixs), "Index: %s\n", "Indices: %s\n"),
       paste0("<", ixs, ">", collapse = ", ")
     ))
+  }
+  if (show.ncols && !isTRUE(trunc.cols) && !any(dim(x)==0L)) {
+    catf("Number of columns: %d\n", ncol(x))
   }
   if (any(dim(x)==0L)) {
     x_class = if (is.data.table(x)) "data.table" else "data.frame"  # a data.frame could be passed to print.data.table() directly, #3363
@@ -116,6 +120,20 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
+
+    if (show.ncols) {
+      n_not_printed = length(not_printed)
+      if (n_not_printed > 0L) {
+        if (class && col.names != "none") classes = paste0(" ", tail(abbs, n_not_printed)) else classes = ""
+        catf("Number of columns: %d, of which %d %s not shown: %s\n",
+             ncol(x), n_not_printed, ngettext(n_not_printed, "is", "are"),
+             brackify(paste0(not_printed, classes)))
+        trunc.cols = FALSE # message already printed in header
+      } else {
+        catf("Number of columns: %d\n", ncol(x))
+      }
+    }
+
     if (!any(cols_to_print)) {
       trunc_cols_message(not_printed, abbs, class, col.names)
       return(invisible(x))
@@ -123,7 +141,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
-    trunc.cols = length(not_printed) > 0L
+    if (!show.ncols) trunc.cols = length(not_printed) > 0L else trunc.cols = FALSE
   }
   print_default = function(x) {
     if (col.names != "none") cut_colnames = identity
