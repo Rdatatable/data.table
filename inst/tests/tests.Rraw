@@ -7267,7 +7267,7 @@ test(1514.9, fitsInInt64(9L), FALSE)
 # #1091
 options(datatable.prettyprint.char = 5L)
 DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
-test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
+test(1515.1, grep("abcde\u2026", capture.output(print(DT))), 2L)
 options(datatable.prettyprint.char = NULL)
 
 # test 1516: chain setnames() - used while mapping source to target columns
@@ -18168,7 +18168,7 @@ ja_ko = "\u3053"
 ja_n = "\u3093"
 nc = c(accented_a, ja_ichi, ja_ni, ja_ko, ja_n)
 if (utf8_check(nc)) {
-  dots = "..."
+  dots = "\u2026"
   clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
   # Tests for combining character latin a and acute accent, single row
   DT = data.table(strrep(accented_a, 4L))
@@ -18194,8 +18194,8 @@ if (utf8_check(nc)) {
   DT = data.table(paste0(ja_ichi), strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa")
   test(2253.13, options=list(datatable.prettyprint.char = 4L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
   test(2253.14, options=list(datatable.prettyprint.char = 3L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
-  test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa..."))
-  test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a..."))
+  test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa\u2026"))
+  test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a\u2026"))
   # Tests for multiple columns, multiple rows
   DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
   test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
@@ -18203,18 +18203,23 @@ if (utf8_check(nc)) {
     paste0(strrep(ja_ko, 2L), "   ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
     paste(strrep(ja_ko, 3L), strrep(ja_n, 4L), strrep(accented_a, 3L))))
   test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-    c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
-    paste0(strrep(ja_ko, 2L), "    ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
+    c(paste0(ja_ko, "    ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
+    paste0(strrep(ja_ko, 2L), "  ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
     paste(strrep(ja_ko, 3L), paste0(strrep(ja_n, 3L), dots), strrep(accented_a, 3L))))
   test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
     c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
-    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
+    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "))) 
   # test for data.table with NA, #6441
-  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
+  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1:   a\u2026\n2: <NA>")
 } else {
   cat("Tests 2253* skipped because they need a UTF-8 locale.\n")
 }})
+
+# Test that char.trunc in prettyprint falls back to three dots if ellipsis is not supported in non UTF-8 encoding
+DT = data.table(a = c("abcd", NA, "f"))
+test(2253.24, options = list(datatable.prettyprint.char = 3L,Sys.setlocale("LC_CTYPE", "C")),
+  DT, output = "        a\n1: abc...\n2:   <NA>\n3:      f")
 
 # allow 1-D matrix in j for consistency, #783
 DT=data.table(a = rep(1:2, 3), b = 1:6)
