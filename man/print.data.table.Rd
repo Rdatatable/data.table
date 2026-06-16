@@ -25,7 +25,7 @@
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
     show.indices=getOption("datatable.show.indices"),   # default: FALSE
-    show.ncols=getOption("datatable.show.ncols"),       # default: FALSE
+    show.ncols=getOption("datatable.show.ncols", FALSE), # default: FALSE
     quote=FALSE,
     na.print=NULL,
     timezone=FALSE, \dots)
