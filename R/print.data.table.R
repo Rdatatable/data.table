@@ -135,13 +135,13 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
 
     if (!any(cols_to_print)) {
-      trunc_cols_message(not_printed, abbs, class, col.names)
+      if (!show.ncols) trunc_cols_message(not_printed, abbs, class, col.names)
       return(invisible(x))
     }
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
-    if (!show.ncols) trunc.cols = length(not_printed) > 0L else trunc.cols = FALSE
+    trunc.cols = !show.ncols && length(not_printed) > 0L
   }
   print_default = function(x) {
     if (col.names != "none") cut_colnames = identity
