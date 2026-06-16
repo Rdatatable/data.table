@@ -128,7 +128,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
         catf("Number of columns: %d, of which %d %s not shown: %s\n",
              ncol(x), n_not_printed, ngettext(n_not_printed, "is", "are"),
              brackify(paste0(not_printed, classes)))
-        trunc.cols = FALSE # message already printed in header
+        trunc.cols = FALSE
       } else {
         catf("Number of columns: %d\n", ncol(x))
       }

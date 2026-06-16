@@ -33,6 +33,7 @@
    \item{\code{datatable.print.keys}}{A logical, default \code{FALSE}. If \code{TRUE}, the table's
      keys are printed above the data.}
    \item{\code{datatable.show.indices}}{A logical, default \code{TRUE}. A synonym for \code{datatable.print.keys} for historical reasons.}
+   \item{\code{datatable.show.ncols}}{A logical, default \code{FALSE}. If \code{TRUE}, the number of columns is printed in the header.}
    \item{\code{datatable.print.trunc.cols}}{A logical, default \code{FALSE}. If \code{TRUE} and a
      table has more columns than fit on the screen, it truncates the middle columns.}
    \item{\code{datatable.prettyprint.char}}{An integer, default \code{100L}. The maximum number of
