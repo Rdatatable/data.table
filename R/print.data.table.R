@@ -120,7 +120,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
-
     if (show.ncols) {
       n_not_printed = length(not_printed)
       if (n_not_printed > 0L) {
@@ -133,7 +132,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
         catf("Number of columns: %d\n", ncol(x))
       }
     }
-
     if (!any(cols_to_print)) {
       if (!show.ncols) trunc_cols_message(not_printed, abbs, class, col.names)
       return(invisible(x))
