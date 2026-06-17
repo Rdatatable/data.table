@@ -144,6 +144,11 @@ if (!test_longdouble) {
   cat("\n**** Full long double accuracy is not available. Tests using this will be skipped.\n\n")
   # e.g. under valgrind, longdouble.digits==53; causing these to fail: 1262, 1729.04, 1729.08, 1729.09, 1729.11, 1729.13, 1830.7; #4639
 }
+exact_NA = identical(NA_real_ + 0, NA_real_)
+if (!exact_NA) {
+  cat("\n**** NaN payload does not propagate through arithmetic operations. Tests requiring NA not to decay to NaN will be skipped.\n\n")
+  # e.g. on riscv64
+}
 
 tt = Sys.getenv("TZ", unset=NA)
 TZnotUTC = !identical(tt,"") && !is_utc(tt)
@@ -1957,12 +1962,9 @@ basemean = base::mean  # to isolate time of `::` itself
 ans3 = DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)]
 test(646, ans1, ans2)
 test(647, ans1, ans3)
-if (test_longdouble) {
+if (exact_NA) {
   test(648, anyNA(ans1$V1) && !any(is.nan(ans1$V1)))
-  # used to error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
-  # it doesn't seem to error under valgrind anymore so the test_longdouble may be removable
-  # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
-  # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
+  # Valgrind may have had NaN payload propagation problems in the past; RISC-V will in the future
 }
 ans1 = DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)]
 ans2 = DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)]
@@ -2403,7 +2405,8 @@ b=data.table('User ID'=c(1,2,3), 'Yadda Yadda'=c(1,2,3), key='User ID')
 test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
-setnames(DT2,"b","a")
+DT2 = data.table(a=letters[1:5], a=6L)
+setattr(DT2, "sorted", "a")
 test(828, setcolorder(DT2,c("a","b")), error="x has duplicated column name [a]. Please remove or rename")
 test(829, merge(DT1,DT2), error="y has duplicated column name [a]. Please remove or rename")
 test(830, merge(DT2,DT1), error="x has duplicated column name [a]. Please remove or rename")
@@ -2631,11 +2634,13 @@ if (test_bit64) {
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
 if (test_R.utils) {
   f = testDir("ch11b.dat.bz2")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
-  test(900.1, fread(f, logical01=FALSE), as.data.table(read.table(f)))
+  test(900.1, DT<-fread(f, logical01=FALSE), as.data.table(read.table(f)))
+  test(900.15, fread(file(f), logical01=FALSE), DT)
   test(900.2, fread(f, logical01=TRUE), as.data.table(read.table(f))[,V5:=as.logical(V5)])
 
   f = testDir("1206FUT.txt.bz2")    # a CRLF line ending file (DOS)
   test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
+  test(901.15, fread(file(f), strip.white=FALSE), DT)
   test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)),strip.white=TRUE)))
 }
 
@@ -2765,6 +2770,12 @@ test(946, fread('A,B,,D\n1,3,foo,5\n2,4,bar,6\n'), data.table(A=1:2,B=3:4,c("foo
 test(947, fread('0,2,,4\n1,3,foo,5\n2,4,bar,6\n'), data.table(0:2,2:4,c("","foo","bar"),4:6))
 test(948, fread('A,B,C\nD,E,F\n',header=TRUE), data.table(A="D",B="E",C="F"))
 test(949, fread('A,B,\nD,E,F\n',header=TRUE), data.table(A="D",B="E",V3="F"))
+# #5124 fread should preserve literal "NA" header names while still parsing data "NA" as missing
+test(949.1, names(fread('A,NA,C\n1,NA,3\n', header=TRUE)), c("A", "NA", "C"))
+ans = data.table(A=1L, tmp=as.logical(NA), C=3L)
+setnames(ans, "tmp", "NA")
+test(949.2, fread('A,NA,C\n1,NA,3\n', header=TRUE), ans)
+test(949.3, names(fread('"A","NA","C"\n1,NA,3\n', header=TRUE)), c("A", "NA", "C"))
 
 # +/- with no numbers afterwards should read as character
 test(950, fread('A,B,C\n1,+,4\n2,-,5\n3,-,6\n'), data.table(A=1:3,B=c("+","-","-"),C=4:6))
@@ -4241,7 +4252,7 @@ test(1163, last(x), character(0))
 # Bug fix for #5159 - chmatch and character encoding (for some reason this seems to pass the test on a mac as well)
 a = c("a","\u00E4","\u00DF","z")
 au = iconv(a,"UTF8","latin1")
-test(1164.1, requires_utf8=c("\u00E4", "\u00DF"), chmatch(a, au), match(a, au))
+test(1164.1, chmatch(a, au), match(a, au))
 
 # Bug fix for #73 - segfault when rbindlist on empty data.tables
 x <- as.data.table(BOD)
@@ -6459,8 +6470,10 @@ if (test_bit64 && test_R.utils) {
     ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
     JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
   )
-  test(1449.1, fread(testDir("quoted_multiline.csv.bz2"))[c(1L, 43:44), c(1L, 22:24)], DT)
-  test(1449.2, fread(testDir("quoted_multiline.csv.bz2"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
+  f = testDir("quoted_multiline.csv.bz2")
+  test(1449.1, fread(f)[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.15, fread(file(f))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(f, integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
 }
 
 # Fix for #927
@@ -8047,20 +8060,22 @@ test(1577.3, levels(X$b), character(0))
 
 # FR #530, skip blank lines
 input = "Header not 2 columns\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(V1=1:2, V2=3:4))
+test(1578.01, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.2, fread(input), data.table(V1=1:2, V2=3:4))  # the block of 2x2 dominates the one line with sep in auto-removed header section
-test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+test(1578.02, fread(input), data.table(V1=1:2, V2=3:4))  # the block of 2x2 dominates the one line with sep in auto-removed header section
+test(1578.03, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n2,4"
-test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+test(1578.04, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n\n2,4\n\n"
-test(1578.5, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+test(1578.05, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
-test(1578.6, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
-test(1578.7, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
-test(1578.8, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
-test(1578.9, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
+test(1578.06, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
+test(1578.07, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
+test(1578.08, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+test(1578.09, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
+input = "x y\n\n1 a\n\n2 b\n\n3 c"
+test(1578.10, fread(input), data.table(V1=3L, V2="c"), warning="The rows in this file appear to be separated by blank lines. This resulted in most rows being skipped. If this was not the intended outcome, please consider setting 'blank.lines.skip' to TRUE.")
 
 # test 1579 moved to optimize.Rraw
 
@@ -9429,7 +9444,7 @@ construct <- function(cols, vals, ops, x, y) {
   expr = lapply(seq_along(cols), function(i) {
     GT_or_LT = ops[i]==">" || ops[i]=="<"
     if (inherits(vals[[i]], "integer64")) {
-      if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+      if (is.na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na), as.name(cols[[i]])))
       else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
       # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
     } else {
@@ -10525,7 +10540,7 @@ if (test_bit64) {
     "+9223372036854775807",  # integer64 max
     "-9223372036854775806","+9223372036854775806",  # 1 below extreme just to check
     "0","-1","1",
-    "NA",NA,
+    NA,
     "-2147483646", # 1 below extreme to check
     "-2147483647", # smallest integer in R
     "-2147483648", # NA_INTEGER == INT_MIN but valid integer64
@@ -10536,7 +10551,7 @@ if (test_bit64) {
     "+2147483649"
   )))
   ans = c('"V1"',"-9223372036854775807","9223372036854775807","-9223372036854775806","9223372036854775806",
-          "0","-1","1","__NA__","__NA__",
+          "0","-1","1","__NA__",
           "-2147483646","-2147483647","-2147483648","-2147483649",
           "2147483646","2147483647","2147483648","2147483649")
   test(1731.1, class(DT[[1L]]), "integer64")
@@ -12350,9 +12365,9 @@ children = data.table(parent=c("Sarah", "Max", "Max"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
 joined = merge(parents, children, by.x="name", by.y="parent")
 test(1880.1, length(names(joined)), length(unique(names(joined))))
-test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
+test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""), sort=FALSE)), 3L,
              warning = "column names.*are duplicated in the result")
-joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE))
+joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE, sort=FALSE))
 test(1880.3, anyDuplicated(names(joined)) > 0L, TRUE)
 
 # out-of-sample quote rule bump, #2265
@@ -12370,7 +12385,7 @@ unlink(f)
 test(1882.1, .Machine$integer.max, 2147483647L)  # same on all platforms and very unlikely to change in R (which is good)
 test(1882.2, ceiling(.Machine$integer.max^(1/3)), 1291)
 v = seq_len(1291L)
-test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
+test(1882.3, CJ(v, v, v, sorted=FALSE), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
 
 # no re-read for particular file, #2509
 if (test_R.utils) test(1883, fread(testDir("SA2-by-DJZ.csv.gz"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
@@ -13502,7 +13517,7 @@ alloc.col(ans)
 test(1965.3, setDT(list(1:2, M)), ans, warning='Some columns are a multi-column type.*for example column 2')
 
 # fread/fwrite file name in native and utf-8 encoding, #3078
-if (.Platform$OS.type=="windows") {
+if (.Platform$OS.type=="windows" && utf8_check("\u00c3\u00b6\u00fc")) {
   f = tempfile("\u00f6"); cat("3.14", file = f)
   fn = enc2native(f); f8 = enc2utf8(f)
   test(1966.1, fread(fn), data.table(V1=3.14))
@@ -13585,7 +13600,7 @@ test(1967.26, foverlaps(x, y, by.x = c('start', 'END')),
      error = "Elements listed in 'by.x' must be valid names")
 test(1967.27, foverlaps(x, y, by.x = c('start', 'start')),
      error = 'Duplicate columns are not allowed')
-setkey(y, start, start)
+setattr(y, 'sorted', c('start', 'start'))
 test(1967.28, foverlaps(x, y, by.y = c('start', 'start')),
      error = 'Duplicate columns are not allowed')
 setkey(y, start, end)
@@ -13679,7 +13694,7 @@ test(1967.69,optimize=0L, x[order(a), .N, verbose = TRUE], output='[1] 5', notOu
 # test 1967.69 subsumes 1967.69 and 1967.70
 test(1967.71,optimize=1L, x[order(a), .N, verbose = TRUE], 5L,
      output = "forder.c received 5 rows and 1 column")
-setkey(x)
+setattr(x, 'sorted', c('a', 'a'))
 test(1967.72,optimize=1L, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
 
@@ -14672,6 +14687,25 @@ test(2038.33, between(1:5, 2, 4L), output="between parallel processing of intege
 test(2038.34, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
 test(2038.35, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
+
+# `between` supports Date/IDate with missing bounds, #7281
+x = data.table(
+  Date       = as.Date("2020-01-01") + 0:5,
+  Active     = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE),
+  InRange    = c(TRUE, NA, FALSE, NA, TRUE, NA),
+  RangeBegin = as.Date("2020-01-01") + c(-1L, NA,  3L, NA,  3L, NA),
+  RangeEnd   = as.Date("2020-01-01") + c( 1L, NA,  4L, NA,  5L, NA)
+)
+test(2038.36, x[Active == TRUE & between(Date, RangeBegin, RangeEnd), Date], as.Date(c("2020-01-01", "2020-01-05")))
+# Date character bounds coercion
+test(2038.37, between(x$Date, "2020-01-02", "2020-01-04"), c(FALSE, TRUE, TRUE, TRUE, FALSE, FALSE))
+x[, c("Date", "RangeBegin", "RangeEnd") := lapply(.SD, as.IDate), .SDcols = c("Date", "RangeBegin", "RangeEnd")]
+test(2038.38, x[Active == TRUE & between(Date, RangeBegin, RangeEnd), Date], as.IDate(c("2020-01-01", "2020-01-05")))
+
+# errors name the bound that failed coercion
+x = as.Date("2020-01-01") + 0:4
+test(2038.39, between(x, "not-a-date", "2020-01-04"), error="Date while 'lower' was not, coercion to Date failed")
+test(2038.40, between(x, "2020-01-02", "not-a-date"), error="Date while 'upper' was not, coercion to Date failed")
 
 # between int64 support
 if (test_bit64) {
@@ -16088,8 +16122,9 @@ test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a",
 set.seed(2)
 ids   = sample(letters, 10)   # reduced from 20 to 10
 dates = 1:10                  #   and 40 to 10 to save ram, #5517
-dt = data.table(CJ(dates, ids, ids))
+dt = data.table(CJ(dates, ids, ids, sorted=FALSE))
 setnames(dt, c("date", "id1", "id2"))
+setorder(dt, date, id1, id2)
 dt[, value := rnorm(length(date))]
 dt = dt[!(date == 1 & (id1 == "a" | id2 == "a"))]
 dt = dt[!(date == 4 & (id1 == "e" | id2 == "e"))]
@@ -18407,7 +18442,7 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
   suppressPackageStartupMessages(unloadNamespace("bit64"))
-  on.exit(suppressPackageStartupMessages(library(bit64, pos="package:base")))
+  on.exit(suppressWarnings(suppressPackageStartupMessages(library(bit64, pos="package:base"))))
   test(2265, DT, output="abc\\s*1$")
 })
 
@@ -20671,9 +20706,11 @@ DT = data.table(factor(rep("\uf8", 3)))
 # identical() to V1's only level but stored in a different CHARSXP
 samelevel = iconv(levels(DT$V1), from = "UTF-8", to = "latin1")
 DT[1, V1 := samelevel]
-test(2311.1, nlevels(DT$V1), 1L) # used to be 2
+# used to fail to look up the new level, resulting in an invalid factor, #7648
+test(2311.1, as.integer(DT$V1), rep(1L, 3))
+test(2311.2, nlevels(DT$V1), 1L) # used to be 2
 DT[1, V1 := factor("a", levels = c("a", samelevel))]
-test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+test(2311.3, nlevels(DT$V1), 2L) # used to be 3
 
 # avoid translateChar*() in OpenMP threads, #6883
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
@@ -21512,14 +21549,117 @@ test(2364.2, levels(x$a), levels(y$a))
 rm(x, y)
 
 # test for data.frame reshape for melt
-df_melt = data.frame(a = 1:2, b = 3:4)
-dt_melt = data.table(a = 1:2, b = 3:4)
+df_melt = data.frame(a=1:2, b=3:4)
+dt_melt = data.table(a=1:2, b=3:4)
 test(2365.1, melt(df_melt, id.vars=1:2), melt(dt_melt, id.vars=1:2))
 
 # test for data.frame reshape for dcast
-df_dcast = data.frame(a = c("x", "y"), b = 1:2, v = 3:4)
-dt_dcast = data.table(a = c("x", "y"), b = 1:2, v = 3:4)
-test(2365.2, dcast(df_dcast, a ~ b, value.var = "v"), dcast(dt_dcast, a ~ b, value.var = "v"))
+df_dcast = data.frame(a=c("x", "y"), b=1:2, v=3:4, stringsAsFactors=FALSE)
+dt_dcast = data.table(a=c("x", "y"), b=1:2, v=3:4)
+test(2365.2, dcast(df_dcast, a~b, value.var="v"), dcast(dt_dcast, a~b, value.var="v"))
+
+#2606 tables() depth=1 finds nested data.tables in lists
+# creating env so that the names are within it
+xenv = new.env()
+xenv$DT = data.table(a=1L)
+xenv$L = list(data.table(a=1, b=4:6), data.table(a=2, b=7:10))
+xenv$LL = list(list(data.table(a=1L, b=4:6)))
+xenv$M = list(b=data.table(a=1, b=4:6), a=1:5)
+xenv$N = list(a=1:5)
+xenv$DF = data.frame(a = 1:2)
+xenv$DF$b = data.table(c = 3:4, d = 5:6)
+test(2366.1,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(NAME, NROW, NCOL, INDICES, KEY)], 
+     data.table(
+       NAME = c("DF$b", "DT", "L[[1]]", "L[[2]]", "M$b"),
+       NROW = c(2L, 1L, 3L, 4L, 3L),
+       NCOL = c(2L, 1L, 2L, 2L, 2L),
+       INDICES = list(NULL, NULL, NULL, NULL, NULL),
+       KEY = list(NULL, NULL, NULL, NULL, NULL)
+     ))
+setindex(xenv$M$b, b)
+test(2366.2,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
+     data.table(INDICES = list(NULL, NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL, NULL)))
+setkey(xenv$M$b, a)
+test(2366.3,
+     tables(env=xenv, depth=1L, index=TRUE)[, .(INDICES, KEY)],
+     data.table(INDICES = list(NULL, NULL, NULL, NULL, "b"), KEY = list(NULL, NULL, NULL, NULL, "a")))
+# test for depth>1L
+test(2366.4, tables(env=xenv, depth=2L), error="depth>1L is not implemented yet")
+rm(xenv)
+
+# no data.table test
+xenv_empty = new.env()
+test(2366.5, tables(env=xenv_empty, depth=1L), invisible(data.table(NULL)))
+test(2366.6, tables(env=xenv_empty), invisible(data.table(NULL)))
+rm(xenv_empty)
+
+# fread supports connections #561
+f = testDir("russellCRLF.csv")
+test(2367.1, fread(file=file(f, "r"), verbose=TRUE), fread(f), output="Spill connection to tempfile")
+test(2367.2, fread(file(f, "r"), nrows=0L), fread(f, nrows=0L))
+test(2367.3, fread(file(f, "r"), nrows=5), fread(f, nrows=5))
+test(2367.4, fread(file(f, "r"), nrows=5, header=FALSE), fread(f, nrows=5, header=FALSE))
+# test with open connection consuming part of the connection before fread
+con = file(f, "rb")
+test(2367.5, {readLines(con, n=3); fread(con)}, fread(f, skip=3L))
+close(con)
+file.create(f <- tempfile())
+test(2367.6, fread(file(f)), data.table(), warning="Connection has size 0.")
+unlink(f)
+
+# negative years caused UB in leap year calculation, #7704
+x = fread("x\n-1-01-01")$x
+test(2368.1, year(x), -1L)
+test(2368.2, month(x), 1L)
+test(2368.3, mday(x),  1L)
+
+# yearqtr() and yearmon() could optionally output 2025Q4 format #7694
+x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01", NA)
+test(2369.1, yearqtr(x, format="numeric"), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100, NA))
+test(2369.2, yearqtr(x, format="numeric"), yearqtr(x))  # numeric is the default, preserves backwards compatibility
+test(2369.3, yearqtr(x, format="character"), c("1111Q4", "2019Q1", "2019Q1", "2019Q1", "2019Q4", "2020Q1", "2020Q1", "2020Q4", "2040Q1", "2040Q4", "2100Q1", NA_character_))
+test(2369.4, yearqtr("2016-08-03 01:02:03.45", format="character"), "2016Q3")
+test(2369.5, yearqtr(NA, format="character"), NA_character_)
+
+test(2370.1, yearmon(x, format="numeric"), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12, NA))
+test(2370.2, yearmon(x, format="numeric"), yearmon(x))  # numeric is the default, preserves backwards compatibility
+test(2370.3, yearmon(x, format="character"), c("1111M11", "2019M01", "2019M02", "2019M03", "2019M12", "2020M02", "2020M03", "2020M12", "2040M01", "2040M12", "2100M03", NA_character_))
+test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
+test(2370.5, yearmon(NA, format="character"), NA_character_)
+
+# multiple expected/observed warnings in test() are printed on aligned lines, #7092
+test(2371.1, test(0, {warning("a"); 2L}, 2L, warning=c("a", "b")), FALSE,
+             output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
+test(2372.2, test(0, {warning("a"); warning("b"); 2L}, 2L, warning="a"), FALSE,
+             output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
+
+# group-by on empty table works
+empty_dt = data.table()
+test(2373.1, empty_dt[, 1, by = numeric()], data.table(numeric=numeric(), V1=numeric()))
+test(2373.2, empty_dt[, 1L, by = numeric()], data.table(numeric=numeric(), V1=integer()))
+test(2373.3, empty_dt[, .(x=1), by = .(b=numeric())], data.table(b=numeric(), x=numeric()))
+test(2373.4, data.table()[, x := 1, by=numeric()], data.table(x=numeric()))
+
+# prohibit duplicated column names as key columns, #4888 and #4891
+DT = data.table(a=1:3, a=4:6)
+test(2374.01, setkey(DT, a, a), error="cols contains duplicate column names")
+test(2374.02, setindex(DT, a, a), error="cols contains duplicate column names")
+test(2374.03, setkey(DT, a), error="duplicated column names in the columns to key by")
+DT = data.table(a=1:2, b=3:4, key=c("a", "b"))
+test(2374.04, setnames(DT, "b", "a"), error="duplicated key columns")
+test(2374.05, key(DT), c("a", "b"))
+test(2374.06, CJ(a=1:3, a=4:5), error="duplicated column names")
+DT1 = CJ(a=1:3, b=c('a','b'), c=6)
+DT2 = data.table(a=rep(1:3, each=2L), a=rep(4:5, 3L), d=6)
+setattr(DT2, "sorted", c("a", "a", "d"))
+test(2374.07, DT1[DT2], error="i has duplicated key column")
+DT = data.table(a=1:2, b=3:4, key="a")
+test(2374.08, key(DT[, .(a, a)]), NULL)
+test(2374.09, key(subset(DT, select=c(a, a))), NULL)
+DT = data.table(a=1:2, a.1=3:4, val=10:11)
+test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
 
 # delete rows by reference #635
 # atomic types and list columns
@@ -21532,83 +21672,83 @@ dt = data.table(
   raw_col = as.raw(1:5),
   list_col = list(1L, 1:2, 1:3, 1:4, 1:5)
 )
-test(2366.01, copy(dt)[1L, .ROW := NULL], dt[-1])
-test(2366.02, copy(dt)[1, .ROW := NULL], dt[-1])
-test(2366.03, copy(dt)[c(TRUE, FALSE, FALSE, TRUE, FALSE), .ROW := NULL], dt[-c(1,4)])
-test(2366.04, copy(dt)[int==1L, .ROW := NULL], dt[-1])
-test(2366.05, copy(dt)[int<2L, .ROW := NULL], dt[-1])
-test(2366.06, copy(dt)[-1, .ROW := NULL], dt[1])
+test(2375.01, copy(dt)[1L, .ROW := NULL], dt[-1])
+test(2375.02, copy(dt)[1, .ROW := NULL], dt[-1])
+test(2375.03, copy(dt)[c(TRUE, FALSE, FALSE, TRUE, FALSE), .ROW := NULL], dt[-c(1,4)])
+test(2375.04, copy(dt)[int==1L, .ROW := NULL], dt[-1])
+test(2375.05, copy(dt)[int<2L, .ROW := NULL], dt[-1])
+test(2375.06, copy(dt)[-1, .ROW := NULL], dt[1])
 # zero row or empty data.tables
 dt = data.table()
-test(2366.07, dt[logical(0), .ROW := NULL], dt)
+test(2375.07, dt[logical(0), .ROW := NULL], dt)
 dt = data.table(a=integer(0), b=character(0))
-test(2366.08, dt[logical(0), .ROW := NULL], dt)
+test(2375.08, dt[logical(0), .ROW := NULL], dt)
 # multirow
 dt = data.table(a=1:5, b=letters[1:5])
-test(2366.09, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
-test(2366.11, copy(dt)[1:2, .ROW := NULL], dt[3:5])
-test(2366.12, copy(dt)[1:5, .ROW := NULL], dt[0])
+test(2375.09, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2375.11, copy(dt)[1:2, .ROW := NULL], dt[3:5])
+test(2375.12, copy(dt)[1:5, .ROW := NULL], dt[0])
 # NA handling and edges case
 dt = data.table(a=1:5, b=letters[1:5])
-test(2366.13, copy(dt)[c(1L, NA_integer_, 3L), .ROW := NULL], dt[c(2,4,5)])
-test(2366.14, copy(dt)[c(NA_integer_, NA_integer_), .ROW := NULL], dt)
-test(2366.15, copy(dt)[c(TRUE, NA, FALSE, NA, TRUE), .ROW := NULL], dt[c(2,3,4)])
-test(2366.16, copy(dt)[integer(0), .ROW := NULL], dt)
-test(2366.17, copy(dt)[logical(0), .ROW := NULL], dt)
-test(2366.18, copy(dt)[c(FALSE, FALSE, FALSE, FALSE, FALSE), .ROW := NULL], dt)
-test(2366.19, copy(dt)[a > 100, .ROW := NULL], dt)  # no matches
+test(2375.13, copy(dt)[c(1L, NA_integer_, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2375.14, copy(dt)[c(NA_integer_, NA_integer_), .ROW := NULL], dt)
+test(2375.15, copy(dt)[c(TRUE, NA, FALSE, NA, TRUE), .ROW := NULL], dt[c(2,3,4)])
+test(2375.16, copy(dt)[integer(0), .ROW := NULL], dt)
+test(2375.17, copy(dt)[logical(0), .ROW := NULL], dt)
+test(2375.18, copy(dt)[c(FALSE, FALSE, FALSE, FALSE, FALSE), .ROW := NULL], dt)
+test(2375.19, copy(dt)[a > 100, .ROW := NULL], dt)  # no matches
 # Duplicate indices
 dt = data.table(a=1:5, b=letters[1:5])
-test(2366.20, copy(dt)[c(1L, 1L), .ROW := NULL], dt[-1])
-test(2366.21, copy(dt)[c(1L, 1L, 2L, 2L), .ROW := NULL], dt[3:5])
-test(2366.22, copy(dt)[c(3L, 1L, 3L, 1L), .ROW := NULL], dt[c(2,4,5)])
+test(2375.20, copy(dt)[c(1L, 1L), .ROW := NULL], dt[-1])
+test(2375.21, copy(dt)[c(1L, 1L, 2L, 2L), .ROW := NULL], dt[3:5])
+test(2375.22, copy(dt)[c(3L, 1L, 3L, 1L), .ROW := NULL], dt[c(2,4,5)])
 # integer64
 if (test_bit64) {
   dt = data.table(a=1:5, b=as.integer64(11:15))
-  test(2366.23, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
-  test(2366.24, copy(dt)[1:5, .ROW := NULL], data.table(a=integer(0), b=integer64(0)))
+  test(2375.23, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
+  test(2375.24, copy(dt)[1:5, .ROW := NULL], data.table(a=integer(0), b=integer64(0)))
 }
 # Date/IDate/ITime columns
 dt = data.table(a=1:5, d=as.Date("2024-01-01") + 0:4, t=as.ITime(paste0(10:14, ":00:00")), dt=as.POSIXct("2024-01-01 12:00:00") + 3600*0:4)
-test(2366.25, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
-test(2366.26, copy(dt)[c(2L, 4L), .ROW := NULL]$d, as.Date("2024-01-01") + c(0,2,4))
+test(2375.25, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2375.26, copy(dt)[c(2L, 4L), .ROW := NULL]$d, as.Date("2024-01-01") + c(0,2,4))
 # Factor columns
 dt = data.table(a=1:5, f=factor(letters[1:5], levels=letters[1:10]))
-test(2366.27, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
-test(2366.28, levels(copy(dt)[c(1L, 3L), .ROW := NULL]$f), letters[1:10])
+test(2375.27, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
+test(2375.28, levels(copy(dt)[c(1L, 3L), .ROW := NULL]$f), letters[1:10])
 dt = data.table(a=1:5, of=ordered(letters[1:5], levels=letters[5:1]))
-test(2366.29, copy(dt)[c(2L, 4L), .ROW := NULL], dt[-c(2L,4L)])
-test(2366.30, is.ordered(copy(dt)[c(2, 4L), .ROW := NULL]$of))
+test(2375.29, copy(dt)[c(2L, 4L), .ROW := NULL], dt[-c(2L,4L)])
+test(2375.30, is.ordered(copy(dt)[c(2, 4L), .ROW := NULL]$of))
 # Keys - should be cleared after deletion
 dt = data.table(a=5:1, b=letters[1:5], key="a")
-test(2366.31, key(copy(dt)[1L, .ROW := NULL]), NULL)
-test(2366.32, haskey(copy(dt)[1L, .ROW := NULL]), FALSE)
+test(2375.31, key(copy(dt)[1L, .ROW := NULL]), NULL)
+test(2375.32, haskey(copy(dt)[1L, .ROW := NULL]), FALSE)
 # Indices - should be cleared after deletion
 dt = data.table(a=1:5, b=letters[1:5], c=5:1)
 setindex(dt, b)
-test(2366.33, indices(copy(dt)[1L, .ROW := NULL]), NULL)
+test(2375.33, indices(copy(dt)[1L, .ROW := NULL]), NULL)
 # row names
 dt = data.table(a=1:5, b=letters[1:5])
-test(2366.34, attr(copy(dt)[c(1L, 3L), .ROW := NULL], "row.names"), 1:3)
+test(2375.34, attr(copy(dt)[c(1L, 3L), .ROW := NULL], "row.names"), 1:3)
 # selfref check
-test(2366.35, selfrefok(copy(dt)[1L, .ROW := NULL]), 1L)
+test(2375.35, selfrefok(copy(dt)[1L, .ROW := NULL]), 1L)
 # errors
 dt = data.table(a=1:4, g=1:2)
-test(2366.36, dt[1L, .ROW := 1L], error=".ROW can only be used with := NULL")
-test(2366.37, dt[1L, .ROW := "delete"], error=".ROW can only be used with := NULL")
-test(2366.38, dt[1L, .ROW := FALSE], error=".ROW can only be used with := NULL")
-test(2366.39, dt[, .ROW := NULL], error=".ROW := NULL requires i= condition")
-test(2366.40, dt[1L, .ROW := NULL, by=g], error=".ROW := NULL does not support 'by' or 'keyby'")
+test(2375.36, dt[1L, .ROW := 1L], error=".ROW can only be used with := NULL")
+test(2375.37, dt[1L, .ROW := "delete"], error=".ROW can only be used with := NULL")
+test(2375.38, dt[1L, .ROW := FALSE], error=".ROW can only be used with := NULL")
+test(2375.39, dt[, .ROW := NULL], error=".ROW := NULL requires i= condition")
+test(2375.40, dt[1L, .ROW := NULL, by=g], error=".ROW := NULL does not support 'by' or 'keyby'")
 # large table
 dt = data.table(a=1:20000, b=rep(letters, length.out=20000))
 idx = seq(1L, 20000L, by=2L)
-test(2366.41, copy(dt)[idx, .ROW := NULL], dt[-idx])
+test(2375.41, copy(dt)[idx, .ROW := NULL], dt[-idx])
 # Chaining and complexer i expressions
 dt = data.table(a=1:10, b=letters[1:10])
-test(2366.42, copy(dt)[a>2, .ROW := NULL][b=="a"], data.table(a=1L, b="a"))
-test(2366.43, copy(dt)[a %% 2 == 0, .ROW := NULL], dt[a %% 2 != 0])
-test(2366.44, copy(dt)[!(a < 5 & b != "d"), .ROW := NULL], dt[1:3])
+test(2375.42, copy(dt)[a>2, .ROW := NULL][b=="a"], data.table(a=1L, b="a"))
+test(2375.43, copy(dt)[a %% 2 == 0, .ROW := NULL], dt[a %% 2 != 0])
+test(2375.44, copy(dt)[!(a < 5 & b != "d"), .ROW := NULL], dt[1:3])
 # make columns resizable
 dt = data.table(a=1:3)
-test(2366.91, truelength(dt$a), 0L)
-test(2366.92, {setallocrow(dt); truelength(dt$a)}, 3L)
+test(2375.91, truelength(dt$a), 0L)
+test(2375.92, {setallocrow(dt); truelength(dt$a)}, 3L)

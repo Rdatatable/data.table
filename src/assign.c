@@ -2,11 +2,7 @@
 
 void setselfref(SEXP x) {
   if(!INHERITS(x, char_datatable))  return; // #5286
-  SEXP p;
-  // Store pointer to itself so we can detect if the object has been copied. See
-  // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
-  // Called from C only, not R level, so returns void.
-  setAttrib(x, SelfRefSymbol, p=R_MakeExternalPtr(
+  SEXP p=R_MakeExternalPtr(
     R_NilValue,                  // for identical() to return TRUE. identical() doesn't look at tag and prot
     PROTECT(getAttrib(x, R_NamesSymbol)),  // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
     PROTECT(R_MakeExternalPtr(   // to avoid an infinite loop in object.size(), if prot=x here
@@ -14,7 +10,11 @@ void setselfref(SEXP x) {
       R_NilValue,                // this tag and prot currently unused
       R_NilValue
     ))
-  ));
+  );
+  // Store pointer to itself so we can detect if the object has been copied. See
+  // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
+  // Called from C only, not R level, so returns void.
+  setAttrib(x, SelfRefSymbol, p);
   UNPROTECT(2);
 
 /*
@@ -52,8 +52,7 @@ void setselfref(SEXP x) {
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
-  SEXP v, p, tag, prot;
-  v = getAttrib(x, SelfRefSymbol);
+  SEXP v = getAttrib(x, SelfRefSymbol);
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
     //  from disk, and ii) every time a new data.table is over-allocated for the first time.
@@ -62,15 +61,15 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     //  In both cases the selfref is not ok.
     return 0;
   }
-  p = R_ExternalPtrAddr(v);
+  SEXP p = R_ExternalPtrAddr(v);
   if (p==NULL) {
     if (verbose) Rprintf(_("The data.table internal attributes of this table are invalid. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to the data.table issue tracker.\n"));
     return -1;
   }
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
-  tag = R_ExternalPtrTag(v);
+  SEXP tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
-  prot = R_ExternalPtrProtected(v);
+  SEXP prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   if (!checkNames) return x == R_ExternalPtrAddr(prot);
@@ -130,7 +129,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   setAttrib(newdt, R_NamesSymbol, newnames);
   setselfref(newdt);
   UNPROTECT(protecti);
-  return(newdt);
+  return newdt;
 }
 
 // Wrapped in a function so the same message is issued for the data.frame case at the R level
@@ -177,14 +176,12 @@ SEXP setdt_nrows(SEXP x)
 
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
-  SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
-  R_len_t l, tl;
   if (isNull(dt)) error(_("alloccol has been passed a NULL dt"));
   if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "alloccol");
-  klass = getAttrib(dt, R_ClassSymbol);
+  SEXP klass = getAttrib(dt, R_ClassSymbol);// klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   if (isNull(klass)) error(_("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker."));
-  l = LENGTH(dt);
-  names = getAttrib(dt,R_NamesSymbol);
+  const R_len_t l = LENGTH(dt);
+  SEXP names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.
   // So, careful to use length() on names, not LENGTH().
   if (length(names)!=l) internal_error(__func__, "length of names (%d) is not length of dt (%d)", length(names),l); // # nocov
@@ -195,7 +192,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
   //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
-  tl = R_maxLength(dt);
+  const R_len_t tl = R_maxLength(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
@@ -203,7 +200,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
   if (n<tl && verbose) Rprintf(_("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead."),tl,n);
         // otherwise the finalizer can't clear up the Large Vector heap
-  return(dt);
+  return dt;
 }
 
 int checkOverAlloc(SEXP x)
@@ -806,9 +803,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -hash_lookup(marks, sourceLevelsD[val-1], 0); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
-          const SEXP *sourceD = STRING_PTR_RO(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
-            const SEXP val = sourceD[i];
+            // for character input, sourceLevelsD corresponds to the source vector pre-converted to UTF-8
+            const SEXP val = sourceLevelsD[i];
             newSourceD[i] = val==NA_STRING ? NA_INTEGER : -hash_lookup(marks, val, 0);
           }
         }
@@ -1204,7 +1201,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   copyMostAttrib(x, v);
   writeNA(v, 0, n, false);
   UNPROTECT(1);
-  return(v);
+  return v;
 }
 
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
