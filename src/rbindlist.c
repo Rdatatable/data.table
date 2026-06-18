@@ -250,7 +250,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
-    SEXP idval, listNames=getAttrib(l, R_NamesSymbol);
+    SEXP idval, listNames=PROTECT(getAttrib(l, R_NamesSymbol));
     if (length(listNames)) {
       SET_VECTOR_ELT(ans, 0, idval=allocVector(STRSXP, nrow));
       for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
@@ -270,6 +270,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         for (int k=0; k<thisnrow; ++k) idvald[ansloc++] = i+1;
       }
     }
+    UNPROTECT(1); // listNames
   }
 
   PROTECT_INDEX IcoercedForFactor;
