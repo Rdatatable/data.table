@@ -281,7 +281,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     PROTECT_INDEX ILongestLevels;
     SEXP longestLevels=R_NilValue;              // just for ordered factor
-    PROTECT_WITH_INDEX(longestLevels, &ILongestLevels); nprotect++;
+    PROTECT_WITH_INDEX(longestLevels, &ILongestLevels);
     bool int64=false, date=false, posixct=false, itime=false, asis=false;
     const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
@@ -565,7 +565,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         ansloc += thisnrow;
       }
     }
+    UNPROTECT(1); // longestLevels
   }
-  UNPROTECT(nprotect); // ans, ansNames, longestLevels? coercedForFactor?
+  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor
   return(ans);
 }
