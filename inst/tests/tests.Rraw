@@ -21669,3 +21669,8 @@ test(2375.3, print(data.table(x=c("short", "abcdefghijklmnopqrstuvwxyz"))), outp
 test(2375.4, print(data.table(x="abcdefghijklmnopqrstuvwxyz")), output="abcdefghijklmnopqrstuvwxyz", options=list(width=200, datatable.prettyprint.char=NULL))
 test(2375.5, print(data.table(id=1L, score=99.1, txt="abcdefghijklmnopqrstuvwxyz")), output="abcdefghijklmn...", options=list(width=20, datatable.prettyprint.char=NULL))
 test(2375.6, print(data.table(x=rep("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1e6)), topn=1), output="1000000: ABCDEFGHIJKLM...", options=list(width=25, datatable.prettyprint.char=NULL))
+
+# rbindlist() used to put O(ncol(...)) > R_PPStackSize = 50000 items on the protect stack, #7793
+x = as.data.table(as.list(1:50001))
+test(2376, rbindlist(list(x)), x)
+rm(x)
