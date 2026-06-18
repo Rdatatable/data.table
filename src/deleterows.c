@@ -173,7 +173,7 @@ static void compactVectorRaw(SEXP col, const int *dest, const int *keep,
       }
       break;
     }
-    default:
+    default: // #nocov
       error("Unsupported column type %s", type2char(TYPEOF(col))); // #nocov
   }
 }
