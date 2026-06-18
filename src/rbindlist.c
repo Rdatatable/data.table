@@ -272,7 +272,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     }
   }
 
-  SEXP coercedForFactor = NULL;
+  PROTECT_INDEX IcoercedForFactor;
+  SEXP coercedForFactor = R_NilValue;
+  PROTECT_WITH_INDEX(coercedForFactor, &IcoercedForFactor); nprotect++;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
@@ -349,7 +351,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
       // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
-      if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
+      if (coercedForFactor==R_NilValue) REPROTECT(coercedForFactor=allocVector(VECSXP, LENGTH(l)), IcoercedForFactor);
       for (int i=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
