@@ -226,7 +226,23 @@ Products[
         total_value = price * count)
 ]
 ```
+#### 3.1.4. Identifying matches in key-only tables
 
+When joining a table `y` to a "lookup" table `x` that contains only keys, the resulting join column defaults to the value in `y`. To explicitly check if a match was found in `x`, we can use the `x.` prefix. If `x.col` is `NA`, no match was found.
+
+```{r}
+# Lookup table of authorized IDs
+authorized_ids = data.table(user_id = c(1L, 2L, 5L), key = "user_id")
+# New login attempts
+logins = data.table(user_id = c(1L, 3L, 5L))
+
+# By selecting x.user_id, we can identify which logins exist in the authorized table
+authorized_ids[logins, on = .(user_id), .(user_id, is_authorized = !is.na(x.user_id))]
+#    user_id is_authorized
+# 1:       1          TRUE
+# 2:       3         FALSE
+# 3:       5          TRUE
+```
 
 ##### Summarizing with `on` in `data.table`
 
@@ -253,7 +269,7 @@ dt2 = ProductReceived[
 identical(dt1, dt2)
 ```
 
-#### 3.1.4. Joining based on several columns
+#### 3.1.5. Joining based on several columns
 
 So far we have just joined `data.table`s based on 1 column, but it's important to know that the package can join tables matching several columns.
 
@@ -627,6 +643,31 @@ ProductPriceHistory[ProductSales,
                     roll = TRUE,
                     nomatch = NULL,
                     j = .(product_id, date, count, price)]
+```
+
+### 5.1. Calculating Staleness (Join Distance)
+
+In rolling joins, `data.table` matches to the nearest available record. By default, the join column in the result displays the value from the i table (the time you "queried"). To see the actual time of the record that was found in `x`, use the `x`. prefix. The difference between these two is often called "staleness."
+
+```{r}
+# Prices updated at specific times
+prices = data.table(
+  time = as.ITime(c("10:00:00", "10:05:00", "10:10:00")),
+  price = c(100, 105, 110),
+  key = "time"
+)
+
+# A trade happens at 10:07:00
+trade = data.table(time = as.ITime("10:07:00"))
+
+# Using x.time to see the actual record time found
+prices[trade, on = .(time), roll = TRUE, 
+       .(queried_time = time, 
+         actual_time = x.time, 
+         price, 
+         staleness = time - x.time)]
+#    queried_time actual_time price staleness
+# 1:     10:07:00    10:05:00   105  00:02:00
 ```
 
 ## 6. Taking advantage of joining speed
