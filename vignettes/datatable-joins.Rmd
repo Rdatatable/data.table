@@ -236,10 +236,8 @@ authorized_ids = data.table(user_id = c(1L, 2L, 5L), key = "user_id")
 # New login attempts
 logins = data.table(user_id = c(1L, 3L, 5L))
 
-# Use "user_id" as a string in the 'on' argument
-authorized_ids[logins, on = "user_id", 
-               .(user_id = i.user_id, 
-                 is_authorized = !is.na(x.user_id))]
+# By selecting x.user_id, we can identify which logins exist in the authorized table
+authorized_ids[logins, on = "user_id", .(user_id, is_authorized = !is.na(x.user_id))]
 ```
 
 ##### Summarizing with `on` in `data.table`
@@ -649,6 +647,7 @@ In rolling joins, `data.table` matches to the nearest available record. By defau
 
 ```{r}
 # Prices updated at specific times
+# Prices updated at specific times
 prices = data.table(
   time = as.ITime(c("10:00:00", "10:05:00", "10:10:00")),
   price = c(100, 105, 110),
@@ -659,12 +658,11 @@ prices = data.table(
 trade = data.table(time = as.ITime("10:07:00"))
 
 # Using x.time to see the actual record time found
-# Use "time" as a string to avoid conflict with base::time
-prices[trade, on = "time", roll = TRUE, 
-       .(queried_time = i.time, 
+prices[trade, on = .(time), roll = TRUE, 
+       .(queried_time = time, 
          actual_time = x.time, 
          price, 
-         staleness = i.time - x.time)]
+         staleness = time - x.time)]
 ```
 
 ## 6. Taking advantage of joining speed
