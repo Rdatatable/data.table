@@ -171,8 +171,13 @@ as.ITime.numeric = function(x, ms = 'truncate', ...) {
 }
 
 as.ITime.character = function(x, format, ...) {
+  nm = names(x)
   x = unclass(x)
-  if (!missing(format)) return(as.ITime(strptime(x, format = format, ...), ...))
+  if (!missing(format)) {
+    ans = as.ITime(strptime(x, format = format, ...), ...)
+    if (!is.null(nm)) setattr(ans, "names", nm)
+    return(ans)
+  }
   # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
   y = strptime(x, format = "%H:%M:%OS", ...)
   w = which(is.na(y))
@@ -192,12 +197,18 @@ as.ITime.character = function(x, format, ...) {
       w = w[!nna]
     }
   }
-  as.ITime(y, ...)
+  ans = as.ITime(y, ...)
+  if (!is.null(nm)) setattr(ans, "names", nm)
+  ans
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
+  nm = names(x)
   secs = clip_msec(x$sec, ms)
-  (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))  # () wrap to return visibly
+  ans = with(x, secs + min * 60L + hour * 3600L)
+  setattr(ans, "class", "ITime")
+  if (!is.null(nm)) setattr(ans, "names", nm)
+  ans
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
