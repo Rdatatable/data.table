@@ -15,7 +15,7 @@ as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
 }
 
 as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
-  nm = names(x)  # Capture names
+  nm = names(x)
   if (origin=="1970-01-01") {
     x = as.integer(x)
     class(x) = c("IDate", "Date")
@@ -23,21 +23,21 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
-    if (!is.null(nm)) setattr(x, "names", nm)  # Restore names
+    if (!is.null(nm)) setattr(x, "names", nm)
     x
   } else {
     # only call expensive as.IDate.character if we have to
     ans = as.IDate(origin, ...) + as.integer(x)
-    if (!is.null(nm)) setattr(ans, "names", nm)  # Restore names
+    if (!is.null(nm)) setattr(ans, "names", nm)
     ans
   }
 }
 
 as.IDate.Date = function(x, ...) {
-  nm = names(x)  # Capture names
+  nm = names(x)
   x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
   class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
-  if (!is.null(nm)) setattr(x, "names", nm)  # Restore names
+  if (!is.null(nm)) setattr(x, "names", nm)
   x                                 # always return a new object
 }
 
@@ -45,7 +45,7 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) {
     ans = as.integer(as.numeric(x) %/% 86400L)
     setattr(ans, "class", c("IDate", "Date"))
-    setattr(ans, "names", names(x))  # Restore names
+    setattr(ans, "names", names(x))
     ans
   } else {
     as.IDate(as.Date(x, tz =  tz %||% '', ...))
