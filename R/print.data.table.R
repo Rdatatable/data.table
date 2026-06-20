@@ -58,7 +58,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Null %s (0 rows and 0 cols)\n", x_class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
       catf("Empty %s (%d rows and %d cols)", x_class, NROW(x), NCOL(x))
-      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      if (length(x)>0L) {
+        e_trunc = getOption("datatable.prettyprint.char") %||% (getOption("width") - 5L)
+        t_names = char.trunc(head(names(x), 6L), trunc.char = e_trunc)
+        cat(": ",paste(t_names,collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      }
       cat("\n") # notranslate
     }
     return(invisible(x))
@@ -94,6 +98,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     trunc.char = max(0L, getOption("width") - rn_w - 3L)
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, trunc.char = trunc.char, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
+  if (col.names != "none") colnames(toprint) = char.trunc(colnames(toprint), trunc.char = trunc.char)
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
@@ -122,7 +127,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (!any(cols_to_print)) {
-      trunc_cols_message(not_printed, abbs, class, col.names)
+      trunc_cols_message(not_printed, abbs, class, col.names, trunc.char = trunc.char)
       return(invisible(x))
     }
     # When nrow(toprint) = 1, attributes get lost in the subset,
@@ -134,7 +139,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (col.names != "none") cut_colnames = identity
     cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
     # prints names of variables not shown in the print
-    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
+    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names, trunc.char = trunc.char)
   }
   if (printdots) {
     if (isFALSE(row.names)) {
@@ -291,12 +296,17 @@ toprint_subset = function(x, cols_to_print) {
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
-trunc_cols_message = function(not_printed, abbs, class, col.names){
+trunc_cols_message = function(not_printed, abbs, class, col.names, trunc.char = getOption("datatable.prettyprint.char")){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
+  footer_trunc = if (!is.null(trunc.char) && is.finite(trunc.char)) {
+    max(5L, trunc.char - 25L) 
+  } else {
+    trunc.char
+  }
   catf(
     ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
-    n, brackify(paste0(not_printed, classes)),
+    n, brackify(paste0(char.trunc(not_printed, trunc.char = footer_trunc), classes)),
     domain=NA
   )
 }
