@@ -58,6 +58,8 @@
 
 12. `print.data.table()` now truncates long character columns and list-column summaries by default to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated based on the available console width. Use `options(datatable.prettyprint.char=Inf)` for the old default behavior (never truncate). Thanks @tdhock for the report and @venom1204 for the fix.
 
+13. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report and @venom1204 for the PR.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
