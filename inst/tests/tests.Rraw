@@ -21672,6 +21672,14 @@ test(2375.6, print(data.table(x=rep("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1e6)), topn=1)
 
 # rbindlist() used to put O(ncol(...)) > R_PPStackSize items on the protect stack, #7793
 # Assuming 50000 as the default protection stack size, although R --max-ppsize=... can increase it to 500000.
-x = as.data.table(as.list(1:50001))
+max_ppsize = local({
+  arg = grep("^--max-ppsize=", commandArgs(FALSE), value = TRUE)
+  if (length(arg)) {
+    v = suppressWarnings(as.integer(sub("^--max-ppsize=", "", tail(arg, 1L))))
+    if (!is.na(v)) return(v)
+  }
+  50000L
+})
+x = as.data.table(as.list(1:max_ppsize))
 test(2376, rbindlist(list(x)), x)
-rm(x)
+rm(x, max_ppsize)
