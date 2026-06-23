@@ -312,27 +312,27 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       if (rollToNearest) {                                                                        \
         /* when rollToNearest you can't limit the distance currently */                           \
         /* rollToNearest not yet supported for STRSXP (checked up front) */                       \
-        if ( xlow>xlowIn && xupp<xuppIn ) {                                                       \
+        if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {                             \
           if ( LOWDIST <= UPPDIST )                                                               \
             xlow--;                                                                               \
           else                                                                                    \
             xupp++;                                                                               \
         }                                                                                         \
-        else if (xupp==xuppIn && rollends[1])                                                     \
+        else if (uppmax && xupp==xuppIn && rollends[1])                                           \
           xlow--;                                                                                 \
-        else if (xlow==xlowIn && rollends[0])                                                     \
+        else if (lowmax && xlow==xlowIn && rollends[0])                                           \
           xupp++;                                                                                 \
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
         /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d lowmax=%d uppmax=%d ilow=%d iupp=%d\n", xlow, xlowIn, xupp, xuppIn, lowmax, uppmax, ilow, iupp); */ \
-        if ((( roll>0.0 && xlow>xlowIn && (xupp<xuppIn || !uppmax || rollends[1]))                \
+        if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))   \
           || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )  /* test 933 */               \
           && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
           /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy,  TODO pre-save isinf() into const bool */ \
           xlow--;                                                                                 \
           /* ** AND NOW EXTEND iupp too for all irows that join to this same row */               \
         else                                                                                      \
-        if ((( roll<0.0 && xupp<xuppIn && (xlow>xlowIn || !lowmax || rollends[0]))                \
+        if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))   \
           || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )                               \
           && ( isinf(rollabs) || ((UPPDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
           xupp++;                                                                                 \
@@ -413,8 +413,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     } else {
       const double *icv = REAL_RO(ic);
       const double *xcv = REAL_RO(xc);
-      const double ival = icv[ir];
-      const uint64_t ivalt = dtwiddle(ival); // TO: remove dtwiddle by dealing with NA, NaN, -Inf, +Inf up front
+      double ival = icv[ir];
       #undef ISNAT
       #undef WRAP
       #define ISNAT(x) (ISNAN(x))
@@ -482,7 +481,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, true, true);
     } else {
-      int len = xupp-xlow-1+rollLow+rollUpp; // rollLow and rollUpp cannot both be true
+      int len = xupp-xlow-1;
       if (len>1) {
         if (mult==ALL)
           allLen1[0] = FALSE;                           // bmerge()$allLen1
@@ -490,7 +489,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           error(_("mult='error' and multiple matches during merge"));
       }
       if (nqmaxgrp == 1) {
-        const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // bmerge()$starts thus extra +1 for 1-based indexing at R level
+        const int rf = (mult!=LAST) ? xlow+2 : xupp; // bmerge()$starts thus extra +1 for 1-based indexing at R level
         const int rl = (mult==ALL) ? len : 1;                        // bmerge()$lens
         for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
           const int k = o ? o[j]-1 : j;
