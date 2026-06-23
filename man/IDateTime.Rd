@@ -38,9 +38,12 @@
 \alias{mday}
 \alias{week}
 \alias{isoweek}
+\alias{isoyear}
 \alias{month}
 \alias{quarter}
 \alias{year}
+\alias{yearmon}
+\alias{yearqtr}
 \alias{IDate-class}
 \alias{ITime-class}
 
@@ -59,7 +62,7 @@
 
    Lastly, there are date-time helpers for extracting parts of dates as
    integers, for example the year (\code{year()}), month
-   (\code{month()}), or day in the month (\code{mday()}); see Usage and Exampels.
+   (\code{month()}), or day in the month (\code{mday()}); see Usage and Examples.
 }
 \usage{
 as.IDate(x, \dots)
@@ -67,13 +70,13 @@ as.IDate(x, \dots)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
-\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
+\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), ...)
 
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
 \method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
-\method{round}{ITime}(x, digits = c("hours", "minutes"), \ldots)
-\method{trunc}{ITime}(x, units = c("hours", "minutes"), \ldots)
+\method{round}{ITime}(x, digits = c("hours", "minutes"), ...)
+\method{trunc}{ITime}(x, units = c("hours", "minutes"), ...)
 
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
@@ -90,9 +93,12 @@ wday(x)
 mday(x)
 week(x)
 isoweek(x)
+isoyear(x)     
 month(x)
 quarter(x)
 year(x)
+yearmon(x, format = c("numeric", "character"))
+yearqtr(x, format = c("numeric", "character"))
 
 }
 
@@ -109,6 +115,7 @@ year(x)
   the S3 generic.}
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
+  \item{format}{For \code{yearmon} and \code{yearqtr}, either \code{"numeric"} (default) or \code{"character"}. \code{"character"} formats the result as \code{"2025M04"} for \code{yearmon} and \code{"2025Q2"} for \code{yearqtr}.}
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -132,6 +139,11 @@ seconds in the day. \code{as.ITime} does not allow days longer than 24
 hours. Because \code{ITime} is stored in seconds, you can add it to a
 \code{POSIXct} object, but you should not add it to a \code{Date}
 object.
+
+For \code{as.ITime}, note that the string \code{"24:00:00"} is parsed as \code{"00:00:00"}.
+This is because the conversion uses \code{as.POSIXct}, which treats \code{"24:00:00"} as midnight of the next day. 
+This differs from ISO 8601 (which allows \code{"24:00:00"} to represent end-of-day), but aligns with POSIX standards.
+To represent end-of-day intervals, use \code{"23:59:59"} or arithmetic (e.g., \code{as.ITime("23:59:59") + 1L}).
 
 We also provide S3 methods to convert to and from \code{Date} and \code{POSIXct}.
 
@@ -164,12 +176,21 @@ functions \code{weekdays}, \code{months}, and \code{quarters} can also
 be used, but these return character values, so they must be converted to
 factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
-The \code{round} method for IDate's is useful for grouping and plotting. 
+The \code{round} method for IDate's is useful for grouping and plotting.
 It can round to weeks, months, quarters, and years. Similarly, the \code{round}
 and \code{trunc} methods for ITime's are useful for grouping and plotting.
-They can round or truncate to hours and minutes. 
-Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5. 
+They can round or truncate to hours and minutes.
+Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
+
+Functions like \code{week()} and \code{isoweek()} provide week numbering functionality.
+\code{week()} computes completed or fractional weeks within the year,
+while \code{isoweek()} calculates week numbers according to ISO 8601 standards,
+which specify that the first week of the year is the one containing the first Thursday.
+This convention ensures that week boundaries align consistently with year boundaries,
+accounting for both year transitions and varying day counts per week.
+
+Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO week.
 
 }
 
@@ -184,22 +205,31 @@ See 'Details' in \code{\link{round}} for more information.
    \code{itime} in \code{IDate} and \code{ITime} format.
 
    \code{second}, \code{minute}, \code{hour}, \code{yday}, \code{wday},
-   \code{mday}, \code{week}, \code{month}, \code{quarter},
+   \code{mday}, \code{week}, \code{isoweek}, \code{isoyear}, \code{month}, \code{quarter},
    and \code{year} return integer values
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
+   \code{yearmon} and \code{yearqtr} return double values representing
+   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}
+   when \code{format = "numeric"} (the default). When \code{format = "character"},
+   they return character vectors of the form \code{"YYYYM##"} (e.g. \code{"2025M04"},
+   zero-padded for sortability) and \code{"YYYYQN"} (e.g. \code{"2025Q2"}) respectively,
+   with \code{NA} input returned as \code{NA_character_}.
 
-   These values are all taken directly from the \code{POSIXlt} representation 
-   of \code{x}, with the notable difference that while \code{yday}, \code{wday}, 
+   \code{second}, \code{minute}, \code{hour} are taken directly from
+   the \code{POSIXlt} representation.
+   All other values are computed from the underlying integer representation
+   and comparable with the values of their \code{POSIXlt} representation
+   of \code{x}, with the notable difference that while \code{yday}, \code{wday},
    and \code{mon} are all 0-based, here they are 1-based.
 
 }
 \references{
 
-  G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
+  G. Grothendieck and T. Petzoldt, \dQuote{Date and Time Classes in R},
   R News, vol. 4, no. 1, June 2004.
 
-  H. Wickham, https://gist.github.com/10238.
+  H. Wickham, https://gist.github.com/hadley/10238.
 
   ISO 8601, https://www.iso.org/iso/home/standards/iso8601.htm
 }
@@ -217,22 +247,28 @@ See 'Details' in \code{\link{round}} for more information.
 (d <- as.IDate("2001-01-01"))
 
 # S4 coercion also works
-identical(as.IDate("2001-01-01"), as("2001-01-01", "IDate"))
+identical(as.IDate("2001-01-01"), methods::as("2001-01-01", "IDate"))
 
 # create ITime:
 (t <- as.ITime("10:45"))
 
 # S4 coercion also works
-identical(as.ITime("10:45"), as("10:45", "ITime"))
+identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 
 (t <- as.ITime("10:45:04"))
 
 (t <- as.ITime("10:45:04", format = "\%H:\%M:\%S"))
 
+# "24:00:00" is parsed as "00:00:00"
+as.ITime("24:00:00")
+
+# Workaround for end-of-day: add 1 second to "23:59:59"
+as.ITime("23:59:59") + 1L
+
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 
 datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")
-(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
+(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = c("a", "idate", "itime")))
 
 af[, mean(a), by = "itime"]
 af[, mean(a), by = list(hour = hour(itime))]
@@ -253,7 +289,23 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
-   
+
+# Examples for isoyear() and isoweek()
+d1 = as.IDate("2019-12-30")
+year(d1)
+isoweek(d1)
+isoyear(d1)
+
+d2 = as.IDate("2016-01-01")
+year(d2)
+isoweek(d2)
+isoyear(d2)
+
+# Character format for yearmon() and yearqtr()
+d3 = as.IDate(c("2019-01-01", "2019-12-31"))
+yearmon(d3, format = "character") # "2019M01" "2019M12"
+yearqtr(d3, format = "character") # "2019Q1"  "2019Q4"
+
 }
 \keyword{utilities}
 

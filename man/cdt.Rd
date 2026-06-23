@@ -2,14 +2,14 @@
 \alias{cdatatable}
 \title{ data.table exported C routines }
 \description{
-  Some of internally used C routines are now exported. This interface should be considered experimental. List of exported C routines and their signatures are provided below in the usage section.
+  Some of the internally used C routines are now exported. This interface should be considered experimental. List of exported C routines and their signatures are provided below in the usage section.
 }
 \usage{
 # SEXP DT_subsetDT(SEXP x, SEXP rows, SEXP cols);
 # p_DT_subsetDT = R_GetCCallable("data.table", "DT_subsetDT");
 }
 \details{
-  Details how to use those can be found in \emph{Writing R Extensions} manual \emph{Linking to native routines in other packages} section.
+  Details on how to use these can be found in the \emph{Writing R Extensions} manual \emph{Linking to native routines in other packages} section.
   An example use with \code{Rcpp}:
 \preformatted{
   dt = data.table::as.data.table(iris)

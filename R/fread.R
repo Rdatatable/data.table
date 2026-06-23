@@ -1,11 +1,49 @@
+# nocov start
+# S3 generic that returns a function to open connections in binary mode
+binary_reopener = function(con, ...) {
+  UseMethod("binary_reopener")
+}
+
+binary_reopener.default = function(con, ...) {
+  con_class = class1(con)
+  stopf("Don't know how to reopen connection type '%s'. Need a connection opened in binary mode to continue.", con_class)
+}
+
+binary_reopener.file = function(con, ...) {
+  function(description) file(description, "rb", ...)
+}
+
+binary_reopener.gzfile = function(con, ...) {
+  function(description) gzfile(description, "rb", ...)
+}
+
+binary_reopener.bzfile = function(con, ...) {
+  function(description) bzfile(description, "rb", ...)
+}
+
+binary_reopener.url = function(con, ...) {
+  function(description) url(description, "rb", ...)
+}
+
+binary_reopener.unz = function(con, ...) {
+  function(description) unz(description, "rb", ...)
+}
+
+binary_reopener.pipe = function(con, ...) {
+  function(description) pipe(description, "rb", ...)
+}
+# nocov end
+
 fread = function(
-input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
+input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
-col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
+col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="", key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
-nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE), keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
+nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
+logicalYN=getOption("datatable.logicalYN", FALSE),
+keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
+yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stopf("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -16,23 +54,28 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
+  stopifnot( is.character(dec), length(dec)==1L)
+  if (dec == "auto") dec = "" else stopifnot(nchar(dec) == 1L)
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
-    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
-    isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(logicalYN), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  if (!is.character(comment.char) || length(comment.char) != 1L || is.na(comment.char) || nchar(comment.char) > 1L) {
+    stopf("comment.char= must be a single non-NA character.")
+  }
+  fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
-  if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
+  if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
-    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
-    is.numeric(nThread) && length(nThread)==1L
+    is.logical(header), length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread), length(nThread)==1L
   )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
@@ -48,7 +91,16 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       input = text
     }
   }
-  else if (is.null(cmd)) {
+  # Check if input is a connection and read it into memory
+  input_is_con = FALSE
+  if (!missing(input) && inherits(input, "connection")) {
+    input_is_con = TRUE
+  } else if (!is.null(file) && inherits(file, "connection")) {
+    input = file
+    input_is_con = TRUE
+    file = NULL
+  }
+  if (!input_is_con && is.null(cmd) && is.null(text)) {
     if (!is.character(input) || length(input)!=1L) {
       stopf("input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
     }
@@ -56,7 +108,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       # input is data itself containing at least one \n or \r
     } else if (startsWith(input, " ")) {
       stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
-    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
+    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(gsub("^file://", "", input))) {  # file name or path containing spaces is not a command. file.exists() doesn't understand file:// (#7550)
       cmd = input
       if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
         messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
@@ -66,9 +118,58 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
   }
   if (!is.null(cmd)) {
-    (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile(tmpdir=tmpdir)))
-    file = tmpFile
+    tmpFile = tempfile(tmpdir=tmpdir)
     on.exit(unlink(tmpFile), add=TRUE)
+    status = (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile))
+    if (status != 0) {
+      stopf("External command failed with exit code %d. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", status, tmpdir)
+    }
+    file = tmpFile
+  }
+  connection_spill_info = NULL
+  if (input_is_con) {
+    if (verbose) {
+      catf("[00] Spill connection to tempfile\n  Connection class: %s\n  Reading connection into a temporary file... ", toString(class(input)))
+      flush.console()
+    }
+    spill_started.at = proc.time()
+    con_open = isOpen(input)
+
+    needs_reopen = FALSE
+    if (con_open) {
+      con_summary = summary(input)
+      binary_modes = c("rb", "r+b")
+      if (!con_summary$mode %chin% binary_modes) needs_reopen = TRUE
+    }
+
+    close_con = NULL
+
+    if (needs_reopen) {
+      close(input)
+      input = binary_reopener(input)(con_summary$description)
+      close_con = input
+    } else if (!con_open) {
+      open(input, "rb")
+      close_con = input
+    }
+    if (!is.null(close_con)) on.exit(close(close_con), add=TRUE)
+    tmpFile = tempfile(tmpdir=tmpdir)
+    on.exit(unlink(tmpFile), add=TRUE)
+    bytes_copied = .Call(CspillConnectionToFile, input, tmpFile, as.numeric(nrows))
+    spill_elapsed = (proc.time() - spill_started.at)[["elapsed"]]
+
+    if (bytes_copied == 0) {
+      warningf("Connection has size 0. Returning a NULL %s.", if (data.table) 'data.table' else 'data.frame')
+      return(if (data.table) data.table(NULL) else data.frame(NULL))
+    }
+
+    if (verbose) {
+      catf("done in %s\n", timetaken(spill_started.at))
+      flush.console()
+    }
+    connection_spill_info = c(spill_elapsed, bytes_copied)
+    input = tmpFile
+    file = tmpFile
   }
   if (!is.null(file)) {
     if (!is.character(file) || length(file)!=1L)
@@ -76,46 +177,63 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (w <- startsWithAny(file, c("https://", "ftps://", "http://", "ftp://", "file://"))) {  # avoid grepl() for #2531
       # nocov start
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
-      if (w<=2L) { # https: or ftps:
-        if (!requireNamespace("curl", quietly = TRUE))
-          stopf("URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        
-        curl::curl_download(file, tmpFile, mode="wb", quiet = !showProgress)
-      } else {
-        method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
-                 else getOption("download.file.method", default="auto")  # http: or ftp:
-        download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
-        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
-      }
+      method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
+               else getOption("download.file.method", default="auto")  # http: or ftp:
+      # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
       # nocov end
     }
-    file_info = file.info(file)
+    file_info = file.info(file, extra_cols=FALSE)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
-    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # dir.exists() requires R v3.2+, #989
+    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # Could use dir.exists(), but we already ran file.info().
     if (!file_info$size) {
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    if (w <- endsWithAny(file, c(".gz",".bz2"))) {
-      if (!requireNamespace("R.utils", quietly = TRUE))
-        stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (w==1L) gzfile else bzfile
-      R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
-      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
+
+    # support zip and tar files #3834
+    file_signature = readBin(file, raw(), 8L)
+
+    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || is_zip(file_signature)) {
+      FUN = if (w==2L) untar else unzip
+      fnames = FUN(file, list=TRUE)
+      if (is.data.frame(fnames)) fnames = fnames[,1L]
+      if (length(fnames) > 1L)
+        stopf("Compressed files containing more than 1 file are currently not supported.")
+      FUN(file, exdir=tmpdir)
+      decompFile = file.path(tmpdir, fnames)
+      file = decompFile
       on.exit(unlink(decompFile), add=TRUE)
+    }
+
+    gzsig = FALSE
+    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
+      if (!requireNamespace("R.utils", quietly = TRUE))
+        stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
+      # not worth doing a behavior test here, so just use getRversion().
+      if (packageVersion("R.utils") < "2.13.0" && base::getRversion() >= "4.5.0")
+        stopf("Reading compressed files in fread requires R.utils version 2.13.0 or higher. Please upgrade R.utils.") # nocov
+      FUN = if (w<=2L || gzsig) gzfile else bzfile
+      decompFile = tempfile(tmpdir=tmpdir)
+      on.exit(unlink(decompFile), add=TRUE)
+      tryCatch({
+        R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+      }, error = function(e) {
+        stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+      })
+      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
     }
     file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
 
     input = file
   }
-  if (!missing(autostart)) warningf("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
   if (is.logical(colClasses)) {
     if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
-  if (!is.null(colClasses) && is.atomic(colClasses)) {
+  if (!is.null(colClasses) && is.atomic(colClasses)) { ## future R can use  if (is.atomic(.))
     if (!is.character(colClasses)) stopf("colClasses is not type list or character vector")
     if (!length(colClasses)) {
       colClasses=NULL;
@@ -135,10 +253,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (length(tt)) {
     msg = gettextf('na.strings[%d]=="%s" consists only of whitespace, ignoring', tt[1L], na.strings[tt[1L]])
     if (strip.white) {
-      if (any(na.strings=="")) {
-        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
-      } else {
+      if (all(nzchar(na.strings))) {
         warningf('%s. Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.', msg)
+      } else {
+        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
       }
       na.strings = na.strings[-tt]
     } else {
@@ -146,6 +264,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
+  # nocov start. Tested in other.Rraw tests 16, not in the main suite.
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
       stopf("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
@@ -153,39 +272,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     call_args = names(match.call())
     if (is.character(skip))
       warningf("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
-    # create connection to stream header lines from file:
-    #   https://stackoverflow.com/questions/9871307
-    f = base::file(input, 'r')
-    first_line = readLines(f, n=1L)
-    n_read = 1L
-    yaml_border_re = '^#?---'
-    if (!grepl(yaml_border_re, first_line)) {
-      close(f)
-      stopf(
-        'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
-        substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
-      )
-    }
-
-    yaml_comment_re = '^#'
-    yaml_string = character(0L)
-    while (TRUE) {
-      this_line = readLines(f, n=1L)
-      n_read = n_read + 1L
-      if (!length(this_line)){
-        close(f)
-        stopf('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching the regex "%s". Please double check the input file is a valid csvy.', yaml_border_re)
-      }
-      if (grepl(yaml_border_re, this_line)) break
-      if (grepl(yaml_comment_re, this_line))
-        this_line = sub(yaml_comment_re, '', this_line)
-      yaml_string = paste(yaml_string, this_line, sep='\n')
-    }
-    close(f) # when #561 is implemented, no need to close f.
-
-    yaml_header = yaml::yaml.load(yaml_string)
+    yaml_res = .read_yaml_header(input, skip, verbose)
+    yaml_header = yaml_res$yaml_header
+    n_read = yaml_res$n_read
     yaml_names = names(yaml_header)
-    if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) messagef("User-supplied 'header' will override that found in metadata.")
@@ -255,15 +345,16 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if (is.integer(skip)) skip = skip + n_read
   }
-  warnings2errors = getOption("warn") >= 2
+  # nocov end
+  warnings2errors = getOption("warn") >= 2L
   stopifnot(identical(tz,"UTC") || identical(tz,""))
   if (tz=="") {
     tt = Sys.getenv("TZ", unset=NA_character_)
     if (identical(tt,"") || is_utc(tt)) # empty TZ env variable ("") means UTC in C library, unlike R; _unset_ TZ means local
       tz="UTC"
   }
-  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
-              fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
+  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,comment.char,
+              fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC",connection_spill_info)
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
   require_bit64_if_needed(ans)
@@ -281,9 +372,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
 
   colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
-  for (j in which(colClassesAs!="")) {       # # 1634
+  for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
+    if (new_class %chin% c("POSIXct")) v[!nzchar(v)] = NA_character_ # as.POSIXct/as.POSIXlt cannot handle as.POSIXct("") correctly #6208
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),
@@ -297,9 +389,15 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
              # finally:
              methods::as(v, new_class))
       },
-      warning = fun <- function(e) {
-        warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
-        return(v)
+      warning = fun <- function(c) {
+        # NB: branch here for translation purposes (e.g. if error/warning have different grammatical gender)
+        if (inherits(c, "warning")) {
+          msg_fmt = gettext("Column '%s' was requested to be '%s' but fread encountered the following warning:\n\t%s\nso the column has been left as type '%s'")
+        } else {
+          msg_fmt = gettext("Column '%s' was requested to be '%s' but fread encountered the following error:\n\t%s\nso the column has been left as type '%s'")
+        }
+        warningf(msg_fmt, names(ans)[j], new_class, conditionMessage(c), typeof(v), domain=NA)
+        v
       },
       error = fun)
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
@@ -313,7 +411,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
+    if (verbose)
+      catf(ngettext(length(cols_to_factor), "stringsAsFactors=%s converted %d column: %s\n", "stringsAsFactors=%s converted %d columns: %s\n"),
+           stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]), domain=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
@@ -322,17 +422,16 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (!is.null(key) && data.table) {
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
-    if (length(key) == 1L) {
-      key = strsplit(key, split = ",", fixed = TRUE)[[1L]]
-    }
+    if (length(key) == 1L)
+      key = cols_from_csv(key)
     setkeyv(ans, key)
   }
-  if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
+  if (yaml) setattr(ans, 'yaml_metadata', yaml_header) # nocov
   if (!is.null(index) && data.table) {
     if (!all(vapply_1b(index, is.character)))
       stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (is.list(index)) {
-      to_split = vapply_1i(index, length) == 1L
+      to_split = lengths(index) == 1L
       if (any(to_split))
         index[to_split] = sapply(index[to_split], strsplit, split = ",", fixed = TRUE)
     } else {
@@ -344,6 +443,68 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     setindexv(ans, index)
   }
   ans
+}
+
+# nocov start. Covered only in other.Rraw
+.read_yaml_header = function(f, skip, verbose) {
+  # create connection to stream header lines from file:
+  #   https://stackoverflow.com/questions/9871307
+  con = base::file(f, 'r')
+  # NB: close() won't be right if 'f' itself can be a file connection (#561)
+  on.exit(close(con))
+
+  first_line = readLines(con, n=1L)
+  n_read = 1L
+  yaml_border_re = '^#?---'
+  if (!grepl(yaml_border_re, first_line)) {
+    stopf(
+      'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
+      substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
+    )
+  }
+
+  yaml_comment_re = '^#'
+  yaml_string = character(0L)
+  repeat {
+    this_line = readLines(con, n=1L)
+    n_read = n_read + 1L
+    if (!length(this_line)){
+      stopf('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching the regex "%s". Please double check the input file is a valid csvy.', yaml_border_re)
+    }
+    if (grepl(yaml_border_re, this_line)) break
+    if (grepl(yaml_comment_re, this_line))
+      this_line = sub(yaml_comment_re, '', this_line)
+    yaml_string = paste(yaml_string, this_line, sep='\n')
+  }
+
+  yaml_header = yaml::yaml.load(yaml_string)
+  if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(names(yaml_header)))
+  list(yaml_header = yaml_header, n_read = n_read)
+}
+# nocov end.
+
+known_signatures = list(
+  zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
+  gzip = as.raw(c(0x1F, 0x8B)),
+  bzip = as.raw(c(0x42, 0x5A, 0x68))
+)
+
+# https://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
+# not checked: what's a valid 'version' entry to check the 5th+6th bytes
+is_zip = function(file_signature) {
+  identical(file_signature[1:4], known_signatures$zip)
+}
+
+# https://en.wikipedia.org/wiki/Gzip#File_format
+# not checked: remaining 8 bytes of header
+is_gzip = function(file_signature) {
+  identical(file_signature[1:2], known_signatures$gzip)
+}
+
+# https://en.wikipedia.org/wiki/Bzip2#File_format
+is_bzip = function(file_signature) {
+  identical(file_signature[1:3], known_signatures$bzip) &&
+    isTRUE(file_signature[4L] %in% charToRaw('123456789')) # for #6304
 }
 
 # simplified but faster version of `factor()` for internal use.

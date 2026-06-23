@@ -40,7 +40,7 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -62,7 +62,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -87,6 +87,36 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 
+void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill, ans_t *ans, bool verbose) {
+  double tic=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (type==0) { // const 1Code has comments. Press enter to view.
+    for (uint_fast64_t i=0; i<nx; i++) {
+      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? fill : x[i]);
+    }
+  } else if (type==1) { // locf
+    SET_STRING_ELT(ans->char_v, 0, x[0]==NA_STRING ? fill : x[0]);
+    const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
+    for (uint_fast64_t i=1; i<nx; i++) {
+      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? thisans[i-1] : x[i]);
+    }
+  } else if (type==2) { // nocb
+    SET_STRING_ELT(ans->char_v, nx-1, x[nx-1]==NA_STRING ? fill : x[nx-1]);
+    const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? thisans[i+1] : x[i]);
+    }
+  }
+  if (verbose)
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
+}
+
+/*
+  OpenMP is being used here to parallelize the loop that fills missing values
+    over columns of the input data. This includes handling different data types
+    and applying the designated filling method to each column in parallel.
+*/
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
   const bool verbose = GetVerbose();
@@ -98,39 +128,42 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (verbose)
     tic = omp_get_wtime();
 
-  bool binplace = LOGICAL(inplace)[0];
+  bool copy = !LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error(_("nan_is_na must be TRUE or FALSE")); // # nocov
+    error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
   bool obj_scalar = isVectorAtomic(obj);
   if (obj_scalar) {
-    if (binplace)
+    if (!copy)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
-    else if (!isReal(obj) && !isInteger(obj))
-      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
+    else if (!isReal(obj) && TYPEOF(obj) != INTSXP && !isLogical(obj) && !isString(obj))
+      error(_("'x' argument (type %s) not supported."), type2char(TYPEOF(obj)));
     SEXP obj1 = obj;
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(obj, 0, obj1);
   }
-  SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+  SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
-  int *icols = INTEGER(ricols);
+  const int *icols = INTEGER_RO(ricols);
+  bool any_char = false;
   for (int i=0; i<length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-    if (!isReal(this_col) && !isInteger(this_col))
-      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
+    if (isString(this_col)) {
+      any_char = true;
+    } else if (!isReal(this_col) && TYPEOF(this_col) != INTSXP && !isLogical(this_col))
+      error(_("'x' argument (type %s) not supported."), type2char(TYPEOF(this_col)));
     SET_VECTOR_ELT(x, i, this_col);
   }
   R_len_t nx = length(x);
 
-  double **dx = (double**)R_alloc(nx, sizeof(double*));
-  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*));
-  int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(int64_t*));
-  uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(uint_fast64_t));
-  SEXP ans = R_NilValue;
-  ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
+  double **dx = (double**)R_alloc(nx, sizeof(*dx));
+  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(*ix));
+  const SEXP **sx = (const SEXP**)R_alloc(nx, sizeof(SEXP*));
+  int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(*i64x));
+  uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(*inx));
+  ans_t *vans = (ans_t *)R_alloc(nx, sizeof(*vans));
   for (R_len_t i=0; i<nx; i++) {
     const SEXP xi = VECTOR_ELT(x, i);
     inx[i] = xlength(xi);
@@ -138,28 +171,46 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     if (isReal(xi)) {
       dx[i] = REAL(xi);
       i64x[i] = (int64_t *)REAL(xi);
-      ix[i] = NULL;
+      ix[i] = NULL; sx[i] = NULL;
+    } else if (isString(xi)) {
+      sx[i] = STRING_PTR_RO(xi);
+      ix[i] = NULL; dx[i] = NULL; i64x[i] = NULL;
     } else {
       ix[i] = INTEGER(xi);
-      dx[i] = NULL;
-      i64x[i] = NULL;
+      dx[i] = NULL; sx[i] = NULL; i64x[i] = NULL;
     }
   }
-  if (!binplace) {
+  SEXP ans = R_NilValue;
+  if (copy) {
     ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
       const SEXP ansi = VECTOR_ELT(ans, i);
-      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (void *)INTEGER(ansi);
-      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .status=0, .message={"\0","\0","\0","\0"} });
+      const void *p;
+      switch (TYPEOF(ansi)) {
+        case LGLSXP:
+          p = LOGICAL_RO(ansi);
+          break;
+        case INTSXP:
+          p = INTEGER_RO(ansi);
+          break;
+        case REALSXP:
+          p = REAL_RO(ansi);
+          break;
+        default:
+          p = ansi;
+          break;
+      }
+      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {
-      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .status=0, .message={"\0","\0","\0","\0"} });
+      SEXP xi = VECTOR_ELT(x, i);
+      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .char_v=isString(xi) ? xi : R_NilValue, .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
 
-  unsigned int itype;
+  unsigned int itype=-1;
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "const"))
     itype = 0;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf"))
@@ -167,16 +218,21 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "type", "nafillR"); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR"); // # nocov
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
-  bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
+  bool *isInt64 = (bool *)R_alloc(nx, sizeof(*isInt64));
   for (R_len_t i=0; i<nx; i++)
     isInt64[i] = INHERITS(VECTOR_ELT(x, i), char_integer64);
-  const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
+  const void **fillp = (const void **)R_alloc(nx, sizeof(*fillp)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   if (hasFill) {
-    if (nx!=length(fill) && length(fill)!=1)
-      error(_("fill must be a vector of length 1 or a list of length of x"));
+    if (nx!=length(fill) && length(fill)!=1) {
+      if (itype == 0) {
+        error(_("fill must be a vector of length 1 or a list of length of x. Consider fcoalesce() to specify element-wise replacements."));
+      } else {
+        error(_("fill must be a vector of length 1 or a list of length of x."));
+      }
+    }
     if (!isNewList(fill)) {
       SEXP fill1 = fill;
       fill = PROTECT(allocVector(VECSXP, nx)); protecti++;
@@ -184,13 +240,15 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         SET_VECTOR_ELT(fill, i, fill1);
     }
     if (!isNewList(fill))
-      error(_("internal error: 'fill' should be recycled as list already")); // # nocov
+      internal_error(__func__, "'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
   }
-  #pragma omp parallel for if (nx>1) num_threads(getDTthreads(nx, true))
+  // need any_char guard to avoid parallelizing on character columns
+  (void)any_char; // used only by OpenMP-enabled builds; avoid -Wunused-but-set-variable otherwise
+  #pragma omp parallel for if (nx>1 && !any_char) num_threads(getDTthreads(nx, true))
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP : {
@@ -200,16 +258,28 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         nafillDouble(dx[i], inx[i], itype, hasFill ? ((double *)fillp[i])[0] : NA_REAL, nan_is_na, &vans[i], verbose);
       }
     } break;
-    case INTSXP : {
+    case LGLSXP: case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, hasFill ? ((int32_t *)fillp[i])[0] : NA_INTEGER, &vans[i], verbose);
+    } break;
+    case STRSXP : {
+      nafillString(sx[i], inx[i], itype, hasFill ? ((SEXP *)fillp[i])[0] : NA_STRING, &vans[i], verbose);
     } break;
     }
   }
 
-  if (!binplace) {
+  if (copy) {
     for (R_len_t i=0; i<nx; i++) {
-      if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
-        copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
+      SEXP xi = VECTOR_ELT(x, i);
+      if (ANY_ATTRIB(xi)) {
+        copyMostAttrib(xi, VECTOR_ELT(ans, i));
+        if (itype == 0 && hasFill && isFactor(xi)) {
+          SEXP fillLev = PROTECT(getAttrib(VECTOR_ELT(fill, i), R_LevelsSymbol));
+          if (!R_compute_identical(PROTECT(getAttrib(xi, R_LevelsSymbol)), fillLev, 0)) {
+            setAttrib(VECTOR_ELT(ans, i), R_LevelsSymbol, fillLev);
+          }
+          UNPROTECT(2);
+        }
+      }
     }
     SEXP obj_names = getAttrib(obj, R_NamesSymbol); // copy names
     if (!isNull(obj_names)) {
@@ -220,15 +290,18 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  ansMsg(vans, nx, verbose, __func__);
+  ansGetMsgs(vans, nx, verbose, __func__);
 
   if (verbose)
-    Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, omp_get_wtime()-tic);
+    Rprintf(Pl_(nx,
+                "%s: parallel processing of %d column took %.3fs\n",
+                "%s: parallel processing of %d columns took %.3fs\n"),
+            __func__, nx, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
-  if (binplace) {
-    return obj;
-  } else {
+  if (copy) {
     return obj_scalar && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+  } else {
+    return obj;
   }
 }

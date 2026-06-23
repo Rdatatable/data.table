@@ -12,4 +12,3 @@ timetaken = function(started.at)
   tt = proc.time()-started.at  # diff all 3 times
   paste0(format(tt[3L])," elapsed (", format(tt[1L]), " cpu)")
 }
-

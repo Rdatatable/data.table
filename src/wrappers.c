@@ -44,10 +44,13 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
   int *ix = INTEGER(x);
-  for (int i=0; i<nx; ++i)
-    SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
+  const int nlevels = length(levels);
+  for (int i=0; i<nx; ++i) {
+    const int ixi = ix[i];
+    SET_STRING_ELT(xchar, i, (ixi >= 1 && ixi <= nlevels) ? STRING_ELT(levels, ix[i]-1) : NA_STRING);
+  }
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
-  int *inewx = INTEGER(newx);
+  const int *inewx = INTEGER_RO(newx);
   for (int i=0; i<nx; ++i) ix[i] = inewx[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
@@ -59,15 +62,23 @@ SEXP copy(SEXP x)
   return(duplicate(x));
 }
 
+// Internal use only. So that := can update elements of a list of data.table, #2204. Just needed to overallocate/grow the VECSXP.
 SEXP setlistelt(SEXP l, SEXP i, SEXP value)
 {
-  R_len_t i2;
-  // Internal use only. So that := can update elements of a list of data.table, #2204. Just needed to overallocate/grow the VECSXP.
-  if (!isNewList(l)) error(_("First argument to setlistelt must be a list()"));
-  if (!isInteger(i) || LENGTH(i)!=1) error(_("Second argument to setlistelt must a length 1 integer vector"));
-  i2 = INTEGER(i)[0];
+  if (!isNewList(l)) internal_error(__func__, "First argument to setlistelt must be a list()");
+  if (!isInteger(i) || LENGTH(i)!=1) internal_error(__func__, "Second argument to setlistelt must a length 1 integer vector");
+  R_len_t i2 = INTEGER(i)[0];
   if (LENGTH(l) < i2 || i2<1) error(_("i (%d) is outside the range of items [1,%d]"),i2,LENGTH(l));
   SET_VECTOR_ELT(l, i2-1, value);
+  return(R_NilValue);
+}
+
+// Internal use only. So that := can update elements of a slot of data.table, #6701.
+SEXP setS4elt(SEXP obj, SEXP name, SEXP value)
+{
+  if (!isS4(obj)) internal_error(__func__, "First argument to setS4elt must be an S4 object");
+  if (!isString(name) || LENGTH(name)!=1) internal_error(__func__, "Second argument to setS4elt must be a character string");
+  R_do_slot_assign(obj, name, value);
   return(R_NilValue);
 }
 
@@ -75,7 +86,7 @@ SEXP address(SEXP x)
 {
   // A better way than : http://stackoverflow.com/a/10913296/403310
   char buffer[32];
-  snprintf(buffer, 32, "%p", (void *)x);
+  snprintf(buffer, sizeof(buffer), "%p", (void*)x); // # notranslate
   return(mkString(buffer));
 }
 
@@ -92,10 +103,16 @@ SEXP expandAltRep(SEXP x)
   for (int i=0; i<LENGTH(x); i++) {
     SEXP col = VECTOR_ELT(x,i);
     if (ALTREP(col)) {
-      SET_VECTOR_ELT(x, i, copyAsPlain(col));
+      SET_VECTOR_ELT(x, i, copyAsPlain(col, -1));
     }
   }
   return R_NilValue;
+}
+
+SEXP allocrowwrapper(SEXP dt, SEXP n) {
+  if (!isInteger(n) || length(n)!=1 || INTEGER(n)[0]<-1 || INTEGER(n)[0]==NA_INTEGER)
+    error(_("n must be a single integer >= -1 and non-NA")); // #nocov
+  return allocrow(dt, (R_xlen_t)INTEGER(n)[0]);
 }
 
 SEXP dim(SEXP x)
@@ -120,3 +137,7 @@ SEXP dim(SEXP x)
   return ans;
 }
 
+SEXP warn_matrix_column_r(SEXP i) {
+  warn_matrix_column(INTEGER(i)[0]);
+  return R_NilValue;
+}

@@ -1,6 +1,7 @@
 # data.table defined last(x) with no arguments, just for last. If you need the last 10 then use tail(x,10).
 # for xts class objects it will dispatch to xts::last
 # reworked to avoid loading xts namespace (#3857) then again to fix dispatching of xts class (#4053)
+# nocov start. Tests 19.* in other.Rraw, not in the main suite.
 last = function(x, n=1L, ...) {
   verbose = isTRUE(getOption("datatable.verbose", FALSE))
   if (!inherits(x, "xts")) {
@@ -82,3 +83,4 @@ first = function(x, n=1L, ...) {
     xts::first(x, n=n, ...)
   }
 }
+# nocov end

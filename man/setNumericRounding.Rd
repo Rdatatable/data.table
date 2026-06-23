@@ -18,8 +18,8 @@ Computers cannot represent some floating point numbers (such as 0.6)
 precisely, using base 2. This leads to unexpected behaviour when joining or
 grouping columns of type 'numeric'; i.e. 'double', see example below. In
 cases where this is undesirable, data.table allows rounding such data up to
-approximately 11 s.f. which is plenty of digits for many cases. This is
-achieved by rounding the last 2 bytes off the significand. Other possible
+approximately 11 significant figures which is plenty of digits for many cases.
+This is achieved by rounding the last 2 bytes off the significand. Other possible
 values are 1 byte rounding, or no rounding (full precision, default).
 
 It is bytes rather than bits because it is tied in with the radix sort

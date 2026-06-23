@@ -40,13 +40,12 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz))
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   else
-    as.IDate(as.Date(x, tz =  if (is.null(tz)) '' else tz, ...))
+    as.IDate(as.Date(x, tz =  tz %||% '', ...))
 }
 
 as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
-  x = as.numeric(x)
   class(x) = "Date"
   x
 }
@@ -83,7 +82,7 @@ as.list.IDate = function(x, ...) NextMethod()
 ## round.IDate = function (x, digits, units=digits, ...) {
 ##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
-round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
+round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
           weeks  = round(x, "year") + 7L * (yday(x) %/% 7L),
@@ -92,44 +91,49 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
           years = ISOdate(year(x), 1L, 1L)))
 }
 
+chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
+
 #Adapted from `+.Date`
-`+.IDate` = function (e1, e2) {
+`+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
-  if (isReallyReal(e1) || isReallyReal(e2)) {
+    internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+  # IDate doesn't support fractional days; revert to base Date
+  if ((is.double(e1) && !fitsInInt32(e1)) || (is.double(e2) && !fitsInInt32(e2))) {
     return(`+.Date`(e1, e2))
-    # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stopf("binary + is not defined for \"IDate\" objects")
   (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
-`-.IDate` = function (e1, e2) {
+`-.IDate` = function(e1, e2) {
   if (!inherits(e1, "IDate")) {
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
     stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stopf("unary - is not defined for \"IDate\" objects")
+    stopf('unary - is not defined for "IDate" objects')
   if (inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
-  if ( isReallyReal(e2) ) {
+  if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
-    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
-    # i) ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
-    # ii) .Date was newly exposed in R some time after 3.4.4
+    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
-  return(ans)
+  if (inherits(e2, "Date")) {
+    setattr(ans, "class", "difftime")
+    setattr(ans, "units", "days")
+  } else {
+    setattr(ans, "class", c("IDate", "Date"))
+  }
+  ans
 }
 
 
@@ -147,7 +151,7 @@ as.ITime.default = function(x, ...) {
 
 as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) as.ITime(unclass(x), ...)
-  else as.ITime(as.POSIXlt(x, tz = if (is.null(tz)) '' else tz, ...), ...)
+  else as.ITime(as.POSIXlt(x, tz = tz %||% '', ...), ...)
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
@@ -177,7 +181,7 @@ as.ITime.character = function(x, format, ...) {
       w = w[!nna]
     }
   }
-  return(as.ITime(y, ...))
+  as.ITime(y, ...)
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
@@ -186,7 +190,7 @@ as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
-  secs = 86400 * (unclass(x) %% 1)
+  secs = 86400L * (unclass(x) %% 1L)
   secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
@@ -210,7 +214,7 @@ as.character.ITime = format.ITime = function(x, ...) {
   res
 }
 
-as.data.frame.ITime = function(x, ...) {
+as.data.frame.ITime = function(x, ..., optional=FALSE) {
   # This method is just for ggplot2, #1713
   # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
   # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.
@@ -220,7 +224,8 @@ as.data.frame.ITime = function(x, ...) {
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
   setattr(ans, "class", "data.frame")
   setattr(ans, "row.names", .set_row_names(length(x)))
-  setattr(ans, "names", "V1")
+  # require 'optional' support for passing back to e.g. data.frame() without overriding names there
+  if (!optional) setattr(ans, "names", "V1")
   ans
 }
 
@@ -228,26 +233,26 @@ print.ITime = function(x, ...) {
   print(format(x))
 }
 
-rep.ITime = function (x, ...)
+rep.ITime = function(x, ...)
 {
   y = rep(unclass(x), ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
 
-round.ITime <- function(x, digits = c("hours", "minutes"), ...)
+round.ITime = function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
-                  hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)),
+                  hours = as.integer(round(unclass(x)/3600.0)*3600.0),
+                  minutes = as.integer(round(unclass(x)/60.0)*60.0)),
            "class", "ITime"))
 }
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
+trunc.ITime = function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
-                  hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)),
+                  hours = as.integer(unclass(x)%/%3600.0*3600.0),
+                  minutes = as.integer(unclass(x)%/%60.0*60.0)),
            "class", "ITime"))
 }
 
@@ -280,7 +285,7 @@ IDateTime.default = function(x, ...) {
 
 # POSIXt support
 
-as.POSIXct.IDate = function(x, tz = "UTC", time = 0, ...) {
+as.POSIXct.IDate = function(x, tz = "UTC", time = 0.0, ...) {
   if (missing(time) && inherits(tz, "ITime")) {
     time = tz # allows you to use time as the 2nd argument
     tz = "UTC"
@@ -314,9 +319,9 @@ clip_msec = function(secs, action) {
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure
 #   integer results.
-#     http://gist.github.com/10238
-#   See also Hadley's more advanced and complex lubridate package:
-#     http://github.com/hadley/lubridate
+#     https://gist.github.com/hadley/10238
+#   See also Hadley et al's more advanced and complex lubridate package:
+#     https://github.com/tidyverse/lubridate
 #   lubridate routines do not return integer values.
 ###################################################################
 
@@ -338,11 +343,12 @@ hour = function(x) {
   if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
   as.POSIXlt(x)$hour
 }
-yday    = function(x) as.POSIXlt(x)$yday + 1L
-wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
-mday    = function(x) as.POSIXlt(x)$mday
-week    = function(x) yday(x) %/% 7L + 1L
-isoweek = function(x) {
+yday    = function(x) convertDate(as.IDate(x), "yday")
+wday    = function(x) convertDate(as.IDate(x), "wday")
+mday    = function(x) convertDate(as.IDate(x), "mday")
+week    = function(x) convertDate(as.IDate(x), "week")
+# TODO(#3279): Investigate if improved as.IDate() makes our below implementation faster than this
+isoweek = function(x) as.integer(format(as.IDate(x), "%V"))
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
   # Approach:
@@ -350,13 +356,41 @@ isoweek = function(x) {
   # * Find the number of weeks having passed between
   #   January 1st of the year of the nearest Thursdays and x
 
-  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
-  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
-  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
-  1L + (nearest_thurs - year_start) %/% 7L
+#  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
+#  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
+#  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
+#  1L + (nearest_thurs - year_start) %/% 7L
+isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
+
+month   = function(x) convertDate(as.IDate(x), "month")
+quarter = function(x) convertDate(as.IDate(x), "quarter")
+year    = function(x) convertDate(as.IDate(x), "year")
+yearmon = function(x, format = c("numeric", "character")) {
+  format = match.arg(format)
+  x_as_idate = as.IDate(x)
+  ymon = convertDate(x_as_idate, "yearmon")
+  if (format == "numeric") return(ymon)
+  ans = rep(NA_character_, length(x_as_idate))
+  ok = !is.na(x_as_idate)
+  yr = floor(ymon[ok])
+  mon = round((ymon[ok] - yr) * 12) + 1L
+  ans[ok] = sprintf("%dM%02d", as.integer(yr), as.integer(mon))
+  ans
+}
+yearqtr = function(x, format = c("numeric", "character")) {
+  format = match.arg(format)
+  x_as_idate = as.IDate(x)
+  yqtr = convertDate(x_as_idate, "yearqtr")
+  if (format == "numeric") return(yqtr)
+  ans = rep(NA_character_, length(x_as_idate))
+  ok = !is.na(x_as_idate)
+  yr = floor(yqtr[ok])
+  qtr = round((yqtr[ok] - yr) * 4) + 1L
+  ans[ok] = sprintf("%dQ%d", as.integer(yr), as.integer(qtr))
+  ans
 }
 
-month   = function(x) as.POSIXlt(x)$mon + 1L
-quarter = function(x) as.POSIXlt(x)$mon %/% 3L + 1L
-year    = function(x) as.POSIXlt(x)$year + 1900L
-
+convertDate = function(x, type) {
+  type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
+  .Call(CconvertDate, x, type)
+}

@@ -2,6 +2,7 @@
 \alias{truelength}
 \alias{setalloccol}
 \alias{alloc.col}
+\alias{setallocrow}
 \title{ Over-allocation access }
 \description{
     These functions are experimental and somewhat advanced. By \emph{experimental} we mean their names might change and perhaps the syntax, argument names and types. So if you write a lot of code using them, you have been warned! They should work and be stable, though, so please report problems with them. \code{alloc.col} is just an alias to \code{setalloccol}. We recommend to use \code{setalloccol} (though \code{alloc.col} will continue to be supported) because the \code{set*} prefix in \code{setalloccol} makes it clear that its input argument is modified in-place.
@@ -14,24 +15,43 @@ setalloccol(DT,
 alloc.col(DT,
     n = getOption("datatable.alloccol"),        # default: 1024L
     verbose = getOption("datatable.verbose"))   # default: FALSE
+setallocrow(DT, n = -1L)
 }
 \arguments{
 \item{x}{ Any type of vector, including \code{data.table} which is a \code{list} vector of column pointers. }
 \item{DT}{ A \code{data.table}. }
-\item{n}{ The number of spare column pointer slots to ensure are available. If \code{DT} is a 1,000 column \code{data.table} with 24 spare slots remaining, \code{n=1024L} means grow the 24 spare slots to be 1024. \code{truelength(DT)} will then be 2024 in this example. }
+\item{n}{ For \code{setalloccol} and \code{alloc.col}: the number of spare column pointer slots to ensure are available. If \code{DT} is a 1,000 column \code{data.table} with 24 spare slots remaining, \code{n=1024L} means grow the 24 spare slots to be 1024. \code{truelength(DT)} will then be 2024 in this example.
+
+  For \code{setallocrow}: the total number of rows to allocate. If \code{n >= 0}, allocates capacity for exactly \code{n} rows in total. If \code{n == -1} (default), shrinks columns to exact current size to free excess memory. }
 \item{verbose}{ Output status and information. }
 }
 \details{
-    When adding columns by reference using \code{:=}, we \emph{could} simply create a new column list vector (one longer) and memcpy over the old vector, with no copy of the column vectors themselves. That requires negligible use of space and time, and is what v1.7.2 did.  However, that copy of the list vector of column pointers only (but not the columns themselves), a \emph{shallow copy}, resulted in inconsistent behaviour in some circumstances. So, as from v1.7.3 data.table over allocates the list vector of column pointers so that columns can be added fully by reference, consistently.
+    When adding columns by reference using \code{:=}, we \emph{could} simply create a new column list vector (one longer) and memcpy over the old vector,
+    with no copy of the column vectors themselves. That requires negligible use of space and time, and long ago we did just that.
+    However, that copy of the list vector of column pointers only (but not the columns themselves), a \emph{shallow copy}, resulted in inconsistent behaviour
+    in some circumstances. Therefore, data.table over-allocates the list vector of column pointers so that columns can be added fully by reference, consistently.
 
-    When the allocated column pointer slots are used up, to add a new column \code{data.table} must reallocate that vector. If two or more variables are bound to the same data.table this shallow copy may or may not be desirable, but we don't think this will be a problem very often (more discussion may be required on data.table issue tracker). Setting \code{options(datatable.verbose=TRUE)} includes messages if and when a shallow copy is taken. To avoid shallow copies there are several options: use \code{\link{copy}} to make a deep copy first, use \code{setalloccol} to reallocate in advance, or, change the default allocation rule (perhaps in your .Rprofile); e.g., \code{options(datatable.alloccol=10000L)}.
+    When the allocated column pointer slots are used up, to add a new column \code{data.table} must reallocate that vector. If two or more variables are bound to
+    the same data.table this shallow copy may or may not be desirable, but we don't think this will be a problem very often (more discussion may be required on
+    data.table issue tracker). Setting \code{options(datatable.verbose=TRUE)} includes messages if and when a shallow copy is taken. To avoid shallow copies there
+    are several options: use \code{\link{copy}} to make a deep copy first, use \code{setalloccol} to reallocate in advance, or, change the default allocation rule
+    (perhaps in your .Rprofile); e.g., \code{options(datatable.alloccol=10000L)}.
 
-    Please note : over allocation of the column pointer vector is not for efficiency \emph{per se}; it is so that \code{:=} can add columns by reference without a shallow copy.
+    Please note: over-allocation of the column pointer vector is not for efficiency \emph{per se}; it is so that \code{:=} can add columns by reference without a shallow copy.
+
+    \code{setallocrow} prepares columns for fast row operations (delete or insert) by reference. (Note that 'insert' by reference is not yet implemented.)
+    Before such operations, columns must be resizable: ALTREP columns are materialized and all columns are made resizable (this might trigger reallocation).
 }
 \value{
-    \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is just the list vector of column pointers that is over-allocated (i.e. \code{truelength(DT)}), not the column vectors themselves, which would in future allow fast row \code{insert()}. For tables loaded from disk however, \code{truelength} is 0 in \R 2.14.0+ (and random in \R <= 2.13.2), which is perhaps unexpected. \code{data.table} detects this state and over-allocates the loaded \code{data.table} when the next column addition occurs. All other operations on \code{data.table} (such as fast grouping and joins) do not need \code{truelength}.
+    \code{truelength(x)} returns the length of the vector allocated in memory. \code{length(x)} of those items are in use. Currently, it is just the list vector of column
+    pointers that is over-allocated (i.e. \code{truelength(DT)}), not the column vectors themselves, which would in future allow fast row \code{insert()}. For tables loaded
+    from disk however, \code{truelength} is 0, which is perhaps unexpected. \code{data.table} detects this state and over-allocates the loaded \code{data.table} when the
+    next column addition occurs. All other operations on \code{data.table} (such as fast grouping and joins) do not need \code{truelength}.
 
-    \code{setalloccol} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop. It also returns the new \code{DT}, for convenience in compound queries.
+    \code{setalloccol} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop.
+    It also returns the new \code{DT}, for convenience in compound queries.
+
+    \code{setallocrow} modifies \code{DT} by reference to ensure all columns are resizable. Note that unlike typical by-reference operations, the underlying memory of each column vector is likely to be reallocated and relocated, if necessary. This means the memory addresses of the column vectors themselves may change, even though the \code{data.table} object \code{DT} is modified in place.
 }
 \seealso{ \code{\link{copy}} }
 \examples{

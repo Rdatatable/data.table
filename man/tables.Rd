@@ -5,23 +5,24 @@
   Convenience function for concisely summarizing some metadata of all \code{data.table}s in memory (or an optionally specified environment).
 }
 \usage{
-tables(mb=TRUE, order.col="NAME", width=80,
-       env=parent.frame(), silent=FALSE, index=FALSE)
+tables(mb=type_size, order.col="NAME", width=80,
+       env=parent.frame(), silent=FALSE, index=FALSE, depth=0L)
 }
 \arguments{
-  \item{mb}{ \code{logical}; \code{TRUE} adds the rough size of each \code{data.table} in megabytes to the output under column \code{MB}.  }
+  \item{mb}{ a function which accepts a \code{data.table} and returns its size in bytes. By default, \code{type_size} (same as \code{TRUE}) provides a fast lower bound by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). A column \code{"MB"} is included in the output unless \code{FALSE} or \code{NULL}. }
   \item{order.col}{ Column name (\code{character}) by which to sort the output. }
   \item{width}{ \code{integer}; number of characters beyond which the output for each of the columns \code{COLS}, \code{KEY}, and \code{INDICES} are truncated. }
   \item{env}{ An \code{environment}, typically the \code{.GlobalEnv} by default, see Details. }
   \item{silent}{ \code{logical}; should the output be printed? }
   \item{index}{ \code{logical}; if \code{TRUE}, the column \code{INDICES} is added to indicate the indices assorted with each object, see \code{\link{indices}}. }
+  \item{depth}{\code{integer}, default \code{0L}. Larger values govern the depth of search in recursive objects like lists or environments. For example, \code{depth=1L} will find all data.tables in the global environment as well as all data.tables in lists (but not in lists of lists). NB: \code{depth > 1L} is not yet supported.}
 }
 \details{
 Usually \code{tables()} is executed at the prompt, where \code{parent.frame()} returns \code{.GlobalEnv}. \code{tables()} may also be useful inside functions where \code{parent.frame()} is the local scope of the function; in such a scenario, simply set it to \code{.GlobalEnv} to get the same behaviour as at prompt.
 
-Note that on older versions of \R, \code{object.size} may be slow, so setting \code{mb=FALSE} may speed up execution of \code{tables} significantly.
+\code{mb = utils::object.size} provides a higher and more accurate estimate of size, but may take longer. Its default \code{units="b"} is appropriate.
 
-Setting \code{silent=TRUE} prints nothing; the metadata are returned as a \code{data.table}, invisibly, whether silent is \code{TRUE} or \code{FALSE}.
+Setting \code{silent=TRUE} prints nothing; the metadata is returned as a \code{data.table} invisibly whether \code{silent} is \code{TRUE} or \code{FALSE}.
 }
 \value{
     A \code{data.table} containing the information printed.

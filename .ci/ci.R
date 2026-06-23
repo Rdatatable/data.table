@@ -47,7 +47,8 @@ function (repos, type = getOption("pkgType"), ver)
 dcf.dependencies <-
 function(file = "DESCRIPTION",
          which = NA,
-         except.priority = "base") {
+         except.priority = "base",
+         exclude = NULL) {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
     stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
   if (!is.character(except.priority))
@@ -79,7 +80,13 @@ function(file = "DESCRIPTION",
   }
   x <- unlist(lapply(x, local.extract_dependency_package_names))
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
-  setdiff(x, except)
+  x = setdiff(x, except)
+  if (length(exclude)) {  # to exclude knitr/rmarkdown, 5294
+    if (!is.character(exclude) || anyDuplicated(exclude))
+      stop("exclude may be NULL or a character vector containing no duplicates")
+    x = setdiff(x, exclude)
+  }
+  x
 }
 
 ## returns additional repositories for dependency packages based on its DESCRIPTION file
@@ -104,7 +111,7 @@ mirror.packages <-
 function(pkgs,
          which = c("Depends", "Imports", "LinkingTo"),
          repos = getOption("repos"),
-         type = c("source", "mac.binary", "win.binary"),
+         type = c("source", "mac.binary.big-sur-arm64", "win.binary"),
          repodir,
          except.repodir = repodir,
          except.priority = "base",
@@ -148,10 +155,11 @@ function(pkgs,
   db <- utils::available.packages(repos.url, type = type)
   allpkgs <- c(pkgs, unlist(tools::package_dependencies(unique(pkgs), db, which, recursive = TRUE), use.names = FALSE))
   except <- c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
-  ## do not re-download existing packages, ignore version
+  ## do not re-download existing packages with the right version
   if (length(except.repodir) && file.exists(file.path(contrib.url(except.repodir, type = type, ver = binary.ver), "PACKAGES"))) {
     except.curl <- contrib.url(file.path("file:", normalizePath(except.repodir)), type = type, ver = binary.ver)
-    except <- c(except, rownames(utils::available.packages(except.curl, type = type, fields = "Package")))
+    except.db <- utils::available.packages(except.curl, type = type, fields = "Package")
+    except <- c(except, merge(db, except.db, by = c("Package", "Version", "MD5sum"))[,"Package"])
   }
   newpkgs <- setdiff(allpkgs, except)
   if (!all(availpkgs<-newpkgs %in% rownames(db))) {
@@ -162,10 +170,18 @@ function(pkgs,
     newpkgs <- newpkgs[availpkgs]
   }
 
-  pkgsext <- switch(type,
+  typeshort <- if (startsWith(type, "mac.binary.")) "mac.binary" else type
+  pkgsext <- switch(typeshort,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
                     "win.binary" = "zip")
+  ## clean up stale package files for which new versions will be downloaded
+  if (file.exists(file.path(destdir, "PACKAGES"))) {
+    repo.db <- utils::available.packages(file.path("file:", normalizePath(destdir)), type = type)
+    oldver <- repo.db[repo.db[, "Package"] %in% newpkgs, c("Package", "Version"), drop=FALSE]
+    oldfiles <- file.path(destdir, sprintf("%s_%s.%s", oldver[,"Package"], oldver[,"Version"], pkgsext))
+    unlink(oldfiles[file.exists(oldfiles)])
+  }
   pkgsver <- db[db[, "Package"] %in% newpkgs, c("Package", "Version"), drop=FALSE]
   dlfiles <- file.path(destdir, sprintf("%s_%s.%s", pkgsver[,"Package"], pkgsver[,"Version"], pkgsext))
   unlink(dlfiles[file.exists(dlfiles)])
@@ -174,11 +190,7 @@ function(pkgs,
   dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir,
                                  available = db, contriburl = repos.url,
                                  type = type, method = method, quiet = quiet)
-  tools::write_PACKAGES(dir = destdir, type = type, ...)
+  tools::write_PACKAGES(dir = destdir, type = typeshort, ...)
   dp
 }
 
-## set repositories for CI tests
-if (as.logical(Sys.getenv("GITLAB_CI","false")) && identical(Sys.getenv("CI_PROJECT_NAME"), "data.table")) {
-  options("repos" = if (.Platform$OS.type == "windows") file.path("file://",getwd(),"bus/mirror-packages/cran") else file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)))
-}

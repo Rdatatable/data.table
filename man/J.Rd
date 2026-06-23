@@ -56,9 +56,7 @@ x = c(1, 1, 2)
 y = c(4, 6, 4)
 CJ(x, y)              # output columns are automatically named 'x' and 'y'
 CJ(x, y, unique=TRUE) # unique(x) and unique(y) are computed automatically
-
-z = 0:1 + (0:1)*1i
-CJ(x, z, sorted = FALSE) # support for sorting complex is not yet implemented
+CJ(x, y, sorted = FALSE) # retain input order for y
 }
 \keyword{ data }
 

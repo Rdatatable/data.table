@@ -21,7 +21,7 @@ Use the \code{by}, \code{by.x} and \code{by.y} arguments explicitly to override 
 \method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE,
 all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
-\dots)
+incomparables = NULL, \dots)
 }
 
 \arguments{
@@ -41,7 +41,7 @@ data from both \code{x} and \code{y} are included in the output.}
 \item{sort}{logical. If \code{TRUE} (default), the rows of the merged
 \code{data.table} are sorted by setting the key to the \code{by / by.x} columns. If
 \code{FALSE}, unlike base R's \code{merge} for which row order is unspecified, the
-row order in \code{x} is retained (including retaining the position of missings when
+row order in \code{x} is retained (including retaining the position of missing entries when
 \code{all.x=TRUE}), followed by \code{y} rows that don't match \code{x} (when \code{all.y=TRUE})
 retaining the order those appear in \code{y}.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
@@ -51,6 +51,7 @@ fashion as the \code{\link{merge.data.frame}} method does.}
 non-\code{by.y} column names in \code{y} when they have the same column name
 as any \code{by.x}.}
 \item{allow.cartesian}{See \code{allow.cartesian} in \code{\link{[.data.table}}.}
+\item{incomparables}{values which cannot be matched and therefore are excluded from by columns.}
 \item{\dots}{Not used at this time.}
 }
 
@@ -86,16 +87,16 @@ merge(dt1, dt2, all = TRUE)
 (dt2 <- data.table(A = letters[rep(2:4, 2)], Y = 6:1, key = "A"))
 merge(dt1, dt2, allow.cartesian=TRUE)
 
-(dt1 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(1:3, 2)], X = 1:6, key = "A,B"))
-(dt2 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(2:4, 2)], Y = 6:1, key = "A,B"))
+(dt1 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(1:3, 2)], X = 1:6, key = c("A", "B")))
+(dt2 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(2:4, 2)], Y = 6:1, key = c("A", "B")))
 merge(dt1, dt2)
 merge(dt1, dt2, by="B", allow.cartesian=TRUE)
 
 # test it more:
-d1 <- data.table(a=rep(1:2,each=3), b=1:6, key="a,b")
+d1 <- data.table(a=rep(1:2,each=3), b=1:6, key=c("a", "b"))
 d2 <- data.table(a=0:1, bb=10:11, key="a")
 d3 <- data.table(a=0:1, key="a")
-d4 <- data.table(a=0:1, b=0:1, key="a,b")
+d4 <- data.table(a=0:1, b=0:1, key=c("a", "b"))
 
 merge(d1, d2)
 merge(d2, d1)
@@ -125,6 +126,12 @@ setnames(d2, "a", "b")
 merge(d1, d2, by.x="a", by.y="b")
 merge(d1, d2, by.x="a", by.y="b", all=TRUE)
 merge(d2, d1, by.x="b", by.y="a")
+
+# using incomparables values
+d1 <- data.table(a=c(1,2,NA,NA,3,1), z=1:6)
+d2 <- data.table(a=c(1,2,NA), z=10:12)
+merge(d1, d2, by="a")
+merge(d1, d2, by="a", incomparables=NA)
 }
 
 \keyword{ data }

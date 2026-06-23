@@ -3,38 +3,42 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-SEXP dt_na(SEXP x, SEXP cols) {
-  int n=0, elem;
+SEXP dt_na(SEXP x, SEXP cols)
+{
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
 
-  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
-  for (int i=0; i<LENGTH(cols); ++i) {
-    elem = INTEGER(cols)[i];
-    if (elem<1 || elem>LENGTH(x))
-      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
-    if (!n) n = length(VECTOR_ELT(x, elem-1));
+  int n = 0;
+  const int numCols = LENGTH(cols);
+  const int* col_ints = INTEGER_RO(cols);
+  for (int i = 0; i < numCols; i++) {
+    const int elem = col_ints[i];
+    if (elem < 1 || elem > LENGTH(x))
+      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i + 1, elem, LENGTH(x));
+    if (!n) n = length(VECTOR_ELT(x, elem - 1));
   }
   SEXP ans = PROTECT(allocVector(LGLSXP, n));
   int *ians = LOGICAL(ans);
-  for (int i=0; i<n; ++i) ians[i]=0;
-  for (int i=0; i<LENGTH(cols); ++i) {
-    SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+  memset(ians, 0, n * sizeof(int));
+
+  for (int i = 0; i < numCols; i++) {
+    SEXP v = VECTOR_ELT(x, col_ints[i]-1);
     if (!length(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip pairlist columns
     if (n != length(v))
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
     case LGLSXP: {
-      const int *iv = LOGICAL(v);
+      const int *iv = LOGICAL_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_LOGICAL);
     }
       break;
     case INTSXP: {
-      const int *iv = INTEGER(v);
+      const int *iv = INTEGER_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_INTEGER);
     }
       break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (sv[j] == NA_STRING);
     }
       break;
@@ -43,7 +47,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
         const int64_t *dv = (int64_t *)REAL(v);
         for (int j=0; j<n; ++j) ians[j] |= (dv[j] == NA_INTEGER64);
       } else {
-        const double *dv = REAL(v);
+        const double *dv = REAL_RO(v);
         for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
       }
     }
@@ -106,8 +110,8 @@ SEXP dt_na(SEXP x, SEXP cols) {
 }
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
-  const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties; // RUNLENGTH
+  const int *xstart = INTEGER_RO(xstartArg), *xlen = INTEGER_RO(xlenArg), *xorder = INTEGER_RO(xorderArg);
+  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
 
   const char *pties = CHAR(STRING_ELT(ties_method, 0));
   if (!strcmp(pties, "average"))  ties = MEAN;
@@ -117,7 +121,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(pties, "sequence")) ties = SEQUENCE;
   else if (!strcmp(pties, "last")) ties = LAST;
   // else if (!strcmp(pties, "runlength")) ties = RUNLENGTH;
-  else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid ties.method, should have been caught before"); // # nocov
   const int n = length(xorderArg);
   SEXP ans = PROTECT(allocVector(ties==MEAN ? REALSXP : INTSXP, n));
   int *ians=NULL;
@@ -174,7 +178,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
-    default: error(_("Internal error: unknown ties value in frank: %d"), ties); // #nocov
+    default: internal_error(__func__, "unknown ties value: %d", ties); // # nocov
     }
   }
   UNPROTECT(1);
@@ -184,8 +188,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
   int n=0;
-  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     const int elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -201,15 +205,15 @@ SEXP anyNA(SEXP x, SEXP cols) {
     j=0;
     switch (TYPEOF(v)) {
     case LGLSXP: {
-      const int *iv = LOGICAL(v);
+      const int *iv = LOGICAL_RO(v);
       while(j<n && iv[j]!=NA_LOGICAL) j++;
     } break;
     case INTSXP: {
-      const int *iv = INTEGER(v);
+      const int *iv = INTEGER_RO(v);
       while(j<n && iv[j]!=NA_INTEGER) j++;
     } break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       while (j<n && sv[j]!=NA_STRING) j++;
     } break;
     case REALSXP:
@@ -217,7 +221,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
         const int64_t *dv = (int64_t *)REAL(v);
         while (j<n && dv[j]!=NA_INTEGER64) j++;
       } else {
-        const double *dv = REAL(v);
+        const double *dv = REAL_RO(v);
         while (j<n && !ISNAN(dv[j])) j++;
       }
       break;
@@ -226,7 +230,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       j = n;
       break;
     case CPLXSXP: {
-      const Rcomplex *cv = COMPLEX(v);
+      const Rcomplex *cv = COMPLEX_RO(v);
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       while (j<n && !ISNAN(cv[j].r) && !ISNAN(cv[j].i)) j++;
     } break;

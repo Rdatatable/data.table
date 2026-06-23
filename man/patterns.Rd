@@ -2,8 +2,8 @@
 \alias{patterns}
 \title{Obtain matching indices corresponding to patterns}
 \description{
-\code{patterns} returns the matching indices in the argument \code{cols}
-corresponding to the regular expression patterns provided. The patterns must be
+\code{patterns} returns the elements of \code{cols}
+that match the regular expression patterns, which must be
 supported by \code{\link[base]{grep}}.
 
 From \code{v1.9.6}, \code{\link{melt.data.table}} has an enhanced functionality
@@ -12,11 +12,15 @@ and melt them into separate columns. See the \code{Efficient reshaping using
 data.tables} vignette linked below to learn more.
 }
 \usage{
-patterns(\dots, cols=character(0))
+patterns(
+  \dots, cols=character(0),
+  ignore.case=FALSE, perl=FALSE,
+  fixed=FALSE, useBytes=FALSE)
 }
 \arguments{
   \item{\dots}{A set of regular expression patterns.}
   \item{cols}{A character vector of names to which each pattern is matched.}
+  \item{ignore.case, perl, fixed, useBytes}{Passed to \code{\link{grep}}.}
 }
 \seealso{
   \code{\link{melt}},
