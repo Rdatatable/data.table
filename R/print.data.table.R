@@ -257,7 +257,7 @@ format_list_item.data.frame = function(x, ...) {
 # Current implementation may have issues when dealing with strings that have combinations of full-width and half-width characters,
 # if this becomes a problem in the future, we could consider string traversal instead.
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
-  if (is.null(trunc.char)) return(x)
+  if (is.null(trunc.char) || is.infinite(trunc.char[1L])) return(x)
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
   nchar_width = nchar(x, 'width', allowNA = TRUE)
@@ -298,14 +298,9 @@ toprint_subset = function(x, cols_to_print) {
 trunc_cols_message = function(not_printed, abbs, class, col.names, trunc.char = getOption("datatable.prettyprint.char")){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
-  footer_trunc = if (!is.null(trunc.char) && is.finite(trunc.char)) {
-    trunc.char
-  } else {
-    trunc.char
-  }
   catf(
     ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
-    n, brackify(paste0(char.trunc(not_printed, trunc.char = footer_trunc), classes)),
+    n, brackify(paste0(char.trunc(not_printed, trunc.char = trunc.char), classes)),
     domain=NA
   )
 }

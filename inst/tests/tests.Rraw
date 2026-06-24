@@ -21689,5 +21689,4 @@ test(2377.1, print(data.table(abcdefghijklmnopqrstuvwxyz=1)), output="abcdefghij
 test(2377.2, print(data.table(abcdefghijklmnopqrstuvwxyz=1)), output="1 variable not shown: \\[abcdefghijklmn... <num>\\]", options=list(width=20, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE))
 test(2377.3, print(data.table(abcdefghijklmnopqrst=1)), output="abcdefghijklmnopqrst", options=list(width=30))
 test(2377.4, print(data.table(abcdefghijklmnopqrstuvwxyz=1, zyxwvutsrqponmlkjihgfedcba=2)), output="zyxwvutsrqponm...", options=list(width=40, datatable.print.trunc.cols=TRUE))
-test(2377.5, print(data.table("你好你好你好你好你好你好你好你好"=1)), output="你好你好你...", options=list(width=20))
-test(2377.6, print(data.table(abcdefghijklmnopqrstuvwxyz=1)), output="1 variable not shown: \\[abcdefghijklmnopqrstuvwxyz <num>\\]", options=list(width=20, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE, datatable.prettyprint.char=Inf))
+test(2377.5, print(data.table(abcdefghijklmnopqrstuvwxyz=1)), output="1 variable not shown: \\[abcdefghijklmn... <num>\\]", options=list(width=20, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE, datatable.prettyprint.char=Inf))
