@@ -1562,8 +1562,7 @@ replace_dot_alias = function(e) {
         }
 
         # Check for .ROW := NULL pattern (delete rows by reference)
-        if ((is.character(lhs) && length(lhs)==1L && lhs==".ROW") ||
-            (is.name(lhs) && identical(lhs, quote(.ROW)))) {
+        if (identical(lhs, ".ROW") || identical(lhs, quote(.ROW))) {
           if (!is.null(jsub) && !identical(jsub, quote(NULL)))
             stopf(".ROW can only be used with := NULL to delete rows")
           if (is.null(irows))
