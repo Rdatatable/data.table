@@ -93,13 +93,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   require_bit64_if_needed(x)
   classes = classes1(toprint)
 
-  # FR #7797 - Calculate dynamic width limit
   rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
   width_limit = max(0L, getOption("width") - rn_w - 3L)
-
-  # Use user option for data, but use width_limit for headers to avoid breaking legacy tests
   trunc.char = getOption("datatable.prettyprint.char") %||% width_limit
-
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, trunc.char = trunc.char, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   if (col.names != "none") colnames(toprint) = char.trunc(colnames(toprint), trunc.char = width_limit)
 
@@ -307,7 +303,6 @@ trunc_cols_message = function(not_printed, abbs, class, col.names, trunc.char = 
   } else {
     trunc.char
   }
-
   catf(
     ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
     n, brackify(paste0(char.trunc(not_printed, trunc.char = footer_trunc), classes)),
