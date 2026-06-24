@@ -117,7 +117,7 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
   res = unclass(e1) + unclass(e2)
   nm = names(res)
   ans = as.integer(res)
-  setattr(ans, "class", c("IDate", "Date"))  # () wrap to return visibly
+  (setattr(ans, "class", c("IDate", "Date")))  # () wrap to return visibly
   copy_names(ans, nm)
 }
 
