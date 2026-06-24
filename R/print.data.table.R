@@ -303,7 +303,7 @@ trunc_cols_message = function(not_printed, abbs, class, col.names, trunc.char = 
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   footer_trunc = if (!is.null(trunc.char) && is.finite(trunc.char)) {
-    trunc.char 
+    trunc.char
   } else {
     trunc.char
   }
