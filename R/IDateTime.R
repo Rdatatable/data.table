@@ -20,18 +20,17 @@ as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
 }
 
 as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
-  nm = names(x)
   if (origin=="1970-01-01") {
+    nm = names(x)
     x = as.integer(x)
     class(x) = c("IDate", "Date")
     # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
     # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
-    copy_names(x, nm)
+    return(copy_names(x, nm))
   } else {
-    ans = as.IDate(origin, ...) + as.integer(x)
-    copy_names(ans, nm)
+    as.IDate(origin, ...) + x
   }
 }
 
@@ -115,7 +114,11 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stopf("binary + is not defined for \"IDate\" objects")
-  (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
+  res = unclass(e1) + unclass(e2)
+  nm = names(res)
+  ans = as.integer(res)
+  setattr(ans, "class", c("IDate", "Date"))  # () wrap to return visibly
+  copy_names(ans, nm)
 }
 
 `-.IDate` = function(e1, e2) {
@@ -135,14 +138,16 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
     return(base::`-.Date`(as.Date(e1), e2))
     # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
   }
-  ans = as.integer(unclass(e1) - unclass(e2))
+  res = unclass(e1) - unclass(e2)
+  nm = names(res)
+  ans = as.integer(res)
   if (inherits(e2, "Date")) {
     setattr(ans, "class", "difftime")
     setattr(ans, "units", "days")
   } else {
     setattr(ans, "class", c("IDate", "Date"))
   }
-  ans
+  copy_names(ans, nm)
 }
 
 
@@ -209,9 +214,11 @@ as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
+  nm = names(x)
   secs = 86400L * (unclass(x) %% 1L)
   secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
+  copy_names(secs, nm)
 }
 
 as.character.ITime = format.ITime = function(x, ...) {
