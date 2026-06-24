@@ -28,7 +28,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
-    return(copy_names(x, nm))
+    copy_names(x, nm)
   } else {
     as.IDate(origin, ...) + x
   }
