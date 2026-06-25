@@ -21661,6 +21661,29 @@ test(2374.09, key(subset(DT, select=c(a, a))), NULL)
 DT = data.table(a=1:2, a.1=3:4, val=10:11)
 test(2374.10, key(DT[, .(a.1, sum(val)), keyby=.(a, a)]), NULL)
 
+# issue 7718: print.data.table truncates long character columns based on width
+test(2375.1, print(data.table(x="1234567890")), output="1234...", options=list(width=10, datatable.prettyprint.char=NULL))
+test(2375.11, print(data.table(x="1234567890")), output="1234567890", options=list(width=10, datatable.prettyprint.char=Inf))
+test(2375.2, print(data.table(L=list(1:20))), output="1,2,3,4,...", options=list(width=15, datatable.prettyprint.char=NULL))
+test(2375.3, print(data.table(x=c("short", "abcdefghijklmnopqrstuvwxyz"))), output="abcdefghijklmn...", options=list(width=20, datatable.prettyprint.char=NULL))
+test(2375.4, print(data.table(x="abcdefghijklmnopqrstuvwxyz")), output="abcdefghijklmnopqrstuvwxyz", options=list(width=200, datatable.prettyprint.char=NULL))
+test(2375.5, print(data.table(id=1L, score=99.1, txt="abcdefghijklmnopqrstuvwxyz")), output="abcdefghijklmn...", options=list(width=20, datatable.prettyprint.char=NULL))
+test(2375.6, print(data.table(x=rep("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1e6)), topn=1), output="1000000: ABCDEFGHIJKLM...", options=list(width=25, datatable.prettyprint.char=NULL))
+
+# rbindlist() used to put O(ncol(...)) > R_PPStackSize items on the protect stack, #7793
+# Assuming 50000 as the default protection stack size, although R --max-ppsize=... can increase it to 500000.
+max_ppsize = local({
+  arg = grep("^--max-ppsize=", commandArgs(FALSE), value = TRUE)
+  if (length(arg)) {
+    v = suppressWarnings(as.integer(sub("^--max-ppsize=", "", tail(arg, 1L))))
+    if (!is.na(v)) return(v)
+  }
+  50000L
+})
+x = as.data.table(as.list(1:max_ppsize))
+test(2376, rbindlist(list(x)), x)
+rm(x, max_ppsize)
+
 #6663 Option to print the number of columns
 test(2375.1, {options(datatable.show.ncols=TRUE); DT=as.data.table(iris); capture.output(print(DT))[1L]}, "Number of columns: 5")
 test(2375.2, {options(datatable.show.ncols=TRUE); DT=as.data.table(iris); setkey(DT, Sepal.Length); any(grepl("^Number of columns: 5$", capture.output(print(DT))))}, TRUE)

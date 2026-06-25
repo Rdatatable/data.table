@@ -31,17 +31,18 @@
     timezone=FALSE, \dots)
 
   format_col(x, \dots)
-  \method{format_col}{default}(x, \dots)
+  \method{format_col}{default}(x, \dots, trunc.char = getOption("datatable.prettyprint.char"))
   \method{format_col}{POSIXct}(x, \dots, timezone=FALSE)
-  \method{format_col}{expression}(x, \dots)
+  \method{format_col}{expression}(x, \dots, trunc.char = getOption("datatable.prettyprint.char"))
 
   format_list_item(x, \dots)
-  \method{format_list_item}{default}(x, \dots)
+  \method{format_list_item}{default}(x, \dots, trunc.char = getOption("datatable.prettyprint.char"))
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
   \item{topn}{ The number of rows to be printed from the beginning and end of tables with more than \code{nrows} rows. }
   \item{nrows}{ The number of rows which will be printed before truncation is enforced. }
+  \item{trunc.char}{The number of characters at which character columns and list-column summaries are truncated. If \code{NULL} (the default), it is dynamically calculated based on \code{getOption("width")}.}
   \item{class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). When combined with \code{col.names="auto"} and tables >20 rows, classes will also appear at the bottom.}
   \item{row.names}{ If \code{TRUE}, row indices will be printed alongside \code{x}. }
   \item{show.ncols}{ If \code{TRUE}, the number of columns is printed in the header. }
@@ -136,5 +137,13 @@
   iris_agg = iris[ , .(reg = list(lm(Sepal.Length ~ Petal.Length))), by = Species]
   format_list_item.lm = function(x, ...) sprintf('<lm:\%s>', format(x$call$formula))
   print(iris_agg)
+
+  # Truncation based on console width
+  old = options(width = 25, datatable.prettyprint.char = NULL)
+  data.table(x = "abcdefghijklmnopqrstuvwxyz", L = list(1:25))
+  
+  # Dynamic truncation: Content shrinks as row labels grow
+  print(data.table(x = rep("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1e6)), topn = 1)
+  options(old)
 }
 
