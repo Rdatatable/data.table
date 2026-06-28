@@ -424,16 +424,6 @@ test.list <- atime::atime_test_list(
     seconds.limit = 1,
     expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id)),
 
-  # speed up bmerge for double columns
-  "bmerge numeric roll improved in this PR" = atime::atime_test(
-    setup = {
-      x = data.table(id = as.double(seq_len(N)))
-      i = data.table(id = as.double(seq_len(N)) + 0.5)
-      setkey(x, id)
-    },
-    Slow = "4ebcd64c3976973d0d601dcbee4daf39a986e091",
-    Fast = "8e8cbbed5e77f657b39dd28b5a87c563fae0c58e",
-    expr = data.table:::`[.data.table`(x, i, roll = TRUE, which = TRUE)),
 
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

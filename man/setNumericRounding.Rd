@@ -3,7 +3,7 @@
 \alias{getNumericRounding}
 \title{ Change or turn off numeric rounding }
 \description{
-Change rounding to 0, 1 or 2 bytes when joining, grouping or ordering numeric
+Change rounding to 0, 1 or 2 bytes when grouping or ordering numeric
 (i.e. double, POSIXct) columns.
 }
 \usage{
@@ -15,9 +15,9 @@ getNumericRounding()
 }
 \details{
 Computers cannot represent some floating point numbers (such as 0.6)
-precisely, using base 2. This leads to unexpected behaviour when joining or
-grouping columns of type 'numeric'; i.e. 'double', see example below. In
-cases where this is undesirable, data.table allows rounding such data up to
+precisely, using base 2. This can lead to unexpected behaviour when grouping
+columns of type 'numeric'; i.e. 'double', see example below. In cases where this
+is undesirable, data.table allows rounding such data up to
 approximately 11 significant figures which is plenty of digits for many cases.
 This is achieved by rounding the last 2 bytes off the significand. Other possible
 values are 1 byte rounding, or no rounding (full precision, default).
@@ -50,7 +50,8 @@ DT[.(0.6)]   # no match, can be confusing since 0.6 is clearly there in DT
              # happens due to floating point representation limitations
 
 setNumericRounding(2)   # round off last 2 bytes
-DT[.(0.6)]   # works
+DT[.(0.6)]   # numeric joins always use full precision, hence, still no match
+DT[,.N,by=a] # grouping uses rounding
 
 # using type 'numeric' for integers > 2^31 (typically ids)
 DT = data.table(id = c(1234567890123, 1234567890124, 1234567890125), val=1:3)
