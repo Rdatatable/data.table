@@ -21,6 +21,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
     stopf("Valid options for trunc.cols are TRUE and FALSE")
   stopifnot(isTRUEorFALSE(class))
+  stopifnot(isTRUEorFALSE(show.ncols))
   if (col.names == "none" && class)
     warningf("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
@@ -54,9 +55,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       paste0("<", ixs, ">", collapse = ", ")
     ))
   }
-  if (show.ncols && !isTRUE(trunc.cols) && !any(dim(x)==0L)) {
-    trunc_cols_message(character(0), NULL, FALSE, "none", ncol=ncol(x))
-  }
   if (any(dim(x)==0L)) {
     x_class = if (is.data.table(x)) "data.table" else "data.frame"  # a data.frame could be passed to print.data.table() directly, #3363
     if (all(dim(x)==0L)) {
@@ -79,7 +77,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
-    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
     idx = c(seq_len(topn), seq(to=nrow(x), length.out=topn))
@@ -90,6 +87,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(n_x)
     printdots = FALSE
     if (show.indices) toprint = cbind(toprint, index_dt)
+  }
+  if (show.ncols && !isTRUE(trunc.cols)) {
+    trunc_cols_message(character(0), NULL, FALSE, "none", ncol=ncol(toprint))
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
@@ -127,9 +127,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (show.ncols) {
-      trunc_cols_message(not_printed, abbs, class, col.names, ncol=ncol(x))
+      trunc_cols_message(not_printed, abbs, class, col.names, ncol=ncol(toprint))
       show_trunc_message = FALSE
-      }
+    }
 
     if (!any(cols_to_print)) {
       if (show_trunc_message) trunc_cols_message(not_printed, abbs, class, col.names)
