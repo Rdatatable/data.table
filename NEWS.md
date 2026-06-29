@@ -60,6 +60,8 @@
 
 13. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
 
+14. `print.data.table()` now also truncates long column names and improves the "variables not shown" footer to stay within the console width, [#7797](https://github.com/Rdatatable/data.table/issues/7797). This ensures that visible headers, empty table summaries, and hidden column lists respect `options("width")`. Thanks @tdhock for the report and @venom1204 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
