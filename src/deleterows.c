@@ -5,7 +5,7 @@ static void compactVectorRaw(SEXP col, const int *dest, const int *keep, R_xlen_
 
 SEXP deleteRows(SEXP dt, SEXP rows_to_delete) {
   if (!isNewList(dt))
-    error("Internal error: deleteRows received non-list dt"); // #nocov
+    internal_error(__func__, "deleteRows received non-list dt"); // #nocov
   if (!xlength(dt)) return dt; // zero-column data.table
 
   const R_xlen_t ncol = length(dt);
