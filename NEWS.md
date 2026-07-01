@@ -32,7 +32,7 @@
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
-7. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request all o, @ben-schwen for the implementation, and @aitap for review and assistance.
+7. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
 
 ### BUG FIXES
 
