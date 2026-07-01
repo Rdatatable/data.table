@@ -4,6 +4,10 @@
 
 ## data.table v1.18.6
 
+### NEW FEATURES
+
+1. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
+
 ### BUG FIXES
 
 1. Adapted the tests to stop using the "special" attribute names in `structure()` calls, [#7813](https://github.com/Rdatatable/data.table/issues/7813) & [#7814](https://github.com/Rdatatable/data.table/issues/7814), avoiding deprecation warnings on R-devel. Thanks @ben-schwen for the report and @ben-schwen & @MichaelChirico for the fix.
