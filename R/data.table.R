@@ -1526,8 +1526,7 @@ replace_dot_alias = function(e) {
       }
       assigned_to_columns = intersect(get_lhs_vars(jsub), sdvars)
       if (length(assigned_to_columns)) {
-        warningf("Local assignment to column(s) %s detected in 'j' while also using .SD. .SD is a static snapshot and will not reflect these modifications. To return updated columns, use .() or list() instead of .SD.", 
-                 brackify(assigned_to_columns))
+        warningf("Local assignment to column(s) %s detected in 'j' while also using .SD. .SD is a static snapshot and will not reflect these modifications. To return updated columns, use .() or list() instead of .SD.", brackify(assigned_to_columns))
       }
     }
 
