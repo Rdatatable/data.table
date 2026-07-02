@@ -131,7 +131,14 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     trunc.cols = length(not_printed) > 0L
   }
   print_default = function(x) {
-    if (col.names != "none") cut_colnames = identity
+    if (col.names != "none") {
+      cut_colnames = identity
+    } else if (isFALSE(row.names)) {
+      cut_colnames = function(x) {
+        out = capture.output(x)
+        if (length(out) > 0L) writeLines(out[-1L])
+      }
+    }
     cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
     # prints names of variables not shown in the print
     if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
