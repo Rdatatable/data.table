@@ -199,6 +199,18 @@ Pitching[rank_in_team == 1, team_performance :=
 
 Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values).
 
+## Important: .SD is a Static Snapshot
+
+A common "gotcha" occurs when trying to modify columns locally within the `j` expression and then returning `.SD`. Because `.SD` is created before the code in `j` runs, it will not see your local changes.
+
+```{r static_sd_warning}
+DT = data.table(a = 1:3, b = 1:3, d = 1:3)
+# INCORRECT: .SD will not reflect the change to 'b'
+DT[a %in% 1:2, { b[d == 2] <- 0L; .SD }] 
+# CORRECT: Return columns explicitly to see the change
+DT[a %in% 1:2, { b[d == 2] <- 0L; .(a, b, d) }]
+```
+
 # Grouped `.SD` operations
 
 Often, we'd like to perform some operation on our data _at the group level_. When we specify `by =` (or `keyby = `), the mental model for what happens when `data.table` processes `j` is to think of your `data.table` as being split into many component sub-`data.table`s, each of which corresponds to a single value of your `by` variable(s):
