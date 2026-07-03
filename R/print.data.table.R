@@ -46,6 +46,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
   show_trunc_message = isTRUE(trunc.cols)
+  n_col = ncol(x)
   if (print.keys) {
     if (!is.null(ky <- key(x)))
     catf("Key: <%s>\n", toString(ky))
@@ -89,7 +90,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   if (show.ncols && !isTRUE(trunc.cols)) {
-    trunc_cols_message(character(0), NULL, FALSE, "none", ncol=ncol(toprint))
+    trunc_cols_message(character(0), NULL, FALSE, "none", ncol=n_col)
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
@@ -127,7 +128,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (show.ncols) {
-      trunc_cols_message(not_printed, abbs, class, col.names, ncol=ncol(toprint))
+      trunc_cols_message(not_printed, abbs, class, col.names, ncol=n_col)
       show_trunc_message = FALSE
     }
 
