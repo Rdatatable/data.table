@@ -32,7 +32,9 @@
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
-7. `print.data.table()` gains a `show.ncols` argument and `datatable.show.ncols` option to print the number of columns (labeled as `ncol:`) in the header, [#6663](https://github.com/Rdatatable/data.table/issues/6663). When `trunc.cols=TRUE`, this information is merged into the truncation message at the top, and the redundant footer message is suppressed. Thanks to @KyleHaynes for the suggestion and @venom1204 for the implementation.
+7. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
+
+8. `print.data.table()` gains a `show.ncols` argument and `datatable.show.ncols` option to print the number of columns (labeled as `ncol:`) in the header, [#6663](https://github.com/Rdatatable/data.table/issues/6663). When `trunc.cols=TRUE`, this information is merged into the truncation message at the top, and the redundant footer message is suppressed. Thanks to @KyleHaynes for the suggestion and @venom1204 for the implementation.
 
 ### BUG FIXES
 
