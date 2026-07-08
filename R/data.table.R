@@ -1512,7 +1512,23 @@ replace_dot_alias = function(e) {
         # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
         ansvals = chmatch(ansvars, names_x)
       }
-      # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
+      if (".SD" %chin% av && any(all.names(jsub) %chin% c("<-", "="))) {
+      get_lhs_vars = function(e) {
+        if (is.call(e)) {
+          if (as.character(e[[1L]]) %chin% c("<-", "=")) {
+            lhs = e[[2L]]
+            while (is.call(lhs) && length(lhs) >= 2L) lhs = lhs[[2L]]
+            return(if (is.name(lhs)) as.character(lhs) else NULL)
+          }
+          return(unique(unlist(lapply(as.list(e), get_lhs_vars), use.names=FALSE)))
+        }
+        NULL
+      }
+      assigned_to_columns = intersect(get_lhs_vars(jsub), sdvars)
+      if (length(assigned_to_columns)) {
+        warningf("Local assignment to column(s) %s detected in 'j' while also using .SD. .SD is a static snapshot and will not reflect these modifications. To return updated columns, use .() or list() instead of .SD.", brackify(assigned_to_columns))
+      }
+    }
 
       lhs = NULL
       newnames = NULL
