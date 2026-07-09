@@ -87,3 +87,9 @@ SEXP copyAsGrowable(SEXP x) {
   UNPROTECT(1);
   return ret;
 }
+
+SEXP resizeVector(SEXP x, SEXP size) {
+  R_xlen_t newlen = INTEGER_RO(size)[0];
+  R_resizeVector(x, newlen);
+  return x;
+}
