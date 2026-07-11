@@ -78,6 +78,8 @@
 
 7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
 
+8. Clarified `fread()` documentation and vignette regarding the interaction between `keepLeadingZeros = TRUE` and automatic header detection, [#5405](https://github.com/Rdatatable/data.table/issues/5405). Thanks @clemenskuehn for the report and @venom1204 for updating the documentation.
+
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 
 ### BUG FIXES
