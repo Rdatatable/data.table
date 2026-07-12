@@ -161,6 +161,7 @@ static const R_CallMethodDef callMethods[] = {
     {"CmemcpyVectoradaptive", (DL_FUNC)&memcpyVectoradaptive, -1},
     {"CmemcpyDTadaptive", (DL_FUNC)&memcpyDTadaptive, -1},
     {"CcopyAsGrowable", (DL_FUNC)&copyAsGrowable, -1},
+    {"CresizeVector", (DL_FUNC)&resizeVector, -1},
     {"Cfrolladapt", (DL_FUNC)&frolladapt, -1},
     {"Cis_direct_child", (DL_FUNC)&is_direct_child, -1},
     {NULL, NULL, 0}};
