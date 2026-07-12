@@ -1726,7 +1726,7 @@ setkey(DT, COURSE)
 test(550, DT[,sum(ID),by=key(DT)]$V1, INT(6,1,29,2,17))
 
 # Another test of DT[i] syntax from datatable-unaware packages, #1794 from ilprincipe.
-DF = structure(list(sample = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev"), class = "factor"), base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002), ref = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("2004", "2002-2004", "2001", "2000", "2009", "2008"), class = "factor"), var = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("distance", "time"), class = "factor"), treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1), distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05), all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L), di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L), irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612245, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)), .Names = c("sample", "base", "ref", "var", "treated", "distance", "all", "di.recip", "irr"), row.names = c(NA, 16L), class = "data.frame")
+DF = structure(list(sample = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), levels = c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev"), class = "factor"), base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002), ref = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), levels = c("2004", "2002-2004", "2001", "2000", "2009", "2008"), class = "factor"), var = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), levels = c("distance", "time"), class = "factor"), treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1), distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05), all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L), di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L), irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612245, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)), names = c("sample", "base", "ref", "var", "treated", "distance", "all", "di.recip", "irr"), row.names = c(NA, 16L), class = "data.frame")
 DT = as.data.table(DF)
 test(551, nrow(stats::reshape(DT, v.names = c("all", "di.recip", "irr"),
               timevar = "treated", idvar = c("sample", "var", "distance"),
@@ -4221,7 +4221,7 @@ test(1155.3, dt1[dt2, nomatch=0L], data.table(x=dt1$x, y=dt1$y, z=dt2$z[1:3], ke
 dt <- structure(list(x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3,
 -3, -2, -2, -1, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 3, 3), y = c(16L,
 25L, 23L, 17L, 21L, 11L, 13L, 15L, 1L, 6L, 4L, 18L, 7L, 3L, 12L,
-24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)), .Names = c("x",
+24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)), names = c("x",
 "y"), row.names = c(NA, -25L), class = c("data.table", "data.frame"
 ))
 setkey(dt, x)
@@ -4348,15 +4348,15 @@ B <- data.table(x=factor(), key='x')
 test(1168.1, rbindlist(list(B,A)), data.table(x=factor(1)))
 
 # fix for bug #72, it's related to rbind and factors as well - more or less similar to 1168.1 (#55).
-tmp1 <- as.data.table(structure(list(Year = 2013L, Maturity = structure(1L, .Label = c("<1",
+tmp1 <- as.data.table(structure(list(Year = 2013L, Maturity = structure(1L, levels = c("<1",
   "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0",
-  "4.0 - 5.0", ">5.0"), class = "factor"), Quality = structure(2L, .Label = c(">BBB",
+  "4.0 - 5.0", ">5.0"), class = "factor"), Quality = structure(2L, levels = c(">BBB",
   "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH"), class = c("ordered",
-  "factor")), Ct = 2L, Wt = 1.56, CtTotRet = 1.08, TotRet = 69.2307692307692), .Names = c("Year",
+  "factor")), Ct = 2L, Wt = 1.56, CtTotRet = 1.08, TotRet = 69.2307692307692), names = c("Year",
   "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
   "data.frame"), row.names = c(NA, -1L)))
 tmp2 <- as.data.table(structure(list(Year = 2013L, Maturity = "TOTAL", Quality = "TOTAL",
-  Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), .Names = c("Year",
+  Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), names = c("Year",
   "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
   "data.frame"), row.names = c(NA, -1L)))
 # "TOTAL" is added to the end of the ordered levels and ordered factor retained
@@ -5176,7 +5176,7 @@ c(0.039310363070415,
     30), c(5, 30)), mg = c(0.0197779376457164, 0.0197779376457164
     ), msal = list(c(2571.70078740157, 4215.73622047244),
 c(2497.94263862333,
-    4094.82600382409))), .Names = c("fisyr", "er", "eg", "esal",
+    4094.82600382409))), names = c("fisyr", "er", "eg", "esal",
 "fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
 "data.frame"), row.names = c(NA, -2L))
 
@@ -5390,9 +5390,9 @@ test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("a","a","c"
 test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("b","a","c","a","c",NA,"c")))
 
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
-dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
+dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), names =
 c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = c('x', 'y'))
-dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), .Names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = c('x', 'y'))
+dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = c('x', 'y'))
 test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[2], dt2$w[5:6]), key=c('x', 'y')))
 
 # also test where 'i' is not sorted.
@@ -8009,7 +8009,7 @@ dimnames(idx) <- list(NULL, "Resample1") # as in caret::createDataPartition
 test(1554.1, dt[idx], data.table(a=letters[idx]))
 test(1554.2, dt[-idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
-test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
+test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), dim = c(6L, 1L), dimnames = list(NULL, "Resample1")))
 
 if (test_R.utils) {
   # strip.white and other enhancements to 'fread()'
@@ -9560,8 +9560,8 @@ test(1639.078, TRUE, all(
   is.list(l), identical(names(l), c("h","f","g","e","a","z")),
   sapply(l, function(x) !is.data.table(x) && is.list(x)),
   identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"), a=character(), z=character())),
-  identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0)))),
-  identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0))))
+  identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=structure(list(), names = character(0)), z=structure(list(), names = character(0)))),
+  identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=structure(list(), names = character(0)), z=structure(list(), names = character(0))))
 ))
 
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE) # empty levels in factor and drop=TRUE
@@ -9577,8 +9577,8 @@ test(1639.080, TRUE, all(
   is.list(l), identical(names(l), c("a","e","f","g","h","z")),
   sapply(l, function(x) !is.data.table(x) && is.list(x)),
   identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
-  identical(lapply(l, lapply, nrow), list(a=structure(list(), .Names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), .Names = character(0)))),
-  identical(lapply(l, lapply, ncol), list(a=structure(list(), .Names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), .Names = character(0))))
+  identical(lapply(l, lapply, nrow), list(a=structure(list(), names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), names = character(0)))),
+  identical(lapply(l, lapply, ncol), list(a=structure(list(), names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), names = character(0))))
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=TRUE
 test(1639.081, TRUE, all(
@@ -9756,9 +9756,9 @@ sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by
 test(1639.128, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
 test(1639.129, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
-test(1639.130, split(dt[0L], by = "x1"), structure(list(), .Names = character(0))) # 0 nrow character/factor with empty levels # no empty levels
+test(1639.130, split(dt[0L], by = "x1"), structure(list(), names = character(0))) # 0 nrow character/factor with empty levels # no empty levels
 test(1639.131, split(fdt[0L], by = "x1"), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # expand empty levels
-test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names = character(0)))
+test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), names = character(0)))
 test(1639.133, split(fdt[0L], by = "x1", sorted = TRUE), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # same as none sorted as all appended on the end in sorted order due to lack of data
 dt2 = copy(dt)[, "l" := lapply(1:12, function(i) i)] # non-atomic type to 'by' should raise error
 test(1639.134, split(dt2, by = "l"), error = "Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic: [l]")
@@ -10378,7 +10378,7 @@ test(1674, forderv(c(2147483645L, 2147483646L, 2147483647L, 2147483644L), order=
 # Test updated minimally to create the previous representation directly instead of going via factor().
 A = data.table(foo = c(1, 2, 3), bar = c(4, 5, 6))
 A[, bar := factor(bar, levels = c(4, 5), labels = c("Boop", "Beep"), exclude = 6)]
-B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = structure(c(3L, 3L, 3L, 1L, 2L, NA), .Label=c("Boop","Beep",NA), class="factor"))
+B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = structure(c(3L, 3L, 3L, 1L, 2L, NA), levels=c("Boop","Beep",NA), class="factor"))
 test(1675.1, as.integer(B[A, bar := i.bar, on="foo"]$bar), c(1:2,NA,1:2,NA))  # remove the NA level is change in v1.12.4
 A = data.table(foo = c(1, 2, 3), bar = c(4, 5, 6))
 B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = c(NA, NA, NA, 4, 5, 6))
@@ -11748,15 +11748,15 @@ test(1771.8, lapply(l, class), lapply(do.call(CJ, l), class))
 DT = data.table(a = factor(c('a', 'b', 'b', 'a'), levels = c('b', 'a')),
                 b = c(2, 2, 1, 1), c = 1:4)
 test(1772.1, split(DT, by = 'a', sorted = TRUE),
-     list(b = data.table(a = structure(c(1L, 1L), .Label = c("b", "a"), class = "factor"),
+     list(b = data.table(a = structure(c(1L, 1L), levels = c("b", "a"), class = "factor"),
                          b = c(2, 1), c = 2:3),
-          a = data.table(a = structure(c(2L, 2L), .Label = c("b", "a"), class = "factor"),
+          a = data.table(a = structure(c(2L, 2L), levels = c("b", "a"), class = "factor"),
                          b = c(2, 1), c = c(1L, 4L))))
 test(1772.2, split(DT, by = c('a', 'b'), sorted = TRUE),
-     list(b.1 = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor"), b = 1, c = 3L),
-          b.2 = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor"), b = 2, c = 2L),
-          a.1 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 1, c = 4L),
-          a.2 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 2, c = 1L)))
+     list(b.1 = data.table(a = structure(1L, levels = c("b", "a"), class = "factor"), b = 1, c = 3L),
+          b.2 = data.table(a = structure(1L, levels = c("b", "a"), class = "factor"), b = 2, c = 2L),
+          a.1 = data.table(a = structure(2L, levels = c("b", "a"), class = "factor"), b = 1, c = 4L),
+          a.2 = data.table(a = structure(2L, levels = c("b", "a"), class = "factor"), b = 2, c = 1L)))
 
 # More helpful error message when using a single symbol name for a logical column to subset, #1844
 # Used to be just 'not found'
@@ -13201,12 +13201,12 @@ test(1918.1, DT[, min(V1)], error='not meaningful for factors')
 test(1918.2, DT[, max(V1)], error='not meaningful for factors')
 ## confirming base functionality works
 DT[ , V1:=as.ordered(V1)]
-test(1918.3, DT[, min(V1)], structure(1L, .Label = lev, class = c("ordered", "factor")))
-test(1918.4, DT[, max(V1)], structure(5L, .Label = lev, class = c("ordered", "factor")))
+test(1918.3, DT[, min(V1)], structure(1L, levels = lev, class = c("ordered", "factor")))
+test(1918.4, DT[, max(V1)], structure(5L, levels = lev, class = c("ordered", "factor")))
 ## make sure GForce is activated
 options(datatable.optimize = Inf)
-test(1918.5, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(1:3, .Label=lev, class=c("ordered", "factor"))))
-test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, .Label=lev, class=c("ordered", "factor"))))
+test(1918.5, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(1:3, levels=lev, class=c("ordered", "factor"))))
+test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, levels=lev, class=c("ordered", "factor"))))
 
 # as.ITime.character bug for NA handling #2940
 test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
@@ -13555,7 +13555,7 @@ DT = data.table(
                      15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
   status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
                        4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
-                     .Label = c("active", "archived", "inactive", "removed"),
+                     levels = c("active", "archived", "inactive", "removed"),
                      class = "factor"),
   amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
              5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
@@ -13763,7 +13763,7 @@ DT = data.table(
                      15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
   status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
                        4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
-                     .Label = c("active", "archived", "inactive", "removed"),
+                     levels = c("active", "archived", "inactive", "removed"),
                      class = "factor"),
   amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
              5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
@@ -14060,7 +14060,7 @@ test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring by/keyby because 'j
 test(1967.526, x[keyby=a],      x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
 
 test(1967.53, as.matrix(x, rownames = 2:3), error='length(rownames)==2 but')
-test(1967.54, as.matrix(x[0L]), structure(integer(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
+test(1967.54, as.matrix(x[0L]), structure(integer(0), dim = c(0L, 2L), dimnames = list(NULL, c("a", "b"))))
 
 test(1967.55, subset(x, 5L), error = "'subset' must evaluate to logical")
 
@@ -14420,8 +14420,8 @@ test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 
 
 # fix for #2202, dcast needs to rank NA with na.last=FALSE in frankv within dcast
 x = data.table(
-  f1 = structure(c(1L, 1L, 1L, 1L, NA, NA), .Label = "123456", class = "factor"),
-  f2 = structure(c(1L, 1L, 1L, 1L, 1L, 1L), .Label = "U", class = "factor"),
+  f1 = structure(c(1L, 1L, 1L, 1L, NA, NA), levels = "123456", class = "factor"),
+  f2 = structure(c(1L, 1L, 1L, 1L, 1L, 1L), levels = "U", class = "factor"),
   v1 = c(0,300, 600, 500, 0, 800),
   v2 = c(0,15, 50, 30, 0, 50))
 y = x[, lapply(.SD, sum), by=.(f1,f2)]
@@ -15443,12 +15443,12 @@ test(2051.6, DT[order(sin(a/pi))], DT)
 
 # rbindlist ordered factor with an NA level, #3601
 dt1 = structure(list(V1 = c("2016", "2016", "2016", "2016", "2016"),
-    V46 = structure(c(3L, 1L, 1L, NA, 3L), .Label = c("Low",
+    V46 = structure(c(3L, 1L, 1L, NA, 3L), levels = c("Low",
     "Typical", "High", NA), class = c("ordered", "factor"))), class = c("data.table", "data.frame"), row.names = c(NA, -5L))
 dt2 = structure(list(V1 = c("2018", "2018", "2018", "2018", "2018")), row.names = c(NA, -5L), class = c("data.table", "data.frame"))
 test(2052, rbindlist(list(dt1, dt2), fill=TRUE),
            data.table(V1=c(dt1$V1, dt2$V1),
-                      V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), .Label=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
+                      V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), levels=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
 
 # rbind.data.frame didn't respect integer storage mode of IDate, #2008
 DF = data.frame(date = as.IDate(0L))
@@ -17571,7 +17571,7 @@ test(2184.4, dt2[1, suma], 2)
 IDT = as.data.table(iris)
 vr = "Species"
 IDT[, virginca := get(vr) == "virginica"]
-ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8), kar = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("setosa", "versicolor", "virginica"), class = "factor"), N = c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L))
+ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8), kar = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), levels = c("setosa", "versicolor", "virginica"), class = "factor"), N = c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L))
 test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))] , ans)
 
 # dcast() segfault or 'STRING_ELT() can only be applied to character not logical' fixed in v1.13.0, #2394
@@ -18720,11 +18720,11 @@ test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[ord
 # regression test on issue reported with printing nested table, #1646
 DF <- structure(
   list(
-    DF1=structure(list(V1=list(1:2, 3:4), V2=5:6), .Names=c("V1", "V2"), class="data.frame", row.names=c(NA, 2L)),
-    DF2=structure(list(V3=7:8, V4=9:10), .Names=c("V3", "V4"), class="data.frame", row.names=c(NA, 2L)),
+    DF1=structure(list(V1=list(1:2, 3:4), V2=5:6), names=c("V1", "V2"), class="data.frame", row.names=c(NA, 2L)),
+    DF2=structure(list(V3=7:8, V4=9:10), names=c("V3", "V4"), class="data.frame", row.names=c(NA, 2L)),
     V5=11:12
   ),
-  .Names=c("DF1", "DF2", "V5"), class="data.frame", row.names=c(NA, 2L)
+  names=c("DF1", "DF2", "V5"), class="data.frame", row.names=c(NA, 2L)
 )
 
 test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")

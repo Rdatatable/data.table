@@ -4,6 +4,10 @@
 
 ## data.table v1.18.6
 
+### BUG FIXES
+
+1. Adapted the tests to stop using the "special" attribute names in `structure()` calls, [#7813](https://github.com/Rdatatable/data.table/issues/7813), avoiding deprecation warnings on R-devel. Thanks @ben-schwen for the report and fix.
+
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45?closed=1)
 
 ### BUG FIXES
