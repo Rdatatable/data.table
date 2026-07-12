@@ -572,7 +572,7 @@ xt = structure(
     94807600, 69620600, 76645300, 108.999954, 109.231255, 108.360008),
   class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
   index = structure(c(1167782400, 1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-  .Dim = c(3L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+  dim = c(3L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
 )
 local({
   old = options(datatable.verbose=TRUE); on.exit(options(old))
@@ -585,14 +585,14 @@ local({
       c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
       class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
       index = structure(1167955200, tzone = "UTC", tclass = "Date"),
-      .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+      dim = c(1L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
     )
     xt_last2 = structure(
       c(141.229996, 141.330002, 142.050003, 141.399994, 140.610001, 140.380005,
         141.669998, 140.539993, 69620600, 76645300, 109.231255, 108.360008),
       class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
       index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-      .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+      dim = c(2L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
     )
     test(19.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
     test(19.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
@@ -604,13 +604,13 @@ local({
       c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
       class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
       index = structure(1167782400, tzone = "UTC", tclass = "Date"),
-      .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+      dim = c(1L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
     )
     xt_first2 = structure(
       c(142.25, 141.229996, 142.860001, 142.050003, 140.570007, 140.610001, 141.369995, 141.669998, 94807600, 69620600, 108.999954, 109.231255),
       class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
       index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
-      .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+      dim = c(2L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
     )
     test(19.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
     test(19.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
@@ -637,11 +637,11 @@ local({
   test(19.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
   test(19.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
   # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-  test(19.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-  expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
+  test(19.81, last(mx), structure(c(3L, 6L, 9L), dim = c(1L, 3L), dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), dim = c(1L, 3L, 3L), dimnames = list("[3,]", NULL, NULL)) #4127
   test(19.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-  test(19.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-  expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
+  test(19.91, first(mx), structure(c(1L, 4L, 7L), dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), dim = c(1L, 3L, 3L)) #4127
   test(19.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 })
 
