@@ -60,8 +60,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Empty %s (%d rows and %d cols)", x_class, NROW(x), NCOL(x))
       if (length(x)>0L) {
         # Minimal truncation for empty table summary line
-        e_trunc = getOption("datatable.prettyprint.char") %||% (getOption("width") - 5L)# 5L accounts for "Empty data.table..." prefix;
-        t_names = char.trunc(head(names(x), 6L), trunc.char = e_trunc)#6L is the max number of names shown in summary
+        e_trunc = getOption("datatable.prettyprint.char")
+        if (is.null(e_trunc)) e_trunc = max(0L, getOption("width") - 5L)  # 5L accounts for "Empty data.table..." prefix
+        t_names = char.trunc(head(names(x), 6L), trunc.char = e_trunc)  #6L is the max number of names shown in summary
         cat(": ", paste(t_names, collapse=","), if(length(x)>6L)"...", sep="") # notranslate
       }
       cat("\n") # notranslate
@@ -93,9 +94,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   require_bit64_if_needed(x)
   classes = classes1(toprint)
 
-  rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L# 2L accounts for the ": " added to row names (e.g., "10: "); 0L used when row.names=FALSE
-  width_limit = max(0L, getOption("width") - rn_w - 3L)# 3L accounts for separators and internal padding between columns
-  trunc.char = getOption("datatable.prettyprint.char") %||% width_limit
+  rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L  # 2L accounts for the ": " added to row names (e.g., "10: "); 0L used when row.names=FALSE
+  width_limit = max(0L, getOption("width") - rn_w - 3L)  # 3L accounts for separators and internal padding between columns
+  trunc.char = getOption("datatable.prettyprint.char")
+  if (is.null(trunc.char)) trunc.char = width_limitrunc.char = getOption("datatable.prettyprint.char") %||% width_limit
   h_opt = getOption("datatable.prettyprint.char")
   h_trunc = if (!is.null(h_opt) && is.infinite(h_opt)) Inf else width_limit
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, trunc.char = trunc.char, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
