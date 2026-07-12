@@ -21799,7 +21799,7 @@ test(2378.94, .Call(CresizeVector, x, NA_integer_), error = "must be length 1 no
 test(2378.95, .Call(CresizeVector, NULL, 2L), error = "must be a vector")
 
 #7797 long column names go past width
-test(2379.1, data.table(abcdefghijklmnopqrstuvwxyz=1), output="abcdefghijklmnop...", options=list(width=20))
+test(2379.1, data.table(abcdefghijklmnopqrstuvwxyz=1), output="abcdefghijklmn...", options=list(width=20))
 test(2379.2, print(data.table(abcdefghijklmnopqrstuvwxyz=1)), output="1 variable not shown: \\[abcdefghijklmn... <num>\\]", options=list(width=20, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE))
 test(2379.3, print(data.table(abcdefghijklmnopqrst=1)), output="abcdefghijklmnopqrst", options=list(width=30))
 test(2379.4, print(data.table(abcdefghijklmnopqrstuvwxyz=1, zyxwvutsrqponmlkjihgfedcba=2)), output="abcdefghijklmnopqrstuvwxyz.*1 variable not shown: \\[zyxwvutsrqponmlkjihgfedcba <num>\\]", options=list(width=35, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE))

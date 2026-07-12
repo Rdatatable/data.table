@@ -97,7 +97,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L  # 2L accounts for the ": " added to row names (e.g., "10: "); 0L used when row.names=FALSE
   width_limit = max(0L, getOption("width") - rn_w - 3L)  # 3L accounts for separators and internal padding between columns
   trunc.char = getOption("datatable.prettyprint.char")
-  trunc.char = getOption("datatable.prettyprint.char")
   if (is.null(trunc.char)) trunc.char = width_limit
   h_opt = getOption("datatable.prettyprint.char")
   h_trunc = if (!is.null(h_opt) && is.infinite(h_opt)) Inf else width_limit
