@@ -309,14 +309,9 @@ trunc_cols_message = function(not_printed=character(0), abbs=NULL, class=FALSE, 
     return()
   }
   classes = if (class && col.names != "none") paste0(" ", tail(abbs, n)) else ""
-  
-  if (is.null(ncol)) {
-    catf(ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
-         n, brackify(paste0(not_printed, classes)), domain=NA)
+  if (is.null(ncol)) { catf(ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"), n, brackify(paste0(not_printed, classes)), domain=NA)
   } else {
-    catf(ngettext(n, "Number of columns: %d, of which %d is not shown: %s\n", 
-                    "Number of columns: %d, of which %d are not shown: %s\n"),
-         ncol, n, brackify(paste0(not_printed, classes)), domain=NA)
+    catf(ngettext(n, "Number of columns: %d, of which %d is not shown: %s\n", "Number of columns: %d, of which %d are not shown: %s\n"), ncol, n, brackify(paste0(not_printed, classes)), domain=NA)
   }
 }
 
