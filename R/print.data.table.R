@@ -90,7 +90,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   if (show.ncols && !isTRUE(trunc.cols)) {
-    trunc_cols_message(character(0), NULL, FALSE, "none", ncol=n_col)
+    trunc_cols_message(ncol=n_col)
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
@@ -302,27 +302,21 @@ toprint_subset = function(x, cols_to_print) {
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
-trunc_cols_message = function(not_printed, abbs, class, col.names, ncol=NULL){
+trunc_cols_message = function(not_printed=character(0), abbs=NULL, class=FALSE, col.names="auto", ncol=NULL){
   n = length(not_printed)
+  if (n == 0L) {
+    if (!is.null(ncol)) catf("Number of columns: %d\n", ncol)
+    return()
+  }
+  classes = if (class && col.names != "none") paste0(" ", tail(abbs, n)) else ""
+  
   if (is.null(ncol)) {
-    if (n == 0L) return()
-    if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
-    catf(
-      ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
-      n, brackify(paste0(not_printed, classes)),
-      domain=NA
-    )
+    catf(ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
+         n, brackify(paste0(not_printed, classes)), domain=NA)
   } else {
-    if (n > 0L) {
-      if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
-      catf(
-        ngettext(n, "Number of columns: %d, of which %d is not shown: %s\n", "Number of columns: %d, of which %d are not shown: %s\n"),
-        ncol, n, brackify(paste0(not_printed, classes)),
-        domain=NA
-      )
-    } else {
-      catf("Number of columns: %d\n", ncol)
-    }
+    catf(ngettext(n, "Number of columns: %d, of which %d is not shown: %s\n", 
+                    "Number of columns: %d, of which %d are not shown: %s\n"),
+         ncol, n, brackify(paste0(not_printed, classes)), domain=NA)
   }
 }
 
