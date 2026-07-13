@@ -388,7 +388,7 @@ test(2231.63,optimize=opt, DT[, weighted.mean(x, w, na.rm=FALSE), g],    DT[, st
 test(2231.64,optimize=opt, DT[, weighted.mean(x, weight=w, na.rm=TRUE)], DT[, stats::weighted.mean(x, weight=w, na.rm=TRUE)])
 
 # GForce retains attributes in by arguments #5567
-dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer"), att=1), c=structure(c(1L,2L,1L,2L), class = c("class_c", "integer")))
+dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer"), att=1), c=`class<-`(c(1L,2L,1L,2L), c("class_c", "integer")))
 opt = c(0,Inf)
 out = c("GForce FALSE", "GForce optimized j to")
 test(2263.1,optimize=opt, options=list(datatable.verbose=TRUE), dt[, .N, b], data.table(b=dt$b, N=1L),               output=out)

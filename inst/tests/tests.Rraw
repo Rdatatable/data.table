@@ -199,7 +199,7 @@ base_messages = list(
   missing_object = get_msg(`__dt_test_missing_` + 1, "'", fmt=TRUE),
   missing_function = get_msg(`__dt_test_missing_`(), '"', fmt=TRUE),
   missing_coerce_method = get_msg(methods::as(TRUE, 'foo'), delim = '"'),
-  missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '[\'"]'),
+  missing_dispatch_method = get_msg(conditionMessage(`class<-`(1, "foo")), '[\'"]'),
   invalid_arg_unary_operator = get_msg(-'a'),
   invalid_arg_binary_operator = get_msg(1 + 'a'),
   invalid_arg_sum = get_msg(sum('a'), c("\\(", "\\)"), fmt=TRUE),
@@ -529,7 +529,7 @@ dt = data.table(a = rep(as.Date("2010-01-01"), 4), b = rep("a",4))
 test(140, rbind(dt,dt), data.table(a = rep(as.Date("2010-01-01"), 8), b = rep("a",8)))
 test(141, dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])
 
-dt$a <- structure(as.integer(dt$a), class = "Date")
+dt$a <- .Date(as.integer(dt$a))
 test(142, dt[,list(b=b), by="a"], dt)
 
 dt = data.table(x=1:5,y=6:10)
@@ -3551,7 +3551,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   # instead (which retains the Date class, unlike reshape::cast it seems).
   DT = data.table(
     ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L),
-    DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"),
+    DATUM = .Date(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209)),
     N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
   test(1101, dcast(DT, ID ~ rank, value.var = "DATUM"), data.table(
     ID = c(611557L, 894125L, 898856L, 898899L),
@@ -4144,12 +4144,10 @@ test(1155.2, dt2[dt1], data.table(y=dt1$y, z=dt2$z[1:3], x=dt1$x, key="y"))
 test(1155.3, dt1[dt2, nomatch=0L], data.table(x=dt1$x, y=dt1$y, z=dt2$z[1:3], key="y"))
 
 # NaN wasn't properly searched for in some cases. Fixed that. Here's the fix!
-dt <- structure(list(x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3,
--3, -2, -2, -1, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 3, 3), y = c(16L,
-25L, 23L, 17L, 21L, 11L, 13L, 15L, 1L, 6L, 4L, 18L, 7L, 3L, 12L,
-24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)), names = c("x",
-"y"), row.names = c(NA, -25L), class = c("data.table", "data.frame"
-))
+dt <- data.table(
+  x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3, -3, -2, -2, -1, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 3, 3),
+  y = c(16L, 25L, 23L, 17L, 21L, 11L, 13L, 15L, 1L, 6L, 4L, 18L, 7L, 3L, 12L, 24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)
+)
 setkey(dt, x)
 test(1155.4, dt[J(NaN)], dt[is.nan(x)])
 test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
@@ -4277,17 +4275,18 @@ B <- data.table(x=factor(), key='x')
 test(1168.1, rbindlist(list(B,A)), data.table(x=factor(1)))
 
 # fix for bug #72, it's related to rbind and factors as well - more or less similar to 1168.1 (#55).
-tmp1 <- as.data.table(structure(list(Year = 2013L, Maturity = structure(1L, levels = c("<1",
-  "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0",
-  "4.0 - 5.0", ">5.0"), class = "factor"), Quality = structure(2L, levels = c(">BBB",
-  "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH"), class = c("ordered",
-  "factor")), Ct = 2L, Wt = 1.56, CtTotRet = 1.08, TotRet = 69.2307692307692), names = c("Year",
-  "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
-  "data.frame"), row.names = c(NA, -1L)))
-tmp2 <- as.data.table(structure(list(Year = 2013L, Maturity = "TOTAL", Quality = "TOTAL",
-  Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), names = c("Year",
-  "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
-  "data.frame"), row.names = c(NA, -1L)))
+tmp1 <- data.table(
+  Year=2013L,
+  Maturity=factor("<1", levels = c("<1", "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0", "4.0 - 5.0", ">5.0"), class = "factor"),
+  Quality=ordered("BBB", levels = c(">BBB", "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH")),
+  Ct=2L, Wt=1.56, CtTotRet=1.08, TotRet=69.2307692307692
+)
+tmp2 <- data.table(
+  Year=2013L,
+  Maturity="TOTAL",
+  Quality="TOTAL",
+  Ct=214L, Wt=100.001, CtTotRet=406.26, TotRet=406.255937440626
+)
 # "TOTAL" is added to the end of the ordered levels and ordered factor retained
 test(1168.2, as.data.frame(rbind(tmp1,tmp2)), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
 
@@ -4516,10 +4515,10 @@ local(if (utf8_check("\u00fc")) {
   eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
     sentEx = data.table(abend = c(1, 1, 0, 0, 2),
                       aber = c(0, 1, 0, 0, 0),
-                      "\u00FCber" = c(1, 0, 0, 0, 0),
-                      "\u00FCberall" = c(0, 0, 0, 0, 0),
-                      "\u00FCberlegt" = c(0, 0, 0, 0, 0),
-                      ID = structure(c(1L, 1L, 2L, 2L, 2L), levels = c("0019", "0021"), class = "factor"),
+                      `\u00FCber` = c(1, 0, 0, 0, 0),
+                      `\u00FCberall` = c(0, 0, 0, 0, 0),
+                      `\u00FCberlegt` = c(0, 0, 0, 0, 0),
+                      ID = factor(rep(c("0019", "0021"), 2:3))
                       abgeandert = c(1, 1, 1, 0, 0),
                       abgebildet = c(0, 0, 1, 1, 0),
                       abgelegt = c(0, 0, 0, 0, 3))
@@ -5218,9 +5217,9 @@ test(1312, DT[,setkey(.SD),by=a], error="Setting a physical key on .SD is reserv
 # test 1313 moved to optimize.Rraw
 
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
-dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), names =
+dt1 <- data.table(structure(list(x = c(7L, 33L), y = .Date(c(15912, 15912)), z = c(626550.35284, 7766.385)), names =
 c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = c('x', 'y'))
-dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = c('x', 'y'))
+dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = .Date(c(15884, 15917, 15884, 15884, 15917, 15917)), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = c('x', 'y'))
 test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[2], dt2$w[5:6]), key=c('x', 'y')))
 
 # also test where 'i' is not sorted.
@@ -8536,9 +8535,9 @@ registerS3method("as.data.table", "foo1613", function(x) { # test as.data.table 
   if (!length(x)) warning("empty foo1613")
   as.data.table(unclass(x))
 })
-foo1613 = structure(list(NULL), class="foo1613")
+foo1613 = `class<-`(list(NULL), "foo1613")
 test(1613.607, all.equal(data.table(), foo1613, check.attributes=FALSE))
-foo1613 = structure(list(), class="foo1613")
+foo1613 = `class<-`(list(), "foo1613")
 test(1613.608, all.equal(data.table(), foo1613, check.attributes=FALSE), warning="empty")
 registerS3method("as.data.table", "foo1613", as.data.table.default)
 # search below in this file for "registerS3method" for comments about it
@@ -9185,7 +9184,7 @@ test(1639.080, TRUE, all(
   sapply(l, function(x) !is.data.table(x) && is.list(x)),
   identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
   identical(lapply(l, lapply, nrow), list(a=structure(list(), names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), names = character(0)))),
-  identical(lapply(l, lapply, ncol), list(a=structure(list(), names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), names = character(0))))
+list(), names = character(0))))
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=TRUE
 test(1639.081, TRUE, all(
@@ -10069,7 +10068,7 @@ test(1684, nrow(udt[d == TRUE]), 2L)
 # #1758, data.table print issue
 foo <- function(annot=c("a", "b")) {
   dt = data.table(x=annot, y=NA)
-  ro = structure(list(dt=dt), class="dtu")
+  ro = `class<-`(list(dt=dt), "dtu")
   suppressWarnings(ro$dt[, flag := TRUE])
   ro
 }
@@ -12273,21 +12272,13 @@ test_dates = c(
 )
 test_dates = as.IDate(test_dates)
 test(1872.03, round(test_dates, 'weeks'),
-     structure(c(17167L, 17377L, 17321L, 17272L, 17328L,
-                 17440L, 17272L, 17174L, 17230L, 17447L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17377L, 17321L, 17272L, 17328L, 17440L, 17272L, 17174L, 17230L, 17447L)))
 test(1872.04, round(test_dates, 'months'),
-     structure(c(17167L, 17379L, 17318L, 17257L, 17318L,
-                 17440L, 17257L, 17167L, 17226L, 17440L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17379L, 17318L, 17257L, 17318L, 17440L, 17257L, 17167L, 17226L, 17440L)))
 test(1872.05, round(test_dates, 'quarters'),
-     structure(c(17167L, 17348L, 17257L, 17257L, 17257L,
-                 17440L, 17257L, 17167L, 17167L, 17440L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17348L, 17257L, 17257L, 17257L, 17440L, 17257L, 17167L, 17167L, 17440L)))
 test(1872.06, round(test_dates, 'years'),
-     structure(c(17167L, 17167L, 17167L, 17167L, 17167L,
-                 17167L, 17167L, 17167L, 17167L, 17167L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L)))
 test(1872.07, round(test_dates, 'centuries'),
      error = 'should be one of')
 ## missing a test of mday
@@ -13423,21 +13414,21 @@ test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
 ## IDateTime.R
 x = as.IDate('2018-08-01')
 test(1962.090, `+`(x), x)
-test(1962.091, all.equal(x+1.4, structure(17745.4, class = "Date")))
+test(1962.091, all.equal(x+1.4, .Date(17745.4)))
 test(1962.092, x + x, error = 'binary + is not defined')
 test(1962.093, `-`(x), error = 'unary - is not defined')
-test(1962.094, all.equal(x-1.4, structure(17742.6, class = "Date")))
+test(1962.094, all.equal(x-1.4, .Date(17742.6)))
 
 y = as.ITime('543210', format = '%S%M%H')
-test(1962.095, y, structure(37974L, class = "ITime"))
-test(1962.096, capture.output(print(y)), '[1] "10:32:54"')
-test(1962.097, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
+test(1962.095, y, as.ITime(37974L))
+test(1962.096, y, '[1] "10:32:54"')
+test(1962.097, rep(y, 2L), as.ITime(c(37974L, 37974L)))
 test(1962.098, format(as.POSIXlt(y, date='2018-12-01', tz='UTC'), usetz=TRUE), "2018-12-01 10:32:54 UTC")
 
 test(1962.099, as.POSIXct(x, y),
-     structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
+     .POSIXct(1533119574, tz="UTC"))
 test(1962.100, as.POSIXct(x, tz = ''),
-     structure(1533081600, tzone = "UTC", class = c("POSIXct", "POSIXt")))
+     .POSIXct(1533081600, tz="UTC"))
 
 z = .POSIXct(3725, 'UTC')
 test(1962.101, second(z), 5L)
@@ -15340,8 +15331,8 @@ test(2063.4, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 options(old)
 
 # integer / double Date merge should retain attributes, #3679
-dbl_date = structure(17896.0, class = "Date")
-int_date = structure(17896L, class = "Date")
+dbl_date = .Date(17896.0)
+int_date = .Date(17896L)
 x = data.table(date = int_date, value = 10, key = 'date')
 i = data.table(date = dbl_date, key = 'date')
 test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
