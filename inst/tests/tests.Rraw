@@ -10147,7 +10147,7 @@ dt = data.table(x=1:5, y=6:10)
 test(1691, rbind(dt, dt), rbind(dt, as.matrix(dt)))
 
 # For #1783 -- subsetting a data.table by an ITime object
-test(1692, capture.output(as.data.table(as.ITime(57600"))),
+test(1692, capture.output(as.data.table(as.ITime(57600))),
      c("         V1", "1: 16:00:00"))
 
 # testing all time part extraction routines (subsumes #874)
