@@ -222,6 +222,14 @@ base_messages = list(
   NULL
 )
 
+# constructor for tests on forderv() output to avoid structure()
+ForderObj = function(x, starts, maxgrpn, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L) {
+  e = environment()
+  for (nm in c("starts", "maxgrpn", "anyna", "anyinfnan", "anynotascii", "anynotutf8"))
+    attr(x, nm) = e[[nm]]
+  x
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -13068,8 +13076,7 @@ test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
 
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
-# nolint next: undesirable_function_linter.
-test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L))
+test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), ForderObj(1:5, starts=1:5, maxgrpn=1L))
 
 # skip values that are not present in old, #3030
 DT <- data.table(a=1, b=2, d=3)
@@ -14049,14 +14056,12 @@ test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid
 test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
 
 # forderv NaN,Inf and Inf when at most 1 finite value is present, #3381. These broke in v1.12.0. They pass in v1.11.8.
-# nolint start: undesirable_function_linter.
-test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-# nolint end: undesirable_function_linter.
+test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), ForderObj(INT(1,3,2), starts=1:3, maxgrpn=1L, anyinfnan=1L))
+test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   ForderObj(integer(), starts=1:3, maxgrpn=1L, anyinfnan=1L))
+test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      ForderObj(integer(), starts=1:2, maxgrpn=1L, anyinfnan=1L))
+test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      ForderObj(2:1, starts=1:2, maxgrpn=1L, anyinfnan=1L))
+test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         ForderObj(2:1, starts=1:2, maxgrpn=1L, anyinfnan=1L))
+test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         ForderObj(integer(), starts=1:2, maxgrpn=1L, anyinfnan=1L))
 test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
 
 # 0 length items should not result in no-recycle error, #3386
@@ -15098,8 +15103,9 @@ DF$b = data.frame(foo=4:6, bar=7:9)
 DT = as.data.table(DF)
 test(2057.1, ncol(DT), 3L)
 test(2057.2, DT[2], data.table(a=2L, b.foo=5L, b.bar=8L))
-# nolint next: undesirable_function_linter.
-DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo=1:3, bar=4:6)), row.names=1:3, class="data.frame")
+DF = data.frame(row.names=1:3)
+DF$a = list(c("a","b"), c("a","b"), c("a","b"))
+DF$b = data.frame(foo=1:3, bar=4:6)
 #  A list being first is needed to mimic the jsonlite case. With this passing, test.R works from https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752
 DT = as.data.table(DF)
 test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), b.foo=1:3, b.bar=4:6))
@@ -18247,16 +18253,13 @@ test(2254.8, DT[, .(b = rbind(b)), by=a], DT[order(a)])
 test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[order(a)])
 
 # regression test on issue reported with printing nested table, #1646
-# nolint start: undesirable_function_linter.
-DF <- structure(
-  list(
-    DF1=structure(list(V1=list(1:2, 3:4), V2=5:6), names=c("V1", "V2"), class="data.frame", row.names=c(NA, 2L)),
-    DF2=data.frame(V3=7:8, V4=9:10),
-    V5=11:12
-  ),
-  names=c("DF1", "DF2", "V5"), class="data.frame", row.names=c(NA, 2L)
-)
-# nolint end: undesirable_function_linter.
+DF1 = data.frame(V2=5:6)
+DF1$V1 = list(1:2, 3:4)
+DF1 = DF1[c("V1", "V2")]
+DF = data.frame(V5=11:12)
+DF$DF1 = DF1
+DF$DF2 = data.frame(V3=7:8, V4=9:10)
+DF = DF[c("DF1", "DF2", "V5")]
 
 test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
 
@@ -18638,10 +18641,8 @@ test(2275.56, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSor
 d = copy(dd)
 setkeyv(d, c("a","b"))
 setindexv(d, list(c("a","b"), c("b","a")))
-# nolint start: undesirable_function_linter.
-ab = structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
-ba = structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
-# nolint end: undesirable_function_linter.
+ab = ForderObj(integer(), starts=1:2, maxgrpn=1L)
+ba = ForderObj(2:1, starts=1:2, maxgrpn=1L)
 test(2275.60, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took") # c(): strip attributes
 test(2275.61, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*took")
 test(2275.62, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE, reuseSorting=FALSE), ab, output="forder.*opt=0.*took")
@@ -18677,8 +18678,7 @@ test(2275.854, options=c(datatable.verbose=TRUE), o<-forderv(d, "v1", retStats=T
 setattr(d, "index", setattr(integer(), "__v1", o))
 test(2275.855, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE), output="index found but not for retGrp")
 test(2275.856, options=c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
-# nolint next: undesirable_function_linter.
-test(2275.857, options=c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), structure(integer(), anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*opt=2.*took")
+test(2275.857, options=c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), ForderObj(integer()), output="forder.*opt=2.*took")
 d = copy(ddd)
 test(2275.8580, options=c(datatable.optimize=Inf), {d[v1 == 1L]; indices(d)}, "v1") # _not_ setindex(d, v1), which will compute retGrp/retStats
 test(2275.8581, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and no stats available")
@@ -18714,8 +18714,7 @@ test(2275.92, options=c(datatable.verbose=TRUE, datatable.use.index=FALSE),
      forderv(d, "b", reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
 d = data.table(x = 2:1)
 test(2275.93, options=c(datatable.optimize=Inf), {d[x == 1L]; attr(attr(d, "index"), "__x")}, 2:1)
-# nolint next: undesirable_function_linter.
-test(2275.94, options=c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
+test(2275.94, options=c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), ForderObj(2:1, starts=1:2, maxgrpn=1L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
 d = data.table(x = 2:1)
 test(2275.95, options=list(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE, datatable.optimize=Inf),
      d[x==1L], data.table(x=1L), output="forder.*setting index.*retGrp=0, retStats=0")
@@ -21501,8 +21500,10 @@ test(2360.5, rowwiseDT(x =, plist =, 1, as.pairlist(list(123))),
 
 # setattr() must not crash for out-of-bounds factor indices when fixing duplicate levels, #7595
 test(2361.1, setattr(factor(c(1, NA), levels = 1), "levels", c("1", "1")), factor(c(1, NA)))
-# nolint next: undesirable_function_linter.
-test(2361.2, setattr(structure(c(-999L, 999L), class = "factor", levels = "a"), "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))
+x = c(-999L, 999L)
+class(x) = 'factor'
+attr(x, 'levels') = 'a'
+test(2361.2, setattr(x, "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))
 
 # gforce should also work with Map in j #5336
 # conversions should not turn gforce off #2934
