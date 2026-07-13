@@ -131,8 +131,8 @@ test(2.903, substitute2(.(v), emptyenv()), quote(.(v)))
 test(2.91, substitute2(.()), error="'env' must not be missing")
 test(2.92, substitute2(v, c(v=1L)), error="'env' must be a list or an environment")
 test(2.93, substitute2(.(v), list(1L, 2L)), error="'env' argument does not have names")
-test(2.94, substitute2(.(v), `names<-`(list(1L,2L), c("","v"))), error="'env' argument has zero char names")
-test(2.95, substitute2(.(v), `names<-`(list(1,2), c(NA,"v"))), error="'env' argument has NA names")
+test(2.94, substitute2(.(v), setNames(list(1L,2L), c("","v"))), error="'env' argument has zero char names")
+test(2.95, substitute2(.(v), setNames(list(1,2), c(NA,"v"))), error="'env' argument has NA names")
 test(2.96, substitute2(.(v), list(v=1,v=2)), error="'env' argument has duplicated names")
 
 # substitute2 reuse inside another function
