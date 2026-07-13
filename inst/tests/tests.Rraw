@@ -14015,7 +14015,7 @@ test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 
 
 # fix for #2202, dcast needs to rank NA with na.last=FALSE in frankv within dcast
 x = data.table(
-  f1 = factor(rep(c("123456", NA), c(4L, 2L)))
+  f1 = factor(rep(c("123456", NA), c(4L, 2L))),
   f2 = factor(rep("U", 6L)),
   v1 = c(0,300, 600, 500, 0, 800),
   v2 = c(0,15, 50, 30, 0, 50))
