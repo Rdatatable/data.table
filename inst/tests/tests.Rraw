@@ -9191,8 +9191,8 @@ test(1639.080, TRUE, all(
   is.list(l), identical(names(l), c("a","e","f","g","h","z")),
   sapply(l, function(x) !is.data.table(x) && is.list(x)),
   identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
-  identical(lapply(l, lapply, nrow), list(a=setNames(list(), names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=setNames(list(), names = character(0)))),
-list(), names = character(0))))
+  identical(lapply(l, lapply, nrow), list(a=setNames(list(), character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=setNames(list(), character(0)))),
+  identical(lapply(l, lapply, ncol), list(a=setNames(list(), character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=setNames(list(), character(0))))
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=TRUE
 test(1639.081, TRUE, all(
