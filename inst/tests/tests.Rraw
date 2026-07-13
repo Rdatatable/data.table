@@ -7036,7 +7036,7 @@ test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
 test(1477.10, transpose(list(x~y)), error="Item 1 of list input is")
 test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
-test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
+test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="'ignore.empty' must be TRUE or FALSE")
 test(1477.13, transpose(list()), list())
 # return list columns #5639
 la = list(as.list(1:3), list("a","b","c"))
