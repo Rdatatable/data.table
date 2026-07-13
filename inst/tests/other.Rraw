@@ -574,9 +574,9 @@ xt = matrix(
   dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
 )
 class(xt) = c("xts", "zoo")
-attr(xt, ".indexCLASS") = attr(xt, "tclass") = "Date"
-attr(xt, ".indexTZ") = attr(xt, "tzone") = "UTC"
-attr(xt, "index") = structure(c(1167782400, 1167868800, 1167955200), tzone = "UTC", tclass = "Date")
+attr(xt, "index") = c(1167782400, 1167868800, 1167955200)
+attr(xt, ".indexCLASS") = attr(xt, "tclass") = attr(attr(xt, "index"), "tclass") = "Date"
+attr(xt, ".indexTZ") = attr(xt, "tzone") = attr(attr(xt, "index"), "tzone") = "UTC"
 local({
   old = options(datatable.verbose=TRUE); on.exit(options(old))
   if (loaded[["xts"]]) {
