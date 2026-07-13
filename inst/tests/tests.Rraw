@@ -223,10 +223,13 @@ base_messages = list(
 )
 
 # constructor for tests on forderv() output to avoid structure()
-ForderObj = function(x, starts, maxgrpn, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L) {
+ForderObj = function(x, starts=NULL, maxgrpn=NULL, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L) {
   e = environment()
-  for (nm in c("starts", "maxgrpn", "anyna", "anyinfnan", "anynotascii", "anynotutf8"))
+  for (nm in c("starts", "maxgrpn", "anyna", "anyinfnan", "anynotascii", "anynotutf8")) {
+    val = e[[nm]]
+    if (is.null(val)) next
     attr(x, nm) = e[[nm]]
+  }
   x
 }
 
@@ -13076,7 +13079,7 @@ test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
 
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
-test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), ForderObj(1:5, starts=1:5, maxgrpn=1L))
+test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), ForderObj(INT(1 ,2, 4, 3, 5), starts=1:5, maxgrpn=1L))
 
 # skip values that are not present in old, #3030
 DT <- data.table(a=1, b=2, d=3)
