@@ -4523,15 +4523,15 @@ test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
 # umlaut in column names (red herring I think, but testing anyway)
 local(if (utf8_check("\u00fc")) {
   eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
-    sentEx = data.table(abend = c(1, 1, 0, 0, 2),
-                        aber = c(0, 1, 0, 0, 0),
-                        `\u00FCber` = c(1, 0, 0, 0, 0),
-                        `\u00FCberall` = c(0, 0, 0, 0, 0),
-                        `\u00FCberlegt` = c(0, 0, 0, 0, 0),
-                        ID = factor(rep(c("0019", "0021"), 2:3)),
-                        abgeandert = c(1, 1, 1, 0, 0),
-                        abgebildet = c(0, 0, 1, 1, 0),
-                        abgelegt = c(0, 0, 0, 0, 3))
+    sentEx = data.table(abend=c(1, 1, 0, 0, 2),
+                        aber=c(0, 1, 0, 0, 0),
+                        `\u00FCber`=c(1, 0, 0, 0, 0),
+                        `\u00FCberall`=c(0, 0, 0, 0, 0),
+                        `\u00FCberlegt`=c(0, 0, 0, 0, 0),
+                        ID=factor(rep(c("0019", "0021"), 2:3)),
+                        abgeandert=c(1, 1, 1, 0, 0),
+                        abgebildet=c(0, 0, 1, 1, 0),
+                        abgelegt=c(0, 0, 0, 0, 3))
     test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), "\u00FCber"=c(1,0),
          "\u00FCberall"=c(0,0), "\u00FCberlegt" = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
   '))
