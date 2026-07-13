@@ -4287,7 +4287,7 @@ test(1168.1, rbindlist(list(B,A)), data.table(x=factor(1)))
 # fix for bug #72, it's related to rbind and factors as well - more or less similar to 1168.1 (#55).
 tmp1 <- data.table(
   Year=2013L,
-  Maturity=factor("<1", levels = c("<1", "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0", "4.0 - 5.0", ">5.0"), class = "factor"),
+  Maturity=factor("<1", levels = c("<1", "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0", "4.0 - 5.0", ">5.0")),
   Quality=ordered("BBB", levels = c(">BBB", "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH")),
   Ct=2L, Wt=1.56, CtTotRet=1.08, TotRet=69.2307692307692
 )
