@@ -21504,8 +21504,7 @@ test(2360.5, rowwiseDT(x =, plist =, 1, as.pairlist(list(123))),
 # setattr() must not crash for out-of-bounds factor indices when fixing duplicate levels, #7595
 test(2361.1, setattr(factor(c(1, NA), levels = 1), "levels", c("1", "1")), factor(c(1, NA)))
 x = c(-999L, 999L)
-class(x) = 'factor'
-attr(x, 'levels') = 'a'
+attributes(x) = list(class='factor', levels='a')
 test(2361.2, setattr(x, "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))
 
 # gforce should also work with Map in j #5336
