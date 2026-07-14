@@ -10158,7 +10158,7 @@ dt = data.table(x=1:5, y=6:10)
 test(1691, rbind(dt, dt), rbind(dt, as.matrix(dt)))
 
 # For #1783 -- subsetting a data.table by an ITime object
-test(1692, capture.output(as.data.table(as.ITime(57600))),
+test(1692, capture.output(as.data.table(as.ITime(57600L))),
      c("         V1", "1: 16:00:00"))
 
 # testing all time part extraction routines (subsumes #874)
@@ -18256,13 +18256,13 @@ test(2254.8, DT[, .(b = rbind(b)), by=a], DT[order(a)])
 test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[order(a)])
 
 # regression test on issue reported with printing nested table, #1646
-DF1 = data.frame(V2=5:6)
+DF1 = data.frame(row.names=1:2)
 DF1$V1 = list(1:2, 3:4)
-DF1 = DF1[c("V1", "V2")]
-DF = data.frame(V5=11:12)
+DF$V2 = 5:6
+DF = data.frame(row.names=1:2)
 DF$DF1 = DF1
 DF$DF2 = data.frame(V3=7:8, V4=9:10)
-DF = DF[c("DF1", "DF2", "V5")]
+DF$V5 = 11:12
 
 test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
 
