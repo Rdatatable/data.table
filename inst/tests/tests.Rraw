@@ -18258,7 +18258,7 @@ test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[ord
 # regression test on issue reported with printing nested table, #1646
 DF1 = data.frame(row.names=1:2)
 DF1$V1 = list(1:2, 3:4)
-DF$V2 = 5:6
+DF1$V2 = 5:6
 DF = data.frame(row.names=1:2)
 DF$DF1 = DF1
 DF$DF2 = data.frame(V3=7:8, V4=9:10)
