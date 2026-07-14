@@ -16,7 +16,8 @@
   \code{TRUE} if self reference attribute is properly set, \code{FALSE} otherwise.
 }
 \examples{
-d1 = structure(list(V1=1L), class=c("data.table","data.frame"))
+d1 = list(V1=1L)
+class(d1) = c("data.table", "data.frame")
 .selfref.ok(d1)
 setDT(d1)
 .selfref.ok(d1)
