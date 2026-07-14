@@ -95,7 +95,7 @@ if (FALSE) {  # loaded[["reshape"]]
   # The bug was that names(DT) changed, hence testing DT here not ans. Same fix tested next with caret, so we now just rely on the caret test.
   # When running this test on 13 Mar 2018, I noticed that reshape::cast doesn't retain the Date class and returns just numbers. So I copied
   # this test to the reshape2 section in main tests.Rraw, changed it to use dcast instead and tested the result explicitly.
-  DT = data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
+  DT = data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = .Date(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209)), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
   ans = cast(DT, ID ~ rank, value = "DATUM")
   test(3, names(DT), c("ID", "DATUM", "N", "rank"))
 }
@@ -553,14 +553,17 @@ df = data.frame(a=1:2, b=3:2)
 dt = as.data.table(df)
 mx = matrix(1:9, 3, 3)
 ar = array(1:27, c(3,3,3))
-xt = structure(
+xt = matrix(
   c(142.25, 141.229996, 141.330002, 142.860001, 142.050003, 141.399994,
     140.570007, 140.610001, 140.380005, 141.369995, 141.669998, 140.539993,
     94807600, 69620600, 76645300, 108.999954, 109.231255, 108.360008),
-  class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-  index = structure(c(1167782400, 1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-  dim = c(3L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
+  nrow=3L, ncol=6L,
+  dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
 )
+class(xt) = c("xts", "zoo")
+attr(xt, "index") = c(1167782400, 1167868800, 1167955200)
+attr(xt, ".indexCLASS") = attr(xt, "tclass") = attr(attr(xt, "index"), "tclass") = "Date"
+attr(xt, ".indexTZ") = attr(xt, "tzone") = attr(attr(xt, "index"), "tzone") = "UTC"
 local({
   old = options(datatable.verbose=TRUE); on.exit(options(old))
   if (loaded[["xts"]]) {
@@ -568,37 +571,17 @@ local({
     test(19.22, last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
     test(19.23, last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
     test(19.24, last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-    xt_last = structure(
-      c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
-      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-      index = structure(1167955200, tzone = "UTC", tclass = "Date"),
-      dim = c(1L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-    )
-    xt_last2 = structure(
-      c(141.229996, 141.330002, 142.050003, 141.399994, 140.610001, 140.380005,
-        141.669998, 140.539993, 69620600, 76645300, 109.231255, 108.360008),
-      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-      index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-      dim = c(2L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-    )
+    # NB: since xts is loaded, `[` dispatch will work
+    xt_last = xt[3L, ]
+    xt_last2 = xt[2:3, ]
     test(19.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
     test(19.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
     test(19.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
     test(19.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
     test(19.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
     test(19.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-    xt_first = structure(
-      c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
-      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-      index = structure(1167782400, tzone = "UTC", tclass = "Date"),
-      dim = c(1L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-    )
-    xt_first2 = structure(
-      c(142.25, 141.229996, 142.860001, 142.050003, 140.570007, 140.610001, 141.369995, 141.669998, 94807600, 69620600, 108.999954, 109.231255),
-      class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-      index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
-      dim = c(2L, 6L), dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-    )
+    xt_first = xt[1L, ]
+    xt_first2 = xt[1:2, ]
     test(19.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
     test(19.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
   } else {
@@ -619,22 +602,22 @@ local({
   test(19.42, last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
   test(19.51, first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
   test(19.52, first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-  test(19.61, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+  test(19.61, last(df), data.frame(a=2L, b=2L, row.names=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
   test(19.62, last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-  test(19.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+  test(19.71, first(df), data.frame(a=1L, b=3L, row.names=1L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
   test(19.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
   # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-  test(19.81, last(mx), structure(c(3L, 6L, 9L), dim = c(1L, 3L), dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-  expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), dim = c(1L, 3L, 3L), dimnames = list("[3,]", NULL, NULL)) #4127
+  test(19.81, last(mx), matrix(c(3L, 6L, 9L), ncol=3L, dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  expected = if (base::getRversion() < "3.7.0") 27L else array(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), dim = c(1L, 3L, 3L), dimnames = list("[3,]", NULL, NULL)) #4127
   test(19.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-  test(19.91, first(mx), structure(c(1L, 4L, 7L), dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-  expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), dim = c(1L, 3L, 3L)) #4127
+  test(19.91, first(mx), matrix(c(1L, 4L, 7L), ncol=3L), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+  expected = if (base::getRversion() < "3.7.0") 1L else array(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), dim = c(1L, 3L, 3L)) #4127
   test(19.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 })
 
 if (loaded[["xts"]]) {  # was 2133 in tests.Rraw, #5516
   # keep.rownames in as.data.table.xts() supports a string, #4232
-  xts = xts::xts(1:10, structure(1:10, class = "Date"))
+  xts = xts::xts(1:10, .Date(1:10))
   colnames(xts) = "VALUE"
   DT = as.data.table(xts, keep.rownames = "DATE", key = "DATE")
   test(20.1, colnames(DT), c("DATE", "VALUE"))

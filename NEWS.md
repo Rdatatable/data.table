@@ -6,7 +6,7 @@
 
 ### BUG FIXES
 
-1. Adapted the tests to stop using the "special" attribute names in `structure()` calls, [#7813](https://github.com/Rdatatable/data.table/issues/7813), avoiding deprecation warnings on R-devel. Thanks @ben-schwen for the report and fix.
+1. Adapted the tests to stop using the "special" attribute names in `structure()` calls, [#7813](https://github.com/Rdatatable/data.table/issues/7813) & [#7814](https://github.com/Rdatatable/data.table/issues/7814), avoiding deprecation warnings on R-devel. Thanks @ben-schwen for the report and @ben-schwen & @MichaelChirico for the fix.
 
 2. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
 
