@@ -163,7 +163,8 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     other.values = lapply(group.dt[, is.other, with=FALSE], unique)
     other.values$stringsAsFactors = FALSE
     other.dt = data.table(do.call(expand.grid, other.values))
-    measure.list = structure(list(), variable_table=other.dt)
+    measure.list = list()
+    attr(measure.list, "variable_table") = other.dt
     column.values = unique(group.dt[[multiple.keyword]])
     for (column.val in column.values) {
       select.dt = data.table(other.dt)
@@ -174,7 +175,8 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     }
     measure.list
   } else {# single output column.
-    structure(measure.vec, variable_table=group.dt)
+    attr(measure.vec, "variable_table") = group.dt
+    measure.vec
   }
 }
 

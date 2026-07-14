@@ -87,3 +87,14 @@ SEXP copyAsGrowable(SEXP x) {
   UNPROTECT(1);
   return ret;
 }
+
+SEXP resizeVector(SEXP x, SEXP size) {
+  if (!(
+    isInteger(size) && LENGTH(size) == 1 && INTEGER_RO(size)[0] >= 0
+  )) error(_("'size' must be length 1 non-NA non-negative integer value."));
+  if (!isVector(x))
+    error(_("'x' must be a vector."));
+  R_xlen_t newlen = INTEGER_RO(size)[0];
+  R_resizeVector(x, newlen);
+  return x;
+}
