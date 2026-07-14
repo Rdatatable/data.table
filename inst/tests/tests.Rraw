@@ -85,6 +85,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
   haszlib = data.table:::haszlib
+  CcopyAsGrowable = data.table:::CcopyAsGrowable
+  CresizeVector = data.table:::CresizeVector
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -197,7 +199,7 @@ base_messages = list(
   missing_object = get_msg(`__dt_test_missing_` + 1, "'", fmt=TRUE),
   missing_function = get_msg(`__dt_test_missing_`(), '"', fmt=TRUE),
   missing_coerce_method = get_msg(methods::as(TRUE, 'foo'), delim = '"'),
-  missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '[\'"]'),
+  missing_dispatch_method = get_msg(conditionMessage(`class<-`(1, "foo")), '[\'"]'),
   invalid_arg_unary_operator = get_msg(-'a'),
   invalid_arg_binary_operator = get_msg(1 + 'a'),
   invalid_arg_sum = get_msg(sum('a'), c("\\(", "\\)"), fmt=TRUE),
@@ -219,6 +221,17 @@ base_messages = list(
   match_arg_4_choices = get_msg(match.arg('e', letters[1:4]), delim='"', fmt=TRUE),
   NULL
 )
+
+# constructor for tests on forderv() output to avoid structure()
+ForderObj = function(x, starts=NULL, maxgrpn=NULL, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L) {
+  e = environment()
+  for (nm in c("starts", "maxgrpn", "anyna", "anyinfnan", "anynotascii", "anynotutf8")) {
+    val = e[[nm]]
+    if (is.null(val)) next
+    attr(x, nm) = e[[nm]]
+  }
+  x
+}
 
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
@@ -527,7 +540,7 @@ dt = data.table(a = rep(as.Date("2010-01-01"), 4), b = rep("a",4))
 test(140, rbind(dt,dt), data.table(a = rep(as.Date("2010-01-01"), 8), b = rep("a",8)))
 test(141, dt[,list(a=a), by="b"], dt[,2:1, with = FALSE])
 
-dt$a <- structure(as.integer(dt$a), class = "Date")
+dt$a <- .Date(as.integer(dt$a))
 test(142, dt[,list(b=b), by="a"], dt)
 
 dt = data.table(x=1:5,y=6:10)
@@ -1727,7 +1740,17 @@ setkey(DT, COURSE)
 test(550, DT[,sum(ID),by=key(DT)]$V1, INT(6,1,29,2,17))
 
 # Another test of DT[i] syntax from datatable-unaware packages, #1794 from ilprincipe.
-DF = structure(list(sample = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev"), class = "factor"), base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002), ref = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("2004", "2002-2004", "2001", "2000", "2009", "2008"), class = "factor"), var = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("distance", "time"), class = "factor"), treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1), distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05), all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L), di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L), irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612245, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)), .Names = c("sample", "base", "ref", "var", "treated", "distance", "all", "di.recip", "irr"), row.names = c(NA, 16L), class = "data.frame")
+DF = data.frame(
+  sample = factor(rep(c("panel.1yr", "panel.2yr"), each=8L), levels=c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev")),
+  base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002),
+  ref = factor("2004", levels=c("2004", "2002-2004", "2001", "2000", "2009", "2008")),
+  var = factor("distance", levels=c("distance", "time")),
+  treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1),
+  distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05),
+  all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L),
+  di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L),
+  irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612245, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)
+)
 DT = as.data.table(DF)
 test(551, nrow(stats::reshape(DT, v.names = c("all", "di.recip", "irr"),
               timevar = "treated", idvar = c("sample", "var", "distance"),
@@ -3549,7 +3572,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   # instead (which retains the Date class, unlike reshape::cast it seems).
   DT = data.table(
     ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L),
-    DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"),
+    DATUM = .Date(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209)),
     N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
   test(1101, dcast(DT, ID ~ rank, value.var = "DATUM"), data.table(
     ID = c(611557L, 894125L, 898856L, 898899L),
@@ -4142,12 +4165,10 @@ test(1155.2, dt2[dt1], data.table(y=dt1$y, z=dt2$z[1:3], x=dt1$x, key="y"))
 test(1155.3, dt1[dt2, nomatch=0L], data.table(x=dt1$x, y=dt1$y, z=dt2$z[1:3], key="y"))
 
 # NaN wasn't properly searched for in some cases. Fixed that. Here's the fix!
-dt <- structure(list(x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3,
--3, -2, -2, -1, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 3, 3), y = c(16L,
-25L, 23L, 17L, 21L, 11L, 13L, 15L, 1L, 6L, 4L, 18L, 7L, 3L, 12L,
-24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)), .Names = c("x",
-"y"), row.names = c(NA, -25L), class = c("data.table", "data.frame"
-))
+dt <- data.table(
+  x = c(NaN, NaN, NaN, NaN, NaN, NA, NA, -3, -3, -3, -2, -2, -1, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 3, 3),
+  y = c(16L, 25L, 23L, 17L, 21L, 11L, 13L, 15L, 1L, 6L, 4L, 18L, 7L, 3L, 12L, 24L, 2L, 10L, 20L, 14L, 9L, 19L, 8L, 22L, 5L)
+)
 setkey(dt, x)
 test(1155.4, dt[J(NaN)], dt[is.nan(x)])
 test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
@@ -4275,17 +4296,18 @@ B <- data.table(x=factor(), key='x')
 test(1168.1, rbindlist(list(B,A)), data.table(x=factor(1)))
 
 # fix for bug #72, it's related to rbind and factors as well - more or less similar to 1168.1 (#55).
-tmp1 <- as.data.table(structure(list(Year = 2013L, Maturity = structure(1L, .Label = c("<1",
-  "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0",
-  "4.0 - 5.0", ">5.0"), class = "factor"), Quality = structure(2L, .Label = c(">BBB",
-  "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH"), class = c("ordered",
-  "factor")), Ct = 2L, Wt = 1.56, CtTotRet = 1.08, TotRet = 69.2307692307692), .Names = c("Year",
-  "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
-  "data.frame"), row.names = c(NA, -1L)))
-tmp2 <- as.data.table(structure(list(Year = 2013L, Maturity = "TOTAL", Quality = "TOTAL",
-  Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), .Names = c("Year",
-  "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
-  "data.frame"), row.names = c(NA, -1L)))
+tmp1 <- data.table(
+  Year=2013L,
+  Maturity=factor("<1", levels = c("<1", "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0", "4.0 - 5.0", ">5.0")),
+  Quality=ordered("BBB", levels = c(">BBB", "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH")),
+  Ct=2L, Wt=1.56, CtTotRet=1.08, TotRet=69.2307692307692
+)
+tmp2 <- data.table(
+  Year=2013L,
+  Maturity="TOTAL",
+  Quality="TOTAL",
+  Ct=214L, Wt=100.001, CtTotRet=406.26, TotRet=406.255937440626
+)
 # "TOTAL" is added to the end of the ordered levels and ordered factor retained
 test(1168.2, as.data.frame(rbind(tmp1,tmp2)), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
 
@@ -4512,15 +4534,15 @@ test(1229.2, setkey(DT), data.table(x=1:5, y=10:6, key="x,y"))
 # umlaut in column names (red herring I think, but testing anyway)
 local(if (utf8_check("\u00fc")) {
   eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
-    sentEx = data.table(abend = c(1, 1, 0, 0, 2),
-                      aber = c(0, 1, 0, 0, 0),
-                      "\u00FCber" = c(1, 0, 0, 0, 0),
-                      "\u00FCberall" = c(0, 0, 0, 0, 0),
-                      "\u00FCberlegt" = c(0, 0, 0, 0, 0),
-                      ID = structure(c(1L, 1L, 2L, 2L, 2L), .Label = c("0019", "0021"), class = "factor"),
-                      abgeandert = c(1, 1, 1, 0, 0),
-                      abgebildet = c(0, 0, 1, 1, 0),
-                      abgelegt = c(0, 0, 0, 0, 3))
+    sentEx = data.table(abend=c(1, 1, 0, 0, 2),
+                        aber=c(0, 1, 0, 0, 0),
+                        `\u00FCber`=c(1, 0, 0, 0, 0),
+                        `\u00FCberall`=c(0, 0, 0, 0, 0),
+                        `\u00FCberlegt`=c(0, 0, 0, 0, 0),
+                        ID=factor(rep(c("0019", "0021"), 2:3)),
+                        abgeandert=c(1, 1, 1, 0, 0),
+                        abgebildet=c(0, 0, 1, 1, 0),
+                        abgelegt=c(0, 0, 0, 0, 3))
     test(1229.3, sentEx[, lapply(.SD, sum), by=ID], data.table(ID=factor(c("0019","0021")), abend=c(2,2), aber=c(1,0), "\u00FCber"=c(1,0),
          "\u00FCberall"=c(0,0), "\u00FCberlegt" = c(0,0), abgeandert=c(2,1), abgebildet = c(0,2), abgelegt=c(0,3)))
   '))
@@ -5058,19 +5080,18 @@ test(1292.3, data.table(x=1:2, y=3:4)[, !c("x","y"), with=FALSE], null.data.tabl
 test(1292.4, data.table(x=1:2)[, !c("x"), with=FALSE], null.data.table())
 
 # Bug #37 - print.data.table and digits option:
-DT <- structure(list(fisyr = 1995:1996, er = list(c(1, 3), c(1, 3)),
-    eg = c(0.0197315833926059, 0.0197315833926059), esal = list(
-        c(2329.89763779528, 2423.6811023622), c(2263.07456978967,
-        2354.16826003824)), fr = list(c(4, 4), c(4, 4)), fg =
-c(0.039310363070415,
-    0.039310363070415), fsal = list(c(2520.85433070866, 2520.85433070866
-    ), c(2448.55449330784, 2448.55449330784)), mr = list(c(5,
-    30), c(5, 30)), mg = c(0.0197779376457164, 0.0197779376457164
-    ), msal = list(c(2571.70078740157, 4215.73622047244),
-c(2497.94263862333,
-    4094.82600382409))), .Names = c("fisyr", "er", "eg", "esal",
-"fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
-"data.frame"), row.names = c(NA, -2L))
+DT = data.table(
+  fisyr=1995:1996,
+  er=list(c(1, 3), c(1, 3)),
+  eg=c(0.0197315833926059, 0.0197315833926059),
+  esal=list(c(2329.89763779528, 2423.6811023622), c(2263.07456978967, 2354.16826003824)),
+  fr=list(c(4, 4), c(4, 4)),
+  fg=c(0.039310363070415, 0.039310363070415),
+  fsal=list(c(2520.85433070866, 2520.85433070866), c(2448.55449330784, 2448.55449330784)),
+  mr=list(c(5, 30), c(5, 30)),
+  mg=c(0.0197779376457164, 0.0197779376457164),
+  msal=list(c(2571.70078740157, 4215.73622047244), c(2497.94263862333, 4094.82600382409))
+)
 
 ans1 = capture.output(print(DT, digits=4, row.names=FALSE))
 ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      msal",
@@ -5216,9 +5237,8 @@ test(1312, DT[,setkey(.SD),by=a], error="Setting a physical key on .SD is reserv
 # test 1313 moved to optimize.Rraw
 
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
-dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
-c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = c('x', 'y'))
-dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), .Names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = c('x', 'y'))
+dt1 <- data.table(x=c(7L, 33L), y=.Date(c(15912, 15912)), z=c(626550.35284, 7766.385), key=c('x', 'y'))
+dt2 <- data.table(x=c(7L, 7L, 33L, 33L, 33L, 33L), y=.Date(c(15884, 15917, 15884, 15884, 15917, 15917)), w=c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694), key = c('x', 'y'))
 test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[2], dt2$w[5:6]), key=c('x', 'y')))
 
 # also test where 'i' is not sorted.
@@ -7819,7 +7839,7 @@ dimnames(idx) <- list(NULL, "Resample1") # as in caret::createDataPartition
 test(1554.1, dt[idx], data.table(a=letters[idx]))
 test(1554.2, dt[-idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
-test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
+test(1554.4, idx, cbind(Resample1 = c(2L, 3L, 4L, 7L, 9L, 10L)))
 
 if (test_R.utils) {
   # strip.white and other enhancements to 'fread()'
@@ -8534,9 +8554,9 @@ registerS3method("as.data.table", "foo1613", function(x) { # test as.data.table 
   if (!length(x)) warning("empty foo1613")
   as.data.table(unclass(x))
 })
-foo1613 = structure(list(NULL), class="foo1613")
+foo1613 = `class<-`(list(NULL), "foo1613")
 test(1613.607, all.equal(data.table(), foo1613, check.attributes=FALSE))
-foo1613 = structure(list(), class="foo1613")
+foo1613 = `class<-`(list(), "foo1613")
 test(1613.608, all.equal(data.table(), foo1613, check.attributes=FALSE), warning="empty")
 registerS3method("as.data.table", "foo1613", as.data.table.default)
 # search below in this file for "registerS3method" for comments about it
@@ -9165,8 +9185,8 @@ test(1639.078, TRUE, all(
   is.list(l), identical(names(l), c("h","f","g","e","a","z")),
   sapply(l, function(x) !is.data.table(x) && is.list(x)),
   identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"), a=character(), z=character())),
-  identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0)))),
-  identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0))))
+  identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=setNames(list(), character(0)), z=setNames(list(), character(0)))),
+  identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=setNames(list(), character(0)), z=setNames(list(), character(0))))
 ))
 
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE) # empty levels in factor and drop=TRUE
@@ -9182,8 +9202,8 @@ test(1639.080, TRUE, all(
   is.list(l), identical(names(l), c("a","e","f","g","h","z")),
   sapply(l, function(x) !is.data.table(x) && is.list(x)),
   identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
-  identical(lapply(l, lapply, nrow), list(a=structure(list(), .Names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), .Names = character(0)))),
-  identical(lapply(l, lapply, ncol), list(a=structure(list(), .Names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), .Names = character(0))))
+  identical(lapply(l, lapply, nrow), list(a=setNames(list(), character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=setNames(list(), character(0)))),
+  identical(lapply(l, lapply, ncol), list(a=setNames(list(), character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=setNames(list(), character(0))))
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=TRUE
 test(1639.081, TRUE, all(
@@ -9361,9 +9381,9 @@ sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by
 test(1639.128, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
 test(1639.129, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
-test(1639.130, split(dt[0L], by = "x1"), structure(list(), .Names = character(0))) # 0 nrow character/factor with empty levels # no empty levels
+test(1639.130, split(dt[0L], by = "x1"), setNames(list(), character(0))) # 0 nrow character/factor with empty levels # no empty levels
 test(1639.131, split(fdt[0L], by = "x1"), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # expand empty levels
-test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names = character(0)))
+test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), setNames(list(), character(0)))
 test(1639.133, split(fdt[0L], by = "x1", sorted = TRUE), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # same as none sorted as all appended on the end in sorted order due to lack of data
 dt2 = copy(dt)[, "l" := lapply(1:12, function(i) i)] # non-atomic type to 'by' should raise error
 test(1639.134, split(dt2, by = "l"), error = "Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic: [l]")
@@ -9982,7 +10002,7 @@ test(1674, forderv(c(2147483645L, 2147483646L, 2147483647L, 2147483644L), order=
 # Test updated minimally to create the previous representation directly instead of going via factor().
 A = data.table(foo = c(1, 2, 3), bar = c(4, 5, 6))
 A[, bar := factor(bar, levels = c(4, 5), labels = c("Boop", "Beep"), exclude = 6)]
-B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = structure(c(3L, 3L, 3L, 1L, 2L, NA), .Label=c("Boop","Beep",NA), class="factor"))
+B = data.table(foo=c(1, 2, 3, 4, 5, 6), bar=factor(c(NA, NA, NA, "Boop", "Beep", ''), levels=c("Boop","Beep",NA), exclude=NULL))
 test(1675.1, as.integer(B[A, bar := i.bar, on="foo"]$bar), c(1:2,NA,1:2,NA))  # remove the NA level is change in v1.12.4
 A = data.table(foo = c(1, 2, 3), bar = c(4, 5, 6))
 B = data.table(foo = c(1, 2, 3, 4, 5, 6), bar = c(NA, NA, NA, 4, 5, 6))
@@ -10067,7 +10087,7 @@ test(1684, nrow(udt[d == TRUE]), 2L)
 # #1758, data.table print issue
 foo <- function(annot=c("a", "b")) {
   dt = data.table(x=annot, y=NA)
-  ro = structure(list(dt=dt), class="dtu")
+  ro = `class<-`(list(dt=dt), "dtu")
   suppressWarnings(ro$dt[, flag := TRUE])
   ro
 }
@@ -10106,7 +10126,7 @@ date_tz = as.POSIXct("2016/01/13 17:00", tz = "America/Los_Angeles")
 test(1689.1, capture.output(IDateTime(date_tz)), c("        idate    itime", "1: 2016-01-13 17:00:00"))
 # and that as.IDate.POSIXct is exported too
 test(1689.2, as.IDate(date_tz), output="2016-01-13")
-date_tz = structure(1496275200.11903, class = c("POSIXct", "POSIXt"), tzone = "America/Los_Angeles")
+date_tz = .POSIXct(1496275200.11903, tz="America/Los_Angeles")
 test(1689.3, as.character(as.IDate(date_tz)), "2017-05-31")
 test(1689.4, as.character(as.IDate(date_tz, tz="UTC")), "2017-06-01")
 test(1689.5, IDateTime("20171002095512", format="%Y%m%d%H%M%S"), data.table(idate=as.IDate("2017-10-02"), itime=as.ITime("09:55:12")))  #2402
@@ -10138,7 +10158,7 @@ dt = data.table(x=1:5, y=6:10)
 test(1691, rbind(dt, dt), rbind(dt, as.matrix(dt)))
 
 # For #1783 -- subsetting a data.table by an ITime object
-test(1692, capture.output(as.data.table(structure(57600L, class = "ITime"))),
+test(1692, capture.output(as.data.table(as.ITime(57600L))),
      c("         V1", "1: 16:00:00"))
 
 # testing all time part extraction routines (subsumes #874)
@@ -11252,7 +11272,7 @@ for (i in 1:100) test(1763+i/1000, rbindlist(x, idcol="id"), ans, context=sprint
 # as.ITime(character(0)) used to fail, #2032
 test(1764.1, format(as.ITime(character(0))), character(0))
 # Edge case from #2171
-test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
+test(1764.2, format(as.ITime(NA_integer_)), NA_character_)
 
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
@@ -11354,15 +11374,15 @@ test(1771.8, lapply(l, class), lapply(do.call(CJ, l), class))
 DT = data.table(a = factor(c('a', 'b', 'b', 'a'), levels = c('b', 'a')),
                 b = c(2, 2, 1, 1), c = 1:4)
 test(1772.1, split(DT, by = 'a', sorted = TRUE),
-     list(b = data.table(a = structure(c(1L, 1L), .Label = c("b", "a"), class = "factor"),
+     list(b = data.table(a = factor(c('b', 'b'), levels = c("b", "a")),
                          b = c(2, 1), c = 2:3),
-          a = data.table(a = structure(c(2L, 2L), .Label = c("b", "a"), class = "factor"),
+          a = data.table(a = factor(c('a', 'a'), levels = c("b", "a")),
                          b = c(2, 1), c = c(1L, 4L))))
 test(1772.2, split(DT, by = c('a', 'b'), sorted = TRUE),
-     list(b.1 = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor"), b = 1, c = 3L),
-          b.2 = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor"), b = 2, c = 2L),
-          a.1 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 1, c = 4L),
-          a.2 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 2, c = 1L)))
+     list(b.1 = data.table(a = factor('b', levels = c("b", "a")), b = 1, c = 3L),
+          b.2 = data.table(a = factor('b', levels = c("b", "a")), b = 2, c = 2L),
+          a.1 = data.table(a = factor('a', levels = c("b", "a")), b = 1, c = 4L),
+          a.2 = data.table(a = factor('a', levels = c("b", "a")), b = 2, c = 1L)))
 
 # More helpful error message when using a single symbol name for a logical column to subset, #1844
 # Used to be just 'not found'
@@ -11677,7 +11697,7 @@ if (test_R.utils) {
 }
 
 # expansion of uses of as.ITime.character, PR#1796
-test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
+test(1819, as.ITime("2015-09-29 08:22:00"), as.ITime(30120L))
 
 # Issue 2287: the % sign in the error/warning message should not be interpreted as a format string!
 test(1820.1, fread("name,id\nfoo,2\nbar%\n"), data.table(name="foo", id=2L), warning="Discarded single-line footer: <<bar%>>")
@@ -12271,21 +12291,13 @@ test_dates = c(
 )
 test_dates = as.IDate(test_dates)
 test(1872.03, round(test_dates, 'weeks'),
-     structure(c(17167L, 17377L, 17321L, 17272L, 17328L,
-                 17440L, 17272L, 17174L, 17230L, 17447L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17377L, 17321L, 17272L, 17328L, 17440L, 17272L, 17174L, 17230L, 17447L)))
 test(1872.04, round(test_dates, 'months'),
-     structure(c(17167L, 17379L, 17318L, 17257L, 17318L,
-                 17440L, 17257L, 17167L, 17226L, 17440L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17379L, 17318L, 17257L, 17318L, 17440L, 17257L, 17167L, 17226L, 17440L)))
 test(1872.05, round(test_dates, 'quarters'),
-     structure(c(17167L, 17348L, 17257L, 17257L, 17257L,
-                 17440L, 17257L, 17167L, 17167L, 17440L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17348L, 17257L, 17257L, 17257L, 17440L, 17257L, 17167L, 17167L, 17440L)))
 test(1872.06, round(test_dates, 'years'),
-     structure(c(17167L, 17167L, 17167L, 17167L, 17167L,
-                 17167L, 17167L, 17167L, 17167L, 17167L),
-               class = c("IDate", "Date")))
+     as.IDate(c(17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L, 17167L)))
 test(1872.07, round(test_dates, 'centuries'),
      error = 'should be one of')
 ## missing a test of mday
@@ -12807,14 +12819,14 @@ test(1918.1, DT[, min(V1)], error='not meaningful for factors')
 test(1918.2, DT[, max(V1)], error='not meaningful for factors')
 ## confirming base functionality works
 DT[ , V1:=as.ordered(V1)]
-test(1918.3, DT[, min(V1)], structure(1L, .Label = lev, class = c("ordered", "factor")))
-test(1918.4, DT[, max(V1)], structure(5L, .Label = lev, class = c("ordered", "factor")))
+test(1918.3, DT[, min(V1)], ordered('a', levels = lev))
+test(1918.4, DT[, max(V1)], ordered('e', levels = lev))
 ## make sure GForce is activated
-test(1918.5,optimize=Inf, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(1:3, .Label=lev, class=c("ordered", "factor"))))
-test(1918.6,optimize=Inf, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, .Label=lev, class=c("ordered", "factor"))))
+test(1918.5,optimize=Inf, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=ordered(lev[1:3], levels=lev)))
+test(1918.6,optimize=Inf, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=ordered(lev[3:5], levels=lev)))
 
 # as.ITime.character bug for NA handling #2940
-test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
+test(1919, as.ITime(c('xxx', '10:43')), as.ITime(c(NA, 38580L)))
 
 # wrong bmerge result if character gets coerced to factor, i is keyed, and level order in i is different from x, #2881
 iris.dt = data.table(iris)
@@ -12875,9 +12887,9 @@ test(1924.5, DT[V==0], error='Perhaps you intended.*V1.*V10, [.]{3}')
 # test suite of as.ITime methods (subsumes #2870)
 s = c('1970-01-01 00:00:00.1234', '2005-10-12 09:45:32.84')
 x = as.POSIXlt(s, tz = 'UTC')
-test(1925.01, as.ITime(x),               structure(c(0L, 35132L), class="ITime"))
-test(1925.02, as.ITime(x, ms='nearest'), structure(c(0L, 35133L), class="ITime"))
-test(1925.03, as.ITime(x, ms='ceil'),    structure(c(1L, 35133L), class="ITime"))
+test(1925.01, as.ITime(x),               as.ITime(c(0L, 35132L)))
+test(1925.02, as.ITime(x, ms='nearest'), as.ITime(c(0L, 35133L)))
+test(1925.03, as.ITime(x, ms='ceil'),    as.ITime(c(1L, 35133L)))
 test(1925.04, as.ITime(x, ms='foo'),     error='Valid options for ms')
 test(1925.05, as.ITime(s),               as.ITime(x))
 n = as.numeric(x)
@@ -12885,10 +12897,11 @@ test(1925.06, as.ITime(n),               as.ITime(x))
 test(1925.07, as.ITime(n, ms='nearest'), as.ITime(x, ms='nearest'))
 test(1925.08, as.ITime(n, ms='ceil'),    as.ITime(x, ms='ceil'))
 test(1925.09, as.ITime(as.POSIXct(x)),   as.ITime(x))
-x = structure(c(12.345, 67.890)/86400, class='times')
-test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
-test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
-test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
+x = c(12.345, 67.890)/86400
+class(x) = 'times'
+test(1925.10, as.ITime(x),               as.ITime(c(12L, 67L)))
+test(1925.11, as.ITime(x, ms='nearest'), as.ITime(c(12L, 68L)))
+test(1925.12, as.ITime(x, ms='ceil'),    as.ITime(c(13L, 68L)))
 
 # 1936.1 was of defunct argument autostart
 if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
@@ -13066,7 +13079,7 @@ test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
 
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
-test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L))
+test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), ForderObj(INT(1 ,2, 4, 3, 5), starts=1:5, maxgrpn=1L))
 
 # skip values that are not present in old, #3030
 DT <- data.table(a=1, b=2, d=3)
@@ -13152,14 +13165,13 @@ DT = data.table(
             "yellow", "yellow", "green", "green", "green", "yellow",
             "red", "yellow", "red", "green", "yellow", "red", "yellow",
             "red", "green", "yellow", "green", "green"),
-  year = structure(c(15340, 15340, 14975, 15706, 15706, 15340,
-                     16436, 15340, 15340, 14975, 16436, 15706,
-                     16436, 15340, 14975, 14975, 16071, 15340,
-                     15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
-  status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
-                       4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
-                     .Label = c("active", "archived", "inactive", "removed"),
-                     class = "factor"),
+  year = .Date(c(15340, 15340, 14975, 15706, 15706, 15340,
+                 16436, 15340, 15340, 14975, 16436, 15706,
+                 16436, 15340, 14975, 14975, 16071, 15340,
+                 15706, 16071, 15706, 15340, 16436, 16071)),
+  status = factor(
+    c("active", "archived", "inactive", "removed")[c(4:3, 4:1, 3:4, 4:3L, rep(4L, 4L), 1L, 3L, 3:1L, 2:4, 2L, 4L)]
+  ),
   amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
              5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
   value = c(2.5, 2, 3, 3, 2.5, 3.5, 2.5, 3.5, 3, 2.5, 3.5, 2.5, 2,
@@ -13360,14 +13372,13 @@ DT = data.table(
             "yellow", "yellow", "green", "green", "green", "yellow",
             "red", "yellow", "red", "green", "yellow", "red", "yellow",
             "red", "green", "yellow", "green", "green"),
-  year = structure(c(15340, 15340, 14975, 15706, 15706, 15340,
-                     16436, 15340, 15340, 14975, 16436, 15706,
-                     16436, 15340, 14975, 14975, 16071, 15340,
-                     15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
-  status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
-                       4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
-                     .Label = c("active", "archived", "inactive", "removed"),
-                     class = "factor"),
+  year = .Date(c(15340, 15340, 14975, 15706, 15706, 15340,
+                 16436, 15340, 15340, 14975, 16436, 15706,
+                 16436, 15340, 14975, 14975, 16071, 15340,
+                 15706, 16071, 15706, 15340, 16436, 16071)),
+  status = factor(
+    c("active", "archived", "inactive", "removed")[c(4:3, 4:1, 3:4, 4:3, rep(4L, 4L), 1L, 3L, 3:1, 2:3, 4L, 2L, 4L)]
+  ),
   amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
              5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
   value = c(2.5, 2, 3, 3, 2.5, 3.5, 2.5, 3.5, 3, 2.5, 3.5, 2.5, 2,
@@ -13421,21 +13432,21 @@ test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
 ## IDateTime.R
 x = as.IDate('2018-08-01')
 test(1962.090, `+`(x), x)
-test(1962.091, all.equal(x+1.4, structure(17745.4, class = "Date")))
+test(1962.091, all.equal(x+1.4, .Date(17745.4)))
 test(1962.092, x + x, error = 'binary + is not defined')
 test(1962.093, `-`(x), error = 'unary - is not defined')
-test(1962.094, all.equal(x-1.4, structure(17742.6, class = "Date")))
+test(1962.094, all.equal(x-1.4, .Date(17742.6)))
 
 y = as.ITime('543210', format = '%S%M%H')
-test(1962.095, y, structure(37974L, class = "ITime"))
-test(1962.096, capture.output(print(y)), '[1] "10:32:54"')
-test(1962.097, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
+test(1962.095, y, as.ITime(37974L))
+test(1962.096, y, output='[1] "10:32:54"')
+test(1962.097, rep(y, 2L), as.ITime(c(37974L, 37974L)))
 test(1962.098, format(as.POSIXlt(y, date='2018-12-01', tz='UTC'), usetz=TRUE), "2018-12-01 10:32:54 UTC")
 
 test(1962.099, as.POSIXct(x, y),
-     structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
+     .POSIXct(1533119574, tz="UTC"))
 test(1962.100, as.POSIXct(x, tz = ''),
-     structure(1533081600, tzone = "UTC", class = c("POSIXct", "POSIXt")))
+     .POSIXct(1533081600, tz="UTC"))
 
 z = .POSIXct(3725, 'UTC')
 test(1962.101, second(z), 5L)
@@ -13512,7 +13523,8 @@ test(1965.1, setDT(list(1, 1:2)), error='input 2 has length 2.*length 1')   #312
 # setDT() skips NULL elements, so get the length from the first non-NULL
 test(1965.2, setDT(list(NULL, 1, 1:2)), error='input 3 has length 2.*length 1')
 M = matrix(nrow=2L, ncol=2L)
-ans = structure(list(V1=1:2, V2=M), class=c('data.table', 'data.frame'))
+ans = list(V1=1:2, V2=M)
+class(ans) = c('data.table', 'data.frame')
 alloc.col(ans)
 test(1965.3, setDT(list(1:2, M)), ans, warning='Some columns are a multi-column type.*for example column 2')
 
@@ -13661,7 +13673,7 @@ test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring by/keyby because 'j
 test(1967.526, x[keyby=a],      x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
 
 test(1967.53, as.matrix(x, rownames = 2:3), error='length(rownames)==2 but')
-test(1967.54, as.matrix(x[0L]), structure(integer(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
+test(1967.54, as.matrix(x[0L]), cbind(a=integer(), b=integer()))
 
 test(1967.55, subset(x, 5L), error = "'subset' must evaluate to logical")
 
@@ -14013,8 +14025,8 @@ test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 
 
 # fix for #2202, dcast needs to rank NA with na.last=FALSE in frankv within dcast
 x = data.table(
-  f1 = structure(c(1L, 1L, 1L, 1L, NA, NA), .Label = "123456", class = "factor"),
-  f2 = structure(c(1L, 1L, 1L, 1L, 1L, 1L), .Label = "U", class = "factor"),
+  f1 = factor(rep(c("123456", NA), c(4L, 2L))),
+  f2 = factor(rep("U", 6L)),
   v1 = c(0,300, 600, 500, 0, 800),
   v2 = c(0,15, 50, 30, 0, 50))
 y = x[, lapply(.SD, sum), by=.(f1,f2)]
@@ -14039,8 +14051,7 @@ test(1992.1, foverlaps(DT_x, DT_y), error="All rows with NA values")
 # foverlaps POSIXct checks #1143 + another check...
 xp <- data.frame(year = c(2006L, 2006L, 2006L), day = c(361L, 361L, 360L),
                  hour = c(14L, 8L, 8L), min = c(30L, 0L, 30L), val = c(0.5, 0.3, 0.4),
-                 Date = structure(c(1167229800, 1167206400, 1167121800),
-                          class = c("POSIXct", "POSIXt"), tzone = "UTC")) ## "UTC" time zone
+                 Date = .POSIXct(c(1167229800, 1167206400, 1167121800), tz='UTC')) ## "UTC" time zone
 setDT(xp)[, `:=`(start = Date - 1800L, end = Date + 1800L)]
 tt <- as.POSIXct(c("2006/12/27 14:23:59", "2006/12/27 16:47:59", "2006/12/27 19:12:00"), format = "%Y/%m/%d %T", tz = "Asia/Jerusalem") ## different time zone
 yp <- data.table(start = tt, end = tt, key=c("start", "end"))
@@ -14048,12 +14059,12 @@ test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid
 test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
 
 # forderv NaN,Inf and Inf when at most 1 finite value is present, #3381. These broke in v1.12.0. They pass in v1.11.8.
-test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
-test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
+test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), ForderObj(INT(1,3,2), starts=1:3, maxgrpn=1L, anyinfnan=1L))
+test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   ForderObj(integer(), starts=1:3, maxgrpn=1L, anyinfnan=1L))
+test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      ForderObj(integer(), starts=1:2, maxgrpn=1L, anyinfnan=1L))
+test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      ForderObj(2:1, starts=1:2, maxgrpn=1L, anyinfnan=1L))
+test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         ForderObj(2:1, starts=1:2, maxgrpn=1L, anyinfnan=1L))
+test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         ForderObj(integer(), starts=1:2, maxgrpn=1L, anyinfnan=1L))
 test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
 
 # 0 length items should not result in no-recycle error, #3386
@@ -14293,7 +14304,8 @@ test(2008.7, rbindlist(list(DT1, list(c("e","b")), DT1)), data.table(x=ordered(c
 test(2008.8, rbindlist(list(DT1, list(c("e","foo")), DT1)), data.table(x=ordered(c(vals,"e","foo",vals), levels=c("f","b","e","c","foo"))))
 
 # segfault comparing NULL column, #2303 #2305
-DT = structure(list(NULL), names="a", class=c("data.table","data.frame"))
+DT = list(a=NULL)
+class(DT) = c("data.table","data.frame")
 test(2009.1, DT[a>1], error="Column 1 is NULL; malformed data.table")
 DT = null.data.table()
 x = NULL
@@ -14360,11 +14372,14 @@ dt = as.data.table(iris)
 test(2012.4, cbind(data.table(), dt[0]), dt[0])
 
 # extra validity checks in subsetDT on data.table; aside in #3369
-DT = structure(list(a=1:3, b=NULL, c=4:6), class=c("data.table","data.frame"))
+DT = list(a=1:3, b=NULL, c=4:6)
+class(DT) = c("data.table", "data.frame")
 test(2013.1, DT[2], error="Column 2 is NULL; malformed data.table")
-DT = structure(list(a=1:3, b=data.frame(foo=10:12,bar=13:15), c=4:6), class=c("data.table","data.frame"))
+DT = list(a=1:3, b=data.frame(foo=10:12,bar=13:15), c=4:6)
+class(DT) = c("data.table", "data.frame")
 test(2013.2, DT[2], error="Column 2 ['b'] is a data.frame or data.table; malformed data.table.")
-DT = structure(list(a=1:3, b=1:4, c=4:6), class=c("data.table","data.frame"))
+DT = list(a=1:3, b=1:4, c=4:6)
+class(DT) = c("data.table", "data.frame")
 test(2013.3, DT[2], error="Column 2 ['b'] is length 4 but column 1 is length 3; malformed data.table.")
 
 ## new fread keepLeadingZeros parameter in v1.12.2
@@ -14740,7 +14755,7 @@ if (test_bit64) {
   test(2039.20, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
   test(2039.21, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   # must not blindly read integer64 values as doubles when the latter fit into int32, #7164
-  test(2039.22, between(42L, structure(41., class="integer64"), structure(43., class="integer64")), error="x is not integer64 but.*Please align classes")
+  test(2039.22, between(42L, `class<-`(41., "integer64"), `class<-`(43., "integer64")), error="x is not integer64 but.*Please align classes")
   # must not blindly convert numeric bounds to integer64, #7164
   test(2039.23, between(as.i64(42), 41, -2^98), error="x is integer64 but upper is not.*Please align classes")
   options(old)
@@ -14779,7 +14794,7 @@ DT = data.table(
 )
 DT[ , DiffTime := abs(difftime(Date1, Date2, units = 'days'))]
 test(2042.4, DT[ , round(mean(DiffTime)), by=Group, verbose=TRUE],
-     data.table(Group=c("A", "B", "C"), V1=structure(c(16, 8, 12), class="difftime", units="days")),
+     data.table(Group=c("A", "B", "C"), V1=as.difftime(c(16, 8, 12), units="days")),
      output="Old mean optimization is on, left j unchanged.*GForce.*FALSE")
 
 # gforce wrongly applied to external variable; #875
@@ -15036,25 +15051,26 @@ test(2050.6, rbind(DT[1], data.table(f=factor(letters[10:11]))[0])[,levels(f)], 
 
 # coverage tests
 ## abusing -.Date, format.data.table, rleidv
-test(2051.1, `-.IDate`(structure(0, class="Date"), 1L), structure(-1, class="Date"))
+test(2051.1, `-.IDate`(.Date(0), 1L), .Date(-1))
 test(2051.2, `-.IDate`(1L, 1L), error = 'only subtract from "IDate"')
 test(2051.3, format.data.table(1L), error = 'Possibly corrupt data.table')
 test(2051.4, rleidv(prefix = 1L), error = "'prefix' must be NULL or")
 ## passing Date to second argument of as.POSIXct.ITime
 t = as.ITime(0L)
-test(2051.5, as.POSIXct(t, structure(0L, class="Date")), .POSIXct(0, 'UTC'))
+test(2051.5, as.POSIXct(t, .Date(0L)), .POSIXct(0, 'UTC'))
 ## forder of dynamic expression
 DT = data.table(a = 1:3)
 test(2051.6, DT[order(sin(a/pi))], DT)
 
 # rbindlist ordered factor with an NA level, #3601
-dt1 = structure(list(V1 = c("2016", "2016", "2016", "2016", "2016"),
-    V46 = structure(c(3L, 1L, 1L, NA, 3L), .Label = c("Low",
-    "Typical", "High", NA), class = c("ordered", "factor"))), class = c("data.table", "data.frame"), row.names = c(NA, -5L))
-dt2 = structure(list(V1 = c("2018", "2018", "2018", "2018", "2018")), row.names = c(NA, -5L), class = c("data.table", "data.frame"))
+dt1 = data.table(
+  V1 = c("2016", "2016", "2016", "2016", "2016"),
+  V46 = ordered(c("High", "Low", "Low", "", "High"), levels=c("Low", "Typical", "High", NA), exclude=NULL)
+)
+dt2 = data.table(V1 = c("2018", "2018", "2018", "2018", "2018"))
 test(2052, rbindlist(list(dt1, dt2), fill=TRUE),
-           data.table(V1=c(dt1$V1, dt2$V1),
-                      V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), .Label=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
+           data.table(V1=rep(c("2016", "2018"), each=5L),
+                      V46=ordered(c("High", "Low", "Low", "", "High", rep("", 5L)), levels=c("Low", "Typical", "High", NA), exclude=NULL)))
 
 # rbind.data.frame didn't respect integer storage mode of IDate, #2008
 DF = data.frame(date = as.IDate(0L))
@@ -15085,11 +15101,14 @@ ans = data.table(V1=c(1L,1L,1L,1L,2L,2L,2L,2L),
 test(2056, as.data.table(a), ans)
 
 # unpack columns which are data.frame; aside in #3369 too.
-DF = structure(list(a=1:3, b=data.frame(foo=4:6, bar=7:9)), row.names=1:3, class="data.frame")
+DF = data.frame(a=1:3, row.names=1:3)
+DF$b = data.frame(foo=4:6, bar=7:9)
 DT = as.data.table(DF)
 test(2057.1, ncol(DT), 3L)
 test(2057.2, DT[2], data.table(a=2L, b.foo=5L, b.bar=8L))
-DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo=1:3, bar=4:6)), row.names=1:3, class="data.frame")
+DF = data.frame(row.names=1:3)
+DF$a = list(c("a","b"), c("a","b"), c("a","b"))
+DF$b = data.frame(foo=1:3, bar=4:6)
 #  A list being first is needed to mimic the jsonlite case. With this passing, test.R works from https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752
 DT = as.data.table(DF)
 test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), b.foo=1:3, b.bar=4:6))
@@ -15153,8 +15172,8 @@ test(2059.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, 
 test(2059.2, rbindlist(DT), error="Input is data.table but should be a plain list of items to be stacked")
 # rbindlist a list of data.frame which has a class though; e.g. trackdf::example(conversions)
 # trackdf does inherit from 'list (i.e. c("ltraj","list")), we just require is.list() to be true.
-L = structure(list(data.frame(A=1:3, B=7:9), data.frame(A=4:6, B=10:12)),
-              class="customClass") # don't inherit from list as a stronger test
+L = list(data.frame(A=1:3, B=7:9), data.frame(A=4:6, B=10:12))
+class(L) = "customClass" # don't inherit from list as a stronger test
 test(2059.3, is.list(L))
 test(2059.4, rbindlist(L), data.table(A=1:6, B=7:12))
 # does not retain customClass consistent with v1.12.2; for safety as its attributes likely aren't appropriate for the new object
@@ -15252,7 +15271,7 @@ test(2060.212, fcoalesce(list(1), list(2)), error="The first argument is a list,
 test(2060.213, fcoalesce(bool, c(TRUE, FALSE)), error="Item 2 is length 2 but the first item is length 3. Only singletons are recycled")
 test(2060.214, fcoalesce(as.raw(0), as.raw(1)), error="Type 'raw' is not supported")
 test(2060.215, fcoalesce(bool, list()), bool)
-test(2060.216, fcoalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
+test(2060.216, fcoalesce(`class<-`(c(1:2,NA,4L), "a"), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
 # different classes of x arg #3660
 x = c(11L, NA, 13L, NA, 15L, NA)
 y = c(NA, 12L, 5L, NA, NA, NA)
@@ -15338,8 +15357,8 @@ test(2063.4, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 options(old)
 
 # integer / double Date merge should retain attributes, #3679
-dbl_date = structure(17896.0, class = "Date")
-int_date = structure(17896L, class = "Date")
+dbl_date = .Date(17896.0)
+int_date = .Date(17896L)
 x = data.table(date = int_date, value = 10, key = 'date')
 i = data.table(date = dbl_date, key = 'date')
 test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
@@ -15621,16 +15640,18 @@ options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
 ### construct incorrectly to have 0 truelength; follow-up: https://github.com/Rdatatable/data.table/pull/3791#discussion_r318326736
-zDT = structure(list(b=2), class = c('data.table', 'data.frame'))
+zDT = list(b=2)
+class(zDT) = c('data.table', 'data.frame')
 test(2074.05, DT[1L, b := zDT], data.table(a=1, b=2))
 ## nested .SD in j
 DT = data.table(a=1, b=2)
 test(2074.06, DT[ , c(.SD[1], .SD[1, .SD[1]]), by=a], data.table(a=1, b=2, b=2))
 ## as.matrix.data.table when a column has columns (only possible when constructed incorrectly)
-DT = structure(list(a=1:5, d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
+DT = list(a=1:5, d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L))
+class(DT) = c('data.table', 'data.frame')
 test(2074.07, as.matrix(DT), matrix(1:25, ncol=5L, dimnames=list(NULL, c('a', 'd.b', 'd.c', 'm.1', 'm.2'))))
 ## can induce !cedta() from base::rownames to get this error
-test(2074.08, rownames(structure(list(1:5), class='data.table')), error="Has it been created manually")
+test(2074.08, rownames(`class<-`(list(1:5), 'data.table')), error="Has it been created manually")
 ## default dimnames.data.table
 test(2074.09, dimnames(data.table(a = 1)), list(NULL, 'a'))
 ## unlock argument of .shallow
@@ -16510,7 +16531,7 @@ registerS3method("format_col", "complex", format_col.default)
 
 # as of #6637, format individual list items but not the whole list
 registerS3method("format", "myclass2130", function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">"))
-DT = data.table(row=1:2, objs=list(structure(list(id="foo"), class="myclass2130"), structure(list(id="bar"), class="myclass2130")))
+DT = data.table(row=1:2, objs=list(`class<-`(list(id="foo"), "myclass2130"), `class<-`(list(id="bar"), "myclass2130")))
 test(2130.13, print(DT), output="myclass2130:foo.*myclass2130:bar")
 setattr(DT$objs, "class", "foo2130")
 registerS3method("format", "foo2130", function(x, ...) "All hail foo")
@@ -16783,7 +16804,7 @@ test(2154.2, fread("A\n0.0\n", colClasses="integer"), data.table(A=0.0),
 
 # asan heap-use-after-free on list columns with attributes on each item, #4746
 DT = data.table(A=INT(1,1,2,3,3,4,5,5,6,7),
-                B=lapply(1:10, function(x) structure(rnorm(90), foo=c(42,12,36))))
+                B=lapply(1:10, function(x) `attr<-`(rnorm(90), 'foo', c(42,12,36))))
 for (i in 0:4) test(2155+i/10,
   { gctorture2(step=20); ans=DT[, .(attr(B[[1L]],"foo")[1L]), by=A]; gctorture2(step=0); gc(); ans },
   data.table(A=1:7, V1=42),
@@ -16848,14 +16869,14 @@ test(2159.16, min(DT[0L]), error="only.*numeric")
 # fcase tests from dev 1.12.9 fixed before 1.13.0 was released, #4378 #4401
 # Matt tested that the smaller 100 size still fails in 1.12.9 under gctorture2(step=100)
 set.seed(123)
-x = structure(rnorm(100L), class='abc')
-test(2160.1, fcase(x <= -100, structure(x*1.0, class='abc'),
-                   x <=  -10, structure(x*1.0, class='abc'),
-                   x <=    0, structure(x*1.0, class='abc'),
-                   x <=  100, structure(x*1.0, class='abc'),
-                   x <= 1000, structure(x*1.0, class='abc'),
-                   x >= 1000, structure(x*1.0, class='abc')),
-             structure(x, class='abc'))
+x = `class<-`(rnorm(100L), 'abc')
+test(2160.1, fcase(x <= -100, `class<-`(x*1.0, 'abc'),
+                   x <=  -10, `class<-`(x*1.0, 'abc'),
+                   x <=    0, `class<-`(x*1.0, 'abc'),
+                   x <=  100, `class<-`(x*1.0, 'abc'),
+                   x <= 1000, `class<-`(x*1.0, 'abc'),
+                   x >= 1000, `class<-`(x*1.0, 'abc')),
+             `class<-`(x, 'abc'))
 x = data.table(rnorm(100L), rnorm(100L), rnorm(100L))
 test(2160.2, x[, v0 := fcase(
   V1 > 0 & V2 <= 1 & V3 > 1,    V2 * 100L,
@@ -17089,15 +17110,15 @@ measure = function(cols)cols # user-defined function for computing measure.vars,
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measure = list("foo", "bar")#measure below should not use this since it is not a function.
 test(2183.02, melt(DTid, measure.vars=measure(value.name, num=as.complex, pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
-test(2183.03, melt(DTid, measure.vars=structure(list(a=c(NA,"a2"),b=c("b1","b2")), variable_table=data.table(number=as.complex(1:2)))), error="variable_table does not support column type 'complex' for column 'number'")
+test(2183.03, melt(DTid, measure.vars=`attr<-`(list(a=c(NA,"a2"),b=c("b1","b2")), 'variable_table', data.table(number=as.complex(1:2)))), error="variable_table does not support column type 'complex' for column 'number'")
 test(2183.04, melt(DTid, measure.vars=measure(value.name, istr, pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2183.05, melt(DTid, measure.vars=measure(column, istr, pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
-test(2183.06, melt(DTid, measure.vars=structure(list(1, 2), variable_table="foo")), error="variable_table attribute of measure.vars should be either NULL or a data table")
-test(2183.07, melt(DTid, measure.vars=structure(1:3, variable_table="foo")), error="variable_table attribute of measure.vars should be either NULL or a data table")
-test(2183.08, melt(DTid, measure.vars=structure(1:3, variable_table=data.table())), error="variable_table attribute of measure.vars should be a data table with at least one column")
-test(2183.09, melt(DTid, measure.vars=structure(1:3, variable_table=data.table(x=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =3")
-test(2183.10, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table=data.table(x=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")
-test(2183.11, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table=list(x=1:2, y=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")#make sure to check each list element, not just the first.
+test(2183.06, melt(DTid, measure.vars=`attr<-`(list(1, 2), 'variable_table', "foo")), error="variable_table attribute of measure.vars should be either NULL or a data table")
+test(2183.07, melt(DTid, measure.vars=`attr<-`(1:3, 'variable_table', "foo")), error="variable_table attribute of measure.vars should be either NULL or a data table")
+test(2183.08, melt(DTid, measure.vars=`attr<-`(1:3, 'variable_table', data.table())), error="variable_table attribute of measure.vars should be a data table with at least one column")
+test(2183.09, melt(DTid, measure.vars=`attr<-`(1:3, 'variable_table', data.table(x=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =3")
+test(2183.10, melt(DTid, measure.vars=`attr<-`(list(a=1, b=2:3), 'variable_table', data.table(x=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")
+test(2183.11, melt(DTid, measure.vars=`attr<-`(list(a=1, b=2:3), 'variable_table', list(x=1:2, y=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")#make sure to check each list element, not just the first.
 # general measure errors.
 iris.dt = data.table(iris)
 test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
@@ -17176,8 +17197,13 @@ test(2184.4, dt2[1, suma], 2)
 IDT = as.data.table(iris)
 vr = "Species"
 IDT[, virginca := get(vr) == "virginica"]
-ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8), kar = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("setosa", "versicolor", "virginica"), class = "factor"), N = c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L))
-test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))] , ans)
+ans = data.table(
+  round=c(3, 3, 3, 2, 2, 4, 2, 4),
+  k=c(6, 7, 8, 5, 7, 7, 6, 8),
+  kar=factor('virginica', levels=c("setosa", "versicolor", "virginica")),
+  N=c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L)
+)
+test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))], ans)
 
 # dcast() segfault or 'STRING_ELT() can only be applied to character not logical' fixed in v1.13.0, #2394
 agg = function(x) if(length(x) > 0) min(x) else NA
@@ -17223,14 +17249,14 @@ test(2189.2, buckets[DT, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2
 # segfault subassigning non-list type to list column, #4166
 DT = data.table(a=list(1:2, 3, 4))
 test(2190.1, DT[, a:=1:4], error="Supplied 4 items to be assigned to 3 items of column 'a'.*please use rep")
-test(2190.2, DT[1:2, a:=structure(c(1L, 2L), att='t')          ]$a, list(structure(1L, att='t'),            structure(2L, att='t'),            4))
-test(2190.3, DT[1:2, a:=structure(c(1, 2), att='t')            ]$a, list(structure(1, att='t'),             structure(2, att='t'),             4))
-test(2190.4, DT[1:2, a:=structure(as.raw(c(1, 2)), att='t')    ]$a, list(structure(as.raw(1), att='t'),     structure(as.raw(2), att='t'),     4))
-test(2190.5, DT[1:2, a:=structure(as.complex(c(1, 2)), att='t')]$a, list(structure(as.complex(1), att='t'), structure(as.complex(2), att='t'), 4))
-test(2190.61, DT[1:2, a:=structure(c(TRUE, FALSE), att='t')    ]$a, list(structure(TRUE, att='t'),          structure(FALSE, att='t'),         4))
+test(2190.2, DT[1:2, a:=`attr<-`(c(1L, 2L), 'att', 't')          ]$a, list(`attr<-`(1L, 'att', 't'),            `attr<-`(2L, 'att', 't'),            4))
+test(2190.3, DT[1:2, a:=`attr<-`(c(1, 2), 'att', 't')            ]$a, list(`attr<-`(1, 'att', 't'),             `attr<-`(2, 'att', 't'),             4))
+test(2190.4, DT[1:2, a:=`attr<-`(as.raw(c(1, 2)), 'att', 't')    ]$a, list(`attr<-`(as.raw(1), 'att', 't'),     `attr<-`(as.raw(2), 'att', 't'),     4))
+test(2190.5, DT[1:2, a:=`attr<-`(as.complex(c(1, 2)), 'att', 't')]$a, list(`attr<-`(as.complex(1), 'att', 't'), `attr<-`(as.complex(2), 'att', 't'), 4))
+test(2190.61, DT[1:2, a:=`attr<-`(c(TRUE, FALSE), 'att', 't')    ]$a, list(`attr<-`(TRUE, 'att', 't'),          `attr<-`(FALSE, 'att', 't'),         4))
 test(2190.62, attributes(TRUE), NULL)  # ensure R's internal global TRUE/FALSE didn't receive attribute att='t'; discovered when merging #4595
 test(2190.63, attributes(FALSE), NULL)
-test(2190.7, DT[1:2, a:=structure(c('a', 'b'), att='t')        ]$a, list(structure('a', att='t'),           structure('b', att='t'),           4))
+test(2190.7, DT[1:2, a:=`attr<-`(c('a', 'b'), 'att', 't')        ]$a, list(`attr<-`('a', 'att', 't'),           `attr<-`('b', 'att', 't'),           4))
 if (test_bit64) {
   test(2190.8, DT[1:2, a:=as.integer64(1:2)                    ]$a, list(as.integer64(1),                   as.integer64(2),                   4))
 }
@@ -17243,8 +17269,8 @@ DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L),
 test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
 
 # base::as.Date was error when first item blank, affecting as.IDate, #4676
-test(2192.1, as.IDate(c('', '2020-01-01')), structure(c(NA_integer_, 18262L), class=c("IDate","Date")))
-test(2192.2, as.IDate(c('2020-01-01', '')), structure(c(18262L, NA_integer_), class=c("IDate","Date")))
+test(2192.1, as.IDate(c('', '2020-01-01')), as.IDate(c(NA_integer_, 18262L)))
+test(2192.2, as.IDate(c('2020-01-01', '')), as.IDate(c(18262L, NA_integer_)))
 
 if (test_bit64) {
   # subassign coerce to integer64 was fixed in 1.12.4, #2530
@@ -17918,7 +17944,7 @@ test(2236.9, yearqtr(x), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.
 
 # as.data.table() no longer ignores row.names=, #5319
 dt = data.table(a=1:2, b=3:4)
-df = structure(list(a=1:2, b=3:4), row.names=c("x", "y"), class="data.frame")
+df = data.frame(a=1:2, b=3:4, row.names=c("x", "y"))
 test(2237.1, as.data.frame(dt, row.names=c("x", "y")), df)
 df = data.frame(a=1:2, b=3:4)
 test(2237.2, as.data.frame(dt, row.names=NULL), df)
@@ -18230,14 +18256,13 @@ test(2254.8, DT[, .(b = rbind(b)), by=a], DT[order(a)])
 test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[order(a)])
 
 # regression test on issue reported with printing nested table, #1646
-DF <- structure(
-  list(
-    DF1=structure(list(V1=list(1:2, 3:4), V2=5:6), .Names=c("V1", "V2"), class="data.frame", row.names=c(NA, 2L)),
-    DF2=structure(list(V3=7:8, V4=9:10), .Names=c("V3", "V4"), class="data.frame", row.names=c(NA, 2L)),
-    V5=11:12
-  ),
-  .Names=c("DF1", "DF2", "V5"), class="data.frame", row.names=c(NA, 2L)
-)
+DF1 = data.frame(row.names=1:2)
+DF1$V1 = list(1:2, 3:4)
+DF1$V2 = 5:6
+DF = data.frame(row.names=1:2)
+DF$DF1 = DF1
+DF$DF2 = data.frame(V3=7:8, V4=9:10)
+DF$V5 = 11:12
 
 test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
 
@@ -18554,11 +18579,11 @@ y = data.table(a = 2L, b=4)
 test(2274.21, rbindlist(list(x,y)), data.table(a = c(1L, 2L), b=I(c(3L, 4))))
 test(2274.22, rbindlist(list(y,x)), data.table(a = c(2L, 1L), b=c(4, 3)))
 # rbind ignore attributes #3911
-x = data.table(a = structure(1:2, class=c("a", "integer")), key="a")
+x = data.table(a = `class<-`(1:2, c("a", "integer")), key="a")
 y = data.table(a = 2:3, key="a")
-test(2274.31, merge(x,y, all.y=TRUE), data.table(a=structure(2:3, class=c("a", "integer")), key="a"))
+test(2274.31, merge(x,y, all.y=TRUE), data.table(a=`class<-`(2:3, c("a", "integer")), key="a"))
 test(2274.32, rbind(x,y), error="Class attribute .* does not match with .*")
-test(2274.33, rbind(x,y, ignore.attr=TRUE), data.table(a=structure(c(1L, 2L, 2L, 3L), class=c("a", "integer"))))
+test(2274.33, rbind(x,y, ignore.attr=TRUE), data.table(a=`class<-`(c(1L, 2L, 2L, 3L), c("a", "integer"))))
 
 # lazy forder, #4386
 dd = data.table(a=1:2, b=2:1)
@@ -18619,8 +18644,8 @@ test(2275.56, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSor
 d = copy(dd)
 setkeyv(d, c("a","b"))
 setindexv(d, list(c("a","b"), c("b","a")))
-ab = structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
-ba = structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
+ab = ForderObj(integer(), starts=1:2, maxgrpn=1L)
+ba = ForderObj(2:1, starts=1:2, maxgrpn=1L)
 test(2275.60, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took") # c(): strip attributes
 test(2275.61, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*took")
 test(2275.62, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE, reuseSorting=FALSE), ab, output="forder.*opt=0.*took")
@@ -18656,7 +18681,7 @@ test(2275.854, options=c(datatable.verbose=TRUE), o<-forderv(d, "v1", retStats=T
 setattr(d, "index", setattr(integer(), "__v1", o))
 test(2275.855, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE), output="index found but not for retGrp")
 test(2275.856, options=c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
-test(2275.857, options=c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), structure(integer(), anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*opt=2.*took")
+test(2275.857, options=c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), ForderObj(integer()), output="forder.*opt=2.*took")
 d = copy(ddd)
 test(2275.8580, options=c(datatable.optimize=Inf), {d[v1 == 1L]; indices(d)}, "v1") # _not_ setindex(d, v1), which will compute retGrp/retStats
 test(2275.8581, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and no stats available")
@@ -18692,7 +18717,7 @@ test(2275.92, options=c(datatable.verbose=TRUE, datatable.use.index=FALSE),
      forderv(d, "b", reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
 d = data.table(x = 2:1)
 test(2275.93, options=c(datatable.optimize=Inf), {d[x == 1L]; attr(attr(d, "index"), "__x")}, 2:1)
-test(2275.94, options=c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
+test(2275.94, options=c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), ForderObj(2:1, starts=1:2, maxgrpn=1L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
 d = data.table(x = 2:1)
 test(2275.95, options=list(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE, datatable.optimize=Inf),
      d[x==1L], data.table(x=1L), output="forder.*setting index.*retGrp=0, retStats=0")
@@ -18849,12 +18874,12 @@ test(2285.12, merge(merge(z, y), x), data.table(a=3L, key="a"))
 x <- 1:3
 test(2286,
      fcase(
-       x<2, structure(list(1), class = "foo"),
-       x<3, structure(list(2), class = "foo"),
+       x<2, `class<-`(list(1), "foo"),
+       x<3, `class<-`(list(2), "foo"),
        # Force gc() and some allocations which have a good chance at landing in the region that was earlier left unprotected
        { gc(full = TRUE); replicate(10, FALSE); x<4 },
        `attr<-`(list(3), "class", "foo")),
-     structure(list(1, 2, 3), class = "foo"))
+     `class<-`(list(1, 2, 3), "foo"))
 
 # Always return a copy of columns, even when returning a single list column, #4788
 dt = data.table(A=list('a', 'b', 'c'))
@@ -19059,7 +19084,7 @@ test(2294.07,
                               c("VCharB", "VFacA"),
                               "VCharA",
                               character()),
-                  label = structure(list("Total VCharA", "Total VCharB"), names = c("VCharA", NA))),
+                  label = setNames(list("Total VCharA", "Total VCharB"), c("VCharA", NA))),
      error = "When argument 'label' is a list, all of the list elements must be named.")
 # 08. label is a list with duplicate names.
 test(2294.08,
@@ -20693,12 +20718,14 @@ test(2309.07, key(as.data.table(DT)), NULL)
 test(2309.08, key(as.data.table(DT, key=NULL)), NULL)
 
 # as.data.table(x, keep.rownames=TRUE) keeps rownames for class(x)==c("*", "data.frame")
-df = structure(list(i = 1:2), class = c("tbl", "data.frame"), row.names = c("a","b"))
+df = data.frame(i=1:2, row.names=c("a", "b"))
+class(df) = c("tbl", "data.frame")
 test(2309.09, as.data.table(df, keep.rownames=TRUE), data.table(rn = c("a","b"), i=1:2))
 
 # as.data.frame(x) does not reset class(x) to "data.frame" #6874
 as.data.frame.no.reset = function(x) x
-DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
+DF = data.frame(a = 1:2)
+class(DF) = c("data.frame", "no.reset")
 test(2310.01, as.data.table(DF), data.table(a=1:2))
 
 # memrecycle() did not consider string encodings for factor levels #6886
@@ -21000,12 +21027,14 @@ test(2332.42, setfrev(x), x)
 x = c(a=1L, b=2L, c=3L)
 test(2332.43, {frev(x); names(x)}, c("a","b","c"))
 # attributes
-x = structure(1:10, class = c("IDate", "Date"), att = 1L)
+x = as.IDate(1:10)
+attr(x, 'att') = 1L
 test(2332.51, attr(frev(x), "att"), attr(rev(x), "att"))
 test(2332.52, class(frev(x)), class(rev(x)))
 test(2332.53, attr(setfrev(x), "att"), 1L)
 test(2332.54, class(setfrev(x)), c("IDate", "Date"))
-x = structure(integer(0), att = 1L)
+x = integer(0)
+attr(x, 'att') = 1L
 test(2332.55, attr(frev(x), "att"), attr(rev(x), "att"))
 # errors
 test(2332.61, frev(data.table()), error="should not be data.frame or data.table")
@@ -21113,7 +21142,8 @@ local({
 
 # Add a function for validating data.tables that might need setDT #7329
 test(2340.00, .selfref.ok(data.frame(V1=1L)), error=".selfref.ok expects data.table class object")
-d1 = structure(list(V1=1L), class=c("data.table","data.frame"))
+d1 = list(V1=1L)
+class(d1) = c("data.table","data.frame")
 test(2340.01, .selfref.ok(d1), FALSE)
 setDT(d1)
 test(2340.02, .selfref.ok(d1), TRUE)
@@ -21385,7 +21415,8 @@ test(2355.4, fread(txt, skip=0, fill=TRUE), data.table(V1 = c("a1", "b1", "c1"),
 # re-overallocate in set if quota is reached #496 #1831 #4100
 DT = data.table()
 test(2356.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i); ncol(DT)}, 10L)
-DT = structure(list(a = 1, b = 2), class = c("data.table", "data.frame"))
+DT = list(a = 1, b = 2)
+class(DT) = c("data.table", "data.frame")
 test(2356.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
 # ensure := and set are consistent if they need to overallocate
 DT = data.table(); DT2 = data.table()
@@ -21472,7 +21503,9 @@ test(2360.5, rowwiseDT(x =, plist =, 1, as.pairlist(list(123))),
 
 # setattr() must not crash for out-of-bounds factor indices when fixing duplicate levels, #7595
 test(2361.1, setattr(factor(c(1, NA), levels = 1), "levels", c("1", "1")), factor(c(1, NA)))
-test(2361.2, setattr(structure(c(-999L, 999L), class = "factor", levels = "a"), "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))
+x = c(-999L, 999L)
+attributes(x) = list(class='factor', levels='a')
+test(2361.2, setattr(x, "levels", c("b", "b")), factor(c(NA, NA), levels = "b"))
 
 # gforce should also work with Map in j #5336
 # conversions should not turn gforce off #2934
@@ -21538,10 +21571,13 @@ rm(x, y, y2)
 
 # internal use of set() causes non-resizable data.tables to be re-assigned in the wrong frame, #7604
 # bmerge -> coerce_col
-x = structure(list(a = as.double(2:3), b = list("foo", "bar")), class = c("data.table", "data.frame"))
-y = structure(list(a = 1:3), class = c("data.table", "data.frame"))
+x = list(a = as.double(2:3), b = list("foo", "bar"))
+class(x) = c("data.table", "data.frame")
+y = list(a = 1:3)
+class(y) = c("data.table", "data.frame")
 test(2364.1, x[y, on = "a"], data.table(a = 1:3, b = list(NULL, "foo", "bar")))
-x = structure(list(a = factor("a", levels = letters)), class = c("data.table", "data.frame"))
+x = list(a = factor("a", levels = letters))
+class(x) = c("data.table", "data.frame")
 y = data.table(a = factor("a", levels = letters))
 setdroplevels(x)
 setdroplevels(y)
@@ -21683,3 +21719,115 @@ max_ppsize = local({
 x = as.data.table(as.list(1:max_ppsize))
 test(2376, rbindlist(list(x)), x)
 rm(x, max_ppsize)
+
+# delete rows by reference #635
+# atomic types and list columns
+dt = data.table(
+  int = 1:5,
+  real = c(1.1, 2.2, 3.3, 4.4, 5.5),
+  char = letters[1:5],
+  lgl = c(TRUE, FALSE, TRUE, FALSE, TRUE),
+  cplx = as.complex(1:5),
+  raw_col = as.raw(1:5),
+  list_col = list(1L, 1:2, 1:3, 1:4, 1:5)
+)
+test(2377.01, copy(dt)[1L, .ROW := NULL], dt[-1])
+test(2377.02, copy(dt)[1, .ROW := NULL], dt[-1])
+test(2377.03, copy(dt)[c(TRUE, FALSE, FALSE, TRUE, FALSE), .ROW := NULL], dt[-c(1,4)])
+test(2377.04, copy(dt)[int==1L, .ROW := NULL], dt[-1])
+test(2377.05, copy(dt)[int<2L, .ROW := NULL], dt[-1])
+test(2377.06, copy(dt)[-1, .ROW := NULL], dt[1])
+# zero row or empty data.tables
+dt = data.table()
+test(2377.07, dt[logical(0), .ROW := NULL], dt)
+dt = data.table(a=integer(0), b=character(0))
+test(2377.08, dt[logical(0), .ROW := NULL], dt)
+# multirow
+dt = data.table(a=1:5, b=letters[1:5])
+test(2377.09, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2377.11, copy(dt)[1:2, .ROW := NULL], dt[3:5])
+test(2377.12, copy(dt)[1:5, .ROW := NULL], dt[0])
+# NA handling and edges case
+dt = data.table(a=1:5, b=letters[1:5])
+test(2377.13, copy(dt)[c(1L, NA_integer_, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2377.14, copy(dt)[c(NA_integer_, NA_integer_), .ROW := NULL], dt)
+test(2377.15, copy(dt)[c(TRUE, NA, FALSE, NA, TRUE), .ROW := NULL], dt[c(2,3,4)])
+test(2377.16, copy(dt)[integer(0), .ROW := NULL], dt)
+test(2377.17, copy(dt)[logical(0), .ROW := NULL], dt)
+test(2377.18, copy(dt)[c(FALSE, FALSE, FALSE, FALSE, FALSE), .ROW := NULL], dt)
+test(2377.19, copy(dt)[a > 100, .ROW := NULL], dt)  # no matches
+# Duplicate indices
+dt = data.table(a=1:5, b=letters[1:5])
+test(2377.20, copy(dt)[c(1L, 1L), .ROW := NULL], dt[-1])
+test(2377.21, copy(dt)[c(1L, 1L, 2L, 2L), .ROW := NULL], dt[3:5])
+test(2377.22, copy(dt)[c(3L, 1L, 3L, 1L), .ROW := NULL], dt[c(2,4,5)])
+# integer64
+if (test_bit64) {
+  dt = data.table(a=1:5, b=as.integer64(11:15))
+  test(2377.23, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
+  test(2377.24, copy(dt)[1:5, .ROW := NULL], data.table(a=integer(0), b=integer64(0)))
+}
+# Date/IDate/ITime columns
+dt = data.table(a=1:5, d=as.Date("2024-01-01") + 0:4, t=as.ITime(paste0(10:14, ":00:00")), dt=as.POSIXct("2024-01-01 12:00:00") + 3600*0:4)
+test(2377.25, copy(dt)[c(1L, 3L), .ROW := NULL], dt[c(2,4,5)])
+test(2377.26, copy(dt)[c(2L, 4L), .ROW := NULL]$d, as.Date("2024-01-01") + c(0,2,4))
+# Factor columns
+dt = data.table(a=1:5, f=factor(letters[1:5], levels=letters[1:10]))
+test(2377.27, copy(dt)[c(1L, 3L), .ROW := NULL], dt[-c(1L,3L)])
+test(2377.28, levels(copy(dt)[c(1L, 3L), .ROW := NULL]$f), letters[1:10])
+dt = data.table(a=1:5, of=ordered(letters[1:5], levels=letters[5:1]))
+test(2377.29, copy(dt)[c(2L, 4L), .ROW := NULL], dt[-c(2L,4L)])
+test(2377.30, is.ordered(copy(dt)[c(2, 4L), .ROW := NULL]$of))
+# Keys - should be cleared after deletion
+dt = data.table(a=5:1, b=letters[1:5], key="a")
+test(2377.31, key(copy(dt)[1L, .ROW := NULL]), NULL)
+test(2377.32, haskey(copy(dt)[1L, .ROW := NULL]), FALSE)
+# Indices - should be cleared after deletion
+dt = data.table(a=1:5, b=letters[1:5], c=5:1)
+setindex(dt, b)
+test(2377.33, indices(copy(dt)[1L, .ROW := NULL]), NULL)
+# row names
+dt = data.table(a=1:5, b=letters[1:5])
+test(2377.34, attr(copy(dt)[c(1L, 3L), .ROW := NULL], "row.names"), 1:3)
+# selfref check
+test(2377.35, selfrefok(copy(dt)[1L, .ROW := NULL]), 1L)
+# errors
+dt = data.table(a=1:4, g=1:2)
+test(2377.36, dt[1L, .ROW := 1L], error=".ROW can only be used with := NULL")
+test(2377.37, dt[1L, .ROW := "delete"], error=".ROW can only be used with := NULL")
+test(2377.38, dt[1L, .ROW := FALSE], error=".ROW can only be used with := NULL")
+test(2377.39, dt[, .ROW := NULL], error=".ROW := NULL requires i= condition")
+test(2377.40, dt[1L, .ROW := NULL, by=g], error=".ROW := NULL does not support 'by' or 'keyby'")
+# large table
+dt = data.table(a=1:20000, b=rep(letters, length.out=20000))
+idx = seq(1L, 20000L, by=2L)
+test(2377.41, copy(dt)[idx, .ROW := NULL], dt[-idx])
+# Chaining and complexer i expressions
+dt = data.table(a=1:10, b=letters[1:10])
+test(2377.42, copy(dt)[a>2, .ROW := NULL][b=="a"], data.table(a=1L, b="a"))
+test(2377.43, copy(dt)[a %% 2 == 0, .ROW := NULL], dt[a %% 2 != 0])
+test(2377.44, copy(dt)[!(a < 5 & b != "d"), .ROW := NULL], dt[1:3])
+# make columns resizable
+dt = data.table(a=1:3)
+test(2377.91, truelength(dt$a), 0L)
+test(2377.92, {setallocrow(dt); truelength(dt$a)}, 3L)
+
+# test R C API via data.table #7810
+set.seed(108)
+x = rnorm(100L)
+test(2378.01, length(x) == 100L && truelength(x) == 0L)
+x = .Call(CcopyAsGrowable, x)
+test(2378.02, length(x) == 100L && truelength(x) == 100L)
+invisible(.Call(CresizeVector, x, 50L))
+test(2378.03, length(x) == 50L && truelength(x) == 100L)
+invisible(.Call(CresizeVector, x, 0L))
+test(2378.04, length(x) == 0L && truelength(x) == 100L)
+invisible(.Call(CresizeVector, x, 49L))
+test(2378.05, length(x) == 49L && truelength(x) == 100L)
+invisible(.Call(CresizeVector, x, 51L))
+test(2378.06, length(x) == 51L && truelength(x) == 100L)
+test(2378.91, .Call(CresizeVector, x, 2), error = "must be length 1 non-NA non-negative integer value")
+test(2378.92, .Call(CresizeVector, x, 2:3), error = "must be length 1 non-NA non-negative integer value")
+test(2378.93, .Call(CresizeVector, x, -2L), error = "must be length 1 non-NA non-negative integer value")
+test(2378.94, .Call(CresizeVector, x, NA_integer_), error = "must be length 1 non-NA non-negative integer value")
+test(2378.95, .Call(CresizeVector, NULL, 2L), error = "must be a vector")
