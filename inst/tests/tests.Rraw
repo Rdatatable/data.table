@@ -21426,3 +21426,17 @@ test(2330.7, as.data.table(list(z), keep.rownames=TRUE), data.table(rn=rep("", 3
 
 M <- matrix(1:6, nrow=3, dimnames=list(rep("", 3), c("V1", "V2")))   #  test of list(M) for empty-rowname'd matrix input
 test(2330.8, as.data.table(list(M), keep.rownames=TRUE), data.table(rn=rep("", 3), V1=1:3, V2=4:6))
+
+# #7252 as.IDate()/as.ITime preserve names and are compliant with as.Date()
+test(2331.01, as.IDate(c(a = "2019-01-01")), as.IDate(as.Date(c(a = "2019-01-01"))))
+test(2331.02, c(a = as.IDate("2019-01-01")), structure(as.IDate("2019-01-01"), names="a"))
+test(2331.03, as.ITime(c(a = "12:00:00")), structure(as.ITime("12:00:00"), names="a"))
+test(2331.04, as.IDate(structure(as.POSIXct("2019-01-01 12:00:00", tz="UTC"), names = "a")), as.IDate(as.Date(structure(as.POSIXct("2019-01-01 12:00:00", tz="UTC"), names = "a"))))
+test(2331.05, as.ITime(structure(3600, names = "a")), structure(as.ITime(3600), names="a"))
+test(2331.06, as.IDate(c(a = 18000)), as.IDate(as.Date(c(a = 18000), origin="1970-01-01")))
+test(2331.07, as.IDate(c(a = 1), origin = "2020-01-01"), as.IDate(as.Date(c(a = 1), origin = "2020-01-01")))
+test(2331.08, as.ITime(c(a = "12-00-00"), format = "%H-%M-%S"), structure(as.ITime("12:00:00"), names="a"))
+test(2331.09, as.IDate(as.POSIXct(c(a = "2019-01-01"), tz="UTC")), as.IDate(as.Date(as.POSIXct(c(a = "2019-01-01"), tz="UTC"))))
+test(2331.10, as.IDate(as.POSIXct(c(a = "2019-01-01"), tz="America/New_York")), as.IDate(as.Date(as.POSIXct(c(a = "2019-01-01"), tz="America/New_York"))))
+test(2331.11, as.IDate(c(a = 1), origin = c(b = "2020-01-01")), as.IDate(as.Date(c(a = 1), origin = c(b = "2020-01-01"))))
+test(2331.12, as.IDate(c(a = 20.5), origin = "2020-01-01"), structure(as.IDate("2020-01-21"), names="a"))
