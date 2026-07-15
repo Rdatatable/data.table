@@ -14,24 +14,24 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 # test that 'test' catches the difference in language object
 cl1 = substitute(f(1L, list(2L)))
 cl2 = substitute(f(1L, .v), list(.v=list(2L)))
-test(1.01, all.equal(cl1, cl2), TRUE)
-test(1.02, identical(cl1, cl2), FALSE)
+test(1.01, all.equal(cl1, cl2))
+test(1.02, !identical(cl1, cl2))
 test(1.03, test(0, cl1, cl2), FALSE, output="f(1L, list(2L))")
 # AsIs
-test(1.11, is.AsIs(1L), FALSE)
-test(1.12, is.AsIs(I(1L)), TRUE)
-test(1.13, is.AsIs("a"), FALSE)
-test(1.14, is.AsIs(I("a")), TRUE)
-test(1.15, is.AsIs(list(1L)), FALSE)
-test(1.16, is.AsIs(I(list(1L))), TRUE)
-test(1.17, is.AsIs(structure(list(NULL), class="an_S3")), FALSE) ## S3
-test(1.18, is.AsIs(I(structure(list(NULL), class="an_S3"))), TRUE)
-test(1.19, is.AsIs(getClass("MethodDefinition")), FALSE) ## S4
-test(1.20, is.AsIs(suppressWarnings(I(getClass("MethodDefinition")))), TRUE) ## suppressWarnings due new warning in R 4.1
-test(1.21, is.AsIs(rm.AsIs(1L)), FALSE)
-test(1.22, is.AsIs(rm.AsIs(I(1L))), FALSE)
-test(1.23, is.AsIs(rm.AsIs(list(1L))), FALSE)
-test(1.24, is.AsIs(rm.AsIs(I(list(1L)))), FALSE)
+test(1.11, !is.AsIs(1L))
+test(1.12, is.AsIs(I(1L)))
+test(1.13, !is.AsIs("a"))
+test(1.14, is.AsIs(I("a")))
+test(1.15, !is.AsIs(list(1L)))
+test(1.16, is.AsIs(I(list(1L))))
+test(1.17, !is.AsIs(`class<-`(list(NULL), "an_S3"))) ## S3
+test(1.18, is.AsIs(I(`class<-`(list(NULL), "an_S3"))))
+test(1.19, !is.AsIs(getClass("MethodDefinition"))) ## S4
+test(1.20, is.AsIs(suppressWarnings(I(getClass("MethodDefinition"))))) ## suppressWarnings due new warning in R 4.1
+test(1.21, !is.AsIs(rm.AsIs(1L)))
+test(1.22, !is.AsIs(rm.AsIs(I(1L))))
+test(1.23, !is.AsIs(rm.AsIs(list(1L))))
+test(1.24, !is.AsIs(rm.AsIs(I(list(1L)))))
 
 # substitute2 simple
 test(2.01, substitute2(list(var = val), env = list(var="my_var", val=5L)), quote(list(my_var = 5L)))
@@ -131,8 +131,8 @@ test(2.903, substitute2(.(v), emptyenv()), quote(.(v)))
 test(2.91, substitute2(.()), error="'env' must not be missing")
 test(2.92, substitute2(v, c(v=1L)), error="'env' must be a list or an environment")
 test(2.93, substitute2(.(v), list(1L, 2L)), error="'env' argument does not have names")
-test(2.94, substitute2(.(v), structure(list(1L,2L), names=c("","v"))), error="'env' argument has zero char names")
-test(2.95, substitute2(.(v), structure(list(1,2), names=c(NA,"v"))), error="'env' argument has NA names")
+test(2.94, substitute2(.(v), setNames(list(1L,2L), c("","v"))), error="'env' argument has zero char names")
+test(2.95, substitute2(.(v), setNames(list(1,2), c(NA,"v"))), error="'env' argument has NA names")
 test(2.96, substitute2(.(v), list(v=1,v=2)), error="'env' argument has duplicated names")
 
 # substitute2 reuse inside another function
@@ -581,12 +581,11 @@ cor_xy3 = function(xdt, ydt, x, y) { ## cor matrix of existing columns and dynam
   xdt[, cor(.SD), .SDcols = c(x, y)]
 }
 cor_mx = cor_xy3(xdt, ydt, c("x1", "x2"), ycols)
-exp = structure(c(
-  1, 0.242249239102964, -0.0286729531730845, -0.0936087330415663, 0.245575245812681, 0.323778522797129, 0.242249239102964, 1, 0.199165327684089, -0.160954354243643, 0.0034174556771777, 0.185518712777259, -0.0286729531730845, 0.199165327684089, 1, -0.164047186655086, -0.0689536633998918, -0.0326400434160486, -0.0936087330415663, -0.160954354243643, -0.164047186655086, 1, -0.0810998892055976, -0.106457956110047, 0.245575245812681, 0.0034174556771777, -0.0689536633998918, -0.0810998892055976, 1, 0.324977066952494, 0.323778522797129, 0.185518712777259, -0.0326400434160486, -0.106457956110047, 0.324977066952494, 1
-  ), dim = c(6L, 6L), dimnames = list(
-    c("x1", "x2", "y1", "y5", "y10", "y20"),
-    c("x1", "x2", "y1", "y5", "y10", "y20")
-))
+exp = matrix(
+  c(1, 0.242249239102964, -0.0286729531730845, -0.0936087330415663, 0.245575245812681, 0.323778522797129, 0.242249239102964, 1, 0.199165327684089, -0.160954354243643, 0.0034174556771777, 0.185518712777259, -0.0286729531730845, 0.199165327684089, 1, -0.164047186655086, -0.0689536633998918, -0.0326400434160486, -0.0936087330415663, -0.160954354243643, -0.164047186655086, 1, -0.0810998892055976, -0.106457956110047, 0.245575245812681, 0.0034174556771777, -0.0689536633998918, -0.0810998892055976, 1, 0.324977066952494, 0.323778522797129, 0.185518712777259, -0.0326400434160486, -0.106457956110047, 0.324977066952494, 1),
+  nrow=6L, ncol=6L,
+  dimnames=list(c("x1", "x2", "y1", "y5", "y10", "y20"), c("x1", "x2", "y1", "y5", "y10", "y20"))
+)
 test(102.06, cor_mx, exp)
 nadt = data.table(x1 = c(1, 2, NA, Inf), x2 = c(2, NA, 3, Inf), x3 = c(NA, 1, 2, 0)) ## fill abnormal values of multiple columns
 dt_fill = function(data, columns, selector, fill) {
