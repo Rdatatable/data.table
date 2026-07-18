@@ -54,7 +54,7 @@ static const R_CallMethodDef callMethods[] = {
     {"Cbmerge", (DL_FUNC)&bmerge, -1},
     {"Cassign", (DL_FUNC)&assign, -1},
     {"Cdogroups", (DL_FUNC)&dogroups, -1},
-    {"Ccopy", (DL_FUNC)&copy, -1},
+    {"Ccopy", (DL_FUNC)&copy, 2},
     {"Cshallowwrapper", (DL_FUNC)&shallowwrapper, -1},
     {"Csetdt_nrows", (DL_FUNC)&setdt_nrows, -1},
     {"Calloccolwrapper", (DL_FUNC)&alloccolwrapper, -1},
