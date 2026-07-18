@@ -1,4 +1,4 @@
-useDynLib("data_table", .registration=TRUE)
+useDynLib("data.table", .registration=TRUE)
 
 ## For S4-ization
 importFrom(methods, "S3Part<-", slotNames)
@@ -36,7 +36,7 @@ export(tstrsplit)
 export(frank)
 export(frankv)
 export(address)
-export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI, measure, measurev, patterns)
+export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI,.ROW, measure, measurev, patterns)
 # TODO(#6197): Export these.
 # export(., J)
 export(rleid)
