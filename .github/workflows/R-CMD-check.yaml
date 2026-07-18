@@ -86,8 +86,6 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      _R_CHECK_RD_CHECKRD_MINLEVEL_: -Inf
-      _R_CHECK_RD_CONTENTS_VALUE_: 1
 
     steps:
       - uses: actions/checkout@v6
