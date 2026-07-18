@@ -21833,7 +21833,7 @@ test(2378.94, .Call(CresizeVector, x, NA_integer_), error = "must be length 1 no
 test(2378.95, .Call(CresizeVector, NULL, 2L), error = "must be a vector")
 
 # copy() reallocates data.tables inside list attributes, #7820
-x = data.table()
-y = list()
-attr(y, 'dt') = list(x)
-test(2379, truelength(attr(copy(y), 'dt')[[1]]) > 0L)
+x = list()
+attr(x, 'dt') = data.table()
+test(2379, truelength(attr(copy(x), 'dt')) > 0L)
+rm(x)
