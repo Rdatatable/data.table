@@ -21831,3 +21831,9 @@ test(2378.92, .Call(CresizeVector, x, 2:3), error = "must be length 1 non-NA non
 test(2378.93, .Call(CresizeVector, x, -2L), error = "must be length 1 non-NA non-negative integer value")
 test(2378.94, .Call(CresizeVector, x, NA_integer_), error = "must be length 1 non-NA non-negative integer value")
 test(2378.95, .Call(CresizeVector, NULL, 2L), error = "must be a vector")
+
+# #7677: add limit argument to nafill()
+test(2379.01, nafill(c(1, NA, NA, NA, 5), type="locf", limit=1), c(1, 1, NA, NA, 5))
+test(2379.02, nafill(c(1, NA, NA, 5, NA, NA, NA, 9), type="locf", limit=2), c(1, 1, 1, 5, 5, 5, NA, 9))
+test(2379.03, nafill(c(1, NA, NA, 4, NA), type="locf", limit=Inf), c(1, 1, 1, 4, 4))
+test(2379.04, nafill(c(NA, NA, 3, NA, NA), type="locf", limit=1), c(NA, NA, 3, 3, NA))
