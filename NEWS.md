@@ -62,6 +62,8 @@
 
 13. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
 
+14. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, and its attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
