@@ -11,6 +11,8 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+if (!exists("deparse1", "package:base")) deparse1 <- function(x, collapse=" ", width.cutoff=60L) paste(deparse(x, width.cutoff=width.cutoff), collapse=collapse) # nolint: paste_linter.
+
 # R 4.4.0
 if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
 
@@ -202,7 +204,7 @@ is_utc = function(tz) {
   if (!is.call(e)) return(FALSE)
   if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
   if (e1 %iscall% c('::', ':::')) return(e1[[3L]] %chin% f)
-  paste(deparse(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than deparse()
+  deparse(e1) %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than deparse()
 }
 
 # nocov start #593 always return a data.table
