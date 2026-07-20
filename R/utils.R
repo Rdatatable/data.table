@@ -11,7 +11,8 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
-if (!exists("deparse1", "package:base")) deparse1 <- function(x, collapse=" ", width.cutoff=60L) paste(deparse(x, width.cutoff=width.cutoff), collapse=collapse) # nolint: paste_linter.
+# R 4.4.0
+if (!exists("deparse1", "package:base")) deparse1 = function(x, collapse=" ", width.cutoff=60L) paste(deparse(x, width.cutoff=width.cutoff), collapse=collapse) # nolint: paste_linter.
 
 # R 4.4.0
 if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
