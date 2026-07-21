@@ -203,6 +203,9 @@ DT[filter_col %in% filter_val,
      by_col =  "Species"
   )]
 ```
+#### Note for package developers: The `..` prefix
+
+Using the `..` prefix (for example, `DT[, ..cols]`) may trigger an `R CMD check` NOTE because `..cols` is treated as an undefined global variable. To avoid the NOTE, either register the variable with `utils::globalVariables("..cols")` or, where appropriate, use alternatives such as `with=FALSE` or the `env=` interface instead of the `..` prefix.
 
 ### Substitute variables and character values
 

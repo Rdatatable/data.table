@@ -122,6 +122,24 @@ aggr = function (x) {
 }
 ```
 
+The `..` prefix (for example, `DT[, ..cols]`) looks up a variable in the calling scope. In R packages, using the `..` prefix may trigger an `R CMD check` NOTE because `..cols` is treated as an undefined global variable.
+```r
+cols = c("x", "y")
+DT[, ..cols]   # may trigger an R CMD check NOTE
+```
+
+To avoid the NOTE, either register the variable with
+```r
+utils::globalVariables("..cols")
+```
+
+or, where appropriate, use an alternative interface such as
+```r
+DT[, cols, with = FALSE]
+DT[, .SD, .SDcols = cols]
+DT[, is.other, env = list(is.other = is.other)]
+```
+
 The case for `data.table`'s special symbols (e.g. `.SD` and `.N`) and assignment operator (`:=`) is slightly different (see `?.N` for more, including a complete listing of such symbols). You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
 
 ```r
