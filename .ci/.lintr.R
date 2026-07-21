@@ -21,6 +21,7 @@ linters = c(dt_linters, all_linters(
     message = "Use messagef to avoid fragmented translations.",
     warning = "Use warningf to avoid fragmented translations.",
     stop = "Use stopf to avoid fragmented translations.",
+    rev = "Use frev internally, or setfrev if by-reference is safe.",
     NULL
   )),
   # undesirable_function_linter(modify_defaults(

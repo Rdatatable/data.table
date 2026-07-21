@@ -1,14 +1,14 @@
 ---
 title: "Foire aux questions de data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format:
+  litedown::html_format:
     options:
       toc: true
       number_sections: true
 vignette: >
   %\VignetteIndexEntry{Foire aux questions de data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -16,21 +16,23 @@ vignette: >
 h2 {
     font-size: 20px;
 }
-#TOC { width: 100%; }
+
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+  width: 100%; 
+}
 </style>
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Une traduction de ce document est disponible en : %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -582,7 +584,10 @@ DT[ , b := rnorm(5)] # « remplace » la colonne entière par une colonne num�
 
 ## Lecture de data.table à partir d'un fichier RDS ou RData
 
-`*.RDS` et `*.RData` sont des types de fichiers qui permettent de stocker efficacement des objets R en mémoire sur le disque. Cependant, le stockage de data.table dans le fichier binaire perd sa sur-allocation de colonnes. Ce n'est pas très grave -- votre data.table sera copié en mémoire lors de la prochaine opération *par référence* et lancera un avertissement. Il est donc recommandé d'appeler `setalloccol()` sur chaque data.table chargée avec les appels `readRDS()` ou `load()`.
+`*.RDS` et `*.RData` sont des types de fichiers qui permettent de stocker efficacement des objets R en mémoire sur le disque. Cependant, le stockage de data.table dans le fichier binaire perd sa sur-allocation de colonnes (voir aussi `?truelength`). Ce n'est pas très grave -- votre `data.table` sera copié en mémoire lors de la prochaine opération _par référence_ et lancera un avertissement.
+C'est pourquoi il est recommandé d'appeler `setDT()` sur chaque `data.table` chargé par un appel à `readRDS()` ou `load()` afin de restaurer ses attributs internes. Si vous avez simplement besoin de préallouer de l'espace pour de nouvelles colonnes, vous pouvez également utiliser `setalloccol()`.
+
+Pour d'autres informations, voir `?setDT` et `?truelength`.
 
 # Questions générales sur le package
 

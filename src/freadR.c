@@ -1,6 +1,8 @@
 #include "fread.h"
 #include "freadR.h"
 #include "data.table.h"
+#include <R_ext/Connections.h>
+#include <errno.h>
 
 /*****    TO DO    *****
 Restore test 1339 (balanced embedded quotes, see ?fread already updated).
@@ -28,6 +30,7 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 static int  typeSxp[NUT]       = { NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP    };
 static char typeRName[NUT][10] = { "NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"   };
 static int  typeEnum[NUT]      = { CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_BOOL8_Y, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING };
+
 static colType readInt64As = CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -61,6 +64,7 @@ SEXP freadR(
   SEXP NAstringsArg,
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
+  SEXP commentCharArg,
   SEXP fillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
@@ -76,8 +80,10 @@ SEXP freadR(
   SEXP integer64Arg,
   SEXP encodingArg,
   SEXP keepLeadingZerosArgs,
-  SEXP noTZasUTC
-) {
+  SEXP noTZasUTC,
+  SEXP connectionSpillArg
+)
+{
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
 
@@ -157,6 +163,8 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  const char *commentStr = CHAR(STRING_ELT(commentCharArg, 0));
+  args.comment = strlen(commentStr) == 0 ? '\0' : commentStr[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0] < 1)
@@ -166,6 +174,19 @@ SEXP freadR(
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
   args.noTZasUTC = LOGICAL(noTZasUTC)[0];
+  args.connectionSpillActive = false;
+  args.connectionSpillSeconds = 0.0;
+  args.connectionSpillBytes = 0.0;
+  if (!isNull(connectionSpillArg)) {
+    if (!isReal(connectionSpillArg) || LENGTH(connectionSpillArg) != 2)
+      internal_error(__func__, "connectionSpillArg must be length-2 real vector"); // # nocov
+    const double *spill = REAL_RO(connectionSpillArg);
+    args.connectionSpillSeconds = spill[0];
+    args.connectionSpillBytes = spill[1];
+    if (!R_FINITE(args.connectionSpillSeconds) || args.connectionSpillSeconds < 0) args.connectionSpillSeconds = 0.0;
+    if (!R_FINITE(args.connectionSpillBytes) || args.connectionSpillBytes < 0) args.connectionSpillBytes = 0.0;
+    args.connectionSpillActive = true;
+  }
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg) != 1) error(_("'integer64' must be a single character string"));
@@ -227,14 +248,16 @@ SEXP freadR(
   return DT;
 }
 
-static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
+static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource)
+{
   if (!length(items)) return;
-  SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP));
-  const int *itemsD = INTEGER(itemsInt), n=LENGTH(itemsInt);
+  const SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP));
+  const int* const itemsD = INTEGER_RO(itemsInt);
+  const int n = LENGTH(itemsInt);
   for (int j = 0; j < n; j++) {
-    int k = itemsD[j];
+    const int k = itemsD[j];
     if (k == NA_INTEGER || k < 1 || k > ncol) {
-      static char buff[50];
+      char buff[50];
       if (dropSource == -1) snprintf(buff, sizeof(buff), "drop[%d]", j + 1); // # notranslate
       else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
       if (k == NA_INTEGER) {
@@ -258,19 +281,17 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N] != 1) internal_error(__func__, "typeSize[CT_BOOL8_N] != 1"); // # nocov
-  if (typeSize[CT_STRING] != 8) internal_error(__func__, "typeSize[CT_STRING] != 1"); // # nocov
-  colNamesSxp = R_NilValue;
-  SET_VECTOR_ELT(RCHK, 1, colNamesSxp = allocVector(STRSXP, ncol));
+  if (typeSize[CT_STRING] != 8) internal_error(__func__, "typeSize[CT_STRING] != 8"); // # nocov
+  colNamesSxp = R_allocResizableVector(STRSXP, ncol);
+  SET_VECTOR_ELT(RCHK, 1, colNamesSxp);
   for (int i = 0; i < ncol; i++) {
-    SEXP elem;
     if (colNames == NULL || colNames[i].len <= 0) {
       char buff[12];
       snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
-      elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
+      SET_STRING_ELT(colNamesSxp, i, mkChar(buff));  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
-      elem = mkCharLenCE(anchor + colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
+      SET_STRING_ELT(colNamesSxp, i, mkCharLenCE(anchor + colNames[i].off, colNames[i].len, ienc));  // no PROTECT as passed immediately to SET_STRING_ELT
     }
-    SET_STRING_ELT(colNamesSxp, i, elem);
   }
   // "use either select= or drop= but not both" was checked earlier in freadR
   applyDrop(dropSxp, type, ncol, /*dropSource=*/-1);
@@ -290,17 +311,17 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (length(selectSxp)) {
     const int n = length(selectSxp);
     if (isString(selectSxp)) {
-      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
+      selectInts = INTEGER_RO(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
       for (int i = 0; i < n; i++) if (selectInts[i] == NA_INTEGER)
         DTWARN(_("Column name '%s' not found in column name header (case sensitive), skipping."), CHAR(STRING_ELT(selectSxp, i)));
     } else {
       if (!isInteger(selectSxp)) { selectSxp = PROTECT(coerceVector(selectSxp, INTSXP)); nprotect++; }  // coerce numeric to int
-      selectInts = INTEGER(selectSxp);
+      selectInts = INTEGER_RO(selectSxp);
     }
     SET_VECTOR_ELT(RCHK, 3, selectRank = allocVector(INTSXP, ncol));
     int *selectRankD = INTEGER(selectRank), rank = 1;
     for (int i = 0; i < n; i++) {
-      int k = selectInts[i];
+      const int k = selectInts[i];
       if (k == NA_INTEGER) continue; // missing column name warned above and skipped
       if (k < 0) STOP(_("Column number %d (select[%d]) is negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion."), k, i + 1, ncol);
       if (k == 0) STOP(_("select = 0 (select[%d]) has no meaning. All values of select should be in the range [1,ncol=%d]."), i + 1, ncol);
@@ -335,7 +356,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           if (type[i] == CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
           const SEXP tt = STRING_ELT(colClassesSxp, i & mask); // mask recycles colClassesSxp when it's length-1
           if (tt == NA_STRING || tt == R_BlankString) continue;  // user is ok with inherent type for this column
-          int w = INTEGER(typeEnum_idx)[i & mask];
+          const int w = INTEGER(typeEnum_idx)[i & mask];
           if (tt == char_POSIXct) {
             // from v1.13.0, POSIXct is a built in type, but if the built-in doesn't support (e.g. test 1743.25 has missing tzone) then we still dispatch to as.POSIXct afterwards
             if (type[i] != CT_ISO8601_TIME) {
@@ -354,8 +375,8 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
         for (int i = 0; i < n; i++) {
           SEXP tt = STRING_ELT(colClassesSxp, i);
           if (tt == NA_STRING || tt == R_BlankString) continue;
-          int w = INTEGER(typeEnum_idx)[i];
-          int y = selectInts[i];
+          const int w = INTEGER(typeEnum_idx)[i];
+          const int y = selectInts[i];
           if (y == NA_INTEGER) continue;
           if (tt == char_POSIXct) {
             if (type[y - 1] != CT_ISO8601_TIME) {
@@ -391,7 +412,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
         // UNPROTECTed directly just after this for loop. No nprotect++ here is correct.
         for (int j = 0; j < LENGTH(items); j++) {
-          int colIdx = INTEGER(itemsInt)[j]; // NB: 1-based
+          const int colIdx = INTEGER(itemsInt)[j]; // NB: 1-based
           if (colIdx == NA_INTEGER) {
             if (isString(items))
               DTWARN(_("Column name '%s' (colClasses[[%d]][%d]) not found"), CHAR(STRING_ELT(items, j)), i + 1, j + 1);
@@ -432,41 +453,51 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     }
     UNPROTECT(1);  // typeRName_sxp
   }
-  UNPROTECT(nprotect);
+  if(nprotect) UNPROTECT(nprotect);
   if (readInt64As != CT_INT64) {
     for (int i = 0; i < ncol; i++) if (type[i] == CT_INT64) type[i] = readInt64As;
   }
   return true;
 }
 
-size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow) {
+size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow)
+{
   // save inputs for use by pushBuffer
   size = sizeArg;
   type = typeArg;
-  int newDT = (ncol == 0);
+  const bool newDT = (ncol == 0);
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    SET_VECTOR_ELT(RCHK, 0, DT = allocVector(VECSXP, ncol - ndrop));
+    DT = R_allocResizableVector(VECSXP, ncol - ndrop);
+    SET_VECTOR_ELT(RCHK, 0, DT);
     if (ndrop == 0) {
       setAttrib(DT, R_NamesSymbol, colNamesSxp);  // colNames mkChar'd in userOverride step
       if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
     } else {
       int nprotect = 0;
-      SEXP tt, ss = R_NilValue;
-      setAttrib(DT, R_NamesSymbol, tt = PROTECT(allocVector(STRSXP, ncol - ndrop))); nprotect++;
+      SEXP tt = PROTECT(allocVector(STRSXP, ncol - ndrop)); nprotect++;
+      setAttrib(DT, R_NamesSymbol, tt);
+      
+      SEXP ss;
       if (colClassesAs) {
-        setAttrib(DT, sym_colClassesAs, ss = PROTECT(allocVector(STRSXP, ncol - ndrop))); nprotect++;
+        ss = PROTECT(allocVector(STRSXP, ncol - ndrop)); nprotect++;
+        setAttrib(DT, sym_colClassesAs, ss);
+      } else {
+        ss = R_NilValue;
       }
+
       for (int i = 0, resi = 0; i < ncol; i++) if (type[i] != CT_DROP) {
         if (colClassesAs) SET_STRING_ELT(ss, resi, STRING_ELT(colClassesAs, i));
         SET_STRING_ELT(tt, resi++, STRING_ELT(colNamesSxp, i));
       }
+
       UNPROTECT(nprotect);
     }
     if (selectRank) {
       SEXP tt = PROTECT(allocVector(INTSXP, ncol - ndrop));
-      int *ttD = INTEGER(tt), *rankD = INTEGER(selectRank), rank = 1;
+      int *ttD = INTEGER(tt), rank = 1;
+      const int *rankD = INTEGER_RO(selectRank);
       for (int i = 0; i < ncol; i++) if (type[i] != CT_DROP) ttD[rankD[i] - 1] = rank++;
       SET_VECTOR_ELT(RCHK, 3, selectRank = tt);
       // selectRank now holds the order not the rank (so its name is now misleading). setFinalNRow passes it to setcolorder
@@ -494,13 +525,13 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   for (int i = 0, resi = 0; i < ncol; i++) {
     if (type[i] == CT_DROP) continue;
     SEXP col = VECTOR_ELT(DT, resi);
-    int oldIsInt64 = newDT ? 0 : INHERITS(col, char_integer64);
-    int newIsInt64 = type[i] == CT_INT64;
-    int typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
-    int nrowChanged = (allocNrow != dtnrows);
+    const bool oldIsInt64 = newDT ? 0 : INHERITS(col, char_integer64);
+    const bool newIsInt64 = type[i] == CT_INT64;
+    const bool typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
+    const bool nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)  // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
-                                 : growVector(col, allocNrow);
+      SEXP thiscol = typeChanged ? R_allocResizableVector(typeSxp[type[i]], allocNrow) : growVector(col, allocNrow); // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
+
       SET_VECTOR_ELT(DT, resi, thiscol);
       if (type[i] == CT_INT64) {
         SEXP tt = PROTECT(ScalarString(char_integer64));
@@ -521,7 +552,6 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
-      SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += RTYPE_SIZEOF(thiscol) * allocNrow;
     }
     resi++;
@@ -530,46 +560,35 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   return DTbytes;
 }
 
-void setFinalNrow(size_t nrow) {
+void setFinalNrow(size_t nrow)
+{
   if (selectRank) setcolorder(DT, selectRank);  // selectRank was changed to contain order (not rank) in allocateDT above
   if (length(DT)) {
     if (nrow == dtnrows)
       return;
     const int ncol = LENGTH(DT);
     for (int i = 0; i < ncol; i++) {
-      SETLENGTH(VECTOR_ELT(DT, i), nrow);
-      SET_TRUELENGTH(VECTOR_ELT(DT, i), dtnrows);
-      SET_GROWABLE_BIT(VECTOR_ELT(DT, i));  // #3292
+      R_resizeVector(VECTOR_ELT(DT, i), nrow);
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
 }
 
-void dropFilledCols(int* dropArg, int ndelete) {
+void dropFilledCols(int* dropArg, int ndelete)
+{
   dropFill = dropArg;
-  int ndt = length(DT);
+  const int ndt = length(DT);
   for (int i = 0; i < ndelete; i++) {
     SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
     SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
   }
-  SETLENGTH(DT, ndt - ndelete);
-  SETLENGTH(colNamesSxp, ndt - ndelete);
+  R_resizeVector(DT, ndt - ndelete);
+  R_resizeVector(colNamesSxp, ndt - ndelete);
+  setAttrib(DT, R_NamesSymbol, colNamesSxp);  // reinstall after resize
 }
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 {
-  const void *buff8 = ctx->buff8;
-  const void *buff4 = ctx->buff4;
-  const void *buff1 = ctx->buff1;
-  const char *anchor = ctx->anchor;
-  int nRows = (int) ctx->nRows;
-  size_t DTi = ctx->DTi;
-  int rowSize8 = (int) ctx->rowSize8;
-  int rowSize4 = (int) ctx->rowSize4;
-  int rowSize1 = (int) ctx->rowSize1;
-  int nStringCols = ctx->nStringCols;
-  int nNonStringCols = ctx->nNonStringCols;
-
   // Do all the string columns first so as to minimize and concentrate the time inside the single critical.
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
@@ -577,91 +596,105 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   // locals passed in on stack so openmp knows that no synchronization is required
 
   // the byte position of this column in the first row of the row-major buffer
-  if (nStringCols) {
+  if (ctx->nStringCols) {
     #pragma omp critical
     {
       int off8 = 0;
-      int cnt8 = rowSize8 / 8;
-      lenOff *buff8_lenoffs = (lenOff*) buff8;
-      for (int j = 0, resj = -1, done = 0; done < nStringCols && j < ncol; j++) {
+      const int cnt8 = ctx->rowSize8 / 8;
+      const lenOff *buff8_lenoffs = (const lenOff*)ctx->buff8;
+      for (int j = 0, resj = -1, done = 0; done < ctx->nStringCols && j < ncol; j++) {
         if (type[j] == CT_DROP) continue;
         resj++;
         if (type[j] == CT_STRING) {
           SEXP dest = VECTOR_ELT(DT, resj);
-          lenOff *source = buff8_lenoffs + off8;
-          for (int i = 0; i < nRows; i++) {
+          const lenOff *source = buff8_lenoffs + off8;
+          for (int i = 0; i < ctx->nRows; i++) {
             int strLen = source->len;
             if (strLen <= 0) {
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-              if (strLen < 0) SET_STRING_ELT(dest, DTi + i, NA_STRING); // else leave the "" in place that was initialized by allocVector()
+              if (strLen < 0) SET_STRING_ELT(dest, ctx->DTi + i, NA_STRING); // else leave the "" in place that was initialized by allocVector()
             } else {
-              const char *str = anchor + source->off;
+              const char *str = ctx->anchor + source->off;
               int c = 0;
               while (c < strLen && str[c]) c++;
               if (c < strLen) {
                 // embedded nul found; any at the beginning or the end of the field should have already been excluded but this will strip those too if present just in case
-                char *last = (char *)str + c;    // obtain write access to (const char *)anchor;
+                char *last = (char*)str + c;    // obtain write access to (const char *)anchor;
                 while (c < strLen) {
                   if (str[c]) *last++ = str[c];  // cow page write: saves allocation and management of a temp that would need to thread-safe in future.
                   c++;                         //   This is only thread accessing this region. For non-mmap direct input nul are not possible (R would not have accepted nul earlier).
                 }
                 strLen = last - str;
               }
-              SET_STRING_ELT(dest, DTi + i, mkCharLenCE(str, strLen, ienc));
+              SET_STRING_ELT(dest, ctx->DTi + i, mkCharLenCE(str, strLen, ienc));
             }
             source += cnt8;
           }
           done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO? start on first too
         }
-        off8 += (size[j] == 8);
+
+        if (size[j] == 8) off8++;
       }
     }
   }
 
   int off1 = 0, off4 = 0, off8 = 0;
-  for (int j = 0, resj = -1, done = 0; done < nNonStringCols && j < ncol; j++) {
+  for (int j = 0, resj = 0, done = 0; done < ctx->nNonStringCols && j < ncol; j++) {
     if (type[j] == CT_DROP) continue;
-    int thisSize = size[j];
-    resj++;
+    
     if (type[j] != CT_STRING && type[j] > 0) {
-      if (thisSize == 8) {
-        double *dest = REAL(VECTOR_ELT(DT, resj)) + DTi;
-        const char *src8 = (char*)buff8 + off8;
-        for (int i = 0; i < nRows; i++) {
-          *dest = *(double *)src8;
-          src8 += rowSize8;
+      switch(size[j])
+      {
+      case 8: {
+        double *dest = REAL(VECTOR_ELT(DT, resj)) + ctx->DTi;
+        const char *src8 = (const char*)ctx->buff8 + off8;
+        for (int i = 0; i < ctx->nRows; i++) {
+          *dest = *(double*)src8;
+          src8 += ctx->rowSize8;
           dest++;
         }
-      } else if (thisSize == 4) {
-        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + DTi;
-        const char *src4 = (char*)buff4 + off4;
+        break;
+      }
+      case 4: {
+        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + ctx->DTi;
+        const char *src4 = (const char*)ctx->buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
-        for (int i = 0; i < nRows; i++) {
-          *dest = *(int *)src4;
-          src4 += rowSize4;
+        for (int i = 0; i < ctx->nRows; i++) {
+          *dest = *(int*)src4;
+          src4 += ctx->rowSize4;
           dest++;
         }
-      } else if (thisSize == 1) {
+        break;
+      }
+      case 1: {
         if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
-        const char *src1 = (char*)buff1 + off1;
-        for (int i = 0; i < nRows; i++) {
-          int8_t v = *(int8_t *)src1;
+        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + ctx->DTi;
+        const char *src1 = (const char*)ctx->buff1 + off1;
+        for (int i = 0; i < ctx->nRows; i++) {
+          const int8_t v = *(int8_t*)src1;
           *dest = (v == INT8_MIN ? NA_INTEGER : v);
-          src1 += rowSize1;
+          src1 += ctx->rowSize1;
           dest++;
         }
-      } else internal_error(__func__, "unexpected field of size %d\n", thisSize);  // # nocov
+        break;
+      }
+      default: { // # nocov
+        internal_error(__func__, "unexpected field of size %d\n", size[j]); // # nocov
+        break; // # nocov
+      }
+      }
       done++;
     }
     off8 += (size[j] & 8);
     off4 += (size[j] & 4);
     off1 += (size[j] & 1);
+    resj++;
   }
 }
 
 // # nocov start
-void progress(int p, int eta) {
+void progress(int p, int eta)
+{
   // called from thread 0 only
   // p between 0 and 100
   // eta in seconds
@@ -707,7 +740,113 @@ void progress(int p, int eta) {
 }
 // # nocov end
 
-void halt__(bool warn, const char *format, ...) {
+#if R_CONNECTIONS_VERSION == 1
+typedef struct {
+  Rconnection con;
+  const char *filepath;
+  size_t row_limit;
+  FILE *outfile;
+  char *buffer;
+} SpillState;
+
+static void spill_cleanup(void *data)
+{
+  SpillState *state = (SpillState *)data;
+  if (!state) return;
+  free(state->buffer); // free(NULL) is safe no-op
+  if (state->outfile) {
+    fclose(state->outfile);
+  }
+}
+
+static SEXP do_spill(void *data)
+{
+  SpillState *state = (SpillState *)data;
+  const size_t chunk_size = 256 * 1024; // TODO tune chunk size
+
+  state->outfile = fopen(state->filepath, "wb");
+  if (state->outfile == NULL) {
+    STOP(_("spillConnectionToFile: failed to open temp file '%s' for writing: %s"), state->filepath, strerror(errno)); // # nocov
+  }
+
+  state->buffer = malloc(chunk_size);
+  if (!state->buffer) {
+    STOP(_("spillConnectionToFile: failed to allocate buffer")); // # nocov
+  }
+  const bool limit_rows = state->row_limit > 0;
+  size_t total_read = 0;
+  size_t nrows_seen = 0;
+
+  while (true) {
+    size_t nread = R_ReadConnection(state->con, state->buffer, chunk_size);
+    if (nread == 0) {
+      break; // EOF
+    }
+
+    size_t bytes_to_write = nread;
+    if (limit_rows && nrows_seen < state->row_limit) {
+      for (size_t i = 0; i < nread; i++) {
+        if (state->buffer[i] == '\n') {
+          nrows_seen++;
+          if (nrows_seen >= state->row_limit) {
+            bytes_to_write = i + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    size_t nwritten = fwrite(state->buffer, 1, bytes_to_write, state->outfile);
+    if (nwritten != bytes_to_write) {
+      STOP(_("spillConnectionToFile: write error %s (wrote %zu of %zu bytes)"), strerror(errno), nwritten, bytes_to_write); // # nocov
+    }
+    total_read += bytes_to_write;
+
+    if (limit_rows && nrows_seen >= state->row_limit) {
+      break;
+    }
+  }
+
+  return ScalarReal((double)total_read);
+}
+#endif // R_CONNECTIONS_VERSION == 1
+
+// Spill connection contents to a tempfile so R-level fread can treat it like a filename
+SEXP spillConnectionToFile(SEXP connection, SEXP tempfile_path, SEXP nrows_limit) {
+#if R_CONNECTIONS_VERSION == 1
+  if (!isString(tempfile_path) || LENGTH(tempfile_path) != 1) {
+    INTERNAL_STOP(_("spillConnectionToFile: tempfile_path must be a single string")); // # nocov
+  }
+
+  if (!isReal(nrows_limit) || LENGTH(nrows_limit) != 1) {
+    INTERNAL_STOP(_("spillConnectionToFile: nrows_limit must be a single numeric value")); // # nocov
+  }
+
+  SpillState state = {
+    .con = R_GetConnection(connection),
+    .filepath = translateChar(STRING_ELT(tempfile_path, 0)),
+    .row_limit = 0,
+    .outfile = NULL,
+    .buffer = NULL
+  };
+
+  const double nrows_max = REAL_RO(nrows_limit)[0];
+  if (R_FINITE(nrows_max) && nrows_max >= 0.0) {
+    if (nrows_max >= (double)SIZE_MAX)
+      STOP(_("spillConnectionToFile: nrows_limit (%g) must fit into a native-size unsigned integer (< %zu)"), nrows_max, (size_t)SIZE_MAX); // # nocov
+    state.row_limit = (size_t)nrows_max;
+    if (state.row_limit == 0) state.row_limit = 100;  // read at least 100 rows if nrows==0
+    state.row_limit++; // cater for potential header row
+  }
+
+  return R_ExecWithCleanup(do_spill, &state, spill_cleanup, &state);
+#else // R_CONNECTIONS_VERSION != 1
+  INTERNAL_STOP(_("spillConnectionToFile: unexpected R_CONNECTIONS_VERSION = %d"), R_CONNECTIONS_VERSION); // # nocov
+#endif
+}
+
+void halt__(bool warn, const char *format, ...)
+{
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
   // TODO: always include fnam in the STOP message. For log files etc.
   va_list args;

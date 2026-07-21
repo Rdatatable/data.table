@@ -38,6 +38,7 @@
 \alias{mday}
 \alias{week}
 \alias{isoweek}
+\alias{isoyear}
 \alias{month}
 \alias{quarter}
 \alias{year}
@@ -69,13 +70,13 @@ as.IDate(x, \dots)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
-\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
+\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), ...)
 
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
 \method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
-\method{round}{ITime}(x, digits = c("hours", "minutes"), \ldots)
-\method{trunc}{ITime}(x, units = c("hours", "minutes"), \ldots)
+\method{round}{ITime}(x, digits = c("hours", "minutes"), ...)
+\method{trunc}{ITime}(x, units = c("hours", "minutes"), ...)
 
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
@@ -92,11 +93,12 @@ wday(x)
 mday(x)
 week(x)
 isoweek(x)
+isoyear(x)     
 month(x)
 quarter(x)
 year(x)
-yearmon(x)
-yearqtr(x)
+yearmon(x, format = c("numeric", "character"))
+yearqtr(x, format = c("numeric", "character"))
 
 }
 
@@ -113,6 +115,7 @@ yearqtr(x)
   the S3 generic.}
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
+  \item{format}{For \code{yearmon} and \code{yearqtr}, either \code{"numeric"} (default) or \code{"character"}. \code{"character"} formats the result as \code{"2025M04"} for \code{yearmon} and \code{"2025Q2"} for \code{yearqtr}.}
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -187,6 +190,8 @@ which specify that the first week of the year is the one containing the first Th
 This convention ensures that week boundaries align consistently with year boundaries,
 accounting for both year transitions and varying day counts per week.
 
+Similarly, \code{isoyear()} returns the ISO 8601 year corresponding to the ISO week.
+
 }
 
 \value{
@@ -200,12 +205,16 @@ accounting for both year transitions and varying day counts per week.
    \code{itime} in \code{IDate} and \code{ITime} format.
 
    \code{second}, \code{minute}, \code{hour}, \code{yday}, \code{wday},
-   \code{mday}, \code{week}, \code{month}, \code{quarter},
+   \code{mday}, \code{week}, \code{isoweek}, \code{isoyear}, \code{month}, \code{quarter},
    and \code{year} return integer values
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
    \code{yearmon} and \code{yearqtr} return double values representing
-   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}.
+   respectively \code{year + (month-1) / 12} and \code{year + (quarter-1) / 4}
+   when \code{format = "numeric"} (the default). When \code{format = "character"},
+   they return character vectors of the form \code{"YYYYM##"} (e.g. \code{"2025M04"},
+   zero-padded for sortability) and \code{"YYYYQN"} (e.g. \code{"2025Q2"}) respectively,
+   with \code{NA} input returned as \code{NA_character_}.
 
    \code{second}, \code{minute}, \code{hour} are taken directly from
    the \code{POSIXlt} representation.
@@ -280,6 +289,22 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
+
+# Examples for isoyear() and isoweek()
+d1 = as.IDate("2019-12-30")
+year(d1)
+isoweek(d1)
+isoyear(d1)
+
+d2 = as.IDate("2016-01-01")
+year(d2)
+isoweek(d2)
+isoyear(d2)
+
+# Character format for yearmon() and yearqtr()
+d3 = as.IDate(c("2019-01-01", "2019-12-31"))
+yearmon(d3, format = "character") # "2019M01" "2019M12"
+yearqtr(d3, format = "character") # "2019Q1"  "2019Q4"
 
 }
 \keyword{utilities}

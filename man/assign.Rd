@@ -6,6 +6,8 @@
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
+    Note that when using \samp{:=} inside a \code{{...}} block in \code{j}, the \samp{:=} call must be the only statement. For assigning to multiple columns, use the functional form: \code{DT[, `:=`(col1=val1, col2=val2)]}. 
+
     \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
     \code{let} is an alias for the functional form and behaves exactly like \code{`:=`}.
@@ -33,13 +35,13 @@ set(x, i = NULL, j, value)
 }
 \arguments{
 \item{LHS}{ A character vector of column names (or numeric positions) or a variable that evaluates as such. If the column doesn't exist, it is added, \emph{by reference}. }
-\item{RHS}{ A list of replacement values. It is recycled in the usual way to fill the number of rows satisfying \code{i}, if any.  To remove a column use \code{NULL}. }
+\item{RHS}{ A list of replacement values. It is recycled in the usual way to fill the number of rows satisfying \code{i}, if any.  To remove a column use \code{NULL}. Note that a zero-length \code{RHS} (other than \code{NULL}) is an error, unless \code{by} is used, in which case it is treated as a no-op for that group, leaving existing values in those rows unchanged. }
 \item{x}{ A \code{data.table}. Or, \code{set()} accepts \code{data.frame}, too. }
 \item{i}{ Optional. Indicates the rows on which the values must be updated. If not \code{NULL}, implies \emph{all rows}. Missing or zero values are ignored. The \code{:=} form is more powerful as it allows adding/updating columns by reference based on \emph{subsets} and \code{joins}. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
 \item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
-\item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
+\item{value}{ A list or vector of replacement values to be assigned by reference to \code{x[i, j]}. }
 }
 \details{
 \code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Please read \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and follow with examples. Some typical usages are:
@@ -52,13 +54,18 @@ set(x, i = NULL, j, value)
     DT[i, colvector := val, with = FALSE]         # OLD syntax. The contents of "colvector" in calling scope determine the column(s).
     DT[i, (colvector) := val]                     # same (NOW PREFERRED) shorthand syntax. The parens are enough to stop the LHS being a symbol; same as c(colvector).
     DT[i, colC := mean(colB), by = colA]          # update (or add) column called "colC" by reference by group. A major feature of `:=`.
+    DT[, colD := if (.N > 2) sum(v) else integer(0), by = g]          # zero-length RHS is treated as a no-op for groups with <= 2 rows
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
     DT[, let(new1 = sum(colB), new2 = sum(colC))] # New alias for functional form.
+    DT[i, .ROW := NULL]                           # delete rows by reference.
 }
 
 The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
 
 Note that for efficiency no check is performed for duplicate assignments, i.e. if multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially; for a given use case, consider whether it makes sense to create your own test for duplicates, e.g. in production code.
+
+Note that \code{.ROW := NULL} is a special case used to delete rows by reference. Unlike column assignment, this requires an \code{i} expression to specify which rows to delete, and does not support \code{by} or \code{keyby}.
+To delete rows using a per-group condition, first compute the indices (\code{rows = DT[, .I[cond], by=grp]$V1}) then delete \code{DT[rows, .ROW := NULL]}. See \code{\link{.ROW}} or \code{\link{special-symbols}} for details.
 
 All of the following result in a friendly error (by design) :
 
@@ -66,12 +73,13 @@ All of the following result in a friendly error (by design) :
     x := 1L
     DT[i, col] := val
     DT[i]$col := val
-    DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
+    DT[, {col1 := 1L; col2 := 2L}]                # Using `{}` in `j` is reserved for single `:=` expressions.
+                                                  # For multiple updates, use the functional form `:=`() instead.
 }
 
 For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{https://stackoverflow.com/questions/tagged/data.table/}{data.table tag}.
 
-\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
+\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
@@ -154,6 +162,13 @@ set(DT, NULL, "b", 100L) # equivalent
 set(DT, j = c("b", "d"), value = list(200L, 300L))
 ## Set values for multiple columns with multiple specified rows.
 set(DT, c(1L, 3L), c("b", "d"), value = list(500L, 800L))
+
+# Delete rows by reference
+DT = data.table(a=1:10, b=letters[1:10])
+DT[c(2,4,6), .ROW := NULL]      # delete rows 2, 4, and 6
+DT
+DT[a>5, .ROW := NULL]           # delete rows where a>5
+DT
 
 \dontrun{
 # Speed example:

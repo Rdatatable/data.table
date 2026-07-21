@@ -9,8 +9,8 @@ foverlaps = function(x, y, by.x=key(x) %||% key(y), by.y=key(y), maxgap=0L, mino
     stopf("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)
     stopf("minoverlap must be a positive integer value of length 1")
-  if (!length(which) || length(which) != 1L || is.na(which))
-    stopf("which must be a logical vector of length 1. Either TRUE/FALSE")
+  if (!isTRUEorFALSE(which))
+    stopf("'%s' must be TRUE or FALSE", "which")
   if (!length(nomatch) || length(nomatch) != 1L || (!is.na(nomatch) && nomatch!=0L))
     stopf("nomatch must either be NA or NULL")
   type = match.arg(type)
@@ -33,9 +33,9 @@ foverlaps = function(x, y, by.x=key(x) %||% key(y), by.y=key(y), maxgap=0L, mino
     by.y = names(y)[by.y]
   }
   if (!is.character(by.x))
-    stopf("A non-empty vector of column names or numbers is required for by.x")
+    stopf("A non-empty vector of column names or numbers is required for '%s'", "by.x")
   if (!is.character(by.y))
-    stopf("A non-empty vector of column names or numbers is required for by.y")
+    stopf("A non-empty vector of column names or numbers is required for '%s'", "by.y")
   if (!identical(by.y, key(y)[seq_along(by.y)]))
     stopf("The first %d columns of y's key must be identical to the columns specified in by.y.", length(by.y))
   if (anyNA(chmatch(by.x, names(x))))

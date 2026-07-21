@@ -42,6 +42,7 @@ static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
 static int gzip_level;
+static bool forceDecimal=false;       // force writing decimal points for numeric columns
 
 extern const char *getString(const void *, int64_t);
 extern int getStringLen(const void *, int64_t);
@@ -198,6 +199,9 @@ void writeFloat64(const void *col, int64_t row, char **pch)
     }
   } else if (x == 0.0) {
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
+    if (forceDecimal) {
+      *ch++ = dec;
+    }
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
     union { double d; uint64_t l; } u;
@@ -237,8 +241,13 @@ void writeFloat64(const void *col, int64_t row, char **pch)
     if (l % 10 >= 5) l += 10; // use the last digit to round
     l /= 10;
     if (l == 0) {
+      // # nocov start. Very likely not needed as such numbers (e.g. 2^-1075) likely not representable in R.
       if (*(ch - 1) == '-') ch--;
       *ch++ = '0';
+      if (forceDecimal) {
+        *ch++ = dec;
+      }
+      // # nocov end
     } else {
       // Count trailing zeros and therefore s.f. present in l
       int trailZero = 0;
@@ -257,6 +266,10 @@ void writeFloat64(const void *col, int64_t row, char **pch)
         if (sf > dr) width = sf + 1;                     // 1.234 and 123.4
         else { dl0 = 1; width = dr + 1 + dl0; }            // 0.1234, 0.0001234
       }
+      const bool isWholeNumber = (dr == 0 && dl0 >= 0);
+      if (forceDecimal && isWholeNumber) { 
+        width += 1; 
+      }
       // So:  3.1416 => l=31416, sf=5, exp=0     dr=4; dl0=0; width=6
       //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
       //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
@@ -268,6 +281,8 @@ void writeFloat64(const void *col, int64_t row, char **pch)
         if (dr) {
           while (dr && sf) { *ch-- = '0' + l % 10; l /= 10; dr--; sf--; }
           while (dr) { *ch-- = '0'; dr--; }
+          *ch-- = dec;
+        } else if (forceDecimal && isWholeNumber) {
           *ch-- = dec;
         }
         while (dl0) { *ch-- = '0'; dl0--; }
@@ -422,7 +437,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
     int m = ((x - xi) * 10000000); // 7th digit used to round up if 9
     m += (m % 10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
     m /= 10;
-    int carry = m / 1000000; // Need to know if we rounded up to a whole second
+    const int carry = m / 1000000; // Need to know if we rounded up to a whole second
     m -= carry * 1000000;
     xi += carry;
     if (xi >= 0) {
@@ -615,6 +630,7 @@ void fwriteMain(fwriteMainArgs args)
   int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
   gzip_level = args.gzip_level;
+  forceDecimal = args.forceDecimal;
 
   size_t len;
   unsigned int crc;
@@ -1080,9 +1096,10 @@ void fwriteMain(fwriteMainArgs args)
         if (hasPrinted || ETA >= 2) {
           // # nocov start
           if (verbose && !hasPrinted) DTPRINT("\n"); // # notranslate
+          DTPRINT("\r"); // # notranslate
           DTPRINT(Pl_(nth,
-                  "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
-                  "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                  "Written %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                  "Written %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
                   (100.0 * end) / args.nrow, args.nrow, (int)(now - startTime), nth, maxBuffUsedPC, ETA); // # nocov
           // TODO: use progress() as in fread
           nextTime = now + 1;

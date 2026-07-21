@@ -36,11 +36,11 @@ as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
   # prevent #4179 & just cut out here
   if (any(dim(x) == 0L)) return(null.data.table())
   # Fix for bug #43 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
-  val = rev(dimnames(provideDimnames(x)))
+  val = frev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
-    setattr(val, 'names', paste0("V", rev(seq_along(val))))
+    setattr(val, 'names', paste0("V", frev(seq_along(val))))
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x), key=key)
-  setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
+  setcolorder(ans, c(frev(head(names(ans), -1L)), "N"))
   ans
 }
 
@@ -50,7 +50,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
     # auto-inferred name 'x' is not back-compatible & inconsistent, #7145
     if (ncol(x) == 1L && is.null(colnames(x)))
-      setnames(ans, 'x', 'V1')
+      setnames(ans, 'x', 'V1', skip_absent=TRUE)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
@@ -89,10 +89,10 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     stopf("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
   if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
     stopf("Argument 'value.name' must be scalar character, non-NA and at least one character")
-  if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
-    stopf("Argument 'sorted' must be scalar logical and non-NA")
-  if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
-    stopf("Argument 'na.rm' must be scalar logical and non-NA")
+  if (!isTRUEorFALSE(sorted))
+    stopf("'%s' must be TRUE or FALSE", "sorted")
+  if (!isTRUEorFALSE(na.rm))
+    stopf("'%s' must be TRUE or FALSE", "na.rm")
   if (!missing(sorted) && !is.null(key))
     stopf("Please provide either 'key' or 'sorted', but not both.")
 
@@ -102,20 +102,21 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     lapply(dx, seq_len)
   } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
     dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
+    setattr(dnx, 'names', copy(names(dnx)))
     dnx
-  } else dnx
-  val = rev(val)
+  } else copy(dnx)
+  setfrev(val)
   if (is.null(names(val)) || !any(nzchar(names(val))))
-    setattr(val, 'names', paste0("V", rev(seq_along(val))))
+    setattr(val, 'names', paste0("V", frev(seq_along(val))))
   if (value.name %chin% names(val))
-    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
+    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(frev(names(val))))
   N = NULL
   ans = do.call(CJ, c(val, sorted=FALSE))
   set(ans, j="N", value=as.vector(x))
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
-  dims = rev(head(names(ans), -1L))
+  dims = frev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
   if (isTRUE(sorted) && is.null(key)) key = dims
   setkeyv(ans, key)
@@ -162,7 +163,7 @@ as.data.table.list = function(x,
       xi = x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {
       if (!is.data.table(xi)) {
-        if (is.matrix(xi) && NCOL(xi)<=1L && is.null(colnames(xi))) { # 1 column matrix naming #4124
+        if (is.matrix(xi) && NCOL(xi)==1L && is.null(colnames(xi)) && isFALSE(getOption('datatable.old.matrix.autoname'))) { # 1 column matrix naming #4124
           xi = x[[i]] = c(xi)
         } else {
           xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns

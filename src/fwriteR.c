@@ -172,7 +172,8 @@ SEXP fwriteR(
   SEXP bom_Arg,
   SEXP yaml_Arg,
   SEXP verbose_Arg,
-  SEXP encoding_Arg
+  SEXP encoding_Arg,
+  SEXP forceDecimal_Arg    // TRUE|FALSE
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
@@ -183,6 +184,7 @@ SEXP fwriteR(
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
   args.verbose = LOGICAL(verbose_Arg)[0];
+  args.forceDecimal = LOGICAL(forceDecimal_Arg)[0];
   args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
   if (args.ncol == 0) {
@@ -268,7 +270,7 @@ SEXP fwriteR(
         if (xlength(rn) != args.nrow)
            // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work on M1
           error(_("input has specific integer rownames but their length (%lld) != nrow (%"PRId64")"), (long long)xlength(rn), args.nrow);  // # nocov
-        args.rowNames = INTEGER(rn);
+        args.rowNames = INTEGER_RO(rn);
         args.rowNameFun = WF_Int32;
       }
     } else if (isString(rn)) {
