@@ -57,21 +57,6 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   return(x);
 }
 
-struct realloc_nested_dt_attr_ctx {
-  SEXP x;
-  int overAlloc;
-};
-static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool);
-static SEXP realloc_nested_dt_list_attr(SEXP tag, SEXP att, void *ctx_) {
-  struct realloc_nested_dt_attr_ctx *ctx = ctx_;
-  SEXP newatt = realloc_nested_dt_list(att, ctx->overAlloc, false);
-  if (newatt != att) {
-    PROTECT(newatt);
-    setAttrib(ctx->x, tag, newatt);
-    UNPROTECT(1);
-  }
-  return R_NilValue;
-}
 static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool replacePairlists) {
   int nprot = 0;
   if (inherits(x, "data.table")) {
@@ -87,8 +72,6 @@ static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool replacePairlists)
     if (xinew != xi)
       SET_VECTOR_ELT(x, i, xinew);
   }
-  struct realloc_nested_dt_attr_ctx ctx = { .x = x, .overAlloc = overAlloc };
-  R_mapAttrib(x, realloc_nested_dt_list_attr, &ctx);
   UNPROTECT(nprot);
   return x;
 }
