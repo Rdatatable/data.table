@@ -1,0 +1,107 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: setops 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: setops.R:3 setops.R:40
+msgid "x and y must both be data.tables"
+msgstr ""
+
+#: setops.R:17
+msgid ""
+"When x's column ('%s') is character, the corresponding column in y ('%s') "
+"should be factor or character, but found incompatible type '%s'."
+msgstr ""
+
+#: setops.R:19
+msgid ""
+"When x's column ('%s') is factor, the corresponding column in y ('%s') "
+"should be character or factor, but found incompatible type '%s'."
+msgstr ""
+
+#: setops.R:21
+msgid ""
+"When x's column ('%s') is integer or numeric, the corresponding column in y ("
+"'%s') can not be character or logical types, but found incompatible type "
+"'%s'."
+msgstr ""
+
+#: setops.R:39
+msgid "argument 'all' should be logical of length one"
+msgstr ""
+
+#: setops.R:41
+msgid "x and y must have the same column names"
+msgstr ""
+
+#: setops.R:42
+msgid "x and y must have the same column order"
+msgstr ""
+
+#: setops.R:55
+msgid "Item %d of x is '%s' but the corresponding item of y is '%s'."
+msgstr ""
+
+#: setops.R:57
+msgid "None of the datasets should contain a column named '.seqn'"
+msgstr ""
+
+#: setops.R:162
+msgid "Datasets have different keys"
+msgstr ""
+
+#: setops.R:163 setops.R:164
+#, c-format
+msgid "has no key"
+msgstr ""
+
+#: setops.R:173
+msgid "Datasets have different indices"
+msgstr ""
+
+#: setops.R:174 setops.R:175
+#, c-format
+msgid "has no index"
+msgstr ""
+
+#: setops.R:192
+msgid "None of the datasets to compare should contain a column named '.seqn'"
+msgstr ""
+
+#: setops.R:195
+msgid ""
+"Datasets to compare with 'ignore.row.order' must not have unsupported column "
+"types: %s"
+msgstr ""
+
+#: setops.R:197
+msgid ""
+"Argument 'tolerance' was forced to lowest accepted value `sqrt(."
+"Machine$double.eps)` from provided %s"
+msgstr ""
+
+#: setops.R:210
+msgid ""
+"Duplicate rows in datasets, numeric columns and ignore.row.order cannot be "
+"used with non 0 tolerance argument"
+msgstr ""
+
+#: setops.R:224
+msgid ""
+"Factor columns and ignore.row.order cannot be used with non 0 tolerance "
+"argument"
+msgstr ""
+
+#: setops.R:46
+msgid "unsupported column type found in x or y: %s"
+msgid_plural "unsupported column types found in x or y: %s"
+msgstr[0] ""
+msgstr[1] ""
