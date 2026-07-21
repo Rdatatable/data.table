@@ -400,6 +400,18 @@ test.list <- atime::atime_test_list(
     Fast = "2715663fcf0344c3f7c73241d391d8de347bdb9d",  # Merge commit of the PR that improves efficiency
     expr = data.table:::as.data.table.array(arr, na.rm=FALSE)),
 
+  # Date-IDate subtraction became much slower when chooseOpsMethod.IDate was added in #7213.
+  "Date-IDate subtraction regression in #7213" = atime::atime_test(
+    N = as.integer(10^seq(1, 5, by=0.5)),
+    setup = {
+      short_date = as.Date("2000-01-01") + seq_len(40L)
+      long_date = as.Date("2000-01-01") + seq_len(N)
+    },
+    Before = "84b0e32f7a1bfdd8ec3a2c4012010b3ec072b31f", # Parent of the regression commit.
+    Regression = "cfa9f49bd27195962573ad493a31600d173abc5c", # Merge commit of #7213 which added chooseOpsMethod.IDate.
+    seconds.limit = 1,
+    expr = outer(short_date, data.table::as.IDate(long_date), `-`)),
+
   # https://github.com/Rdatatable/data.table/pull/7144 added the speedup code and this performance test.
   "isoweek improved in #7144" = atime::atime_test(
     setup = {
