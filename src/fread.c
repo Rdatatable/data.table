@@ -259,13 +259,11 @@ static inline void skip_white(const char **pch)
 {
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
   // always skip any \0 (NUL) that occur before end of file, #3400
-  const char *ch = *pch;
   if (whiteChar == 0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
-    while (*ch == ' ' || *ch == '\t' || (*ch == '\0' && ch < eof)) ch++;
+    while (**pch == ' ' || **pch == '\t' || (**pch == '\0' && *pch < eof)) (*pch)++;
   } else {
-    while (*ch == whiteChar || (*ch == '\0' && ch < eof)) ch++;  // sep is ' ' or '\t' so just skip the other one.
+    while (**pch == whiteChar || (**pch == '\0' && *pch < eof)) (*pch)++;  // sep is ' ' or '\t' so just skip the other one.
   }
-  *pch = ch;
 }
 
 /**
