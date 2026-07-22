@@ -1,0 +1,795 @@
+---
+title: "Time series with data.table"
+author: "Vignette Author"
+date: "`r Sys.time()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#"
+)
+```
+
+```{r load_packages, include=FALSE}
+library(data.table)
+library(ggplot2)
+```
+
+## Vignette Info
+
+This vignette will introduce the wide range of `data.table` features that are useful when working with ordered observations.
+
+[Add some more intro]
+
+***
+
+## Basic `data.table` syntax: `x[ i , j , by ]`
+
+We start with a quick reminder of the general form of `data.table` syntax:
+
+* `x[ i , j , by ]`
+
+1. Start with the `data.table` `x`
+
+2. Subset using `i`, then
+
+3. Group using `by`, then
+
+4. Do `j`
+
+5. Several additional arguments, see `?data.table`.
+
+You can read more about the basic `data.table` syntax and follow several examples in the vignette [Introduction to data.table](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html). In the next section, we will repeat how we can select rows in `i` using integer vectors or a logical condition  
+
+## Subset rows in `i`: `x[ i ]`
+
+[So far I have deliberately used simple numbers as time variable. If desired, they could easily be replaced with `Date`, `POSIXct` or similar]
+
+
+To demonstrate the different `data.table` features in this vignette, simple toy data sets are used. Hopefully this will make it easy to track the result of the code. Whenever possible, we provide visual representations of the data and the output.
+
+The first data sets are two very simple time series. They could, for example, represent two different type of measurements. The data sets are "colour-coded", _grey_ and _black_, to facilitate tracking of the output in the corresponding plots. Both have a time variable _time_ and a set of values registered at each time step, _v_grey_ and _v_black_ respectively. The exact time of sampling may differ between the _black_ and _grey_ data.
+
+Our goal is to join the values from the _black_ data to the _grey_, so that both measurements are stored in the same data set. Let's create the data and have a look at it: 
+```{r, create_data_1}
+library(data.table)
+grey <- data.table(time = c(1, 5, 8, 11, 15),
+                   v_grey = paste0("g", 1:5))
+
+black <- data.table(time = c(5, 10, 13),
+                    v_black = paste0("b", 1:3))
+
+grey
+black
+```
+
+```{r,combine_data, echo=FALSE}
+
+d <- rbindlist(list(grey = grey, black = black), use.names = FALSE, idcol = "device")
+setnames(d, c("device", "time", "v"))
+
+# set factor levels for plot order
+d[ , device := factor(device, levels = c("grey", "black"))]
+```
+
+The _grey_ and the _black_ data sets can be visualized along a horisontal time axis. The values that correspond to each time step in the _black_ data are also shown.
+
+```{r, plot_data1, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+p <- ggplot(d, aes(x = time, y = 1)) +
+  geom_point(aes(color = device, size = device)) +
+  geom_text(data = d[device == "black"],
+            aes(color = device, label = v, y = 1.5), size = 6) +
+  scale_x_continuous(limits = c(0, 15),
+                     breaks = seq(0, 15, by = 5),
+                     minor_breaks = 0:15) +
+  scale_y_continuous(limits = c(0, 2)) +
+  scale_color_manual(values = c("grey80", "black"), guide = FALSE) +
+  scale_size_manual(values = c(8, 4), guide = FALSE) + 
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 20))
+p
+  
+  #geom_text(data = d[g == "grey"], aes(y = 0.8)) +
+```
+
+
+       
+
+
+
+### Subset by index or condition in `i`
+[yes, really basic stuff, but I thought maybe a quick "`i` warm-up" could be useful, before diving into the `data.table` in `i`]
+Recall two basic form of indexing in `i`: rows can be selected from our data in `x` using an `integer` vector in `i`, e.g. select rows 2 and 4: 
+
+
+```{r, i_index}
+grey[c(2, 4)]
+```
+
+
+...or use an expression in `i` which evaluates to a logical vector, e.g. select rows where time is 10 or more:  
+```{r, i_cond}
+grey[time >= 10]
+```
+
+
+Note two differences compared to `data.frame` indexing: the `x$` prefix is not needed, and when only subsetting rows, we can skip the comma. 
+
+
+
+# Join: `x[ i , on ]`
+
+## Using a `data.table` in `i`
+
+Above, we used `integer` and `logical` vectors in `i` to subset rows of `x`, like we would do in `[.data.frame`. However, in `[.data.table`, `i` may also be a second `data.table` (or a `list`). When `i` is a table, think of `x[ i ]` as using a lookup table `i` to search for matching rows of `x` - we _join_ `x` and `i`. The join criteria are specified in the `on` argument. By default, each row of `i` is returned, even if is not matching a row in `x`.
+
+
+
+## Right outer join of `x` and `i`
+
+
+The basic syntax to join two `data.table`s is:
+
+- `x[ i , on ]`
+
+- This returns _all rows_ from the _right_ table (`i`), even those that are unmatched, in conjunction with data of the matching rows from the left table (`x`)
+
+- _Non-matching rows_ will be filled with `NA` (see below)
+
+- Corresponds to `merge(x, i, all.y = TRUE)` in `base` R
+
+
+Now, back to our real data! We wish to join _grey_ and _black_ on the _time_ column. We want to return _all rows_ from _grey_, even those that are unmatched, in conjunction with data of the rows of _black_ where there is an exact match on the _time_ column. Thus, _grey_ is used as our _right_ table (`i`) to look-up rows in _black_ (our `x` table) on the column `time`.  
+
+The join columns are specified in `on`, using either a `character` vector:
+
+```{r, join1, eval=FALSE}
+black[grey, on = "time"]
+```
+
+...or a `list`. Here we use the 'dot alias', `.()`, which is the same as `list()`:
+```{r, join2}
+black[grey, on = .(time)] 
+```
+
+As you see, there is only time in _black_ which exactly matches a time in _grey_: where _time_ is 5. Thus, this matching row get the corresponding value from _black_, b1. All other rows without a matching time, are filled with `NA`. How rows in `i` with no match in `x` are handled, is determined by the `nomatch` argument. The default in `nomatch = NA`.
+
+```{r, plot_join, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+d_join <- black[grey, on = "time"]
+p +
+  geom_segment(data = d_join[!is.na(v_black)],
+               aes(x = time, xend = time, y = 0.1, yend = 0.75),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2)
+```
+
+To omit the rows with no match, use `nomatch = NULL`. This corresponds to `merge(x, i, all = FALSE)` in `base` R. Learn more about `data.table` joining in the vignette [ddd](www).
+
+
+
+[TODO: Perhaps demonstrate update join, adding a column by reference?
+`grey[black, on = .(time), v2 := v2]`. A balance to avoid to much overlap with the join vignette ]
+
+
+
+# Rolling join - handle unmatched rows
+
+## `x[ i , on , j , roll ]`
+
+In the join above, there was only one row with a perfect match in the time column. Can we still achieve our goal to join the values from the _black_ data to the _grey_ in a sensible way? `data.table` to our rescue! A very strong feature of `data.table` is that it provides methods to handle also rows with imperfect matches, through so called rolling joins.
+
+Several different types of rolling joins are available: each time value in the lookup table in `i` can be matched with (a) the _nearest_ time in the second table `x`, before or after; (b) the most recent _prior_ time in `x`. The values in `x` are then "carried forward" to `i`; (c) the _next_ following time in `x`. The values in `x` are then "carried backward" to `i`. Finally, (d) values can be rolled to a time at a certain distance, either before or after the focal time.      
+
+
+
+## Rolling join to nearest
+
+## `x[ i , on , j , roll = "nearest" ]`
+
+The first way to handle unmatched rows in the column specified in `on`, is to match with the _nearest_ value from `x` instead, by using `roll = "nearest"`. Thus, when the values in the _black_ data are not measured at the same time as in _grey_, we decide to pick the value closest in time instead. Try it! 
+
+```{r, roll_near}
+black[grey, on = "time", roll = "nearest"]
+```
+
+To make it more explicit how the _time_ values from the _grey_ data in `ì` are matched to _time_ in _black_, the _time_ columns from both data sets can be selected and renamed in `j` (`.(time_grey = i.time, time_black = x.time, v_black)`). The `i.` prefix in `i.time` indicates that the column is selected from the `i` table in `x[i]`, here the _grey_ data. Similarly, an `x.` prefix refers to columns in `x`, here the _black_ data:
+
+```{r, roll_near_selectcols}
+black[grey, on = "time", .(time_grey = i.time, time_black = x.time, v_black), roll = "nearest"]
+```
+
+Here's a visualisation of the join, where the arrows represent the "rolling" of values from the _black_ data to the _grey_:
+
+```{r, plot_near, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+d_near <- black[grey, on = "time", .(x.time, i.time, v_grey, v_black), roll = "nearest"]
+
+p +
+  geom_segment(data = d_near[x.time == i.time],
+               aes(x = x.time, xend = i.time, y = 0.1, yend = 0.75),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2) +
+  geom_segment(data = d_near[x.time > i.time],
+               aes(x = x.time - 0.2, xend = i.time + 0.25, y = 1, yend = 1),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2) +
+  geom_segment(data = d_near[x.time < i.time],
+               aes(x = x.time + 0.25, xend = i.time - 0.2, y = 1, yend = 1),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2)
+```
+The values from `x` (the _black_ data) are now rolled to the _nearest_ time in `i` (the _grey_ data). For example, the _grey_ times at 8 and 11 don't have an exact match in _black_, instead the values from the nearest time in black, i.e. at 10, are rolled _back_ to 8 and _forward_ to 11. In the following examples, we learn how to roll values in a certain direction. 
+
+
+## Rolling join - last observation carried forward (LOCF)
+
+## `x[ i , on , j , roll = Inf ]`
+
+The second type of rolling join, handles the situation where we want to roll values forward (last observation carried forward, LOCF), from one data set to another. Typically when the two sets of values by their very nature must come in a certain order (treatment-response, effort-result, et c). We now set `roll = Inf` (or `TRUE`). 
+
+Again, _time_ columns from both data sets are selected in `j`, to make it more explicit how the _time_ values from the _grey_ data in `ì` are matched to _time_ in _black_ data in `x`, and how the corresponding values from `x` are rolled forward to the next time in `i`.
+
+```{r, roll_locf}
+black[grey, on = "time", .(time_black = x.time, time_grey = i.time, v_black),
+      roll = Inf]
+```
+
+
+```{r, plot_roll_locf, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+
+d_roll_inf <- black[grey, on = "time", .(i.time, x.time, v_black),
+                  roll = Inf]
+p +
+  geom_segment(data = d_roll_inf[x.time == i.time],
+               aes(x = x.time, xend = i.time, y = 0.1, yend = 0.75),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2) +
+  geom_segment(data = d_roll_inf[x.time < i.time],
+               aes(x = x.time + 0.2, xend = i.time - 0.25, y = 1, yend = 1),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2)
+```
+
+For example, at time = 11 in _grey_, there is no exact match in _black_, but the values at time = 10 (b2) are rolled forward to the _grey_ data.
+
+
+## Rolling join - next observation carried backward (NOCB)
+
+## `x[ i , on , j, roll = -Inf ]`
+
+This is the opposite of the previous example: when we join on _time_ (`on = "time"`) and set `roll = -Inf`, each time in `i` is joined with the next following time in `x`, and the prevailing values in `x` are rolled backward (next observation carried backward, NOCB). 
+
+```{r, roll_nocb, eval=FALSE}
+black[grey, on = "time", .(time_black = x.time, time_grey = i.time, v_black), roll = -Inf]
+```
+
+
+```{r, plot_roll_nocb, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+d_roll_neg <- black[grey, on = "time", .(i.time, x.time, v_black), roll = -Inf]
+
+p +
+  geom_segment(data = d_roll_neg[x.time == i.time],
+               aes(x = x.time, xend = i.time, y = 0.1, yend = 0.75),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2) +
+  geom_segment(data = d_roll_neg[x.time > i.time],
+               aes(x = x.time - 0.2, xend = i.time + 0.25, y = 1, yend = 1),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2)
+```
+
+For example, time = 8 in _grey_ has no exact match in _black_, but the values at time = 10 (b2) are rolled backward to the _grey_ data.
+
+
+## Rolling join - roll finite positive or negative number
+
+## `x[ i , on , j , roll = <number> ]`
+
+When we join on _time_ (`on = "time"`) and set `roll = <a number>`, each time in `i` is joined to a time in `x` at a certain distance, either before (when the `roll` number is positive) or after (when the `roll` number is negative). Thus, a limit is set how far values in `x` are carried forward or backward. By setting roll to a number, you decide whether to keep or discard measurements according to a fixed maximum time difference between two measurements. Here values from _black_ are rolled maximum 2 time steps forward, specified by `roll = 2`:
+
+
+
+```{r, roll_finite}
+
+black[grey, on = "time", .(time_black = x.time, time_grey = i.time, v_black), roll = 2]
+```
+
+
+```{r, plot_roll_finite, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+d_roll_num <- black[grey, on = "time", .(i.time, x.time, v_black), roll = 2]
+
+p +
+  geom_segment(data = d_roll_num[x.time == i.time],
+               aes(x = x.time, xend = i.time, y = 0.1, yend = 0.75),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2) +
+  geom_segment(data = d_roll_num[x.time < i.time],
+               aes(x = x.time + 0.2, xend = i.time - 0.25, y = 1, yend = 1),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2) +
+  # hardcode a dashed arrow for the roll which doesn't reach the next i.time... 
+  geom_segment(aes(x = 5 + 0.2, xend = 5 + 2, y = 1, yend = 1),
+               color = "black", linetype = "dotted", size = 2) +
+  geom_segment(aes(x = 5 + 2 - 0.25 - 0.1, xend = 5 + 2, y = 1, yend = 1),
+               arrow = arrow(length = unit(0.15, "npc")),
+               color = "black", size = 2)
+  
+```
+
+Because the values from _black_ are only rolled forward two time steps (`roll = 2`), 'b1' at time = 5 don't "reach" the grey data at time = 8. 
+
+## Join on group and rolling join on time
+
+## `x[ i , on , j, roll = Inf ]`
+
+Often data are grouped by one or more variables (e.g. person, company, country), and we want to perform a rolling join _within_ each group. Then several variables can be specified in `on`, and the rolling join will apply to the last column. Assume that the _black_ and _grey_ data above belonged to one person, _Anne_. Let's add some data from a second person _Bob_:
+
+```{r, add_data}
+grey_2 <- data.table(
+  person = c("Anne", "Anne", "Anne", "Anne", "Anne", "Bob", "Bob"),
+  device = "grey",
+  time = c(1, 5, 8, 11, 15, 6, 9),
+  v = c("g1", "g2", "g3", "g4", "g5", "g1", "g2"))
+
+black_2 <- data.table(
+  person = c("Anne", "Anne", "Anne", "Bob", "Bob"),
+  device = "black",
+  time = c(5, 10, 13, 4, 7),
+  v = c("b1", "b2", "b3", "b1", "b2"))
+
+grey_2
+black_2
+
+```
+
+```{r, combine_rolldata, echo=FALSE}
+# combine data for plotting
+d2 <- rbindlist(list(grey_2, black_2))
+
+# set factor levels for plot order
+d2[ , device := factor(device, levels = c("grey", "black"))]
+
+```
+
+
+
+The goal is now to join the _grey_ and _black_ data on _person_ and _time_. When time doesn't match exactly, the last observation in _black_ should be rolled forward (`roll = Inf`). Because the last column in `on` is _time_, the rolling join will apply to the _time_ column:
+
+```{r, join_group_roll, eval=FALSE}
+black_2[grey_2, on = .(person, time),
+        .(person, time_black = x.time, time_grey = i.time, v),
+        roll = Inf]
+```
+
+
+```{r, plot_join_group_roll, echo=FALSE, fig.width=10, fig.height=4, fig.fullwidth=TRUE}
+
+
+d_group_rollinf <- black_2[grey_2, on = .(person, time),
+                         .(person, time_black = x.time, time_grey = i.time, v),
+                         roll = Inf]
+
+p <- ggplot(d2, aes(x = time, y = person, label = v)) +
+  geom_point(aes(color = device, size = device)) +
+  geom_text(data = d2[device == "black"], size = 6, nudge_y = 0.2) +
+  scale_x_continuous(limits = c(0, 15),
+                     breaks = seq(0, 15, by = 5),
+                     minor_breaks = 0:15) +
+  scale_color_manual(values = c("grey80", "black"), guide = FALSE) +
+  scale_size_manual(values = c(8, 4), guide = FALSE) + 
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size = 20))
+
+p + geom_segment(data = d_group_rollinf[time_black == time_grey],
+               aes(x = time_black, xend = time_black, y = as.numeric(as.factor(person)) - 0.5, yend = as.numeric(as.factor(person)) - 0.1),
+               arrow = arrow(length = unit(0.05, "npc")),
+               color = "black", size = 2) +
+  geom_segment(data = d_group_rollinf[time_black < time_grey],
+               aes(x = time_black + 0.2, xend = time_grey - 0.25, y = person, yend = person),
+               arrow = arrow(length = unit(0.05, "npc")),
+               color = "black", size = 2)
+```
+
+# Non-equi join
+
+Non-equi joins are joins based on _inequalities_ (`>=`, `>`, `<=` and `<`) between columns. Thus, they are very useful for range-based joins and overlaps. It works also on class `Date` and `POSIXct`.
+
+
+### Example: Identify events which occured during time periods at different sites.
+
+In this example, there are three persons which are subject to a treatment. The treatment periods are time ranges with a start and end time. From each person measurements are taken at different time points. Thus, the samples are discrete time events. Using a non-equi join, we can determine if the sampling of each person takes place during a period of treatment.
+
+Here is one data set with time _periods_ for each person, and another with time of the sampling _events_: 
+
+```{r, data_nonequi}
+periods <- data.table(person =  c(1,  2,  2,  3),
+                      start = c(1, 2, 7,  5),
+                      end =   c(4, 5, 9,  7))
+
+events <- data.table(person = rep(1:2, c(3, 4)),
+                     time = c(2, 3, 5, 4, 6, 7, 8))
+
+periods
+events
+```
+
+The data can be visualized with the treatment periods as grey segments and the discrete sampling events as black segments:
+
+```{r, plot_nonequi,echo=FALSE, fig.width=10, fig.height=4, fig.fullwidth=TRUE}
+
+p <- ggplot() +
+  geom_segment(data = periods,
+               aes(x = start, xend = end, y = person, yend = person),
+               size = 10, color = "grey") +
+  geom_segment(data = events, aes(x = time, xend = time, y = person - 0.08, yend = person + 0.08),
+               color = "black", size = 2) +
+  scale_x_continuous(limits = c(0, 10),
+                     breaks = seq(0, 10, by = 5),
+                     minor_breaks = 0:10) +
+  scale_y_continuous(breaks = periods$person) +
+  labs(x = "Time") +
+  theme_classic() +
+  theme(panel.grid.major.x = element_line(size = 1),
+        panel.grid.minor.x = element_line(size = 1),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.y = element_blank())
+p
+
+```
+
+
+
+Our goal now is to join _periods_ and _events_ on _person_ and on sampling times which are within the time range of the treatment periods. Thus, the two tables should be matched on _person_, and _time_ should be `>=` the start of the periods, and `<=` the end of the periods:  
+
+
+```{r, join_group_nonequi}
+events[periods, on = .(person, time >= start, time <= end)]
+```
+
+The column names and values following a non-equi join may cause some confusion. Currently, the displayed columns will have their _names_ from the data in `x` (_time_) and _values_ from the data in `i` (_start_, _end_). See e.g. the description here: [SQL-like column return for non-equi and rolling joins](https://github.com/Rdatatable/data.table/pull/2706). Thus, to make it easier to track the join columns and values in the result, we may use `j` to select _start_ and _end_ columns from the _periods_ data in `i`, and the _time_ column from the _events_ data in `x` using the `x.` prefix. 
+
+
+```{r, join_nonequi_selectcols}
+events[periods, on = .(person, time >= start, time <= end),
+       .(person, start, end, time = x.time)]
+```
+
+
+## Convenience functions for range subsets: `between` & `inrange` 
+
+The non-equi join described above is a very general and versatile method to perform joins and subsets based on ranges and overlaps. Built on this feature there are also two convenience functions for range subsets: `between` and `inrange`.
+
+`inrange` checks whether each value in `x` falls within any of the intervals provided in by `lower` and `upper` bounds. For example, using data from _person_ 2 in the example above, we can find those samples in _events_ which occured during a treatment period.
+
+```{r, data_inrange}
+events_2 <- events[person == 2]
+periods_2 <- periods[person == 2]
+```
+
+We check if each time point in _events_ is in any of the ranges in defined by _start_ and _end_ in _periods_. The result of `inrange` is a logical vector the same length as `x` with value `TRUE` for those time values which lie within the specified range. This result can the be used in `i` to subset the desired rows. 
+
+`inrange` can be applied in two different forms, either: 
+```{r, inrange, eval=FALSE}
+events_2[time %inrange% periods_2[ , .(start, end)]]
+```
+       
+...or:
+```{r, inrange_alt}
+events_2[inrange(time, periods_2$start, periods_2$end)]
+```
+
+By default the bounds are inclusive (`[lower,upper]`; `incbounds = TRUE`). Thus, here the event at time = 7, on the lower bound of the second period, is included.
+
+The lower and upper bounds can also be vectors specified on-the-fly:
+
+```{r, inrange_onthefly}
+events_2[inrange(time, lower = c(1, 8), upper = c(5, 10))]
+```
+
+`between` is vectorized and each row in `x` is checked against the lower and upper bound on the same row. In the example below, only a single lower bound (5) and upper bound (7) are provided, and rows of _time_ are checked if they fall between these two bounds. As with `inrange`, `between` can also be specified in two different ways:  
+
+```{r, between1,eval=FALSE}
+events_2[time %between% c(5, 7)]
+```
+
+```{r, between2}
+events_2[between(time, 5, 7)]
+```
+
+
+# Overlap joins using `foverlaps` 
+## `foverlaps(x, y, )`##
+
+[TODO: I believe the non-equi joins above are more general. In addition, foverlaps doesn't seem to be that much used after non-equi joins were introduced, at least judging from my impression from SO. Thus, for now I haven't provided any examples here.]
+
+
+
+# Create ID for consecutive runs: `rleid`
+
+Often data consists of consecutive runs of values. For example, a device may be in either of two states, e.g. 0 or 1. It switches between the two states over time, with runs of zeros alternating with runs of ones, e.g. 0-0-1-1-1-0-1-1. Each such run of identical values can be assigned a unique ID using the function `rleid`, "run-length type group id".
+
+Here the run IDs created by `rleid` are added as a new column by reference (`:=`): 
+```{r,  rleid}
+d <- data.table(time = 1:10, state = c(0, 0, 1, 1, 1, 0, 0, 0, 1, 1))
+d[ , r := rleid(state)]
+d
+```
+
+
+```{r, plot_rleid, echo=FALSE, fig.width=10, fig.height=2, fig.fullwidth=TRUE}
+
+d_rleid <- data.table(time = 1:10, state = factor(c(0, 0, 1, 1, 1, 0, 0, 0, 1, 1)))
+d_seg <- d_rleid[ , .(start = first(time), end = last(time)), by = .(r = rleid(state))]
+d_seg[ , x_lab := rowMeans(.SD), .SDcols = start:end]
+
+
+ggplot() +
+  geom_point(data = d_rleid, aes(x = time, y = 1, color = state), size = 8) + 
+  geom_segment(data = d_seg,
+               aes(x = start, xend = end, y = 1.4, yend = 1.4)) +
+  geom_text(data = d_seg, aes(x = x_lab, y = 1.7, label = r), size = 6) +
+  scale_x_continuous(limits = c(0, 10),
+                     breaks = seq(0, 10, by = 2)) +
+  annotate(geom = "text", x = 1, y = 1.7, label = "rleid:", size = 6, hjust = "right") +
+  #minor_breaks = 0:10) +
+  scale_y_continuous(limits = c(0, 2)) +
+  scale_color_manual(values = c("grey80", "black"), guide = FALSE) +
+  scale_size_manual(values = c(8, 4), guide = FALSE) + 
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 20))
+```
+
+# Lead or lag vectors and lists: `shift`
+
+A lag variable can be described as look back in time - for each time step, the value _n_ time steps _back_ is retrieved. And vice versa, for a lead variable, we look forward in time - for each time step, the value _n_ time steps _forward_ is retrieved. In `data.table`, lead and lag variables can be created using the `shift` function.
+
+When we look beyond the original data, the lag or lead values can be filled or padded to the original input length using the `fill` argument, either a single value or a dynamic expression.
+
+We begin with some simple examples where we `shift` values in a vector. Then we move on to shifting several variables in a data set, using different offset values.
+
+## `shift` a single vector
+
+```{r, shift_vector}
+x <- 1:4
+x
+
+# lag, n = 1L (default), fill = NA (default)
+shift(x, type = "lag", n = 1L, fill = NA)
+
+# lag, set fill value
+shift(x, type = "lag", n = 1L, fill = 0L)
+
+# lead, n = 1
+shift(x, type = "lead")
+
+# lag, multiple offsets in n
+shift(x, type = "lag", n = 1:2)
+
+# let shift give names to the list elements
+shift(x, type = "lag", n = 1:2, give.names = TRUE)
+
+```
+
+We can also `shift` several variables at once in a `data.table`. Here's some weather data (temperature and precipitation) collected at one site over four years.     
+
+```{r, shift_dt}
+d <- data.table(site = rep("a", 4),
+                year = c(2006:2009),
+                temp = c(2, 6, 15, 20),
+                prec = c(10, 20, 50, 80))
+d
+```
+
+## Add shifted columns by reference
+
+Using `shift`, multiple lead/lag columns can be created in one go. In the first example, the shifted columns are added to the original data by reference, i.e. using `:=`. Lag versions of both temperature and precipitation are created. The columns to be shifted are specified in `.SDcols` and `shift` is applied on `.SD` (learn more about `.SD` in the vignette [Using .SD for Data Analysis](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html)). Each variable is shifted 1 and 2 steps (`n = 1:2`). 
+
+```{r, shift_addcols}
+cols <- c("temp", "prec")
+n <- 1:2
+lagcols <- paste(cols, "lag", rep(n, each = length(cols)), sep = "_")
+
+d[ , (lagcols) := shift(.SD, type = "lag", n = n), .SDcols = cols]
+d
+```
+
+The data can be shifted within groups specified in `by`. Here we offset temperature and precipitation by one, for two sites separately.  
+
+```{r, shift_bygroup}
+d <- data.table(site = rep(c("a", "b"), c(4, 3)),
+                year = c(2006:2009, 2005:2007),
+                temp = c(2, 6, 15, 20, 10, 16, 12),
+                prec = c(10, 20, 50, 80, 4, 8, 6))
+
+cols <- c("temp", "prec")
+n <- 1
+lagcols <- paste(cols, "lag", rep(n, each = length(cols)), sep = "_")
+
+d[ , (lagcols) := shift(.SD, type = "lag", n = n), .SDcols = cols, by = .(site)]
+d
+```
+
+
+## Return a new `data.table` with shifted columns
+
+Instead of updating the original data by reference, a new `data.table` can be returned. Create lag versions of both temperature and precipitation, and shift each variable 0 (i.e. the original data), 1, and 2 steps. Also let `shift` generate (sensible) variable names by setting `give.names = TRUE`. The columns to be shifted are specified in `.SDcols`    
+
+```{r, shift_newdt}
+d <- data.table(site = rep("a", 4),
+                year = c(2006:2009),
+                temp = c(2, 6, 15, 20),
+                prec = c(10, 20, 50, 80))
+
+cols <- c("temp", "prec")
+
+d[ , shift(.SD, type = "lag", n = 0:2, give.names = TRUE), .SDcols = cols]
+```
+
+# Fill missing values
+
+## `nafill` & `setnafill`
+
+`nafill` and `setnafill` provides fast methods to fill missing values (`NA`) using either a constant value, last (non-`NA`) observation carried forward (`type = "locf"`) or next observation carried backward (`type = "nocb"`). Currently (`data.table 1.12.8`), the functions handle `double` and `integer` values stored in a vector, list, data.frame or data.table.
+
+Simple examples with a vector:
+
+```{r, nafill_vec}
+x <- c(1, NA, 3, NA, NA, 6, NA)
+x
+
+# last observation carried forward
+nafill(x, type = "locf")
+
+# next observation carried backward
+nafill(x, type = "nocb")
+```
+
+We can also apply `nafill` on a `data.table`. The result is a list.
+
+```{r, nafill_dt}
+d <- data.table(x = c(1, NA, 3, NA, 5),
+                y = c(NA, 2, 3, 4, NA),
+                z = c(1, NA, NA, 4, 5))
+d
+
+nafill(d, type = "locf")
+```
+
+`setnafill` updates the input `data.table` by reference. All columns can be updated in one go:
+
+```{r, setnafill}
+d2 <- copy(d)
+
+setnafill(d2, type = "locf")
+d2
+```
+
+The `cols` argument can be used to specify columns to be updated: 
+```{r, setnafill_cols}
+setnafill(d, type = "locf", cols = c("x", "z"))
+d
+```
+
+# Integer based date and time classes
+## `IDate`, `ITime`, `IDateTime`
+
+[Background from ?IDateTime and NEWS. I see no problem of using the most important parts rather verbatim?]
+
+`IDate` and `ITime` are date and time classes with integer storage. Using integer storage allows dates and times to be used as data table keys, which enables fast sorting and grouping. Please note that these classes are still experimental. In this section different methods to create object of class `IDate` and `ITime` are described. Then some of the convenience functions to extract various parts of the date-time object are demonstrated.   
+
+
+## `IDate`
+
+`IDate` is a date class which inherits from `Date` in `base` R, except that the storage mode is `integer`. `IDate` can replace `Date` in almost all situations, and functions which accept `Date` objects generally work for `IDate` objects too. 
+
+
+### Create `IDate` object: `as.IDate`
+
+To create an `IDate` object, the function `as.IDate` is used. For input objects of class `character`, two "standard unambiguous formats" are recognized, just as in `as.Date`: `%Y-%m-%d` or `%Y/%m/%d` (e.g. `"2020-04-28"` or `"2020/04/28"`), where `%Y` is year with century, `%m` month as decimal number, and `%d` is day of the month as decimal number (see Details section in `?strptime` for a full description of conversion specifications).
+
+Below a string in "standard format" is converted to `IDate`. We also show that the class is both `IDate` and `Date`, and that the storage mode is `integer`:  
+
+```{r, idate_standard_format}
+
+(idate <- as.IDate("2020-04-28"))
+class(idate)
+typeof(idate)
+```
+
+When the input string is not in a standard unambiguous format, the `format` argument is used for conversion specification. Here is an example of an input in a format typically used in the US ("month-day-year"):
+
+```{r, idate_us_date}
+as.IDate("04/28/2018", format = "%m/%m/%Y") 
+```
+
+Note that if your string contains abbreviated weekday or abbreviated month name, the corresponding conversion specifications, `%a` and `%b` refer to the names _in the current locale on this platform_. Thus, if weekdays and month names in the string differ from those in the current locale, `as.IDate` will fail to parse the string and `NA` is returned. For more details, see [strptime, as.POSIXct and as.Date return unexpected NA](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
+
+Conversion methods from and to `Date` and `POSIXct` objects are provided, e.g.:
+
+```{r, posix}
+(datetime <- as.POSIXct("2020-04-28 10:30:45", tz = "UTC"))
+(idate <- as.IDate(datetime))
+as.POSIXct(idate)
+```
+
+
+Finally, the input can also be a numeric object, which is then added to the default `origin` of "1970-01-01":
+
+```{r, idate_num}
+as.IDate(1L)
+
+as.IDate(1L, origin = "2020-05-01")
+```
+
+
+### Methods for `IDate`
+
+Methods for `IDate` includes `mean`, `cut`, `seq`, `c`, and `rep`. The is also a `round`, which can round to weeks, months, quarters and years, specified in the `digit` argument. 
+
+```{r, seq_round_idate}
+(dates <- seq(from = as.IDate("2020-04-10"), to = as.IDate("2020-05-30"), by = "2 weeks"))
+round(dates, "month")
+```
+
+
+## `ITime`
+
+`ITime` is a time-of-day class stored as the integer number of seconds in the day. 
+
+### Create `ITime` 
+
+To create an `ITime` object we use `as.ITime`. It accepts `character`, `numeric`, `POSIXct` and `POSIXlt` as input, e.g.:
+
+```{r, itime_char}
+
+(time <- as.ITime("10:45:20"))
+class(time)
+typeof(time)
+
+as.ITime(as.POSIXct("2020-04-28 10:30:45"))
+```
+
+### Methods for `ITime`
+`round`, `trunc`
+
+# Extraction functions
+`second`, `minute`, `hour`, `yday`, `wday`, `mday`, `week`, `month`, `quarter`, and `year`
+
+[Most of the extraction functions are straightforward, but may expand a bit on yday/wday/mon and week:]  
+Note difference with `as.POSIXlt(x)$yday`, `as.POSIXlt(x)$wday`, `as.POSIXlt(x)$mon` are all 0-based, here they are 1-based. 
+
+`week` may be a source of confusion. Different conventions: perhaps use/refer to the nice summary by @UweBlock here: [bug in week means first week only has 6 days?](https://github.com/Rdatatable/data.table/issues/2611#issuecomment-367619640).  Table in Appendix?
+
+
+[Somewhere this should be mentioned]
+`as.POSIX.lt` columns are not supported ("POSIXlt column type detected and converted to POSIXct.")  
+
