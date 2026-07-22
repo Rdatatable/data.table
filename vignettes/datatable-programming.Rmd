@@ -115,6 +115,47 @@ There are third party packages that can achieve what base R computing on the lan
 
 Though these can be helpful, we will be discussing a `data.table`-unique approach here.
 
+### Dynamic Grouping and Naming Syntax
+
+Besides the programmatic use with `env`, data.table offers some powerful and concise syntax for interactive use, especially in the `by` argument.
+
+```{r}
+d = data.table(x = 1:4, y = 2:5)
+```
+
+#### Grouping by Expressions in `by`
+
+For convenience, data.table allows you to group by a single expression directly without `list()` or `.()`. To name the resulting grouping column, you have two options:
+
+```{r}
+# 1. The canonical way: a named list (required for multiple expressions)
+d[, sum(y), by = .(grp = x %% 2)]
+
+# 2. A concise shortcut: parentheses (for a single expression)
+d[, sum(y), by = (grp = x %% 2)]
+```
+
+The `(grp = ...)` syntax is a base R feature that data.table leverages to see the intended column name.
+
+#### Important Contrast: Naming in `j` vs. `by`
+
+This parentheses shortcut for naming does **not** work in `j`. In `j`, you must use the canonical `. (new_name = ...)` syntax to create a named column.
+
+```{r}
+# Correct way to name a new column in `j`
+d[, .(sum_y = sum(y)), by = .(grp = x %% 2)]
+
+# This will not create a column named 'sum_y'
+d[, (sum_y = sum(y)), by = .(grp = x %% 2)]
+```
+
+In the second case, the parentheses cause base R to evaluate the expression, returning only the final value. data.table then gives this unnamed result a default column name (`V1`).
+
+**Takeaway:**  
+*  In `by`, `(name = expr)` is a valid shortcut for `. (name = expr)`.  
+*  In `j`, you must always use `. (name = expr)` to create a named column.
+
+
 ## Programming on data.table
 
 Now that we've established the proper way to parameterize code that uses *lazy evaluation*, we can move on to the main subject of this vignette, *programming on data.table*.
