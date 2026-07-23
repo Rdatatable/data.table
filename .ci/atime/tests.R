@@ -64,7 +64,14 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
 # - seconds.limit: The maximum median timing (in seconds) of an expression. No timings for larger N are computed past that threshold. Default of 0.01 seconds should be sufficient for most tests.
 # - Historical references (short version name = commit SHA1).
 #   For historical regressions, use version names 'Before', 'Regression', and 'Fixed'
-#   When there was no regression, use 'Slow' and 'Fast' 
+#   When there was no regression, use 'Slow' and 'Fast'
+# - Caveat: atime installs each version as a separate package but runs them all in ONE R session.
+#   State registered outside a package's own namespace therefore persists across versions and can
+#   mask a regression. The clearest case is S3 methods for base group generics (Ops, Math, Summary)
+#   and helpers like chooseOpsMethod: these register into the base namespace's S3 table
+#   (get(".__S3MethodsTable__.", envir = baseenv())), which is shared. If one version registers such
+#   a method, it stays active while a version that lacks it is measured. When a test depends on
+#   such state, reset it inside `expr` to match the version under test (see the #7213 test below).
 # @note Please check https://github.com/tdhock/atime/blob/main/vignettes/data.table.Rmd for more information.
 # nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- atime::atime_test_list(
@@ -335,8 +342,8 @@ test.list <- atime::atime_test_list(
       L = as.data.table(as.character(rnorm(N, 1, 0.5)))
       setkey(L, V1)
     },
-    Fast = "680b5e8e6d3f16a09dfb2f86ac7b2ce5ce70c3f1", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
-    Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Fast = "680b5e8e6d3f16a09dfb2f86ac7b2ce5ce70c3f1", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue
+    Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue
     Slower = "cacdc92df71b777369a217b6c902c687cf35a70d", # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue
     ## New DT can safely retain key.
     expr = data.table:::`[.data.table`(L, , .SD)),
@@ -371,7 +378,7 @@ test.list <- atime::atime_test_list(
         x = rep(NA, N)
         x[i] = i
         x
-      })  
+      })
     },
     Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
     Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
@@ -410,7 +417,21 @@ test.list <- atime::atime_test_list(
     Before = "84b0e32f7a1bfdd8ec3a2c4012010b3ec072b31f", # Parent of the regression commit.
     Regression = "cfa9f49bd27195962573ad493a31600d173abc5c", # Merge commit of #7213 which added chooseOpsMethod.IDate.
     seconds.limit = 1,
-    expr = outer(short_date, data.table::as.IDate(long_date), `-`)),
+    # Reset the shared base S3 table to match the version under test (see "Caveat" in the intro above).
+    expr = {
+      ns = environment(data.table::as.IDate)
+      s3_table = get(".__S3MethodsTable__.", envir = baseenv())
+      if (exists("chooseOpsMethod.IDate", envir = s3_table)) {
+        rm("chooseOpsMethod.IDate", envir = s3_table)
+      }
+      if (exists("chooseOpsMethod.IDate", envir = ns, inherits = FALSE)) {
+        base::registerS3method(
+          "chooseOpsMethod", "IDate",
+          get("chooseOpsMethod.IDate", envir = ns),
+          envir = ns)
+      }
+      outer(short_date, data.table::as.IDate(long_date), `-`)
+    }),
 
   # https://github.com/Rdatatable/data.table/pull/7144 added the speedup code and this performance test.
   "isoweek improved in #7144" = atime::atime_test(
