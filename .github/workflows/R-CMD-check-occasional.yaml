@@ -117,7 +117,7 @@ jobs:
           message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
           if (run_other) {
             desc = read.dcf("DESCRIPTION")
-            desc[1, "Suggests"] = paste(c(desc[1, "Suggests"], other_pkgs), collapse = ", ")
+            desc[1L, "Suggests"] = toString(unique(c(desc[1, "Suggests"], other_pkgs)))
             write.dcf(desc, "DESCRIPTION")
           }
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
