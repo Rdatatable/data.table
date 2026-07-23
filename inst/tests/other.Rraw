@@ -26,8 +26,10 @@ INT = data.table:::INT
 
 if (anyDuplicated(pkgs)) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 
+# attach at the end for #5101;
+# attach.required=FALSE for Depends resolution order (see https://stat.ethz.ch/pipermail/r-devel/2026-July/084630.html)
 f = function(pkg) suppressWarnings(suppressMessages(isTRUE(
-  library(pkg, character.only=TRUE, logical.return=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+  library(pkg, character.only=TRUE, logical.return=TRUE, warn.conflicts=FALSE, pos="package:base", attach.required=FALSE)
 )))
 loaded = sapply(pkgs, f)
 if (!all(loaded)) {
