@@ -76,9 +76,17 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev pandoc
 
+      - name: Install R Package Build Dependencies on MacOS
+        if: matrix.os == 'macOS-latest'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
-        run: brew install gdal proj
+        run: |
+          brew install gdal proj gettext
+          brew link --force gettext
 
       - name: Check
         env:
