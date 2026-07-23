@@ -12,6 +12,10 @@
 
 3. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
 
+### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES  
+
+1. `t1 - t2`, where both `t1` and `t2` are `IDate`, will eventually have class `difftime`, consistent with the case where `t1` and `t2` are both `Date`. You can activate the new behavior by setting `options(datatable.old.diff.time = FALSE)`. See point 17 under Bug Fixes for more context.
+
 ### NEW FEATURES
 
 1. `nafill()`, `setnafill()` extended to work on logical, factor and character vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct` and character vectors. Thanks @jangorecki for the request and @jangorecki, @MichaelChirico and @ben-schwen for the PRs.
