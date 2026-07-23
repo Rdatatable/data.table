@@ -125,24 +125,23 @@ aggr = function (x) {
   )
   x[, .N, by = "grp"]
 }
+
+The `..` prefix (for example, `DT[, ..cols]`) looks up a variable in the calling scope. In R packages, this triggers an `R CMD check` NOTE. To avoid this, set the variable to `NULL` inside the function:
+
+```r
+gen = function(dt, cols) {
+  ..cols = NULL
+  dt[, ..cols]
+}
 ```
 
-The `..` prefix (for example, `DT[, ..cols]`) looks up a variable in the calling scope. In R packages, using the `..` prefix may trigger an `R CMD check` NOTE because `..cols` is treated as an undefined global variable.
-```r
-cols = c("x", "y")
-DT[, ..cols]   # may trigger an R CMD check NOTE
-```
+Alternatively, you can avoid the prefix entirely by using `with = FALSE`, `.SDcols`, or the env argument:
 
-To avoid the NOTE, either register the variable with
 ```r
-utils::globalVariables("..cols")
-```
-
-or, where appropriate, use an alternative interface such as
-```r
-DT[, cols, with = FALSE]
-DT[, .SD, .SDcols = cols]
-DT[, is.other, env = list(is.other = is.other)]
+# Alternatives that avoid the .. prefix
+dt[, cols, with = FALSE]
+dt[, .SD, .SDcols = cols]
+dt[, cols, env = list(cols = cols)]
 ```
 
 The case for `data.table`'s special symbols (e.g. `.SD` and `.N`) and assignment operator (`:=`) is slightly different (see `?.N` for more, including a complete listing of such symbols). You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
