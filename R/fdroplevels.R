@@ -1,7 +1,13 @@
 # 647 fast droplevels.data.table method
 fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   stopifnot(inherits(x, "factor"))
-  if (!length(x)) return(structure(integer(), class='factor', levels=character())) # skip factor() overhead
+  if (!length(x)) {
+    # skip factor() overhead
+    ret = integer()
+    class(ret) = 'factor'
+    attr(ret, 'levels') = character()
+    return(ret)
+  }
   lev = which(tabulate(x, nlevels(x)) & (!match(levels(x), exclude, 0L)))
   ans = match(as.integer(x), lev)
   setattr(ans, 'levels', levels(x)[lev])
