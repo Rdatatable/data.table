@@ -86,7 +86,6 @@ jobs:
           _R_CHECK_FORCE_SUGGESTS_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_TESTS_NLINES_: 0
-          _R_CHECK_DEPENDS_ONLY_: false
         run: |
           options(crayon.enabled = TRUE)
           message("*** Using the following repos for installation ***")
@@ -108,10 +107,14 @@ jobs:
             message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
           }
           message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
+          if (run_other) {
+            desc = read.dcf("DESCRIPTION")
+            desc[1, "Suggests"] = paste(c(desc[1, "Suggests"], other_pkgs), collapse = ", ")
+            write.dcf(desc, "DESCRIPTION")
+          }
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
-            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other),
-            `_R_CHECK_DEPENDS_ONLY_`="false"
+            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
           )
 
           do_vignettes = requireNamespace("litedown", quietly=TRUE)
