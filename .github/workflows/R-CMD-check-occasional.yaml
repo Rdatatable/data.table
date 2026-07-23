@@ -111,7 +111,7 @@ jobs:
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
             TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other),
-            "_R_CHECK_DEPENDS_ONLY_"="false"
+            _R_CHECK_DEPENDS_ONLY_="false"
           )
 
           do_vignettes = requireNamespace("litedown", quietly=TRUE)
