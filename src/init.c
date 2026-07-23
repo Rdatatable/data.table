@@ -97,6 +97,7 @@ static const R_CallMethodDef callMethods[] = {
     {"Cfrank", (DL_FUNC)&frank, -1},
     {"Cdt_na", (DL_FUNC)&dt_na, -1},
     {"Callocrowwrapper", (DL_FUNC)&allocrowwrapper, 2},
+    {"CdeleteRows", (DL_FUNC)&deleteRows, 2},
     {"Clookup", (DL_FUNC)&lookup, -1},
     {"Coverlaps", (DL_FUNC)&overlaps, -1},
     {"Cwhichwrapper", (DL_FUNC)&whichwrapper, -1},
@@ -160,6 +161,7 @@ static const R_CallMethodDef callMethods[] = {
     {"CmemcpyVectoradaptive", (DL_FUNC)&memcpyVectoradaptive, -1},
     {"CmemcpyDTadaptive", (DL_FUNC)&memcpyDTadaptive, -1},
     {"CcopyAsGrowable", (DL_FUNC)&copyAsGrowable, -1},
+    {"CresizeVector", (DL_FUNC)&resizeVector, -1},
     {"Cfrolladapt", (DL_FUNC)&frolladapt, -1},
     {"Cis_direct_child", (DL_FUNC)&is_direct_child, -1},
     {NULL, NULL, 0}};

@@ -11,7 +11,7 @@ methods::setPackageName("data.table",.global)
 #   (1) add to man/special-symbols.Rd
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
-.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
+.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = .ROW = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
@@ -567,7 +567,7 @@ replace_dot_alias = function(e) {
         stopf("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
     if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
-    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse="\n"))
+    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", deparse1(bysub, collapse="\n"))
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -632,7 +632,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse="\n"))
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", deparse1(jsub, collapse="\n"))
     }
   }
   if (!missing(j)) {
@@ -722,7 +722,7 @@ replace_dot_alias = function(e) {
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse="\n"))
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", deparse1(isub, collapse="\n"))
     }
   }
   if (!missing(i)) {
@@ -1560,6 +1560,18 @@ replace_dot_alias = function(e) {
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
+
+        # Check for .ROW := NULL pattern (delete rows by reference)
+        if (identical(lhs, ".ROW") || identical(lhs, quote(.ROW))) {
+          if (!is.null(jsub) && !identical(jsub, quote(NULL)))
+            stopf(".ROW can only be used with := NULL to delete rows")
+          if (is.null(irows))
+            stopf(".ROW := NULL requires i= condition to specify rows to delete")
+          if (!missingby)
+            stopf(".ROW := NULL does not support 'by' or 'keyby'. To delete rows using by grouping, first compute the row indices (e.g. rows = DT[, .I[cond], by=grp]$V1) and then delete them DT[rows, .ROW := NULL].")
+          .Call(CdeleteRows, x, irows)
+          return(suppPrint(x))
+        }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
         if (is.character(lhs)) {
@@ -2240,7 +2252,7 @@ replace_dot_alias = function(e) {
 
 # What's the name of the top-level call in 'j'?
 # NB: earlier, we used 'as.character()' but that fails for closures/builtins (#6026).
-root_name = function(jsub) if (is.call(jsub)) paste(deparse(jsub[[1L]]), collapse = " ") else ""
+root_name = function(jsub) if (is.call(jsub)) deparse1(jsub[[1L]], width.cutoff=60L) else ""
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")
