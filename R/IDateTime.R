@@ -30,7 +30,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
     copy_names(x, nm)
   } else {
-    as.IDate(origin, ...) + x
+    as.IDate(origin, ...) + copy_names(as.integer(x), names(x))
   }
 }
 
@@ -47,6 +47,7 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
     setattr(ans, "class", c("IDate", "Date"))
     copy_names(ans, names(x))
   } else {
+    
     as.IDate(as.Date(x, tz =  tz %||% '', ...))
   }
 }
@@ -117,7 +118,7 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
   res = unclass(e1) + unclass(e2)
   nm = names(res)
   ans = as.integer(res)
-  (setattr(ans, "class", c("IDate", "Date")))  # () wrap to return visibly
+  setattr(ans, "class", c("IDate", "Date"))  # () wrap to return visibly
   copy_names(ans, nm)
 }
 
@@ -217,7 +218,7 @@ as.ITime.times = function(x, ms = 'truncate', ...) {
   nm = names(x)
   secs = 86400L * (unclass(x) %% 1L)
   secs = clip_msec(secs, ms)
-  (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
+  setattr(secs, "class", "ITime")  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
   copy_names(secs, nm)
 }
 
