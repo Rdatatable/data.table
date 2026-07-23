@@ -58,7 +58,7 @@ if (all(c("package:reshape", "package:reshape2") %in% search())) {
 
 if (loaded[["ggplot2"]]) {
   DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D"), f=1:5, grp=1:5 )
-  print_without_error = \(x) !inherits(tryCatch(print(x), error=identity), "error")
+  print_without_error = function(x) !inherits(tryCatch(print(x), error=identity), "error")
   test(1.1, print_without_error(ggplot(DT, aes(b,f)) + geom_point())) # update as described in #3047
   test(1.2, DT[, print_without_error(ggplot(.SD, aes(b,f)) + geom_point()), by=list(grp %% 2L)][, all(V1)])  # %%2 to reduce time needed for ggplot2 to plot
   if (loaded[["hexbin"]]) {
