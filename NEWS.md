@@ -12,6 +12,8 @@
 
 3. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
 
+4. Joins on numeric (`double`, including `POSIXct`) columns are no longer affected by `setNumericRounding()`, and always use exact matching as with the default `setNumericRounding(0L)`. If you relied on `setNumericRounding(1L)` or `setNumericRounding(2L)` to match nearly-equal numeric values in joins, round those columns explicitly before joining. `setNumericRounding()` continues to affect grouping and ordering. Numeric joins, especially rolling joins, are faster as a result. Thanks @jangorecki for the PR.
+
 ### NEW FEATURES
 
 1. `nafill()`, `setnafill()` extended to work on logical, factor and character vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct` and character vectors. Thanks @jangorecki for the request and @jangorecki, @MichaelChirico and @ben-schwen for the PRs.
