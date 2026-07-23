@@ -93,9 +93,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
-  
+
   # 2L accounts for the ": " added to row names (e.g., "10: ")
-  # 0L used when row.names=FALSE
   rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
   width_limit = max(0L, getOption("width") - rn_w - 3L)  # 3L accounts for separators and internal padding between columns
   trunc.char = getOption("datatable.prettyprint.char")
