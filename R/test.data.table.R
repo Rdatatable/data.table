@@ -671,15 +671,16 @@ test = function(num, x, y=TRUE,
     # nocov start
     if (!fail) {
       catf("Test %s ran without errors but failed check that x equals y:\n", numStr)
-      failPrint = function(x, diff_idx, xsub) {
+      failPrint = function(x, y, xsub) {
         label = substitute(x)
         cat(">", label, "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
           nn = length(x)
           if (is.atomic(x)) {
             total = length(x)
-            x = x[diff_idx] # careful to only evaluate '!=' in diff_idx for atomic inputs
-            names(x) = sprintf("%s[%d]", as.character(label), which(diff_idx))
+            diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
+            x = x[diff_idx]
+            names(x) = sprintf("%s[%d]", as.character(label), diff_idx)
             catf("First %d different of %d (%d total, type '%s'): \n", min(nn, 6L), length(x), total, typeof(x))
           } else {
             catf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x))
@@ -693,8 +694,8 @@ test = function(num, x, y=TRUE,
           }
         }
       }
-      failPrint(x, x!=y, deparse(xsub))
-      failPrint(y, x!=y, deparse(ysub))
+      failPrint(x, y, deparse(xsub))
+      failPrint(y, x, deparse(ysub))
       if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
