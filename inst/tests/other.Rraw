@@ -169,10 +169,11 @@ if (loaded[["nlme"]]) {
 
 if (loaded[["bit64"]]) {
   # these don't pass UBSAN/USAN because of the overflow, so just here in other.Rraw
-  test(9.1, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
-  test(9.2, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
-  test(9.3, as.character(-(as.integer64(2^62)-1)*2-1), "-9223372036854775807")
-  test(9.4, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
+  # Use 'L' to avoid integer64-double math when 'long double' is unavailable.
+  test(9.1, as.character((as.integer64(2^62)-1L)*2L+1L), "9223372036854775807")
+  test(9.2, as.character((as.integer64(2^62)-1L)*2L+2L), NA_character_, warning="integer64 overflow")
+  test(9.3, as.character(-(as.integer64(2^62)-1L)*2L-1L), "-9223372036854775807")
+  test(9.4, as.character(-(as.integer64(2^62)-1L)*2L-2L), NA_character_, warning="integer64.*flow")
 }
 
 if (loaded[["gdata"]]) {
