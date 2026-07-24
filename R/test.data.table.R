@@ -672,7 +672,7 @@ test = function(num, x, y=TRUE,
     if (!fail) {
       catf("Test %s ran without errors but failed check that x equals y:\n", numStr)
       failPrint = function(x, y, xsub) {
-        label = substitute(x)
+        label = as.character(substitute(x))
         cat(">", label, "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
           if (is.atomic(x)) {
@@ -680,7 +680,7 @@ test = function(num, x, y=TRUE,
             diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
             x = x[diff_idx]
             nn = length(x)
-            names(x) = sprintf("%s[%d]", as.character(label), diff_idx)
+            names(x) = sprintf("%s[%d]", label, diff_idx)
             catf("First %d different of %d (%d total, type '%s'): \n", min(nn, 6L), nn, total, typeof(x))
           } else {
             nn = length(x)
