@@ -4452,7 +4452,6 @@ test(1221, DT[.(1),b], c("a","c","e"))
 # - Generate a random seed each time; the randomness allows catching errors quicker
 # - But save the seed so that we can generate the same data back if any error occurs
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
-seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
 foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
@@ -4466,36 +4465,27 @@ c2 = sample(foo(50), 1e3, TRUE)
 DT = data.table(i1, i2, d1, d2, c1, c2)
 # randomise col order as well
 colorder=sample(ncol(DT))
-setcolorder(DT, names(DT)[colorder])
-seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
+setcolorder(DT, colorder)
 
 test_no = 0L
-oldnfail = nfail
 for (nvars in seq_along(names(DT))) {
   signs = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
-  combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
+  for (cols in combn(names(DT), nvars, simplify = FALSE)) {
     for (i in seq_len(nrow(signs))) {
-      test_no <<- test_no + 1L
+      test_no <- test_no + 1L
       ll = as.call(c(
         as.name("order"),
         method="radix",
-        lapply(seq_along(x), function(j) {
-          if (signs[i,j] == 1L)
-            as.name(x[j])
-          else {
-            if (is.character(DT[[x[j]]]))
-              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
-            else
-              as.call(list(as.name("-"), as.name(x[j])))
-          }
-        })
+        decreasing=list(signs[i, ] == -1L),
+        lapply(cols, as.name)
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)), context=sprintf("signs[%d, ]==%s", i, paste(unlist(signs[i, ]), collapse=",")))
+      test(1223.0 + test_no*0.001, forderv(DT, by=cols, order=signs[i,]), with(DT, eval(ll)),
+           context=sprintf(
+             "seed = %d; setorder(DT, %s)",
+             seed, toString(paste0(fifelse(signs[i, ] == 1L, "", "-"), names(DT)))))
     }
-    integer()
-  })
+  }
 }
-if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 rm_all()
 
 # fix for bug #44 - unique on null data.table should return null data.table
