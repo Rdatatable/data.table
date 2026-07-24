@@ -4454,35 +4454,61 @@ test(1221, DT[.(1),b], c("a","c","e"))
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
-foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
+safe_charset = letters
+# Subset the letters until the collation order matches C. This way we don't totally ignore
+#   any possible issues with sorting strings in unusual locales (even though this _should_
+#   be impossible given we _always_ use C-collated order, such a regression test is still
+#   beneficial as a sanity check).
+if (!identical(order(letters, method='shell'), order(letters, method='radix'))) {
+  repeat {
+    sorted_c = safe_charset[order(safe_charset, method='radix')]
+    sorted_r = safe_charset[order(safe_charset, method='shell')]
+
+    mismatch = which(sorted_c != sorted_r)
+    if (!length(mismatch)) break
+    safe_charset = safe_charset[-mismatch[1L]]
+  }
+}
+if (length(safe_charset) < 5L) {
+  stop("This locale collates too differently from C; please report.")
+}
+foo <- function(n) apply(matrix(sample(safe_charset, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
 i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
 d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
 d2 = as.numeric(rnorm(1e3))
-c1 = sample(letters, 1e3, TRUE)
+c1 = sample(safe_charset, 1e3, TRUE)
 c2 = sample(foo(50), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, d2, c1, c2)
 # randomise col order as well
-colorder=sample(ncol(DT))
-setcolorder(DT, colorder)
+setcolorder(DT, sample(ncol(DT)))
 
 test_no = 0L
 for (nvars in seq_along(names(DT))) {
-  signs = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
-  for (cols in combn(names(DT), nvars, simplify = FALSE)) {
-    for (i in seq_len(nrow(signs))) {
+  orders_grid = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
+  for (cols in combn(names(DT), nvars, simplify=FALSE)) {
+    for (i in seq_len(nrow(orders_grid))) {
+      orders = orders_grid[i, ]
       test_no <- test_no + 1L
       ll = as.call(c(
         as.name("order"),
         method="radix",
-        decreasing=list(signs[i, ] == -1L),
-        lapply(cols, as.name)
+        lapply(seq_along(cols), function(j) {
+          col = cols[j]
+          col_nm = as.name(col)
+          if (orders[j] == 1L)
+            col_nm
+          else if (is.character(DT[[col]]))
+            call("-", call("xtfrm", col_nm))
+          else
+            call("-", col_nm)
+        })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=cols, order=signs[i,]), with(DT, eval(ll)),
+      test(1223.0 + test_no*0.001, forderv(DT, by=cols, order=orders), with(DT, eval(ll)),
            context=sprintf(
              "seed = %d; setorder(DT, %s)",
-             seed, toString(paste0(fifelse(signs[i, ] == 1L, "", "-"), names(DT)))))
+             seed, toString(paste0(fifelse(orders == 1L, "", "-"), cols))))
     }
   }
 }
@@ -4718,58 +4744,70 @@ seed = as.integer(Sys.time())
 # This choice of seed by Arun was very good as it revealed problems that a fixed seed would not.
 # Test 1844 is now added to consistently run the rare cases discovered here (depending on the seed) to cover all lines in
 # forder consistently to save pull requests failing coverage tests randomly, issue #2346
-seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 set.seed(seed)
+safe_charset = letters
+# Subset the letters until the collation order matches C. This way we don't totally ignore
+#   any possible issues with sorting strings in unusual locales (even though this _should_
+#   be impossible given we _always_ use C-collated order, such a regression test is still
+#   beneficial as a sanity check).
+if (!identical(order(letters, method='shell'), order(letters, method='radix'))) {
+  repeat {
+    sorted_c = safe_charset[order(safe_charset, method='radix')]
+    sorted_r = safe_charset[order(safe_charset, method='shell')]
+
+    mismatch = which(sorted_c != sorted_r)
+    if (!length(mismatch)) break
+    safe_charset = safe_charset[-mismatch[1L]]
+  }
+}
+if (length(safe_charset) < 5L) {
+  stop("This locale collates too differently from C; please report.")
+}
 # these variable try to simulate groups of length 1, 2, < 200, > 200 so as to cover all different internal implementations
-foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
+foo <- function(n) apply(matrix(sample(safe_charset, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
 i1 = as.integer(sample(rep(c(-3:3, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
 i2 = as.integer(sample(rep(c(-2:2, -1e6, 1e6, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
 d1 = as.numeric(sample(rep(c(-2:2,Inf,-Inf, NA_real_, 5, -1e3), c(1, 190, 2, 300, 7, 50, 50, 100, 150, 150))))
-c1 = sample(rep(c(letters[1:5], NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
+c1 = sample(rep(c(safe_charset[1:5], NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
 c2 = sample(c(foo(200), NA_character_), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, c1, c2)
 # randomise col order as well
-colorder=sample(ncol(DT))
-setcolorder(DT, names(DT)[colorder])
-seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
-ans = vector("list", length(names(DT)))
+setcolorder(DT, sample(ncol(DT)))
 
 test_no = 0L
-oldnfail = nfail
-for (i in seq_along(names(DT))) {
-  cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
-  ans[[i]] = combn(names(DT), i, function(x) {
-    tmp = apply(cj, 1, function(y) {
-      test_no <<- test_no + 1L
+for (nvars in seq_along(names(DT))) {
+  orders_grid = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
+  for (cols in combn(names(DT), nvars, simplify=FALSE)) {
+    for (i in seq_len(nrow(orders_grid))) {
+      orders = orders_grid[i, ]
+      test_no <- test_no + 1L
       ll = as.call(c(
         as.name("base_order"),
         method = "radix",
-        lapply(seq_along(x), function(j) {
-          x_nm = as.name(x[j])
-          if (y[j] == 1L)
-            x_nm
-          else {
-            if (is.character(DT[[x[j]]]))
-              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), x_nm))))
-            else
-              as.call(list(as.name("-"), x_nm))
-          }
+        lapply(seq_along(cols), function(j) {
+          col = cols[j]
+          col_nm = as.name(col)
+          if (orders[j] == 1L)
+            col_nm
+          else if (is.character(DT[[col]]))
+            call("-", call("xtfrm", col_nm))
+          else
+            call("-", col_nm)
         })
       ))
-      ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
+      ans1 = forderv(DT, by=cols, order=orders, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
       test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
-      test_no <<- test_no + 1L
+      test_no <- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
-      ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
-    })
-    dim(tmp)=NULL
-    list(tmp)
-  })
+      ans1 = forderv(DT, by=cols, order=orders, na.last=NA)           # nalast=NA here.
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)),
+          context=sprintf(
+            "seed = %d; setorder(DT, %s)",
+            seed, toString(paste0(fifelse(orders == 1L, "", "-"), cols))))
+    }
+  }
 }
-ans = NULL
-if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 
 ###############
 # turning off tolerance for UPCs (> 11 s.f. stored in numeric), #342
