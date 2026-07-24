@@ -1,0 +1,60 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: onLoad 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: onLoad.R:9
+msgid ""
+"Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 "
+"in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2."
+msgstr ""
+
+#: onLoad.R:28
+msgid ""
+"The data_table.%s version (%s) does not match the package (%s). Please close "
+"all R sessions to release the old %s and reinstall data.table in a fresh R "
+"session. Prior to R version 3.6.0 patched, R's package installer could leave "
+"a package in an apparently functional state where new R code was calling old "
+"C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. "
+"Once a package is in this mismatch state it may produce wrong results "
+"silently until you next upgrade the package. This mismatch between R and C "
+"code can happen with any package not just data.table. It is just that data."
+"table has added this check."
+msgstr ""
+
+#: onLoad.R:32
+msgid ""
+"This is R %s but data.table has been installed using R %s. The major version "
+"must match. Please reinstall data.table."
+msgstr ""
+
+#: onLoad.R:99
+msgid "Unexpected base R behaviour: list(x) has copied x"
+msgstr ""
+
+#: onLoad.R:107
+msgid "Unexpected base R behaviour: names<- has copied column contents"
+msgstr ""
+
+#: onLoad.R:117
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was "
+"assigned to"
+msgstr ""
+
+#: onLoad.R:118
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- copied the first column which was not "
+"assigned to, too"
+msgstr ""
+
+#: onLoad.R:120
+msgid "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)"
+msgstr ""
