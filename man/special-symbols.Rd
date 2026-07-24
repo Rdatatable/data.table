@@ -28,6 +28,7 @@
         \item \code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, its row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}. If used in \code{by} it corresponds to applying a function rowwise. 
         \item \code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.
         \item \code{.NGRP} is an integer, length 1, containing the number of groups. 
+        \item \code{..} prefix: Signals to look for a variable in the calling scope.
     }
 
     \code{.EACHI} is defined as \code{NULL} but its value is not used. Its usage is \code{by=.EACHI} (or \code{keyby=.EACHI}) which invokes grouping-by-each-row-of-i; see \code{\link{data.table}}'s \code{by} argument for more details.
