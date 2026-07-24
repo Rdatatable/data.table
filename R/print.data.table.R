@@ -8,6 +8,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                show.indices=getOption("datatable.show.indices"),
+               show.ncols=getOption("datatable.show.ncols", FALSE),
                quote=FALSE,
                na.print=NULL,
                timezone=FALSE, ...) {
@@ -20,6 +21,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
     stopf("Valid options for trunc.cols are TRUE and FALSE")
   stopifnot(isTRUEorFALSE(class))
+  stopifnot(isTRUEorFALSE(show.ncols))
   if (col.names == "none" && class)
     warningf("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
@@ -43,6 +45,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
+  show_trunc_message = isTRUE(trunc.cols)
+  n_col = ncol(x)
   if (print.keys) {
     if (!is.null(ky <- key(x)))
     catf("Key: <%s>\n", toString(ky))
@@ -74,7 +78,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
-    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
     idx = c(seq_len(topn), seq(to=nrow(x), length.out=topn))
@@ -85,6 +88,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(n_x)
     printdots = FALSE
     if (show.indices) toprint = cbind(toprint, index_dt)
+  }
+  if (show.ncols && !isTRUE(trunc.cols)) {
+    trunc_cols_message(ncol=n_col)
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
@@ -121,8 +127,13 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
+    if (show.ncols) {
+      trunc_cols_message(not_printed, abbs, class, col.names, ncol=n_col)
+      show_trunc_message = FALSE
+    }
+
     if (!any(cols_to_print)) {
-      trunc_cols_message(not_printed, abbs, class, col.names)
+      if (show_trunc_message) trunc_cols_message(not_printed, abbs, class, col.names)
       return(invisible(x))
     }
     # When nrow(toprint) = 1, attributes get lost in the subset,
@@ -134,7 +145,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (col.names != "none") cut_colnames = identity
     cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
     # prints names of variables not shown in the print
-    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
+    if (show_trunc_message) trunc_cols_message(not_printed, abbs, class, col.names)
   }
   if (printdots) {
     if (isFALSE(row.names)) {
@@ -291,14 +302,17 @@ toprint_subset = function(x, cols_to_print) {
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
-trunc_cols_message = function(not_printed, abbs, class, col.names){
+trunc_cols_message = function(not_printed=character(0), abbs=NULL, class=FALSE, col.names="auto", ncol=NULL){
   n = length(not_printed)
-  if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
-  catf(
-    ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
-    n, brackify(paste0(not_printed, classes)),
-    domain=NA
-  )
+  if (n == 0L) {
+    if (!is.null(ncol)) catf("Number of columns: %d\n", ncol)
+    return()
+  }
+  classes = if (class && col.names != "none") paste0(" ", tail(abbs, n)) else ""
+  if (is.null(ncol)) { catf(ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"), n, brackify(paste0(not_printed, classes)), domain=NA)
+  } else {
+    catf(ngettext(n, "Number of columns: %d, of which %d is not shown: %s\n", "Number of columns: %d, of which %d are not shown: %s\n"), ncol, n, brackify(paste0(not_printed, classes)), domain=NA)
+  }
 }
 
 # Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965

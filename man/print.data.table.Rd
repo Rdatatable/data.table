@@ -25,6 +25,7 @@
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
     show.indices=getOption("datatable.show.indices"),   # default: FALSE
+    show.ncols=getOption("datatable.show.ncols", FALSE), # default: FALSE
     quote=FALSE,
     na.print=NULL,
     timezone=FALSE, \dots)
@@ -44,6 +45,7 @@
   \item{trunc.char}{The number of characters at which character columns and list-column summaries are truncated. If \code{NULL} (the default), it is dynamically calculated based on \code{getOption("width")}.}
   \item{class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). When combined with \code{col.names="auto"} and tables >20 rows, classes will also appear at the bottom.}
   \item{row.names}{ If \code{TRUE}, row indices will be printed alongside \code{x}. }
+  \item{show.ncols}{ If \code{TRUE}, the number of columns is printed in the header. }
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20} (when \code{class=TRUE}, column classes will also appear at the bottom). \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
