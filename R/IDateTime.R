@@ -111,7 +111,16 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
 
 `-.IDate` = function(e1, e2) {
   if (!inherits(e1, "IDate")) {
-    if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
+    if (inherits(e1, "Date")) {
+      if (inherits(e2, "Date")) {
+        #7825 avoid base::`-.Date` to avoid conversion from IDate to POSIXlt/POSIXct
+        ans = unclass(e1) - unclass(e2)
+        setattr(ans, "class", "difftime")
+        setattr(ans, "units", "days")
+        return(ans)
+      }
+      return(base::`-.Date`(e1, e2))
+    }
     stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
