@@ -21831,3 +21831,10 @@ test(2378.92, .Call(CresizeVector, x, 2:3), error = "must be length 1 non-NA non
 test(2378.93, .Call(CresizeVector, x, -2L), error = "must be length 1 non-NA non-negative integer value")
 test(2378.94, .Call(CresizeVector, x, NA_integer_), error = "must be length 1 non-NA non-negative integer value")
 test(2378.95, .Call(CresizeVector, NULL, 2L), error = "must be a vector")
+
+# #6341: tstrsplit() supports reverse indexing with keep
+test(2379.01, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL", "ABC-DEF-GHI-JKL-MNO"), "-", fixed=TRUE, keep=1:3, rev=TRUE), list(c("DEF", "GHI", "JKL", "MNO"), c("ABC", "DEF", "GHI", "JKL"), c(NA_character_, "ABC", "DEF", "GHI")))
+test(2379.02, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL"), "-", fixed=TRUE, keep=1, rev=TRUE), list(c("DEF", "GHI", "JKL")))
+test(2379.03, tstrsplit(c("A", "A-B", "A-B-C", "A-B-C-D"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("A", "B", "C", "D"), c(NA_character_, "A", "B", "C")))
+test(2379.04, tstrsplit(c("ABC-DEF", NA_character_, "XYZ"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("DEF", NA_character_, "XYZ"), c("ABC", NA_character_, NA_character_)))
+test(2379.05, tstrsplit(c("A/B/C", "A/B/C/D"), "/", fixed=TRUE, keep=1:2, rev=TRUE), list(c("C", "D"), c("B", "C")))

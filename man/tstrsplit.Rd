@@ -8,7 +8,7 @@
 }
 
 \usage{
-tstrsplit(x, \dots, fill=NA, type.convert=FALSE, keep, names=FALSE)
+tstrsplit(x, \dots, fill=NA, type.convert=FALSE, keep, names=FALSE, rev=FALSE)
 }
 \arguments{
 	\item{x}{The vector to split (and transpose).}
@@ -17,6 +17,7 @@ tstrsplit(x, \dots, fill=NA, type.convert=FALSE, keep, names=FALSE)
   \item{type.convert}{\code{TRUE} calls \code{\link{type.convert}} with \code{as.is=TRUE} on the columns. May also be a function, list of functions, or named list of functions to apply to each part; see examples. }
   \item{keep}{Specify indices corresponding to just those list elements to retain in the transposed result. Default is to return all.}
   \item{names}{\code{TRUE} auto names the list with \code{V1, V2} etc. Default (\code{FALSE}) is to return an unnamed list.}
+  \item{rev}{logical. If \code{TRUE}, the components are extracted counting from the end of the string. This is especially useful when strings have a varying number of segments and you want to anchor to the end (e.g., the last or second-to-last element).}
 }
 \details{
   It internally calls \code{strsplit} first, and then \code{\link{transpose}} on the result.
@@ -62,6 +63,12 @@ DT[, tstrsplit(z, "/", type.convert=list(as.factor=1L, as.numeric))]
 
 # convert the remaining using 'type.convert(x, as.is=TRUE)' (i.e. what type.convert=TRUE does)
 DT[, tstrsplit(v, " ", type.convert=list(as.IDate=4L, function(x) type.convert(x, as.is=TRUE)))]
+
+# using rev to anchor from the end of the string
+x = c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL")
+tstrsplit(x, "-", fixed=TRUE, keep=1, rev=TRUE) # returns the last element
+tstrsplit(x, "-", fixed=TRUE, keep=1:2, rev=TRUE) # returns the last two elements
+
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{transpose}}, \code{\link[utils]{type.convert}}
