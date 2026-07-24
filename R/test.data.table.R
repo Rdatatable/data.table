@@ -713,4 +713,4 @@ test = function(num, x, y=TRUE,
   invisible(!fail)
 }
 
-anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov
+anyNonAscii = function(x) anyNA(iconv(x[!is.na(x)], to="ASCII")) # nocov
