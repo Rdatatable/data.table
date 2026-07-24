@@ -421,14 +421,17 @@ test.list <- atime::atime_test_list(
     expr = {
       ns = environment(data.table::as.IDate)
       s3_table = get(".__S3MethodsTable__.", envir = baseenv())
-      if (exists("chooseOpsMethod.IDate", envir = s3_table)) {
-        rm("chooseOpsMethod.IDate", envir = s3_table)
-      }
-      if (exists("chooseOpsMethod.IDate", envir = ns, inherits = FALSE)) {
-        base::registerS3method(
-          "chooseOpsMethod", "IDate",
-          get("chooseOpsMethod.IDate", envir = ns),
-          envir = ns)
+      s3_generics = c("chooseOpsMethod.IDate" = "chooseOpsMethod", "-.IDate" = "-")
+      for (s3_method in names(s3_generics)) {
+        if (exists(s3_method, envir = s3_table, inherits = FALSE)) {
+          rm(list = s3_method, envir = s3_table)
+        }
+        if (exists(s3_method, envir = ns, inherits = FALSE)) {
+          base::registerS3method(
+            s3_generics[[s3_method]], "IDate",
+            get(s3_method, envir = ns, inherits = FALSE),
+            envir = ns)
+        }
       }
       outer(short_date, data.table::as.IDate(long_date), `-`)
     }),
