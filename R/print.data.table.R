@@ -58,7 +58,13 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Null %s (0 rows and 0 cols)\n", x_class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
       catf("Empty %s (%d rows and %d cols)", x_class, NROW(x), NCOL(x))
-      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      if (length(x)>0L) {
+        # Minimal truncation for empty table summary line
+        e_trunc = getOption("datatable.prettyprint.char")
+        if (is.null(e_trunc)) e_trunc = max(0L, getOption("width") - 5L)  # 5L accounts for "Empty data.table..." prefix
+        t_names = char.trunc(head(names(x), 6L), trunc.char = e_trunc)  #6L is the max number of names shown in summary
+        cat(": ", paste(t_names, collapse=","), if(length(x)>6L)"...", sep="") # notranslate
+      }
       cat("\n") # notranslate
     }
     return(invisible(x))
@@ -74,7 +80,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
-    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
     idx = c(seq_len(topn), seq(to=nrow(x), length.out=topn))
@@ -88,12 +93,16 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
+
+  # 2L accounts for the ": " added to row names (e.g., "10: ")
+  rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
+  width_limit = max(0L, getOption("width") - rn_w - 3L)  # 3L accounts for separators and internal padding between columns
   trunc.char = getOption("datatable.prettyprint.char")
-  if (is.null(trunc.char)) {
-    rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
-    trunc.char = max(0L, getOption("width") - rn_w - 3L)
-  }
+  if (is.null(trunc.char)) trunc.char = width_limit
+  h_opt = getOption("datatable.prettyprint.char")
+  h_trunc = if (!is.null(h_opt) && is.infinite(h_opt)) Inf else width_limit
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, trunc.char = trunc.char, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
+  if (col.names != "none") colnames(toprint) = char.trunc(colnames(toprint), trunc.char = h_trunc)
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
@@ -122,7 +131,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (!any(cols_to_print)) {
-      trunc_cols_message(not_printed, abbs, class, col.names)
+      trunc_cols_message(not_printed, abbs, class, col.names, trunc.char = h_trunc)
       return(invisible(x))
     }
     # When nrow(toprint) = 1, attributes get lost in the subset,
@@ -134,7 +143,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (col.names != "none") cut_colnames = identity
     cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
     # prints names of variables not shown in the print
-    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
+    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names, trunc.char = h_trunc)
   }
   if (printdots) {
     if (isFALSE(row.names)) {
@@ -253,7 +262,7 @@ format_list_item.data.frame = function(x, ...) {
 # Current implementation may have issues when dealing with strings that have combinations of full-width and half-width characters,
 # if this becomes a problem in the future, we could consider string traversal instead.
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
-  if (is.null(trunc.char)) return(x)
+  if (is.null(trunc.char) || is.infinite(trunc.char[1L])) return(x)
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
   nchar_width = nchar(x, 'width', allowNA = TRUE)
@@ -291,12 +300,12 @@ toprint_subset = function(x, cols_to_print) {
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
-trunc_cols_message = function(not_printed, abbs, class, col.names){
+trunc_cols_message = function(not_printed, abbs, class, col.names, trunc.char = getOption("datatable.prettyprint.char")){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   catf(
     ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
-    n, brackify(paste0(not_printed, classes)),
+    n, brackify(paste0(char.trunc(not_printed, trunc.char = trunc.char), classes)),
     domain=NA
   )
 }
