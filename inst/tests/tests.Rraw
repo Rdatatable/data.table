@@ -21831,3 +21831,9 @@ test(2378.92, .Call(CresizeVector, x, 2:3), error = "must be length 1 non-NA non
 test(2378.93, .Call(CresizeVector, x, -2L), error = "must be length 1 non-NA non-negative integer value")
 test(2378.94, .Call(CresizeVector, x, NA_integer_), error = "must be length 1 non-NA non-negative integer value")
 test(2378.95, .Call(CresizeVector, NULL, 2L), error = "must be a vector")
+
+# copy() reallocates data.tables inside list attributes, #7820
+x = list()
+attr(x, 'dt') = data.table()
+test(2379, truelength(attr(copy(x), 'dt')) > 0L)
+rm(x)

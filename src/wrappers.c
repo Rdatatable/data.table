@@ -57,9 +57,48 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   return(x);
 }
 
-SEXP copy(SEXP x)
-{
-  return(duplicate(x));
+struct realloc_nested_dt_attr_ctx {
+  SEXP x;
+  int overAlloc;
+};
+static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool);
+static SEXP realloc_nested_dt_list_attr(SEXP tag, SEXP att, void *ctx_) {
+  struct realloc_nested_dt_attr_ctx *ctx = ctx_;
+  SEXP newatt = realloc_nested_dt_list(att, ctx->overAlloc, false);
+  if (newatt != att) {
+    PROTECT(newatt);
+    setAttrib(ctx->x, tag, newatt);
+    UNPROTECT(1);
+  }
+  return R_NilValue;
+}
+static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool replacePairlists) {
+  int nprot = 0;
+  if (inherits(x, "data.table")) {
+    x = PROTECT(alloccol(x, LENGTH(x) + overAlloc, FALSE)); ++nprot;
+    unlock(x);
+  }
+  if (replacePairlists && TYPEOF(x) == LISTSXP) {
+    x = PROTECT(coerceVector(x, VECSXP)); ++nprot;
+  }
+  if (TYPEOF(x) == VECSXP) for (R_xlen_t i = 0; i < XLENGTH(x); ++i) {
+    SEXP xi = VECTOR_ELT(x, i);
+    SEXP xinew = realloc_nested_dt_list(xi, overAlloc, false);
+    if (xinew != xi)
+      SET_VECTOR_ELT(x, i, xinew);
+  }
+  struct realloc_nested_dt_attr_ctx ctx = { .x = x, .overAlloc = overAlloc };
+  R_mapAttrib(x, realloc_nested_dt_list_attr, &ctx);
+  UNPROTECT(nprot);
+  return x;
+}
+
+SEXP copy(SEXP x, SEXP overAllocArg) {
+  int overAlloc = checkOverAlloc(overAllocArg);
+  PROTECT(x = duplicate(x));
+  x = realloc_nested_dt_list(x, overAlloc, true);
+  UNPROTECT(1);
+  return x;
 }
 
 // Internal use only. So that := can update elements of a list of data.table, #2204. Just needed to overallocate/grow the VECSXP.
