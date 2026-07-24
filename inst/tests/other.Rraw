@@ -201,7 +201,9 @@ if (loaded[["knitr"]]) {
 if (loaded[["parallel"]]) {
   #1745 and #1727
   if (.Platform$OS.type=="windows") {
-    warning("This test of auto fallback to single threaded mode when data.table is used from package parallel, does not run on Windows because 'mc.cores'>1 is not supported on Windows; i.e., parallel package isn't parallel on Windows, IIUC. Whereas data.table is parallel built-in on Windows for some functions (fwrite/fread/fsort and expanding) using OpenMP.")
+    cat(
+      strwrap("This test of auto fallback to single threaded mode when data.table is used from package parallel, does not run on Windows because 'mc.cores'>1 is not supported on Windows; i.e., parallel package isn't parallel on Windows, IIUC. Whereas data.table is parallel built-in on Windows for some functions (fwrite/fread/fsort and expanding) using OpenMP.\n"),
+      sep="\n")
   } else {
     setDTthreads(2)
     if (getDTthreads()!=2) {
