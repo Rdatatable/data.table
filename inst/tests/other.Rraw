@@ -74,7 +74,7 @@ if (loaded[["ggplot2"]]) {
   #           message="Don't know how to automatically pick scale for object of type ITime. Defaulting to continuous")
 
   # qplot() soon to be deleted, unclear how to adapt the test meaningfully after that...
-  invisible(try(qplot(), silent=TRUE)) # force deprecation warning
+  invisible(tryCatch(qplot(), condition=function(.) NULL)) # force deprecation warning
   test(1.5, all.equal(
     print(DT[, qplot(idate, as.POSIXct(itime, tzone=""))]),
     print(qplot(idate, as.POSIXct(itime, tzone=""), data=DT))))
