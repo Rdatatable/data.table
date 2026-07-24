@@ -11,7 +11,7 @@ jobs:
   R-CMD-check-occasional:
     runs-on: ${{ matrix.os }}
 
-    name: ${{ matrix.os }} (${{ matrix.r }})
+    name: ${{ matrix.os }} (${{ matrix.r }}, ${{ matrix.locale }})
 
     strategy:
       fail-fast: false
