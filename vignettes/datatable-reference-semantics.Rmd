@@ -410,6 +410,22 @@ To select a single column as a vector, remember:
 - `DT[, mycol]` is safer as it always returns a new, independent copy.
 - `DT$mycol` is fast but may return a reference. Use `copy(DT$mycol)` to guarantee independence.
 
+### d) Side effects and testing
+
+Because `:=` modifies by reference, changes to a data.table persist after evaluation. If the same *data.table* is reused for example, in a loop or when using `test()` with multiple `optimization` levels, subsequent runs will start with the modified table from the previous run. Use `copy()` to ensure each run starts with the same data.
+
+```{r}
+DT = data.table(a = 1L)
+# Subsequent runs are cumulative
+DT[, a := a + 1L][]
+DT[, a := a + 1L][]
+
+# Use copy() to isolate runs
+test_expr = function(x) copy(x)[, a := a + 1L][]
+test_expr(DT)
+test_expr(DT)
+```
+
 ## Summary
 
 #### The `:=` operator
