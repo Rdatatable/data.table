@@ -671,13 +671,23 @@ test = function(num, x, y=TRUE,
     # nocov start
     if (!fail) {
       catf("Test %s ran without errors but failed check that x equals y:\n", numStr)
-      failPrint = function(x, xsub) {
-        cat(">", substitute(x), "=", xsub, "\n") # notranslate
+      failPrint = function(x, y, xsub) {
+        label = as.character(substitute(x))
+        cat(">", label, "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
-          nn = length(x)
-          catf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x))
+          if (is.atomic(x)) {
+            total = length(x)
+            diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
+            x = x[diff_idx]
+            nn = length(x)
+            names(x) = sprintf("%s[%d]", label, diff_idx)
+            catf("First %d different of %d (%d total, type '%s'): \n", min(nn, 6L), nn, total, typeof(x))
+          } else {
+            nn = length(x)
+            catf("First %d of %d (type '%s'): \n", min(nn, 6L), nn, typeof(x))
+          }
           # head.matrix doesn't restrict columns
-          if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
+          if (length(d <- dim(x))) print(do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len))))
           else print(head(x))
           if (typeof(x) == 'character' && anyNonAscii(x)) {
             catf("Non-ASCII string detected, raw representation:\n")
@@ -685,8 +695,8 @@ test = function(num, x, y=TRUE,
           }
         }
       }
-      failPrint(x, deparse(xsub))
-      failPrint(y, deparse(ysub))
+      failPrint(x, y, deparse(xsub))
+      failPrint(y, x, deparse(ysub))
       if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
@@ -704,4 +714,4 @@ test = function(num, x, y=TRUE,
   invisible(!fail)
 }
 
-anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov
+anyNonAscii = function(x) anyNA(iconv(x[!is.na(x)], to="ASCII")) # nocov
