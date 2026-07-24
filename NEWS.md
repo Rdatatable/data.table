@@ -74,6 +74,8 @@
 
 17. `print()` works with multi-byte characters on R before 4.2.0, [#7848](https://github.com/Rdatatable/data.table/pull/7848). Thanks @MichaelChirico for the fix and @aitap for the improvement.
 
+18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7833](https://github.com/Rdatatable/data.table/issues/7833) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
