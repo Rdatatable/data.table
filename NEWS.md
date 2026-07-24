@@ -62,6 +62,8 @@
 
 13. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
 
+14. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7833](https://github.com/Rdatatable/data.table/issues/7833) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
