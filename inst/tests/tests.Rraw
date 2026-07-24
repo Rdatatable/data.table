@@ -20308,7 +20308,7 @@ local(if (utf8_check(c("\u00e4", "\u00f6", "\u00fc"))) {
   # a-umlaut, o-umlaut, u-umlaut
   eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
     setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
-    setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+    setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "", to = "latin1"))
     test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
     test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
     set(y, j="\u00e4", value=NULL)

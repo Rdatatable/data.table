@@ -71,3 +71,52 @@ jobs:
       - uses: yihui/actions/check-r-package@HEAD
         with:
           check-args: "--no-manual --as-cran"
+
+  R-CMD-check-locale:
+    runs-on: ${{ matrix.os }}
+
+    name: ${{ matrix.os }}, R-${{ matrix.r }}, LC_CTYPE=${{ matrix.locale }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-22.04]
+        r: ['release']
+        locale: ['fr_CA.ISO-8859-1', 'zh_CN.GB18030', 'ru_RU.KOI8-R']
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+
+      - name: Configure locale
+        run: |
+          echo ${{ matrix.locale }} `echo ${{ matrix.locale }} | sed 's/.*\.//'` | sudo tee -a /etc/locale.gen
+          sudo locale-gen --keep-existing
+
+      - uses: yihui/actions/setup-r-dependencies@HEAD
+
+      - name: Override R for locale-specific check
+        run: |
+          sudo mkdir -p /override
+          # poor man's luit that doesn't require a tty
+          sudo tee /override/R <<EOF # no quotes => expand backticks, dollars
+          #!/bin/bash
+          set -o pipefail
+          exec stdbuf -o L -e L `which R` "\$@" 2>&1 | while read line; do
+            echo "\$line" | iconv -t UTF-8
+          done
+          EOF
+          sudo chmod +x /override/R
+          echo PATH=/override:$PATH >> $GITHUB_ENV
+
+      - uses: yihui/actions/check-r-package@HEAD
+        with:
+          check-args: "--no-manual"
+        env:
+          LC_CTYPE: ${{ matrix.locale }}
