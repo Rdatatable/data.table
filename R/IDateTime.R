@@ -51,6 +51,10 @@ as.Date.IDate = function(x, ...) {
 }
 
 mean.IDate =
+  function(x, ...) {
+    x = unclass(x)
+    as.IDate(NextMethod())
+  }
 seq.IDate =
 c.IDate =
 cut.IDate =
@@ -90,6 +94,8 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
           quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
           years = ISOdate(year(x), 1L, 1L)))
 }
+# Dates aren't simple numbers, and round.IDate doesn't accept numeric 'digits'.
+is.numeric.IDate = function(x) FALSE
 
 chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
 
@@ -248,6 +254,9 @@ round.ITime = function(x, digits = c("hours", "minutes"), ...)
            "class", "ITime"))
 }
 
+# Day times aren't simple numbers, and round.ITime doesn't accept numeric 'digits'.
+is.numeric.ITime = function(x) FALSE
+
 trunc.ITime = function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
@@ -272,7 +281,11 @@ unique.ITime = function(x, ...) {
 }
 
 # various methods to ensure ITime class is retained, #3628
-mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
+mean.ITime = function(x, ...) {
+  x = unclass(x)
+  as.ITime(NextMethod())
+}
+c.ITime = seq.ITime = function(...) as.ITime(NextMethod())
 
 
 # create a data.table with IDate and ITime columns
