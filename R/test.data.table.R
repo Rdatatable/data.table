@@ -675,15 +675,16 @@ test = function(num, x, y=TRUE,
         label = substitute(x)
         cat(">", label, "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
-          nn = length(x)
           if (is.atomic(x)) {
             total = length(x)
             diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
             x = x[diff_idx]
+            nn = length(x)
             names(x) = sprintf("%s[%d]", as.character(label), diff_idx)
-            catf("First %d different of %d (%d total, type '%s'): \n", min(nn, 6L), length(x), total, typeof(x))
+            catf("First %d different of %d (%d total, type '%s'): \n", min(nn, 6L), nn, total, typeof(x))
           } else {
-            catf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x))
+            nn = length(x)
+            catf("First %d of %d (type '%s'): \n", min(nn, 6L), nn, typeof(x))
           }
           # head.matrix doesn't restrict columns
           if (length(d <- dim(x))) print(do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len))))
