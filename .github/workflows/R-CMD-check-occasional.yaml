@@ -1,4 +1,5 @@
 on:
+  push:
   schedule:
    - cron: '17 13 23 * *' # 23rd of month at 13:17 UTC
   workflow_dispatch:
@@ -75,9 +76,17 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev pandoc
 
+      - name: Install R Package Build Dependencies on MacOS
+        if: matrix.os == 'macOS-latest'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
-        run: brew install gdal proj
+        run: |
+          brew install gdal proj gettext
+          brew link --force gettext
 
       - name: Check
         env:
@@ -106,6 +115,11 @@ jobs:
             message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
           }
           message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
+          if (run_other) {
+            desc = read.dcf("DESCRIPTION")
+            desc[1L, "Suggests"] = toString(unique(c(desc[1, "Suggests"], other_pkgs)))
+            write.dcf(desc, "DESCRIPTION")
+          }
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
             TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
