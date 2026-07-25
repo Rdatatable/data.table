@@ -88,7 +88,12 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   require_bit64_if_needed(x)
   classes = classes1(toprint)
-  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
+  trunc.char = getOption("datatable.prettyprint.char")
+  if (is.null(trunc.char)) {
+    rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
+    trunc.char = max(0L, getOption("width") - rn_w - 3L)
+  }
+  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, trunc.char = trunc.char, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
@@ -155,12 +160,12 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table = function(x, ..., justify="none") {
+format.data.table = function(x, ..., trunc.char = getOption("datatable.prettyprint.char"), justify="none") {
   if (is.atomic(x) && !is.null(x)) { ## future R can use  if (is.atomic(x))
 
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  do.call(cbind, lapply(x, format_col, ..., justify=justify))
+  do.call(cbind, lapply(x, format_col, ..., trunc.char = trunc.char, justify=justify))
 }
 
 shouldPrint = function(x) {
@@ -198,13 +203,13 @@ has_format_method = function(x) {
   any(vapply_1b(class(x), f))
 }
 
-format_col.default = function(x, ...) {
+format_col.default = function(x, ..., trunc.char = getOption("datatable.prettyprint.char")) {
   if (!is.null(dim(x)))
     "<multi-column>"
   else if (is.list(x))
-    vapply_1c(x, format_list_item, ...)
+    vapply_1c(x, format_list_item, ..., trunc.char = trunc.char)
   else
-    format(char.trunc(x), ...) # relevant to #37
+    format(char.trunc(x, trunc.char = trunc.char), ...) # relevant to #37
 }
 
 # #2842 -- different columns can have different tzone, so force usage in output
@@ -221,20 +226,21 @@ format_col.POSIXct = function(x, ..., timezone=FALSE) {
 }
 
 # #3011 -- expression columns can wrap to newlines which breaks printing
-format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...)
+format_col.expression = function(x, ..., trunc.char = getOption("datatable.prettyprint.char")) {
+  format(char.trunc(as.character(x), trunc.char = trunc.char), ...)
+}
 
-format_list_item.default = function(x, ...) {
-  if (is.null(x))  # NULL item in a list column
-    "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
-  else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) sprintf("...[%d]", length(x))), collapse=",") # fix for #5435, #37, and #605 - format has to be added here...
+format_list_item.default = function(x, ..., trunc.char = getOption("datatable.prettyprint.char")) {
+  res = if (is.null(x))  # NULL item in a list column
+    "[NULL]"
+  else if (is.atomic(x) || inherits(x, "formula"))
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) sprintf("...[%d]", length(x))), collapse=",")
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
-    # the column's class does not have a format method (otherwise it would have been used by format_col and this
-    # format_list_item would not be reached) but this particular list item does have a format method so use it
     formatted
   } else {
     paste0("<", class1(x), paste_dims(x), ">")
   }
+  char.trunc(res, trunc.char = trunc.char)
 }
 
 # #6592 -- nested 1-column frames breaks printing
@@ -247,12 +253,14 @@ format_list_item.data.frame = function(x, ...) {
 # Current implementation may have issues when dealing with strings that have combinations of full-width and half-width characters,
 # if this becomes a problem in the future, we could consider string traversal instead.
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+  if (is.null(trunc.char)) return(x)
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
-  nchar_width = nchar(x, 'width') # Check whether string is full-width or half-width, #5096
-  nchar_chars = nchar(x, 'char')
+  nchar_width = nchar(x, 'width', allowNA = TRUE)
+  nchar_chars = nchar(x, 'char', allowNA = TRUE)
   is_full_width = nchar_width > nchar_chars
-  idx = !is.na(x) & pmin(nchar_width, nchar_chars) > trunc.char
+  is_full_width[is.na(is_full_width)] = FALSE
+  idx = !is.na(x) & !is.na(nchar_width) & pmin(nchar_width, nchar_chars) > trunc.char
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }

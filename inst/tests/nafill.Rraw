@@ -56,11 +56,11 @@ test(1.41, nafill(l, "locf"), lapply(l, nafill, "locf"))
 test(1.42, nafill(l, "nocb"), lapply(l, nafill, "nocb"))
 test(1.43, nafill(l, fill=0), lapply(l, nafill, fill=0))
 l = list(a=c(1:2,NA,4:5), b=as.Date(c(1:2,NA,4:5), origin="1970-01-01"), d=c(NA,2L,NA,4L,NA), e=as.Date(c(NA,2L,NA,4L,NA), origin="1970-01-01")) # Date retain class #3617
-test(1.44, nafill(l, "locf"), list(a=c(1:2,2L,4:5), b=structure(c(1,2,2,4,5), class="Date"), d=c(NA,2L,2L,4L,4L), e=structure(c(NA,2,2,4,4), class="Date")))
-test(1.45, nafill(l, "nocb"), list(a=c(1:2,4L,4:5), b=structure(c(1,2,4,4,5), class="Date"), d=c(2L,2L,4L,4L,NA), e=structure(c(2,2,4,4,NA), class="Date")))
-test(1.46, nafill(l, fill=0), list(a=c(1:2,0L,4:5), b=structure(c(1,2,0,4,5), class="Date"), d=c(0L,2L,0L,4L,0L), e=structure(c(0,2,0,4,0), class="Date")))
-test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(a=c(1:2,0L,4:5), b=structure(c(1,2,0,4,5), class="Date"), d=c(0L,2L,0L,4L,0L), e=structure(c(0,2,0,4,0), class="Date")))
-test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(a=c(1:2,18052L,4:5), b=structure(c(1,2,18052,4,5), class="Date"), d=c(18052L,2L,18052L,4L,18052L), e=structure(c(18052,2,18052,4,18052), class="Date")))
+test(1.44, nafill(l, "locf"), list(a=c(1:2,2L,4:5), b=.Date(c(1,2,2,4,5)), d=c(NA,2L,2L,4L,4L), e=.Date(c(NA,2,2,4,4))))
+test(1.45, nafill(l, "nocb"), list(a=c(1:2,4L,4:5), b=.Date(c(1,2,4,4,5)), d=c(2L,2L,4L,4L,NA), e=.Date(c(2,2,4,4,NA))))
+test(1.46, nafill(l, fill=0), list(a=c(1:2,0L,4:5), b=.Date(c(1,2,0,4,5)), d=c(0L,2L,0L,4L,0L), e=.Date(c(0,2,0,4,0))))
+test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(a=c(1:2,0L,4:5), b=.Date(c(1,2,0,4,5)), d=c(0L,2L,0L,4L,0L), e=.Date(c(0,2,0,4,0))))
+test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(a=c(1:2,18052L,4:5), b=.Date(c(1,2,18052,4,5)), d=c(18052L,2L,18052L,4L,18052L), e=.Date(c(18052,2,18052,4,18052))))
 test(1.49, nafill(numeric()), numeric())
 if (test_bit64) {
   l = list(a=as.integer64(c(1:2,NA,4:5)), b=as.integer64(c(NA,2L,NA,4L,NA)))
@@ -105,7 +105,7 @@ dt = copy(db)
 test(2.07, {setnafill(dt, "locf", cols=c("V2","V3")); dt}, db[, c(list(V1), nafill(.SD, "locf"), list(V4)), .SDcols=c("V2","V3")])
 l = list(a=c(1:2,NA,4:5), b=as.Date(c(1:2,NA,4:5), origin="1970-01-01"), d=c(NA,2L,NA,4L,NA), e=as.Date(c(NA,2L,NA,4L,NA), origin="1970-01-01")) # Date retain class #3617
 setnafill(l, fill=as.Date("2019-06-05"))
-test(2.08, unname(l), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
+test(2.08, unname(l), list(c(1:2,18052L,4:5), .Date(c(1,2,18052,4,5)), c(18052L,2L,18052L,4L,18052L), .Date(c(18052,2,18052,4,18052))))
 
 # exceptions test coverage
 x = 1:10
@@ -277,18 +277,18 @@ local({
   test(10.18, coerceAs(c(1,2,3), xy_factor), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
   test(10.19, coerceAs(factor("x"), xy_factor), factor("x", levels=c("x","y")), output="integer[factor] into integer[factor]")
   test(10.20, coerceAs(factor("x"), xy_factor, copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
-  a = structure("a", class="a")
-  b = structure("b", class="b")
-  test(10.21, coerceAs(a, b), structure("a", class="b"), output="character[a] into character[b]")
-  a = structure(1L, class="a")
-  b = structure(2L, class="b")
-  test(10.22, coerceAs(a, b), structure(1L, class="b"), output="integer[a] into integer[b]")
-  a = structure(1, class="a")
-  b = structure(2, class="b")
-  test(10.23, coerceAs(a, b), structure(1, class="b"), output="double[a] into double[b]")
-  a = structure(1, class="a")
-  b = structure(2L, class="b")
-  test(10.24, coerceAs(a, b), structure(1L, class="b"), output="double[a] into integer[b]")
+  a = `class<-`("a", "a")
+  b = `class<-`("b", "b")
+  test(10.21, coerceAs(a, b), `class<-`("a", "b"), output="character[a] into character[b]")
+  a = `class<-`(1L, "a")
+  b = `class<-`(2L, "b")
+  test(10.22, coerceAs(a, b), `class<-`(1L, "b"), output="integer[a] into integer[b]")
+  a = `class<-`(1, "a")
+  b = `class<-`(2, "b")
+  test(10.23, coerceAs(a, b), `class<-`(1, "b"), output="double[a] into double[b]")
+  a = `class<-`(1, "a")
+  b = `class<-`(2L, "b")
+  test(10.24, coerceAs(a, b), `class<-`(1L, "b"), output="double[a] into integer[b]")
   if (test_bit64) {
     x = as.integer64(1L)
     test(10.81, coerceAs(x, 1), 1, output="double[integer64] into double[numeric]")
@@ -452,10 +452,15 @@ test(16.07, setnafill(copy(DT), fill="a", cols='f1')$f1,
 test(16.08, setnafill(copy(DT), fill="a", cols=c('f1', 'f2'))[, .(f1, f2)],
             data.table(f1=as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")),
                        f2=as.factor(c("a", "a", "c", "b", "a", "a", "b", "a", "a", "a"))))
-test(16.09, setnafill(DT, fill="z", cols='c1'), error="not yet supported")
-# test(16.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
-#             data.table(c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
-#                        c2=c("z", "z", "d", "c", "z", "z", "b", "a", "z", "z")))
+test(16.09, setnafill(copy(DT), fill="z", cols='c1')$c1,
+            c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"))
+test(16.10, setnafill(copy(DT), fill="z", cols=c('c1', 'c2'))[, .(c1, c2)],
+            data.table(c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z"),
+                       c2=c("z", "z", "d", "c", "z", "z", "b", "a", "z", "z")))
+test(16.101, setnafill(copy(DT), type="locf", cols='c1')$c1,
+            c(NA, NA, "a", "b", "b", "b", "c", "d", "d", "d"))
+test(16.102, setnafill(copy(DT), type="nocb", cols='c1')$c1,
+            c("a", "a", "a", "b", "c", "c", "c", "d", NA, NA))
 test(16.11, setnafill(copy(DT), fill=as.POSIXct("2027-01-01"), cols='t1')$t1,
             replace(DT$t1, c(1:2, 5:6, 9:10), as.POSIXct("2027-01-01")))
 test(16.12, setnafill(copy(DT), fill=as.POSIXct("2027-01-01"), cols=c('t1', 't2'))[, .(t1, t2)],
@@ -467,10 +472,27 @@ test(16.13, setnafill(copy(DT), fill=list(TRUE, 9L, 9.0, "a", as.POSIXct("2027-0
                        d1=c(9.0, 9L, 0L, 1L, 9L, 9L, 2:3, 9L, 9L),
                        f1=as.factor(c("a", "a", "a", "b", "a", "a", "b", "c", "a", "a")),
                        t1=replace(DT$t1, c(1:2, 5:6, 9:10), as.POSIXct("2027-01-01"))))
-test(16.14, setnafill(DT, cols=c("l1", "c1")), error="not yet supported")
+test(16.14, setnafill(copy(DT), fill=list(TRUE, "z"), cols=c("l1", "c1"))[, .(l1, c1)],
+            data.table(l1=c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
+                       c1=c("z", "z", "a", "b", "z", "z", "c", "d", "z", "z")))
 DT = data.table(l=c(NA, FALSE), i=c(NA, 0L))
 setnafill(DT, fill=list(TRUE, 1L))
 test(16.15, DT, data.table(l=c(TRUE, FALSE), i=1:0))
+# setnafill truly works in-place
+DT = data.table(l1=c(NA, TRUE, NA), i1=c(NA, 1L, NA), d1=c(NA, 1.5, NA),
+                f1=as.factor(c(NA, "a", NA)), c1=c(NA, "a", NA),
+                t1=as.POSIXct(c(NA, "2025-01-01", NA)))
+setnafill(DT, fill=list(TRUE, 9L, 9.0, "a", "z", as.POSIXct("2027-01-01")),
+          cols=c("l1", "i1", "d1", "f1", "c1", "t1"))
+test(16.16, DT, data.table(l1=c(TRUE, TRUE, TRUE), i1=c(9L, 1L, 9L), d1=c(9.0, 1.5, 9.0),
+                           f1=as.factor(c("a", "a", "a")), c1=c("z", "a", "z"),
+                           t1=as.POSIXct(c("2027-01-01", "2025-01-01", "2027-01-01"))))
+DT = data.table(x=c(NA, "a", NA, "b", NA))
+setnafill(DT, type="locf", cols="x")
+test(16.17, DT, data.table(x=c(NA, "a", "a", "b", "b")))
+DT = data.table(x=c(NA, "a", NA, "b", NA))
+setnafill(DT, type="nocb", cols="x")
+test(16.18, DT, data.table(x=c("a", "a", "b", "b", NA)))
 
 # related to !is.integer(verbose)
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")

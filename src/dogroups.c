@@ -190,7 +190,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // We just want to set anyNA for later. We do it only once for the whole operation
   // because it is a rare edge case for it to be true. See #4892.
   bool anyNA=false, orderedSubset=false;
-  check_idx(order, length(VECTOR_ELT(dt, 0)), &anyNA, &orderedSubset);
+  check_idx(order, length(dt) ? length(VECTOR_ELT(dt, 0)) : 0, &anyNA, &orderedSubset);
   for(int i=0; i<ngrp; ++i) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
     if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;
@@ -324,7 +324,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // e.g. in #91 `:=` did not issue recycling warning during grouping. Now it is error not warning.
         }
       }
-      int n = LENGTH(VECTOR_ELT(dt, 0));
+      int n = length(dt) ? LENGTH(VECTOR_ELT(dt, 0)) : 0;
       for (int j=0; j<length(lhs); ++j) {
         int colj = INTEGER(lhs)[j]-1;
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
@@ -346,7 +346,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           target = VECTOR_ELT(dt, colj);
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(RHS, specials)) {  // see comments in anySpecialStatic()
-          RHS = PROTECT(copyAsPlain(RHS));
+          RHS = PROTECT(copyAsPlain(RHS, -1));
           copied = true;
         }
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
@@ -452,7 +452,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(source, specials)) {  // see comments in anySpecialStatic()
-          source = PROTECT(copyAsPlain(source));
+          source = PROTECT(copyAsPlain(source, -1));
           copied = true;
         }
         memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");

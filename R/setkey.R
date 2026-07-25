@@ -44,6 +44,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]), class = "dt_missing_column_error")
+  if (anyDuplicated(cols)) stopf("cols contains duplicate column names: %s", brackify(duplicated_values(cols)))
+  if (any(cols %chin% (dups <- duplicated_values(names(x)))))
+    stopf("x has duplicated column names in the columns to key by: %s", brackify(cols[cols %chin% dups]))
 
   if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
     ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
@@ -309,6 +312,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   l = list(...)
   vnames = name_dots(...)$vnames
   if (any(tt <- !nzchar(vnames))) vnames[tt] = paste0("V", which(tt))
+  if (sorted && anyDuplicated(vnames)) stopf("CJ() cannot create a keyed data.table with duplicated column names: %s", brackify(duplicated_values(vnames)))
   dups = FALSE # fix for #1513
   for (i in seq_along(l)) {
     y = l[[i]]
