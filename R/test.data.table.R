@@ -675,7 +675,7 @@ test = function(num, x, y=TRUE,
         label = as.character(substitute(x))
         cat(">", label, "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
-          if (is.atomic(x)) {
+          if (is.atomic(x) && is.atomic(y) && length(x) == length(y) && identical(dim(x), dim(y))) {
             total = length(x)
             diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
             x = x[diff_idx]
