@@ -49,7 +49,6 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
     setattr(ans, "class", c("IDate", "Date"))
     copy_names(ans, names(x))
   } else {
-
     as.IDate(as.Date(x, tz =  tz %||% '', ...))
   }
 }
