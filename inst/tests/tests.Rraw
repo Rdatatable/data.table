@@ -21871,3 +21871,6 @@ test(2380.14, nafill(1:5, limit=NA), error="limit must be a non-negative scalar 
 test(2380.15, nafill(1:5, limit=NULL), error="limit must be a non-negative scalar numeric")
 test(2380.16, nafill(1:5, limit=c(1, 2)), error="limit must be a non-negative scalar numeric")
 test(2380.17, nafill(1:5, limit=1+2i), error="limit must be a non-negative scalar numeric")
+test(2380.18, setnafill(data.table(a=1:5), limit=-1), error="limit must be a non-negative scalar numeric")
+test(2380.19, nafill(c(1.1, NA, NA, NA, 4.4), type="nocb", limit=1), c(1.1, NA, NA, 4.4, 4.4))
+test(2380.20, nafill(c(1L, NA, NA, NA, 4L), type="nocb", limit=1), c(1L, NA, NA, 4L, 4L))
