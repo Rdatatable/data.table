@@ -55,8 +55,8 @@ dt
 
 # limit= restricts the number of consecutive fills
 y = c(1, NA, NA, NA, 5)
-nafill(y, "locf", limit=1) # Only fills the first NA
-nafill(y, "locf", limit=2) # Fills the first two NAs
+nafill(y, "locf", limit=1)   # Only fills the first NA
+nafill(y, "locf", limit=Inf) # Fills all NAs (default)
 
 }
 \seealso{
