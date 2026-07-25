@@ -195,8 +195,7 @@ as.ITime.character = function(x, format, ...) {
   nm = names(x)
   x = unclass(x)
   if (!missing(format)) {
-    ans = as.ITime(strptime(x, format = format, ...), ...)
-    return(copy_names(ans, nm))
+    return(copy_names(as.ITime(strptime(x, format = format, ...), ...), nm))
   }
   # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
   y = strptime(x, format = "%H:%M:%OS", ...)
@@ -217,8 +216,7 @@ as.ITime.character = function(x, format, ...) {
       w = w[!nna]
     }
   }
-  ans = as.ITime(y, ...)
-  copy_names(ans, nm)
+  copy_names(as.ITime(y, ...), nm)
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
