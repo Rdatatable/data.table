@@ -12,6 +12,8 @@
 
 3. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
 
+4. `is.numeric()` now returns `FALSE` for `IDate` and `ITime`, since these classes don't support arbitrary numeric operations, [#7746](https://github.com/Rdatatable/data.table/issues/7746). Thanks @aitap for the report and fix.
+
 ### NEW FEATURES
 
 1. `nafill()`, `setnafill()` extended to work on logical, factor and character vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct` and character vectors. Thanks @jangorecki for the request and @jangorecki, @MichaelChirico and @ben-schwen for the PRs.
@@ -31,6 +33,8 @@
 5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
+
+7. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
 
 ### BUG FIXES
 
@@ -56,6 +60,14 @@
 
 11. `between()` now supports `Date` and `IDate` bounds with default `NAbounds=TRUE`, avoiding errors like "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type" when date bounds contain `NA`, [#7281](https://github.com/Rdatatable/data.table/issues/7281). Thanks @grcatlin for the report and fix, and @ben-schwen and @aitap for assistance.
 
+12. `print.data.table()` now truncates long character columns and list-column summaries by default to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated based on the available console width. Use `options(datatable.prettyprint.char=Inf)` for the old default behavior (never truncate). Thanks @tdhock for the report and @venom1204 for the fix.
+
+13. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
+
+14. Subtracting an `IDate` from a `Date` is fast again by avoiding unnecessary conversion to `POSIXlt`/`POSIXct`, [#7825](https://github.com/Rdatatable/data.table/issues/7825). Thanks @gilesheywood for the report and @ben-schwen for the fix.
+
+15. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report and @venom1204 for the PR.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
@@ -71,6 +83,8 @@
 6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
 
 7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
+
+8. Clarified `fread()` documentation and vignette regarding the interaction between `keepLeadingZeros = TRUE` and automatic header detection, [#5405](https://github.com/Rdatatable/data.table/issues/5405). Thanks @clemenskuehn for the report and @venom1204 for updating the documentation.
 
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 
