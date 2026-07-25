@@ -66,6 +66,8 @@
 
 14. Subtracting an `IDate` from a `Date` is fast again by avoiding unnecessary conversion to `POSIXlt`/`POSIXct`, [#7825](https://github.com/Rdatatable/data.table/issues/7825). Thanks @gilesheywood for the report and @ben-schwen for the fix.
 
+15. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report and @venom1204 for the PR.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
