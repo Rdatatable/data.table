@@ -412,18 +412,24 @@ To select a single column as a vector, remember:
 
 ### d) Side effects and testing
 
-Because `:=` modifies by reference, changes to a data.table persist after evaluation. If the same *data.table* is reused for example, in a loop or when using `test()` with multiple `optimization` levels, subsequent runs will start with the modified table from the previous run. Use `copy()` to ensure each run starts with the same data.
+Because `:=` modifies its input in-place, the changes persist. If the same *data.table* is reused, for example in a loop or when using `test()` with multiple `optimization` levels, subsequent runs will start with the table as modified by the previous run. Use `copy()` to ensure each run starts with the same data for every evaluation.
 
 ```{r}
 DT = data.table(a = 1L)
-# Subsequent runs are cumulative
-DT[, a := a + 1L][]
-DT[, a := a + 1L][]
 
-# Use copy() to isolate runs
-test_expr = function(x) copy(x)[, a := a + 1L][]
-test_expr(DT)
-test_expr(DT)
+# Simulation of a test running under two optimization levels:
+# Optimization level 1
+DT[, a := a + 1L]
+# Optimization level 2 starts with the modified table (a = 2)
+DT[, a := a + 1L]
+DT  # 'a' is now 3, not 2!
+
+# Correct approach: use copy() to isolate evaluations for each level
+DT = data.table(a = 1L)
+# Optimization level 1
+copy(DT)[, a := a + 1L]
+# Optimization level 2
+copy(DT)[, a := a + 1L]
 ```
 
 ## Summary
