@@ -21852,8 +21852,9 @@ test(2379.13, as.IDate("2020-01-01") + a, as.IDate(as.Date("2020-01-01") + a))
 test(2379.14, as.IDate(d) - 1L, as.IDate(as.Date(d) - 1L))
 
 # #6341: tstrsplit() supports reverse indexing with keep
-test(2379.01, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL", "ABC-DEF-GHI-JKL-MNO"), "-", fixed=TRUE, keep=1:3, rev=TRUE), list(c("DEF", "GHI", "JKL", "MNO"), c("ABC", "DEF", "GHI", "JKL"), c(NA_character_, "ABC", "DEF", "GHI")))
-test(2379.02, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL"), "-", fixed=TRUE, keep=1, rev=TRUE), list(c("DEF", "GHI", "JKL")))
-test(2379.03, tstrsplit(c("A", "A-B", "A-B-C", "A-B-C-D"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("A", "B", "C", "D"), c(NA_character_, "A", "B", "C")))
-test(2379.04, tstrsplit(c("ABC-DEF", NA_character_, "XYZ"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("DEF", NA_character_, "XYZ"), c("ABC", NA_character_, NA_character_)))
-test(2379.05, tstrsplit(c("A/B/C", "A/B/C/D"), "/", fixed=TRUE, keep=1:2, rev=TRUE), list(c("C", "D"), c("B", "C")))
+test(2380.01, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL", "ABC-DEF-GHI-JKL-MNO"), "-", fixed=TRUE, keep=1:3, rev=TRUE), list(c("DEF", "GHI", "JKL", "MNO"), c("ABC", "DEF", "GHI", "JKL"), c(NA_character_, "ABC", "DEF", "GHI")))
+test(2380.02, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL"), "-", fixed=TRUE, keep=1, rev=TRUE), list(c("DEF", "GHI", "JKL")))
+test(2380.03, tstrsplit(c("A", "A-B", "A-B-C", "A-B-C-D"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("A", "B", "C", "D"), c(NA_character_, "A", "B", "C")))
+test(2380.04, tstrsplit(c("ABC-DEF", NA_character_, "XYZ"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("DEF", NA_character_, "XYZ"), c("ABC", NA_character_, NA_character_)))
+test(2380.05, tstrsplit(c("A/B/C", "A/B/C/D"), "/", fixed=TRUE, keep=1:2, rev=TRUE), list(c("C", "D"), c("B", "C")))
+test(2380.06, tstrsplit("A-B", "-", rev = 1L), "rev must be TRUE or FALSE") # New test for coverage
