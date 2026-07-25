@@ -29,9 +29,9 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE, rev
   if (!isTRUEorFALSE(rev))
     stopf("'rev' must be TRUE or FALSE.")
   ans = strsplit(as.character(x), ...)
-  if (isTRUE(rev)) ans = lapply(ans, rev) 
+  if (isTRUE(rev)) ans = lapply(ans, rev)
   ans = transpose(ans, fill=fill, ignore.empty=FALSE)
-  
+
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
     chk = min(keep) >= min(1L, length(ans)) & max(keep) <= length(ans)

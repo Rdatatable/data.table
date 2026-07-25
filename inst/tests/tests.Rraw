@@ -21857,4 +21857,4 @@ test(2380.02, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL"), "-", fix
 test(2380.03, tstrsplit(c("A", "A-B", "A-B-C", "A-B-C-D"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("A", "B", "C", "D"), c(NA_character_, "A", "B", "C")))
 test(2380.04, tstrsplit(c("ABC-DEF", NA_character_, "XYZ"), "-", fixed=TRUE, keep=1:2, rev=TRUE), list(c("DEF", NA_character_, "XYZ"), c("ABC", NA_character_, NA_character_)))
 test(2380.05, tstrsplit(c("A/B/C", "A/B/C/D"), "/", fixed=TRUE, keep=1:2, rev=TRUE), list(c("C", "D"), c("B", "C")))
-test(2380.06, tstrsplit("A-B", "-", rev = 1L), "rev must be TRUE or FALSE") # New test for coverage
+test(2380.06, tstrsplit("A-B", "-", rev = 1L), error = "'rev' must be TRUE or FALSE.")
