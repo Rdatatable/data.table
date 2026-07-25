@@ -31,20 +31,21 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
     copy_names(x, nm)
   } else {
+    # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + copy_names(as.integer(x), names(x))
   }
 }
 
 as.IDate.Date = function(x, ...) {
   nm = names(x)
-  x = as.integer(x)
-  class(x) = c("IDate", "Date")
+  x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
+  class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
   copy_names(x, nm)
 }
 
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) {
-    ans = as.integer(as.numeric(x) %/% 86400L)
+    ans = as.integer(as.numeric(x) %/% 86400L)  # %/% returns new object so can use setattr() on it;
     setattr(ans, "class", c("IDate", "Date"))
     copy_names(ans, names(x))
   } else {
@@ -125,7 +126,7 @@ chooseOpsMethod.IDate = function(x, y, mx, my, cl, reverse) inherits(y, "Date")
   res = unclass(e1) + unclass(e2)
   nm = names(res)
   ans = as.integer(res)
-  setattr(ans, "class", c("IDate", "Date"))  # () wrap to return visibly
+  setattr(ans, "class", c("IDate", "Date"))
   copy_names(ans, nm)
 }
 
