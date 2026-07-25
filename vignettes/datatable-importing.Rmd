@@ -125,6 +125,7 @@ aggr = function (x) {
   )
   x[, .N, by = "grp"]
 }
+```
 
 The `..` prefix (for example, `DT[, ..cols]`) looks up a variable in the calling scope. In R packages, this triggers an `R CMD check` NOTE. To avoid this, set the variable to `NULL` inside the function:
 
