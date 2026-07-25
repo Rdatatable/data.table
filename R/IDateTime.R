@@ -21,6 +21,7 @@ as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
 
 as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
+    # standard epoch
     nm = names(x)
     x = as.integer(x)
     class(x) = c("IDate", "Date")
