@@ -12,6 +12,8 @@
 
 3. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
 
+4. `is.numeric()` now returns `FALSE` for `IDate` and `ITime`, since these classes don't support arbitrary numeric operations, [#7746](https://github.com/Rdatatable/data.table/issues/7746). Thanks @aitap for the report and fix.
+
 ### NEW FEATURES
 
 1. `nafill()`, `setnafill()` extended to work on logical, factor and character vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct` and character vectors. Thanks @jangorecki for the request and @jangorecki, @MichaelChirico and @ben-schwen for the PRs.
@@ -62,7 +64,11 @@
 
 13. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
 
-14. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, list columns inside data.tables are searched recursively, and their attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
+14. Subtracting an `IDate` from a `Date` is fast again by avoiding unnecessary conversion to `POSIXlt`/`POSIXct`, [#7825](https://github.com/Rdatatable/data.table/issues/7825). Thanks @gilesheywood for the report and @ben-schwen for the fix.
+
+15. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report and @venom1204 for the PR.
+
+16. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, list columns inside data.tables are searched recursively, and their attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
 
 ### Notes
 
