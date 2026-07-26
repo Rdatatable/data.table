@@ -38,6 +38,8 @@
 
 8. `tstrsplit()` gains a `rev` argument to facilitate extracting elements anchored from the end of the string, [#6341](https://github.com/Rdatatable/data.table/issues/6341). This is especially useful when strings have a varying number of components and you only want to extract the last or second-to-last element. Thanks to @JBrownArcGen for the suggestion and @venom1204 for the implementation.
 
+9. The `give.names` argument of rolling functions now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

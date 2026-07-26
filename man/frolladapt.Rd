@@ -12,7 +12,7 @@
   \item{n}{ Integer, positive, rolling window size. Up to \code{n} values nearest to each value of \code{x}, with distance in the units of \code{x} and according to the window implied by \code{align}, are included in each rolling aggregation window. Thus when \code{x} is a \code{POSIXct}, \code{n} are seconds, and when \code{x} is a \code{Date}, \code{n} are days. It supports vectorized input, then it needs to be a vector. }
   \item{align}{ Character, default \code{"right"}. Other alignments have not yet been implemented. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{n} be trimmed to available observations? For details see \code{\link{froll}}. }
-  \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{n}. If answer is an integer vector, then the argument is ignored, see examples. }
+  \item{give.names}{ Logical or character vector, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{n}. A character vector supplies the output names directly. If the answer is an integer vector, then the argument is ignored, see examples. }
 }
 \details{
   Argument \code{n} allows multiple values to generate multiple adaptive windows, unlike \code{x}, as mixing different time series would make no sense.
