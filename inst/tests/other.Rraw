@@ -225,8 +225,8 @@ if (loaded[["parallel"]]) {
 }
 
 # example(":=", local=TRUE) triggered cedta==FALSE and then error, #2972
-test(14.1, {example(':=', package='data.table', local=TRUE, echo=FALSE); TRUE})
-test(14.2, {example('CJ', package='data.table', local=TRUE, echo=FALSE); TRUE})
+test(14.1, example(':=', package='data.table', local=TRUE, echo=FALSE), check_value=FALSE)
+test(14.2, example('CJ', package='data.table', local=TRUE, echo=FALSE), check_value=FALSE)
 
 if (loaded[["sf"]]) {  #2273
   DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf"), quiet=TRUE))
