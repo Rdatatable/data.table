@@ -21850,3 +21850,8 @@ a = c(a=1L)
 test(2379.12, as.IDate(d) + 1L, as.IDate(as.Date(d) + 1L))
 test(2379.13, as.IDate("2020-01-01") + a, as.IDate(as.Date("2020-01-01") + a))
 test(2379.14, as.IDate(d) - 1L, as.IDate(as.Date(d) - 1L))
+
+# #6341: tstrsplit() supports reverse indexing
+test(2380.01, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL", "ABC-DEF-GHI-JKL-MNO"), "-", fixed=TRUE, keep=1:3, rev=TRUE), list(c("DEF", "GHI", "JKL", "MNO"), c("ABC", "DEF", "GHI", "JKL"), c(NA_character_, "ABC", "DEF", "GHI")))
+test(2380.02, tstrsplit(c("A-B", "A-B-C"), "-", fixed=TRUE, rev=TRUE), list(c("B", "C"), c("A", "B"), c(NA_character_, "A")))
+test(2380.03, tstrsplit("A-B", "-", rev=NA), error="'rev' must be TRUE or FALSE.")
