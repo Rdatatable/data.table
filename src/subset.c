@@ -313,7 +313,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     for (int i=0; i<LENGTH(cols); i++) {
       SEXP thisCol = VECTOR_ELT(x, colD[i]-1);
       checkCol(thisCol, colD[i], nrow, x);
-      SET_VECTOR_ELT(ans, i, copyAsPlain(thisCol));
+      SET_VECTOR_ELT(ans, i, copyAsPlain(thisCol, -1));
       // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
     }
   } else {
