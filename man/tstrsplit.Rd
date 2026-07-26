@@ -66,7 +66,6 @@ DT[, tstrsplit(v, " ", type.convert=list(as.IDate=4L, function(x) type.convert(x
 
 # using rev to anchor from the end of the string
 x = c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL")
-tstrsplit(x, "-", fixed=TRUE, keep=1, rev=TRUE) # returns the last element
 tstrsplit(x, "-", fixed=TRUE, keep=1:2, rev=TRUE) # returns the last two elements
 
 }
