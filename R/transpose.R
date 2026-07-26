@@ -29,7 +29,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE, rev
   if (!isTRUEorFALSE(rev))
     stopf("'rev' must be TRUE or FALSE.")
   ans = strsplit(as.character(x), ...)
-  if (isTRUE(rev)) ans = lapply(ans, rev)
+  if (rev) ans = lapply(ans, base::rev)
   ans = transpose(ans, fill=fill, ignore.empty=FALSE)
 
   if (!missing(keep)) {

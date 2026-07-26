@@ -17,10 +17,10 @@ tstrsplit(x, \dots, fill=NA, type.convert=FALSE, keep, names=FALSE, rev=FALSE)
   \item{type.convert}{\code{TRUE} calls \code{\link{type.convert}} with \code{as.is=TRUE} on the columns. May also be a function, list of functions, or named list of functions to apply to each part; see examples. }
   \item{keep}{Specify indices corresponding to just those list elements to retain in the transposed result. Default is to return all.}
   \item{names}{\code{TRUE} auto names the list with \code{V1, V2} etc. Default (\code{FALSE}) is to return an unnamed list.}
-  \item{rev}{logical. If \code{TRUE}, the components are extracted counting from the end of the string. This is especially useful when strings have a varying number of segments and you want to anchor to the end (e.g., the last or second-to-last element).}
+  \item{rev}{logical. If \code{TRUE}, each split result is reversed before transposing, so \code{keep} indices count from the end of the string. This is useful when strings have varying numbers of components and extraction should be anchored to the end.}
 }
 \details{
-  It internally calls \code{strsplit} first, and then \code{\link{transpose}} on the result.
+  It internally calls \code{strsplit} first, optionally reverses each split result, and then calls \code{\link{transpose}}.
 
   \code{names} argument can be used to return an auto named list, although this argument does not have any effect when used with \code{:=}, which requires names to be provided explicitly. It might be useful in other scenarios.
 }
