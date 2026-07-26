@@ -377,8 +377,8 @@ gc_mem = function() {
 # defers parsing to runtime, allowing the encoding check to run first and avoid source() warnings.
 utf8_check = function(test_str) identical(test_str, enc2native(test_str))
 
-test = function(num, x, y=TRUE,
-                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
+test = function(num, x, y=TRUE, ...,
+                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL, check_value=TRUE,
                 options=NULL, env=NULL,
                 context=NULL, requires_utf8=FALSE, optimize=NULL) {
   # if optimization is provided, test across multiple optimization levels
@@ -442,7 +442,7 @@ test = function(num, x, y=TRUE,
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
-  # ii) tests that x is TRUE when y isn't supplied
+  # ii) tests that x is TRUE when y isn't supplied, or ignores y entirely when check_value=FALSE
   # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
   # iv) if warning is supplied, y is checked to equal x, and x should result in a warning message matching the pattern
   # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
@@ -636,7 +636,7 @@ test = function(num, x, y=TRUE,
       # nocov end
     }
   }
-  if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
+  if (check_value && !fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
     if (inherits(x, c("Date", "POSIXct"))) storage.mode(x) <- "numeric"
     if (inherits(y, c("Date", "POSIXct"))) storage.mode(y) <- "numeric"
