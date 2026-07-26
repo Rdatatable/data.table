@@ -61,7 +61,7 @@ struct realloc_nested_dt_attr_ctx {
   SEXP x;
   int overAlloc;
 };
-static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool);
+static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool replacePairlists);
 static SEXP realloc_nested_dt_list_attr(SEXP tag, SEXP att, void *ctx_) {
   struct realloc_nested_dt_attr_ctx *ctx = ctx_;
   SEXP newatt = realloc_nested_dt_list(att, ctx->overAlloc, false);
