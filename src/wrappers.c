@@ -70,7 +70,7 @@ static SEXP realloc_nested_dt_list_attr(SEXP tag, SEXP att, void *ctx_) {
     setAttrib(ctx->x, tag, newatt);
     UNPROTECT(1);
   }
-  return R_NilValue;
+  return NULL;
 }
 static SEXP realloc_nested_dt_list(SEXP x, int overAlloc, bool replacePairlists) {
   int nprot = 0;
