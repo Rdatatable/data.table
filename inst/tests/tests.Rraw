@@ -233,6 +233,26 @@ ForderObj = function(x, starts=NULL, maxgrpn=NULL, anyna=0L, anyinfnan=0L, anyno
   x
 }
 
+c_sortable_letters = letters
+# For some tests of forder() compatibility with base sorting methods.
+# Subset the letters until the collation order matches C. This way we don't totally ignore
+#   any possible issues with sorting strings in unusual locales (even though this _should_
+#   be impossible given we _always_ use C-collated order, such a regression test is still
+#   beneficial as a sanity check).
+if (!identical(order(letters, method='shell'), order(letters, method='radix'))) {
+  repeat {
+    sorted_c = c_sortable_letters[order(c_sortable_letters, method='radix')]
+    sorted_r = c_sortable_letters[order(c_sortable_letters, method='shell')]
+
+    mismatch = which(sorted_c != sorted_r)
+    if (!length(mismatch)) break
+    c_sortable_letters = c_sortable_letters[-mismatch[1L]]
+  }
+}
+if (length(c_sortable_letters) < 5L) {
+  stop("This locale collates too differently from C; please report.")
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -4454,24 +4474,6 @@ test(1221, DT[.(1),b], c("a","c","e"))
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
-c_sortable_letters = letters
-# Subset the letters until the collation order matches C. This way we don't totally ignore
-#   any possible issues with sorting strings in unusual locales (even though this _should_
-#   be impossible given we _always_ use C-collated order, such a regression test is still
-#   beneficial as a sanity check).
-if (!identical(order(letters, method='shell'), order(letters, method='radix'))) {
-  repeat {
-    sorted_c = c_sortable_letters[order(c_sortable_letters, method='radix')]
-    sorted_r = c_sortable_letters[order(c_sortable_letters, method='shell')]
-
-    mismatch = which(sorted_c != sorted_r)
-    if (!length(mismatch)) break
-    c_sortable_letters = c_sortable_letters[-mismatch[1L]]
-  }
-}
-if (length(c_sortable_letters) < 5L) {
-  stop("This locale collates too differently from C; please report.")
-}
 foo <- function(n) apply(matrix(sample(c_sortable_letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
 i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
