@@ -33,7 +33,7 @@ nafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA) {
 
 setnafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x)) {
   type = match.arg(type)
-  if (!is.list(x)) stop("in-place update is supported only for list")
+  if (!is.list(x)) stop("in-place update is supported only for list", call. = FALSE)
   cols = .Call(CcolnamesInt, x, cols, FALSE, FALSE)
   invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols))
 }
