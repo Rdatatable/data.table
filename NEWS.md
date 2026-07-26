@@ -36,6 +36,8 @@
 
 7. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
 
+8. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

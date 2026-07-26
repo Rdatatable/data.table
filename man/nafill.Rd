@@ -18,7 +18,7 @@ setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x)
   \item{type}{ Character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
   \item{fill}{ Value to be used to replace missing observations. See examples. }
   \item{nan}{ Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement. See Examples. }
-  \item{cols}{ Numeric or character vector specifying columns to be updated. }
+  \item{cols}{ Numeric, character or logical vector specifying columns to be updated. A logical vector must be the same length as the number of columns in \code{x}. }
 }
 \details{
   Supported types are \emph{logical}, \emph{integer}, \emph{double}, \emph{character}, and \emph{factor}, as well as classes built on top of these such as \code{Date}, \code{IDate}, and \code{POSIXct}.
