@@ -11280,10 +11280,10 @@ attr(x, 'tzone') = NULL
 test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]")
 
 # test test's ignore.warning
-test(1765.2, {warning("foo"); 4L}, 4L, ignore.warning="foo")
-test(1765.3, {warning("foo"); 4L}, 4L, ignore.warning="Foo", warning="foo")
-test(1765.4, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="bar", warning="FOO")
-test(1765.5, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="2", warning=c("foobar1","FOO"))
+test(1765.2, warning("foo"), ignore.warning="foo", check_value=FALSE)
+test(1765.3, warning("foo"), ignore.warning="Foo", warning="foo", check_value=FALSE)
+test(1765.4, {warning("foobar1"); warning("foobar2"); warning("FOO")}, ignore.warning="bar", warning="FOO", check_value=FALSE)
+test(1765.5, {warning("foobar1"); warning("foobar2"); warning("FOO")}, ignore.warning="2", warning=c("foobar1","FOO"), check_value=FALSE)
 
 # print(null.data.table()) should not output NULL as well, #1852
 test(1766, data.table(NULL), notOutput = "NULL$")
@@ -17219,7 +17219,7 @@ test(2186, DT[, if (TRUE) .(a=1L) else .(a=1L, b=2L)], DT,
 
 # col.names='none' should apply when wrapping too, #4270
 DT = setDT(replicate(getOption('width'), 1, simplify = FALSE))
-test(2187, {print(DT, col.names='none'); TRUE}, notOutput="V")
+test(2187, print(DT, col.names='none'), notOutput="V", check_value=FALSE)
 
 # fifelse now supports vector na arguments and coerces NA to other types, PR#4289
 test(2188.01, fifelse(c(TRUE, FALSE, TRUE, NA), 1L, 2L, 1.0), c(1, 2, 1, 1))
@@ -20657,7 +20657,7 @@ test(2304.099, copy(DT)[2L, let(L1=list(NULL), L2=list(NULL))], ans)
 test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(NULL))), ans)
 
 # the integer overflow in #6729 is only noticeable with UBSan
-if (test_R.utils) test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
+if (test_R.utils) test(2305, fread(testDir("issue_6729.txt.bz2")), check_value=FALSE)
 
 if (exists("sort_by", "package:base")) {
   # sort_by.data.table
@@ -20691,7 +20691,7 @@ DT <- data.table(a = 1:2, b = 2:1)
 setindex(DT, b)
 # make sure that print(DT) doesn't warn due to the header missing index column types, #6806
 # can't use output= here because the print() call is outside withCallingHandlers(...)
-test(2307, { capture.output(print(DT, class = TRUE, show.indices = TRUE)); TRUE })
+test(2307, capture.output(print(DT, class = TRUE, show.indices = TRUE)), check_value=FALSE)
 
 # fread with colClasses and keepLeadingZeros=TRUE #6851
 dt = data.table(date=as.IDate(c(NA, "2014-12-05")))
@@ -21667,9 +21667,9 @@ test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
 test(2370.5, yearmon(NA, format="character"), NA_character_)
 
 # multiple expected/observed warnings in test() are printed on aligned lines, #7092
-test(2371.1, test(0, {warning("a"); 2L}, 2L, warning=c("a", "b")), FALSE,
+test(2371.1, test(0, warning("a"), warning=c("a", "b"), check_value=FALSE), FALSE,
              output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
-test(2372.2, test(0, {warning("a"); warning("b"); 2L}, 2L, warning="a"), FALSE,
+test(2372.2, test(0, {warning("a"); warning("b")}, warning="a", check_value=FALSE), FALSE,
              output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
 
 # group-by on empty table works
@@ -21851,15 +21851,20 @@ test(2379.12, as.IDate(d) + 1L, as.IDate(as.Date(d) + 1L))
 test(2379.13, as.IDate("2020-01-01") + a, as.IDate(as.Date("2020-01-01") + a))
 test(2379.14, as.IDate(d) - 1L, as.IDate(as.Date(d) - 1L))
 
+# #6341: tstrsplit() supports reverse indexing
+test(2380.01, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL", "ABC-DEF-GHI-JKL-MNO"), "-", fixed=TRUE, keep=1:3, rev=TRUE), list(c("DEF", "GHI", "JKL", "MNO"), c("ABC", "DEF", "GHI", "JKL"), c(NA_character_, "ABC", "DEF", "GHI")))
+test(2380.02, tstrsplit(c("A-B", "A-B-C"), "-", fixed=TRUE, rev=TRUE), list(c("B", "C"), c("A", "B"), c(NA_character_, "A")))
+test(2380.03, tstrsplit("A-B", "-", rev=NA), error="'rev' must be TRUE or FALSE.")
+
 # copy() reallocates data.tables inside list columns and attributes, #7820
 x = list()
 attr(x, 'foo') = 1:2
 attr(x, 'dt') = data.table()
-test(2380.1, truelength(attr(copy(x), 'dt')) > 0L)
+test(2381.1, truelength(attr(copy(x), 'dt')) > 0L)
 rm(x)
 inner = data.table(a=1)
 DT = data.table(x=1:2, y=list(inner, inner))
 DT2 = copy(DT)
-test(2380.2, truelength(DT2$y[[1L]]) > 0L)
-test(2380.3, DT2$y[[1L]][, b := 2][, b], 2)
+test(2381.2, truelength(DT2$y[[1L]]) > 0L)
+test(2381.3, DT2$y[[1L]][, b := 2][, b], 2)
 rm(inner, DT, DT2)
