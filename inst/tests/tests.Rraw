@@ -233,23 +233,29 @@ ForderObj = function(x, starts=NULL, maxgrpn=NULL, anyna=0L, anyinfnan=0L, anyno
   x
 }
 
-c_sortable_letters = letters
+c_sortable_pairs = apply(expand.grid(letters, letters), 1L, paste, collapse="")
 # For some tests of forder() compatibility with base sorting methods.
-# Subset the letters until the collation order matches C. This way we don't totally ignore
+# Subset the pairs of letters until the collation order matches C. This way we don't totally ignore
 #   any possible issues with sorting strings in unusual locales (even though this _should_
 #   be impossible given we _always_ use C-collated order, such a regression test is still
-#   beneficial as a sanity check).
-if (!identical(order(letters, method='shell'), order(letters, method='radix'))) {
+#   beneficial as a sanity check). Pairs of letters are needed for languages like Latvian which
+#   have some '<='-like letters e.g. 'i' and 'y' are considered something of a 'tie', except when a
+#   tie-breaker is needed. For example, 'ya' comes before 'ib' because of 'a' < 'b' and 'i' <= 'y',
+#   but the letters alone sort as 'i' < 'y'.
+if (!identical(order(c_sortable_pairs, method='shell'), order(c_sortable_pairs, method='radix'))) {
   repeat {
-    sorted_c = c_sortable_letters[order(c_sortable_letters, method='radix')]
-    sorted_r = c_sortable_letters[order(c_sortable_letters, method='shell')]
+    sorted_c = c_sortable_pairs[order(c_sortable_pairs, method='radix')]
+    sorted_r = c_sortable_pairs[order(c_sortable_pairs, method='shell')]
 
     mismatch = which(sorted_c != sorted_r)
     if (!length(mismatch)) break
-    c_sortable_letters = c_sortable_letters[-mismatch[1L]]
+    c_sortable_pairs = c_sortable_pairs[-mismatch[1L]]
   }
+} else {
+  # don't pull all 676 pairs, but also not sample() for stability
+  c_sortable_pairs = c_sortable_pairs[seq(1L, length(c_sortable_pairs), length.out=75L)]
 }
-if (length(c_sortable_letters) < 5L) {
+if (length(c_sortable_pairs) < 5L) {
   stop("This locale collates too differently from C; please report.")
 }
 
@@ -4474,12 +4480,12 @@ test(1221, DT[.(1),b], c("a","c","e"))
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
-foo <- function(n) apply(matrix(sample(c_sortable_letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
+foo <- function(n) apply(matrix(sample(c_sortable_pairs, n*4L, TRUE), ncol=4L), 1, paste, collapse="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
 i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
 d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
 d2 = as.numeric(rnorm(1e3))
-c1 = sample(c_sortable_letters, 1e3, TRUE)
+c1 = sample(c_sortable_pairs, 1e3, TRUE)
 c2 = sample(foo(50), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, d2, c1, c2)
@@ -4748,11 +4754,11 @@ seed = as.integer(Sys.time())
 # forder consistently to save pull requests failing coverage tests randomly, issue #2346
 set.seed(seed)
 # these variable try to simulate groups of length 1, 2, < 200, > 200 so as to cover all different internal implementations
-foo <- function(n) apply(matrix(sample(c_sortable_letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
+foo <- function(n) apply(matrix(sample(c_sortable_pairs, n*4L, TRUE), ncol=4L), 1, paste, collapse="")
 i1 = as.integer(sample(rep(c(-3:3, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
 i2 = as.integer(sample(rep(c(-2:2, -1e6, 1e6, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
 d1 = as.numeric(sample(rep(c(-2:2,Inf,-Inf, NA_real_, 5, -1e3), c(1, 190, 2, 300, 7, 50, 50, 100, 150, 150))))
-c1 = sample(rep(c(c_sortable_letters[1:5], NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
+c1 = sample(rep(c(c_sortable_pairs[1:5], NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
 c2 = sample(c(foo(200), NA_character_), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, c1, c2)
