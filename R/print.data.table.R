@@ -259,7 +259,7 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_width = tryCatch(nchar(x, 'width', allowNA=TRUE), error=identity)
   if (inherits(nchar_width, "error")) { # for R<4.2 e.g. 2366.6 print of fread table gives 'invalid multibyte string'
     x = encodeString(x)
-    x = nchar(x, 'width', allowNA=TRUE)
+    nchar_width = nchar(x, 'width', allowNA=TRUE)
   }
   nchar_chars = nchar(x, 'char', allowNA=TRUE)
   is_full_width = nchar_width > nchar_chars
