@@ -70,6 +70,8 @@
 
 15. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report and @venom1204 for the PR.
 
+16. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, list columns inside data.tables are searched recursively, and their attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

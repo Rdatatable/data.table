@@ -21855,3 +21855,16 @@ test(2379.14, as.IDate(d) - 1L, as.IDate(as.Date(d) - 1L))
 test(2380.01, tstrsplit(c("ABC-DEF", "ABC-DEF-GHI", "ABC-DEF-GHI-JKL", "ABC-DEF-GHI-JKL-MNO"), "-", fixed=TRUE, keep=1:3, rev=TRUE), list(c("DEF", "GHI", "JKL", "MNO"), c("ABC", "DEF", "GHI", "JKL"), c(NA_character_, "ABC", "DEF", "GHI")))
 test(2380.02, tstrsplit(c("A-B", "A-B-C"), "-", fixed=TRUE, rev=TRUE), list(c("B", "C"), c("A", "B"), c(NA_character_, "A")))
 test(2380.03, tstrsplit("A-B", "-", rev=NA), error="'rev' must be TRUE or FALSE.")
+
+# copy() reallocates data.tables inside list columns and attributes, #7820
+x = list()
+attr(x, 'foo') = 1:2
+attr(x, 'dt') = data.table()
+test(2381.1, truelength(attr(copy(x), 'dt')) > 0L)
+rm(x)
+inner = data.table(a=1)
+DT = data.table(x=1:2, y=list(inner, inner))
+DT2 = copy(DT)
+test(2381.2, truelength(DT2$y[[1L]]) > 0L)
+test(2381.3, DT2$y[[1L]][, b := 2][, b], 2)
+rm(inner, DT, DT2)
