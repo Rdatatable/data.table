@@ -150,7 +150,7 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
   } else {
     ans = lapply(n, function(.n) .Call(Cfrolladapt, x, .n, partial))
     if (isTRUE(give.names) || is.character(give.names))
-      set.roll.names(ans, give.names, if (is.null(nms)) paste0("n", as.character(n)) else nms)
+      set.roll.names(ans, give.names, nms %||% paste0("n", as.character(n)))
   }
   ans
 }
