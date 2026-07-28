@@ -77,9 +77,14 @@ if (loaded[["ggplot2"]]) {
   # suppressWarnings: in locales where 'human-readable' formatting of date/datetime uses
   #   multibyte characters, we'll get a warning. We'd have to muddle this with scale
   #   specifications to get around this robustly; simpler for this test to just suppress.
-  test(1.5, all.equal(
-    suppressWarnings(print(DT[, qplot(idate, as.POSIXct(itime, tzone=""))])),
-    suppressWarnings(print(qplot(idate, as.POSIXct(itime, tzone=""), data=DT)))))
+  p1 = suppressWarnings(DT[, qplot(idate, as.POSIXct(itime, tzone=""))])
+  p2 = suppressWarnings(qplot(idate, as.POSIXct(itime, tzone=""), data=DT))
+  # ggplot2 internal representation of plots has changed several times over. The recommended
+  #   flow to compare the plots is to use {vdiffr}; we just care that any internal coercion
+  #   of IDate/ITime goes off without a hitch, so just comparing file size should be "good enough".
+  ggsave(t1 <- tempfile(), p1, device='png')
+  ggsave(t2 <- tempfile(), p2, device='png')
+  test(1.5, file.size(t1), file.size(t2))
   try(graphics.off(), silent=TRUE)
 }
 
