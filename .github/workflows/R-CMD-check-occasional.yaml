@@ -1,5 +1,4 @@
 on:
-  push:
   schedule:
    - cron: '17 13 23 * *' # 23rd of month at 13:17 UTC
   workflow_dispatch:
@@ -126,14 +125,13 @@ jobs:
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_other_pkg)
-          if (!run_other) {
-            message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
-          }
-          message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
           if (run_other) {
             desc = read.dcf("DESCRIPTION")
             desc[1L, "Suggests"] = toString(unique(c(desc[1, "Suggests"], other_pkgs)))
             write.dcf(desc, "DESCRIPTION")
+            message("Setting TEST_DATA_TABLE_WITH_OTHER_PACKAGES=TRUE to run other.Rraw")
+          } else {
+            message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
           }
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
