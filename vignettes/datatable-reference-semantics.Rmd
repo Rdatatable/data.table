@@ -412,24 +412,30 @@ To select a single column as a vector, remember:
 
 ### d) Side effects and testing
 
-Because `:=` modifies its input in-place, the changes persist. If the same *data.table* is reused, for example in a loop or when using `test()` with multiple `optimization` levels, subsequent runs will start with the table as modified by the previous run. Use `copy()` to ensure each run starts with the same data for every evaluation.
+Because `:=` modifies its input in-place, the changes persist. This is important when running tests or comparisons across different optimization levels (e.g., using the internal `test()` function or by setting `options(datatable.optimize = ...)`). If the same *data.table* is reused across these evaluations, subsequent runs will start with the table as modified by the previous run.
 
 ```{r}
 DT = data.table(a = 1L)
 
-# Simulation of a test running under two optimization levels:
-# Optimization level 1
+# WRONG: The second run starts with the modified table
+options(datatable.optimize = 1L)
 DT[, a := a + 1L]
-# Optimization level 2 starts with the modified table (a = 2)
-DT[, a := a + 1L]
-DT  # 'a' is now 3, not 2!
 
-# Correct approach: use copy() to isolate evaluations for each level
+options(datatable.optimize = 2L)
+DT[, a := a + 1L]
+DT$a  # returns 3; the result of Level 2 is 'polluted' by Level 1
+
+# RIGHT: Use copy() to ensure a fresh state for each optimization level
 DT = data.table(a = 1L)
-# Optimization level 1
+
+options(datatable.optimize = 1L)
 copy(DT)[, a := a + 1L]
-# Optimization level 2
+
+options(datatable.optimize = 2L)
 copy(DT)[, a := a + 1L]
+
+# Reset to default optimization level
+options(datatable.optimize = 3L)
 ```
 
 ## Summary
