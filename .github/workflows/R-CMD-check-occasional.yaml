@@ -70,6 +70,10 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
 
+      - name: Set script permissions
+        run: chmod +x configure cleanup 2>/dev/null || true # Silence some GHA Annotations
+        shell: bash
+
       - name: Install check dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -85,8 +89,9 @@ jobs:
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
         run: |
+          brew untap aws/tap 2>/dev/null || true # silence some 'brew' Annotations
           brew install gdal proj gettext
-          brew link --force gettext
+          brew link --overwrite --force gettext 2>/dev/null || true
 
       - name: Check
         env:
