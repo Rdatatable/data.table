@@ -72,6 +72,8 @@
 
 16. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, list columns inside data.tables are searched recursively, and their attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
 
+17. `print()` works with multi-byte characters on R before 4.2.0, [#7848](https://github.com/Rdatatable/data.table/pull/7848). Thanks @MichaelChirico for the fix and @aitap for the improvement.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
