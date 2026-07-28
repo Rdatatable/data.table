@@ -80,6 +80,10 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev pandoc
 
+      - name: Pre-untap untrusted Homebrew taps on macOS
+        if: matrix.os == 'macOS-latest'
+        run: brew untap aws/tap 2>/dev/null || true
+
       - name: Install R Package Build Dependencies on MacOS
         if: matrix.os == 'macOS-latest'
         uses: r-hub/actions/setup-r-sysreqs@v1
@@ -89,7 +93,6 @@ jobs:
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
         run: |
-          brew untap aws/tap 2>/dev/null || true # silence some 'brew' Annotations
           brew install gdal proj gettext
           brew link --overwrite --force gettext 2>/dev/null || true
 
@@ -100,7 +103,14 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_TESTS_NLINES_: 0
         run: |
-          options(crayon.enabled = TRUE)
+          options(crayon.enabled=TRUE)
+          dir.create("~/.R", showWarnings=FALSE)
+          # suppress noisy Annotation for e.g. {hexbin} about tabs v. spaces
+          cat("FCFLAGS += -Wno-tabs\nFFLAGS += -Wno-tabs\n", file="~/.R/Makevars", append=TRUE)
+          # e.g. Annotation about lacking macosx binaries: bin/macosx/sonoma-arm64/contrib/4.7
+          if (grepl("Under development", R.version$status)) options(pkgType="source")
+          # to avoid Annotation about certain packages being unavailable, use this old snapshot repo
+          if (getRversion() < "3.6") options(repos=c(CRAN="https://packagemanager.posit.co/cran/2020-04-24"))
           message("*** Using the following repos for installation ***")
           print(getOption("repos"))
           message("*** Installing Suggested packages ***")
