@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: transpose 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: transpose.R:7
+msgid "make.names='%s' not found in names of input"
+msgstr "make.names='%s' इनपुट (input) के नामों में नहीं मिला"
+
+#: transpose.R:12
+msgid "make.names=%d is out of range [1,ncol=%d]"
+msgstr "make.names=%d सीमा [1,ncol=%d] से बाहर है"
+
+#: transpose.R:28
+msgid "'names' must be TRUE/FALSE or a character vector."
+msgstr "'names' TRUE/FALSE या कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+
+#: transpose.R:34
+msgid "'keep' should contain integer values between %d and %d."
+msgstr "'keep' में %d से %d के बीच पूर्णांक (integer) मान होने चाहिए।"
+
+#: transpose.R:51
+msgid "The argument 'type.convert' does not support empty list."
+msgstr "आर्ग्युमेंट (argument) 'type.convert' रिक्त लिस्ट (list) का समर्थन नहीं करता है।"
+
+#: transpose.R:57
+msgid ""
+"When the argument 'type.convert' contains an unnamed element, it is expected "
+"to be the last element and should be a function. More than one unnamed "
+"element is not allowed unless all elements are functions with length equal to "
+"%d (the length of the transpose list or 'keep' argument if it is specified)."
+msgstr ""
+"जब आर्ग्युमेंट (argument) 'type.convert' में कोई नामरहित तत्व होता है,”
+“तो उससे अंतिम तत्व होने की अपेक्षा होती है और वह फ़ंक्शन (function) होना चाहिए।”
+“एक से अधिक नामरहित तत्व की अनुमति नहीं है जब तक कि सभी तत्व फ़ंक्शन (function) न हों जिनकी लेंथ (length)”
+“%d (transpose लिस्ट (list) या 'keep' आर्ग्युमेंट (argument) की लेंथ (length) यदि निर्दिष्ट है) के बराबर हो।"
+
+#: transpose.R:66
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, it should "
+"be a named list of non-missing integer values (with no duplicate) except the "
+"last element that should be unnamed if it is a function."
+msgstr ""
+"जब आर्ग्युमेंट (argument) 'type.convert' में transpose लिस्ट (list) इंडिसेज़ (indices) होते हैं,”
+“तो यह नाम सहित गैर-लापता पूर्णांक (integer) मानों की लिस्ट (list) होनी चाहिए (कोई डुप्लिकेट (duplicate) नहीं)”
+“सिवाय अंतिम तत्व के, जो कि नामरहित होना चाहिए यदि वह एक फ़ंक्शन (function) है।"
+
+#: transpose.R:68
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, they should "
+"be integer values contained in the argument 'keep' (if it is specified) or be "
+"between %d and %d (if it is not). But '%s' is/are not contained in '%s'."
+msgstr ""
+"जब आर्ग्युमेंट (argument) 'type.convert' में transpose लिस्ट (list) इंडिसेज़ (indices) होते हैं,”
+“तो वे आर्ग्युमेंट (argument) 'keep' (यदि निर्दिष्ट हो) में मौजूद पूर्णांक (integer) मान होने चाहिए या %d और %d”
+“के बीच होने चाहिए (यदि निर्दिष्ट नहीं है)। लेकिन '%s' '%s' में शामिल नहीं है/हैं।"
+
+#: transpose.R:74
+msgid ""
+"In the argument 'type.convert', '%s' was ignored because all elements in the "
+"transpose list or elements corresponding to indices specified in the 'keep' "
+"argument have already been converted."
+msgstr ""
+"आर्ग्युमेंट (argument) 'type.convert' में, '%s' को अनदेखा कर दिया गया क्योंकि”
+“transpose लिस्ट (list) के सभी तत्व या 'keep' आर्ग्युमेंट (argument) में निर्दिष्ट”
+“इंडिसेज़ (indices) से जुड़े तत्व पहले ही रूपांतरित किए जा चुके हैं।"
+
+#: transpose.R:83
+msgid ""
+"The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
+"functions, or a named list of pairs 'fun=indices' with optionally one unnamed "
+"element (a function) but an object of type '%s' was provided."
+msgstr ""
+"आर्ग्युमेंट (argument) 'type.convert' TRUE/FALSE, एक फ़ंक्शन (function), फंक्शन्स (functions) की लिस्ट (list),”
+“या 'fun=indices' की नाम सहित जोड़े की लिस्ट (list) होनी चाहिए, जिसमें वैकल्पिक रूप से एक नामरहित तत्व (एक फ़ंक्शन (function)) हो सकता है,”
+“लेकिन '%s' प्रकार की ऑब्जेक्ट (object) दी गई थी।"
+
+#: transpose.R:88
+msgid "length(names) (= %d) is not equal to length(%s) (= %d)."
+msgstr "length(names) (= %d) length(%s) (= %d) के बराबर नहीं है।"
