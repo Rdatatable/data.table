@@ -156,20 +156,6 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       else if(bskip_absent && icols[i]>nx)
         icols[i] = 0L;
     }
-  } else if (isLogical(cols) && nc == nx) { 
-    int count = 0;
-    const int *bcols = LOGICAL_RO(cols);
-    for (int i=0; i<nc; i++) {
-      if (bcols[i] == 1) count++;
-      else if (bcols[i] == NA_LOGICAL)
-        error(_("argument specifying columns is a logical vector containing NA at position %d"), i+1);
-    }
-    ricols = PROTECT(allocVector(INTSXP, count)); protecti++;
-    int *icols = INTEGER(ricols);
-    int target = 0;
-    for (int i=0; i<nc; i++) {
-      if (bcols[i] == 1) icols[target++] = i + 1;
-    }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
     if (isNull(xnames))
