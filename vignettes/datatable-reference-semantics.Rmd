@@ -414,9 +414,8 @@ To select a single column as a vector, remember:
 
 Because `:=` modifies its input in-place, the changes persist. This matters when using the internal `test()` function to run an expression at multiple optimization levels: each evaluation must start with the same data. Use `copy()` inside the expression passed to `test()`.
 
-```{r, eval=FALSE}
+```r
 DT = data.table(a = 1L)
-
 # Run the expression with optimization levels 0, 1, 2, and 3.
 # copy(DT) gives every evaluation an independent input.
 test(1, copy(DT)[, a := a + 1L][], data.table(a = 2L), optimize = 0:3)
