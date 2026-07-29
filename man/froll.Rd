@@ -165,6 +165,10 @@ all.equal(ans1, ans3)
 
 # give.names
 frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
+# supply output names
+frollsum(x=1:5, c(2,4), give.names=c("tiny", "big"))
+# output is atomic, so names are ignored
+frollsum(x=1:5, 2, give.names="tiny")
 
 # has.nf=FALSE should be used with care
 frollmax(c(1,2,NA,4,5), 2)
