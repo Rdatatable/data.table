@@ -409,7 +409,7 @@ SEXP copyCols(SEXP x, SEXP cols);
 // where there are no arguments, it must be (void) not () to be a strict prototype
 SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP copy(SEXP);
+SEXP copy(SEXP, SEXP);
 SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
 SEXP allocrowwrapper(SEXP, SEXP);
