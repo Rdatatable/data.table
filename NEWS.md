@@ -78,6 +78,9 @@
 
 18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
 
+11. `.NAUTRAL` now unpacks early enough to detect common columns, the same as `on=` join, [#6667] (https://github.com/Rdatatable/data.table/issues/6667). Thanks you @MichaelChirico for the report and @aam936 for the fix. 
+
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
