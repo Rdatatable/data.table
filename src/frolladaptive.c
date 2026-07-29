@@ -29,42 +29,50 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
   case MAX :
     if (algo==0 && verbose) {
       //frolladaptivemaxFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemaxFast does not exists as of now
-      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+      snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (Last snprintf in this function)
+      algo = 1;
     }
     frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case MIN :
     if (algo==0 && verbose) {
       //frolladaptiveminFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveminFast does not exists as of now
-      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+      snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      //set algo to 1 to print exact instead of fast in snprinf "fun %s" (Last snprintf in this function)
+      algo = 1;
     }
     frolladaptiveminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case PROD :
     if (algo==0 && verbose) {
       //frolladaptiveprodFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveprodFast does not exists as of now
-      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+      snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      algo = 1;
     }
     frolladaptiveprodExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case MEDIAN :
     if (algo==0 && verbose) {
       //frolladaptivemedianFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemedianFast does not exists as of now
-      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+      snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      algo = 1;
     }
     frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case VAR :
     if (algo==0 && verbose) {
       //frolladaptivevarFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivevarFast does not exists as of now
-      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+      snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      algo = 1;
     }
     frolladaptivevarExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   case SD :
     if (algo==0 && verbose) {
       //frolladaptivesdFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivesdFast does not exists as of now
-      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+      snprintf(end(ans->message[0]), 500, _("%s: algo fast not implemented, fall back to exact\n"), __func__);
+      algo = 1;
     }
     frolladaptivesdExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
@@ -72,7 +80,7 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, const double *x, uint64
     internal_error(__func__, "Unknown rfun value in frolladaptive: %d", rfun); // # nocov
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %s algo %s took %.3fs\n"), __func__, rfunNames[rfun], (algo == 0) ? "fast" : "exact", omp_get_wtime()-tic);
 }
 
 #undef MEAN_WINDOW_STEP_VALUE

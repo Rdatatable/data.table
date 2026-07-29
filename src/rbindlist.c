@@ -250,7 +250,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
-    SEXP idval, listNames=getAttrib(l, R_NamesSymbol);
+    SEXP idval, listNames=PROTECT(getAttrib(l, R_NamesSymbol));
     if (length(listNames)) {
       SET_VECTOR_ELT(ans, 0, idval=allocVector(STRSXP, nrow));
       for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
@@ -270,16 +270,19 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         for (int k=0; k<thisnrow; ++k) idvald[ansloc++] = i+1;
       }
     }
+    UNPROTECT(1); // listNames
   }
 
-  SEXP coercedForFactor = NULL;
+  PROTECT_INDEX IcoercedForFactor;
+  SEXP coercedForFactor = R_NilValue;
+  PROTECT_WITH_INDEX(coercedForFactor, &IcoercedForFactor); nprotect++;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     PROTECT_INDEX ILongestLevels;
     SEXP longestLevels=R_NilValue;              // just for ordered factor
-    PROTECT_WITH_INDEX(longestLevels, &ILongestLevels); nprotect++;
+    PROTECT_WITH_INDEX(longestLevels, &ILongestLevels);
     bool int64=false, date=false, posixct=false, itime=false, asis=false;
     const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
@@ -349,7 +352,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
       // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
-      if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
+      if (coercedForFactor==R_NilValue) REPROTECT(coercedForFactor=allocVector(VECSXP, LENGTH(l)), IcoercedForFactor);
       for (int i=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
@@ -563,7 +566,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         ansloc += thisnrow;
       }
     }
+    UNPROTECT(1); // longestLevels
   }
-  UNPROTECT(nprotect); // ans, ansNames, longestLevels? coercedForFactor?
+  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor
   return(ans);
 }

@@ -24,11 +24,11 @@ body:
     attributes:
       label: Failing check output
       description: |
-        Paste the relevant `R CMD check` output showing the failure.
+        Write markdown describing the relevant `R CMD check` output showing the failure.
+        Paste check output inside a fenced code block (triple backticks).
         The output can be found in the
         [Monsoon results](https://rcdata.nau.edu/genomic-ml/data.table-revdeps/analyze/)
         or from a local revdep check.
-      render: text
     validations:
       required: true
 
@@ -49,7 +49,7 @@ body:
     attributes:
       label: Additional context
       description: |
-        Any other relevant information: @mentions of the commit/PR
+        Write markdown with any other relevant information: @mentions of the commit/PR
         author(s), links to Monsoon result pages, whether the fix
         should come from data.table or from the revdep package, etc.
         Minimal reproducible examples (MRE) can also be included here.

@@ -11,7 +11,7 @@ methods::setPackageName("data.table",.global)
 #   (1) add to man/special-symbols.Rd
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
-.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
+.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = .ROW = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
@@ -567,7 +567,7 @@ replace_dot_alias = function(e) {
         stopf("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
     if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
-    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse="\n"))
+    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", deparse1(bysub, collapse="\n"))
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -632,7 +632,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse="\n"))
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", deparse1(jsub, collapse="\n"))
     }
   }
   if (!missing(j)) {
@@ -722,7 +722,7 @@ replace_dot_alias = function(e) {
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse="\n"))
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", deparse1(isub, collapse="\n"))
     }
   }
   if (!missing(i)) {
@@ -841,9 +841,10 @@ replace_dot_alias = function(e) {
 
     if (is.data.frame(i)) {
       if (missing(on)) {
-        if (!haskey(x)) {
-          stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
-        }
+        if (haskey(x)) check_duplicate_key(x)
+        else stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+
+        if (haskey(i)) check_duplicate_key(i)
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
         naturaljoin = TRUE
       }
@@ -1559,6 +1560,18 @@ replace_dot_alias = function(e) {
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
+
+        # Check for .ROW := NULL pattern (delete rows by reference)
+        if (identical(lhs, ".ROW") || identical(lhs, quote(.ROW))) {
+          if (!is.null(jsub) && !identical(jsub, quote(NULL)))
+            stopf(".ROW can only be used with := NULL to delete rows")
+          if (is.null(irows))
+            stopf(".ROW := NULL requires i= condition to specify rows to delete")
+          if (!missingby)
+            stopf(".ROW := NULL does not support 'by' or 'keyby'. To delete rows using by grouping, first compute the row indices (e.g. rows = DT[, .I[cond], by=grp]$V1) and then delete them DT[rows, .ROW := NULL].")
+          .Call(CdeleteRows, x, irows)
+          return(suppPrint(x))
+        }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
         if (is.character(lhs)) {
@@ -1871,10 +1884,10 @@ replace_dot_alias = function(e) {
       }
       shared_keys = get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
       if (is.null(irows) && !is.null(shared_keys)) {
-        setattr(jval, 'sorted', shared_keys)
+        if (!any(shared_keys %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', shared_keys)
         # potentially inefficient backup -- check if jval is sorted by key(x)
       } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
-        setattr(jval, 'sorted', key(x))
+        if (!any(key(x) %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', key(x))
       }
       if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
     }
@@ -2188,7 +2201,8 @@ replace_dot_alias = function(e) {
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
-    setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
+    grpnames = names(ans)[seq_along(grpcols)]
+    if (!any(grpnames %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", grpnames)
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
@@ -2238,7 +2252,7 @@ replace_dot_alias = function(e) {
 
 # What's the name of the top-level call in 'j'?
 # NB: earlier, we used 'as.character()' but that fails for closures/builtins (#6026).
-root_name = function(jsub) if (is.call(jsub)) paste(deparse(jsub[[1L]]), collapse = " ") else ""
+root_name = function(jsub) if (is.call(jsub)) deparse1(jsub[[1L]], width.cutoff=60L) else ""
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")
@@ -2610,6 +2624,7 @@ subset.data.table = function(x, subset, select, ...)
   } else {
     setkey(ans,NULL)
   }
+  if (haskey(ans) && any(key(ans) %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", NULL)
   ans
 }
 
@@ -2765,26 +2780,8 @@ sort_by.data.table <- function(x, y, ...)
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
-copy = function(x) {
-  newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
-                         # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
-                         # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
-
-  reallocate = function(y) {
-    if (is.data.table(y)) {
-      .Call(C_unlock, y)
-      setalloccol(y)
-    } else if (is.list(y)) {
-      oldClass = class(y)
-      setattr(y, 'class', NULL)  # otherwise [[.person method (which returns itself) results in infinite recursion, #4620
-      y[] = lapply(y, reallocate)
-      if (!identical(oldClass, 'list')) setattr(y, 'class', oldClass)
-    }
-    y
-  }
-
-  reallocate(newx)
-}
+copy = function(x)
+  .Call(Ccopy, x, getOption('datatable.alloccol'))
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
   wasnull = is.null(cols)
@@ -2848,6 +2845,10 @@ setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbos
     assign(name,ans,parent.frame(),inherits=TRUE)
   }
   ans
+}
+
+setallocrow = function(DT, n=-1L) {
+  invisible(.Call(Callocrowwrapper, DT, as.integer(n)))
 }
 
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
@@ -2946,6 +2947,15 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))
+  if (haskey(x)) {
+    check_duplicate_key(x)
+    k = key(x)
+    if (length(w)) k[m[w]] = new[w]
+    newnames = names(x)
+    newnames[i] = new
+    duplicate_key = unique(c(k[duplicated(k)], k[k %chin% duplicated_values(newnames)]))
+    if (length(duplicate_key)) stopf("The new names would result in duplicated key columns: %s", brackify(duplicate_key))
+  }
   if (length(w))
     .Call(Csetcharvec, attr(x, "sorted", exact=TRUE), m[w], new[w])
 

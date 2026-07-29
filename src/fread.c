@@ -1847,6 +1847,7 @@ int freadMain(freadMainArgs _args)
       int topNumFields = 1;               // how many fields that was, to resolve ties
       enum quote_rule_t topQuoteRule = -1;   // which quote rule that was
       int topSkip = 0;                    // how many rows to auto-skip
+      // #7707 'topSkip' accumulates as blank lines are encountered; can be used to differentiate between a file where the header and data are separated by a blank line and a file where block(s) of lines or each line is separated by a blank line
       const char *topStart = NULL;
     
       for (quoteRule = quote ? QUOTE_RULE_EMBEDDED_QUOTES_DOUBLED : QUOTE_RULE_IGNORE_QUOTES; quoteRule < QUOTE_RULE_COUNT; quoteRule++) { // #loop_counter_not_local_scope_ok
@@ -1949,6 +1950,10 @@ int freadMain(freadMainArgs _args)
             }
           }
         }
+      }
+      if (!prevStart && topSkip > 1 && !skipEmptyLines)
+      {
+        DTWARN(_("The rows in this file appear to be separated by blank lines. This resulted in most rows being skipped. If this was not the intended outcome, please consider setting 'blank.lines.skip' to TRUE.\n"));
       }
       if (!firstJumpEnd) {
         if (verbose) DTPRINT(_("  No sep and quote rule found a block of 2x2 or greater. Single column input.\n"));
