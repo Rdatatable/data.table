@@ -1,0 +1,175 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fmelt 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fmelt.c:18
+msgid "'x' must be an integer"
+msgstr ""
+
+#: fmelt.c:19
+msgid "'n' must be a positive integer"
+msgstr ""
+
+#: fmelt.c:41
+msgid "Argument to 'which' must be logical"
+msgstr ""
+
+#: fmelt.c:65
+msgid "concat: 'vec' must be a character vector"
+msgstr ""
+
+#: fmelt.c:67
+msgid "concat: 'idx' must be an integer vector"
+msgstr ""
+
+#: fmelt.c:135
+#, c-format
+msgid "Unknown 'measure.vars' type %s at index %d of list"
+msgstr ""
+
+#: fmelt.c:188
+msgid "One or more values in 'measure.vars' is invalid."
+msgstr ""
+
+#: fmelt.c:190
+msgid "One or more values in 'id.vars' is invalid."
+msgstr ""
+
+#: fmelt.c:214
+#, c-format
+msgid "Unknown 'measure.vars' type %s, must be character or integer vector/list"
+msgstr ""
+
+#: fmelt.c:216
+#, c-format
+msgid "Unknown 'id.vars' type %s, must be character or integer vector"
+msgstr ""
+
+#: fmelt.c:241
+#, c-format
+msgid ""
+"id.vars and measure.vars are internally guessed when both are 'NULL'. All non-"
+"numeric/integer/logical type columns are considered id.vars, which in this "
+"case are columns [%s]. Consider providing at least one of 'id' or 'measure' "
+"vars in future."
+msgstr ""
+
+#: fmelt.c:247
+msgid ""
+"'measure.vars' is missing. Assigning all columns other than 'id.vars' columns "
+"as 'measure.vars'.\n"
+msgstr ""
+
+#: fmelt.c:249
+#, c-format
+msgid "Assigned 'measure.vars' are [%s].\n"
+msgstr ""
+
+#: fmelt.c:260
+msgid ""
+"'id.vars' is missing. Assigning all columns other than 'measure.vars' columns "
+"as 'id.vars'.\n"
+msgstr ""
+
+#: fmelt.c:261
+#, c-format
+msgid "Assigned 'id.vars' are [%s].\n"
+msgstr ""
+
+#: fmelt.c:315
+msgid ""
+"When 'measure.vars' is a list, 'value.name' must be a character vector of "
+"length =1 or =length(measure.vars)."
+msgstr ""
+
+#: fmelt.c:316
+msgid ""
+"When 'measure.vars' is either not specified or a character/integer vector, "
+"'value.name' must be a character vector of length =1."
+msgstr ""
+
+#: fmelt.c:319
+msgid "'variable.name' must be a character/integer vector of length 1."
+msgstr ""
+
+#: fmelt.c:372
+msgid ""
+"variable_table attribute of measure.vars should be a data table with at least "
+"one column"
+msgstr ""
+
+#: fmelt.c:377
+#, c-format
+msgid ""
+"variable_table attribute of measure.vars should be a data table with same "
+"number of rows as max length of measure.vars vectors =%d"
+msgstr ""
+
+#: fmelt.c:381
+msgid ""
+"variable_table attribute of measure.vars should be either NULL or a data table"
+msgstr ""
+
+#: fmelt.c:464
+#, c-format
+msgid ""
+"'measure.vars' [%s] are not all of the same type. By order of hierarchy, the "
+"molten data value column will be of type '%s'. All measure variables not of "
+"type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on "
+"coercion.\n"
+msgstr ""
+
+#: fmelt.c:576
+#, c-format
+msgid "Unknown column type '%s' for column '%s'."
+msgstr ""
+
+#: fmelt.c:686
+#, c-format
+msgid "variable_table does not support column type '%s' for column '%s'."
+msgstr ""
+
+#: fmelt.c:780
+#, c-format
+msgid "Unknown column type '%s' for column '%s' in 'data'"
+msgstr ""
+
+#: fmelt.c:791
+msgid "Input is not of type VECSXP, expected a data.table, data.frame or list"
+msgstr ""
+
+#: fmelt.c:792
+msgid "Argument 'value.factor' should be logical TRUE/FALSE"
+msgstr ""
+
+#: fmelt.c:793
+msgid "Argument 'variable.factor' should be logical TRUE/FALSE"
+msgstr ""
+
+#: fmelt.c:794
+msgid "Argument 'na.rm' should be logical TRUE/FALSE."
+msgstr ""
+
+#: fmelt.c:795
+msgid "Argument 'variable.name' must be a character vector"
+msgstr ""
+
+#: fmelt.c:796
+msgid "Argument 'value.name' must be a character vector"
+msgstr ""
+
+#: fmelt.c:797
+msgid "Argument 'verbose' should be logical TRUE/FALSE"
+msgstr ""
+
+#: fmelt.c:801
+msgid "ncol(data) is 0. Nothing to melt. Returning original data.table."
+msgstr ""
