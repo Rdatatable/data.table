@@ -111,6 +111,14 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
   ans
 }
 
+# internal helper for applying give.names to rolling results
+set.roll.names = function(ans, give.names, generated) {
+  nms = if (is.character(give.names)) give.names else generated
+  if (length(nms) != length(ans))
+    stopf("length of 'give.names' (%d) must match the number of rolling results (%d)", length(nms), length(ans))
+  setattr(ans, "names", nms)
+}
+
 # irregularly spaced time series, helper for creating adaptive window size
 frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
   x = unclass(x)
@@ -134,18 +142,15 @@ frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
     stopf("'align' other than 'right' has not yet been implemented")
   if (!isTRUEorFALSE(partial))
     stopf("'%s' must be TRUE or FALSE", "partial")
-  if (!isTRUEorFALSE(give.names))
-    stopf("'%s' must be TRUE or FALSE", "give.names")
+  if (!isTRUEorFALSE(give.names) && !is.character(give.names))
+    stopf("'%s' must be TRUE or FALSE, or a character vector", "give.names")
 
   if (length(n) == 1L) {
     ans = .Call(Cfrolladapt, x, n, partial)
   } else {
     ans = lapply(n, function(.n) .Call(Cfrolladapt, x, .n, partial))
-    if (give.names) {
-      if (is.null(nms))
-        nms = paste0("n", as.character(n))
-      setattr(ans, "names", nms)
-    }
+    if (isTRUE(give.names) || is.character(give.names))
+      set.roll.names(ans, give.names, nms %||% paste0("n", as.character(n)))
   }
   ans
 }
@@ -155,6 +160,8 @@ froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","le
   if (!missing(hasNA)) stopf("hasNA is deprecated, use has.nf instead")
   algo = match.arg(algo)
   align = match.arg(align)
+  if (!isTRUEorFALSE(give.names) && !is.character(give.names))
+    stopf("'%s' must be TRUE or FALSE, or a character vector", "give.names")
   if (isTRUE(give.names)) {
     orig = list(n=n, adaptive=adaptive)
     xnam = if (is.list(x)) names(x) else character()
@@ -186,10 +193,8 @@ froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","le
       catf("froll: adaptive=TRUE && align='left' post-processing from align='right'\n")
     ans = rev2(ans)
   }
-  if (isTRUE(give.names) && is.list(ans)) {
-    nms = make.roll.names(x.len=nx, n.len=nn, n=orig$n, x.nm=xnam, n.nm=nnam, fun=fun, adaptive=orig$adaptive)
-    setattr(ans, "names", nms)
-  }
+  if ((isTRUE(give.names) || is.character(give.names)) && is.list(ans))
+    set.roll.names(ans, give.names, make.roll.names(x.len=nx, n.len=nn, n=orig$n, x.nm=xnam, n.nm=nnam, fun=fun, adaptive=orig$adaptive))
   ans
 }
 
