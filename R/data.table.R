@@ -2780,26 +2780,8 @@ sort_by.data.table <- function(x, y, ...)
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
-copy = function(x) {
-  newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
-                         # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
-                         # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
-
-  reallocate = function(y) {
-    if (is.data.table(y)) {
-      .Call(C_unlock, y)
-      setalloccol(y)
-    } else if (is.list(y)) {
-      oldClass = class(y)
-      setattr(y, 'class', NULL)  # otherwise [[.person method (which returns itself) results in infinite recursion, #4620
-      y[] = lapply(y, reallocate)
-      if (!identical(oldClass, 'list')) setattr(y, 'class', oldClass)
-    }
-    y
-  }
-
-  reallocate(newx)
-}
+copy = function(x)
+  .Call(Ccopy, x, getOption('datatable.alloccol'))
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
   wasnull = is.null(cols)

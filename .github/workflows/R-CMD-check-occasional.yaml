@@ -10,13 +10,13 @@ jobs:
   R-CMD-check-occasional:
     runs-on: ${{ matrix.os }}
 
-    name: ${{ matrix.os }} (${{ matrix.r }})
+    name: ${{ matrix.os }} (${{ matrix.r }}, ${{ matrix.locale }})
 
     strategy:
       fail-fast: false
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
-        r: ['devel', 'release', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
+        r: ['devel', 'release', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3', '4.4', '4.5']
         locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
         exclude:
           # only run non-English locale CI on Ubuntu
@@ -69,15 +69,31 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
 
+      - name: Set script permissions
+        run: chmod +x configure cleanup 2>/dev/null || true # Silence some GHA Annotations
+        shell: bash
+
       - name: Install check dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
             sudo apt-get update
             sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev pandoc
 
+      - name: Pre-untap untrusted Homebrew taps on macOS
+        if: matrix.os == 'macOS-latest'
+        run: brew untap aws/tap 2>/dev/null || true
+
+      - name: Install R Package Build Dependencies on MacOS
+        if: matrix.os == 'macOS-latest'
+        uses: r-hub/actions/setup-r-sysreqs@v1
+        with:
+          type: 'minimal'
+
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
-        run: brew install gdal proj
+        run: |
+          brew install gdal proj gettext
+          brew link --overwrite --force gettext 2>/dev/null || true
 
       - name: Check
         env:
@@ -86,7 +102,14 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_TESTS_NLINES_: 0
         run: |
-          options(crayon.enabled = TRUE)
+          options(crayon.enabled=TRUE)
+          dir.create("~/.R", showWarnings=FALSE)
+          # suppress noisy Annotation for e.g. {hexbin} about tabs v. spaces
+          cat("FCFLAGS += -Wno-tabs\nFFLAGS += -Wno-tabs\n", file="~/.R/Makevars", append=TRUE)
+          # e.g. Annotation about lacking macosx binaries: bin/macosx/sonoma-arm64/contrib/4.7
+          if (grepl("Under development", R.version$status)) options(pkgType="source")
+          # to avoid Annotation about certain packages being unavailable, use this old snapshot repo
+          if (getRversion() < "3.6") options(repos=c(CRAN="https://packagemanager.posit.co/cran/2020-04-24"))
           message("*** Using the following repos for installation ***")
           print(getOption("repos"))
           message("*** Installing Suggested packages ***")
@@ -102,10 +125,14 @@ jobs:
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_other_pkg)
-          if (!run_other) {
+          if (run_other) {
+            desc = read.dcf("DESCRIPTION")
+            desc[1L, "Suggests"] = toString(unique(c(desc[1, "Suggests"], other_pkgs)))
+            write.dcf(desc, "DESCRIPTION")
+            message("Setting TEST_DATA_TABLE_WITH_OTHER_PACKAGES=TRUE to run other.Rraw")
+          } else {
             message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
           }
-          message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
             TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
@@ -128,7 +155,7 @@ jobs:
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
             res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE, env=sprintf("%s=%s", names(env), env))
-            if (!is.null(attr(res, "status")) || is.na(res) || grep("^Status:.*(ERROR|WARNING)", res)) {
+            if (!is.null(attr(res, "status")) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
               writeLines(as.character(res))
               stop("R CMD check failed")
             }

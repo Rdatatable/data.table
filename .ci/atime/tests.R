@@ -407,16 +407,15 @@ test.list <- atime::atime_test_list(
     Fast = "2715663fcf0344c3f7c73241d391d8de347bdb9d",  # Merge commit of the PR that improves efficiency
     expr = data.table:::as.data.table.array(arr, na.rm=FALSE)),
 
-  # Date-IDate subtraction became much slower when chooseOpsMethod.IDate was added in #7213.
-  "Date-IDate subtraction regression in #7213" = atime::atime_test(
-    N = as.integer(10^seq(1, 5, by=0.5)),
+  # Date-IDate became much slower when chooseOpsMethod.IDate was added in #7213.
+  "Date-IDate regression in #7213" = atime::atime_test(
     setup = {
       short_date = as.Date("2000-01-01") + seq_len(40L)
       long_date = as.Date("2000-01-01") + seq_len(N)
     },
-    Before = "84b0e32f7a1bfdd8ec3a2c4012010b3ec072b31f", # Parent of the regression commit.
-    Regression = "cfa9f49bd27195962573ad493a31600d173abc5c", # Merge commit of #7213 which added chooseOpsMethod.IDate.
-    seconds.limit = 1,
+    Before = "84b0e32f7a1bfdd8ec3a2c4012010b3ec072b31f", # Parent of the Regression commit (https://github.com/Rdatatable/data.table/commit/cfa9f49bd27195962573ad493a31600d173abc5c).
+    Regression = "cfa9f49bd27195962573ad493a31600d173abc5c", # Merge commit of regression PR (https://github.com/Rdatatable/data.table/pull/7213) which added chooseOpsMethod.IDate.
+    Fixed = "3376b44e549315f35118daf23676298fc941d8f3", # Merge commit of fix PR (https://github.com/Rdatatable/data.table/pull/7828).
     # Reset the shared base S3 table to match the version under test (see "Caveat" in the intro above).
     expr = {
       ns = environment(data.table::as.IDate)

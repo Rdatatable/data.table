@@ -36,6 +36,10 @@
 
 7. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
 
+8. `tstrsplit()` gains a `rev` argument to facilitate extracting elements anchored from the end of the string, [#6341](https://github.com/Rdatatable/data.table/issues/6341). This is especially useful when strings have a varying number of components and you only want to extract the last or second-to-last element. Thanks to @JBrownArcGen for the suggestion and @venom1204 for the implementation.
+
+9. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
+
 8. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
 
 ### BUG FIXES
@@ -68,7 +72,13 @@
 
 14. Subtracting an `IDate` from a `Date` is fast again by avoiding unnecessary conversion to `POSIXlt`/`POSIXct`, [#7825](https://github.com/Rdatatable/data.table/issues/7825). Thanks @gilesheywood for the report and @ben-schwen for the fix.
 
-15. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report and @venom1204 for the PR.
+15. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report, @venom1204 for the PR, and @MichaelChirico for patching the fix back to old versions of R.
+
+16. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, list columns inside data.tables are searched recursively, and their attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
+
+17. `print()` works with multi-byte characters on R before 4.2.0, [#7848](https://github.com/Rdatatable/data.table/pull/7848). Thanks @MichaelChirico for the fix and @aitap for the improvement.
+
+18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
 
 ### Notes
 

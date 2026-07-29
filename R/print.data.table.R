@@ -256,8 +256,9 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   if (is.null(trunc.char)) return(x)
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
-  nchar_width = nchar(x, 'width', allowNA = TRUE)
-  nchar_chars = nchar(x, 'char', allowNA = TRUE)
+  # TODO(R>=4.2.0): we only need the tryCatch() for old bug in allowNA=TRUE, see #7848
+  nchar_width = tryCatch(nchar(x, 'width', allowNA=TRUE), error=function(.) NA)
+  nchar_chars = nchar(x, 'char', allowNA=TRUE)
   is_full_width = nchar_width > nchar_chars
   is_full_width[is.na(is_full_width)] = FALSE
   idx = !is.na(x) & !is.na(nchar_width) & pmin(nchar_width, nchar_chars) > trunc.char
