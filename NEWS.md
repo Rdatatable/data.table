@@ -82,6 +82,8 @@
 
 19. `fread()` returns a clearer error message when `dec = NA` is used, [#7737](https://github.com/Rdatatable/data.table/issues/7737). Thanks @mcol for the report and the fix.
 
+20. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
