@@ -22,15 +22,6 @@ jobs:
         # Latvian, Azeri, Hungarian, Faroese, Albanian: collate order (#3502, see also #7837)
         locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8']
         exclude:
-          # only run non-English locale CI on Ubuntu
-          - os: macOS-latest
-            locale: 'zh_CN.utf8'
-          - os: macOS-latest
-            locale: 'lv_LV.utf8'
-          - os: windows-latest
-            locale: 'zh_CN.utf8'
-          - os: windows-latest
-            locale: 'lv_LV.utf8'
           # macOS/arm64 only available for R>=4.1.0
           - os: macOS-latest
             r: '3.5'
@@ -47,24 +38,11 @@ jobs:
 
     steps:
       - name: Set locale
-        if: matrix.os == 'ubuntu-latest' && matrix.locale == 'en_US.utf8'
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo locale-gen en_US
-          echo "LC_ALL=en_US.utf8" >> $GITHUB_ENV
-
-      - name: Set locale
-        if: matrix.locale == 'zh_CN.utf8'
-        run: |
-          sudo locale-gen 'zh_CN.utf8'
-          echo "LC_ALL=zh_CN.utf8" >> $GITHUB_ENV
-          echo "LANGUAGE=zh_CN" >> $GITHUB_ENV
-
-      - name: Set locale
-        if: matrix.locale == 'lv_LV.utf8'
-        run: |
-          sudo locale-gen 'lv_LV.utf8'
-          echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
-          echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
+          sudo locale-gen "${{ matrix.locale }}"
+          echo "LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
+          echo "LANGUAGE=$(echo '${{ matrix.locale }}' | cut -d'.' -f1)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v7
 
