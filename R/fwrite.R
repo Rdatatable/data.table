@@ -58,7 +58,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
   )
 
-  na = as.character(na[1L]) # fix for #1725
+  na = as.character(na) # fix for #1725
   is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
