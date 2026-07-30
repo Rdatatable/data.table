@@ -21,6 +21,28 @@ jobs:
         # Mandarin: multibyte characters
         # Latvian, Azeri, Hungarian, Faroese, Albanian: collate order (#3502, see also #7837)
         locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8']
+        # Only run non-English-locale CI runs on Ubuntu
+        include:
+          # For multibyte characters
+          - os: ubuntu-latest
+            r: 'devel'
+            locale: 'zh_CN.utf8' # Mandarin
+          # For collate order (#3502, see also #7837)
+          - os: ubuntu-latest
+            r: 'devel'
+            locale: 'lv_LV.utf8' # Latvian
+          - os: ubuntu-latest
+            r: 'devel'
+            locale: 'az_AZ.utf8' # Azeri
+          - os: ubuntu-latest
+            r: 'devel'
+            locale: 'hu_HU.utf8' # Hungarian
+          - os: ubuntu-latest
+            r: 'devel'
+            locale: 'fo_FO.utf8' # Faroese
+          - os: ubuntu-latest
+            r: 'devel'
+            locale: 'sq_MK.utf8' # Albanian (in North Macedonia)
         exclude:
           # macOS/arm64 only available for R>=4.1.0
           - os: macOS-latest
