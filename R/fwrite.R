@@ -15,6 +15,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            verbose=getOption("datatable.verbose", FALSE),
            encoding = "",
            forceDecimal = FALSE) {
+  na = as.character(na) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
   }
@@ -58,7 +59,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
   )
 
-  na = as.character(na) # fix for #1725
   is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
