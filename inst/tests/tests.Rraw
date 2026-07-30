@@ -6449,8 +6449,9 @@ for (t in seq_len(nrow(all))) {
 
 }
 
-# fread dec=',' e.g. France
-test(1439, fread("A;B\n1;2,34\n", dec="12"), error=base_messages$stopifnot("nchar(dec) == 1L"))
+# validation of dec argument, issue #7738
+test(1439.1, fread("A;B\n1;2,34\n", dec="12"), error='dec= must be a single non-NA character or "auto".')
+test(1439.2, fread(input = "whatever.csv", dec = NA_character_), error='dec= must be a single non-NA character or "auto".')
 test(1440, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
 test(1441, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
 test(1442, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
