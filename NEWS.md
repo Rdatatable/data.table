@@ -78,6 +78,8 @@
 
 18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
 
+19. `fread()` returns a clearer error message when `dec = NA` is used, [#7737](https://github.com/Rdatatable/data.table/issues/7737). Thanks @mcol for the report and the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
