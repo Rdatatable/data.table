@@ -21872,4 +21872,4 @@ test(2381.3, DT2$y[[1L]][, b := 2][, b], 2)
 rm(inner, DT, DT2)
 
 ## validation of dec argument
-test(2382.1, fread(input = "whatever.csv", dec = NA_character_), error=base_messages$stopifnot("nchar(dec) == 1L"))
+test(2382.1, fread(input = "whatever.csv", dec = NA_character_), error='dec= must be a single non-NA character, or "auto".')
