@@ -40,6 +40,8 @@
 
 9. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
 
+10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

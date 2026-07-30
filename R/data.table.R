@@ -2585,7 +2585,7 @@ transform.data.table = function(`_data`, ...)
   `_data`
 }
 
-subset.data.table = function(x, subset, select, ...)
+subset.data.table = function(x, subset, select, drop=FALSE, ...)
 {
   key.cols = key(x)
 
@@ -2610,6 +2610,8 @@ subset.data.table = function(x, subset, select, ...)
   }
 
   ans = x[r, vars, with = FALSE]
+
+  if (isTRUE(drop) && ncol(ans) == 1L) return(ans[[1L]])
 
   if (nrow(ans) > 0L) {
     if (!missing(select) && length(key.cols)) {
