@@ -10018,6 +10018,7 @@ test(1676.1, fwrite(dt, f, na=NULL), error=base_messages$stopifnot("length(na) =
 fwrite(dt, f, na=NA)
 test(1676.2, fread(f), data.table(x=1:2, y=c(NA, "a")))
 unlink(f)
+test(1676.3, fwrite(dt, na=data.frame()), error=base_messages$stopifnot("length(na) == 1L"))
 
 # duplicate names in foverlaps #1730
 a = data.table(start = 1:5, end = 2:6, c2 = rnorm(10), c2 = rnorm(10), key=c("start","end"))
