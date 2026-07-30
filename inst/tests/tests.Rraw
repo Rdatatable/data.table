@@ -21874,18 +21874,19 @@ rm(inner, DT, DT2)
 
 # subset.data.table respects drop=TRUE, #7859
 DT = data.table(a=1:10, b=10:1)
-test(2382.01, subset(DT, a > 5, select="b", drop=TRUE), subset(as.data.frame(DT), a > 5, select="b", drop=TRUE))
-test(2382.02, subset(DT, a > 10, select="b", drop=TRUE), subset(as.data.frame(DT), a > 10, select="b", drop=TRUE))
-test(2382.03, subset(DT, a > 5, select="a", drop=TRUE), subset(as.data.frame(DT), a > 5, select="a", drop=TRUE))
-test(2382.04, as.data.frame(subset(DT, a > 5, select=c("a", "b"), drop=TRUE), row.names=6:10),
-             subset(as.data.frame(DT), a > 5, select=c("a", "b"), drop=TRUE))
-test(2382.05, as.data.frame(subset(DT, a > 5, drop=TRUE), row.names=6:10),
-             subset(as.data.frame(DT), a > 5, drop=TRUE))
-# 0-column >0-row data.table not supported, so not "strictly" consistent to data.frame
+DF = data.frame(a=1:10, b=10:1, row.names=NULL)
+test(2382.01, subset(DT, a > 5, select="b", drop=TRUE), subset(DF, a > 5, select="b", drop=TRUE))
+test(2382.02, subset(DT, a > 10, select="b", drop=TRUE), subset(DF, a > 10, select="b", drop=TRUE))
+test(2382.03, subset(DT, a > 5, select="a", drop=TRUE), subset(DF, a > 5, select="a", drop=TRUE))
+test(2382.04, as.data.frame(subset(DT, a > 5, select=c("a", "b"), drop=TRUE), row.names=6:10), subset(DF, a > 5, select=c("a", "b"), drop=TRUE))
+test(2382.05, as.data.frame(subset(DT, a > 5, drop=TRUE), row.names=6:10), subset(DF, a > 5, drop=TRUE))
+## 0-column >0-row data.table not supported, so not "strictly" consistent to data.frame
 test(2382.06, subset(DT, select=character(), drop=TRUE), data.table(NULL))
 test(2382.07, subset(DT, a > 5, select=character(), drop=TRUE), data.table(NULL))
 
+## ensure working on one-column input too
 DT = DT[, 'a']
-test(2382.08, subset(DT, a > 5, select="a", drop=TRUE), subset(as.data.frame(DT), a > 5, select="a", drop=TRUE))
-test(2382.09, subset(DT, a > 10, select="a", drop=TRUE), subset(as.data.frame(DT), a > 10, select="a", drop=TRUE))
-test(2382.10, subset(DT, a > 5, drop=TRUE), subset(as.data.frame(DT), a > 5, drop=TRUE))
+DF = DF[, 'a', drop=FALSE]
+test(2382.08, subset(DT, a > 5, select="a", drop=TRUE), subset(DF, a > 5, select="a", drop=TRUE))
+test(2382.09, subset(DT, a > 10, select="a", drop=TRUE), subset(DF, a > 10, select="a", drop=TRUE))
+test(2382.10, subset(DT, a > 5, drop=TRUE), subset(DF, a > 5, drop=TRUE))
