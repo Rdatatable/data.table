@@ -108,5 +108,7 @@ Authors@R: c(
   person("Mukul", "Kumar",         role="ctb"),
   person("Ildikó", "Czeller",      role="ctb"),
   person("Manmita", "Das",         role="ctb"),
-  person("Tarun", "Thammisetty",   role="ctb")
+  person("Tarun", "Thammisetty",   role="ctb"),
+  person("Marco", "Colombo",       role="ctb"),
+  NULL
   )
