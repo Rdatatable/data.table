@@ -146,10 +146,7 @@ jobs:
           } else {
             message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
           }
-          # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
-          env = c(
-            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
-          )
+          Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
 
           do_vignettes = requireNamespace("litedown", quietly=TRUE)
 
@@ -172,7 +169,7 @@ jobs:
             system2(Rbin, c("CMD", "build", ".", build_args))
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
-            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE, env=sprintf("%s=%s", names(env), env))
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE)
             if (!is.null(attr(res, "status")) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
               writeLines(as.character(res))
               stop("R CMD check failed")
