@@ -130,7 +130,7 @@ jobs:
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           other_pkgs = setdiff(
-            get(as.character(other_deps_expr[[1L]][[2L]]))
+            get(as.character(other_deps_expr[[1:2]])),
             tools:::.get_standard_package_names()$base) # skip parallel
           # Many will not install on oldest R versions
           message("*** Installing fully optional packages ***")
