@@ -40,6 +40,8 @@
 
 9. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
 
+10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
+
 10. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted (#6932, @MichaelChirico).
 
 ### BUG FIXES
@@ -97,6 +99,10 @@
 7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
 
 8. Clarified `fread()` documentation and vignette regarding the interaction between `keepLeadingZeros = TRUE` and automatic header detection, [#5405](https://github.com/Rdatatable/data.table/issues/5405). Thanks @clemenskuehn for the report and @venom1204 for updating the documentation.
+
+9. `fread()` returns a clearer error message when `dec = NA` is used, [#7737](https://github.com/Rdatatable/data.table/issues/7737). Thanks @mcol for the report and the fix.
+
+10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
 
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 

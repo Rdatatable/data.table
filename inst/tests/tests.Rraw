@@ -6449,8 +6449,9 @@ for (t in seq_len(nrow(all))) {
 
 }
 
-# fread dec=',' e.g. France
-test(1439, fread("A;B\n1;2,34\n", dec="12"), error=base_messages$stopifnot("nchar(dec) == 1L"))
+# validation of dec argument, issue #7738
+test(1439.1, fread("A;B\n1;2,34\n", dec="12"), error='dec= must be a single non-NA character or "auto".')
+test(1439.2, fread(input = "whatever.csv", dec = NA_character_), error='dec= must be a single non-NA character or "auto".')
 test(1440, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
 test(1441, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
 test(1442, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
@@ -10017,6 +10018,7 @@ test(1676.1, fwrite(dt, f, na=NULL), error=base_messages$stopifnot("length(na) =
 fwrite(dt, f, na=NA)
 test(1676.2, fread(f), data.table(x=1:2, y=c(NA, "a")))
 unlink(f)
+test(1676.3, fwrite(dt, na=data.frame()), error=base_messages$stopifnot("length(na) == 1L"))
 
 # duplicate names in foverlaps #1730
 a = data.table(start = 1:5, end = 2:6, c2 = rnorm(10), c2 = rnorm(10), key=c("start","end"))
@@ -20309,7 +20311,9 @@ local(if (utf8_check(c("\u00e4", "\u00f6", "\u00fc"))) {
   # a-umlaut, o-umlaut, u-umlaut
   eval(parse(text = '  # eval(parse()) defers parsing to runtime; see utf8_check description
     setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
-    setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+    # NB: since these can be represented e.g. in latin1, after parse(), they will be in
+    #   native encoding, _not_ necessarily UTF-8, so omit from=
+    setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), to = "latin1"))
     test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
     test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
     set(y, j="\u00e4", value=NULL)
@@ -21868,6 +21872,25 @@ DT2 = copy(DT)
 test(2381.2, truelength(DT2$y[[1L]]) > 0L)
 test(2381.3, DT2$y[[1L]][, b := 2][, b], 2)
 rm(inner, DT, DT2)
+
+# subset.data.table respects drop=TRUE, #7859
+DT = data.table(a=1:10, b=10:1)
+DF = data.frame(a=1:10, b=10:1, row.names=NULL)
+test(2382.01, subset(DT, a > 5, select="b", drop=TRUE), subset(DF, a > 5, select="b", drop=TRUE))
+test(2382.02, subset(DT, a > 10, select="b", drop=TRUE), subset(DF, a > 10, select="b", drop=TRUE))
+test(2382.03, subset(DT, a > 5, select="a", drop=TRUE), subset(DF, a > 5, select="a", drop=TRUE))
+test(2382.04, as.data.frame(subset(DT, a > 5, select=c("a", "b"), drop=TRUE), row.names=6:10), subset(DF, a > 5, select=c("a", "b"), drop=TRUE))
+test(2382.05, as.data.frame(subset(DT, a > 5, drop=TRUE), row.names=6:10), subset(DF, a > 5, drop=TRUE))
+## 0-column >0-row data.table not supported, so not "strictly" consistent to data.frame
+test(2382.06, subset(DT, select=character(), drop=TRUE), data.table(NULL))
+test(2382.07, subset(DT, a > 5, select=character(), drop=TRUE), data.table(NULL))
+
+## ensure working on one-column input too
+DT = DT[, 'a']
+DF = DF[, 'a', drop=FALSE]
+test(2382.08, subset(DT, a > 5, select="a", drop=TRUE), subset(DF, a > 5, select="a", drop=TRUE))
+test(2382.09, subset(DT, a > 10, select="a", drop=TRUE), subset(DF, a > 10, select="a", drop=TRUE))
+test(2382.10, subset(DT, a > 5, drop=TRUE), subset(DF, a > 5, drop=TRUE))
 
 # #6392 setorderv() could take order=<column-order mapping>
 test(2382.01, {DT1=copy(data.table(a=c(2,1,2),b=c("b","a","b"),c=c(5,10,3))); DT2=copy(DT1); m=c(a=1L,b=1L,c=-1L); setorderv(DT1, order=m); setorderv(DT2, cols=names(m), order=m); identical(DT1, DT2)}, TRUE)
