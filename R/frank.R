@@ -88,7 +88,7 @@ frank = function(x, ..., order=1L, na.last=TRUE, ties.method=c("average", "first
   } else if (length(cols)) {
     cols=as.list(cols)
     if (length(order) == 1L) order = rep(as.integer(order), length(cols))
-    
+
     for (i in seq_along(cols)) {
       v=as.list(cols[[i]])
       if (length(v) > 1L && v[[1L]] == "+") v=v[[-1L]]
