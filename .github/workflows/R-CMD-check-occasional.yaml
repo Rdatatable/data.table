@@ -134,7 +134,7 @@ jobs:
             tools:::.get_standard_package_names()$base) # skip parallel
           # Many will not install on oldest R versions
           message("*** Installing fully optional packages ***")
-          try(install.packages(c(other_pkgs, "rcmdcheck"))
+          try(install.packages(c(other_pkgs, "rcmdcheck")))
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_other_pkg)
