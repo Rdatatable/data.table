@@ -132,7 +132,9 @@ jobs:
           other_pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
           # Many will not install on oldest R versions
           message("*** Installing fully optional packages ***")
-          try(install.packages(c(other_pkgs, "rcmdcheck")))
+          base_pkgs = rownames(installed.packages(priority = "base"))
+          install_pkgs = setdiff(c(other_pkgs, "rcmdcheck"), base_pkgs)
+          try(install.packages(install_pkgs))
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_other_pkg)
@@ -144,7 +146,8 @@ jobs:
           } else {
             message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
           }
-          # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
+          # Set env var in calling process for older rcmdcheck versions (<1.4.0) that do not support env=
+          Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES = as.character(run_other))
           env = c(
             TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
           )
@@ -159,7 +162,9 @@ jobs:
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
           if (requireNamespace("rcmdcheck", quietly=TRUE)) {
-            rcmdcheck::rcmdcheck(args = check_args, build_args = build_args, error_on = "warning", check_dir = "check", env=env)
+            rc_args = list(args = check_args, build_args = build_args, error_on = "warning", check_dir = "check")
+            if ("env" %in% names(formals(rcmdcheck::rcmdcheck))) rc_args$env = env
+            do.call(rcmdcheck::rcmdcheck, rc_args)
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", ".", build_args))
