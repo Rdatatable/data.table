@@ -42,7 +42,7 @@
 
 10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
 
-10. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted (#6932, @MichaelChirico).
+11. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted (#6932, @MichaelChirico).
 
 ### BUG FIXES
 
