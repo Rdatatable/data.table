@@ -136,9 +136,11 @@ sugg = c(
 )
 for (s in sugg) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
-    library(s, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+    # tryCatch() here, not library(logical.return=), because of https://github.com/HenrikBengtsson/R.oo/issues/31;
+    #   library(logical.return=) throws an error when R.utils doesn't find R.oo, not logical FALSE.
+    tryCatch(library(s, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base"), error=identity)  # attach at the end for #5101
   )))
-  if (!loaded) cat("\n**** Suggested package",s,"is not installed or has dependencies missing. Tests using it will be skipped.\n\n")
+  if (inherits(loaded, "error")) cat("\n**** Suggested package",s,"is not installed or has dependencies missing. Tests using it will be skipped.\n\n")
 }
 
 test_longdouble = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
