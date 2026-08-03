@@ -21892,6 +21892,23 @@ test(2382.08, subset(DT, a > 5, select="a", drop=TRUE), subset(DF, a > 5, select
 test(2382.09, subset(DT, a > 10, select="a", drop=TRUE), subset(DF, a > 10, select="a", drop=TRUE))
 test(2382.10, subset(DT, a > 5, drop=TRUE), subset(DF, a > 5, drop=TRUE))
 
-# forder() handles na.last=TRUE correctly in ordering double with >1 unique value then character (#7875)
-DT = data.table(d1=c(10, 10, 10, 1), c2=c('b', 'c', NA, 'a'))
-test(2383, DT[order(d1, -c2, na.last=TRUE)], data.table(d1=c(1, 10, 10, 10), c2=c('a', 'c', 'b', NA)))
+# forder() handles na.last=TRUE correctly in ordering double with >1 unique value then non-double (#7875)
+DT = data.table(
+  d0=c(10, 10, 10, 1),
+  l1=c(FALSE, TRUE, NA, TRUE),
+  i2=c(2:3, NA, 1L),
+  d3=c(2, 3, NA, 1),
+  z4=c(2+1i, 3+1i, NA, 1+1i),
+  c5=c('b', 'c', NA, 'a')
+)
+DT_sorted = DT[c(4L, 2:1, 3L)]
+test(2383.1, DT[order(d0, -l1, na.last=TRUE)], DT_sorted)
+test(2383.2, DT[order(d0, -i2, na.last=TRUE)], DT_sorted)
+test(2383.3, DT[order(d0, -d3, na.last=TRUE)], DT_sorted)
+test(2383.4, DT[order(d0, -z4, na.last=TRUE)], DT_sorted)
+test(2383.5, DT[order(d0, -c5, na.last=TRUE)], DT_sorted)
+if (test_bit64) {
+  DT[, i64 := as.integer64(i2)]
+  DT_sorted[, i64 := as.integer64(i2)]
+  test(2383.6, DT[order(d0, -i64, na.last=TRUE)], DT_sorted)
+}
