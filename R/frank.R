@@ -74,12 +74,14 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
 }
 
 frank = function(x, ..., order=1L, na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
-  if (missing(order)) {
-    q_x = substitute(x)
-    if (is.call(q_x) && length(q_x) == 2L && q_x[[1L]] == quote(`-`)) {
-      x = eval(q_x[[2L]], parent.frame())
-      order = -1L
+  q_x = substitute(x)
+  if (is.call(q_x) && length(q_x) == 2L && (q_x[[1L]] == quote(`-`) || q_x[[1L]] == quote(`+`))) {
+    if (!missing(order)) {
+      warningf("Both prefix sign and 'order' argument are provided; 'order' will take precedence.")
+    } else {
+      order = if (q_x[[1L]] == quote(`-`)) -1L else 1L
     }
+    x = eval(q_x[[2L]], parent.frame())
   }
 
   cols = substitute(list(...))[-1L]

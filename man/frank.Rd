@@ -72,7 +72,7 @@ frankv(DT, order=c(1L, -1L), ties.method="first")
 dates = as.Date("2022-10-19") + c(1, 3, 2, 4)
 frank(dates)      # ascending
 frank(-dates)     # descending (intercepts '-' to avoid error)
-frank(dates, order=-1L) # same as above
+frank(dates, order=-1L) # also descending
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{setorder}}
