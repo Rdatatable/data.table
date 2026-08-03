@@ -80,6 +80,8 @@
 
 18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
 
+19. `DT[order(double, ..., -non_double, na.last=TRUE)]`, i.e., a double/complex column (in any order) followed by a non-double column in descending order with `na.last=TRUE`, is fixed to respect `na.last` again, [#7875](https://github.com/Rdatatable/data.table/issues/7875). The problematic behavior only occurred under specific conditions on the cardinality of the non-double column.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
