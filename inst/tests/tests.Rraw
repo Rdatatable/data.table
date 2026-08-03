@@ -21891,3 +21891,7 @@ DF = DF[, 'a', drop=FALSE]
 test(2382.08, subset(DT, a > 5, select="a", drop=TRUE), subset(DF, a > 5, select="a", drop=TRUE))
 test(2382.09, subset(DT, a > 10, select="a", drop=TRUE), subset(DF, a > 10, select="a", drop=TRUE))
 test(2382.10, subset(DT, a > 5, drop=TRUE), subset(DF, a > 5, drop=TRUE))
+
+# forder() handles na.last=TRUE correctly in ordering double with >1 unique value then character (#7875)
+DT = data.table(d1=c(10, 10, 10, 1), c2=c('b', 'c', NA, 'a'))
+test(2383, DT[order(d1, -c2, na.last=TRUE)], data.table(d1=c(1, 10, 10, 10), c2=c('a', 'c', 'b', NA)))
