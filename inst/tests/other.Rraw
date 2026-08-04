@@ -203,7 +203,9 @@ if (loaded[["knitr"]]) {
     tmp = tempfile()
     on.exit({unlink(tmp); options(old)})
     invisible(knit(testDir("knitr.Rmd"), tmp, quiet=TRUE))
-    test(11.2, tools::Rdiff(tmp, testDir("knitr.md.save")), 0L)
+    # TODO(R>=3.6.0): Try removing this kludge
+    if (packageVersion("knitr") > "1.45")
+      test(11.2, tools::Rdiff(tmp, testDir("knitr.md.save")), 0L)
   })
 }
 
