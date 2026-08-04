@@ -22,7 +22,9 @@ jobs:
                  # Multibyte characters: Mandarin
                  'zh_CN.utf8',
                  # Collate order (#3502, see also #7837): Latvian, Azeri, Hungarian, Faroese, Albanian
-                 'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8']
+                 'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8',
+                 # Local time formatting (for R bug #19117)
+                 'vi_VN.utf8']
         # we're constrained by GHA inflexibility to do a tedious thing here with 'exclude' below.
         #   better would be for GHA to support multiple 'matrix' configs (one for ubuntu, one for other OS);
         #   an approach with multiple jobs would tediously require copy-pasting the _rest_ of the steps

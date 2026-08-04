@@ -627,15 +627,12 @@ test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 # 167 tested graphics::plot, moved to other.Rraw 28 to save ram, #5517
 
 # IDateTime conversion methods that ggplot2 uses (it calls as.data.frame method)
-# Since %b is e.g. "nov." in LC_TIME=fr_FR.UTF-8 locale, we need to
-# have the target/y value in these tests depend on the locale as well, #3450.
-NOV = format(strptime("2000-11-01", "%Y-%m-%d"), "%b")
-x = c("09:29:16","10:42:40","23:47:12","01:06:01","11:35:34","11:51:09")
-datetimes = paste0("2011 ", NOV, c(18,18,18,19,19,19), " ", x)
-DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
-test(168.1, DT[,as.data.frame(itime)], data.frame(V1=as.ITime(x)))
-test(168.2, as.character(DT[,as.POSIXct(itime,tz="UTC")]), paste(Sys.Date(), x))
-test(168.3, as.character(DT[,as.POSIXct(idate,tz="UTC")]), c("2011-11-18","2011-11-18","2011-11-18","2011-11-19","2011-11-19","2011-11-19"))
+dates = paste0("2011-11-", rep(18:19, each=3L))
+times = c("09:29:16", "10:42:40", "23:47:12", "01:06:01", "11:35:34", "11:51:09")
+DT = IDateTime(as.POSIXlt(paste(dates, times)))
+test(168.1, DT[, as.data.frame(itime)], data.frame(V1=as.ITime(times)))
+test(168.2, as.character(DT[, as.POSIXct(itime, tz="UTC")]), paste(Sys.Date(), times))
+test(168.3, as.character(DT[, as.POSIXct(idate, tz="UTC")]), dates)
 
 # test of . in formula, using inheritance
 DT = data.table(y=1:100,x=101:200,y=201:300,grp=1:5)
