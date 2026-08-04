@@ -42,6 +42,8 @@ jobs:
             locale: 'fo_FO.utf8'
           - os: macOS-latest
             locale: 'sq_MK.utf8'
+          - os: macOS-latest
+            locale: 'vi_VN.utf8'
           - os: windows-latest
             locale: 'zh_CN.utf8'
           - os: windows-latest
@@ -54,6 +56,8 @@ jobs:
             locale: 'fo_FO.utf8'
           - os: windows-latest
             locale: 'sq_MK.utf8'
+          - os: windows-latest
+            locale: 'vi_VN.utf8'
           # macOS/arm64 only available for R>=4.1.0
           - os: macOS-latest
             r: '3.5'
