@@ -102,7 +102,9 @@ if (loaded[["dplyr"]]) {
   DT = data.table(A=c("b","c","a"), B=10:12)
   setindex(DT, A)
   DT2 = dplyr::arrange(DT, A)
-  test(2.2, DT2[A=="c"], data.table(A="c", B=11L))
+  # TODO(R>=3.6.0): Old versions of dplyr might coerce to tbl or data.frame; try removing this
+  if (is.data.table(DT2))
+    test(2.2, DT2[A=="c"], data.table(A="c", B=11L))
 }
 
 if (FALSE) {  # loaded[["reshape"]]
