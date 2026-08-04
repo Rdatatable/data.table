@@ -20769,8 +20769,10 @@ DT[1, V1 := factor("a", levels = c("a", samelevel))]
 test(2311.3, nlevels(DT$V1), 2L) # used to be 3
 
 # avoid translateChar*() in OpenMP threads, #6883
-DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
-test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
+DF = list(rep(iconv("\uf8", from="UTF-8", to="latin1"), 2e6))
+# TODO(R>=3.6.0): nullfile() added to base
+if (!exists("nullfile")) nullfile <- function() if (.Platform$OS.type == "windows") "nul:" else "/dev/null"
+test(2312, fwrite(DF, nullfile(), encoding="UTF-8", nThread=2L), check_value=FALSE)
 
 # avoid memcpy of 0-length inputs
 test(2313,
