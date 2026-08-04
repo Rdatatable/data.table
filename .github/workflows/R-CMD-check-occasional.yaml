@@ -1,5 +1,4 @@
 on:
-  push:
   schedule:
    - cron: '17 13 23 * *' # 23rd of month at 13:17 UTC
   workflow_dispatch:
