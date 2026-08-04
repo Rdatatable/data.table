@@ -97,14 +97,13 @@ if (loaded[["plyr"]]) {
   test(2.1, plyr::arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))
 }
 
-if (loaded[["dplyr"]]) {
+# in versions 0.7.0-0.8.5 of dplyr, arrange() returns a data.frame.
+if (loaded[["dplyr"]] && packageVersion("dplyr") >= "1.0.0") {
   # dplyr::arrange uses vctrs::vec_slice which is implemented in C and bypasses `[` dispatch; #5042
   DT = data.table(A=c("b","c","a"), B=10:12)
   setindex(DT, A)
   DT2 = dplyr::arrange(DT, A)
-  # TODO(R>=3.6.0): Old versions of dplyr might coerce to tbl or data.frame; try removing this
-  if (is.data.table(DT2))
-    test(2.2, DT2[A=="c"], data.table(A="c", B=11L))
+  test(2.2, DT2[A=="c"], data.table(A="c", B=11L))
 }
 
 if (FALSE) {  # loaded[["reshape"]]
@@ -194,7 +193,8 @@ if (loaded[["gdata"]]) {
   unlink(f)
 }
 
-if (loaded[["knitr"]]) {
+# trivial '```r' vs '``` r' difference in older knitr
+if (loaded[["knitr"]] && packageVersion("knitr") > "1.45") {
   # That data.table-unaware code in packages like knitr still work
   # kable in knitr v1.6 uses DF[...] syntax inside it but the user might have passed a data.table.
   # Which is fine and works thanks to cedta().
