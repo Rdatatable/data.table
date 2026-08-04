@@ -4485,6 +4485,11 @@ d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
 d2 = as.numeric(rnorm(1e3))
 c1 = sample(make_c_sortable(letters), 1e3, TRUE)
 c2 = sample(make_c_sortable(make_words(50L)), 1e3, TRUE)
+# With some probability, in some locales (esp. az_AZ), c2
+#   can be sorted leading forderv to give integer().
+if (length(unique(c2)) == 1) {
+  c2 = c(c2[-1L], "mmmmmmmmmmmmmmmmmmmmmmmmmmm")
+}
 
 DT = data.table(i1, i2, d1, d2, c1, c2)
 # randomise col order as well
