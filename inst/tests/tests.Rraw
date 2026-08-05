@@ -21912,3 +21912,16 @@ if (test_bit64) {
   DT_sorted[, i64 := as.integer64(i2)]
   test(2383.6, DT[order(d0, -i64, na.last=TRUE)], DT_sorted)
 }
+
+# col.names="none" should suppress only the column names, not the data, #7735
+DT = data.table(c1=1:2, c2=letters[1:2])
+test(2384.1, print(DT, col.names="none", row.names=FALSE, class=FALSE), output=c(" 1 a\n 2 b"))
+# also handle wide tables and other formattings
+DT = data.table(a=strrep("a",20L), b=strrep("b",20L), c=strrep("c",20L))
+test(2384.2, options=list(width=40L), print(DT, col.names="none", row.names=FALSE, class=FALSE),
+  output=c(" aaaaaaaaaaaaaaaaaaaa\n bbbbbbbbbbbbbbbbbbbb\n cccccccccccccccccccc"))
+DT = data.table(x=c(NA,"e","b","j","w",NA))
+test(2384.3, print(DT, na.print=".", topn=2, col.names="none", row.names=FALSE, class=FALSE),
+  output=c("   .\n   e\n ---\n   w\n   ."))
+DT = data.table(a=c("x\ny","z"), b=1:2)
+test(2384.4, print(DT, col.names="none", row.names=FALSE, class=FALSE), output=c(" x\\ny 1\n    z 2"))

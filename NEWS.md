@@ -82,6 +82,8 @@
 
 19. `DT[order(double, ..., -non_double, na.last=TRUE)]`, i.e., a double/complex column (in any order) followed by a non-double column in descending order with `na.last=TRUE`, is fixed to respect `na.last` again, [#7875](https://github.com/Rdatatable/data.table/issues/7875). The problematic behavior only occurred under specific conditions on the cardinality of the non-double column.
 
+20. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
