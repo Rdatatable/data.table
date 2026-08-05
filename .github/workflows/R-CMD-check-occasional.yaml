@@ -1,4 +1,5 @@
 on:
+  push:
   schedule:
    - cron: '17 13 23 * *' # 23rd of month at 13:17 UTC
   workflow_dispatch:
@@ -20,6 +21,8 @@ jobs:
         locale: ['en_US.utf8',
                  # Multibyte characters: Mandarin
                  'zh_CN.utf8',
+                 # Encoding: non-UTF-8 locales for French, Mandarin, and Russian
+                 'fr_CA.ISO-8859-1', 'zh_CN.GB18030', 'ru_RU.KOI8-R',
                  # Collate order (#3502, see also #7837): Latvian, Azeri, Hungarian, Faroese, Albanian
                  'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8',
                  # Local time formatting (for R bug #19117)
@@ -31,6 +34,12 @@ jobs:
           # only run non-English locale CI on Ubuntu
           - os: macOS-latest
             locale: 'zh_CN.utf8'
+          - os: macOS-latest
+            locale: 'fr_CA.ISO-8859-1'
+          - os: macOS-latest
+            locale: 'zh_CN.GB18030'
+          - os: macOS-latest
+            locale: 'ru_RU.KOI8-R'
           - os: macOS-latest
             locale: 'lv_LV.utf8'
           - os: macOS-latest
@@ -45,6 +54,12 @@ jobs:
             locale: 'vi_VN.utf8'
           - os: windows-latest
             locale: 'zh_CN.utf8'
+          - os: windows-latest
+            locale: 'fr_CA.ISO-8859-1'
+          - os: windows-latest
+            locale: 'zh_CN.GB18030'
+          - os: windows-latest
+            locale: 'ru_RU.KOI8-R'
           - os: windows-latest
             locale: 'lv_LV.utf8'
           - os: windows-latest
