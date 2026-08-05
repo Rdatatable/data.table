@@ -21940,9 +21940,11 @@ test(2384.3, print(DT, na.print=".", topn=2, col.names="none", row.names=FALSE, 
 DT = data.table(a=c("x\ny","z"), b=1:2)
 test(2384.4, print(DT, col.names="none", row.names=FALSE, class=FALSE), output=c(" x\\ny 1\n    z 2"))
 
-# #6392 setorderv() could take order=<column-order mapping>
-test(2383.01, {DT1=copy(data.table(a=c(2,1,2),b=c("b","a","b"),c=c(5,10,3))); DT2=copy(DT1); m=c(a=1L,b=1L,c=-1L); setorderv(DT1, order=m); setorderv(DT2, cols=names(m), order=m); identical(DT1, DT2)}, TRUE)
-test(2383.02, {DT=data.table(x=c(2,1,2),y=c(2,1,1)); setorderv(DT, order=c(x=1L,y=-1L)); DT}, data.table(x=c(1,2,2),y=c(1,2,1)))
-test(2383.03, setorderv(data.table(x=1:3), order=c(y=1L)), error="some columns are not in the data.table")
-test(2383.04, setorderv(data.table(x=1:3), order=c(x=1L,x=-1L)), error="order argument has named duplicates")
-test(2383.05, setorderv(data.table(x=1:3), order=c(x=2L)), error="Must be +1 or -1")
+# #6932 setorderv() could take order=<column-order mapping>
+DT = data.table(a=c(2,1,2), b=c("b","a","b"), c=c(5,10,3))
+m = c(a=1L, b=1L, c=-1L)
+test(2385.01, setorderv(copy(DT), order=m), setorderv(copy(DT), cols=names(m), order=m))
+test(2385.02, {DT=data.table(x=c(2,1,2),y=c(2,1,1)); setorderv(DT, order=c(x=1L,y=-1L)); DT}, data.table(x=c(1,2,2),y=c(1,2,1)))
+test(2385.03, setorderv(data.table(x=1:3), order=c(y=1L)), error="some columns are not in the data.table")
+test(2385.04, setorderv(data.table(x=1:3), order=c(x=1L,x=-1L)), error="order argument has named duplicates")
+test(2385.05, setorderv(data.table(x=1:3), order=c(x=2L)), error="Must be +1 or -1")

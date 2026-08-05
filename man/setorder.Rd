@@ -138,7 +138,7 @@ setorder(DT, A, -B)
 # same as above, but using setorderv
 setorderv(DT, c("A", "B"), c(1, -1))
 
-# infer cols from named order mapping (v1.18.99+)
+# infer cols from named order mapping
 mapping = c(A = 1L, B = -1L)
 setorderv(DT, order = mapping)
 }
