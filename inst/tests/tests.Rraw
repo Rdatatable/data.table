@@ -233,6 +233,29 @@ ForderObj = function(x, starts=NULL, maxgrpn=NULL, anyna=0L, anyinfnan=0L, anyno
   x
 }
 
+# For some tests of forder() compatibility with base sorting methods.
+# Subset the input until the locale collation order matches C. This way we don't totally ignore
+#   any possible issues with sorting strings in unusual locales (even though this _should_
+#   be impossible given we _always_ use C-collated order, such a regression test is still
+#   beneficial as a sanity check).
+# This is somewhat complicated and has gone through a few iterations.
+#  - Pairs of letters were tried for languages like Latvian which have some '<='-like letters,
+#    e.g. 'i' and 'y' are considered something of a 'tie', except when a tie-breaker is needed.
+#    For example, 'ya' comes before 'ib' because of 'a' < 'b' and 'i' <= 'y', but the letters
+#    alone sort as 'i' < 'y'.
+#  - But also there are locales like Faroese (fo_FO), which treats 'aa' like a single letter
+#    that sorts after 'z', which breaks an approach that glues bigrams together.
+make_c_sortable = function(x) {
+  while (!identical(idx_c<-order(x, method='radix'),
+                    idx_r<-order(x, method='shell'))) {
+    sorted_c = x[idx_c]
+    sorted_r = x[idx_r]
+
+    x = x[-which(sorted_c != sorted_r)[1L]]
+  }
+  x
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -1163,9 +1186,10 @@ test(353, DT[2,f:="c"], data.table(f=factor(c("a","c","a","b")),x=1:4))
 test(354, DT[3,f:=factor("foo")], data.table(f=factor(c("a","c","foo","b")),x=1:4))
 
 # Test growVector logic when adding levels  (don't need to grow levels for character cols)
-newlevels = format(as.hexmode(1:2000))
-DT = data.table(f=factor("000"),x=1:2010)
-test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevels)),x=1:2010))
+newlevels = make_c_sortable(format(as.hexmode(1:2000))) # hexmode with 'aa' will cause issues in some locales like fo_FO
+xx = seq_len(length(newlevels) + 10L)
+DT = data.table(f=factor("000"), x=xx)
+test(355, DT[10L + seq_along(newlevels), f := newlevels], data.table(f=factor(c(rep("000", 10L), newlevels)), x=xx))
 
 DT = data.table(f=c("a","b"),x=1:4)
 # Test coercing factor to character column
@@ -4452,50 +4476,53 @@ test(1221, DT[.(1),b], c("a","c","e"))
 # - Generate a random seed each time; the randomness allows catching errors quicker
 # - But save the seed so that we can generate the same data back if any error occurs
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
-seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
-foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
+make_words <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
 i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
 d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
 d2 = as.numeric(rnorm(1e3))
-c1 = sample(letters, 1e3, TRUE)
-c2 = sample(foo(50), 1e3, TRUE)
+c1 = sample(make_c_sortable(letters), 1e3, TRUE)
+c2 = sample(make_c_sortable(make_words(50L)), 1e3, TRUE)
+# With some probability, in some locales (esp. az_AZ), c2
+#   can be sorted leading forderv to give integer().
+if (identical(order(c2), seq_along(c2))) {
+  c2 = c(c2[-1L], "mmmmmmmmmmmmmmmmmmmmmmmmmmm")
+}
 
 DT = data.table(i1, i2, d1, d2, c1, c2)
 # randomise col order as well
-colorder=sample(ncol(DT))
-setcolorder(DT, names(DT)[colorder])
-seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
+setcolorder(DT, sample(ncol(DT)))
 
 test_no = 0L
-oldnfail = nfail
 for (nvars in seq_along(names(DT))) {
-  signs = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
-  combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
-    for (i in seq_len(nrow(signs))) {
-      test_no <<- test_no + 1L
+  orders_grid = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
+  for (cols in combn(names(DT), nvars, simplify=FALSE)) {
+    for (i in seq_len(nrow(orders_grid))) {
+      orders = orders_grid[i, ]
+      test_no <- test_no + 1L
       ll = as.call(c(
         as.name("order"),
         method="radix",
-        lapply(seq_along(x), function(j) {
-          if (signs[i,j] == 1L)
-            as.name(x[j])
-          else {
-            if (is.character(DT[[x[j]]]))
-              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
-            else
-              as.call(list(as.name("-"), as.name(x[j])))
-          }
+        lapply(seq_along(cols), function(j) {
+          col = cols[j]
+          col_nm = as.name(col)
+          if (orders[j] == 1L)
+            col_nm
+          else if (is.character(DT[[col]]))
+            call("-", call("xtfrm", col_nm))
+          else
+            call("-", col_nm)
         })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)), context=sprintf("signs[%d, ]==%s", i, paste(unlist(signs[i, ]), collapse=",")))
+      test(1223.0 + test_no*0.001, forderv(DT, by=cols, order=orders), with(DT, eval(ll)),
+           context=sprintf(
+             "seed = %d; setorder(DT, %s)",
+             seed, toString(paste0(fifelse(orders == 1L, "", "-"), cols))))
     }
-    integer()
-  })
+  }
 }
-if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 rm_all()
 
 # fix for bug #44 - unique on null data.table should return null data.table
@@ -4728,58 +4755,52 @@ seed = as.integer(Sys.time())
 # This choice of seed by Arun was very good as it revealed problems that a fixed seed would not.
 # Test 1844 is now added to consistently run the rare cases discovered here (depending on the seed) to cover all lines in
 # forder consistently to save pull requests failing coverage tests randomly, issue #2346
-seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 set.seed(seed)
 # these variable try to simulate groups of length 1, 2, < 200, > 200 so as to cover all different internal implementations
-foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
+make_words <- function(n) apply(matrix(sample(letters, n*4L, TRUE), ncol=4L), 1L, paste, collapse="")
 i1 = as.integer(sample(rep(c(-3:3, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
 i2 = as.integer(sample(rep(c(-2:2, -1e6, 1e6, NA_integer_), c(1, 2, 190, 300, 7, 190, 210, 100))))
 d1 = as.numeric(sample(rep(c(-2:2,Inf,-Inf, NA_real_, 5, -1e3), c(1, 190, 2, 300, 7, 50, 50, 100, 150, 150))))
-c1 = sample(rep(c(letters[1:5], NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
-c2 = sample(c(foo(200), NA_character_), 1e3, TRUE)
+c1 = sample(rep(c(make_c_sortable(letters[1:5]), NA_character_, "z"), c(1, 2, 190, 7, 300, 200, 300)))
+c2 = sample(c(make_c_sortable(make_words(200)), NA_character_), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, c1, c2)
 # randomise col order as well
-colorder=sample(ncol(DT))
-setcolorder(DT, names(DT)[colorder])
-seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
-ans = vector("list", length(names(DT)))
+setcolorder(DT, sample(ncol(DT)))
 
 test_no = 0L
-oldnfail = nfail
-for (i in seq_along(names(DT))) {
-  cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
-  ans[[i]] = combn(names(DT), i, function(x) {
-    tmp = apply(cj, 1, function(y) {
-      test_no <<- test_no + 1L
+for (nvars in seq_along(names(DT))) {
+  orders_grid = expand.grid(replicate(nvars, c(-1L, 1L), simplify=FALSE))
+  for (cols in combn(names(DT), nvars, simplify=FALSE)) {
+    for (i in seq_len(nrow(orders_grid))) {
+      orders = orders_grid[i, ]
+      test_no <- test_no + 1L
       ll = as.call(c(
         as.name("base_order"),
         method = "radix",
-        lapply(seq_along(x), function(j) {
-          x_nm = as.name(x[j])
-          if (y[j] == 1L)
-            x_nm
-          else {
-            if (is.character(DT[[x[j]]]))
-              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), x_nm))))
-            else
-              as.call(list(as.name("-"), x_nm))
-          }
+        lapply(seq_along(cols), function(j) {
+          col = cols[j]
+          col_nm = as.name(col)
+          if (orders[j] == 1L)
+            col_nm
+          else if (is.character(DT[[col]]))
+            call("-", call("xtfrm", col_nm))
+          else
+            call("-", col_nm)
         })
       ))
-      ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
+      ans1 = forderv(DT, by=cols, order=orders, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
       test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
-      test_no <<- test_no + 1L
+      test_no <- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
-      ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)), context=sprintf("ll=%s", format(ll)))
-    })
-    dim(tmp)=NULL
-    list(tmp)
-  })
+      ans1 = forderv(DT, by=cols, order=orders, na.last=NA)           # nalast=NA here.
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)),
+          context=sprintf(
+            "seed = %d; setorder(DT, %s)",
+            seed, toString(paste0(fifelse(orders == 1L, "", "-"), cols))))
+    }
+  }
 }
-ans = NULL
-if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 
 ###############
 # turning off tolerance for UPCs (> 11 s.f. stored in numeric), #342
@@ -12708,8 +12729,8 @@ test(1913.05, merge(y,dt), data.table(a=1L, b=1:3, key="a"))
 test(1913.06, merge(y, dt, all=TRUE), data.table(a=rep(c(0L,1L,2L),c(1,3,3)), b=c(NA_integer_,1:6), key="a"))
 #
 # merging data.tables is almost like merging data.frames
-d1 <- data.table(a=sample(letters, 10), b=sample(1:100, 10), key='a')
-d2 <- data.table(a=d1$a, b=sample(1:50, 10), c=rnorm(10), key='a')
+d1 <- data.table(a=sample(make_c_sortable(letters), 10L), b=sample(1:100, 10L), key='a')
+d2 <- data.table(a=d1$a, b=sample(1:50, 10L), c=rnorm(10L), key='a')
 dtm <- merge(d1, d2, by='a', suffixes=c(".xx", ".yy"))
 dtm.df <- as.data.frame(dtm)
 dfm <- merge(as.data.frame(d1), as.data.frame(d2), by='a', suffixes=c('.xx', '.yy'))
