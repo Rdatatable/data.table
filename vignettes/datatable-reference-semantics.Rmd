@@ -410,6 +410,19 @@ To select a single column as a vector, remember:
 - `DT[, mycol]` is safer as it always returns a new, independent copy.
 - `DT$mycol` is fast but may return a reference. Use `copy(DT$mycol)` to guarantee independence.
 
+### d) Side effects and testing
+
+Because `:=` modifies its input in-place, the changes persist. This matters when using the internal `test()` function to run an expression at multiple optimization levels: each evaluation must start with the same data. Use `copy()` inside the expression passed to `test()`.
+
+```r
+DT = data.table(a = 1L)
+# Run the expression with optimization levels 0, 1, 2, and 3.
+# copy(DT) gives every evaluation an independent input.
+test(1, copy(DT)[, a := a + 1L][], data.table(a = 2L), optimize = 0:3)
+```
+
+Without `copy(DT)`, each optimization level would modify `DT` before the next one is evaluated.
+
 ## Summary
 
 #### The `:=` operator

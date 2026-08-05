@@ -54,7 +54,7 @@ static const R_CallMethodDef callMethods[] = {
     {"Cbmerge", (DL_FUNC)&bmerge, -1},
     {"Cassign", (DL_FUNC)&assign, -1},
     {"Cdogroups", (DL_FUNC)&dogroups, -1},
-    {"Ccopy", (DL_FUNC)&copy, -1},
+    {"Ccopy", (DL_FUNC)&copy, 2},
     {"Cshallowwrapper", (DL_FUNC)&shallowwrapper, -1},
     {"Csetdt_nrows", (DL_FUNC)&setdt_nrows, -1},
     {"Calloccolwrapper", (DL_FUNC)&alloccolwrapper, -1},
@@ -161,6 +161,7 @@ static const R_CallMethodDef callMethods[] = {
     {"CmemcpyVectoradaptive", (DL_FUNC)&memcpyVectoradaptive, -1},
     {"CmemcpyDTadaptive", (DL_FUNC)&memcpyDTadaptive, -1},
     {"CcopyAsGrowable", (DL_FUNC)&copyAsGrowable, -1},
+    {"CresizeVector", (DL_FUNC)&resizeVector, -1},
     {"Cfrolladapt", (DL_FUNC)&frolladapt, -1},
     {"Cis_direct_child", (DL_FUNC)&is_direct_child, -1},
     {NULL, NULL, 0}};
