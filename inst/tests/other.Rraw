@@ -1,9 +1,11 @@
-pkgs = c("DBI", "RSQLite", "bit64", "ggplot2", "caret", "dplyr", "gdata", "hexbin", "knitr", "nanotime", "nlme", "parallel", "plyr", "R.utils", "sf", "vctrs", "zoo", "xts", "yaml")
+pkgs = c("DBI", "RSQLite", "bit64", "ggplot2", "caret", "dplyr", "gdata", "hexbin", "knitr", "nanotime", "nlme", "parallel", "plyr", "R.oo", "R.utils", "sf", "vctrs", "zoo", "xts", "yaml")
 # First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
 # So that these dependencies of other.Rraw are maintained in a single place.
 # TODO(R>=3.6.0): use attach.required=FALSE to let us keep pkgs= in alphabetical order (https://stat.ethz.ch/pipermail/r-devel/2026-July/084630.html)
 # TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
 #   users running test.data.table("other.Rraw").
+# TODO(HenrikBengtsson/R.oo#31): I think we can remove 'R.oo' once it can install in certain locales;
+#   for now, we have to include it in 'pkgs' to ensure tests don't try to proceed when 'R.oo' is found missing.
 
 # Optional Suggest-ed package tests moved from tests.Rraw to here in #5516. Retaining their comments:
 #  "xts",            # we have xts methods in R/xts.R
@@ -95,7 +97,8 @@ if (loaded[["plyr"]]) {
   test(2.1, plyr::arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))
 }
 
-if (loaded[["dplyr"]]) {
+# in versions 0.7.0-0.8.5 of dplyr, arrange() returns a data.frame.
+if (loaded[["dplyr"]] && packageVersion("dplyr") >= "1.0.0") {
   # dplyr::arrange uses vctrs::vec_slice which is implemented in C and bypasses `[` dispatch; #5042
   DT = data.table(A=c("b","c","a"), B=10:12)
   setindex(DT, A)
@@ -190,7 +193,8 @@ if (loaded[["gdata"]]) {
   unlink(f)
 }
 
-if (loaded[["knitr"]]) {
+# trivial '```r' vs '``` r' difference in older knitr
+if (loaded[["knitr"]] && packageVersion("knitr") > "1.45") {
   # That data.table-unaware code in packages like knitr still work
   # kable in knitr v1.6 uses DF[...] syntax inside it but the user might have passed a data.table.
   # Which is fine and works thanks to cedta().
@@ -716,13 +720,13 @@ if (loaded[["nanotime"]]) {
   test(27, na.omit(DT), DT[c(1,3)])
 
   # rbind with vectors with class attributes #5309
-  x = data.table(a=1L, b=as.nanotime(0))
+  x = data.table(a=1L, b=nanotime(0))
   y = data.table(a=2L, b=NA)
-  test(27.01, rbind(x,y), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
-  test(27.02, rbind(y,x), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+  test(27.01, rbind(x,y), data.table(a = c(1L, 2L), b=nanotime(c(0, NA))))
+  test(27.02, rbind(y,x), data.table(a = c(2L, 1L), b=nanotime(c(NA, 0))))
   y[, b := NULL]
-  test(27.03, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
-  test(27.04, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+  test(27.03, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=nanotime(c(0, NA))))
+  test(27.04, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=nanotime(c(NA, 0))))
 
   # Was 1.91-1.94 in nafill.Rraw, #6139
   l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
@@ -782,7 +786,7 @@ if (loaded[["dplyr"]]) {
 
 if (loaded[["nanotime"]]) {
   # respect dec=',' for nanotime, related to #6446, corresponding to tests 2281.*
-  test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
+  test(31, fwrite(data.table(nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
 }
 
 # tables() with large environment #6607
