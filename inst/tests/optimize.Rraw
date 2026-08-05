@@ -192,7 +192,8 @@ dt = data.table(x  = sample(letters, 300, TRUE),
                 i2 = sample(c(-10:10, NA), 300, TRUE),
                 d1 = as.numeric(sample(-10:10, 300, TRUE)),
                 d2 = as.numeric(sample(c(NA, NaN, -10:10), 300, TRUE)))
-if (test_bit64) {
+# is.na() test for ancient {bit64} on ancient R
+if (test_bit64 && is.na(integer64()[1L])) {
   dt[, `:=`(d3 = as.integer64(sample(-10:10, 300, TRUE)))]
   dt[, `:=`(d4 = as.integer64(sample(c(-10:10,NA), 300, TRUE)))]
 }

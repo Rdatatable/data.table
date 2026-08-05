@@ -40,6 +40,8 @@
 
 9. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
 
+10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
+
 10. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
 
 ### BUG FIXES
@@ -80,6 +82,10 @@
 
 18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
 
+19. `DT[order(double, ..., -non_double, na.last=TRUE)]`, i.e., a double/complex column (in any order) followed by a non-double column in descending order with `na.last=TRUE`, is fixed to respect `na.last` again, [#7875](https://github.com/Rdatatable/data.table/issues/7875). The problematic behavior only occurred under specific conditions on the cardinality of the non-double column.
+
+20. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
@@ -97,6 +103,10 @@
 7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
 
 8. Clarified `fread()` documentation and vignette regarding the interaction between `keepLeadingZeros = TRUE` and automatic header detection, [#5405](https://github.com/Rdatatable/data.table/issues/5405). Thanks @clemenskuehn for the report and @venom1204 for updating the documentation.
+
+9. `fread()` returns a clearer error message when `dec = NA` is used, [#7737](https://github.com/Rdatatable/data.table/issues/7737). Thanks @mcol for the report and the fix.
+
+10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
 
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 

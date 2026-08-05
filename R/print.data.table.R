@@ -131,8 +131,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     trunc.cols = length(not_printed) > 0L
   }
   print_default = function(x) {
-    if (col.names != "none") cut_colnames = identity
-    cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
+    if (col.names != "none") cut_colnames = function(x, nr) x
+    cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print), nrow(x))
     # prints names of variables not shown in the print
     if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
   }
@@ -177,8 +177,13 @@ shouldPrint = function(x) {
 
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
-# be sure to remove colnames from any row where they exist, #4270
-cut_colnames = function(x) writeLines(grepv("^\\s*(?:[0-9]+:|---)", capture.output(x)))
+# print() splits a matrix too wide for the console into blocks, each one starting
+#   with its own line of column names; drop all of them, #4270, and don't rely on
+#   row names being present to identify the data lines, #7735
+cut_colnames = function(x, nr) {
+  out = capture.output(x)
+  writeLines(out[seq_along(out) %% (nr + 1L) != 1L])
+}
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
