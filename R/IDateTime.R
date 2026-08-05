@@ -47,10 +47,10 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) {
     ans = as.integer(as.numeric(x) %/% 86400L)  # %/% returns a new object, so setattr() is safe
     setattr(ans, "class", c("IDate", "Date"))
-    copy_names(ans, names(x))
   } else {
-    as.IDate(as.Date(x, tz =  tz %||% '', ...))
+    ans = as.IDate(as.Date(x, tz =  tz %||% '', ...))
   }
+  copy_names(ans, names(x))
 }
 
 as.IDate.IDate = function(x, ...) x

@@ -1,0 +1,14 @@
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  library(data.table)
+
+  test = data.table:::test
+}
+
+# multiple expected/observed warnings in test() are printed on aligned lines, #7092
+test(1.1, test(0, warning("a"), warning=c("a", "b"), check_value=FALSE), FALSE,
+          output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
+test(1.2, test(0, {warning("a"); warning("b")}, warning="a", check_value=FALSE), FALSE,
+          output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
