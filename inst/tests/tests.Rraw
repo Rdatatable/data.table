@@ -21692,11 +21692,7 @@ test(2370.3, yearmon(x, format="character"), c("1111M11", "2019M01", "2019M02", 
 test(2370.4, yearmon("2016-08-03 01:02:03.45", format="character"), "2016M08")
 test(2370.5, yearmon(NA, format="character"), NA_character_)
 
-# multiple expected/observed warnings in test() are printed on aligned lines, #7092
-test(2371.1, test(0, warning("a"), warning=c("a", "b"), check_value=FALSE), FALSE,
-             output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
-test(2372.2, test(0, {warning("a"); warning("b")}, warning="a", check_value=FALSE), FALSE,
-             output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
+# test 2371, of test() itself, moved to self.Rraw
 
 # group-by on empty table works
 empty_dt = data.table()
