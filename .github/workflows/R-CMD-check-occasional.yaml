@@ -100,6 +100,18 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
 
+      - name: Override R for locale-specific check
+        if: matrix.os == 'ubuntu-latest' && !contains(matrix.locale, 'utf8')
+        run: |
+          sudo mkdir -p /override
+          sudo tee /override/R << 'EOF'
+          #!/bin/bash
+          set -o pipefail
+          exec $(which R) "$@" 2>&1 | iconv -c -t UTF-8
+          EOF
+          sudo chmod +x /override/R
+          echo "PATH=/override:$PATH" >> $GITHUB_ENV
+
       - name: Set script permissions
         run: chmod +x configure cleanup 2>/dev/null || true # Silence some GHA Annotations
         shell: bash
