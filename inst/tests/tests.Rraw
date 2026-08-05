@@ -5886,9 +5886,10 @@ test(1374.2, DT[, list(x=sum(x)), by=y], data.table(y=c(1,2,3), x=c(5L, 7L, 3L))
 # Similarly, subset in i with := in j, updates that subset
 DT = as.data.table(iris)
 DT[,Species:=as.character(Species)]
-test(1375.1, DT[,mean(Petal.Width),by=Species][order(-V1),Species:=toupper(Species)]$Species, c("SETOSA","VERSICOLOR","VIRGINICA"))
-test(1375.2, DT[,mean(Petal.Width),by=Species][order(-V1)][,Species:=toupper(Species)]$Species, c("VIRGINICA","VERSICOLOR","SETOSA"))
-test(1375.3, DT[,mean(Petal.Width),by=Species][V1>1,Species:=toupper(Species)]$Species, c("setosa","VERSICOLOR","VIRGINICA"))
+# toupper() here in both x and y because in some locales, toupper() can add accents (e.g. az_AZ)
+test(1375.1, DT[,mean(Petal.Width),by=Species][order(-V1),Species:=toupper(Species)]$Species, toupper(c("setosa", "versicolor", "virginica")))
+test(1375.2, DT[,mean(Petal.Width),by=Species][order(-V1)][,Species:=toupper(Species)]$Species, toupper(c("virginica", "versicolor", "setosa")))
+test(1375.3, DT[,mean(Petal.Width),by=Species][V1>1,Species:=toupper(Species)]$Species, c("setosa", toupper(c("versicolor", "virginica"))))
 
 # Secondary keys a.k.a indexes ...
 DT = data.table(a=1:10,b=10:1)
