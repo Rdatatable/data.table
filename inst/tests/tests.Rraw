@@ -21610,11 +21610,7 @@ xenv$N = list(a=1:5)
 xenv$DF = data.frame(a = 1:2)
 xenv$DF$b = data.table(c = 3:4, d = 5:6)
 test(2366.1,
-<<<<<<< HEAD
-     tables(env=xenv, depth=1L, index=TRUE)[, .(NAME, NROW, NCOL, INDICES, KEY)],
-=======
      tables(env=xenv, depth=1L, index=TRUE, silent=TRUE)[, .(NAME, NROW, NCOL, INDICES, KEY)],
->>>>>>> master
      data.table(
        NAME = c("DF$b", "DT", "L[[1]]", "L[[2]]", "M$b"),
        NROW = c(2L, 1L, 3L, 4L, 3L),
