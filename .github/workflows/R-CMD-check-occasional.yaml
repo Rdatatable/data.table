@@ -163,12 +163,7 @@ jobs:
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
           if (requireNamespace("rcmdcheck", quietly=TRUE)) {
-            if ("env" %in% names(formals(rcmdcheck::rcmdcheck))) {
-              rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check", env=env)
-            } else {
-              do.call(Sys.setenv, as.list(env))
-              rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
-            }
+            rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", ".", build_args))
