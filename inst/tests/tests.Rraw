@@ -21940,7 +21940,7 @@ test(2384.3, print(DT, na.print=".", topn=2, col.names="none", row.names=FALSE, 
 DT = data.table(a=c("x\ny","z"), b=1:2)
 test(2384.4, print(DT, col.names="none", row.names=FALSE, class=FALSE), output=c(" x\\ny 1\n    z 2"))
 
-# #6932 setorderv() could take order=<column-order mapping>
+# setorderv() could take order as named column order mapping, #6932
 DT = data.table(a=c(2,1,1,2), b=c("d","c","b","a"), c=c(1,2,1,2))
 m = c(c=-1L, a=1L)
 test(2385.01, setorderv(copy(DT), order=m), setorderv(copy(DT), cols=c("c", "a"), order=m))
