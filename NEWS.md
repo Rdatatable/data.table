@@ -42,6 +42,8 @@
 
 10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
 
+11. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 8. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled during `locf` or `nocb` operations, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 for the PR.
 
 ### BUG FIXES

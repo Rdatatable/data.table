@@ -256,6 +256,10 @@ setorder = function(x, ..., na.last=FALSE)
 
 setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
 {
+  if (missing(cols) && !is.null(names(order))) {
+    cols = names(order)
+    if (anyDuplicated(cols)) stopf("order argument has named duplicates: %s", brackify(duplicated_values(cols)))
+  }
   if (is.null(cols)) return(x)
   if (!is.data.frame(x)) stopf("x must be a data.frame or data.table")
   na.last = as.logical(na.last)
