@@ -1,0 +1,32 @@
+---
+title: "Manual"
+---
+
+## All functions
+
+```{r, echo=FALSE, results='asis'}
+# Load the reference index
+ref_info = readRDS("reference_index.rds")
+
+format_alias = function(alias, link) {
+  is_simple_name = grepl("^[A-Za-z][A-Za-z0-9._]*$", alias)
+  alias_text = gsub("<([^>]+)>", "<i>&lt;\\1&gt;</i>", alias)
+  if (is_simple_name) alias_text = paste0(alias_text, "()")
+  sprintf("<code><a href=\"%s\">%s</a></code>", link, alias_text)
+}
+
+for (info in ref_info) {
+  # Create a link to the individual page
+  link = sprintf("reference/%s.html", info$name)
+
+  # Format aliases as function names
+  if (length(info$aliases) > 0) {
+    formatted_aliases = vapply(info$aliases, function(alias) format_alias(alias, link), character(1))
+    alias_text = paste(formatted_aliases, collapse = " ")
+  } else {
+    alias_text = format_alias(info$name, link)
+  }
+
+  cat(sprintf("<dl><dt>\n\n  %s\n\n</dt>\n<dd>%s</dd>\n</dl>\n", alias_text, info$title))
+}
+```

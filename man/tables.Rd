@@ -6,7 +6,7 @@
 }
 \usage{
 tables(mb=type_size, order.col="NAME", width=80,
-       env=parent.frame(), silent=FALSE, index=FALSE)
+       env=parent.frame(), silent=FALSE, index=FALSE, depth=0L)
 }
 \arguments{
   \item{mb}{ a function which accepts a \code{data.table} and returns its size in bytes. By default, \code{type_size} (same as \code{TRUE}) provides a fast lower bound by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). A column \code{"MB"} is included in the output unless \code{FALSE} or \code{NULL}. }
@@ -15,6 +15,7 @@ tables(mb=type_size, order.col="NAME", width=80,
   \item{env}{ An \code{environment}, typically the \code{.GlobalEnv} by default, see Details. }
   \item{silent}{ \code{logical}; should the output be printed? }
   \item{index}{ \code{logical}; if \code{TRUE}, the column \code{INDICES} is added to indicate the indices assorted with each object, see \code{\link{indices}}. }
+  \item{depth}{\code{integer}, default \code{0L}. Larger values govern the depth of search in recursive objects like lists or environments. For example, \code{depth=1L} will find all data.tables in the global environment as well as all data.tables in lists (but not in lists of lists). NB: \code{depth > 1L} is not yet supported.}
 }
 \details{
 Usually \code{tables()} is executed at the prompt, where \code{parent.frame()} returns \code{.GlobalEnv}. \code{tables()} may also be useful inside functions where \code{parent.frame()} is the local scope of the function; in such a scenario, simply set it to \code{.GlobalEnv} to get the same behaviour as at prompt.

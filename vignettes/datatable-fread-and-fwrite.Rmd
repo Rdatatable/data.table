@@ -1,26 +1,20 @@
 ---
 title: "Fast Read and Fast Write"
-date: "`r Sys.Date()`"
-output: 
-  markdown::html_format
+date: "`{r} Sys.Date()`"
+output: litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Fast Read and Fast Write}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
 ```{r echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -102,6 +96,8 @@ In many cases, `fread()` can automatically detect and decompress files with comm
 After applying any `skip` or `nrows` settings (if specified), the first row with a consistent number of fields is examined:
 
 If all fields in this line are interpretable as character and the values do not strongly resemble a data row (e.g., a row of purely numeric-looking strings might still be considered data), it is typically used as the header (column names).
+
+**Note:** Setting `keepLeadingZeros = TRUE` can influence this logic. Because it forces numeric columns with leading zeros to be treated as `character`, it may cause `fread` to mistakenly identify a data row as a header row. In such cases, explicitly setting `header = FALSE` is recommended.
 
 Otherwise (e.g., if the line contains detected numeric types, or character strings that strongly resemble numbers and could be data), it is treated as a data row, and default column names (`V1`, `V2`, …) are assigned.
 

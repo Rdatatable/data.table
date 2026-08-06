@@ -1,0 +1,298 @@
+---
+title: "Importar data.table"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Importing data.table}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
+
+<style>
+h2 {
+    font-size: 20px;
+}
+</style>
+
+```{r, echo=FALSE, file='../_translation_links.R'}
+```
+
+`{r} .write.translation.links("Las traducciones de este documento están disponibles en: %s")`
+
+Este documento se centra en el uso de `data.table` como dependencia en otros paquetes R. Si está interesado en utilizar el código C de `data.table` desde una aplicación que no sea R, o en llamar directamente a sus funciones C, salte a la [última sección](#non-r-api) de esta viñeta.
+
+Importar `data.table` no es diferente de importar otros paquetes R. Esta viñeta tiene como objetivo responder las preguntas más comunes que surgen en torno a ese tema; las lecciones aquí presentadas se pueden aplicar a otros paquetes R.
+
+## ¿Por qué importar `data.table`?
+
+Una de las principales características de `data.table` es su sintaxis concisa, que agiliza y facilita la escritura y la comprensión del análisis exploratorio. Esta comodidad puede impulsar a los desarrolladores de paquetes a usar `data.table`. Otra razón, quizás más importante, es su alto rendimiento. Al externalizar tareas de computación pesadas de su paquete a `data.table`, generalmente se obtiene el máximo rendimiento sin necesidad de reinventar ninguno de estos trucos de optimización numérica.
+
+## Importar `data.table` es fácil
+
+Es muy fácil usar `data.table` como dependencia, ya que no tiene dependencias propias. Esto aplica tanto al sistema operativo como a las dependencias de R. Esto significa que si tiene R instalado en su equipo, ya tiene todo lo necesario para instalar `data.table`. Además, añadir `data.table` como dependencia de su paquete no generará una cadena de otras dependencias recursivas, lo que lo hace muy conveniente para la instalación sin conexión.
+
+## Archivo `DESCRIPTION` {#DESCRIPTION}
+
+El primer lugar para definir una dependencia en un paquete es el archivo `DESCRIPTION`. Normalmente, deberá agregar `data.table` en el campo `Imports:`. Para ello, deberá instalar `data.table` antes de que el paquete pueda compilarse/instalarse. Como se mencionó anteriormente, no se instalarán otros paquetes porque `data.table` no tiene dependencias propias. También puede especificar la versión mínima requerida de una dependencia; por ejemplo, si su paquete utiliza la función `fwrite`, introducida en `data.table` en la versión 1.9.8, debería incorporarla como `Imports: data.table (>= 1.9.8)`. De esta forma, puede asegurarse de que la versión de `data.table` instalada sea la 1.9.8 o posterior antes de que los usuarios puedan instalar el paquete. Además del campo `Imports:`, también puede usar `Depends: data.table`, pero desaconsejamos este método (y es posible que no lo permitamos en el futuro) porque carga `data.table` en el espacio de trabajo del usuario; es decir, habilita la funcionalidad de `data.table` en los scripts del usuario sin que este la solicite. `Imports:` es la forma correcta de usar `data.table` dentro del paquete sin afectar a `data.table` en el usuario. De hecho, esperamos que el campo `Depends:` quede obsoleto en R, ya que esto aplica a todos los paquetes.
+
+## Archivo `NAMESPACE` {#NAMESPACE}
+
+El siguiente paso es definir el contenido de `data.table` que usa tu paquete. Esto debe hacerse en el archivo `NAMESPACE`. Normalmente, los autores de paquetes usarán `import(data.table)`, que importará todas las funciones exportadas (es decir, las que aparecen en el archivo `NAMESPACE` de `data.table`) desde `data.table`.
+
+También puede usar solo un subconjunto de las funciones de `data.table`; por ejemplo, algunos paquetes pueden usar simplemente el lector y escritor de CSV de alto rendimiento de `data.table`, para lo cual puede agregar `importFrom(data.table, fread, fwrite)` en su archivo `NAMESPACE`. También es posible importar todas las funciones de un paquete, *excluyendo* algunas específicas, usando `import(data.table, except=c(fread, fwrite))`.
+
+Asegúrese de leer también la nota sobre la evaluación no estándar en `data.table` en [la sección sobre "globales indefinidos"](#globals).
+
+## Uso
+
+Como ejemplo, definiremos dos funciones en el paquete `a.pkg` que utilizan `data.table`. Una función, `gen`, generará un `data.table` simple; otra, `aggr`, realizará una agregación simple del mismo.
+
+```r
+gen = function (n = 100L) {
+  dt = as.data.table(list(id = seq_len(n)))
+  dt[, grp := ((id - 1) %% 26) + 1
+     ][, grp := letters[grp]
+       ][]
+}
+aggr = function (x) {
+  stopifnot(
+    is.data.table(x),
+    "grp" %in% names(x)
+  )
+  x[, .N, by = grp]
+}
+```
+
+## Pruebas
+
+Asegúrese de incluir pruebas en su paquete. Antes de cada lanzamiento principal de `data.table`, verificamos las dependencias inversas. Esto significa que si algún cambio en `data.table` pudiera afectar su código, podremos detectar los cambios problemáticos e informarle antes de publicar la nueva versión. Esto, por supuesto, supone que publicará su paquete en CRAN o Bioconductor. La prueba más básica puede ser un script de R en texto plano en el directorio `tests/test.R` de su paquete:
+
+```r
+library(a.pkg)
+dt = gen()
+stopifnot(nrow(dt) == 100)
+dt2 = aggr(dt)
+stopifnot(nrow(dt2) < 100)
+```
+
+Al probar su paquete, puede utilizar `R CMD check --no-stop-on-test-error`, que continuará después de un error y ejecutará todas sus pruebas (en lugar de detenerse en la primera línea del script que falló).
+
+## Pruebas usando `testthat`
+
+Es muy común usar el paquete `testthat` para realizar pruebas. Probar un paquete que importa `data.table` no es diferente a probar otros paquetes. Un ejemplo de script de prueba `tests/testthat/test-pkg.R`:
+
+```r
+context("pkg tests")
+
+test_that("generate dt", { expect_true(nrow(gen()) == 100) })
+test_that("aggregate dt", { expect_true(nrow(aggr(gen())) < 100) })
+```
+
+Si `data.table` está en "Suggests" (pero no en "Imports"), entonces necesita declarar `.datatable.aware=TRUE` en uno de los archivos R/* para evitar errores de "objeto no encontrado" al realizar pruebas a través de `testthat::test_package` o `testthat::test_check`.
+
+## Cómo lidiar con "undefined global functions or variables " {#globals}
+
+El uso de la evaluación diferida de R por parte de `data.table` (especialmente en el lado izquierdo de `:=`) no es bien reconocido por `R CMD check`. Esto genera `NOTE`s como la siguiente durante la comprobación del paquete:
+
+```
+* checking R code for possible problems ... NOTE
+aggr: no visible binding for global variable 'grp'
+gen: no visible binding for global variable 'grp'
+gen: no visible binding for global variable 'id'
+Undefined global functions or variables:
+grp id
+```
+
+La forma más sencilla de solucionar esto es predefinir esas variables dentro del paquete y establecerlas como `NULL`, añadiendo opcionalmente un comentario (como se hace en la versión refinada de `gen` a continuación). Siempre que sea posible, también puede usar un vector de caracteres en lugar de símbolos (como en `aggr` a continuación):
+
+```r
+gen = function (n = 100L) {
+  id = grp = NULL # due to NSE notes in R CMD check
+  dt = as.data.table(list(id = seq_len(n)))
+  dt[, grp := ((id - 1) %% 26) + 1
+     ][, grp := letters[grp]
+       ][]
+}
+aggr = function (x) {
+  stopifnot(
+    is.data.table(x),
+    "grp" %in% names(x)
+  )
+  x[, .N, by = "grp"]
+}
+```
+
+El caso de los símbolos especiales de `data.table` (p. ej., `.SD` y `.N`) y el operador de asignación (`:=`) es ligeramente diferente (consulte `?.N` para obtener más información, incluyendo una lista completa de dichos símbolos). Debe importar cualquiera de estos valores que utilice del espacio de nombres de `data.table` para evitar problemas derivados del improbable escenario de que cambiemos el valor exportado de estos en el futuro. Por ejemplo, si desea usar `.N`, `.I` y `:=`, un `NAMESPACE` mínimo tendría:
+
+```r
+importFrom(data.table, .N, .I, ':=')
+```
+
+Mucho más simple es simplemente usar `import(data.table)`, lo que permitirá el uso en el código de su paquete de cualquier objeto exportado desde `data.table`.
+
+Si no le importa tener `id` y `grp` registrados como variables globales en el espacio de nombres de su paquete, puede usar `?globalVariables`. Tenga en cuenta que estas notas no afectan el código ni su funcionalidad; si no va a publicar su paquete, puede simplemente ignorarlas.
+
+## Se debe tener cuidado al proporcionar y utilizar `options`
+
+Una práctica común en los paquetes de R es proporcionar opciones de personalización definidas por `options(name=val)` y obtenidas mediante `getOption("name", default)`. Los argumentos de función suelen especificar una llamada a `getOption()` para que el usuario conozca (a través de `?fun` o `args(fun)`) el nombre de la opción que controla el valor predeterminado para ese parámetro; por ejemplo, `fun(..., verbose=getOption("datatable.verbose", FALSE))`. Todas las opciones de `data.table` comienzan con `datatable.` para evitar conflictos con las opciones de otros paquetes. El usuario simplemente llama a `options(datatable.verbose=TRUE)` para activar la verbosidad. Esto afecta a todas las llamadas a la función data.table, a menos que `verbose=FALSE` se especifique explícitamente; por ejemplo, `fun(..., verbose=FALSE)`.
+
+El mecanismo de opciones en R es *global*. Esto significa que si un usuario establece una opción `data.table` para su propio uso, esa configuración también afecta al código dentro de cualquier paquete que también esté usando `data.table`. Para una opción como `datatable.verbose`, este es exactamente el comportamiento deseado ya que el deseo es rastrear y registrar todas las operaciones de `data.table` desde donde sea que se originen; activar la verbosidad no afecta los resultados. Otra opción única de R y excelente para producción es `options(warn=2)` de R que convierte todas las advertencias en errores. Nuevamente, el deseo es afectar cualquier advertencia en cualquier paquete para no perder ninguna advertencia en producción. Hay 6 opciones `datatable.print.*` y 3 opciones de optimización que no afectan el resultado de las operaciones. Sin embargo, hay una opción `data.table` que sí afecta y ahora es una preocupación: `datatable.nomatch`. Esta opción cambia la unión predeterminada de externa a interna. [Aparte, la unión predeterminada es externa porque externa es más segura; no elimina los datos faltantes silenciosamente; Además, es coherente con el método R básico para la coincidencia por nombres e índices. Algunos usuarios prefieren que la unión interna sea la opción predeterminada, y les proporcionamos esta opción. Sin embargo, si un usuario configura esta opción, puede cambiar involuntariamente el comportamiento de las uniones dentro de paquetes que usan `data.table`. Por consiguiente, en la versión 1.12.4 (octubre de 2019) se mostraba un mensaje al usar la opción `datatable.nomatch`, y a partir de la versión 1.14.2, se ignora con una advertencia. Era la única opción de `data.table` con este problema.
+
+## Solución de problemas
+
+Si enfrenta algún problema al crear un paquete que usa data.table, confirme que el problema se pueda reproducir en una sesión R limpia usando la consola R: `R CMD check package.name`.
+
+Algunos de los problemas más comunes que enfrentan los desarrolladores suelen estar relacionados con las herramientas auxiliares diseñadas para automatizar algunas tareas de desarrollo de paquetes; por ejemplo, usar `roxygen` para generar el archivo `NAMESPACE` a partir de los metadatos de los archivos de código de R. Otros están relacionados con las herramientas auxiliares que compilan y verifican el paquete. Desafortunadamente, estas herramientas auxiliares a veces tienen efectos secundarios imprevistos u ocultos que pueden ocultar el origen de los problemas. Por lo tanto, asegúrese de verificar con la consola de R (ejecute R en la línea de comandos) y asegúrese de que la importación esté definida en los archivos `DESCRIPTION` y `NAMESPACE` siguiendo las instrucciones [arriba](#DESCRIPTION).
+
+Si no puede reproducir los problemas que tiene al usar la compilación y verificación de la consola R simple, puede intentar obtener ayuda en función de los problemas anteriores que hemos encontrado con la interacción de `data.table` con las herramientas auxiliares: [devtools#192](https://github.com/r-lib/devtools/issues/192) o [devtools#1472](https://github.com/r-lib/devtools/issues/1472).
+
+## Licencia
+
+Desde la versión 1.10.5, `data.table` se licencia como Licencia Pública de Mozilla (MPL). Las razones del cambio de la GPL se pueden consultar aquí [https://github.com/Rdatatable/data.table/pull/2456] y se puede leer más sobre la MPL en Wikipedia [https://en.wikipedia.org/wiki/Mozilla_Public_License] y [https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses].
+
+## Importar opcionalmente `data.table`: Sugiere
+
+Si desea usar `data.table` condicionalmente, es decir, solo cuando esté instalado, debe usar `Suggests: data.table` en su archivo `DESCRIPTION` en lugar de `Imports: data.table`. De forma predeterminada, esta definición no forzará la instalación de `data.table` al instalar el paquete. Esto también requiere que use `data.table` condicionalmente en el código del paquete, lo cual debe hacerse mediante la función `?requireNamespace`. El siguiente ejemplo muestra el uso condicional del rápido escritor de CSV `?fwrite` de `data.table`. Si el paquete `data.table` no está instalado, se usa la función `?write.table` de R, mucho más lenta.
+
+```r
+my.write = function (x) {
+  if(requireNamespace("data.table", quietly=TRUE)) {
+    data.table::fwrite(x, "data.csv")
+  } else {
+    write.table(x, "data.csv")
+  }
+}
+```
+
+Una versión ligeramente más extendida de esto también garantizaría que la versión instalada de `data.table` sea lo suficientemente reciente para tener la función `fwrite` disponible:
+
+```r
+my.write = function (x) {
+  if(requireNamespace("data.table", quietly=TRUE) &&
+    utils::packageVersion("data.table") >= "1.9.8") {
+    data.table::fwrite(x, "data.csv")
+  } else {
+    write.table(x, "data.csv")
+  }
+}
+```
+
+Al usar un paquete como dependencia sugerida, no debe importarlo en el archivo `NAMESPACE`. Simplemente menciónelo en el archivo `DESCRIPTION`. Al usar funciones `data.table` en el código del paquete (archivos R/*), debe usar el prefijo `data.table::`, ya que ninguna se importa. Al usar `data.table` en pruebas de paquetes (por ejemplo, archivos tests/testthat/test*), debe declarar `.datatable.aware=TRUE` en uno de los archivos R/*.
+
+## `data.table` en `Imports` pero no se importó nada
+
+Algunos usuarios ([por ejemplo](https://github.com/Rdatatable/data.table/issues/2341)) pueden preferir evitar el uso de `importFrom` o `import` en su archivo `NAMESPACE` y en su lugar usar la calificación `data.table::` en todo el código interno (por supuesto, manteniendo `data.table` debajo de su `Imports:` en `DESCRIPTION`).
+
+En este caso, la función no exportada `[.data.table` volverá a llamar a `[.data.frame` como medida de protección, ya que `data.table` no tiene forma de saber que el paquete padre es consciente de que está intentando realizar llamadas contra la sintaxis de la API de consulta de `data.table` (lo que podría generar un comportamiento inesperado ya que la estructura de las llamadas a `[.data.frame` y `[.data.table` difieren fundamentalmente, por ejemplo, este último tiene muchos más argumentos).
+
+Si este es su enfoque preferido para el desarrollo de paquetes, defina `.datatable.aware = TRUE` en cualquier parte de su código fuente de R (no es necesario exportar). Esto indica a `data.table` que usted, como desarrollador de paquetes, ha diseñado su código para que utilice intencionalmente su funcionalidad, aunque no sea evidente al inspeccionar su archivo `NAMESPACE`.
+
+`data.table` determina sobre la marcha si la función que llama es consciente de que está accediendo a `data.table` con la función interna `cedta` (**C**alling **E**nvironment is **D**ata **T**able **A**ware), que, además de verificar `?getNamespaceImports` para su paquete, también verifica la existencia de esta variable (entre otras cosas).
+
+## Más información sobre las dependencias
+
+Para obtener documentación más canónica sobre la definición de dependencia de paquetes, consulte el manual oficial: [Escritura de extensiones R](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
+
+## Importación de rutinas data.table C
+
+Algunas de las rutinas C utilizadas internamente ahora se exportan a nivel C, por lo que se pueden usar en paquetes R directamente desde su código C. Consulte [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html) para obtener detalles y la sección [Escritura de extensiones R](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) *Enlace a rutinas nativas en otros paquetes* para su uso.
+
+## Importación desde aplicaciones que no son r {#non-r-api}
+
+Algunas pequeñas partes del código C de `data.table` se aislaron de la API de RC y ahora pueden usarse desde aplicaciones que no sean de R mediante enlaces a archivos .so o .dll. Más adelante se proporcionarán detalles más concretos al respecto; por ahora, puede estudiar el código C aislado de la API de RC en [src/fread.c](https://github.com/Rdatatable/data.table/blob/master/src/fread.c) y [src/fwrite.c](https://github.com/Rdatatable/data.table/blob/master/src/fwrite.c).
+
+## Cómo convertir su dependencia Depends en data.table a Imports
+
+Para convertir una dependencia `Depends` de `data.table` en una dependencia `Imports` en su paquete, siga estos pasos:
+
+### Paso 0. Asegúrese de que su paquete pase la verificación R CMD inicialmente
+
+### Paso 1. Actualice el archivo DESCRIPTION para colocar data.table en Imports, no en Depends
+
+**Antes:**
+
+```dcf
+Depends:
+    R (>= 3.5.0),
+    data.table
+Imports:
+```
+
+**Después:**
+
+```dcf
+Depends:
+    R (>= 3.5.0)
+Imports:
+    data.table
+```
+
+### Paso 2.1: Ejecutar `R CMD check`
+
+Ejecute `R CMD check` para identificar importaciones o símbolos faltantes. Este paso ayuda a:
+
+- Detecta automáticamente cualquier función o símbolo de `data.table` que no se importe explícitamente.
+- Marca los símbolos especiales faltantes como `.N`, `.SD` y `:=`.
+- Proporciona retroalimentación inmediata sobre lo que se debe agregar al archivo NAMESPACE.
+
+Nota: No todos estos usos son detectados por `R CMD check`. En particular, `R CMD check` omite algunos símbolos/funciones en fórmulas y no detecta expresiones analizadas como `parse(text = "data.table(a = 1)")`. Los paquetes necesitarán una buena cobertura de pruebas para detectar estos casos extremos.
+
+### Paso 2.2: Modificar el archivo NAMESPACE
+
+Según los resultados de `R CMD check`, asegúrese de que se importen todas las funciones utilizadas, los símbolos especiales, los genéricos S3 y las clases S4 de `data.table`.
+
+Esto implica agregar directivas `importFrom(data.table, ...)` para símbolos, funciones y genéricos de S3, o directivas `importClassesFrom(data.table, ...)` para clases de S4, según corresponda. Consulte "Escritura de extensiones de R" para obtener más información sobre cómo hacerlo correctamente.
+
+#### Importación completa
+
+Como alternativa, puede importar todas las funciones de `data.table` a la vez, aunque esto generalmente no se recomienda:
+
+```r
+import(data.table)
+```
+
+**Justificación para evitar importaciones generales:** 
+1. **Documentación**: El archivo NAMESPACE puede servir como buena documentación de cómo depende de ciertos paquetes.
+2. **Evitar conflictos**: Las importaciones generales pueden causar fallos sutiles. Por ejemplo, si importa `import(pkgA)` e `import(pkgB)`, pero posteriormente pkgB exporta una función también exportada por pkgA, esto romperá su paquete debido a conflictos en su espacio de nombres, lo cual no está permitido por `R CMD check` y CRAN.
+
+### Paso 3: Actualice sus archivos de código R fuera del directorio R/ del paquete
+
+Al mover un paquete de "Depends" a "Imports", ya no se adjuntará automáticamente al cargarlo. Esto puede ser importante para ejemplos, pruebas, viñetas y demostraciones, donde los paquetes de "Imports" deben adjuntarse explícitamente.
+
+**Antes (con `Depends`):**
+
+```r
+# data.table functions are directly available
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+**Después (con `Imports`):**
+
+```r
+# Explicitly load data.table in user scripts or vignettes
+library(data.table)
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+### Beneficios de usar `Imports`
+
+- **Facilidad de uso**: `Depends` modifica la ruta `search()` de los usuarios, posiblemente sin su consentimiento.
+- **Gestión del espacio de nombres**: Solo están disponibles las funciones que tu paquete importa explícitamente, lo que reduce el riesgo de conflictos de nombres de funciones.
+- **Carga de paquetes más limpia**: Las dependencias de tu paquete no se vinculan a la ruta de búsqueda, lo que hace que el proceso de carga sea más limpio y potencialmente más rápido.
+- **Mantenimiento más sencillo**: Simplifica las tareas de mantenimiento a medida que evolucionan las API de las dependencias ascendentes. Depender demasiado de `Depends` puede generar conflictos y problemas de compatibilidad con el tiempo.
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```

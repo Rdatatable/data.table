@@ -1,0 +1,295 @@
+---
+title: "Remodelado eficiente con data.table"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Efficient reshaping using data.tables}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo=FALSE, file='../_translation_links.R'}
+```
+
+`{r} .write.translation.links("Las traducciones de este documento están disponibles en: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+Esta viñeta analiza el uso predeterminado de las funciones de remodelación `melt` (de ancho a largo) y `dcast` (de largo a ancho) para *data.tables*, así como las **nuevas funcionalidades extendidas** de fusión y conversión en *múltiples columnas* disponibles a partir de `v1.9.6`.
+
+***
+
+```{r, echo = FALSE}
+options(width = 100L)
+```
+
+## Datos
+
+Cargaremos los conjuntos de datos directamente dentro de las secciones.
+
+## Introducción
+
+Las funciones `melt` y `dcast` para `data.table` sirven para remodelar de ancho a largo y de largo a ancho, respectivamente; las implementaciones están diseñadas específicamente teniendo en mente grandes datos en memoria (por ejemplo, 10 Gb).
+
+En esta viñeta, vamos a:
+
+1. Primero, observar brevemente la conversión predeterminada de `melt` y `dcast` de `data.table` para convertirlos de formato *ancho* a *largo* y *viceversa*
+
+2. Analizar escenarios donde las funcionalidades actuales se vuelven engorrosas e ineficientes
+
+3. Finalmente, observar las nuevas mejoras en los métodos `melt` y `dcast` para que `data.table` gestione múltiples columnas simultáneamente.
+
+Las funcionalidades ampliadas están en línea con la filosofía de `data.table` de realizar operaciones de manera eficiente y sencilla.
+
+## 1. Funcionalidad predeterminada
+
+### a) fusión (`melt`ing) de `data.table` (de ancho a largo)
+
+Supongamos que tenemos una `data.table` (datos artificiales) como se muestra a continuación:
+
+```{r}
+s1 <- "family_id age_mother dob_child1 dob_child2 dob_child3
+1         30 1998-11-26 2000-01-29         NA
+2         27 1996-06-22         NA         NA
+3         26 2002-07-11 2004-04-05 2007-09-02
+4         32 2004-10-10 2009-08-27 2012-07-21
+5         29 2000-12-05 2005-02-28         NA"
+DT <- fread(s1)
+DT
+## dob stands for date of birth.
+
+str(DT)
+```
+
+#### - Convertir 'DT' a formato *largo* donde cada 'dob' es una observación separada.
+
+Podríamos lograr esto usando `melt()` especificando los argumentos `id.vars` y `measure.vars` de la siguiente manera:
+
+```{r}
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"),
+                measure.vars = c("dob_child1", "dob_child2", "dob_child3"))
+DT.m1
+str(DT.m1)
+```
+
+* `measure.vars` especifica el conjunto de columnas que nos gustaría contraer (o combinar).
+
+* También podemos especificar *posiciones* de columna en lugar de *nombres*.
+
+* Por defecto, la columna `variable` es de tipo `factor`. Establezca el argumento `variable.factor` en `FALSE` si prefiere devolver un vector de tipo *`character`*.
+
+* De forma predeterminada, las columnas fundidas se denominan automáticamente `variable` y `value`.
+
+* `melt` conserva los atributos de la columna en el resultado.
+
+#### - Nombrar las columnas `variable` y `valor` como `hijo` y `fecha de nacimiento` respectivamente
+
+```{r}
+DT.m1 = melt(DT, measure.vars = c("dob_child1", "dob_child2", "dob_child3"),
+               variable.name = "child", value.name = "dob")
+DT.m1
+```
+
+* De manera predeterminada, cuando falta una de las `id.vars` o `measure.vars`, el resto de las columnas se *asignan automáticamente* al argumento faltante.
+
+* Cuando no se especifican ni `id.vars` ni `measure.vars`, como se menciona en `?melt`, todas las columnas *no* `numeric`, `integer` o `logical` se asignarán a `id.vars`.
+
+    In addition, a warning message is issued highlighting the columns that are automatically considered to be `id.vars`.
+
+### b) `dcast` de `data.table` (de largo a ancho)
+
+En la sección anterior, vimos cómo pasar del formato ancho al formato largo. Veamos la operación inversa en esta sección.
+
+#### - ¿Cómo podemos volver a la tabla de datos original `DT` desde `DT.m1`?
+
+Es decir, queremos recopilar todas las observaciones de *child* correspondientes a cada `family_id, age_mother` en la misma fila. Podemos lograrlo usando `dcast` de la siguiente manera:
+
+```{r}
+dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
+```
+
+* `dcast` usa la interfaz *formula*. Las variables del lado izquierdo de *formula* representan las variables *id* y del lado derecho, las variables *measure*.
+
+* `value.var` denota la columna que se debe completar al convertir a formato ancho.
+
+* `dcast` también intenta preservar los atributos en el resultado siempre que sea posible.
+
+#### - A partir de `DT.m1`, ¿cómo podemos obtener el número de hijos en cada familia?
+
+También puede pasar una función para agregar en `dcast` con el argumento `fun.aggregate`. Esto es especialmente esencial cuando la fórmula proporcionada no identifica una sola observación para cada celda.
+
+```{r}
+dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.var = "dob")
+```
+
+Consulte `?dcast` para obtener otros argumentos útiles y ejemplos adicionales.
+
+## 2. Limitaciones de los enfoques anteriores de `melt/dcast`
+
+Hasta ahora hemos visto características de `melt` y `dcast` que se implementan de manera eficiente para `data.table`s, utilizando maquinaria interna de `data.table` (*ordenamiento rápido de radix*, *búsqueda binaria*, etc.).
+
+Sin embargo, existen situaciones en las que la operación deseada no se expresa de forma clara. Por ejemplo, considere la tabla `data.table` que se muestra a continuación:
+
+```{r}
+s2 <- "family_id age_mother name_child1 name_child2 name_child3 gender_child1 gender_child2 gender_child3
+1         30         Ben        Anna          NA             1             2            NA
+2         27         Tom          NA          NA             2            NA            NA
+3         26         Lia         Sam         Amy             2             2             1
+4         32         Max         Zoe         Joe             1             1             1
+5         29         Dan         Eva          NA             2             1            NA"
+DT <- fread(s2)
+DT
+## 1 = female, 2 = male
+```
+
+Y podría querer combinar (`melt`) todas las columnas `name` y `gender`. Con la funcionalidad anterior, podríamos hacer algo como esto:
+
+```{r}
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
+DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
+DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
+DT.c1
+
+str(DT.c1) ## gender column is character type now!
+```
+
+#### Asuntos
+
+1. Lo que queríamos hacer era combinar todas las columnas de tipo `nombre` y `género`, respectivamente. En lugar de eso, combinamos *todo* y luego lo volvemos a dividir. Creo que es fácil ver que es bastante indirecto (e ineficiente).
+
+    As an analogy, imagine you've a closet with four shelves of clothes and you'd like to put together the clothes from shelves 1 and 2 together (in 1), and 3 and 4 together (in 3). What we are doing is more or less to combine all the clothes together, and then split them back on to shelves 1 and 3!
+
+2. Las columnas a fusionar pueden ser de diferentes tipos. Al fusionarlas todas juntas, se forzará el resultado.
+
+3. Generamos una columna adicional dividiendo la columna `variable` en dos, cuyo propósito es bastante complejo. Lo hacemos porque la necesitamos para la *conversión* en el siguiente paso.
+
+4. Finalmente, convertimos el conjunto de datos. El problema es que es una operación mucho más compleja computacionalmente que *melt*. En concreto, requiere calcular el orden de las variables en la fórmula, lo cual es costoso.
+
+De hecho, `stats::reshape` puede realizar esta operación de forma muy sencilla. Es una función extremadamente útil y a menudo subestimada. ¡Debería probarla!
+
+## 3. Funcionalidad mejorada (nueva)
+
+### a) Fusión mejorada
+
+Dado que nos gustaría que `data.table` realice esta operación de manera sencilla y eficiente utilizando la misma interfaz, seguimos adelante e implementamos una *funcionalidad adicional*, donde podemos `fusionar` múltiples columnas *simultáneamente*.
+
+#### - `fundir` múltiples columnas simultáneamente
+
+La idea es bastante sencilla. Pasamos una lista de columnas a `measure.vars`, donde cada elemento de la lista contiene las columnas que deben combinarse.
+
+```{r}
+colA = paste0("name_child", 1:3)
+colB = paste0("gender_child", 1:3)
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("name", "gender"))
+DT.m2
+
+str(DT.m2) ## col type is preserved
+```
+
+* Podemos eliminar la columna `variable` si es necesario.
+
+* La funcionalidad está implementada completamente en C y, por lo tanto, es *rápida* y *eficiente en el uso de memoria*, además de ser *sencilla*.
+
+#### - Usando `patrones()`
+
+Normalmente, en estos problemas, las columnas que queremos fundir se distinguen por un patrón común. Podemos usar la función `patterns()`, implementada para mayor comodidad, para proporcionar expresiones regulares que permitan combinar las columnas. La operación anterior se puede reescribir como:
+
+```{r}
+DT.m2 = melt(DT, measure.vars = patterns("^name", "^gender"), value.name = c("name", "gender"))
+DT.m2
+```
+
+#### - Usar `measure()` para especificar `measure.vars` a través de un separador o patrón
+
+Si, como en los datos anteriores, las columnas de entrada que se van a fusionar tienen nombres regulares, podemos usar `measure`, que permite especificar las columnas que se van a fusionar mediante un separador o una expresión regular. Por ejemplo, considere los datos de *iris*:
+
+```{r}
+(two.iris = data.table(datasets::iris)[c(1,150)])
+```
+
+Los datos de *iris* tienen cuatro columnas numéricas con una estructura regular: primero la parte de la flor, luego un punto y finalmente la dimensión de la medida. Para especificar que queremos fusionar esas cuatro columnas, podemos usar `measure` con `sep="."`, lo que significa usar `strsplit` en todos los nombres de columna; las columnas que resulten en el número máximo de grupos después de la división se usarán como `measure.vars`:
+
+```{r}
+melt(two.iris, measure.vars = measure(part, dim, sep="."))
+```
+
+Los primeros dos argumentos de `measure` en el código anterior (`part` y `dim`) se utilizan para nombrar las columnas de salida; la cantidad de argumentos debe ser igual a la cantidad máxima de grupos después de dividir con `sep`.
+
+Si queremos dos columnas de valores, una para cada parte, podemos usar la palabra clave especial `value.name`, lo que significa generar una columna de valores para cada nombre único encontrado en ese grupo:
+
+```{r}
+melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
+```
+
+Usando el código anterior, obtenemos una columna de valor por cada parte de la flor. Si, en cambio, queremos una columna de valor para cada dimensión de medida, podemos hacer lo siguiente:
+
+```{r}
+melt(two.iris, measure.vars = measure(part, value.name, sep="."))
+```
+
+Volviendo al ejemplo de los datos con familias y niños, podemos ver un uso más complejo de `measure`, que involucra una función que se utiliza para convertir los valores de la cadena `child` en números enteros:
+
+```{r}
+DT.m3 = melt(DT, measure.vars = measure(value.name, child=as.integer, sep="_child"))
+DT.m3
+```
+
+En el código anterior, usamos `sep="_child"`, lo que resulta en la fusión de solo las columnas que contienen esa cadena (seis nombres de columna divididos en dos grupos cada uno). El argumento `child=as.integer` significa que el segundo grupo generará una columna de salida llamada `child` con valores definidos al insertar las cadenas de caracteres de ese grupo en la función `as.integer`.
+
+Finalmente, consideramos un ejemplo (tomado del paquete tidyr) donde necesitamos definir los grupos usando una expresión regular en lugar de un separador.
+
+```{r}
+(who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3))
+melt(who, measure.vars = measure(
+  diagnosis, gender, ages, pattern="new_?(.*)_(.)(.*)"))
+```
+
+Al usar el argumento `patrón`, debe ser una expresión regular compatible con Perl que contenga el mismo número de grupos de captura (subexpresiones entre paréntesis) que el resto de argumentos (nombres de grupo). El código a continuación muestra cómo usar una expresión regular más compleja con cinco grupos, dos columnas de salida numérica y una función de conversión de tipos anónima.
+
+```{r}
+melt(who, measure.vars = measure(
+  diagnosis, gender, ages,
+  ymin=as.numeric,
+  ymax=function(y) ifelse(nzchar(y), as.numeric(y), Inf),
+  pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
+))
+```
+
+### b) `dcast` mejorado
+
+¡Genial! Ahora podemos fusionar varias columnas simultáneamente. Dado el conjunto de datos `DT.m2`, como se muestra arriba, ¿cómo podemos recuperar el mismo formato que los datos originales con los que empezamos?
+
+Si usamos la funcionalidad actual de `dcast`, tendríamos que convertir dos veces y enlazar los resultados. Pero esto, una vez más, es demasiado verboso, no es sencillo y, además, ineficiente.
+
+#### - Convertir varios `value.var` simultáneamente
+
+Ahora podemos proporcionar **múltiples columnas `value.var`** a `dcast` para `data.table` directamente para que las operaciones se realicen de manera interna y eficiente.
+
+```{r}
+## new 'cast' functionality - multiple value.vars
+DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("name", "gender"))
+DT.c2
+```
+
+* Los atributos se conservan en el resultado siempre que sea posible.
+
+* Todo se gestiona internamente y de forma eficiente. Además de ser rápido, también es muy eficiente en el uso de memoria.
+
+# 
+
+#### Varias funciones para `fun.aggregate`:
+
+También puede proporcionar múltiples funciones a `fun.aggregate` en `dcast` para *data.tables*. Consulte los ejemplos en `?dcast` que ilustran esta funcionalidad.
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
+
+# 
+
+***

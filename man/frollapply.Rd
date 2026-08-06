@@ -20,7 +20,7 @@
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. For details see \code{\link{froll}}. }
   \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? For details see \code{\link{froll}}. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{N} be trimmed to available observations? For details see \code{\link{froll}}. }
-  \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{X} and names of \code{N}. If answer is an atomic vector, then the argument is ignored, see examples. }
+  \item{give.names}{ Logical or character vector, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{X} and names of \code{N}. A character vector supplies the output names directly. If the answer is an atomic vector, then the argument is ignored, see examples. }
   \item{simplify}{ Logical or a function. When \code{TRUE} (default) then internal \code{simplifylist} function is applied on a list storing results of all computations. When \code{FALSE} then list is returned without any post-processing. Argument can take a function as well, then the function is applied to a list that would have been returned when \code{simplify=FALSE}. If results are not automatically simplified when \code{simplify=TRUE} then, for backward compatibility, one should use \code{simplify=FALSE} explicitly. See \emph{\code{simplify} argument} section below for details. }
   \item{x}{ Deprecated, use \code{X} instead. }
   \item{n}{ Deprecated, use \code{N} instead. }

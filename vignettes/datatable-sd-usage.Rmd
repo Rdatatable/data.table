@@ -1,14 +1,14 @@
 ---
 title: "Using .SD for Data Analysis"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
-  markdown::html_format:
+  litedown::html_format:
     options:
       toc: true
       number_sections: true
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -21,21 +21,13 @@ vignette: >
 }
 </style>
 
-```{r echo=FALSE, file='_translation_links.R'}
+```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse = TRUE,
-  out.width = '100%',
-  dpi = 144
-)
+library(data.table)
+litedown::reactor(comment = "# ")
 .old.th = setDTthreads(1)
 ```
 
@@ -91,10 +83,10 @@ Pitching[ , .SD, .SDcols = c('W', 'L', 'G')]
 This is just for illustration and was pretty boring. In addition to accepting a character vector, `.SDcols` also accepts:
 
 1. any function such as `is.character` to filter _columns_
-2. the function^{*} `patterns()` to filter _column names_ by regular expression
+2. the function[^*] `patterns()` to filter _column names_ by regular expression
 3. integer and logical vectors
 
-*see `?patterns` for more details
+[^*]: see `?patterns` for more details
 
 This simple usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
 
@@ -240,9 +232,9 @@ Suppose we wanted to return the _best_ year for each team, as measured by their 
 Teams[ , .SD[which.max(R)], by = teamID]
 ```
 
-Note that this approach can of course be combined with `.SDcols` to return only portions of the `data.table` for each `.SD` (with the caveat that `.SDcols` should be fixed across the various subsets)
+Note that this approach can of course be combined with `.SDcols` to return only portions of the `data.table` for each `.SD` (with the caveat that `.SDcols` should be fixed across the various subsets).
 
-_NB_: `.SD[1L]` is currently optimized by [_`GForce`_](https://Rdatatable.gitlab.io/data.table/library/data.table/html/datatable-optimize.html) ([see also](https://stackoverflow.com/questions/22137591/about-gforce-in-data-table-1-9-2)), `data.table` internals which massively speed up the most common grouped operations like `sum` or `mean` -- see `?GForce` for more details and keep an eye on/voice support for feature improvement requests for updates on this front: [1](https://github.com/Rdatatable/data.table/issues/735), [2](https://github.com/Rdatatable/data.table/issues/2778), [3](https://github.com/Rdatatable/data.table/issues/523), [4](https://github.com/Rdatatable/data.table/issues/971), [5](https://github.com/Rdatatable/data.table/issues/1197), [6](https://github.com/Rdatatable/data.table/issues/1414)
+_NB_: `.SD[1L]` is currently optimized by [_`GForce`_](https://Rdatatable.gitlab.io/data.table/library/data.table/html/datatable-optimize.html) ([see also](https://stackoverflow.com/questions/22137591/about-gforce-in-data-table-1-9-2)), `data.table` internals which massively speed up the most common grouped operations like `sum` or `mean` -- see `?GForce` for more details and keep an eye on/voice support for feature improvement requests for updates on this front: [1](https://github.com/Rdatatable/data.table/issues/735), [2](https://github.com/Rdatatable/data.table/issues/2778), [3](https://github.com/Rdatatable/data.table/issues/523), [4](https://github.com/Rdatatable/data.table/issues/971), [5](https://github.com/Rdatatable/data.table/issues/1197), [6](https://github.com/Rdatatable/data.table/issues/1414).
 
 ## Grouped Regression
 

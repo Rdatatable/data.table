@@ -57,5 +57,10 @@ dev.R
 *.diff
 *.patch
 
-# pkgdown
-docs
+# litedown
+site/*.html
+site/*.md
+site/doc/
+site/man/
+site/reference/
+site/reference_index.rds

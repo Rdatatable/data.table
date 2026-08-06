@@ -1,0 +1,15 @@
+# This Dependabot configuration is designed to keep GitHub Actions dependencies up-to-date
+# by running weekly checks and creating pull requests to update them as needed.
+#
+# This ensures that the GitHub Actions workflows remain compatible with the latest versions
+# of their dependencies, potentially improving the stability and security of automation processes.
+#
+# For more, see:
+# https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts
+version: 2
+
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

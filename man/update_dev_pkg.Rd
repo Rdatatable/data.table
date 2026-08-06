@@ -34,7 +34,8 @@
   Invisibly \code{TRUE} if package was updated, otherwise \code{FALSE}.
 }
 \examples{
-\dontshow{ # using if(FALSE) because \dontrun could still be run by  --run-dontrun; #5421 }
+\dontshow{ # using if(FALSE) because \dontrun could still be run by  --run-dontrun; #5421
+}
   if (FALSE) data.table::update_dev_pkg()
 }
 \seealso{
