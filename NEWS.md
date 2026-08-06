@@ -44,6 +44,8 @@
 
 11. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
+12. `print.data.table()` gains a `show.ncols` argument and `datatable.show.ncols` option to print the number of columns (labeled as `ncol:`) in the header, [#6663](https://github.com/Rdatatable/data.table/issues/6663). When `trunc.cols=TRUE`, this information is merged into the truncation message at the top, and the redundant footer message is suppressed. Thanks to @KyleHaynes for the suggestion and @venom1204 for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

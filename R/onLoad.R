@@ -90,6 +90,7 @@
     datatable.print.keys=TRUE,          # for print.data.table
     datatable.print.trunc.cols=FALSE,   # for print.data.table
     datatable.show.indices=FALSE,       # for print.data.table
+    datatable.show.ncols=FALSE,         # for print.data.table
     datatable.allow.cartesian=FALSE,    # datatable.<argument name>
     datatable.join.many=TRUE,           # mergelist, [.data.table #4383 #914
     datatable.dfdispatchwarn=TRUE,      # not a function argument
