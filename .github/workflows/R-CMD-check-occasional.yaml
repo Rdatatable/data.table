@@ -176,21 +176,21 @@ jobs:
             build_args = "--no-build-vignettes"
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
-          locale = Sys.getenv("R_CMD_CHECK_LC_ALL") # only set on Linux
-          utf8locale = grepl("utf8", locale)
-          if (requireNamespace("rcmdcheck", quietly=TRUE) && utf8locale) {
-            if (nzchar(locale)) Sys.setenv(LC_ALL = locale)
+          testing_locale = Sys.getenv("R_CMD_CHECK_LC_ALL") # only set on Linux
+          non_utf8_locale = nzchar(testing_locale) && !grepl("utf8", testing_locale)
+          if (requireNamespace("rcmdcheck", quietly=TRUE) && !non_utf8_locale) {
+            if (nzchar(testing_locale)) Sys.setenv(LC_ALL = testing_locale)
             rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", ".", build_args))
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
-            if (nzchar(locale)) Sys.setenv(LC_ALL = locale)
+            if (nzchar(testing_locale)) Sys.setenv(LC_ALL = testing_locale)
             res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE)
             status = attr(res, "status")
-            if (!utf8locale)
-              res = iconv(res, sub(".*[.]", "", locale), "UTF-8", "byte")
+            if (non_utf8_locale)
+              res = iconv(res, sub(".*[.]", "", testing_locale), "UTF-8", "byte")
             writeLines(res, useBytes = TRUE)
             if (!is.null(status) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
               stop("R CMD check failed")
