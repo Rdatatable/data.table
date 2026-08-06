@@ -42,6 +42,8 @@
 
 10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
 
+11. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
 11. `frank()` gains an `order` argument (matching `frankv()`) and now intercepts the unary minus symbol (e.g., `frank(-dates)`) to support reverse ranking even for types where unary `-` is not defined in R, such as `Date` or `character` vectors, [#5489](https://github.com/Rdatatable/data.table/issues/5489). Thanks @hope-data-science for the request and @venom1204 for teh implementation.
 
 ### BUG FIXES
@@ -81,6 +83,10 @@
 17. `print()` works with multi-byte characters on R before 4.2.0, [#7848](https://github.com/Rdatatable/data.table/pull/7848). Thanks @MichaelChirico for the fix and @aitap for the improvement.
 
 18. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
+
+19. `DT[order(double, ..., -non_double, na.last=TRUE)]`, i.e., a double/complex column (in any order) followed by a non-double column in descending order with `na.last=TRUE`, is fixed to respect `na.last` again, [#7875](https://github.com/Rdatatable/data.table/issues/7875). The problematic behavior only occurred under specific conditions on the cardinality of the non-double column.
+
+20. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
 
 ### Notes
 
