@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         r: ['3.5','release','devel']
-        locale: [ 'ru_RU.KOI8-R','zh_CN.GB18030' ]
+        locale: [ 'ru_RU.KOI8-R','zh_CN.GB18030', 'hu_HU.utf8' ]
         # we're constrained by GHA inflexibility to do a tedious thing here with 'exclude' below.
         #   better would be for GHA to support multiple 'matrix' configs (one for ubuntu, one for other OS);
         #   an approach with multiple jobs would tediously require copy-pasting the _rest_ of the steps
