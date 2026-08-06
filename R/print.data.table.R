@@ -8,7 +8,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                show.indices=getOption("datatable.show.indices"),
-               show.ncols=getOption("datatable.show.ncols", FALSE),
+               show.ncols=getOption("datatable.show.ncols"),
                quote=FALSE,
                na.print=NULL,
                timezone=FALSE, ...) {
