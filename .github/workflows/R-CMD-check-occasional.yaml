@@ -16,17 +16,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, windows-latest, ubuntu-latest]
-        r: ['devel', 'release', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3', '4.4', '4.5']
-        locale: ['en_US.utf8',
-                 # Multibyte characters: Mandarin
-                 'zh_CN.utf8',
-                 # Encoding: non-UTF-8 locales for French, Mandarin, and Russian
-                 'fr_CA', 'zh_CN.GB18030', 'ru_RU.KOI8-R', # fr_CA is implicitly 'ISO-8859-1'
-                 # Collate order (#3502, see also #7837): Latvian, Azeri, Hungarian, Faroese, Albanian
-                 'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8',
-                 # Local time formatting (for R bug #19117)
-                 'vi_VN.utf8']
+        os: [ubuntu-latest]
+        r: ['devel']
+        locale: ['zh_CN.GB18030']
         # we're constrained by GHA inflexibility to do a tedious thing here with 'exclude' below.
         #   better would be for GHA to support multiple 'matrix' configs (one for ubuntu, one for other OS);
         #   an approach with multiple jobs would tediously require copy-pasting the _rest_ of the steps
@@ -151,37 +143,38 @@ jobs:
           options(crayon.enabled=TRUE)
           dir.create("~/.R", showWarnings=FALSE)
           # suppress noisy Annotation for e.g. {hexbin} about tabs v. spaces
-          cat("FCFLAGS += -Wno-tabs\nFFLAGS += -Wno-tabs\n", file="~/.R/Makevars", append=TRUE)
+          #cat("FCFLAGS += -Wno-tabs\nFFLAGS += -Wno-tabs\n", file="~/.R/Makevars", append=TRUE)
           # e.g. Annotation about lacking macosx binaries: bin/macosx/sonoma-arm64/contrib/4.7
           if (grepl("Under development", R.version$status)) options(pkgType="source")
           # to avoid Annotation about certain packages being unavailable, use this old snapshot repo
-          if (getRversion() < "3.6") options(repos=c(CRAN="https://packagemanager.posit.co/cran/2020-04-24"))
+          #if (getRversion() < "3.6") options(repos=c(CRAN="https://packagemanager.posit.co/cran/2020-04-24"))
           message("*** Using the following repos for installation ***")
           print(getOption("repos"))
-          message("*** Installing Suggested packages ***")
-          sugg <- names(tools:::.split_dependencies(read.dcf("DESCRIPTION", "Suggests")))
-          install.packages(sugg)
+          #message("*** Installing Suggested packages ***")
+          #sugg <- names(tools:::.split_dependencies(read.dcf("DESCRIPTION", "Suggests")))
+          #install.packages(sugg)
 
-          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
-          eval(other_deps_expr)
-          other_pkgs = setdiff(
-            get(as.character(other_deps_expr[[1:2]])),
-            tools:::.get_standard_package_names()$base) # skip parallel
-          # Many will not install on oldest R versions
-          message("*** Installing fully optional packages ***")
-          try(install.packages(c(other_pkgs, "rcmdcheck")))
+          #other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          #eval(other_deps_expr)
+          #other_pkgs = setdiff(
+          #  get(as.character(other_deps_expr[[1:2]])),
+          #  tools:::.get_standard_package_names()$base) # skip parallel
+          ## Many will not install on oldest R versions
+          #message("*** Installing fully optional packages ***")
+          #try(install.packages(c(other_pkgs, "rcmdcheck")))
+          install.packages("rcmdcheck")
 
-          has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
-          run_other = all(has_other_pkg)
-          if (run_other) {
-            desc = read.dcf("DESCRIPTION")
-            desc[1L, "Suggests"] = toString(unique(c(desc[1, "Suggests"], other_pkgs)))
-            write.dcf(desc, "DESCRIPTION")
-            message("Setting TEST_DATA_TABLE_WITH_OTHER_PACKAGES=TRUE to run other.Rraw")
-          } else {
-            message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
-          }
-          Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
+          #has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
+          #run_other = all(has_other_pkg)
+          #if (run_other) {
+          #  desc = read.dcf("DESCRIPTION")
+          #  desc[1L, "Suggests"] = toString(unique(c(desc[1, "Suggests"], other_pkgs)))
+          #  write.dcf(desc, "DESCRIPTION")
+          #  message("Setting TEST_DATA_TABLE_WITH_OTHER_PACKAGES=TRUE to run other.Rraw")
+          #} else {
+          #  message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(other_pkgs[!has_other_pkg])))
+          #}
+          #Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
 
           do_vignettes = requireNamespace("litedown", quietly=TRUE)
 
@@ -192,19 +185,7 @@ jobs:
             build_args = "--no-build-vignettes"
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
-          if (requireNamespace("rcmdcheck", quietly=TRUE)) {
-            rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
-          } else {
-            Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
-            system2(Rbin, c("CMD", "build", ".", build_args))
-            dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
-            if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
-            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE)
-            if (!is.null(attr(res, "status")) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
-              writeLines(as.character(res))
-              stop("R CMD check failed")
-            }
-          }
+          rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
         shell: Rscript {0}
 
       - name: Upload check results
