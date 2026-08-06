@@ -21939,3 +21939,16 @@ test(2384.3, print(DT, na.print=".", topn=2, col.names="none", row.names=FALSE, 
   output=c("   .\n   e\n ---\n   w\n   ."))
 DT = data.table(a=c("x\ny","z"), b=1:2)
 test(2384.4, print(DT, col.names="none", row.names=FALSE, class=FALSE), output=c(" x\\ny 1\n    z 2"))
+
+# setorderv() could take order as named column order mapping, #6932
+DT = data.table(a=c(2,1,1,2), b=c("d","c","b","a"), c=c(1,2,1,2))
+m = c(c=-1L, a=1L)
+test(2385.01, setorderv(copy(DT), order=m), setorderv(copy(DT), cols=c("c", "a"), order=m))
+DT=data.table(x=c(2,1,2), y=c(2,1,1))
+test(2385.02, setorderv(DT, order=c(x=1L,y=-1L)), data.table(x=c(1,2,2), y=c(1,2,1)))
+DT = data.table(x=1:3)
+test(2385.03, setorderv(DT, order=c(y=1L)), error="some columns are not in the data.table")
+test(2385.04, setorderv(DT, order=c(x=1L, x=-1L)), error="order argument has named duplicates")
+test(2385.05, setorderv(DT, order=c(x=2L)), error="Must be +1 or -1")
+DT = data.table(a=c(2,1,2), b=3:1)
+test(2385.06, setorderv(copy(DT), order=c(a=1L)), setorderv(copy(DT), cols="a", order=1L))

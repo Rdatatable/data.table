@@ -42,11 +42,13 @@ is missing (ex: \code{setorder(x)}), \code{x} is rearranged based on all
 columns in ascending order by default. To sort by a column in descending order
 prefix the symbol \code{"-"} which means "descending" (\emph{not} "negative", in this context), i.e., \code{setorder(x, a, -b, c)}. The \code{-b} works
 when \code{b} is of type \code{character} as well. }
-\item{cols}{ A character vector of column names of \code{x} by which to order. By default, sorts over all columns; \code{cols = NULL} will return \code{x} untouched. Do not add \code{"-"} here. Use \code{order} argument instead. }
+\item{cols}{ A character vector of column names of \code{x} by which to order. By default, sorts over all columns; \code{cols = NULL} will return \code{x} untouched. Do not add \code{"-"} here. Use \code{order} argument instead. This argument can be omitted if \code{order} is a named vector. }
 \item{order}{ An integer vector with only possible values of \code{1} and
 \code{-1}, corresponding to ascending and descending order. The length of
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
-\code{length(order) == 1}, it is recycled to \code{length(cols)}. }
+\code{length(order) == 1}, it is recycled to \code{length(cols)}. \code{order} 
+can also be a named vector, in which case the names are used as \code{cols} 
+and the \code{cols} argument can be omitted. }
 \item{na.last}{ \code{logical}. If \code{TRUE}, missing values in the data are placed last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
 \code{na.last=NA} is valid only for \code{x[order(., na.last)]} and related \code{sort_by(x, .)} (\R \ifelse{html}{\out{&ge;}}{\eqn{\ge}} 4.4.0) and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
@@ -65,7 +67,9 @@ Note that \code{-b} also works with columns of type \code{character} unlike
 \code{\link[base]{order}}, which requires \code{-xtfrm(y)} instead (which is slow).
 
 \code{setorderv} in turn accepts a character vector of column names and an
-integer vector of column order separately.
+integer vector of column order separately. Additionally, \code{setorderv} can 
+accept a named integer vector for \code{order}, in which case \code{cols} is 
+inferred from the names and can be omitted.
 
 Note that \code{\link{setkey}} still requires and will always sort only in
 ascending order, and is different from \code{setorder} in that it additionally
@@ -133,6 +137,10 @@ setorder(DT, A, -B)
 
 # same as above, but using setorderv
 setorderv(DT, c("A", "B"), c(1, -1))
+
+# infer cols from named order mapping
+mapping = c(A = 1L, B = -1L)
+setorderv(DT, order = mapping)
 }
 \keyword{ data }
 
