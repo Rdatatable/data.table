@@ -92,20 +92,19 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
 
-      - name: Override R for locale-specific check
+      - name: Override Rscript for locale-specific check
         if: matrix.os == 'ubuntu-latest' && !contains(matrix.locale, 'utf8')
         run: |
-          R_BIN_DIR=$(Rscript -e 'cat(R.home("bin"))')
-          for bin in R Rscript; do
-            target="${R_BIN_DIR}/${bin}"
-            sudo mv "$target" "${target}.orig"
-            sudo tee "$target" << EOF
+          RSCRIPT_PATH="$HOME/.local/bin"
+          mkdir -p "$RSCRIPT_PATH"
+          echo "$RSCRIPT_PATH" >> "$GITHUB_PATH"
+          target="$RSCRIPT_PATH/Rscript"
+          tee "$target" << EOF
           #!/bin/bash
           set -o pipefail
-          exec "${target}.orig" "\$@" 2>&1 | iconv -c -t UTF-8
+          exec "$(which Rscript)" "\$@" 2>&1 | iconv -c -t UTF-8
           EOF
-            sudo chmod +x "$target"
-          done
+          chmod +x "$target"
 
       - name: Set script permissions
         run: chmod +x configure cleanup 2>/dev/null || true # Silence some GHA Annotations
