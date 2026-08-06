@@ -83,28 +83,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo locale-gen "${{ matrix.locale }}"
-          echo "LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
-          echo "LANGUAGE=$(echo '${{ matrix.locale }}' | cut -d'.' -f1)" >> $GITHUB_ENV
+          echo "R_CMD_CHECK_LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v7
 
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.r }}
-
-      - name: Override Rscript for locale-specific check
-        if: matrix.os == 'ubuntu-latest' && !contains(matrix.locale, 'utf8')
-        run: |
-          RSCRIPT_PATH="$HOME/.local/bin"
-          mkdir -p "$RSCRIPT_PATH"
-          echo "$RSCRIPT_PATH" >> "$GITHUB_PATH"
-          target="$RSCRIPT_PATH/Rscript"
-          tee "$target" << EOF
-          #!/bin/bash
-          set -o pipefail
-          exec "$(which Rscript)" "\$@" 2>&1 | iconv -c -t UTF-8
-          EOF
-          chmod +x "$target"
 
       - name: Set script permissions
         run: chmod +x configure cleanup 2>/dev/null || true # Silence some GHA Annotations
@@ -183,16 +168,23 @@ jobs:
             build_args = "--no-build-vignettes"
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
-          if (requireNamespace("rcmdcheck", quietly=TRUE)) {
+          locale = Sys.getenv("R_CMD_CHECK_LC_ALL") # only set on Linux
+          utf8locale = grepl("utf8", locale)
+          if (requireNamespace("rcmdcheck", quietly=TRUE) && utf8locale) {
+            if (nzchar(locale)) Sys.setenv(LC_ALL = locale)
             rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", ".", build_args))
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
+            if (nzchar(locale)) Sys.setenv(LC_ALL = locale)
             res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE)
-            if (!is.null(attr(res, "status")) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
-              writeLines(as.character(res))
+            status = attr(res, "status")
+            if (!utf8locale)
+              res = iconv(res, sub(".*[.]", "", locale), "UTF-8", "byte")
+            writeLines(res, useBytes = TRUE)
+            if (!is.null(status) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
               stop("R CMD check failed")
             }
           }
