@@ -1,66 +1,43 @@
 #include "data.table.h"
 
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose, double limit) {
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
-    if (nan_is_na) {
-      for (uint_fast64_t i=0; i<nx; i++) {
-        ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
-      }
-    } else {
-      for (uint_fast64_t i=0; i<nx; i++) {
-        ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
-      }
+    for (uint_fast64_t i=0; i<nx; i++) {
+      bool is_na = nan_is_na ? ISNAN(x[i]) : ISNA(x[i]);
+      ans->dbl_v[i] = is_na ? fill : x[i];
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
-    if (nan_is_na) {
-      ans->dbl_v[0] = ISNAN(x[0]) ? fill : x[0];
-      if (ISNAN(x[0])) fills = 1;
-      for (uint_fast64_t i=1; i<nx; i++) {
-        if (ISNAN(x[i])) {
-          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
-          else ans->dbl_v[i] = x[i];
-        } else { ans->dbl_v[i] = x[i]; fills = 0; }
-      }
-    } else {
-      ans->dbl_v[0] = ISNA(x[0]) ? fill : x[0];
-      if (ISNA(x[0])) fills = 1;
-      for (uint_fast64_t i=1; i<nx; i++) {
-        if (ISNA(x[i])) {
-          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
-          else ans->dbl_v[i] = x[i];
-        } else { ans->dbl_v[i] = x[i]; fills = 0; }
-      }
+    bool is_na = nan_is_na ? ISNAN(x[0]) : ISNA(x[0]);
+    ans->dbl_v[0] = is_na ? fill : x[0];
+    if (is_na) fills = 1;
+    for (uint_fast64_t i=1; i<nx; i++) {
+      is_na = nan_is_na ? ISNAN(x[i]) : ISNA(x[i]);
+      if (is_na) {
+        if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
+        else ans->dbl_v[i] = x[i];
+      } else { ans->dbl_v[i] = x[i]; fills = 0; }
     }
   } else if (type==2) { // nocb
     uint_fast64_t fills = 0;
-    if (nan_is_na) {
-      ans->dbl_v[nx-1] = ISNAN(x[nx-1]) ? fill : x[nx-1];
-      if (ISNAN(x[nx-1])) fills = 1;
-      for (int_fast64_t i=nx-2; i>=0; i--) {
-        if (ISNAN(x[i])) {
-          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
-          else ans->dbl_v[i] = x[i];
-        } else { ans->dbl_v[i] = x[i]; fills = 0; }
-      }
-    } else {
-      ans->dbl_v[nx-1] = ISNA(x[nx-1]) ? fill : x[nx-1];
-      if (ISNA(x[nx-1])) fills = 1;
-      for (int_fast64_t i=nx-2; i>=0; i--) {
-        if (ISNA(x[i])) {
-          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
-          else ans->dbl_v[i] = x[i];
-        } else { ans->dbl_v[i] = x[i]; fills = 0; }
-      }
+    bool is_na = nan_is_na ? ISNAN(x[nx-1]) : ISNA(x[nx-1]);
+    ans->dbl_v[nx-1] = is_na ? fill : x[nx-1];
+    if (is_na) fills = 1;
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      is_na = nan_is_na ? ISNAN(x[i]) : ISNA(x[i]);
+      if (is_na) {
+        if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
+        else ans->dbl_v[i] = x[i];
+      } else { ans->dbl_v[i] = x[i]; fills = 0; }
     }
   }
   if (verbose)
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
-void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose, double limit) {
+void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
@@ -92,7 +69,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   if (verbose)
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
-void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose, double limit) {
+void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
@@ -125,7 +102,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 
-void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill, ans_t *ans, bool verbose, double limit) {
+void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
@@ -176,7 +153,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (verbose)
     tic = omp_get_wtime();
 
-  double limit_val = REAL(limit)[0];
+  const double limit_d = REAL(limit)[0];
+  const uint_fast64_t limit_n = !R_FINITE(limit_d) || limit_d >= (double)UINT_FAST64_MAX ? UINT_FAST64_MAX : (uint_fast64_t)limit_d;
 
   bool copy = !LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
@@ -236,21 +214,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
       const SEXP ansi = VECTOR_ELT(ans, i);
-      const void *p;
-      switch (TYPEOF(ansi)) {
-        case LGLSXP:
-          p = LOGICAL_RO(ansi);
-          break;
-        case INTSXP:
-          p = INTEGER_RO(ansi);
-          break;
-        case REALSXP:
-          p = REAL_RO(ansi);
-          break;
-        default:
-          p = ansi;
-          break;
-      }
+      const void *p = isReal(ansi) ? (void*)REAL_RO(ansi) : (isString(ansi) ? (void*)ansi : (void*)INTEGER_RO(ansi));
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
@@ -260,15 +224,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  unsigned int itype=-1;
-  if (!strcmp(CHAR(STRING_ELT(type, 0)), "const"))
-    itype = 0;
-  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf"))
-    itype = 1;
-  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
-    itype = 2;
-  else
-    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR"); // # nocov
+  unsigned int itype = !strcmp(CHAR(STRING_ELT(type, 0)), "const") ? 0 : (!strcmp(CHAR(STRING_ELT(type, 0)), "locf") ? 1 : 2);
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(*isInt64));
@@ -303,16 +259,16 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP : {
       if (isInt64[i]) {
-        nafillInteger64(i64x[i], inx[i], itype, hasFill ? ((int64_t *)fillp[i])[0] : NA_INTEGER64, &vans[i], verbose, limit_val);
+        nafillInteger64(i64x[i], inx[i], itype, hasFill ? ((int64_t *)fillp[i])[0] : NA_INTEGER64, &vans[i], verbose, limit_n);
       } else {
-        nafillDouble(dx[i], inx[i], itype, hasFill ? ((double *)fillp[i])[0] : NA_REAL, nan_is_na, &vans[i], verbose, limit_val);
+        nafillDouble(dx[i], inx[i], itype, hasFill ? ((double *)fillp[i])[0] : NA_REAL, nan_is_na, &vans[i], verbose, limit_n);
       }
     } break;
     case LGLSXP: case INTSXP : {
-      nafillInteger(ix[i], inx[i], itype, hasFill ? ((int32_t *)fillp[i])[0] : NA_INTEGER, &vans[i], verbose, limit_val);
+      nafillInteger(ix[i], inx[i], itype, hasFill ? ((int32_t *)fillp[i])[0] : NA_INTEGER, &vans[i], verbose, limit_n);
     } break;
     case STRSXP : {
-      nafillString(sx[i], inx[i], itype, hasFill ? ((SEXP *)fillp[i])[0] : NA_STRING, &vans[i], verbose, limit_val);
+      nafillString(sx[i], inx[i], itype, hasFill ? ((SEXP *)fillp[i])[0] : NA_STRING, &vans[i], verbose, limit_n);
     } break;
     }
   }

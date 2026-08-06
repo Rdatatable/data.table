@@ -30,7 +30,6 @@ nafill = function(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, limit=Inf
   type = match.arg(type)
   if (!is.numeric(limit) || length(limit) != 1L || is.na(limit) || limit < 0)
      stopf("limit must be a non-negative scalar numeric")
-
   .Call(CnafillR, x, type, fill, nan_is_na(nan), FALSE, NULL, as.double(floor(limit)))
 }
 
@@ -38,6 +37,5 @@ setnafill = function(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=s
   type = match.arg(type)
   if (!is.numeric(limit) || length(limit) != 1L || is.na(limit) || limit < 0)
      stopf("limit must be a non-negative scalar numeric")
-
   invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols, as.double(floor(limit))))
 }
