@@ -26,12 +26,16 @@ shift = function(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.n
   ans
 }
 
-nafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA) {
+nafill = function(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, limit=Inf) {
   type = match.arg(type)
-  .Call(CnafillR, x, type, fill, nan_is_na(nan), FALSE, NULL)
+  if (!is.numeric(limit) || length(limit) != 1L || is.na(limit) || limit < 0)
+     stopf("limit must be a non-negative scalar numeric")
+  .Call(CnafillR, x, type, fill, nan_is_na(nan), FALSE, NULL, as.double(floor(limit)))
 }
 
-setnafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x)) {
+setnafill = function(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x), limit=Inf) {
   type = match.arg(type)
-  invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols))
+  if (!is.numeric(limit) || length(limit) != 1L || is.na(limit) || limit < 0)
+     stopf("limit must be a non-negative scalar numeric")
+  invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols, as.double(floor(limit))))
 }

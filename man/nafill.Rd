@@ -10,8 +10,8 @@
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-nafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA)
-setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x))
+nafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, limit=Inf)
+setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x), limit=Inf)
 }
 \arguments{
   \item{x}{ Vector, list, data.frame or data.table of logical, numeric or character columns. }
@@ -19,6 +19,7 @@ setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x)
   \item{fill}{ Value to be used to replace missing observations. See examples. }
   \item{nan}{ Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement. See Examples. }
   \item{cols}{ Numeric or character vector specifying columns to be updated. }
+  \item{limit}{The maximum number of consecutive \code{NA} values to fill. Must be a non-negative scalar numeric. Default is \code{Inf}. Fractional values are truncated via \code{floor}. This argument is ignored when \code{type="const"}.}
 }
 \details{
   Supported types are \emph{logical}, \emph{integer}, \emph{double}, \emph{character}, and \emph{factor}, as well as classes built on top of these such as \code{Date}, \code{IDate}, and \code{POSIXct}.
@@ -51,6 +52,13 @@ nafill(dt, "nocb")
 
 setnafill(dt, "locf", cols=c("v2","v3"))
 dt
+
+# limit= restricts the number of consecutive fills
+y = c(1, NA, NA, NA, 5)
+nafill(c(NA, 1), "locf", fill=0, limit=0) # Result: 0, 1 (Boundary case)
+nafill(y, "locf", limit=1)   # Only fills the first NA
+nafill(y, "locf", limit=Inf) # Fills all NAs (default)
+
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}, \code{\link{fcoalesce}}
