@@ -185,9 +185,12 @@ jobs:
             build_args = "--no-build-vignettes"
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
+          try(dir.create("check"))
           withCallingHandlers(
             rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check"),
             error = \(e) {
+              setwd("check")
+              dump.frames(to.file = TRUE, include.GlobalEnv = TRUE)
               print(sys.calls())
               message(conditionCall(e))
               message(conditionMessage(e))
