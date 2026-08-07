@@ -90,7 +90,9 @@ jobs:
       - name: Set locale
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo locale-gen "${{ matrix.locale }}"
+          LOCALE="${{ matrix.locale }}"
+          echo "$LOCALE ${LOCALE#*.}" | sudo tee -a /etc/locale.gen
+          sudo locale-gen --keep-existing
           echo "R_CMD_CHECK_LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v7
