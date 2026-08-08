@@ -181,6 +181,7 @@ jobs:
           }
           testing_locale = Sys.getenv("R_CMD_CHECK_LC_ALL") # only set on Linux
           if (nzchar(testing_locale)) Sys.setenv(LC_ALL = testing_locale)
+          non_utf8_locale = nzchar(testing_locale) && !grepl("UTF-8", testing_locale)
           if (requireNamespace("rcmdcheck", quietly=TRUE) && !non_utf8_locale) {
             rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
           } else {
@@ -190,7 +191,6 @@ jobs:
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
             res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE)
             status = attr(res, "status")
-            non_utf8_locale = nzchar(testing_locale) && !grepl("UTF-8", testing_locale)
             if (non_utf8_locale)
               res = iconv(res, sub(".*[.]", "", testing_locale), "UTF-8", "byte")
             writeLines(res, useBytes = TRUE)
