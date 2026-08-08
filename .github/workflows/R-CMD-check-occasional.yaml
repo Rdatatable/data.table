@@ -17,46 +17,60 @@ jobs:
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
         r: ['devel', 'release', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3', '4.4', '4.5']
-        locale: ['en_US.utf8',
+        locale: ['en_US.UTF-8',
                  # Multibyte characters: Mandarin
-                 'zh_CN.utf8',
+                 'zh_CN.UTF-8',
+                 # Encoding: non-UTF-8 locales for French, Mandarin, and Russian
+                 'fr_CA.ISO-8859-1', 'zh_CN.GB18030', 'ru_RU.KOI8-R',
                  # Collate order (#3502, see also #7837): Latvian, Azeri, Hungarian, Faroese, Albanian
-                 'lv_LV.utf8', 'az_AZ.utf8', 'hu_HU.utf8', 'fo_FO.utf8', 'sq_MK.utf8',
+                 'lv_LV.UTF-8', 'az_AZ.UTF-8', 'hu_HU.UTF-8', 'fo_FO.UTF-8', 'sq_MK.UTF-8',
                  # Local time formatting (for R bug #19117)
-                 'vi_VN.utf8']
+                 'vi_VN.UTF-8']
         # we're constrained by GHA inflexibility to do a tedious thing here with 'exclude' below.
         #   better would be for GHA to support multiple 'matrix' configs (one for ubuntu, one for other OS);
         #   an approach with multiple jobs would tediously require copy-pasting the _rest_ of the steps
         exclude:
           # only run non-English locale CI on Ubuntu
           - os: macOS-latest
-            locale: 'zh_CN.utf8'
+            locale: 'zh_CN.UTF-8'
           - os: macOS-latest
-            locale: 'lv_LV.utf8'
+            locale: 'fr_CA.ISO-8859-1'
           - os: macOS-latest
-            locale: 'az_AZ.utf8'
+            locale: 'zh_CN.GB18030'
           - os: macOS-latest
-            locale: 'hu_HU.utf8'
+            locale: 'ru_RU.KOI8-R'
           - os: macOS-latest
-            locale: 'fo_FO.utf8'
+            locale: 'lv_LV.UTF-8'
           - os: macOS-latest
-            locale: 'sq_MK.utf8'
+            locale: 'az_AZ.UTF-8'
           - os: macOS-latest
-            locale: 'vi_VN.utf8'
+            locale: 'hu_HU.UTF-8'
+          - os: macOS-latest
+            locale: 'fo_FO.UTF-8'
+          - os: macOS-latest
+            locale: 'sq_MK.UTF-8'
+          - os: macOS-latest
+            locale: 'vi_VN.UTF-8'
           - os: windows-latest
-            locale: 'zh_CN.utf8'
+            locale: 'zh_CN.UTF-8'
           - os: windows-latest
-            locale: 'lv_LV.utf8'
+            locale: 'fr_CA.ISO-8859-1'
           - os: windows-latest
-            locale: 'az_AZ.utf8'
+            locale: 'zh_CN.GB18030'
           - os: windows-latest
-            locale: 'hu_HU.utf8'
+            locale: 'ru_RU.KOI8-R'
           - os: windows-latest
-            locale: 'fo_FO.utf8'
+            locale: 'lv_LV.UTF-8'
           - os: windows-latest
-            locale: 'sq_MK.utf8'
+            locale: 'az_AZ.UTF-8'
           - os: windows-latest
-            locale: 'vi_VN.utf8'
+            locale: 'hu_HU.UTF-8'
+          - os: windows-latest
+            locale: 'fo_FO.UTF-8'
+          - os: windows-latest
+            locale: 'sq_MK.UTF-8'
+          - os: windows-latest
+            locale: 'vi_VN.UTF-8'
           # macOS/arm64 only available for R>=4.1.0
           - os: macOS-latest
             r: '3.5'
@@ -75,9 +89,12 @@ jobs:
       - name: Set locale
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo locale-gen "${{ matrix.locale }}"
-          echo "LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
-          echo "LANGUAGE=$(echo '${{ matrix.locale }}' | cut -d'.' -f1)" >> $GITHUB_ENV
+          LOCALE="${{ matrix.locale }}"
+          echo "$LOCALE ${LOCALE#*.}" | sudo tee -a /etc/locale.gen
+          sudo locale-gen --keep-existing
+          # don't set LC_ALL yet -- it interferes with installation of other packages sometimes.
+          #   only do so immediately before R CMD check
+          echo "R_CMD_CHECK_LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v7
 
@@ -162,7 +179,10 @@ jobs:
             build_args = "--no-build-vignettes"
             check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           }
-          if (requireNamespace("rcmdcheck", quietly=TRUE)) {
+          testing_locale = Sys.getenv("R_CMD_CHECK_LC_ALL") # only set on Linux
+          if (nzchar(testing_locale)) Sys.setenv(LC_ALL = testing_locale)
+          non_utf8_locale = nzchar(testing_locale) && !grepl("UTF-8", testing_locale)
+          if (requireNamespace("rcmdcheck", quietly=TRUE) && !non_utf8_locale) {
             rcmdcheck::rcmdcheck(args=check_args, build_args=build_args, error_on="warning", check_dir="check")
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
@@ -170,8 +190,11 @@ jobs:
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
             res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE)
-            if (!is.null(attr(res, "status")) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
-              writeLines(as.character(res))
+            status = attr(res, "status")
+            if (non_utf8_locale)
+              res = iconv(res, sub(".*[.]", "", testing_locale), "UTF-8", "byte")
+            writeLines(res, useBytes = TRUE)
+            if (!is.null(status) || anyNA(res) || any(grepl("^Status:.*(ERROR|WARNING)", res))) {
               stop("R CMD check failed")
             }
           }
