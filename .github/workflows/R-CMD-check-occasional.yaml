@@ -92,6 +92,8 @@ jobs:
           LOCALE="${{ matrix.locale }}"
           echo "$LOCALE ${LOCALE#*.}" | sudo tee -a /etc/locale.gen
           sudo locale-gen --keep-existing
+          # don't set LC_ALL yet -- it interferes with installation of other packages sometimes.
+          #   only do so immediately before R CMD check
           echo "R_CMD_CHECK_LC_ALL=${{ matrix.locale }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v7
