@@ -46,6 +46,8 @@
 
 12. `frank()` gains an `order` argument (matching `frankv()`) and now intercepts the unary minus symbol (e.g., `frank(-dates)`) to support reverse ranking even for types where unary `-` is not defined in R, such as `Date` or `character` vectors, [#5489](https://github.com/Rdatatable/data.table/issues/5489). Thanks @hope-data-science for the request and @venom1204 for the implementation.
 
+13. Type overrides (e.g. changing an integer column to character) are now permitted in `:=` when `i` is a call to `order()` or `forder()`, [#2925](https://github.com/Rdatatable/data.table/issues/2925). Previously, any non-missing `i` forced `data.table` into "subset update" mode which prevents type changes; this restriction is now relaxed for ordering calls since they encompass all rows. Thanks @MichaelChirico for the report and @venom1204 for the fix.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.

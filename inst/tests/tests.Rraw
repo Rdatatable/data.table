@@ -21974,3 +21974,15 @@ test(2386.10, frank(-dates, order=-1L), frankv(dates, order=-1L), warning=warn)
 test(2386.11, frank(+dates), frankv(dates, order=1L))
 chars = c("b", "a", "c", "a")
 test(2386.12, frank(-chars), frankv(chars, order=-1L))
+
+# #2925: Allow type override in := when i is order()
+DT = data.table(a = 1:10)
+DT[order(-a), a := paste0(a)]
+test(2925.1, class(DT$a), "character")
+test(2925.2, DT$a, as.character(1:10))
+DT = data.table(a = rep(letters[1:3], 3), b = 1:9)
+DT[order(-b), a := factor(a, levels = unique(a))]
+test(2925.3, is.factor(DT$a), TRUE)
+test(2925.4, levels(DT$a), c("c", "b", "a"))
+DT = data.table(a = 1:10)
+test(2925.5, DT[1:5, a := as.character(a)], data.table(a=1:10), warning="Coercing 'character' RHS to 'integer'")
