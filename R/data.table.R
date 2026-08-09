@@ -548,6 +548,7 @@ replace_dot_alias = function(e) {
     on.exit(options(oldverbose))
   }
   .global$print=""
+  i_is_order = FALSE
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
   if (missingby || missing(j)) {
     if (!missingby) warningf("Ignoring by/keyby because 'j' is not supplied")
@@ -727,6 +728,7 @@ replace_dot_alias = function(e) {
   }
   if (!missing(i)) {
     xo = NULL
+    i_is_order = is.call(isub) && any(as.character(isub[[1L]]) %chin% c("order", "forder"))
     if (identical(isub, NA)) {
       # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
       # replace NA in this case with NA_integer_ as that's almost surely what user intended to
@@ -1839,6 +1841,9 @@ replace_dot_alias = function(e) {
         }
       }
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
+      if (isTRUE(i_is_order) && !is.null(irows)) {
+        setattr(irows, ".datatable.full_order", TRUE)
+      }
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
     }

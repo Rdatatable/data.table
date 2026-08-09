@@ -363,6 +363,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   bool verbose=GetVerbose();
   int ndelete=0;  // how many columns are being deleted
   int *buf;
+  SEXP full_order_attr = (isNull(rows)) ? R_NilValue : getAttrib(rows, install(".datatable.full_order"));
+  bool is_full_order = (isLogical(full_order_attr) && length(full_order_attr)>0 && LOGICAL(full_order_attr)[0]==1);
   if (isNull(dt)) error(_("assign has been passed a NULL dt"));
   if (TYPEOF(dt) != VECSXP) error(_("dt passed to %s isn't type VECSXP"), "assign");
   if (islocked(dt))
@@ -602,14 +604,20 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 
     if (coln+1 > oldncol) {  // new column
       SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
+      if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
-      if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
+      if (is_full_order && !isNull(rows) && (TYPEOF(targetcol) != TYPEOF(thisvalue) || isFactor(thisvalue))) {
+          targetcol = PROTECT(allocNAVectorLike(thisvalue, nrow));
+          if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue, targetcol);
+          SET_VECTOR_ELT(dt, coln, targetcol);
+          UNPROTECT(1);
+      }
     }
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
     if (ret) warning("%s", ret); // # notranslate
