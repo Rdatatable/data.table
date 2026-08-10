@@ -4,7 +4,7 @@
 \alias{\%ilike\%}
 \alias{\%flike\%}
 \alias{\%plike\%}
-\title{ Convenience function for calling grep. }
+\title{ Convenience function for calling grep }
 \description{
   Intended for use in \code{i} in \code{\link[=data.table]{[.data.table}}, i.e., for subsetting/filtering.
 

@@ -17,7 +17,7 @@ skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64", "integer64"),
 col.names,
 check.names=FALSE, encoding="unknown",
-strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
+strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, comment.char="",
 key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
@@ -36,7 +36,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC"
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;}], other than \code{sep}, that exists inside each field outside quoted regions in the sample. NB: \code{sep2} is not yet implemented. }
   \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. \code{nrows=0} returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
-  \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
+  \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. \bold{Note:} \code{keepLeadingZeros=TRUE} can influence this guess. }
   \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default, \code{",,"} for columns of all types, including type \code{character} is read as \code{NA} for consistency. \code{,"",} is unambiguous and read as an empty string. To read \code{,NA,} as \code{NA}, set \code{na.strings="NA"}. To read \code{,,} as blank string \code{""}, set \code{na.strings=NULL}. When they occur in the file, the strings in \code{na.strings} should not appear quoted since that is how the string literal \code{,"NA",} is distinguished from \code{,NA,}, for example, when \code{na.strings="NA"}. }
   \item{stringsAsFactors}{ Convert all or some character columns to factors? Acceptable inputs are \code{TRUE}, \code{FALSE}, or a decimal value between 0.0 and 1.0. For \code{stringsAsFactors = FALSE}, all string columns are stored as \code{character} vs. all stored as \code{factor} when \code{TRUE}. When \code{stringsAsFactors = p} for \code{0 <= p <= 1}, string columns \code{col} are stored as \code{factor} if \code{uniqueN(col)/nrow < p}. 
   }
@@ -56,6 +56,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC"
   \item{strip.white}{ Logical, default \code{TRUE}, in which case leading and trailing whitespace is stripped from unquoted \code{"character"} fields. \code{"numeric"} fields are always stripped of leading and trailing whitespace.}
   \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. If \code{fill=Inf} then the whole file is read for detecting the number of columns. }
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
+  \item{comment.char}{Character vector of length one containing a single character of an empty string. Any text after the comment character in a line is ignored, including skipping comment-only lines. Use \code{""} to turn off the interpretation of comments altogether.}
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
@@ -63,7 +64,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC"
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
   \item{logicalYN}{If TRUE a column containing only Ys and Ns will be read as logical, otherwise as character.}
-  \item{keepLeadingZeros}{If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric.}
+  \item{keepLeadingZeros}{If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric. \bold{Note:} This may cause \code{header="auto"} to guess \code{TRUE} because the first row may now appear to be all character data.}
   \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
   \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls, e.g. when the input is a URL or a shell command. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base:tempfile]{base::tempdir}}. }
   \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs \code{""} is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
@@ -117,6 +118,15 @@ Currently, the \code{yaml} setting is somewhat inflexible with respect to incorp
 \bold{File Download:}
 
 When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
+
+\bold{Automatic Decompression:}
+
+In many cases, \code{fread} can automatically detect and decompress files with common compression extensions directly, without needing an explicit connection object or shell commands. This works by checking the file extension.
+
+  \itemize{
+    \item \code{.gz} and \code{.bz2} are supported out of the box.
+    \item \code{.zip} is also supported. If the archive contains a single data file, \code{fread} will read it. If the archive contains multiple files, \code{fread} will produce an error.
+  }
 
 \bold{Shell commands:}
 

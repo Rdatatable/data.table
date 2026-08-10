@@ -110,7 +110,7 @@
 
 \section{Back-compatibility Options}{
   \describe{
-    \item{\code{datatable.old.matrix.autoname}}{Logical, default \code{TRUE}. Governs how the output of
+    \item{\code{datatable.old.matrix.autoname}}{Logical, default \code{FALSE}. Governs how the output of
       expressions like \code{data.table(x=1, cbind(1))} will be named. When \code{TRUE}, it will be named
       \code{V1}, otherwise it will be named \code{V2}.
     }

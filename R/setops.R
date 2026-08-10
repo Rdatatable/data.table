@@ -160,8 +160,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(sprintf(
         "%s. 'target': %s. 'current': %s.",
         gettext("Datasets have different keys"),
-        if(length(k1)) brackify(k1) else gettextf("has no key"),
-        if(length(k2)) brackify(k2) else gettextf("has no key")
+        if(length(k1)) brackify(k1) else gettext("has no key"),
+        if(length(k2)) brackify(k2) else gettext("has no key")
       ))
     }
     # check index
@@ -171,8 +171,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(sprintf(
         "%s. 'target': %s. 'current': %s.",
         gettext("Datasets have different indices"),
-        if(length(i1)) brackify(i1) else gettextf("has no index"),
-        if(length(i2)) brackify(i2) else gettextf("has no index")
+        if(length(i1)) brackify(i1) else gettext("has no index"),
+        if(length(i2)) brackify(i2) else gettext("has no index")
       ))
     }
 

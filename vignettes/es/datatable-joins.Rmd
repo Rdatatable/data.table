@@ -1,0 +1,725 @@
+---
+title: "Uniones «join» en data.table"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Joins in data.table}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+```
+
+```{r, echo=FALSE, file='../_translation_links.R'}
+```
+
+`{r} .write.translation.links("Las traducciones de este documento están disponibles en: %s")`
+
+En esta viñeta aprenderá cómo realizar cualquier operación de *unión* (N. de T.: *join*) utilizando los recursos disponibles en la sintaxis de 'data.table'.
+
+Se presupone familiaridad con la sintaxis de `data.table`. De no ser así, lea las siguientes viñetas:
+
+- [`viñeta("datatable-intro", paquete="data.table")`](datatable-intro.html)
+- [`viñeta("datatable-reference-semantics", paquete="data.table")`](datatable-reference-semantics.html)
+- [`viñeta("datatable-keys-fast-subset", paquete="data.table")`](datatable-keys-fast-subset.html)
+
+***
+
+## 1. Definición de datos de ejemplo
+
+Para ilustrar cómo utilizar el método disponible con ejemplos de la vida real, simulemos una **base de datos normalizada** de un pequeño supermercado definiendo las siguientes tablas en una base de datos:
+
+1. «Productos», una tabla con filas que muestran las características de varios productos. Para mostrar cómo el framework gestiona los ***valores faltantes***, un id es `NA`.
+
+```{r, define_products}
+Products = rowwiseDT(
+  id=,        name=, price=,   unit=, type=,
+   1L,     "banana",   0.63,  "unit", "natural",
+   2L,    "carrots",   0.89,    "lb", "natural",
+   3L,    "popcorn",   2.99,  "unit", "processed",
+   4L,       "soda",   1.49, "ounce", "processed",
+   NA, "toothpaste",   2.99,  "unit", "processed"
+)
+```
+
+2. `NewTax`, una tabla con filas que definen algunos impuestos asociados a los productos procesados ​​en función de sus unidades.
+
+```{r define_new_tax}
+NewTax = data.table(
+  unit = c("unit", "ounce"),
+  type = "processed",
+  tax_prop = c(0.65, 0.20)
+)
+
+NewTax
+```
+
+3. `ProductReceived`, una tabla con filas que simulan el inventario entrante semanal.
+
+```{r define_product_received}
+set.seed(2156)
+
+# NB: Jan 8, 2024 is a Monday.
+receipt_dates = seq(from=as.IDate("2024-01-08"), length.out=10L, by="week")
+
+ProductReceived = data.table(
+  id=1:10, # unique identifier for an supply transaction
+  date=receipt_dates,
+  product_id=sample(c(NA, 1:3, 6L), size=10L, replace=TRUE), # NB: product '6' is not recorded in Products above.
+  count=sample(c(50L, 100L, 150L), size=10L, replace=TRUE)
+)
+
+ProductReceived
+```
+
+4. `ProductSales`, una tabla con filas que simulan transacciones de clientes.
+
+```{r define_product_sales}
+set.seed(5415)
+
+# Monday-Friday (4 days later) for each of the weeks present in ProductReceived
+possible_weekdays <- as.IDate(sapply(receipt_dates, `+`, 0:4))
+
+ProductSales = data.table(
+  id = 1:10,
+  date = sort(sample(possible_weekdays, 10L)),
+  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE), # NB: product '7' is in neither Products nor ProductReceived.
+  count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
+)
+
+ProductSales
+```
+
+## 2. Sintaxis de uniones join de `data.table`
+
+Antes de aprovechar la sintaxis `data.table` para realizar operaciones de unión, necesitamos saber qué argumentos pueden ayudarnos a realizar uniones *join* exitosas.
+
+El siguiente diagrama muestra una descripción de cada argumento básico. En las siguientes secciones, mostraremos cómo usar cada uno y añadiremos complejidad gradualmente.
+
+```
+x[i, on, nomatch]
+| |  |   |
+| |  |   \__ If NULL only returns rows linked in x and i tables
+| |  \____ a character vector or list defining match logic
+| \_____ primary data.table, list or data.frame
+\____ secondary data.table
+```
+
+**Nota**: Tenga en cuenta que el orden estándar de los argumentos en `data.table` es `dt[i, j, by]`. Para las operaciones de unión, se recomienda pasar los argumentos `on` y `nomatch` por nombre para evitar usar `j` y `by` cuando no sean necesarios.
+
+## 3. Equi se une
+
+Este es el caso más común y sencillo ya que podemos encontrar elementos comunes entre tablas para combinar.
+
+La relación entre tablas puede ser:
+
+- **Uno a uno**: Cuando cada valor coincidente es único en cada tabla.
+- **Uno a muchos**: Cuando algunos valores coincidentes se repiten en una de las tablas y ambos son únicos en la otra.
+- **Muchos a muchos**: Cuando los valores coincidentes se repiten varias veces en cada tabla.
+
+En la mayoría de los siguientes ejemplos realizaremos coincidencias de *uno a muchos*, pero también nos tomaremos el tiempo para explicar los recursos disponibles para realizar coincidencias de *muchos a muchos*.
+
+### 3.1. Unión derecha (Right Join)
+
+Utilice este método si necesita combinar columnas de 2 tablas según una o más referencias pero ***manteniendo todas las filas presentes en la tabla ubicada a la derecha (entre corchetes)***.
+
+En nuestro contexto de supermercado, podemos realizar una unión derecha para ver más detalles sobre los productos recibidos, ya que esta es una relación *uno a muchos* al pasar un vector al argumento `on`.
+
+```{r}
+Products[ProductReceived,
+         on = c(id = "product_id")]
+```
+
+Como muchas cosas han cambiado, vamos a explicar las nuevas características en los siguientes grupos:
+
+- **Nivel de columna**
+ - El *primer grupo* de columnas en la nueva `data.table` proviene de la tabla `x`.
+ - El *segundo grupo* de columnas en la nueva `data.table` proviene de la tabla `i`.
+ - Si la operación de unión presenta algún **conflicto de nombre** (ambas tablas tienen el mismo nombre de columna), el ***prefijo*** `i.` se agrega a los nombres de columna de la **tabla de la derecha** (tabla en la posición `i`).
+
+- **Nivel de fila**
+ - El `product_id` faltante presente en la tabla `ProductReceived` en la fila 1 se correspondió exitosamente con el `id` faltante de la tabla `Products`, por lo que los ***valores `NA` se tratan como cualquier otro valor***.
+ - Se conservaron todas las filas de la tabla `i`, incluyendo:
+*- Filas que no coinciden como la que tiene `product_id = 6`.
+*- Filas que repiten el mismo `product_id` varias veces.
+
+#### 3.1.1. Unirse mediante un argumento de lista
+
+Si está siguiendo la viñeta, es posible que haya descubierto que usamos un vector para definir las relaciones entre las tablas en el argumento `on`, lo cual es realmente útil si está **creando sus propias funciones**, pero otra alternativa es usar una **lista** para definir las columnas que coinciden.
+
+Para utilizar esta capacidad, tenemos 2 alternativas equivalentes:
+
+- Envolviendo las columnas relacionadas en la función base R `lista`.
+
+```r
+Products[ProductReceived,
+         on = list(id = product_id)]
+```
+
+- Envolviendo las columnas relacionadas en el alias `lista` `.`.
+
+```r
+Products[ProductReceived,
+         on = .(id = product_id)]
+```
+
+#### 3.1.2. Alternativas para definir el argumento `on`
+
+En todos los ejemplos anteriores, pasamos los nombres de las columnas que queremos que coincidan con el argumento `on`, pero `data.table` también tiene alternativas a esa sintaxis.
+
+- **Unión natural**: Selecciona las columnas para realizar la coincidencia según nombres de columna comunes. Para ilustrar este método, cambiemos la columna de la tabla "Productos" de "id" a "product_id" y usemos la palabra clave ".NATURAL".
+
+```{r}
+ProductsChangedName = setnames(copy(Products), "id", "product_id")
+ProductsChangedName
+
+ProductsChangedName[ProductReceived, on = .NATURAL]
+```
+
+- **Unión con clave**: selecciona las columnas para realizar la coincidencia en función de las columnas con clave, independientemente de sus nombres. Para ilustrar este método, necesitamos definir claves en el mismo orden para ambas tablas.
+
+```{r}
+ProductsKeyed = setkey(copy(Products), id)
+key(ProductsKeyed)
+
+ProductReceivedKeyed = setkey(copy(ProductReceived), product_id)
+key(ProductReceivedKeyed)
+
+ProductsKeyed[ProductReceivedKeyed]
+```
+
+#### 3.1.3. Operaciones posteriores a la incorporación
+
+La mayoría de las veces, tras unirnos, necesitamos realizar transformaciones adicionales. Para ello, tenemos las siguientes alternativas:
+
+- Encadenar una nueva instrucción añadiendo un par de corchetes `[]`.
+- Pasar una lista con las columnas que queremos conservar o crear al argumento `j`.
+
+Nuestra recomendación es utilizar la segunda alternativa si es posible, ya que es **más rápida** y utiliza **menos memoria** que la primera.
+
+##### Administrar nombres de columnas compartidas con el argumento j
+
+El argumento `j` ofrece excelentes alternativas para gestionar uniones con tablas que **comparten los mismos nombres para varias columnas**. Por defecto, todas las columnas toman su origen de la tabla `x`, pero también podemos usar el prefijo `x.` para especificar el origen y el prefijo `i.` para usar cualquier columna de la tabla declarada en el argumento `i` de la tabla `x`.
+
+Volviendo al pequeño supermercado, luego de actualizar la tabla `ProductReceived` con la tabla `Products`, supongamos que queremos aplicar los siguientes cambios:
+
+- Cambie los nombres de las columnas de `id` a `product_id` y de `i.id` a `received_id`.
+- Agregue `total_value`.
+
+```{r}
+Products[
+  ProductReceived,
+  on = c("id" = "product_id"),
+  j = .(product_id = x.id,
+        name = x.name,
+        price,
+        received_id = i.id,
+        date = i.date,
+        count,
+        total_value = price * count)
+]
+```
+
+##### Resumiendo con `on` en `data.table`
+
+También podemos utilizar esta alternativa para devolver resultados agregados en función de las columnas presentes en la tabla `x`.
+
+Por ejemplo, podríamos estar interesados ​​en cuánto dinero gastamos comprando cada producto a lo largo de los días.
+
+```{r}
+dt1 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+  by = .EACHI,
+  j = .(total_value_received  = sum(price * count))
+]
+
+# alternative using multiple [] queries
+dt2 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+][, .(total_value_received  = sum(price * count)),
+  by = "product_id"
+]
+
+identical(dt1, dt2)
+```
+
+#### 3.1.4. Unión basada en varias columnas
+
+Hasta ahora solo hemos unido `data.table` en función de 1 columna, pero es importante saber que el paquete puede unir tablas que coincidan con varias columnas.
+
+Para ilustrar esto, supongamos que queremos agregar `tax_prop` de `NewTax` para **actualizar** la tabla `Products`.
+
+```{r}
+NewTax[Products, on = c("unit", "type")]
+```
+
+### 3.2. Inner join
+
+Utilice este método si necesita combinar columnas de 2 tablas según una o más referencias pero ***manteniendo solo las filas coincidentes en ambas tablas***.
+
+Para realizar esta operación solo necesitamos agregar `nomatch = NULL` a cualquiera de las operaciones de unión anteriores para devolver los mismos resultados.
+
+```{r}
+# First Table
+Products[ProductReceived,
+         on = c("id" = "product_id"),
+         nomatch = NULL]
+
+# Second Table
+ProductReceived[Products,
+                on = .(product_id = id),
+                nomatch = NULL]
+```
+
+A pesar de que ambas tablas tienen la misma información, existen algunas diferencias relevantes:
+
+- Presentan un orden de columnas diferente.
+- Tienen diferencias en el nombre de las columnas:
+ - La columna `id` en la primera tabla tiene la misma información que `product_id` en la segunda tabla.
+ - La columna `i.id` en la primera tabla tiene la misma información que `id` en la segunda tabla.
+
+### 3.3. Anti-unión
+
+Este método **conserva sólo las filas que no coinciden con ninguna fila de una segunda tabla**.
+
+Para aplicar esta técnica podemos negar (`!`) la tabla ubicada en el argumento `i`.
+
+```{r}
+Products[!ProductReceived,
+         on = c("id" = "product_id")]
+```
+
+Como puedes ver, el resultado solo tiene 'soda', ya que era el único producto que no estaba presente en la tabla 'ProductReceived'.
+
+```{r}
+ProductReceived[!Products,
+                on = c("product_id" = "id")]
+```
+
+En este caso, la operación devuelve la fila con `product_id = 6`, ya que no está presente en la tabla `Productos`.
+
+### 3.4. Semi unión
+
+Este método extrae **sólo las filas que coinciden con cualquier fila de una segunda tabla**, sin combinar las columnas de las tablas.
+
+Es muy similar a filtrar via un "join", pero como en esta ocasión estamos pasando una tabla completa en `i`, debemos asegurarnos de que:
+
+- Cualquier fila en la tabla `x` se duplica debido a la duplicación de filas en la tabla pasada al argumento `i`.
+
+- Todas las filas renombradas desde `x` deben mantener el orden de filas original. 
+
+Para realizar esto puedes aplicar los siguientes pasos:
+
+1. Realice un **inner join** con `which = TRUE` para guardar los números de fila relacionados con cada fila coincidente de la tabla `x`.
+
+```{r}
+SubSetRows = Products[
+  ProductReceived,
+  on = .(id = product_id),
+  nomatch = NULL,
+  which = TRUE
+]
+
+SubSetRows
+```
+
+2. Seleccionar y ordenar los identificadores de filas únicos.
+
+```{r}
+SubSetRowsSorted = sort(unique(SubSetRows))
+
+SubSetRowsSorted
+```
+
+3. Seleccionar las `x` filas que se conservarán.
+
+```{r}
+Products[SubSetRowsSorted]
+```
+
+### 3.5. Unión izquierda (left join)
+
+Utilice este método si necesita combinar columnas de 2 tablas según una o más referencias pero ***manteniendo todas las filas presentes en la tabla ubicada a la izquierda***.
+
+Para realizar esta operación, solo necesitamos **intercambiar el orden entre ambas tablas** y los nombres de las columnas en el argumento `on`.
+
+```{r}
+ProductReceived[Products,
+                on = list(product_id = id)]
+```
+
+A continuación se presentan algunas consideraciones importantes:
+
+- **Nivel de columna**
+ - El *primer grupo* de columnas ahora proviene de la tabla `ProductReceived` ya que es la tabla `x`.
+ - El *segundo grupo* de columnas ahora proviene de la tabla `Products` ya que es la tabla `i`.
+ - No agregó el prefijo `i.` a ninguna columna.
+
+- **Nivel de fila**
+ - Se conservaron todas las filas de la tabla `i`: la entrada de soda de `Products` que no coincidió con ninguna fila en `ProductReceived` todavía es parte de los resultados.
+ - La fila relacionada con `product_id = 6` ya no es parte de los resultados porque no está presente en la tabla `Products`.
+
+#### 3.5.1. Unión tras operaciones de encadenamiento
+
+Una de las características clave de `data.table` es que podemos aplicar varias operaciones antes de guardar nuestros resultados finales encadenando corchetes.
+
+```r
+DT[
+  ...
+][
+  ...
+][
+  ...
+]
+```
+
+Hasta ahora, si después de aplicar todas esas operaciones **queremos unir nuevas columnas sin eliminar ninguna fila**, necesitaríamos detener el proceso de encadenamiento, guardar una tabla temporal y luego aplicar la operación de unión.
+
+Para evitar esa situación, podemos usar símbolos especiales `.SD`, para aplicar una **unión derecha (right join) basada en la tabla modificada**.
+
+```{r}
+NewTax[Products,
+       on = c("unit", "type")
+][, ProductReceived[.SD,
+                    on = list(product_id = id)],
+  .SDcols = !c("unit", "type")]
+```
+
+### 3.6. Unión de muchos a muchos
+
+A veces queremos unir tablas en función de columnas con **valores `id` duplicados** para luego realizar algunas transformaciones más adelante.
+
+Para ilustrar esta situación tomemos como ejemplo el `product_id == 1L`, que tiene 4 filas en nuestra tabla `ProductReceived`.
+
+```{r}
+ProductReceived[product_id == 1L]
+```
+
+Y 4 filas en nuestra tabla 'ProductSales'.
+
+```{r}
+ProductSales[product_id == 1L]
+```
+
+Para realizar esta unión solo necesitamos filtrar `product_id == 1L` en la tabla `i` para limitar la unión solo a ese producto y establecer el argumento `allow.cartesian = TRUE` para permitir combinar cada fila de una tabla con cada fila de la otra tabla.
+
+```{r}
+ProductReceived[ProductSales[list(1L),
+                             on = "product_id",
+                             nomatch = NULL],
+                on = "product_id",
+                allow.cartesian = TRUE]
+```
+
+Una vez que entendemos el resultado, podemos aplicar el mismo proceso para **todos los productos**.
+
+```{r}
+ProductReceived[ProductSales,
+                on = "product_id",
+                allow.cartesian = TRUE]
+```
+
+**Nota**: El valor predeterminado de `allow.cartesian` es FALSE, ya que esto rara vez es lo que el usuario desea, y una combinación cruzada de este tipo puede generar un número muy elevado de filas en el resultado. Por ejemplo, si la Tabla A tiene 100 filas y la Tabla B tiene 50, su producto cartesiano resultaría en 5000 filas (100 * 50). Esto puede consumir rápidamente mucha memoria para conjuntos de datos grandes.
+
+#### 3.6.1. Seleccionar una coincidencia
+
+Tras unir la tabla, podríamos descubrir que solo necesitamos devolver una única unión para extraer la información necesaria. En este caso, tenemos dos alternativas:
+
+- Podemos seleccionar la **primera coincidencia**, representada en el siguiente ejemplo por `id = 2`.
+
+```{r}
+ProductReceived[ProductSales[product_id == 1L],
+                on = .(product_id),
+                allow.cartesian = TRUE,
+                mult = "first"]
+```
+
+- Podemos seleccionar la **última coincidencia**, representada en el siguiente ejemplo por `id = 9`.
+
+```{r}
+ProductReceived[ProductSales[product_id == 1L],
+                on = .(product_id),
+                allow.cartesian = TRUE,
+                mult = "last"]
+```
+
+#### 3.6.2. Unión cruzada
+
+Si desea obtener **todas las combinaciones de filas posibles** independientemente de cualquier columna de identificación en particular, podemos seguir el siguiente proceso:
+
+1. Crea una nueva columna en ambas tablas con una constante.
+
+```{r}
+ProductsTempId = copy(Products)[, temp_id := 1L]
+```
+
+2. Unir ambas tablas en función de la nueva columna y eliminarla después de finalizar el proceso, ya que no tiene motivos para permanecer después de unirse.
+
+```{r}
+AllProductsMix =
+  ProductsTempId[ProductsTempId,
+                 on = "temp_id",
+                 allow.cartesian = TRUE]
+
+AllProductsMix[, temp_id := NULL]
+
+# Removing type to make easier to see the result when printing the table
+AllProductsMix[, !c("type", "i.type")]
+```
+
+### 3.7. Unión completa
+
+Utilice este método si necesita combinar columnas de 2 tablas según una o más referencias ***sin eliminar ninguna fila***.
+
+Como vimos en la sección anterior, cualquiera de las operaciones anteriores puede mantener el `product_id = 6` faltante y el **soda** (`product_id = 4`) como parte de los resultados.
+
+Para evitar este problema, podemos utilizar la función `merge` aunque es más sencilla que utilizar la sintaxis de unión nativa `data.table`.
+
+```{r}
+merge(x = Products,
+      y = ProductReceived,
+      by.x = "id",
+      by.y = "product_id",
+      all = TRUE,
+      sort = FALSE)
+```
+
+## 4. Unión no equitativa
+
+Una unión no equitativa es un tipo de unión donde la condición para la coincidencia de filas se basa en operadores de comparación distintos de la igualdad, como `<`, `>`, `<=` o `>=`. Esto permite **criterios de unión más flexibles**. En `data.table`, las uniones no equitativas son particularmente útiles para operaciones como:
+
+- Encontrar la coincidencia más cercana.
+- Comparar rangos de valores entre tablas.
+
+Es una gran alternativa cuando, después de aplicar una unión derecha o interna, quieres:
+
+- Desea reducir la cantidad de filas devueltas en función de las comparaciones de columnas numéricas entre tablas.
+- No es necesario conservar las columnas de la tabla x *(la `data.table` secundaria)* en el resultado final.
+
+Para ilustrar cómo funciona esto, centrémonos en las ventas y recepciones del producto 2.
+
+```{r}
+ProductSalesProd2 = ProductSales[product_id == 2L]
+ProductReceivedProd2 = ProductReceived[product_id == 2L]
+```
+
+Si deseamos saber, por ejemplo, si podemos encontrar alguna recepción que haya tenido lugar antes de una fecha de venta, podemos aplicar lo siguiente.
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = "product_id",
+                     allow.cartesian = TRUE
+][date < i.date]
+```
+
+¿Qué sucede si simplemente aplicamos la misma lógica en la lista pasada a 'on'?
+
+- Como esta operación sigue siendo una unión derecha (right join), devuelve todas las filas de la tabla `i`, pero solo muestra los valores de `id` y `count` cuando se cumplen las reglas.
+
+- La fecha relacionada con `ProductReceivedProd2` se omitió de esta nueva tabla.
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, date < date)]
+```
+
+Ahora, después de aplicar la unión, podemos limitar los resultados mostrando solo los casos que cumplen todos los criterios de unión.
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, date < date),
+                     nomatch = NULL]
+```
+
+### 4.1 Nombres de columnas de salida en uniones no equitativas
+
+Al realizar uniones no equitativas (`<`, `>`, `<=`, `>=`), los nombres de columna se asignan de la siguiente manera:
+
+- El operando izquierdo (columna `x`) determina el nombre de la columna en el resultado.
+- El operando derecho (columna `i`) aporta valores pero no conserva su nombre original.
+- De manera predeterminada, `data.table` no conserva la columna `i` utilizada en la condición de unión a menos que se solicite explícitamente.
+
+En uniones no equitativas, el lado izquierdo del operador (por ejemplo, `x_int` en `x_int >= i_int`) debe ser una columna de `x`, mientras que el lado derecho (por ejemplo, `i_int`) debe ser una columna de `i`.
+
+Las uniones no equitativas actualmente no admiten expresiones arbitrarias (pero consulte [#1639](https://github.com/Rdatatable/data.table/issues/1639)). Por ejemplo, `on = .(x_int >= i_int)` es válido, pero `on = .(x_int >= i_int + 1L)` no lo es. Para realizar una unión no equitativa de este tipo, primero agregue la expresión como una nueva columna, por ejemplo, `i[, i_int_plus_one := i_int + 1L]`, luego ejecute `.on(x_int >= i_int_plus_one)`.
+
+```{r non_equi_join_example}
+x <- data.table(x_int = 2:4, lower = letters[1:3])
+i <- data.table(i_int = c(2L, 4L, 5L), UPPER = LETTERS[1:3])
+x[i, on = .(x_int >= i_int)]
+```
+
+Conclusiones clave:
+
+- El nombre de la columna de salida (`x_int`) proviene de `x`, pero los valores provienen de `i_int` en `i`.
+- La última fila contiene `NA` porque ninguna fila en `x` coincide con la última fila en `i` (`UPPER == "C"`).
+- Se devuelven varias filas en `x` para que coincidan con la primera fila en `i` con `UPPER == "A"`.
+
+Si desea conservar la columna `i_int` de `i`, debe seleccionarla explícitamente en el resultado:
+
+```{r retain_i_column}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
+```
+
+El uso de prefijos (`x.` e `i.`) no es estrictamente necesario en este caso ya que los nombres no son ambiguos, pero su uso garantiza que la salida distinga claramente `i_int` (de `i`) y `x_int` (de `x`).
+
+Si desea excluir filas no coincidentes (una *unión interna*), utilice `nomatch = NULL`:
+
+```{r retain_i_column_inner_join}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER), nomatch = NULL]
+```
+
+## 5. Unión rodante
+
+Las uniones continuas son especialmente útiles en el análisis de datos de series temporales. Permiten **emparejar filas según el valor más cercano** en una columna ordenada, generalmente una columna de fecha u hora.
+
+Esto es útil cuando necesita alinear datos de diferentes fuentes **que pueden no tener marcas de tiempo exactamente coincidentes**, o cuando desea transferir el valor más reciente.
+
+Por ejemplo, en datos financieros, puede utilizar una unión continua para asignar el precio de acción más reciente a cada transacción, incluso si las actualizaciones de precios y las transacciones no ocurren exactamente en el mismo momento.
+
+En nuestro ejemplo de supermercado, podemos utilizar una unión continua para hacer coincidir las ventas con la información más reciente del producto.
+
+Supongamos que el precio de los plátanos y las zanahorias cambia el primer día de cada mes.
+
+```{r}
+ProductPriceHistory = data.table(
+  product_id = rep(1:2, each = 3),
+  date = rep(as.IDate(c("2024-01-01", "2024-02-01", "2024-03-01")), 2),
+  price = c(0.59, 0.63, 0.65,  # Banana prices
+            0.79, 0.89, 0.99)  # Carrot prices
+)
+
+ProductPriceHistory
+```
+
+Ahora, podemos realizar un *right join* dando un precio diferente para cada producto en función de la fecha de venta.
+
+```{r}
+ProductPriceHistory[ProductSales,
+                    on = .(product_id, date),
+                    roll = TRUE,
+                    j = .(product_id, date, count, price)]
+```
+
+Si solo queremos ver los casos coincidentes, simplemente necesitamos agregar el argumento `nomatch = NULL` para realizar una unión interna.
+
+```{r}
+ProductPriceHistory[ProductSales,
+                    on = .(product_id, date),
+                    roll = TRUE,
+                    nomatch = NULL,
+                    j = .(product_id, date, count, price)]
+```
+
+## 6. Aprovechar la velocidad de incorporación
+
+### 6.1. Filtrado mediante joins
+
+Como vimos en la sección anterior, la tabla `x` se filtra según los valores disponibles en la tabla `i`. Este proceso es más rápido que pasar una expresión booleana al argumento `i`.
+
+Para filtrar la tabla `x` rápidamente no necesitamos pasar un `data.table` completo, podemos pasar una `list()` de vectores con los valores que queremos mantener u omitir de la tabla original.
+
+Por ejemplo, para filtrar las fechas donde el mercado recibió 100 unidades de plátanos (`product_id = 1`) o palomitas de maíz (`product_id = 3`) podemos utilizar lo siguiente:
+
+```{r}
+ProductReceived[list(c(1L, 3L), 100L),
+                on = c("product_id", "count")]
+```
+
+Como al final filtramos según una operación de unión, el código devolvió una fila que no estaba presente en la tabla original. Para evitar este comportamiento, se recomienda agregar siempre el argumento `nomatch = NULL`.
+
+```{r}
+ProductReceived[list(c(1L, 3L), 100L),
+                on = c("product_id", "count"),
+                nomatch = NULL]
+```
+
+También podemos usar esta técnica para filtrar cualquier combinación de valores, prefijándolos con `!` para negar la expresión en el argumento `i` y manteniendo `nomatch` con su valor predeterminado. Por ejemplo, podemos filtrar las dos filas que filtramos anteriormente.
+
+```{r}
+ProductReceived[!list(c(1L, 3L), 100L),
+                on = c("product_id", "count")]
+```
+
+Si solo desea filtrar un valor para una sola **columna de caracteres**, puede omitir la llamada a la función `list()` y pasar el valor a filtrar en el argumento `i`.
+
+```{r}
+Products[c("banana","popcorn"),
+         on = "name",
+         nomatch = NULL]
+
+Products[!"popcorn",
+         on = "name"]
+```
+
+### 6.2. Actualización por referencia
+
+Utilice `:=` para modificar columnas **por referencia** (sin copia) durante las uniones. Sintaxis general: `x[i, on=, (cols) := val]`.
+
+**Actualización simple uno a uno**
+
+Actualizar `Productos` con precios de `ProductPriceHistory`:
+
+```{r}
+Products[ProductPriceHistory, 
+         on = .(id = product_id), 
+         price := i.price]
+
+Products
+```
+
+- `i.price` hace referencia al precio de `ProductPriceHistory`.
+- Modifica `Products` en el lugar.
+
+**Actualizaciones agrupadas con `.EACHI`**
+
+Obtenga el último precio/fecha de cada producto:
+
+```{r Updating_with_the_Latest_Record}
+Products[ProductPriceHistory,
+         on = .(id = product_id),
+         `:=`(price = last(i.price), last_updated = last(i.date)),
+         by = .EACHI]
+
+Products
+```
+
+- `by = .EACHI` agrupa por filas en `i` (1 grupo por fila de ProductPriceHistory).
+- `last()` devuelve el último valor
+
+**Actualización eficiente mediante Right Join**
+
+Agregue detalles del producto a `ProductPriceHistory` sin copiar:
+
+```{r}
+cols <- setdiff(names(Products), "id")
+ProductPriceHistory[, (cols) := 
+  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
+
+ProductPriceHistory
+```
+
+- En `i`, `.SD` hace referencia a `ProductPriceHistory`.
+- En `j`, `.SD` hace referencia a `Products`.
+- `:=` y `setnafill()` actualizan `ProductPriceHistory` por referencia.
+
+## Referencia
+
+- *Entendiendo las uniones continuas en data.table*: https://www.r-bloggers.com/2016/06/understanding-data-table-rolling-joins/
+
+- *Semi-unión con data.table*: https://stackoverflow.com/questions/18969420/perform-a-semi-join-with-data-table
+
+- *Unión cruzada con data.table*: https://stackoverflow.com/questions/10600060/how-to-do-cross-join-in-r
+
+- *¿Cómo se hace una unión completa usando data.table?*: https://stackoverflow.com/questions/15170741/how-does-one-do-a-full-join-using-data-table
+
+- *Data.frame mejorado*: https://rdatatable.gitlab.io/data.table/reference/data.table.html

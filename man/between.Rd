@@ -3,7 +3,7 @@
 \alias{\%between\%}
 \alias{inrange}
 \alias{\%inrange\%}
-\title{ Convenience functions for range subsets. }
+\title{ Convenience functions for range subsets }
 \description{
 Intended for use in \code{i} in \code{[.data.table}.
 

@@ -51,7 +51,7 @@ sourceImports = function(path=getwd(), quiet=FALSE) {
     #   https://stat.ethz.ch/pipermail/r-devel/2024-April/083319.html
     for (import in imported) assign(import, getExportedValue(entry[[1L]], import), .GlobalEnv)
   }
-  return(invisible())
+  invisible()
 }
 
 cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv("PROJ_PATH", unset=normalizePath(".")), CC="gcc", quiet=FALSE) {
@@ -70,7 +70,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
   dll = grep("data_table.so", dll, fixed=TRUE, value=TRUE)
   sapply(dll, dyn.unload)
   gc()
-  
+
   # hack for windows under mingw-like environment
   # PROJ_PATH must be windows like i.e.: export PROJ_PATH=$(Rscript -e 'getwd()')
   if (.Platform$OS.type == "windows") {
@@ -90,10 +90,11 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
   if (!quiet) cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "openmp" else "no-openmp"
+  R = file.path(R.home("bin"), "R")
   if (debug) {
-    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f% CFLAGS=-std=c11\ -O0\ -ggdb\ %s\ -pedantic' R CMD SHLIB -d -o data_table.so *.c)", CC, OMP, W32)
+    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%s CFLAGS=-std=c11\ -O0\ -ggdb\ %s\ -pedantic' %s CMD SHLIB -d -o data_table.so *.c)", CC, OMP, W32, R)
   } else {
-    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s CFLAGS=-f%s\ -std=c11\ -O3\ -pipe\ -Wall\ -pedantic\ -Wstrict-prototypes\ -isystem\ /usr/share/R/include\ %s\ -fno-common' R CMD SHLIB -o data_table.so *.c)", CC, OMP, W32)
+    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s CFLAGS=-f%s\ -std=c11\ -O3\ -pipe\ -Wall\ -pedantic\ -Wstrict-prototypes\ -isystem\ %s\ %s\ -fno-common' %s CMD SHLIB -o data_table.so *.c)", CC, OMP, R.home("include"), W32, R)
     # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
     # TODO add -Wextra too?
   }
@@ -126,4 +127,3 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
 }
 
 dd = function(omp=FALSE)cc(test=FALSE,debug=TRUE,omp=omp,clean=TRUE)
-
