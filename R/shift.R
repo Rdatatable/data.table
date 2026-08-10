@@ -35,6 +35,11 @@ nafill = function(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, limit=Inf
 
 setnafill = function(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x), limit=Inf) {
   type = match.arg(type)
+  if (is.logical(cols)) {
+    if (length(cols) != length(x)) stopf("'cols' is a logical vector of length %d but there are %d columns", length(cols), length(x))
+    if (anyNA(cols)) stopf("'cols' contains NA at position %d", which(is.na(cols))[1L])
+    cols = which(cols)
+  }
   if (!is.numeric(limit) || length(limit) != 1L || is.na(limit) || limit < 0)
      stopf("limit must be a non-negative scalar numeric")
   invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols, as.double(floor(limit))))

@@ -44,6 +44,10 @@
 
 11. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
+12. `frank()` gains an `order` argument (matching `frankv()`) and now intercepts the unary minus symbol (e.g., `frank(-dates)`) to support reverse ranking even for types where unary `-` is not defined in R, such as `Date` or `character` vectors, [#5489](https://github.com/Rdatatable/data.table/issues/5489). Thanks @hope-data-science for the request and @venom1204 for the implementation.
+
+13. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
+
 12. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled during `locf` or `nocb` operations, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 for the PR.
 
 ### BUG FIXES
