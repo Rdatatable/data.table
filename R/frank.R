@@ -73,27 +73,41 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   ans
 }
 
-frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
+frank = function(x, ..., order=1L, na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
+  order_missing = missing(order)
+  has_prefix = FALSE
+  q_x = substitute(x)
+  if (is.call(q_x) && length(q_x) == 2L && (q_x[[1L]] == quote(`-`) || q_x[[1L]] == quote(`+`))) {
+    has_prefix = TRUE
+    if (order_missing) order = if (q_x[[1L]] == quote(`-`)) -1L else 1L
+    x = eval(q_x[[2L]], parent.frame())
+  }
+
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL
-    order = 1L
   } else if (length(cols)) {
     cols=as.list(cols)
-    order=rep(1L, length(cols))
+    if (length(order) == 1L) order = rep(as.integer(order), length(cols))
+
     for (i in seq_along(cols)) {
       v=as.list(cols[[i]])
-      if (length(v) > 1L && v[[1L]] == "+") v=v[[-1L]]
-      else if (length(v) > 1L && v[[1L]] == "-") {
+      if (length(v) > 1L && (v[[1L]] == "+" || v[[1L]] == "-")) {
+        has_prefix = TRUE
+        if (order_missing && v[[1L]] == "-") order[i] = -1L
         v=v[[-1L]]
-        order[i] = -1L
       }
       cols[[i]]=as.character(v)
     }
     cols=unlist(cols, use.names=FALSE)
   } else {
     cols=colnames(x)
-    order=if (is.null(cols)) 1L else rep(1L, length(cols))
+    if (!is.null(cols) && length(order) == 1L) {
+      order = rep(as.integer(order), length(cols))
+    }
+  }
+  if (has_prefix && !order_missing) {
+    warningf("Both prefix sign and 'order' argument are provided; 'order' will take precedence.")
   }
   frankv(x, cols=cols, order=order, na.last=na.last, ties.method=ties.method)
 
