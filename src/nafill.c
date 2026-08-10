@@ -2,40 +2,57 @@
 
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
-  if (verbose)
-    tic = omp_get_wtime();
+  if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
-    for (uint_fast64_t i=0; i<nx; i++) {
-      bool is_na = nan_is_na ? ISNAN(x[i]) : ISNA(x[i]);
-      ans->dbl_v[i] = is_na ? fill : x[i];
+    if (nan_is_na) {
+      for (uint_fast64_t i=0; i<nx; i++) ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
+    } else {
+      for (uint_fast64_t i=0; i<nx; i++) ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
-    bool is_na = nan_is_na ? ISNAN(x[0]) : ISNA(x[0]);
-    ans->dbl_v[0] = is_na ? fill : x[0];
-    if (is_na) fills = 1;
-    for (uint_fast64_t i=1; i<nx; i++) {
-      is_na = nan_is_na ? ISNAN(x[i]) : ISNA(x[i]);
-      if (is_na) {
-        if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
-        else ans->dbl_v[i] = x[i];
-      } else { ans->dbl_v[i] = x[i]; fills = 0; }
+    if (nan_is_na) {
+      ans->dbl_v[0] = ISNAN(x[0]) ? fill : x[0];
+      if (ISNAN(x[0])) fills = 1;
+      for (uint_fast64_t i=1; i<nx; i++) {
+        if (ISNAN(x[i])) {
+          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
+          else ans->dbl_v[i] = x[i];
+        } else { ans->dbl_v[i] = x[i]; fills = 0; }
+      }
+    } else {
+      ans->dbl_v[0] = ISNA(x[0]) ? fill : x[0];
+      if (ISNA(x[0])) fills = 1;
+      for (uint_fast64_t i=1; i<nx; i++) {
+        if (ISNA(x[i])) {
+          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
+          else ans->dbl_v[i] = x[i];
+        } else { ans->dbl_v[i] = x[i]; fills = 0; }
+      }
     }
   } else if (type==2) { // nocb
     uint_fast64_t fills = 0;
-    bool is_na = nan_is_na ? ISNAN(x[nx-1]) : ISNA(x[nx-1]);
-    ans->dbl_v[nx-1] = is_na ? fill : x[nx-1];
-    if (is_na) fills = 1;
-    for (int_fast64_t i=nx-2; i>=0; i--) {
-      is_na = nan_is_na ? ISNAN(x[i]) : ISNA(x[i]);
-      if (is_na) {
-        if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
-        else ans->dbl_v[i] = x[i];
-      } else { ans->dbl_v[i] = x[i]; fills = 0; }
+    if (nan_is_na) {
+      ans->dbl_v[nx-1] = ISNAN(x[nx-1]) ? fill : x[nx-1];
+      if (ISNAN(x[nx-1])) fills = 1;
+      for (int_fast64_t i=nx-2; i>=0; i--) {
+        if (ISNAN(x[i])) {
+          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
+          else ans->dbl_v[i] = x[i];
+        } else { ans->dbl_v[i] = x[i]; fills = 0; }
+      }
+    } else {
+      ans->dbl_v[nx-1] = ISNA(x[nx-1]) ? fill : x[nx-1];
+      if (ISNA(x[nx-1])) fills = 1;
+      for (int_fast64_t i=nx-2; i>=0; i--) {
+        if (ISNA(x[i])) {
+          if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
+          else ans->dbl_v[i] = x[i];
+        } else { ans->dbl_v[i] = x[i]; fills = 0; }
+      }
     }
   }
-  if (verbose)
-    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
+  if (verbose) snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
@@ -145,20 +162,15 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols, SEXP limit) {
   int protecti=0;
   const bool verbose = GetVerbose();
-
-  if (!xlength(obj))
-    return(obj);
-
+  if (!xlength(obj)) return(obj);
   double tic=0.0;
-  if (verbose)
-    tic = omp_get_wtime();
+  if (verbose) tic = omp_get_wtime();
 
   const double limit_d = REAL(limit)[0];
   const uint_fast64_t limit_n = !R_FINITE(limit_d) || limit_d >= (double)UINT_FAST64_MAX ? UINT_FAST64_MAX : (uint_fast64_t)limit_d;
 
   bool copy = !LOGICAL(inplace)[0];
-  if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
+  if (!IS_TRUE_OR_FALSE(nan_is_na_arg)) error(_("'%s' must be TRUE or FALSE"), "nan_is_na");
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
@@ -224,7 +236,15 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  unsigned int itype = !strcmp(CHAR(STRING_ELT(type, 0)), "const") ? 0 : (!strcmp(CHAR(STRING_ELT(type, 0)), "locf") ? 1 : 2);
+  unsigned int itype=-1;
+  if (!strcmp(CHAR(STRING_ELT(type, 0)), "const"))
+    itype = 0;
+  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf"))
+    itype = 1;
+  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
+    itype = 2;
+  else
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR");
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(*isInt64));
