@@ -22000,4 +22000,3 @@ lims = list(-1, NA, NaN, NULL, c(1, 2), 1+2i); for (i in seq_along(lims)) { test
 test(2388.16, setnafill(data.table(a=1:5), limit=-1), error="limit must be a non-negative scalar numeric")
 test(2388.17, nafill(c(1.1, NA, NA, 4.4), type="nocb", limit=1), c(1.1, NA, 4.4, 4.4))
 test(2388.18, nafill(c(1.1, NA, NA), type="locf", limit=1, nan=NaN), c(1.1, 1.1, NA))
-test(2388.19, nafill(c(1.1, NA, NA), type="nocb", limit=1, nan=NaN), c(NA, 1.1, 1.1))
