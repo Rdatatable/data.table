@@ -10,6 +10,7 @@
 \alias{funion}
 \alias{setequal}
 \alias{fsetequal}
+\alias{\%fin\%}
 \title{ Set operations for data tables }
 \description{
   Similar to base R set functions, \code{union}, \code{intersect}, \code{setdiff} and \code{setequal} but for \code{data.table}s. Additional \code{all} argument controls how duplicated rows are handled. Functions \code{fintersect}, \code{setdiff} (\code{MINUS} or \code{EXCEPT} in SQL) and \code{funion} are meant to provide functionality of corresponding SQL operators. Unlike SQL, data.table functions will retain row order.
@@ -19,6 +20,7 @@ fintersect(x, y, all = FALSE)
 fsetdiff(x, y, all = FALSE)
 funion(x, y, all = FALSE)
 fsetequal(x, y, all = TRUE)
+x \%fin\% y
 }
 \arguments{
 	\item{x, y}{\code{data.table}s.}
@@ -33,6 +35,7 @@ fsetequal(x, y, all = TRUE)
 }
 \details{
   \code{bit64::integer64} columns are supported but not \code{complex} and \code{list}, except for \code{funion}.
+  \code{\%fin\%} provides a fast way to check if rows of x exist in y.
 }
 \value{
     A data.table in case of \code{fintersect}, \code{funion} and \code{fsetdiff}. Logical \code{TRUE} or \code{FALSE} for \code{fsetequal}.
@@ -54,5 +57,9 @@ funion(x, y)                # union
 funion(x, y, all=TRUE)      # union all
 fsetequal(x, x2, all=FALSE) # setequal
 fsetequal(x, x2)            # setequal all
+# %fin% operator
+x = data.table(name=c("A","B","C"), year=c(2020,2020,2021))
+y = data.table(name=c("A","B"), year=c(2020,2020))
+x[, found := .(name, year) \%fin\% y]
 }
 \keyword{ data }

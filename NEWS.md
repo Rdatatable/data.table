@@ -90,6 +90,8 @@
 
 20. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
 
+21. New `%fin%` operator for fast row-wise existence checks, e.g., `x %fin% y` or `x[, found := .(col1, col2) %fin% y]`. It supports multi-column matching using `data.table` join semantics, offering a concise and high-performance alternative to standard R `%in%` for membership testing, [#2279](https://github.com/Rdatatable/data.table/issues/2279). Thanks to @franknarf1 for the request and @venom1204 for teh implementation.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
