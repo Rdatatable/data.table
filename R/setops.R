@@ -296,3 +296,30 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
   }
   TRUE
 }
+
+`%fin%` = function(x, y) {
+  mc = match.call()
+  
+  if (is.list(x) && !is.data.table(x)) {
+    if (is.call(mc$x) && (identical(mc$x[[1L]], quote(`list`)) || identical(mc$x[[1L]], quote(`.`)))) {
+      nms = names(mc$x)
+      arg_names = as.character(mc$x[-1L])
+      if (is.null(nms)) {
+        names(x) = arg_names
+      } else {
+        names(x) = ifelse(nms[-1L] == "", arg_names, nms[-1L])
+      }
+    }
+    x = as.data.table(x)
+  } else if (!is.data.table(x)) {
+    x = as.data.table(list(x))
+    setnames(x, names(y)[1])
+  }
+  join_cols = names(x)
+  if (!all(join_cols %in% names(y))) {
+    stopf("All columns in the left-hand side (%s) must exist in the right-hand table (%s).", 
+          paste(join_cols, collapse=","), paste(names(y), collapse=","))
+  }
+  ans = y[x, .N, on=join_cols, by=.EACHI]
+  return(ans$N > 0L)
+}
