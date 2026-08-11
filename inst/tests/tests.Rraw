@@ -21994,5 +21994,5 @@ test(2388.03, data.table(name=c("A","A","B"),year=c(2020,2020,2021),grade=c(8,8,
 test(2388.04, data.table(name=c("A","B"),year=c(2020,2021),grade=c(8,9)) %fin% y, c(TRUE,FALSE))
 test(2388.05, data.table(name=c("A","B"),year=c(2020,2021),grade=c(8,9)) %fin% data.table(name=c("A","B"),year=c(2020,2021)), error="All columns in the left-hand side")
 test(2388.06, data.table(name=c("A","B"),year=c(2020,2021),grade=c(8,9)) %fin% data.table(name=c("A","B"),year=c(2020,2021),grade=c(8,9),extra=c(1,2)), c(TRUE,TRUE))
-test(2388.07, .(name, year=2020) %fin% y, c(TRUE, FALSE))
-test(2388.08, c("A", "B") %fin% y[, .(name)], c(TRUE, TRUE))
+test(2388.07, c("A","B","C") %fin% data.table(name=c("A","B","D"), year=c(2020,2019,2021), grade=c(8,9,10)), c(TRUE,FALSE,FALSE))
+test(2388.08, x[, .(name, year, grade) %fin% y], c(TRUE,FALSE,FALSE))
