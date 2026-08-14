@@ -33,7 +33,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE, rev
   if (rev) ans = lapply(ans, base::rev)
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
-    maxlen = if (length(ans)) max(vapply(ans, length, 0L)) else 0L
+    maxlen = if (length(ans)) max(lengths(ans)) else 0L
     chk = min(keep, na.rm=TRUE) >= min(1L, maxlen) && max(keep, na.rm=TRUE) <= maxlen
     if (!isTRUE(chk) || !length(keep) || anyNA(keep))
       stopf("'keep' should contain integer values between %d and %d.", min(1L, maxlen), maxlen)
