@@ -7,7 +7,7 @@
 
 \usage{
 transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL,
-          make.names=NULL, list.cols=FALSE)
+          make.names=NULL, list.cols=FALSE, keep=NULL)
 }
 \arguments{
   \item{l}{ A list, data.frame or data.table. }
@@ -16,6 +16,7 @@ transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL,
   \item{keep.names}{The name of the first column in the result containing the names of the input; e.g. \code{keep.names="rn"}. By default \code{NULL} and the names of the input are discarded.}
   \item{make.names}{The name or number of a column in the input to use as names of the output; e.g. \code{make.names="rn"}. By default \code{NULL} and default names are given to the output columns.}
   \item{list.cols}{Default is \code{FALSE}. \code{TRUE} will avoid promoting types and return columns of type \code{list} instead. \code{factor} will always be cast to \code{character}.}
+  \item{keep}{An integer vector of column indices to keep and return. The columns will be returned in the order specified. If \code{NULL} (default), all columns are returned. This is much more memory efficient than transposing the entire list and then subsetting the result.}
 }
 \details{
   The list elements (or columns of \code{data.frame}/\code{data.table}) should be all \code{atomic}. If list elements are of unequal lengths, the value provided in \code{fill} will be used so that the resulting list always has all elements of identical lengths. The class of input object is also preserved in the transposed result.
@@ -48,8 +49,9 @@ l = list(1:3, c("a", "b", "c"))
 lapply(seq(length(l[[1]])), function(x) lapply(l, `[[`, x))
 transpose(l, list.cols=TRUE)
 
-ll = list(nm=c('x', 'y'), 1:2, 3:4)
-transpose(ll, make.names="nm")
+ll = list(1:5, 6:10)
+transpose(ll, keep=1:2)
+transpose(ll, keep=c(3, 1))
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{tstrsplit}}

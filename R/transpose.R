@@ -1,4 +1,5 @@
-transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL, list.cols=FALSE) {
+transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL, list.cols=FALSE, keep=NULL) {
+  if (!is.null(keep)) keep = as.integer(keep)
   if (!is.null(make.names)) {
     stopifnot(length(make.names)==1L)
     if (is.character(make.names)) {
@@ -14,7 +15,7 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
     colnames = as.character(l[[make.names]])
     l = if (is.data.table(l)) l[,-make.names,with=FALSE] else l[-make.names]
   }
-  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names, list.cols)
+  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names, list.cols, keep)
   if (!is.null(make.names)) setattr(ans, "names", c(keep.names, colnames))
   else if (is.data.frame(l))  # including data.table but not plain list
     setattr(ans, "names", c(keep.names, paste0("V", seq_len(length(ans)-length(keep.names)))))
@@ -30,18 +31,22 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE, rev
     stopf("'rev' must be TRUE or FALSE.")
   ans = strsplit(as.character(x), ...)
   if (rev) ans = lapply(ans, base::rev)
-  ans = transpose(ans, fill=fill, ignore.empty=FALSE)
-
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
-    chk = min(keep) >= min(1L, length(ans)) & max(keep) <= length(ans)
-    if (!isTRUE(chk) || !length(keep))
-      stopf("'keep' should contain integer values between %d and %d.", min(1L, length(ans)), length(ans))
+    maxlen = if (length(ans)) max(vapply(ans, length, 0L)) else 0L
+    chk = min(keep, na.rm=TRUE) >= min(1L, maxlen) && max(keep, na.rm=TRUE) <= maxlen
+    if (!isTRUE(chk) || !length(keep) || anyNA(keep))
+      stopf("'keep' should contain integer values between %d and %d.", min(1L, maxlen), maxlen)
+    can_keep_early = isFALSE(type.convert)
+    ans = transpose(ans, fill=fill, ignore.empty=FALSE, keep = if (can_keep_early) keep else NULL)
   } else {
+    ans = transpose(ans, fill=fill, ignore.empty=FALSE)
     keep = seq_along(ans)
   }
-  if (isFALSE(type.convert))
-    ans = ans[keep]
+
+  if (isFALSE(type.convert)) {
+    if (length(ans) != length(keep)) ans = ans[keep]
+  }
   # Implementing #1094, but default FALSE
   else if (isTRUE(type.convert))
     ans = lapply(ans[keep], type.convert, as.is=TRUE)

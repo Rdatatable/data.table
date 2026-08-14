@@ -21985,3 +21985,11 @@ DT3 = data.table(a=c(1,NA), b=c("x",NA), c=c(3,NA))
 test(2387.04, setnafill(copy(DT3), type="locf", cols=sapply(DT3, is.numeric)), data.table(a=c(1,1), b=c("x",NA), c=c(3,3)))
 test(2387.05, setnafill(copy(DT3), type="locf", cols=c(TRUE,NA,FALSE)), error="'cols' contains NA at position 2")
 test(2387.06, setnafill(copy(DT3), type="locf", cols=c(TRUE,FALSE)), error="'cols' is a logical vector of length 2 but there are 3 columns")
+
+# transpose() supports keep argument, #5250
+x = list(1:5, 6:10, 11:15)
+test(2388.01, transpose(x, keep=1:2), transpose(x)[1:2])
+test(2388.02, transpose(x, keep=c(5L,3L,1L)), transpose(x)[c(5,3,1)])
+test(2388.03, transpose(x, keep=c(1L,1L,3L)), transpose(x)[c(1,1,3)])
+test(2388.04, transpose(x, keep=NULL), transpose(x))
+test(2388.05, transpose(x, keep=1:2, fill=NA), transpose(x, fill=NA)[1:2])

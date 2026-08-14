@@ -2,7 +2,7 @@
 #include <Rdefines.h>
 #include <time.h>
 
-SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listColsArg)
+SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listColsArg, SEXP keepArg)
 {
   int nprotect = 0;
   if (!isNewList(l))
@@ -22,6 +22,11 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     error(_("'%s' must be TRUE or FALSE"), "list.cols");
   const bool listCol = LOGICAL_RO(listColsArg)[0];
 
+  const bool use_keep = !isNull(keepArg);
+  if (use_keep && !isInteger(keepArg)) error(_("'keep' must be an integer vector."));
+  const int *keep_ptr = use_keep ? INTEGER_RO(keepArg) : NULL;
+  const int keep_len = use_keep ? LENGTH(keepArg) : 0;
+
   // preprocessing
   int maxlen = 0, zerolen = 0;
   SEXPTYPE maxtype = 0;
@@ -37,8 +42,16 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     if (type > maxtype) maxtype = type;
   }
   if (listCol) maxtype = VECSXP; // need to keep preprocessing for zerolen
+  if (use_keep) {
+    for (int i=0; i<keep_len; i++) {
+      if (keep_ptr[i] == NA_INTEGER || keep_ptr[i] < 1 || keep_ptr[i] > maxlen)
+        error(_("'keep' index %d is out of bounds [1, %d]"), keep_ptr[i], maxlen);
+    }
+  }
+  const int num_cols = use_keep ? keep_len : maxlen;
+
   fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
-  SEXP ans = PROTECT(allocVector(VECSXP, maxlen + rn)); nprotect++;
+  SEXP ans = PROTECT(allocVector(VECSXP, num_cols + rn)); nprotect++;
   const int anslen = (ignore) ? (ln - zerolen) : ln;
   if (rn) {
     SEXP tt;
@@ -48,7 +61,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
       if (length(VECTOR_ELT(l, i))) SET_STRING_ELT(tt, j++, STRING_ELT(lNames, i));
     }
   }
-  for (int i = 0; i < maxlen; i++) {
+  for (int i = 0; i < num_cols; i++) {
     SET_VECTOR_ELT(ans, i + rn, allocVector(maxtype, anslen));
   }
   const SEXP *ansp = SEXPPTR_RO(ans);
@@ -63,34 +76,39 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     case LGLSXP: {
       const int *ili = LOGICAL_RO(li);
       const int ifill = LOGICAL_RO(fill)[0];
-      for (int j = 0; j < maxlen; j++) {
-        LOGICAL(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
+      for (int j = 0; j < num_cols; j++) {
+        int idx = use_keep ? (keep_ptr[j] - 1) : j;
+        LOGICAL(ansp[j + rn])[k] = idx < len ? ili[idx] : ifill;
       }
     } break;
     case INTSXP: {
       const int *ili = INTEGER_RO(li);
       const int ifill = INTEGER_RO(fill)[0];
-      for (int j = 0; j < maxlen; j++) {
-        INTEGER(ansp[j + rn])[k] = j < len ? ili[j] : ifill;
+      for (int j = 0; j < num_cols; j++) {
+        int idx = use_keep ? (keep_ptr[j] - 1) : j;
+        INTEGER(ansp[j + rn])[k] = idx < len ? ili[idx] : ifill;
       }
     } break;
     case REALSXP: {
       const double *dli = REAL_RO(li);
       const double dfill = REAL_RO(fill)[0];
-      for (int j = 0; j < maxlen; j++) {
-        REAL(ansp[j + rn])[k] = j < len ? dli[j] : dfill;
+      for (int j = 0; j < num_cols; j++) {
+        int idx = use_keep ? (keep_ptr[j] - 1) : j;
+        REAL(ansp[j + rn])[k] = idx < len ? dli[idx] : dfill;
       }
     } break;
     case STRSXP: {
       const SEXP sfill = STRING_ELT(fill, 0);
-      for (int j = 0; j < maxlen; j++) {
-        SET_STRING_ELT(ansp[j + rn], k, j < len ? STRING_ELT(li, j) : sfill);
+      for (int j = 0; j < num_cols; j++) {
+        int idx = use_keep ? (keep_ptr[j] - 1) : j;
+        SET_STRING_ELT(ansp[j + rn], k, idx < len ? STRING_ELT(li, idx) : sfill);
       }
     } break;
     case VECSXP: {
       const SEXP vfill = VECTOR_ELT(fill, 0);
-      for (int j = 0; j < maxlen; j++) {
-        SET_VECTOR_ELT(ansp[j + rn], k, j < len ? VECTOR_ELT(li, j) : vfill);
+      for (int j = 0; j < num_cols; j++) {
+        int idx = use_keep ? (keep_ptr[j] - 1) : j;
+        SET_VECTOR_ELT(ansp[j + rn], k, idx < len ? VECTOR_ELT(li, idx) : vfill);
       }
     } break;
     default:
