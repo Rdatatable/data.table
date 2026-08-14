@@ -538,16 +538,11 @@ test = function(num, x, y=TRUE, ...,
     old_options = do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
     on.exit(base::options(old_options), add=TRUE)
   }
-  if (is.null(output) && is.null(notOutput)) {
-    x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
-    # save the overhead of capture.output() since there are a lot of tests, often called in loops
+  out = if (is.null(output) && is.null(notOutput) || xsub %iscall% "print") {
+    capture.output(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler)))
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
-    out = if (xsub %iscall% "print") {
-      capture.output(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler)))
-    } else {
-      capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
-    }
+    capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
   }
   if (!is.null(options)) {
     # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
@@ -600,10 +595,17 @@ test = function(num, x, y=TRUE, ...,
       }
     }
   }
-  if (fail && exists("out",inherits=FALSE)) {
+  if (fail && length(out)) {
     # nocov start
     catf("Output captured before unexpected warning/error/message:\n")
     writeLines(out)
+    # nocov end
+  }
+  if (!fail && is.null(output) && is.null(notOutput) && length(out)) {
+    # nocov start
+    catf("Test %s produced unexpected output:\n", numStr)
+    writeLines(out)
+    fail = TRUE
     # nocov end
   }
   if (!fail && !length(error) && (length(output) || length(notOutput))) {
