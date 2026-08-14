@@ -601,7 +601,7 @@ test = function(num, x, y=TRUE, ...,
     writeLines(out)
     # nocov end
   }
-  if (!fail && is.null(output) && is.null(notOutput) && length(out)) {
+  if (!fail && is.null(output) && is.null(notOutput) && length(out) && !isTRUE(getOption("datatable.verbose"))) {
     # nocov start
     catf("Test %s produced unexpected output:\n", numStr)
     writeLines(out)
