@@ -48,6 +48,8 @@
 
 13. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
 
+14. `transpose()` and `tstrsplit()` gain a `keep` argument to specify which columns to return and in what order, [#5250](https://github.com/Rdatatable/data.table/issues/5250). When `keep` is used, the operation is now significantly more memory-efficient because memory for "throwaway" columns is never allocated in the C engine. Thanks to @MichaelChirico for the suggestion and @venom1204 the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
