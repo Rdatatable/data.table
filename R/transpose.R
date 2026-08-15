@@ -1,5 +1,8 @@
 transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL, list.cols=FALSE, keep=NULL) {
-  if (!is.null(keep)) keep = as.integer(keep)
+  if (!is.null(keep)) {
+  if (!is.numeric(keep)) stopf("'keep' must be an integer vector.")
+  keep = as.integer(keep)
+  }
   if (!is.null(make.names)) {
     stopifnot(length(make.names)==1L)
     if (is.character(make.names)) {
