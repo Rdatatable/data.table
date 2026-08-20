@@ -244,7 +244,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR");
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR"); // # nocov
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(*isInt64));
