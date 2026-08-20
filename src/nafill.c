@@ -2,7 +2,8 @@
 
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose, uint_fast64_t limit) {
   double tic=0.0;
-  if (verbose) tic = omp_get_wtime();
+  if (verbose)
+    tic = omp_get_wtime();
   if (type==0) { // const
     if (nan_is_na) {
       for (uint_fast64_t i=0; i<nx; i++) ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
