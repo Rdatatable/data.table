@@ -4,8 +4,8 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
+  uint_fast64_t fills = 0;
   if (type==0) { // const
-    uint_fast64_t fills = 0;
     if (nan_is_na) {
       for (uint_fast64_t i=0; i<nx; i++) {
         if (ISNAN(x[i])) {
@@ -22,7 +22,6 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
       }
     }
   } else if (type==1) { // locf
-    uint_fast64_t fills = 0;
     if (nan_is_na) {
       if (ISNAN(x[0]) && limit>0) { ans->dbl_v[0] = fill; fills = 1; }
       else ans->dbl_v[0] = x[0];
@@ -43,7 +42,6 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
       }
     }
   } else if (type==2) { // nocb
-    uint_fast64_t fills = 0;
     if (nan_is_na) {
       if (ISNAN(x[nx-1]) && limit>0) { ans->dbl_v[nx-1] = fill; fills = 1; }
       else ans->dbl_v[nx-1] = x[nx-1];
@@ -71,8 +69,8 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
+  uint_fast64_t fills = 0;
   if (type==0) { // const
-    uint_fast64_t fills = 0;
     for (uint_fast64_t i=0; i<nx; i++) {
       if (x[i]==NA_INTEGER) {
         if (fills < limit) { ans->int_v[i] = fill; fills++; }
@@ -80,7 +78,6 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
       } else { ans->int_v[i] = x[i]; fills = 0; }
     }
   } else if (type==1) { // locf
-    uint_fast64_t fills = 0;
     if (x[0]==NA_INTEGER && limit>0) { ans->int_v[0] = fill; fills = 1; }
     else ans->int_v[0] = x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
@@ -90,7 +87,6 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
       } else { ans->int_v[i] = x[i]; fills = 0; }
     }
   } else if (type==2) { // nocb
-    uint_fast64_t fills = 0;
     if (x[nx-1]==NA_INTEGER && limit>0) { ans->int_v[nx-1] = fill; fills = 1; }
     else ans->int_v[nx-1] = x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
@@ -107,8 +103,8 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
+  uint_fast64_t fills = 0;
   if (type==0) { // const
-    uint_fast64_t fills = 0;
     for (uint_fast64_t i=0; i<nx; i++) {
       if (x[i]==NA_INTEGER64) {
         if (fills < limit) { ans->int64_v[i] = fill; fills++; }
@@ -116,7 +112,6 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
       } else { ans->int64_v[i] = x[i]; fills = 0; }
     }
   } else if (type==1) { // locf
-    uint_fast64_t fills = 0;
     if (x[0]==NA_INTEGER64 && limit>0) { ans->int64_v[0] = fill; fills = 1; }
     else ans->int64_v[0] = x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
@@ -126,7 +121,6 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
       } else { ans->int64_v[i] = x[i]; fills = 0; }
     }
   } else if (type==2) { // nocb
-    uint_fast64_t fills = 0;
     if (x[nx-1]==NA_INTEGER64 && limit>0) { ans->int64_v[nx-1] = fill; fills = 1; }
     else ans->int64_v[nx-1] = x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
@@ -144,8 +138,8 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
+  uint_fast64_t fills = 0;
   if (type==0) { // const
-    uint_fast64_t fills = 0;
     for (uint_fast64_t i=0; i<nx; i++) {
       if (x[i]==NA_STRING) {
         if (fills < limit) { SET_STRING_ELT(ans->char_v, i, fill); fills++; }
@@ -153,7 +147,6 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
       } else { SET_STRING_ELT(ans->char_v, i, x[i]); fills = 0; }
     }
   } else if (type==1) { // locf
-    uint_fast64_t fills = 0;
     if (x[0]==NA_STRING && limit>0) { SET_STRING_ELT(ans->char_v, 0, fill); fills = 1; }
     else SET_STRING_ELT(ans->char_v, 0, x[0]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
@@ -164,7 +157,6 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
       } else { SET_STRING_ELT(ans->char_v, i, x[i]); fills = 0; }
     }
   } else if (type==2) { // nocb
-    uint_fast64_t fills = 0;
     if (x[nx-1]==NA_STRING && limit>0) { SET_STRING_ELT(ans->char_v, nx-1, fill); fills = 1; }
     else SET_STRING_ELT(ans->char_v, nx-1, x[nx-1]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
