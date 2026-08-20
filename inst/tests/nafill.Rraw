@@ -249,6 +249,9 @@ if (test_bit64) {
   test(9.32, nafill(x, "nocb", 0), seti64(nafill(x, "nocb"), 5:6, as.integer64(0)))
   test(9.33, nafill(x, "locf", -1), seti64(nafill(x, "locf"), 1:2, as.integer64(-1)))
   test(9.34, nafill(x, "nocb", -1), seti64(nafill(x, "nocb"), 5:6, as.integer64(-1)))
+  test(9.35, nafill(x, "const", 0, limit=1), as.integer64(c(0,NA,3,4,0,NA)))
+  test(9.36, nafill(x, "locf", 0, limit=1), as.integer64(c(0,NA,3,4,4,NA)))
+  test(9.37, nafill(x, "nocb", 0, limit=1), as.integer64(c(NA,3,3,4,NA,0)))
 }
 
 # coerceAs verbose
