@@ -112,6 +112,8 @@
 
 10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
 
+11. Handled OpenMP deprecation of `MASTER` construct, [#7882](https://github.com/Rdatatable/data.table/pull/7882). Thanks @TimTaylor for the PR.
+
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 
 ### BUG FIXES
