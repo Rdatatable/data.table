@@ -21995,8 +21995,10 @@ test(2388.05, setnafill(data.table(a=c(1, NA, NA)), type="locf", limit=1), data.
 test(2388.06, nafill(c(1, NA, NA), type="locf", limit=0), c(1, NA, NA))
 test(2388.07, nafill(c(NA, 1), "locf", fill=0, limit=0), c(0, 1))
 test(2388.08, nafill(c(1, NA, NA), type="locf", limit=1.5), c(1, 1, NA))
-test(2388.09, nafill(c(1, NA, NA), type="const", fill=0, limit=1), c(1, 0, 0))
+test(2388.09, nafill(c(1, NA, NA), type="const", fill=0, limit=1), c(1, 0, NA))
 lims = list(-1, NA, NaN, NULL, c(1, 2), 1+2i); for (i in seq_along(lims)) { test(2388.09 + i / 100, nafill(1:5, limit=lims[[i]]), error="limit must be a non-negative scalar numeric") }
 test(2388.16, setnafill(data.table(a=1:5), limit=-1), error="limit must be a non-negative scalar numeric")
 test(2388.17, nafill(c(1.1, NA, NA, 4.4), type="nocb", limit=1), c(1.1, NA, 4.4, 4.4))
 test(2388.18, nafill(c(1.1, NA, NA), type="locf", limit=1, nan=NaN), c(1.1, 1.1, NA))
+test(2388.19, nafill(c(NA, NA, 3, NA, NA, NA, 9), type="const", fill=0, limit=2), c(0, 0, 3, 0, 0, NA, 9))
+test(2388.20, nafill(c(1, NA, NA), type="const", fill=0, limit=0), c(1, NA, NA))

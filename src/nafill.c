@@ -5,13 +5,20 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
+    uint_fast64_t fills = 0;
     if (nan_is_na) {
       for (uint_fast64_t i=0; i<nx; i++) {
-        ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
+        if (ISNAN(x[i])) {
+          if (fills < limit) { ans->dbl_v[i] = fill; fills++; }
+          else ans->dbl_v[i] = x[i];
+        } else { ans->dbl_v[i] = x[i]; fills = 0; }
       }
     } else {
       for (uint_fast64_t i=0; i<nx; i++) {
-        ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+        if (ISNA(x[i])) {
+          if (fills < limit) { ans->dbl_v[i] = fill; fills++; }
+          else ans->dbl_v[i] = x[i];
+        } else { ans->dbl_v[i] = x[i]; fills = 0; }
       }
     }
   } else if (type==1) { // locf
@@ -65,8 +72,12 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
+    uint_fast64_t fills = 0;
     for (uint_fast64_t i=0; i<nx; i++) {
-      ans->int_v[i] = x[i]==NA_INTEGER ? fill : x[i];
+      if (x[i]==NA_INTEGER) {
+        if (fills < limit) { ans->int_v[i] = fill; fills++; }
+        else ans->int_v[i] = x[i];
+      } else { ans->int_v[i] = x[i]; fills = 0; }
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
@@ -97,8 +108,12 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
+    uint_fast64_t fills = 0;
     for (uint_fast64_t i=0; i<nx; i++) {
-      ans->int64_v[i] = x[i]==NA_INTEGER64 ? fill : x[i];
+      if (x[i]==NA_INTEGER64) {
+        if (fills < limit) { ans->int64_v[i] = fill; fills++; }
+        else ans->int64_v[i] = x[i];
+      } else { ans->int64_v[i] = x[i]; fills = 0; }
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
@@ -129,9 +144,13 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
-  if (type==0) { // const 1Code has comments. Press enter to view.
+  if (type==0) { // const
+    uint_fast64_t fills = 0;
     for (uint_fast64_t i=0; i<nx; i++) {
-      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? fill : x[i]);
+      if (x[i]==NA_STRING) {
+        if (fills < limit) { SET_STRING_ELT(ans->char_v, i, fill); fills++; }
+        else SET_STRING_ELT(ans->char_v, i, x[i]);
+      } else { SET_STRING_ELT(ans->char_v, i, x[i]); fills = 0; }
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;

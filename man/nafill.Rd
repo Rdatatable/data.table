@@ -19,7 +19,7 @@ setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x)
   \item{fill}{ Value to be used to replace missing observations. See examples. }
   \item{nan}{ Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement. See Examples. }
   \item{cols}{ Numeric, character or logical vector specifying columns to be updated. A logical vector must be the same length as the number of columns in \code{x}. }
-  \item{limit}{The maximum number of consecutive \code{NA} values to fill. Must be a non-negative scalar numeric. Default is \code{Inf}. Fractional values are truncated via \code{floor}. This argument is ignored when \code{type="const"}.}
+  \item{limit}{The maximum number of consecutive \code{NA} values to fill. Must be a non-negative scalar numeric. Default is \code{Inf}. Fractional values are truncated via \code{floor}.}
 }
 \details{
   Supported types are \emph{logical}, \emph{integer}, \emph{double}, \emph{character}, and \emph{factor}, as well as classes built on top of these such as \code{Date}, \code{IDate}, and \code{POSIXct}.
@@ -58,6 +58,7 @@ y = c(1, NA, NA, NA, 5)
 nafill(c(NA, 1), "locf", fill=0, limit=0) # Result: 0, 1 (Boundary case)
 nafill(y, "locf", limit=1)   # Only fills the first NA
 nafill(y, "locf", limit=Inf) # Fills all NAs (default)
+nafill(y, "const", fill=0, limit=1)
 
 }
 \seealso{
