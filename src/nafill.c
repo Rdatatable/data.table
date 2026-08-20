@@ -170,7 +170,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   const uint_fast64_t limit_n = !R_FINITE(limit_d) || limit_d >= (double)UINT_FAST64_MAX ? UINT_FAST64_MAX : (uint_fast64_t)limit_d;
 
   bool copy = !LOGICAL(inplace)[0];
-  if (!IS_TRUE_OR_FALSE(nan_is_na_arg)) error(_("'%s' must be TRUE or FALSE"), "nan_is_na");
+  if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
+    error(_("'%s' must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
