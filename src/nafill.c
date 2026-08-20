@@ -6,9 +6,13 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
     tic = omp_get_wtime();
   if (type==0) { // const
     if (nan_is_na) {
-      for (uint_fast64_t i=0; i<nx; i++) ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
+      for (uint_fast64_t i=0; i<nx; i++) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
+      }
     } else {
-      for (uint_fast64_t i=0; i<nx; i++) ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+      for (uint_fast64_t i=0; i<nx; i++) {
+        ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+      }
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
