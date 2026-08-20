@@ -110,5 +110,6 @@ Authors@R: c(
   person("Manmita", "Das",         role="ctb"),
   person("Tarun", "Thammisetty",   role="ctb"),
   person("Marco", "Colombo",       role="ctb", comment = c(ORCID = "0000-0001-6672-0623")),
+  person("Tim", "Taylor",          role="ctb", comment = c(ORCID = "0000-0002-8587-7113")),
   NULL
   )
