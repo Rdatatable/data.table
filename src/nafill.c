@@ -162,9 +162,13 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols, SEXP limit) {
   int protecti=0;
   const bool verbose = GetVerbose();
-  if (!xlength(obj)) return(obj);
+
+  if (!xlength(obj))
+    return(obj);
+
   double tic=0.0;
-  if (verbose) tic = omp_get_wtime();
+  if (verbose)
+    tic = omp_get_wtime();
 
   const double limit_d = REAL(limit)[0];
   const uint_fast64_t limit_n = !R_FINITE(limit_d) || limit_d >= (double)UINT_FAST64_MAX ? UINT_FAST64_MAX : (uint_fast64_t)limit_d;
