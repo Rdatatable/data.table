@@ -55,7 +55,7 @@ dt
 
 # limit= restricts the number of consecutive fills
 y = c(1, NA, NA, NA, 5)
-nafill(c(NA, 1), "locf", fill=0, limit=0) # Result: 0, 1 (Boundary case)
+nafill(c(NA, 1), "locf", fill=0, limit=0) # Result: NA, 1 (limit=0 fills nothing)
 nafill(y, "locf", limit=1)   # Only fills the first NA
 nafill(y, "locf", limit=Inf) # Fills all NAs (default)
 nafill(y, "const", fill=0, limit=1)

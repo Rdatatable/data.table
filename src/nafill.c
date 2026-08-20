@@ -24,8 +24,8 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
     if (nan_is_na) {
-      ans->dbl_v[0] = ISNAN(x[0]) ? fill : x[0];
-      if (ISNAN(x[0])) fills = 1;
+      if (ISNAN(x[0]) && limit>0) { ans->dbl_v[0] = fill; fills = 1; }
+      else ans->dbl_v[0] = x[0];
       for (uint_fast64_t i=1; i<nx; i++) {
         if (ISNAN(x[i])) {
           if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
@@ -33,8 +33,8 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
         } else { ans->dbl_v[i] = x[i]; fills = 0; }
       }
     } else {
-      ans->dbl_v[0] = ISNA(x[0]) ? fill : x[0];
-      if (ISNA(x[0])) fills = 1;
+      if (ISNA(x[0]) && limit>0) { ans->dbl_v[0] = fill; fills = 1; }
+      else ans->dbl_v[0] = x[0];
       for (uint_fast64_t i=1; i<nx; i++) {
         if (ISNA(x[i])) {
           if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i-1]; fills++; }
@@ -45,8 +45,8 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
   } else if (type==2) { // nocb
     uint_fast64_t fills = 0;
     if (nan_is_na) {
-      ans->dbl_v[nx-1] = ISNAN(x[nx-1]) ? fill : x[nx-1];
-      if (ISNAN(x[nx-1])) fills = 1;
+      if (ISNAN(x[nx-1]) && limit>0) { ans->dbl_v[nx-1] = fill; fills = 1; }
+      else ans->dbl_v[nx-1] = x[nx-1];
       for (int_fast64_t i=nx-2; i>=0; i--) {
         if (ISNAN(x[i])) {
           if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
@@ -54,8 +54,8 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
         } else { ans->dbl_v[i] = x[i]; fills = 0; }
       }
     } else {
-      ans->dbl_v[nx-1] = ISNA(x[nx-1]) ? fill : x[nx-1];
-      if (ISNA(x[nx-1])) fills = 1;
+      if (ISNA(x[nx-1]) && limit>0) { ans->dbl_v[nx-1] = fill; fills = 1; }
+      else ans->dbl_v[nx-1] = x[nx-1];
       for (int_fast64_t i=nx-2; i>=0; i--) {
         if (ISNA(x[i])) {
           if (fills < limit) { ans->dbl_v[i] = ans->dbl_v[i+1]; fills++; }
@@ -81,8 +81,8 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
-    ans->int_v[0] = x[0]==NA_INTEGER ? fill : x[0];
-    if (x[0]==NA_INTEGER) fills = 1;
+    if (x[0]==NA_INTEGER && limit>0) { ans->int_v[0] = fill; fills = 1; }
+    else ans->int_v[0] = x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
       if (x[i]==NA_INTEGER) {
         if (fills < limit) { ans->int_v[i] = ans->int_v[i-1]; fills++; }
@@ -91,8 +91,8 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
     }
   } else if (type==2) { // nocb
     uint_fast64_t fills = 0;
-    ans->int_v[nx-1] = x[nx-1]==NA_INTEGER ? fill : x[nx-1];
-    if (x[nx-1]==NA_INTEGER) fills = 1;
+    if (x[nx-1]==NA_INTEGER && limit>0) { ans->int_v[nx-1] = fill; fills = 1; }
+    else ans->int_v[nx-1] = x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
       if (x[i]==NA_INTEGER) {
         if (fills < limit) { ans->int_v[i] = ans->int_v[i+1]; fills++; }
@@ -117,8 +117,8 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
-    ans->int64_v[0] = x[0]==NA_INTEGER64 ? fill : x[0];
-    if (x[0]==NA_INTEGER64) fills = 1;
+    if (x[0]==NA_INTEGER64 && limit>0) { ans->int64_v[0] = fill; fills = 1; }
+    else ans->int64_v[0] = x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
       if (x[i]==NA_INTEGER64) {
         if (fills < limit) { ans->int64_v[i] = ans->int64_v[i-1]; fills++; }
@@ -127,8 +127,8 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     }
   } else if (type==2) { // nocb
     uint_fast64_t fills = 0;
-    ans->int64_v[nx-1] = x[nx-1]==NA_INTEGER64 ? fill : x[nx-1];
-    if (x[nx-1]==NA_INTEGER64) fills = 1;
+    if (x[nx-1]==NA_INTEGER64 && limit>0) { ans->int64_v[nx-1] = fill; fills = 1; }
+    else ans->int64_v[nx-1] = x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
       if (x[i]==NA_INTEGER64) {
         if (fills < limit) { ans->int64_v[i] = ans->int64_v[i+1]; fills++; }
@@ -154,8 +154,8 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
     }
   } else if (type==1) { // locf
     uint_fast64_t fills = 0;
-    SET_STRING_ELT(ans->char_v, 0, x[0]==NA_STRING ? fill : x[0]);
-    if (x[0]==NA_STRING) fills = 1;
+    if (x[0]==NA_STRING && limit>0) { SET_STRING_ELT(ans->char_v, 0, fill); fills = 1; }
+    else SET_STRING_ELT(ans->char_v, 0, x[0]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
     for (uint_fast64_t i=1; i<nx; i++) {
       if (x[i]==NA_STRING) {
@@ -165,8 +165,8 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
     }
   } else if (type==2) { // nocb
     uint_fast64_t fills = 0;
-    SET_STRING_ELT(ans->char_v, nx-1, x[nx-1]==NA_STRING ? fill : x[nx-1]);
-    if (x[nx-1]==NA_STRING) fills = 1;
+    if (x[nx-1]==NA_STRING && limit>0) { SET_STRING_ELT(ans->char_v, nx-1, fill); fills = 1; }
+    else SET_STRING_ELT(ans->char_v, nx-1, x[nx-1]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
     for (int_fast64_t i=nx-2; i>=0; i--) {
       if (x[i]==NA_STRING) {
