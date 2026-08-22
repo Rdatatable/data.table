@@ -1,0 +1,104 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: frollR 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: frollR.c:17
+msgid ""
+"x must be of type numeric or logical, or a list, data.frame or data.table of "
+"such"
+msgstr ""
+
+#: frollR.c:38 frollR.c:244
+msgid "n must be non 0 length"
+msgstr ""
+
+#: frollR.c:41 frollR.c:95
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr ""
+
+#: frollR.c:49
+msgid "n must be integer, list is accepted for adaptive TRUE"
+msgstr ""
+
+#: frollR.c:56 frollR.c:236 frollR.c:239
+msgid "n must be integer"
+msgstr ""
+
+#: frollR.c:63
+msgid "n must be positive integer values (> 0)"
+msgstr ""
+
+#: frollR.c:72 frollR.c:84
+msgid "n must be integer vector or list of integer vectors"
+msgstr ""
+
+#: frollR.c:98
+msgid "hasNA must be TRUE, FALSE or NA"
+msgstr ""
+
+#: frollR.c:100
+msgid ""
+"using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
+"NA values use hasNA TRUE, otherwise leave it as default NA"
+msgstr ""
+
+#: frollR.c:113
+msgid ""
+"using adaptive TRUE and align argument different than 'right' is not "
+"implemented"
+msgstr ""
+
+#: frollR.c:117 frollR.c:267
+#, c-format
+msgid "%s: allocating memory for results %dx%d\n"
+msgstr ""
+
+#: frollR.c:126
+msgid ""
+"adaptive rolling function can only process 'x' having equal length of "
+"elements, like data.table or data.frame; If you want to call rolling "
+"function on list having variable length of elements call it for each field "
+"separately"
+msgstr ""
+
+#: frollR.c:128
+msgid ""
+"length of integer vector(s) provided as list to 'n' argument must be equal "
+"to number of observations provided in 'x'"
+msgstr ""
+
+#: frollR.c:146 frollR.c:259
+msgid "fill must be a vector of length 1"
+msgstr ""
+
+#: frollR.c:148 frollR.c:261
+msgid "fill must be numeric or logical"
+msgstr ""
+
+#: frollR.c:178
+#, c-format
+msgid ""
+"%s: %d column(s) and %d window(s), if product > 1 then entering parallel "
+"execution\n"
+msgstr ""
+
+#: frollR.c:180
+#, c-format
+msgid ""
+"%s: %d column(s) and %d window(s), not entering parallel execution here "
+"because algo='exact' will compute results in parallel\n"
+msgstr ""
+
+#: frollR.c:207 frollR.c:299
+#, c-format
+msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
+msgstr ""

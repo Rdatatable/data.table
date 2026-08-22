@@ -1,0 +1,146 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fwrite 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fwrite.c:622
+#, c-format
+msgid "buffMB=%d outside [1,1024]"
+msgstr ""
+
+#: fwrite.c:629
+#, c-format
+msgid ""
+"eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
+msgstr ""
+
+#: fwrite.c:632
+msgid "Column writers: "
+msgstr ""
+
+#: fwrite.c:683
+#, c-format
+msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
+msgstr ""
+
+#: fwrite.c:703
+#, c-format
+msgid ""
+"%s: '%s'. Failed to open existing file for writing. Do you have write "
+"permission to it? Is this Windows and does another process such as Excel "
+"have it open?"
+msgstr ""
+
+#: fwrite.c:704
+#, c-format
+msgid ""
+"%s: '%s'. Unable to create new file for writing (it does not exist already). "
+"Do you have permission to write here, is there space on the disk and does "
+"the path exist?"
+msgstr ""
+
+#: fwrite.c:711
+msgid ""
+"Compression in fwrite uses zlib library. Its header files were not found at "
+"the time data.table was compiled. To enable fwrite compression, please "
+"reinstall data.table and study the output for further guidance."
+msgstr ""
+
+#: fwrite.c:716
+#, c-format
+msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+msgstr ""
+
+#: fwrite.c:718
+msgid "\n"
+msgstr ""
+
+#: fwrite.c:730
+#, c-format
+msgid "Unable to allocate %zu MiB for header: %s"
+msgstr ""
+
+#: fwrite.c:764 fwrite.c:828
+msgid "Can't allocate gzip stream structure"
+msgstr ""
+
+#: fwrite.c:772
+#, c-format
+msgid "Unable to allocate %zu MiB for zbuffer: %s"
+msgstr ""
+
+#: fwrite.c:788
+#, c-format
+msgid "Compress gzip error: %d"
+msgstr ""
+
+#: fwrite.c:789 fwrite.c:797
+#, c-format
+msgid "%s: '%s'"
+msgstr ""
+
+#: fwrite.c:794
+#, c-format
+msgid "done in %.3fs\n"
+msgstr ""
+
+#: fwrite.c:796
+msgid "No data rows present (nrow==0)\n"
+msgstr ""
+
+#: fwrite.c:814
+#, c-format
+msgid ""
+"Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
+"showProgress=%d, nth=%d)\n"
+msgstr ""
+
+#: fwrite.c:830
+#, c-format
+msgid "zbuffSize=%d returned from deflateBound\n"
+msgstr ""
+
+#: fwrite.c:839
+#, c-format
+msgid ""
+"Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite "
+"for nThread, buffMB and verbose options."
+msgstr ""
+
+#: fwrite.c:850
+#, c-format
+msgid ""
+"Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please "
+"read ?fwrite for nThread, buffMB and verbose options."
+msgstr ""
+
+#: fwrite.c:864
+#, c-format
+msgid "Failed to allocated %d bytes for '%s'."
+msgstr ""
+
+#: fwrite.c:1030
+#, c-format
+msgid ""
+"zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
+"Z_FINISH=%d Z_BLOCK=%d. %s"
+msgstr ""
+
+#: fwrite.c:1032
+msgid ""
+"Please include the full output above and below this message in your data."
+"table bug report."
+msgstr ""
+
+#: fwrite.c:1033
+msgid ""
+"Please retry fwrite() with verbose=TRUE and include the full output with "
+"your data.table bug report."
+msgstr ""
