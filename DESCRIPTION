@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.18.5
+Version: 1.18.6.1
 Title: Extension of `data.frame`
 Depends: R (>= 3.4.0)
 Imports: methods
@@ -109,6 +109,5 @@ Authors@R: c(
   person("Manmita", "Das",         role="ctb"),
   person("Tarun", "Thammisetty",   role="ctb"),
   person("Marco", "Colombo",       role="ctb", comment = c(ORCID = "0000-0001-6672-0623")),
-  person("Tim", "Taylor",          role="ctb", comment = c(ORCID = "0000-0002-8587-7113")),
-  NULL
+  person("Tim", "Taylor",          role="ctb", comment = c(ORCID = "0000-0002-8587-7113"))
   )
