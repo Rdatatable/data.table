@@ -116,6 +116,8 @@
 
 11. Handled OpenMP deprecation of `master` construct, [#7882](https://github.com/Rdatatable/data.table/pull/7882). Thanks @TimTaylor for the PR.
 
+12. `test()` now fails on unexpected console output, with the message `Test <num> produced unexpected output`, consistent with how unexpected warnings and messages are already handled, [#7847](https://github.com/Rdatatable/data.table/issues/7847). Thanks @MichaelChirico for the suggestion and @0xtch for the implementation.
+
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 
 ### BUG FIXES
