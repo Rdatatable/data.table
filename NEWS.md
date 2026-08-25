@@ -48,6 +48,8 @@
 
 13. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
 
+14. `first()` and `last()` with `n>1` are now GForce optimized (e.g. `DT[, first(x, n=3), by=grp]`), [#4239](https://github.com/Rdatatable/data.table/issues/4239). Also adds a new internal `gforce_dynamic` mechanism to track any GForce result which returns other than exactly 1 row per group so that results are correctly replicated. Thanks to @nbenn for the report and @ben-schwen and @mattdowle for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
