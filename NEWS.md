@@ -52,6 +52,8 @@
 
 15. `first()` and `last()` with `n>1` are now GForce optimized (e.g. `DT[, first(x, n=3), by=grp]`), [#4239](https://github.com/Rdatatable/data.table/issues/4239). Also adds a new internal `gforce_dynamic` mechanism to track any GForce result which returns other than exactly 1 row per group so that results are correctly replicated. Thanks to @nbenn for the report and @ben-schwen and @mattdowle for the implementation.
 
+15. `first()` and `last()` gain an `na.rm` argument to skip missing values (e.g. `DT[, first(x, na.rm=TRUE), by=grp]`), [#4239](https://github.com/Rdatatable/data.table/issues/4239) and [#4446](https://github.com/Rdatatable/data.table/issues/4446). A group with no non-missing values returns `NA` for `n=1` (matching `median()`/`var()`), or zero rows for `n>1`. GForce optimized. Thanks to @nbenn and @MichaelChirico for the reports and @ben-schwen and @mattdowle for the implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
