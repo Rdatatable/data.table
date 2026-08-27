@@ -22011,3 +22011,10 @@ test(2388.21, nafill(c(1, NA, NA, 5), type="nocb", limit=1, nan=NaN), c(1, NA, 5
 test(2388.22, nafill(c(1L, NA, NA, 5L), type="nocb", limit=1), c(1L, NA, 5L, 5L))
 test(2388.23, nafill(c("a", NA, NA), type="const", fill="x", limit=1), c("a", "x", NA))
 test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z", "z"))
+
+# all.equal() could sub-aggregate before comparison #7890
+test(2389.01, all.equal(data.table(a = 1:2, b = c(1, 2)), data.table(a = c(1:2, 2L), b = c(1, 1, 1)), by = "a"), TRUE)
+test(2389.02, all.equal(data.table(a = c(1:2, 2L), b = c(1, 1, 1)), data.table(a = 1:2, b = c(1, 2)), by = "a"), TRUE)
+test(2389.03, all.equal(data.table(a = c(1, 1, 2, 2), b = c(1, 1, 1, 1)), data.table(a = c(1, 2), b = c(2, 2)), by = "a"), TRUE)
+test(2389.04, all.equal(data.table(a = c(1, 1, 1, 2), b = c("x", "x", "y", "x"), value = c(1, 2, 3, 4)), data.table(a = c(1, 1, 2), b = c("x", "y", "x"), value = c(3, 3, 4)), by = c("a", "b")), TRUE)
+test(2389.05, isTRUE(all.equal(data.table(a = c(1, 1, 2), b = c(1, 2, 3)), data.table(a = c(1, 2), b = c(99, 3)), by = "a")), FALSE)
