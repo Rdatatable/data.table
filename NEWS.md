@@ -50,6 +50,8 @@
 
 14. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 and @ben-schwen for the PR.
 
+15. `all.equal()` for `data.table` gains `by` and `fun.aggregate` arguments to allow sub-aggregating datasets before comparison, [#7890](https://github.com/Rdatatable/data.table/issues/7890). This is useful for comparing datasets at different levels of granularity (e.g., comparing raw data to a summary table). Defaults to `fun.aggregate=sum`. Thanks to @jangorecki for the suggestion and @venom1204 implementation.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
