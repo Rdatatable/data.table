@@ -522,4 +522,55 @@ test(2285.01, optimize=opt, DT5[, .(shift(x), mean(x)), by=g, verbose=TRUE],
 test(2285.02, copy(DT5)[, c("s","m") := .(shift(x), mean(x)), by=g],
               data.table(g=c(1,1,1,2,2), x=1:5, y=1:5, s=c(NA,1L,2L,NA,4L), m=c(2,2,2,4.5,4.5)))
 test(2285.03, optimize=opt, DT5[, .(head(x,2), head(y,3)), by=g], error="Supplied 2 items for column 1 of group 1 which has 3 rows")
-# head/tail with := and mismatched n: previously errored (Supplied N items...), now aligns/pads instead, see tests 2233.28/2233.29 in tests.Rraw
+
+# first()/last() gain na.rm=, #4239 #4446. GForce optimized (gfirst()/glast()) for both the simple
+# (n=1, always exactly 1 row per group) and n>1 (data-dependent rows per group, using the same
+# gforce_dynamic mechanism as n>1 without na.rm) cases.
+opt = 0:2
+DT = data.table(g=c(1,1,1,2,2), x=c(1,NA,3,NA,5), y=11:15)
+out = c("GForce FALSE", "GForce FALSE", "GForce optimized j")
+test(2286.01, optimize=opt, DT[, first(x, na.rm=TRUE), by=g, verbose=TRUE],
+              data.table(g=c(1,2), V1=c(1,5)), output=out)
+test(2286.02, optimize=opt, DT[, .(first(x, na.rm=TRUE), mean(y)), by=g, verbose=TRUE],
+              data.table(g=c(1,2), V1=c(1,5), V2=c(12,14.5)), output=out)
+test(2286.03, optimize=opt, DT[, last(x, na.rm=TRUE), by=g, verbose=TRUE],
+              data.table(g=c(1,2), V1=c(3,5)), output=out)
+test(2286.04, optimize=opt, DT[, first(x, n=2, na.rm=TRUE), by=g, verbose=TRUE],
+              data.table(g=c(1,1,2), V1=c(1,3,5)), output=out)
+test(2286.05, optimize=opt, DT[, last(x, n=2, na.rm=TRUE), by=g],
+              data.table(g=c(1,1,2), V1=c(1,3,5)))
+test(2286.06, optimize=opt, DT[, .(first(x, n=2, na.rm=TRUE), mean(y)), by=g],
+              data.table(g=c(1,1,2), V1=c(1,3,5), V2=c(12,12,14.5)))
+test(2286.07, optimize=opt, copy(DT)[, v := first(x, na.rm=TRUE), by=g, verbose=TRUE],
+              data.table(g=c(1,1,1,2,2), x=c(1,NA,3,NA,5), y=11:15, v=c(1,1,1,5,5)), output=out)
+test(2286.08, DT[, v := first(x, n=2, na.rm=TRUE), by=g],
+              error="Supplied 3 items to be assigned to 5 items of column 'v'.")
+
+# all-NA group returns NA, like gmedian/gvar do for insufficient data, not an empty/dropped group
+DT = data.table(g=c(1,1,2,2), x=c(NA,NA,3,4))
+test(2286.11, optimize=opt, DT[, first(x, na.rm=TRUE), by=g],
+              data.table(g=c(1,2), V1=c(NA,3)))
+test(2286.12, optimize=opt, DT[, first(x, n=2, na.rm=TRUE), by=g],
+              data.table(g=2, V1=c(3,4)))
+DT = data.table(g=c(1,1,1,1), x=c(1,2,3,4), y=c(NA,6,7,8))
+test(2286.13, optimize=opt, DT[, .(first(x, n=2), first(y, n=3, na.rm=TRUE)), by=g],
+              error="Supplied 2 items for column 1 of group 1 which has 3 rows")
+DT = data.table(g=c(1,1,1,1), x=c(1,NA,3,4), y=c(NA,NA,NA,9))
+test(2286.14, optimize=opt, DT[, .(first(x, n=2, na.rm=TRUE), first(y, n=2, na.rm=TRUE)), by=g],
+              data.table(g=c(1,1), V1=c(1,3), V2=c(9,9)))
+DT = data.table(g=c(1,1,1,2,2), s=c("a",NA,"c",NA,"e"), l=list(1,NA,3,NA,5),
+                  lg=c(TRUE,NA,FALSE,NA,TRUE), cx=c(1+1i,NA,3+3i,NA,5+5i))
+test(2286.21, DT[, .(first(s,na.rm=TRUE)), by=g], data.table(g=c(1,2), V1=c("a","e")))
+test(2286.22, DT[, .(first(l,na.rm=TRUE)), by=g], data.table(g=c(1,2), V1=list(1,5)))
+test(2286.23, DT[, .(first(lg,na.rm=TRUE)), by=g], data.table(g=c(1,2), V1=c(TRUE,TRUE)))
+test(2286.24, DT[, .(first(cx,na.rm=TRUE)), by=g], data.table(g=c(1,2), V1=c(1+1i,5+5i)))
+if (test_bit64) {
+  DT[, i64 := as.integer64(c(1,NA,3,NA,5))]
+  test(2286.25, DT[, .(first(i64,na.rm=TRUE)), by=g], data.table(g=c(1,2), V1=bit64::as.integer64(c(1,5))))
+}
+test(2286.31, first(c(1,NA,3,NA,5), na.rm=TRUE), 1)
+test(2286.32, first(c(1,NA,3,NA,5), n=2, na.rm=TRUE), c(1,3))
+test(2286.33, last(c(1,NA,3,NA,5), n=2, na.rm=TRUE), c(3,5))
+test(2286.34, first(c(NA_real_,NA_real_), na.rm=TRUE), NA_real_)
+test(2286.35, first(list(1,NULL,3,NA,5), n=3, na.rm=TRUE), list(1,3,5))
+test(2286.36, first(x <- data.frame(a=1:2), na.rm=TRUE), error="na.rm=TRUE is not currently supported for 'data.frame'")
