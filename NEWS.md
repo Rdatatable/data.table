@@ -92,6 +92,9 @@
 
 20. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
 
+11. `.NAUTRAL` now unpacks early enough to detect common columns, the same as `on=` join, [#6667] (https://github.com/Rdatatable/data.table/issues/6667). Thanks you @MichaelChirico for the report and @aam936 for the fix. 
+
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
