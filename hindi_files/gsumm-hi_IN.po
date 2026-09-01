@@ -1,0 +1,184 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: gsumm 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: gsumm.c:48
+msgid "env is not an environment"
+msgstr ""
+
+#: gsumm.c:50 gsumm.c:51 gsumm.c:52
+#, c-format
+msgid "%s is not an integer vector"
+msgstr ""
+
+#: gsumm.c:61
+msgid "irowsArg is neither an integer vector nor NULL"
+msgstr ""
+
+#: gsumm.c:72
+#, c-format
+msgid "o has length %d but sum(l)=%d"
+msgstr ""
+
+#: gsumm.c:104
+#, c-format
+msgid "gforce initial population of grp took %.3f\n"
+msgstr ""
+
+#: gsumm.c:124
+msgid "Failed to allocate counts or TMP when assigning g in gforce"
+msgstr ""
+
+#: gsumm.c:203
+#, c-format
+msgid "gforce assign high and low took %.3f\n"
+msgstr ""
+
+#: gsumm.c:209
+#, c-format
+msgid "gforce eval took %.3f\n"
+msgstr ""
+
+#: gsumm.c:342
+#, c-format
+msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
+msgstr ""
+
+#: gsumm.c:344
+#, c-format
+msgid "gather took %.3fs\n"
+msgstr ""
+
+#: gsumm.c:351 gsumm.c:587 gsumm.c:733 gsumm.c:870 gsumm.c:1025 gsumm.c:1117
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr ""
+
+#: gsumm.c:354 gsumm.c:585 gsumm.c:736 gsumm.c:873 gsumm.c:1028 gsumm.c:1122
+#, c-format
+msgid "%s is not meaningful for factors."
+msgstr ""
+
+#: gsumm.c:358
+#, c-format
+msgid "This gsum (narm=%s) took ... "
+msgstr ""
+
+#: gsumm.c:359 gsumm.c:593 gsumm.c:741 gsumm.c:876 gsumm.c:928 gsumm.c:1030
+#: gsumm.c:1126
+#, c-format
+msgid "nrow [%d] != length(x) [%d] in %s"
+msgstr ""
+
+#: gsumm.c:413
+msgid ""
+"The sum of an integer column for a group was more than type 'integer' can "
+"hold so the result has been coerced to 'numeric' automatically for "
+"convenience."
+msgstr ""
+
+#: gsumm.c:574 gsumm.c:848 gsumm.c:914 gsumm.c:1099 gsumm.c:1171
+#, c-format
+msgid ""
+"Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off "
+"GForce optimization using options(datatable.optimize=1)"
+msgstr ""
+
+#: gsumm.c:577 gsumm.c:725
+#, c-format
+msgid "%.3fs\n"
+msgstr ""
+
+#: gsumm.c:592
+#, c-format
+msgid "This gmean took (narm=%s) ... "
+msgstr ""
+
+#: gsumm.c:630 gsumm.c:686
+#, c-format
+msgid "Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"
+msgstr ""
+
+#: gsumm.c:722
+#, c-format
+msgid ""
+"Type '%s' not supported by GForce mean (gmean). Either add the prefix base::"
+"mean(.) or turn off GForce optimization using options(datatable.optimize=1)"
+msgstr ""
+
+#: gsumm.c:734
+msgid ""
+"GForce min/max can only be applied to columns, not .SD or similar. To find "
+"min/max of all items in a list such as .SD, either add the prefix base::min(."
+"SD) or turn off GForce optimization using options(datatable.optimize=1). More "
+"likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
+msgstr ""
+
+#: gsumm.c:845
+msgid "Type 'complex' has no well-defined min/max"
+msgstr ""
+
+#: gsumm.c:871
+msgid ""
+"GForce median can only be applied to columns, not .SD or similar. To find "
+"median of all items in a list such as .SD, either add the prefix stats::"
+"median(.SD) or turn off GForce optimization using options(datatable."
+"optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,."
+"SDcols=]'"
+msgstr ""
+
+#: gsumm.c:988
+#, c-format
+msgid ""
+"Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the "
+"namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using "
+"options(datatable.optimize=1)"
+msgstr ""
+
+#: gsumm.c:1026
+msgid ""
+"GForce var/sd can only be applied to columns, not .SD or similar. For the "
+"full covariance matrix of all items in a list such as .SD, either add the "
+"prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization "
+"using options(datatable.optimize=1). Alternatively, if you only need the "
+"diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way "
+"to do this."
+msgstr ""
+
+#: gsumm.c:1120
+msgid ""
+"GForce prod can only be applied to columns, not .SD or similar. To multiply "
+"all items in a list such as .SD, either add the prefix base::prod(.SD) or "
+"turn off GForce optimization using options(datatable.optimize=1). More "
+"likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"
+msgstr ""
+
+#: gsumm.c:1129
+#, c-format
+msgid "Unable to allocate %d * %zu bytes for gprod"
+msgstr ""
+
+#: gsumm.c:1203
+msgid "fill must be a vector of length 1"
+msgstr ""
+
+#: gsumm.c:1220
+#, c-format
+msgid "Item %d of n is NA"
+msgstr ""
+
+#: gsumm.c:1277
+#, c-format
+msgid ""
+"Type '%s' is not supported by GForce gshift. Either add the namespace prefix "
+"(e.g. data.table::shift(.)) or turn off GForce optimization using "
+"options(datatable.optimize=1)"
+msgstr ""

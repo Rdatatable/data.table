@@ -1,0 +1,86 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: onAttach 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: onAttach.R:23
+msgid ""
+"data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads)."
+msgstr ""
+
+#: onAttach.R:25
+msgid "data.table %s using %d threads (see ?getDTthreads)."
+msgstr ""
+
+#: onAttach.R:26
+msgid "Latest news: r-datatable.com"
+msgstr ""
+
+#: onAttach.R:27
+msgid "TRANSLATION CHECK"
+msgstr ""
+
+#: onAttach.R:29
+msgid ""
+"**********\n"
+"Running data.table in English; package support is available in English only. "
+"When searching for online help, be sure to also check for the English error "
+"message. This can be obtained by looking at the po/R-<locale>.po and po/"
+"<locale>.po files in the package source, where the native language and "
+"English error messages can be found side-by-side.%s\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:34
+msgid ""
+"**********\n"
+"This development version of data.table was built more than 4 weeks ago. "
+"Please update: data.table::update_dev_pkg()\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:36
+msgid ""
+"**********\n"
+"This installation of data.table has not detected OpenMP support. It should "
+"still work but in single-threaded mode."
+msgstr ""
+
+#: onAttach.R:38
+msgid ""
+"This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage "
+"with Apple and ask them for support. Check r-datatable.com for updates, and "
+"our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/"
+"Installation. After several years of many reports of installation problems on "
+"Mac, it's time to gingerly point out that there have been no similar problems "
+"on Windows or Linux.\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:40
+msgid ""
+"This is %s. This warning should not normally occur on Windows or Linux where "
+"OpenMP is turned on by data.table's configure script by passing -fopenmp to "
+"the compiler. If you see this warning on Windows or Linux, please file a "
+"GitHub issue.\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:44
+msgid ""
+"**********\n"
+"This data.table installation was compiled for R < 3.4.0 (Apr 2017) and is "
+"known to leak memory. Please upgrade R and reinstall data.table to fix the "
+"leak. Maintaining and testing code branches to support very old versions "
+"increases development time so please do upgrade R. We intend to bump data."
+"table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 "
+"(Apr 2017).\n"
+"**********"
+msgstr ""

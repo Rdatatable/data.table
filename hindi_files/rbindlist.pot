@@ -1,0 +1,162 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: rbindlist 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: rbindlist.c:8 rbindlist.c:12
+#, c-format
+msgid "%s should be TRUE or FALSE"
+msgstr ""
+
+#: rbindlist.c:10
+msgid "use.names= should be TRUE, FALSE, or not used (\"check\" by default)"
+msgstr ""
+
+#: rbindlist.c:14
+msgid ""
+"Input to rbindlist must be a list. This list can contain data.tables, data."
+"frames or plain lists."
+msgstr ""
+
+#: rbindlist.c:33
+#, c-format
+msgid "Item %d of input is not a data.frame, data.table or list"
+msgstr ""
+
+#: rbindlist.c:41
+#, c-format
+msgid ""
+"Item %d has %d columns, inconsistent with item %d which has %d columns. To "
+"fill missing columns use fill=TRUE."
+msgstr ""
+
+#: rbindlist.c:44
+#, c-format
+msgid "Item %d has %d columns but %d column names. Invalid object."
+msgstr ""
+
+#: rbindlist.c:51
+#, c-format
+msgid ""
+"Column %d of item %d is length %d inconsistent with column %d which is "
+"length %d. Only length-1 columns are recycled."
+msgstr ""
+
+#: rbindlist.c:66
+#, c-format
+msgid ""
+"Total rows in the list is %<PRId64> which is larger than the maximum number "
+"of rows, currently %d"
+msgstr ""
+
+#: rbindlist.c:67
+msgid "use.names=TRUE but no item of input list has any names"
+msgstr ""
+
+#: rbindlist.c:76
+#, c-format
+msgid ""
+"Failed to allocate upper bound of %<PRId64> unique column names "
+"[sum(lapply(l,ncol))]"
+msgstr ""
+
+#: rbindlist.c:107
+#, c-format
+msgid "Failed to allocate nuniq=%d items working memory in rbindlist.c"
+msgstr ""
+
+#: rbindlist.c:141
+#, c-format
+msgid "Failed to allocate ncol=%d items working memory in rbindlist.c"
+msgstr ""
+
+#: rbindlist.c:201
+msgid ""
+" use.names='check' (default from v1.12.2) emits this message and proceeds as "
+"if use.names=FALSE for  backwards compatibility. See news item 5 in v1.12.2 "
+"for options to control this message."
+msgstr ""
+
+#: rbindlist.c:215
+#, c-format
+msgid ""
+"Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill "
+"with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"
+msgstr ""
+
+#: rbindlist.c:224
+#, c-format
+msgid ""
+"Column %d ['%s'] of item %d appears in position %d in item %d. Set use."
+"names=TRUE to match by column name, or use.names=FALSE to ignore column "
+"names.%s"
+msgstr ""
+
+#: rbindlist.c:233
+msgid ""
+"options()$datatable.rbindlist.check is set but is not a single string. See "
+"news item 5 in v1.12.2."
+msgstr ""
+
+#: rbindlist.c:240
+#, c-format
+msgid ""
+"options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|"
+"'error'|'none'. See news item 5 in v1.12.2."
+msgstr ""
+
+#: rbindlist.c:303
+#, c-format
+msgid ""
+"Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
+msgstr ""
+
+#: rbindlist.c:332
+#, c-format
+msgid ""
+"Class attribute on column %d of item %d does not match with column %d of "
+"item %d. You can deactivate this safety-check by using ignore.attr=TRUE"
+msgstr ""
+
+#: rbindlist.c:383
+#, c-format
+msgid ""
+"Failed to allocate working memory for %d ordered factor levels of result "
+"column %d"
+msgstr ""
+
+#: rbindlist.c:406
+#, c-format
+msgid ""
+"Column %d of item %d is an ordered factor but level %d ['%s'] is missing "
+"from the ordered levels from column %d of item %d. Each set of ordered "
+"factor levels should be an ordered subset of the first longest. A regular "
+"factor will be created for this column."
+msgstr ""
+
+#: rbindlist.c:411
+#, c-format
+msgid ""
+"Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But "
+"'%s'<'%s' in the ordered levels from column %d of item %d. A regular factor "
+"will be created for this column due to this ambiguity."
+msgstr ""
+
+#: rbindlist.c:456
+#, c-format
+msgid ""
+"Failed to allocate working memory for %d factor levels of result column %d "
+"when reading item %d of item %d"
+msgstr ""
+
+#: rbindlist.c:548 rbindlist.c:551
+#, c-format
+msgid "Column %d of item %d: %s"
+msgstr ""
