@@ -445,6 +445,39 @@ test.list <- atime::atime_test_list(
     Fast = "ed2df986da6d3a4ff35bec1b0f75db2b767e3eb2", # Merge commit of the PR that uses a much faster implementation
     expr = data.table::isoweek(x)),
 
+    "GForce aggregation (benchmark across # rows)" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(grp = sample.int(10L, N, TRUE), v=rnorm(N), i=sample(N), vna=rnorm(N))
+        DT[1:3, vna := NA_real_]
+      },
+      expr = data.table:::`[.data.table`(DT, j=.(mean(v), sum(v), mean(i), sum(i), mean(vna, na.rm=TRUE), sum(vna, na.rm=TRUE))),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
+    "GForce aggregation (benchmark across # groups)" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(grp = sample.int(1e7, N, TRUE), v=rnorm(1e7), i=sample(1e7), vna=rnorm(N))
+      },
+      expr = data.table:::`[.data.table`(DT, j=.(mean(v), sum(v), mean(i), sum(i), mean(vna, na.rm=TRUE), sum(vna, na.rm=TRUE))),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
+    "Serial value setting with :=" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(i=N:1)
+      },
+      expr = for (ii in seq_len(nrow(DT))) data.table:::`[.data.table`(DT, ii, `:=`(i, ii)),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
+    "Serial value setting with set" = atime::atime_test(
+      setup = {
+        set.seed(34893)
+        DT = data.table(i=N:1)
+      },
+      expr = for (ii in seq_len(nrow(DT))) data.table::set(DT, ii, "i", ii),
+      `Status quo` = "8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0"), # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8f5ffa8bb8f3f5861020a6e32f897c30e42eeab0)
+
   # Regression introduced by https://github.com/Rdatatable/data.table/pull/6890 and discussed in https://github.com/Rdatatable/data.table/issues/7404 (grouped by factor).
   "DT[by] max regression fixed in #7480" = atime::atime_test(
     setup = {
