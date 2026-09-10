@@ -2093,30 +2093,21 @@ replace_dot_alias = function(e) {
       }
     }
 
-    # adding ghead/gtail(n) support for n > 1 #5060 #523
-    q3 = 0L
-    if (!is.symbol(jsub)) {
-      headTail_arg = function(q) {
-        if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1L) q3
-        else 0L
-      }
-      if (jsub %iscall% "list"){
-        q3 = max(sapply(jsub, headTail_arg))
-      } else if (length(jsub)==3L) {
-        q3 = headTail_arg(jsub)
-      }
-    }
-    if (q3 > 0L) {
-      grplens = pmin.int(q3, len__)
-      g = lapply(g, rep.int, times=grplens)
-    } else if (.is_nrows(jsub)) {
+    if (.is_nrows(jsub)) {
+      # multi-n shift() is not marked gforce_dynamic (its per-item results
+      # need unpacking into separate columns below), so it needs this branch
+      # specifically.
       g = lapply(g, rep.int, times=len__)
       # unpack list of lists for nrows functions
       zip_items = function(ll) do.call(mapply, c(list(FUN = c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
       if (all(vapply_1b(ans, is.list))) {
         ans = lapply(ans, zip_items)
       }
+    } else if (!is.null(dynlens <- attr(ans, "gforce_dynamic", exact=TRUE))) {
+      # ghead/gtail/gfirst/glast with n>1 and shift() with a single n:
+      # gforce() has already validated 'ans' is consistently 'dynlens' items
+      # per group in gsumm.c
+      g = lapply(g, rep.int, times=dynlens)
     }
     ans = c(g, ans)
   } else {
@@ -3346,8 +3337,8 @@ gfuns = c(gdtfuns,
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n))
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
-gfirst = function(x) .Call(Cgfirst, x)
-glast = function(x) .Call(Cglast, x)
+gfirst = function(x, n=1L) .Call(Cgfirst, x, as.integer(n))
+glast = function(x, n=1L) .Call(Cglast, x, as.integer(n))
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gweighted.mean = function(x, w, ..., na.rm=FALSE) {
@@ -3398,6 +3389,12 @@ is_constantish = function(q, check_singleton=FALSE) {
 .ghead_ok = function(q) {
   length(q) == 3L &&
     is_constantish(q[[3L]], check_singleton = TRUE)
+}
+# first(x, n) / last(x, n) with n>1, #4446 #4239.
+.gfirstlast_ok = function(q, envir) {
+  length(q) == 3L &&
+    is_constantish(q[[3L]], check_singleton = TRUE) &&
+    is.numeric(n <- eval(q[[3L]], envir)) && length(n)==1L && !is.na(n) && n>=1
 }
 `.g[_ok` = function(q, x, envir=parent.frame(3L)) {
   length(q) == 3L &&
@@ -3458,6 +3455,7 @@ is_constantish = function(q, check_singleton=FALSE) {
       "shift" = .gshift_ok(q),
       "weighted.mean" = .gweighted.mean_ok(q, x),
       "tail" = , "head" = .ghead_ok(q),
+      "first" = , "last" = .gfirstlast_ok(q, envir),
       "[[" = , "[" = `.g[_ok`(q, x, envir),
       FALSE
     ))
