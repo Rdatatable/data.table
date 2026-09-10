@@ -37,6 +37,8 @@ test(num, x, y = TRUE, ...,
 
    Multiple warnings are supported; supply a vector of strings to \code{warning=}. If \code{x} does not produce the correct number of warnings in the correct order, the test will fail.
 
+   Unless \code{output=} or \code{notOutput=} is supplied, you are automatically asserting that \code{x} prints nothing to the console; the test will fail if it does. This does not apply when \code{datatable.verbose} is \code{TRUE}.
+
    Strings passed to \code{notOutput=} should be minimal; e.g. pick out single words from the output that you desire to check does not occur. The reason being so that the test does not incorrectly pass just because the output has slightly changed. For example \code{notOutput="revised"} is better than \code{notOutput="revised flag to true"}. \code{notOutput=} is automatically case insensitive for this reason.
 }
 \value{
