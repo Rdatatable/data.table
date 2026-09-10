@@ -457,6 +457,22 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   close(fcon)
   test(17.14, fread(f), DT)
   unlink(f)
+
+  # honor YAML column types even without values to infer, #3999
+  DT = data.table(date = as.Date('2006-05-01'), idate = as.IDate('2006-05-01'),
+                  time = as.ITime('12:00:00'), datetime = as.POSIXct('2006-05-01', tz='UTC'),
+                  ordered = ordered('a'), factor = factor('a'), logical = TRUE, complex = 1+2i)
+  f = tempfile()
+  fwrite(DT[0L], f, yaml=TRUE)
+  # we need the options since otherwise fread converts Date to IDate naturally
+  test(17.15, lapply(fread(f, yaml=TRUE), class), lapply(DT, class), options=c(datatable.old.fread.datetime.character=TRUE))
+  fwrite(DT, f, yaml=TRUE)
+  test(17.16, lapply(fread(f, yaml=TRUE), class), lapply(DT, class), options=c(datatable.old.fread.datetime.character=TRUE))
+  # unknown yaml schema types fall back to inference, even when none are recognized
+  DT = data.table(x = structure(1:2, class='unknown'))
+  fwrite(DT, f, yaml=TRUE)
+  test(17.17, lapply(fread(f, yaml=TRUE), class), list(x='integer'))
+  unlink(f)
 }
 
 if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
