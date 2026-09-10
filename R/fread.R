@@ -289,15 +289,22 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       new_types = sapply(yaml_header$schema$fields, `[[`, 'type')
       if (any(null_idx <- vapply_1b(new_types, is.null)))
         new_types = do.call(c, new_types)
-      synonms = rbindlist(list(
+      synonyms = rbindlist(list(
         character = list(syn = c('character', 'string')),
         integer = list(syn = c('integer', 'int')),
         numeric = list(syn = c('numeric', 'number', 'double')),
         factor = list(syn = c('factor', 'categorical')),
+        ordered = list(syn = 'ordered'),
+        logical = list(syn = 'logical'),
+        complex = list(syn = 'complex'),
+        Date = list(syn = 'Date'),
+        IDate = list(syn = 'IDate'),
+        ITime = list(syn = 'ITime'),
+        POSIXct = list(syn = 'POSIXct'),
         integer64 = list(syn = c('integer64', 'int64'))
       ), idcol = 'r_type')
-      setkeyv(synonms, 'syn')
-      new_types = synonms[list(new_types)]$r_type
+      setkeyv(synonyms, 'syn')
+      new_types = synonyms[list(new_types)]$r_type
       new_names = sapply(yaml_header$schema$fields[!null_idx], `[[`, 'name')
 
       if ('col.names' %chin% call_args) messagef("User-supplied column names in 'col.names' will override those found in YAML metadata.")
@@ -313,8 +320,8 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
               brackify(new_names[matched_name_idx[!idx_type]]))
           }
         }
-        # only add unmentioned columns
-        for (ii in which(!idx_name)) {
+        # only add unmentioned columns # dont override unknown types
+        for (ii in which(!idx_name & !is.na(new_types))) {
           colClasses[[ new_types[ii] ]] = c(colClasses[[ new_types[ii] ]], new_names[ii])
         }
       } else {
@@ -325,7 +332,8 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
           if (!'col.names' %chin% call_args) col.names = new_names
           new_names = paste0('V', seq_along(new_names))
         }
-        colClasses = tapply(new_names, new_types, c, simplify=FALSE)
+        # deactivate override for all unknown types
+        colClasses = if (all(is.na(new_types))) NULL else tapply(new_names, new_types, c, simplify=FALSE)
       }
     }
     sep_syn = c('sep', 'delimiter')
@@ -383,6 +391,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),
+             "ordered" = as.ordered(v),
              "complex" = as.complex(v),
              "raw" = as_raw(v),  # Internal implementation
              "Date" = as.Date(v),

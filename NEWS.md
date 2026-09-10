@@ -88,6 +88,8 @@
 
 19. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
 
+21. `fread(yaml=TRUE)` now honors column types in the YAML schema, including empty columns written by `fwrite(yaml=TRUE)`, [#3999](https://github.com/Rdatatable/data.table/issues/3999). Unknown schema types now fall back to type inference even when no schema types are recognized. Thanks to @PavoDive and @Noskario for the report and @ben-schwen for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
