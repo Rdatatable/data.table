@@ -34,19 +34,19 @@
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
 
-8. `tstrsplit()` gains a `rev` argument to facilitate extracting elements anchored from the end of the string, [#6341](https://github.com/Rdatatable/data.table/issues/6341). This is especially useful when strings have a varying number of components and you only want to extract the last or second-to-last element. Thanks to @JBrownArcGen for the suggestion and @venom1204 for the implementation.
+7. `tstrsplit()` gains a `rev` argument to facilitate extracting elements anchored from the end of the string, [#6341](https://github.com/Rdatatable/data.table/issues/6341). This is especially useful when strings have a varying number of components and you only want to extract the last or second-to-last element. Thanks to @JBrownArcGen for the suggestion and @venom1204 for the implementation.
 
-9. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
+8. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
 
-10. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
+9. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
 
-11. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+10. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
 
-12. `frank()` gains an `order` argument (matching `frankv()`) and now intercepts the unary minus symbol (e.g., `frank(-dates)`) to support reverse ranking even for types where unary `-` is not defined in R, such as `Date` or `character` vectors, [#5489](https://github.com/Rdatatable/data.table/issues/5489). Thanks @hope-data-science for the request and @venom1204 for the implementation.
+11. `frank()` gains an `order` argument (matching `frankv()`) and now intercepts the unary minus symbol (e.g., `frank(-dates)`) to support reverse ranking even for types where unary `-` is not defined in R, such as `Date` or `character` vectors, [#5489](https://github.com/Rdatatable/data.table/issues/5489). Thanks @hope-data-science for the request and @venom1204 for the implementation.
 
-13. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
+12. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
 
-14. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 and @ben-schwen for the PR.
+13. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 and @ben-schwen for the PR.
 
 ### BUG FIXES
 
