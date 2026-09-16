@@ -1,0 +1,82 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: between 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: between.c:18
+#, c-format
+msgid ""
+"Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)=="
+"%d. Each should be either length 1 or the length of the longest."
+msgstr ""
+
+#: between.c:22 between.c:28
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr ""
+
+#: between.c:25
+msgid "NAbounds must be TRUE or NA"
+msgstr ""
+
+#: between.c:70
+#, c-format
+msgid "Item %d of lower (%d) is greater than item %d of upper (%d)"
+msgstr ""
+
+#: between.c:88
+#, c-format
+msgid "between parallel processing of integer took %8.3fs\n"
+msgstr ""
+
+#: between.c:94
+msgid "x is integer64 but lower and/or upper are not."
+msgstr ""
+
+#: between.c:101
+#, c-format
+msgid ""
+"Item %d of lower (%<PRId64>) is greater than item %d of upper (%<PRId64>)"
+msgstr ""
+
+#: between.c:118
+#, c-format
+msgid "between parallel processing of integer64 took %8.3fs\n"
+msgstr ""
+
+#: between.c:121
+msgid ""
+"x is not integer64 but lower and/or upper is integer64. Please align classes."
+msgstr ""
+
+#: between.c:128
+#, c-format
+msgid "Item %d of lower (%f) is greater than item %d of upper (%f)"
+msgstr ""
+
+#: between.c:146
+#, c-format
+msgid "between parallel processing of double with open bounds took %8.3fs\n"
+msgstr ""
+
+#: between.c:163
+#, c-format
+msgid "between parallel processing of double with closed bounds took %8.3fs\n"
+msgstr ""
+
+#: between.c:178
+#, c-format
+msgid "Item %d of lower ('%s') is greater than item %d of upper ('%s')"
+msgstr ""
+
+#: between.c:193
+#, c-format
+msgid "between non-parallel processing of character took %8.3fs\n"
+msgstr ""
