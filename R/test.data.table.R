@@ -666,7 +666,7 @@ test = function(num, x, y=TRUE, ...,
           identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
       }
     }
-    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return(invisible(TRUE))
+    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y) && all(is.nan(x)==is.nan(y))) return(invisible(TRUE))
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
@@ -677,7 +677,7 @@ test = function(num, x, y=TRUE, ...,
         if (is.data.table(x)) compactprint(x) else {
           if (is.atomic(x) && is.atomic(y) && length(x) == length(y) && identical(dim(x), dim(y))) {
             total = length(x)
-            diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
+            diff_idx = which(x != y | xor(is.na(x), is.na(y)) | xor(is.nan(x), is.nan(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
             x = x[diff_idx]
             nn = length(x)
             names(x) = sprintf("%s[%d]", label, diff_idx)
