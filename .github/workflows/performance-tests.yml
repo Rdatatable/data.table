@@ -14,11 +14,126 @@ on:
 
 jobs:
   comment:
-    if: github.repository == 'Rdatatable/data.table'
     runs-on: ubuntu-latest
-    container: ghcr.io/iterative/cml:0-dvc2-base1
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: Anirban166/Autocomment-atime-results@v1.4.3
+    - name: Start timer
+      run: echo "START_SETUP_TIME=$(date +%s)" >> $GITHUB_ENV
+      shell: bash
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Retrieve branch references, necessary for perf testing past versions
+      shell: bash
+      run: |
+        git switch "${GITHUB_BASE_REF}"
+        git switch "${GITHUB_HEAD_REF}"
+    - uses: actions/setup-node@v6
+      name: setup-node https://github.com/actions/setup-node?tab=readme-ov-file#usage
+    - name: Safe directory exception
+      run: |
+        git config --global --add safe.directory '*'
+      shell: bash
+    - name: Setup
+      uses: eddelbuettel/github-actions/r-ci@master
+    - name: Dependencies
+      run: ./run.sh install_all
+    - name: Install and run atime@main
+      run: |
+        echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" >> .Rprofile
+        Rscript -e 'install.packages(c("atime", "ggplot2", "directlabels"))'
+        echo "END_SETUP_START_TESTS_TIME=$(date +%s)" >> $GITHUB_ENV
+        Rscript -e 'atime::atime_pkg(Sys.getenv("GITHUB_WORKSPACE"), tests.dir = ".ci");'
+        echo "END_TESTS_TIME=$(date +%s)" >> $GITHUB_ENV
+      shell: bash
+    - name: Upload artifact
+      id: artifact-upload-step
+      uses: actions/upload-artifact@v4
+      with:
+        name: atime-results
+        path: .ci/atime/
+    - name: comments.json
+      if: ${{ github.event_name == 'pull_request' }}
+      env:
+        PR_NUMBER: ${{ github.event.number }}
+        TAG: atime
+      shell: bash
+      run: |
+        curl --no-progress-meter -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2026-03-10" https://api.github.com/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments > comments.json
+        cat comments.json
+        echo > comment-number.txt
+        echo "<!-- automatic comment for $TAG -->" > comment.md
+        cat comment.md
+    - name: comment-number.txt
+      if: ${{ github.event_name == 'pull_request' }}
+      shell: node {0}
+      run: |
+        fs = require('fs');
+        tag = fs.readFileSync('comment.md', 'utf-8');
+        console.log(tag);
+        content = fs.readFileSync('comments.json', 'utf-8').replaceAll("\r", "");
+        console.log(content);
+        prc = JSON.parse(content);
+        flist = prc.filter((o) => { return o.body.startsWith(tag); });
+        console.log(flist);
+        if(flist.length == 0) process.exit(0);
+        comment_id = flist[0].id;
+        console.log(comment_id);
+        fs.writeFileSync('comment-number.txt', comment_id+"");
+    - name: add images
+      shell: bash
+      run: |
+        uploadImage() {
+          local png=$1
+          curl -F "file=@$png" -F "visibility=unlisted" https://picrd.com/api/upload | sed 's/.*image_url":"//' | sed 's/",".*//'
+        }
+        cat comment-number.txt
+        PREVIEW_URL=$(uploadImage .ci/atime/tests_preview_facet.png)
+        ALL_URL=$(uploadImage .ci/atime/tests_all_facet.png)
+        echo $PREVIEW_URL $ALL_URL
+        cat .ci/atime/HEAD_issues.md >> comment.md
+        echo -e "\n[![Comparison Plot]($PREVIEW_URL)]($ALL_URL)" >> comment.md
+        echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> comment.md
+        echo -e "\nDownload link for the artifact containing the test results: [↓ atime-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> comment.md
+    - name: add content to comment.md
+      run: |
+        R_SETUP_DURATION=$((END_SETUP_START_TESTS_TIME - START_SETUP_TIME))
+        VERSION_SETUP_DURATION=$(cut -d '.' -f 1 ./.ci/atime/install_seconds.txt)
+        ATIME_TESTS_DURATION=$((END_TESTS_TIME - END_SETUP_START_TESTS_TIME - VERSION_SETUP_DURATION))
+        formatTime() {
+            local totalSeconds=$1
+            if [ $totalSeconds -lt 0 ]; then
+                echo "Time calculation error: negative duration"
+                return
+            fi
+            if [ $totalSeconds -lt 60 ]; then
+                echo "${totalSeconds} seconds"
+            else
+                local minutes=$((totalSeconds / 60))
+                local seconds=$((totalSeconds % 60))
+                echo "${minutes} minutes and ${seconds} seconds"
+            fi
+        }
+        echo -e "\n| Task | Duration |" >> comment.md
+        echo -e "|---|---|" >> comment.md
+        echo -e "| R setup and installing dependencies   | $(formatTime $R_SETUP_DURATION)       |" >> comment.md
+        echo -e "| Installing different package versions | $(formatTime $VERSION_SETUP_DURATION) |" >> comment.md
+        echo -e "| Running and plotting the test cases   | $(formatTime $ATIME_TESTS_DURATION)   |" >> comment.md
+    - name: convert comment to json https://stackoverflow.com/questions/1251999/how-can-i-replace-each-newline-n-with-a-space-using-sed/1252191#1252191 then post
+      if: ${{ github.event_name == 'pull_request' }}
+      env:
+        PR_COMMENT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.number }}
+      shell: bash
+      run: |
+        ISSUES_API=https://api.github.com/repos/$GITHUB_REPOSITORY/issues
+        PR_API=$ISSUES_API/$PR_NUMBER/comments
+        VERSION=2026-03-10
+        ACCEPT=application/vnd.github+json
+        COMMENT_NUMBER=$(cat comment-number.txt)
+        if [ "$COMMENT_NUMBER" == "" ]; then CMD=$PR_API; else CMD=$ISSUES_API/comments/$COMMENT_NUMBER; fi; echo $CMD
+        cat comment.md
+        MD=$(sed 's/"/\\"/g' comment.md | sed ':a;N;$!ba;s/\n/\\n/g')
+        echo '{"body":"'$MD'"}' > pr-comment.json
+        cat pr-comment.json
+        curl --no-progress-meter -L -H "Accept: $ACCEPT" -H "X-GitHub-Api-Version: $VERSION" -X POST -H "Authorization: Bearer $PR_COMMENT_TOKEN" $CMD -d "@pr-comment.json"
