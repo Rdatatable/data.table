@@ -38,7 +38,7 @@ jobs:
       uses: eddelbuettel/github-actions/r-ci@master
     - name: Dependencies
       run: ./run.sh install_all
-    - name: Install and run atime@main
+    - name: Install and run atime
       run: |
         echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" >> .Rprofile
         Rscript -e 'install.packages(c("atime", "ggplot2", "directlabels"))'
