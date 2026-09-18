@@ -10,6 +10,7 @@ on:
       - 'R/**'
       - 'src/**'
       - '.ci/atime/**'
+      - '.github/workflows/performance-tests.yml'
   workflow_dispatch:
 
 jobs:
@@ -21,4 +22,9 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: install libcurl
+        run: |
+          sudo apt update
+          sudo apt -y install libcurl4-openssl-dev
+        shell: bash
       - uses: Anirban166/Autocomment-atime-results@v1.4.3
