@@ -38,6 +38,8 @@ jobs:
       uses: eddelbuettel/github-actions/r-ci@master
     - name: Dependencies
       run: ./run.sh install_all
+    - name: Adjust compilation flags for old data.table versions
+      run: sudo sed -i 's|-Werror=format-security||' `Rscript -e 'writeLines(R.home("etc"))'`/Makeconf
     - name: Install and run atime
       run: |
         echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" >> .Rprofile
