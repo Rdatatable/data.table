@@ -25,6 +25,6 @@ jobs:
       - name: install libcurl
         run: |
           apt search libcurl
-          sudo apt install curl
+          sudo apt install libcurl4-openssl-dev
         shell: bash
       - uses: Anirban166/Autocomment-atime-results@v1.4.3
