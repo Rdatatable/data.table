@@ -10,6 +10,7 @@ on:
       - 'R/**'
       - 'src/**'
       - '.ci/atime/**'
+      - '.github/workflows/performance-tests.yml'
   workflow_dispatch:
 
 jobs:
