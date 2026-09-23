@@ -28,6 +28,7 @@ Se presupone familiaridad con la sintaxis de `data.table`. De no ser así, lea l
 - [`viñeta("datatable-intro", paquete="data.table")`](datatable-intro.html)
 - [`viñeta("datatable-reference-semantics", paquete="data.table")`](datatable-reference-semantics.html)
 - [`viñeta("datatable-keys-fast-subset", paquete="data.table")`](datatable-keys-fast-subset.html)
+- [`viñeta("datatable-secondary-indices-and-auto-indexing", paquete="data.table")`](datatable-secondary-indices-and-auto-indexing.html)
 
 ***
 

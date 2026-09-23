@@ -27,6 +27,7 @@ Cela suppose que vous êtes déjà familiarisé avec la syntaxe `data.table` . S
 - [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
 - [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
 - [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
+- [`vignette("datatable-secondary-indices-and-auto-indexing", package="data.table")`](datatable-secondary-indices-and-auto-indexing.html)
 
 ***
 
