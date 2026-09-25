@@ -1,0 +1,218 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: dogroups 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: dogroups.c:85
+msgid "env is not an environment"
+msgstr "env एक एनवायरनमेंट (environment) नहीं है"
+
+#: dogroups.c:132
+msgid "row.names attribute of .SD not found"
+msgstr ".SD का row.names एट्रिब्यूट (attribute) नहीं मिला"
+
+#: dogroups.c:134
+#, c-format
+msgid ""
+"row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
+"set_row_names(). [%s %d %d]"
+msgstr ""
+".SD का row.names पहले आइटम (item) के रूप में NA के साथ इंटीजर (integer) लेंथ (length) 2 नहीं है; यानी, ."
+"set_row_names(). [%s %d %d]"
+
+#: dogroups.c:165
+#, c-format
+msgid "length(iSD)[%d] != length(jiscols)[%d]"
+msgstr "length(iSD)[%d] != length(jiscols)[%d]"
+
+#: dogroups.c:166
+#, c-format
+msgid "length(xSD)[%d] != length(xjiscols)[%d]"
+msgstr "length(xSD)[%d] != length(xjiscols)[%d]"
+
+#: dogroups.c:277
+#, c-format
+msgid "j evaluates to type '%s'. Must evaluate to atomic vector or list."
+msgstr "j का परिणाम type '%s' है। इसका परिणाम एटॉमिक (atomic) वेक्टर (vector) या लिस्ट (list) होना चाहिए।"
+
+#: dogroups.c:286
+#, c-format
+msgid ""
+"Entry %d for group %d in j=list(...) should be atomic vector or list. If you "
+"are trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
+"instead (much quicker), or cbind or merge afterwards."
+msgstr ""
+"j=list(...) में समूह %d के लिए प्रविष्टि %d एटॉमिक (atomic) वेक्टर (vector) या लिस्ट (list) होनी चाहिए। यदि आप "
+"j=list(.SD,newcol=mean(colA)) जैसा कुछ प्रयास कर रहे हैं तो इसके बजाय := by group का उपयोग करें (बहुत तेज़), या बाद में cbind या merge करें।"
+
+#: dogroups.c:293
+#, c-format
+msgid ""
+"Entry %d for group %d in j=list(...) is an array with %d dimensions > 1, "
+"which is disallowed. \"Break\" the array yourself with c() or as.vector() if "
+"that is intentional."
+msgstr ""
+"j=list(...) में समूह %d के लिए प्रविष्टि %d एक एरे (array) है जिसमें %d आयामों (dimensions) > 1 हैं, "
+"जो वर्जित है। यदि यह जानबूझकर किया गया है तो एरे (array) को स्वयं \"Break\" c() या as.vector() के साथ करें।"
+
+#: dogroups.c:303
+msgid ""
+"RHS of := is NULL during grouped assignment, but it's not possible to delete "
+"parts of a column."
+msgstr ""
+"समूहीकृत नियत (assignment) के दौरान := का RHS NULL है, लेकिन कॉलम (column) के हिस्सों को हटाना संभव नहीं है।"
+
+#: dogroups.c:307
+#, c-format
+msgid ""
+"Supplied %d items to be assigned to group %d of size %d in column '%s'. The "
+"RHS length must either be 1 (single values are ok) or match the LHS length "
+"exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make "
+"this intent clear to readers of your code."
+msgstr ""
+"कॉलम (column) '%s' में साइज़ %d के समूह %d को नियत (assignment) करने के लिए %d आइटम (items) दिए गए हैं। "
+"RHS की लेंथ (length) या तो 1 होनी चाहिए (सिंगल (single) मान ठीक हैं) या LHS की लेंथ (length) से बिल्कुल मेल खानी चाहिए। यदि "
+"आप RHS की पुनरावृत्ति करना चाहते हैं तो कृपया अपने कोड (code) के पाठकों को यह स्पष्ट करने के लिए स्पष्ट रूप से rep() का उपयोग करें।"
+
+#: dogroups.c:339
+#, c-format
+msgid "Group %d column '%s': %s"
+msgstr "समूह %d कॉलम (column) '%s': %s"
+
+#: dogroups.c:346
+msgid "j doesn't evaluate to the same number of columns for each group"
+msgstr "j प्रत्येक समूह के लिए कॉलम (column) की समान संख्या का परिणाम नहीं देता है"
+
+#: dogroups.c:380
+#, c-format
+msgid ""
+"Column %d of j's result for the first group is NULL. We rely on the column "
+"types of the first result to decide the type expected for the remaining "
+"groups (and require consistency). NULL columns are acceptable for later "
+"groups (and those are replaced with NA of appropriate type and recycled) but "
+"not for the first. Please use a typed empty vector instead, such as integer() "
+"or numeric()."
+msgstr ""
+"पहले समूह के लिए j के परिणाम का कॉलम (column) %d NULL है। हम शेष समूहों के लिए अपेक्षित type तय करने के लिए "
+"पहले परिणाम के कॉलम (column) types पर भरोसा करते हैं (और निरंतरता की आवश्यकता होती है)। बाद के समूहों के लिए NULL कॉलम (column) स्वीकार्य हैं "
+"(और उन्हें उचित type के NA से बदल दिया जाता है और पुनरावृत्ति किया जाता है) लेकिन पहले के लिए नहीं। कृपया इसके बजाय "
+"एक typed खाली वेक्टर (vector) का उपयोग करें, जैसे कि integer() या न्यूमेरिक (numeric) ()।"
+
+#: dogroups.c:383
+msgid ""
+"j appears to be a named vector. The same names will likely be created over "
+"and over again for each group and slow things down. Try and pass a named list "
+"(which data.table optimizes) or an unnamed list() instead.\n"
+msgstr ""
+"j एक नामित वेक्टर (vector) प्रतीत होता है। प्रत्येक समूह के लिए बार-बार वही नाम बनाए जाने की संभावना है जिससे गति धीमी हो जाएगी। "
+"इसके बजाय एक नामित लिस्ट (list) (जिसे data.table अनुकूलित (optimize) करता है) या एक अनाम list() पास (pass) करने का प्रयास करें।\n"
+
+#: dogroups.c:385
+#, c-format
+msgid ""
+"Column %d of j is a named vector (each item down the rows is named, somehow). "
+"Please remove those names for efficiency (to save creating them over and over "
+"for each group). They are ignored anyway.\n"
+msgstr ""
+"j का कॉलम (column) %d एक नामित वेक्टर (vector) है (किसी तरह रोज़(rows) में प्रत्येक आइटम (item) नामित है)। दक्षता के लिए कृपया उन नामों को हटा दें "
+"(प्रत्येक समूह के लिए उन्हें बार-बार बनाने से बचने के लिए)। वैसे भी उन्हें अनदेखा कर दिया जाता है।\n"
+
+#: dogroups.c:393
+msgid ""
+"The result of j is a named list. It's very inefficient to create the same "
+"names over and over again for each group. When j=list(...), any names are "
+"detected, removed and put back after grouping has completed, for efficiency. "
+"Using j=transform(), for example, prevents that speedup (consider changing "
+"to :=). This message may be upgraded to warning in future.\n"
+msgstr ""
+"j का परिणाम एक नामित लिस्ट (list) है। प्रत्येक समूह के लिए बार-बार वही नाम बनाना बहुत अक्षम है। जब j=list(...) होता है, "
+"तो दक्षता के लिए समूहीकरण (grouping) पूरा होने के बाद किसी भी नाम का पता लगाया जाता है, हटाया जाता है और वापस रखा जाता है। "
+"उदाहरण के लिए, j=transform() का उपयोग करना उस गति वृद्धि (speedup) को रोकता है (इसे := में बदलने पर विचार करें)। भविष्य में इस संदेश "
+"को चेतावनी के रूप में अपग्रेड (upgrade) किया जा सकता है।\n"
+
+#: dogroups.c:405
+#, c-format
+msgid "dogroups: growing from %d to %d rows\n"
+msgstr "dogroups: %d से %d रोज़(rows) तक बढ़ रहा है\n"
+
+#: dogroups.c:425
+#, c-format
+msgid ""
+"Item %d of j's result for group %d is zero length. This will be filled with "
+"%d NAs to match the longest column in this result. Later groups may have a "
+"similar problem but only the first is reported to save filling the warning "
+"buffer."
+msgstr ""
+"समूह %d के लिए j के परिणाम का आइटम (item) %d शून्य लेंथ (length) का है। इस परिणाम के सबसे लंबे कॉलम (column) से मेल खाने के लिए इसे "
+"%d NAs से भरा जाएगा। बाद के समूहों में भी इसी तरह की समस्या हो सकती है लेकिन चेतावनी बफर (buffer) को भरने से बचाने के लिए केवल पहले को सूचित किया जाता है।"
+
+#: dogroups.c:432
+#, c-format
+msgid ""
+"Column %d of result for group %d is type '%s' but expecting type '%s'. Column "
+"types must be consistent for each group."
+msgstr ""
+"समूह %d के परिणाम का कॉलम (column) %d, type '%s' है लेकिन type '%s' की अपेक्षा है। प्रत्येक समूह के लिए कॉलम (column) "
+"types सुसंगत होने चाहिए।"
+
+#: dogroups.c:434
+#, c-format
+msgid ""
+"Supplied %d items for column %d of group %d which has %d rows. The RHS length "
+"must either be 1 (single values are ok) or match the LHS length exactly. If "
+"you wish to 'recycle' the RHS please use rep() explicitly to make this intent "
+"clear to readers of your code."
+msgstr ""
+"समूह %d के कॉलम (column) %d के लिए %d आइटम (items) दिए गए हैं जिसमें %d रोज़(rows) हैं। RHS की लेंथ (length) या तो 1 "
+"होनी चाहिए (सिंगल (single) मान ठीक हैं) या LHS की लेंथ (length) से बिल्कुल मेल खानी चाहिए। यदि आप RHS की पुनरावृत्ति करना चाहते हैं "
+"तो कृपया अपने कोड (code) के पाठकों को यह स्पष्ट करने के लिए स्पष्ट रूप से rep() का उपयोग करें।"
+
+#: dogroups.c:452
+msgid "\n"
+msgstr "\n"
+
+#: dogroups.c:453 dogroups.c:467
+#, c-format
+msgid ""
+"\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
+msgstr ""
+"\r%d में से %d समूहों को संसाधित किया गया। %.0f%% पूर्ण। समय बीता: %ds. ईटीए (ETA): %ds."
+
+#: dogroups.c:472
+#, c-format
+msgid "Wrote less rows (%d) than allocated (%d).\n"
+msgstr "आवंटित (%d) की तुलना में कम रोज़(rows) (%d) लिखे गए।\n"
+
+#: dogroups.c:496
+#, c-format
+msgid ""
+"\n"
+"  collecting discontiguous groups took %.3fs for %d groups\n"
+msgstr ""
+"\n"
+"  %d गैर-निरंतर समूहों को एकत्रित करने में %.3fs का समय लगा\n"
+
+#: dogroups.c:497
+#, c-format
+msgid ""
+"\n"
+"  memcpy contiguous groups took %.3fs for %d groups\n"
+msgstr ""
+"\n"
+"  %d निरंतर समूहों के memcpy में %.3fs का समय लगा\n"
+
+#: dogroups.c:499
+#, c-format
+msgid "  eval(j) took %.3fs for %d calls\n"
+msgstr "  eval(j) ने %d कॉल (calls) के लिए %.3fs का समय लिया\n"
+
+#: dogroups.c:528
+msgid "growVector passed NULL"
+msgstr "growVector ने NULL पास (pass) किया"
