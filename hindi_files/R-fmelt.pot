@@ -1,0 +1,181 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fmelt 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: fmelt.R:16
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s "
+"currently only has a method for data.tables. Please confirm your input is a "
+"data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a "
+"method from reshape2, try installing that package first, but do note that "
+"reshape2 is superseded and is no longer actively developed."
+msgstr ""
+
+#: fmelt.R:17
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s and will attempt to "
+"redirect to the relevant reshape2 method; please note that reshape2 is "
+"superseded and is no longer actively developed, and this redirection is now "
+"deprecated. To continue using melt methods from reshape2 while both packages "
+"are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::"
+"%1$s(%3$s). In the next version, this warning will become an error."
+msgstr ""
+
+#: fmelt.R:26 fmelt.R:80
+msgid "cols must be a character vector of column names"
+msgstr ""
+
+#: fmelt.R:31
+msgid "Input patterns must be of type character."
+msgstr ""
+
+#: fmelt.R:49
+msgid ""
+"each ... argument to measure must be either a symbol without argument name, "
+"or a function with argument name, problems: %s"
+msgstr ""
+
+#: fmelt.R:57
+msgid ""
+"group names specified in ... conflict with measure argument names; please "
+"fix by changing group names: %s"
+msgstr ""
+
+#: fmelt.R:63
+msgid ""
+"each ... argument to measure must be a function with at least one argument, "
+"problem: %s"
+msgstr ""
+
+#: fmelt.R:74
+msgid ""
+"both sep and pattern arguments used; must use either sep or pattern (not "
+"both)"
+msgstr ""
+
+#: fmelt.R:77
+msgid "multiple.keyword must be a character string with nchar>0"
+msgstr ""
+
+#: fmelt.R:88
+msgid "in measurev, elements of fun.list must be named, problems: %s"
+msgstr ""
+
+#: fmelt.R:91
+msgid "elements of fun.list should be uniquely named, problems: %s"
+msgstr ""
+
+#: fmelt.R:96
+msgid "pattern must be character string"
+msgstr ""
+
+#: fmelt.R:101
+msgid ""
+"pattern did not match any cols, so nothing would be melted; fix by changing "
+"pattern"
+msgstr ""
+
+#: fmelt.R:105
+msgid ""
+"pattern must contain at least one capture group (parenthesized sub-pattern)"
+msgstr ""
+
+#: fmelt.R:108
+msgid ""
+"number of elements of fun.list (%d) must be the same as the number of "
+"capture groups in pattern (%d)"
+msgstr ""
+
+#: fmelt.R:116
+msgid "sep must be character string"
+msgstr ""
+
+#: fmelt.R:122
+msgid ""
+"each column name results in only one item after splitting using sep, which "
+"means that all columns would be melted; to fix please either specify melt on "
+"all columns directly without using measure, or use a different sep/pattern "
+"specification"
+msgstr ""
+
+#: fmelt.R:125
+msgid ""
+"number of elements of fun.list (%d) must be the same as the max number of "
+"items after splitting column names (%d)"
+msgstr ""
+
+#: fmelt.R:132
+msgid "measured columns should be uniquely named, problems: %s"
+msgstr ""
+
+#: fmelt.R:136
+msgid ""
+"number of unique column IDs =%d is less than number of melted columns =%d; "
+"fix by changing pattern/sep"
+msgstr ""
+
+#: fmelt.R:146
+msgid ""
+"in the measurev fun.list, each non-NULL element must be a function with at "
+"least one argument, problem: %s"
+msgstr ""
+
+#: fmelt.R:150
+msgid ""
+"each conversion function must return an atomic vector with same length as "
+"its first argument, problem: %s"
+msgstr ""
+
+#: fmelt.R:153
+msgid "%s conversion function returned vector of all NA"
+msgstr ""
+
+#: fmelt.R:159
+msgid ""
+"number of unique groups after applying type conversion functions less than "
+"number of groups, change type conversion"
+msgstr ""
+
+#: fmelt.R:164
+msgid ""
+"%s column class=%s after applying conversion function, but must be character"
+msgstr ""
+
+#: fmelt.R:168
+msgid "%s is the only group; fix by creating at least one more group"
+msgstr ""
+
+#: fmelt.R:191
+msgid "'data' must be a data.table"
+msgstr ""
+
+#: fmelt.R:210
+msgid ""
+"'value.name' provided in both 'measure.vars' and 'value.name argument'; "
+"value provided in 'measure.vars' is given precedence."
+msgstr ""
+
+#: fmelt.R:213
+msgid "Please provide a name to each element of 'measure.vars'."
+msgstr ""
+
+#: fmelt.R:224
+msgid ""
+"Duplicate column names found in molten data.table. Setting unique names "
+"using 'make.names'"
+msgstr ""
+
+#: fmelt.R:34
+msgid "Pattern not found: [%s]"
+msgid_plural "Patterns not found: [%s]"
+msgstr[0] ""
+msgstr[1] ""
