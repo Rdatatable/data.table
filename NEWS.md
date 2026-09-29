@@ -100,7 +100,7 @@
 
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
 
-6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
+6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp/>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
 
 7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
 
