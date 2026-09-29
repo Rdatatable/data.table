@@ -123,7 +123,7 @@
 
 2. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
 
-## NOTES
+### NOTES
 
 1. Handled OpenMP deprecation of `master` construct, [#7882](https://github.com/Rdatatable/data.table/pull/7882). Thanks @TimTaylor for the PR.
 
