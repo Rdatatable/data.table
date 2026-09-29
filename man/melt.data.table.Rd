@@ -9,6 +9,7 @@ efficiency. Since \code{v1.9.6}, \code{melt.data.table} allows melting into
 multiple columns simultaneously.
 }
 \usage{
+melt(data, ..., na.rm = FALSE, value.name = "value")
 ## fast melt a data.table
 \method{melt}{data.table}(data, id.vars, measure.vars,
     variable.name = "variable", value.name = "value",
