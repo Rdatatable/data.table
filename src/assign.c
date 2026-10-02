@@ -52,28 +52,11 @@ void setselfref(SEXP x) {
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
-  SEXP v = getAttrib(x, SelfRefSymbol);
-  if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
-    // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
-    //  from disk, and ii) every time a new data.table is over-allocated for the first time.
-    //  Not being an extptr is for when users construct a data.table via structure() using dput, post
-    //  a question, and find the extptr doesn't parse so put quotes around it (for example).
-    //  In both cases the selfref is not ok.
-    return 0;
-  }
-  SEXP p = R_ExternalPtrAddr(v);
-  if (p==NULL) {
+  if (!R_isResizable(x)) {
     if (verbose) Rprintf(_("The data.table internal attributes of this table are invalid. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to the data.table issue tracker.\n"));
     return -1;
   }
-  if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
-  SEXP tag = R_ExternalPtrTag(v);
-  if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
-  SEXP prot = R_ExternalPtrProtected(v);
-  if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
-    return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (!checkNames) return x == R_ExternalPtrAddr(prot);
-  return getAttrib(x, R_NamesSymbol) == tag;
+  return !checkNames || R_isResizable(getAttrib(x, R_NamesSymbol));
 }
 
 static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
