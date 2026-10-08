@@ -260,6 +260,22 @@ test.list <- atime::atime_test_list(
     }
   },
 
+  "fread N=cols regression" = atime::atime_test(
+    N = 2^seq(0, 20), # smaller N because disk can be slow.
+    setup={
+      set.seed(1)
+      n.rows <- 100
+      input.vec <- rnorm(n.rows*N)
+      input.mat <- matrix(input.vec, n.rows, N)
+      input.dt <- data.table(input.mat)
+      input.csv <- tempfile()
+      data.table::fwrite(input.dt, input.csv)
+    },
+    seconds.limit=0.1,
+    Fast="1.14.8",
+    Slow="1.18.6",
+    expr=data.table::fread(input.csv, showProgress = FALSE, nThread=1)),
+
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
   "fread disk overhead improved in #6925" = atime::atime_test(
