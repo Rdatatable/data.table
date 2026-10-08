@@ -1,0 +1,5 @@
+# src/forder.c allocates working buffers via malloc/realloc that are freed in
+# cleanup(). An R error/R_MAX_VSIZE longjmp bypasses cleanup(), so disable
+# exit-time LeakSanitizer checks while keeping ASan memory-error checks active.
+[asan]
+detect_leaks = 0

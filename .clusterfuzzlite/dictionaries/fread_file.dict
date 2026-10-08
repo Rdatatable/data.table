@@ -1,0 +1,35 @@
+# libFuzzer dictionary for data.table::fread(file = ...) mmap parser
+
+# Byte-order marks and embedded NULs
+"\xef\xbb\xbf"
+"\xff\xfe"
+"\xfe\xff"
+"\x00"
+",\x00,"
+"\x00\x0a"
+
+# Separators and quotes
+","
+"\x09"
+"|"
+";"
+"\""
+"'"
+"\"\""
+"\\\""
+
+# Line endings
+"\x0a"
+"\x0d"
+"\x0d\x0a"
+
+# Literals
+"NA"
+"NaN"
+"Inf"
+"-Inf"
+"TRUE"
+"FALSE"
+"2147483647"
+"9223372036854775807"
+"\xc3\xa9"

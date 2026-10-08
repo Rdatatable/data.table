@@ -1,0 +1,84 @@
+# libFuzzer dictionary for data.table::fread() text parser (src/fread.c)
+
+# Separators
+","
+"\x09"
+"|"
+";"
+":"
+" "
+
+# Quotes and escapes
+"\""
+"'"
+"\"\""
+"\"\"\""
+"\\\""
+"\\\\"
+
+# Line endings
+"\x0a"
+"\x0d"
+"\x0d\x0a"
+",\x0a"
+"\x0a,"
+"\x0a\x0a"
+
+# NA and comment tokens
+"NA"
+"NaN"
+"null"
+"NULL"
+"N/A"
+"-"
+"#"
+
+# Logical tokens (logical01, logicalYN, standard)
+"TRUE"
+"FALSE"
+"True"
+"False"
+"true"
+"false"
+"T"
+"F"
+"Y"
+"N"
+"yes"
+"no"
+
+# Numeric and integer64 boundary literals
+"0"
+"-0"
+"-0.0"
+"1"
+"-1"
+"000123"
+"2147483647"
+"-2147483647"
+"-2147483648"
+"9223372036854775807"
+"-9223372036854775807"
+"-9223372036854775808"
+"3.141592653589793"
+"1,5"
+"1e308"
+"1e-308"
+"4.9e-324"
+"Inf"
+"-Inf"
+"+Inf"
+"0x1f"
+"0x1.8p+1"
+
+# ISO-8601 date/time tokens
+"2026-10-08"
+"2026-10-08T12:34:56Z"
+"2026-10-08 12:34:56.789+02:00"
+
+# UTF-8 / Latin-1 sequences
+"\xc3\xa9"
+"\xe2\x82\xac"
+"\xe4\xb8\xad"
+"\xc3"
+"\xe9"

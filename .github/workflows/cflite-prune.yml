@@ -1,0 +1,45 @@
+name: ClusterFuzzLite prune
+
+# Corpus minimization: weekly pass over the stored corpora to drop redundant
+# inputs and keep startup replay fast.
+#
+# Modeled on https://github.com/r-devel/r-oss-fuzz/blob/main/.github/workflows/cflite-prune.yml.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Saturdays at 02:00 UTC.
+    - cron: '0 2 * * 6'
+
+permissions: read-all
+
+jobs:
+  Prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build fuzzers
+        uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+        with:
+          language: c
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prune corpora
+        uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+        with:
+          language: c
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 2400
+          mode: 'prune'

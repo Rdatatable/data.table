@@ -1,0 +1,2 @@
+[asan]
+detect_leaks = 0

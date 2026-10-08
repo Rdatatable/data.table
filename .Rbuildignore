@@ -13,6 +13,7 @@
 ^[^/]+\.patch$
 
 ^\.ci$
+^\.clusterfuzzlite$
 ^\.dev$
 ^\.devcontainer$
 ^\.graphics$

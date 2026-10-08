@@ -1,0 +1,76 @@
+name: ClusterFuzzLite batch
+
+# Continuous batch fuzzing: runs every data.table target and merges newly
+# discovered coverage into the stored corpus in GitHub Actions cache, while
+# uploading the latest build so cflite-pr.yml can distinguish newly introduced
+# regressions from pre-existing issues.
+#
+# Modeled on https://github.com/r-devel/r-oss-fuzz/blob/main/.github/workflows/cflite-batch.yml.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 02:00 UTC.
+    - cron: '0 2 * * *'
+
+permissions: read-all
+
+jobs:
+  Batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build fuzzers
+        uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+        with:
+          language: c
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          upload-build: true
+
+      - name: Start memory sampler
+        run: |
+          ( while true; do
+              echo "$(date -u '+%F %T') $(free -m | awk '/^Mem:/ {print "used="$3"M avail="$7"M"}')"
+              sleep 2
+            done ) > "$RUNNER_TEMP/memory.log" 2>&1 &
+          echo "SAMPLER_PID=$!" >> "$GITHUB_ENV"
+          disown
+
+      - name: Run fuzzers
+        uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+        timeout-minutes: 150
+        env:
+          REPORT_TIMEOUTS: false
+          REPORT_OOMS: false
+        with:
+          language: c
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 3600
+          mode: 'batch'
+          parallel-fuzzing: 2
+
+      - name: Stop memory sampler
+        if: always()
+        run: |
+          kill "$SAMPLER_PID" 2>/dev/null || true
+
+      - name: Upload memory samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-samples
+          path: ${{ runner.temp }}/memory.log
+          if-no-files-found: warn
+          overwrite: true

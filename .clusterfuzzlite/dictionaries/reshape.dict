@@ -1,0 +1,13 @@
+# libFuzzer dictionary for data.table::melt / dcast / rbindlist / transpose
+na="NA"
+nan="NaN"
+inf="Inf"
+neg_inf="-Inf"
+zero="0"
+one="1"
+neg_one="-1"
+comma=","
+semi=";"
+pipe="|"
+nl="\x0a"
+utf8_e_acute="\xc3\xa9"
