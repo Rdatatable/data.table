@@ -45,13 +45,15 @@ SEXP fastmean(SEXP args)
     error(_("fastmean was passed type %s, not numeric or logical"), type2char(TYPEOF(x)));
   }
   l = LENGTH(x);
+  const int *xi = isReal(x) ? NULL : INTEGER_RO(x);
+  const double *xd = isReal(x) ? REAL_RO(x) : NULL;
   if (narm) {
     switch(TYPEOF(x)) {
     case LGLSXP:
     case INTSXP:
       for (int i=0; i<l; ++i) {
-        if(INTEGER_RO(x)[i] == NA_INTEGER) continue;
-        s += INTEGER_RO(x)[i];   // no under/overflow here, s is long double not integer
+        if(xi[i] == NA_INTEGER) continue;
+        s += xi[i];   // no under/overflow here, s is long double not integer
         n++;
       }
       if (n>0)
@@ -61,8 +63,8 @@ SEXP fastmean(SEXP args)
       break;
     case REALSXP:
       for (int i=0; i<l; ++i) {
-        if(ISNAN(REAL_RO(x)[i])) continue;  // TO DO: could drop this line and let NA propagate?
-        s += REAL_RO(x)[i];
+        if(ISNAN(xd[i])) continue;  // TO DO: could drop this line and let NA propagate?
+        s += xd[i];
         n++;
       }
       if (n==0) {
@@ -72,8 +74,8 @@ SEXP fastmean(SEXP args)
       s /= n;
       if(R_FINITE((double)s)) {
         for (int i=0; i<l; ++i) {
-          if(ISNAN(REAL_RO(x)[i])) continue;
-          t += (REAL_RO(x)[i] - s);
+          if(ISNAN(xd[i])) continue;
+          t += (xd[i] - s);
         }
         s += t/n;
       }
@@ -87,21 +89,21 @@ SEXP fastmean(SEXP args)
     case LGLSXP:
     case INTSXP:
       for (int i=0; i<l; ++i) {
-        if(INTEGER_RO(x)[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
-        s += INTEGER_RO(x)[i];
+        if(xi[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
+        s += xi[i];
       }
       REAL(ans)[0] = (double) (s/l);
       break;
     case REALSXP:
       for (int i=0; i<l; ++i) {
-        if(ISNAN(REAL_RO(x)[i])) {UNPROTECT(1); return(ans);}
-        s += REAL_RO(x)[i];
+        if(ISNAN(xd[i])) {UNPROTECT(1); return(ans);}
+        s += xd[i];
       }
       s /= l;
       if(R_FINITE((double)s)) {
         for (int i=0; i<l; ++i) {
           // no NA if got this far
-          t += (REAL_RO(x)[i] - s);
+          t += (xd[i] - s);
         }
         s += t/LENGTH(x);
       }
