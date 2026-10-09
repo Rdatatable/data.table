@@ -328,7 +328,7 @@ test.list <- atime::atime_test_list(
         v2 = sample(5L, N, TRUE)
       )
     },
-    Before = "1.12.8",
+    #Before = "1.12.8",
     Regression="6f360be0b2a6cf425f6df751ca9a99ec5d35ed93", #parent of Slow (https://github.com/Rdatatable/data.table/commit/ba32f3cba38ec270587e395f6e6c26a80be36be6)
     Slow = "ba32f3cba38ec270587e395f6e6c26a80be36be6", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4558) that fixes the regression
     Fast="1.18.6",
