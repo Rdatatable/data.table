@@ -110,7 +110,7 @@ test(1184.2,optimize=1L, DT[, mean(v), by=x, verbose=TRUE], output="(GForce FALS
 test(1185.1,optimize=c(0L, 1L, 2L), DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
 # test 1185.1 subsumes 1185.1 and 1187.1 for testing all levels
-test(1185.2,optimize=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], 
+test(1185.2,optimize=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE],
   output=c("All optimizations.*off", "Old mean.*changed j", "GForce optimized j to"))
 # test 1185.2 subsumes 1185.2, 1185.3, and 1185.4 for testing all levels
 MyVar = TRUE
@@ -334,7 +334,7 @@ test(1594.08,optimize=opt, DT[(idx), var(z1, na.rm=TRUE), by=x], ans)
 test(1594.09,optimize=opt,DT[, lapply(.SD, sd, na.rm=FALSE), by=x])
 test(1594.10,optimize=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
 test(1594.11,optimize=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output=out)
- 
+
 test(1594.12,optimize=opt, DT[, lapply(.SD, prod, na.rm=FALSE), by=x])
 test(1594.13,optimize=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x])
 test(1594.14,optimize=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output=out)
@@ -490,3 +490,36 @@ test(2283 + 0.19, optimize=opts,
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "V2", "b", "vs", "am"),
        context=sprintf("optimize=%s [XIX]", format(opt)))
+
+# first()/last() with n>1 are now GForce optimized via gfirst()/glast(), #4239
+opt = 0:2
+DT = data.table(g=c(1,1,1,2,2), x=1:5, y=11:15)
+out = c("GForce FALSE", "GForce FALSE", "GForce optimized j to")
+test(2284.01, optimize=opt, DT[, first(x, n=2), by=g, verbose=TRUE],
+              data.table(g=c(1,1,2,2), V1=c(1L,2L,4L,5L)), output=out)
+test(2284.02, optimize=opt, DT[, .(first(x,n=2), mean(y)), by=g, verbose=TRUE],
+              data.table(g=c(1,1,2,2), V1=c(1L,2L,4L,5L), V2=c(12,12,14.5,14.5)), output=out)
+test(2284.03, optimize=opt, DT[, .(first(x,n=2), first(y,n=3)), by=g], error="Supplied 2 items for column 1 of group 1 which has 3 rows")
+DT = data.table(a=1:3,b=(1:9)/10)
+test(2284.04, optimize=opt, copy(DT)[, v := first(b, n=3), a, verbose=TRUE], copy(DT)[, v := b], output=out)
+test(2284.05, DT[, v := first(b, n=2), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
+DT = data.table(g=c(1,1,1,2,2), s=c("a","b","c","d","e"), l=list(1,2,3,4,5))
+test(2284.06, DT[, .(first(s,n=2), last(l,n=2)), by=g],
+              data.table(g=c(1,1,2,2), V1=c("a","b","d","e"), V2=list(2,3,4,5)))
+DT4 = data.table(g=c(1,1,1,2,2), lg=c(TRUE,FALSE,TRUE,FALSE,TRUE), db=c(1.5,2.5,3.5,4.5,5.5), cx=complex(1:5, 5:1))
+test(2284.07, DT4[, .(first(lg,n=2), first(db,n=2), first(cx,n=2)), by=g],
+              data.table(g=c(1,1,2,2), V1=c(TRUE,FALSE,FALSE,TRUE), V2=c(1.5,2.5,4.5,5.5),
+                         V3=complex(c(1,2,4,5), c(5,4,2,1))))
+# fall back for n<1L
+DT = data.table(g=c(1,1,1,2,2), x=1:5, y=11:15)
+test(2284.08, DT[, first(x, n=0L), by=g, verbose=TRUE],
+              data.table(g=numeric(), V1=integer()), output="GForce is on, but not activated")
+
+# ghead()/gtail() and gshift() now also go through gforce_dynamic too
+DT5 = data.table(g=c(1,1,1,2,2), x=1:5, y=1:5)
+test(2285.01, optimize=opt, DT5[, .(shift(x), mean(x)), by=g, verbose=TRUE],
+              data.table(g=c(1,1,1,2,2), V1=c(NA,1L,2L,NA,4L), V2=c(2,2,2,4.5,4.5)), output=out)
+test(2285.02, copy(DT5)[, c("s","m") := .(shift(x), mean(x)), by=g],
+              data.table(g=c(1,1,1,2,2), x=1:5, y=1:5, s=c(NA,1L,2L,NA,4L), m=c(2,2,2,4.5,4.5)))
+test(2285.03, optimize=opt, DT5[, .(head(x,2), head(y,3)), by=g], error="Supplied 2 items for column 1 of group 1 which has 3 rows")
+# head/tail with := and mismatched n: previously errored (Supplied N items...), now aligns/pads instead, see tests 2233.28/2233.29 in tests.Rraw
