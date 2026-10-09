@@ -1,3 +1,7 @@
+bisect.restore.fun <- function(tinfo){
+  cat("", file.path(tinfo$checkout.path, ".gitattributes"))
+  gert::git_restore(".", repo=tinfo$checkout.path)
+}
 pval.thresh <- 0.001 # to reduce false positives.
 
 # Test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
