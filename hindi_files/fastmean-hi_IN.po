@@ -1,0 +1,21 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fastmean 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fastmean.c:39
+#, c-format
+msgid "%s should be TRUE or FALSE"
+msgstr "%s TRUE या FALSE होना चाहिए"
+
+#: fastmean.c:45
+#, c-format
+msgid "fastmean was passed type %s, not numeric or logical"
+msgstr "fastmean में प्रकार %s पास (pass) किया गया था, जो न तो न्यूमेरिक (numeric) है और न ही लॉजिकल (logical)"
