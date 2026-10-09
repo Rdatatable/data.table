@@ -1218,8 +1218,10 @@ replace_dot_alias = function(e) {
         if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% all.names(bysub)))
           # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
           allbyvars = NULL
-        else
-          allbyvars = intersect(all.vars(bysub), names_x)
+        else {
+          allbyvars = all.vars(bysub)
+          allbyvars = allbyvars[allbyvars %chin% names_x]
+        }
 
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
@@ -1468,7 +1470,7 @@ replace_dot_alias = function(e) {
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        non_sdvars = setdiff(intersect(av, allcols), c(bynames, ansvars))
+        non_sdvars = av[av %chin% allcols & !av %chin% c(bynames, ansvars)]
 
         # added 'mget' - fix for #994
         if (any(c("get", "mget") %chin% av)){
@@ -1504,7 +1506,7 @@ replace_dot_alias = function(e) {
       } else {
         if (!missing(.SDcols)) warningf("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
+        ansvars = sdvars = av[av %chin% allcols & !av %chin% bynames]
         if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackify(ansvars))
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
