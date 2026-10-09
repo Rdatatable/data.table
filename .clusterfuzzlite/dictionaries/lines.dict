@@ -1,0 +1,38 @@
+# Shared libFuzzer dictionary for line-based data.table fuzz targets
+# (forder, bmerge, fwrite, reshape, froll).
+#
+# Provides special IEEE-754 floating-point values, 32/64-bit integer boundary
+# literals, delimiters, and valid/invalid UTF-8 and Latin-1 byte sequences so
+# as.numeric(x), as.integer(x), and encoding-aware string comparisons reach
+# edge-case branches in C.
+
+na="NA"
+nan="NaN"
+inf="Inf"
+neg_inf="-Inf"
+neg_zero="-0"
+neg_zero_dbl="-0.0"
+zero="0"
+one="1"
+neg_one="-1"
+tiny="1e-300"
+huge="1e308"
+denorm="4.9e-324"
+int_max="2147483647"
+int_min="-2147483647"
+i64_max="9223372036854775807"
+hex="0x1A"
+true="TRUE"
+false="FALSE"
+quote="\""
+comma=","
+semi=";"
+pipe="|"
+empty_line="\x0a\x0a"
+nl="\x0a"
+crlf="\x0d\x0a"
+space=" "
+utf8_e_acute="\xc3\xa9"
+utf8_euro="\xe2\x82\xac"
+utf8_invalid="\xc3"
+latin1_e_acute="\xe9"

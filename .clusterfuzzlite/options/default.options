@@ -1,0 +1,8 @@
+# Several C entry points in data.table (e.g., src/fread.c, src/forder.c)
+# allocate working buffers with malloc/calloc/realloc and free them in cleanup
+# functions. When an R allocation hits R_MAX_VSIZE or another R error occurs,
+# Rf_error() longjmps back to R_ToplevelExec before the C cleanup runs.
+# Disable exit-time LeakSanitizer checks via ASAN_OPTIONS while keeping all
+# AddressSanitizer memory-safety checks enabled.
+[asan]
+detect_leaks = 0

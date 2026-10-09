@@ -2,7 +2,10 @@
 #
 # OSS-Fuzz / ClusterFuzzLite build script for data.table fuzz targets.
 #
-# Modeled directly on https://github.com/r-devel/r-oss-fuzz/blob/main/ossfuzz.sh.
+# Modeled on https://github.com/r-devel/r-oss-fuzz/blob/main/ossfuzz.sh,
+# adapted so each fuzz target is defined as a plain R script in
+# .clusterfuzzlite/harnesses/<name>.R and driven by a single C driver
+# (.clusterfuzzlite/harnesses/driver.c).
 #
 # Expected environment (provided by the OSS-Fuzz base-builder image):
 #   $CC, $CXX, $CFLAGS, $CXXFLAGS   compiler + sanitizer + coverage flags
@@ -95,8 +98,6 @@ fi
 ########################################################################
 # 2. Build and install instrumented data.table into $OUT/r-install
 ########################################################################
-# Stage a copy of $R_PREFIX into $OUT/r-install first and install data.table
-# there so $R_PREBUILT stays untouched across builds.
 rm -rf "$OUT/r-install"
 cp -a "$R_PREFIX" "$OUT/r-install"
 
@@ -125,8 +126,7 @@ R_MAKEVARS_USER="$MAKEVARS_FUZZ" \
 # Keep the git working tree clean after R CMD INSTALL.
 rm -f "$REPO_ROOT"/src/*.o "$REPO_ROOT"/src/*.so "$REPO_ROOT"/src/Makevars
 
-# If data.table.so linked against an OpenMP runtime not yet in $R_LIB_DIR,
-# copy its resolved shared object into $R_LIB_DIR so base-runner finds it.
+# Ensure any OpenMP runtime linked by data.table.so is bundled in $R_LIB_DIR.
 DT_SO="$R_HOME/library/data.table/libs/data.table.so"
 if [ -f "$DT_SO" ]; then
     ldd "$DT_SO" | awk '/=> \// {print $1, $3}' | while read -r soname fullpath; do
@@ -150,14 +150,10 @@ if [ -d "$FUZZ_DIR/seeds" ]; then
     cp -a "$FUZZ_DIR/seeds/." "$SEED_STAGE/"
 fi
 
-mkdir -p \
-    "$SEED_STAGE/fread" \
-    "$SEED_STAGE/fread_file" \
-    "$SEED_STAGE/fwrite" \
-    "$SEED_STAGE/forder" \
-    "$SEED_STAGE/bmerge" \
-    "$SEED_STAGE/reshape" \
-    "$SEED_STAGE/froll"
+for r_src in "$FUZZ_DIR"/harnesses/*.R; do
+    tname=$(basename "$r_src" .R)
+    mkdir -p "$SEED_STAGE/$tname"
+done
 
 # Stage small CSV / delimited test files from inst/tests/ into fread and
 # fread_file seed corpora, prefixing a selector byte so data + 1 holds the
@@ -186,7 +182,6 @@ fi
 
   stage <- Sys.getenv("SEED_STAGE")
 
-  # fread seeds across slots
   write_seed(file.path(stage, "fread"), "basic_csv.bin", 0L,
              c("a,b,c", "1,2.5,hello", "3,-4.0,\"world,x\"", "NA,Inf,"))
   write_seed(file.path(stage, "fread"), "tsv.bin", 2L,
@@ -196,13 +191,11 @@ fi
   write_seed(file.path(stage, "fread"), "logical_zeros.bin", 13L,
              c("l1,l2,z", "0,Y,0012", "1,N,0000", "NA,Y,099"))
 
-  # fread_file seeds with BOM and embedded NUL bytes
   write_seed(file.path(stage, "fread_file"), "utf8_bom.bin", 0L,
              c(as.raw(c(0xef, 0xbb, 0xbf)), charToRaw("a,b\n1,2\n3,4\n")))
   write_seed(file.path(stage, "fread_file"), "embedded_nul.bin", 1L,
              c(charToRaw("a,b\n1,x"), as.raw(0L), charToRaw("y\n2,z\n")))
 
-  # Line-based seeds for fwrite, forder, bmerge, reshape, froll
   line_samples <- list(
     numeric = c("1", "-1", "0", "-0.0", "3.14159", "NA", "NaN", "Inf", "-Inf",
                 "1e-300", "1e308", "2147483647", "-2147483647", "42"),
@@ -212,6 +205,7 @@ fi
   )
   for (target in c("fwrite", "forder", "bmerge", "reshape", "froll")) {
     tdir <- file.path(stage, target)
+    if (!dir.exists(tdir)) next
     for (s in seq_along(line_samples)) {
       nm <- names(line_samples)[s]
       for (slot in 0:11) {
@@ -222,12 +216,19 @@ fi
 ' SEED_STAGE="$SEED_STAGE"
 
 ########################################################################
-# 4. Compile, link, and package each fuzz target
+# 4. Compile driver.c once, stage harnesses/*.R, and link each target
 ########################################################################
 DEFERRED_TARGETS="${DEFERRED_TARGETS:-}"
 
-for src in "$FUZZ_DIR"/harnesses/*.c; do
-    name=$(basename "$src" .c)
+mkdir -p "$OUT/harnesses"
+cp "$FUZZ_DIR"/harnesses/*.R "$OUT/harnesses/"
+
+$CC $CFLAGS -fno-omit-frame-pointer \
+    -I"$R_INCLUDE" \
+    -c "$FUZZ_DIR/harnesses/driver.c" -o "$WORK/driver.o"
+
+for r_src in "$FUZZ_DIR"/harnesses/*.R; do
+    name=$(basename "$r_src" .R)
 
     case " $DEFERRED_TARGETS " in
         *" $name "*)
@@ -236,13 +237,9 @@ for src in "$FUZZ_DIR"/harnesses/*.c; do
             ;;
     esac
 
-    echo "ossfuzz.sh: building target $name"
-    $CC $CFLAGS -fno-omit-frame-pointer \
-        -I"$R_INCLUDE" \
-        -c "$src" -o "$WORK/${name}.o"
-
+    echo "ossfuzz.sh: linking target $name"
     $CXX $CXXFLAGS -fno-omit-frame-pointer \
-        "$WORK/${name}.o" \
+        "$WORK/driver.o" \
         -o "$OUT/$name" \
         $LIB_FUZZING_ENGINE \
         -L"$R_LIB_DIR" -lR \
@@ -254,10 +251,14 @@ for src in "$FUZZ_DIR"/harnesses/*.c; do
 
     if [ -f "$FUZZ_DIR/dictionaries/${name}.dict" ]; then
         cp "$FUZZ_DIR/dictionaries/${name}.dict" "$OUT/${name}.dict"
+    elif [ -f "$FUZZ_DIR/dictionaries/lines.dict" ]; then
+        cp "$FUZZ_DIR/dictionaries/lines.dict" "$OUT/${name}.dict"
     fi
 
     if [ -f "$FUZZ_DIR/options/${name}.options" ]; then
         cp "$FUZZ_DIR/options/${name}.options" "$OUT/${name}.options"
+    elif [ -f "$FUZZ_DIR/options/default.options" ]; then
+        cp "$FUZZ_DIR/options/default.options" "$OUT/${name}.options"
     fi
 
     if [ -d "$SEED_STAGE/${name}" ] && [ -n "$(ls -A "$SEED_STAGE/${name}" 2>/dev/null)" ]; then

@@ -1,7 +1,0 @@
-# fread() allocates working buffers via malloc/calloc in src/fread.c and
-# src/freadR.c that are freed in freadCleanup(). If an R allocation hits
-# R_MAX_VSIZE or another R error longjmps out before freadCleanup(), LSan
-# would abort at process exit. Disable leak detection via ASAN_OPTIONS while
-# keeping all ASan memory-safety checks enabled.
-[asan]
-detect_leaks = 0
