@@ -11,7 +11,10 @@
 }
 \usage{
 nafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, limit=Inf)
-setnafill(x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x), limit=Inf)
+setnafill(
+  x, type=c("const", "locf", "nocb"), fill=NA, nan=NA, cols=seq_along(x),
+  limit=Inf
+)
 }
 \arguments{
   \item{x}{ Vector, list, data.frame or data.table of logical, numeric or character columns. }
