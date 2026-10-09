@@ -1,7 +1,7 @@
 # Fuzz harness slots for rolling window statistics, NA filling, coalescing,
-# conditional, range, and shift C primitives:
+# conditional, range, shift, and integer date/time C primitives:
 #   src/froll.c, src/frollR.c, src/frolladaptive.c, src/nafill.c,
-#   src/coalesce.c, src/fifelse.c, src/between.c, src/shift.c.
+#   src/coalesce.c, src/fifelse.c, src/between.c, src/shift.c, src/idatetime.c.
 
 list(
   # 1: frollmean and frollsum (fast vs exact, na.rm, align)
@@ -129,5 +129,46 @@ list(
     on.exit(setDTthreads(1L))
     n <- as.numeric(rep(x, length.out = 200L))
     frollmean(list(n, rev(n)), c(3L, 5L), algo = "exact", na.rm = TRUE)
+  },
+
+  # 13: IDate conversions, CconvertDate extractors, and round.IDate (src/idatetime.c)
+  function(x) {
+    i <- as.integer(as.numeric(x))
+    # Clamp finite values to valid proleptic Gregorian day range while preserving NAs
+    ok <- !is.na(i)
+    i[ok] <- i[ok] %% 200000L
+    d <- as.IDate(i, origin = "1970-01-01")
+    year(d)
+    month(d)
+    mday(d)
+    yday(d)
+    wday(d)
+    quarter(d)
+    week(d)
+    isoweek(d)
+    yearmon(d)
+    yearqtr(d)
+    for (u in c("weeks", "months", "quarters", "years")) {
+      round(d, u)
+    }
+    c(d, rev(d))
+    unique(d)
+  },
+
+  # 14: ITime, IDateTime, and POSIXct round-trips (R/IDateTime.R)
+  function(x) {
+    n <- as.numeric(x)
+    ok <- is.finite(n)
+    n_sec <- rep(NA_real_, length(n))
+    n_sec[ok] <- abs(n[ok]) %% 86400
+    it <- as.ITime(n_sec)
+    hour(it)
+    minute(it)
+    second(it)
+    as.ITime(x)
+    p <- as.POSIXct(ifelse(ok, n %% 1e9, NA_real_), origin = "1970-01-01", tz = "UTC")
+    idt <- IDateTime(p)
+    as.POSIXct(idt$idate, time = idt$itime, tz = "UTC")
   }
 )
+

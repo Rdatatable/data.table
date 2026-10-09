@@ -203,17 +203,22 @@ fi
                 "123", "-45.6", "\xc3\xa9", "\xe2\x82\xac", "omega"),
     mixed   = c("10", "20", "10", "5", "-3", "NA", "0", "100", "50", "20")
   )
-  for (target in c("fwrite", "forder", "bmerge", "reshape", "froll")) {
+  fuzz_dir <- Sys.getenv("FUZZ_DIR")
+  for (r_file in list.files(file.path(fuzz_dir, "harnesses"), pattern = "\\.R$", full.names = TRUE)) {
+    target <- sub("\\.R$", "", basename(r_file))
+    if (target %in% c("fread", "fread_file")) next
     tdir <- file.path(stage, target)
     if (!dir.exists(tdir)) next
+    slots <- source(r_file, local = TRUE)$value
+    nslots <- length(slots)
     for (s in seq_along(line_samples)) {
       nm <- names(line_samples)[s]
-      for (slot in 0:11) {
+      for (slot in seq.int(0L, nslots - 1L)) {
         write_seed(tdir, sprintf("%s_slot%02d.bin", nm, slot), slot, line_samples[[s]])
       }
     }
   }
-' SEED_STAGE="$SEED_STAGE"
+' SEED_STAGE="$SEED_STAGE" FUZZ_DIR="$FUZZ_DIR"
 
 ########################################################################
 # 4. Compile driver.c once, stage harnesses/*.R, and link each target

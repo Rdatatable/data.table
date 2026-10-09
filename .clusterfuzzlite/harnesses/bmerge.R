@@ -1,5 +1,6 @@
 # Fuzz harness slots for binary merge, rolling joins, non-equi joins,
-# interval overlaps, and set operations (src/bmerge.c, src/ijoin.c, R/setops.R).
+# interval overlaps, multi-table merges, column binding, and set operations
+# (src/bmerge.c, src/ijoin.c, src/mergelist.c, R/mergelist.R, R/setops.R).
 
 list(
   # 1: Character equi-joins with mult and nomatch variants
@@ -40,9 +41,9 @@ list(
     if (!length(i2)) i2 <- i1
     d1 <- data.table(t = i1, v = seq_along(i1))
     d2 <- data.table(t = i2)
-    d1[d2, on = "t", roll = TRUE]
-    d1[d2, on = "t", roll = "nearest"]
-    d1[d2, on = "t", roll = 5L, rollends = c(TRUE, FALSE)]
+    d1[d2, on = "t", roll = TRUE, allow.cartesian = TRUE]
+    d1[d2, on = "t", roll = "nearest", allow.cartesian = TRUE]
+    d1[d2, on = "t", roll = 5L, rollends = c(TRUE, FALSE), allow.cartesian = TRUE]
   },
 
   # 4: Non-equi joins (src/bmerge.c non-equi binary search)
@@ -129,7 +130,7 @@ list(
     d1 <- data.table(k = n1, v = seq_along(n1))
     d2 <- data.table(k = n2)
     d1[d2, on = "k", mult = "first"]
-    d1[d2, on = "k", roll = TRUE]
+    d1[d2, on = "k", roll = TRUE, allow.cartesian = TRUE]
   },
 
   # 10: Multi-column composite key joins (character + factor + integer)
@@ -169,5 +170,42 @@ list(
     d1 <- data.table(k = u, v = seq_along(u))
     d2 <- data.table(k = l)
     d1[d2, on = "k", allow.cartesian = TRUE]
+  },
+
+  # 13: mergelist and setmergelist across join types (src/mergelist.c, R/mergelist.R)
+  function(x) {
+    n <- as.numeric(x)
+    h <- ceiling(length(x) / 2)
+    x1 <- head(x, h)
+    x2 <- tail(x, -h)
+    if (!length(x2)) x2 <- x1
+    d1 <- data.table(k = x1, a = seq_along(x1))
+    d2 <- data.table(k = x2, b = head(n, length(x2)))
+    d3 <- data.table(k = rev(x1), c = rev(seq_along(x1)))
+    l <- list(d1, d2, d3)
+    for (how in c("left", "inner", "full", "right", "semi", "anti")) {
+      m <- if (how %in% c("semi", "anti")) "first" else "all"
+      mergelist(l, on = "k", how = how, mult = m, join.many = TRUE)
+    }
+    mergelist(list(d1, unique(d2, by = "k")), on = "k", how = "left", mult = "first")
+    mergelist(list(unique(d1, by = "k"), d2), on = "k", how = "right", mult = "last")
+    if (nrow(d1) <= 16L && nrow(d2) <= 16L) {
+      mergelist(list(d1[, .(k1 = k, a)], d2[, .(k2 = k, b)]), how = "cross", join.many = TRUE)
+    }
+    setmergelist(list(copy(d1), copy(d2)), on = "k", how = "left", mult = "all", join.many = TRUE)
+  },
+
+  # 14: cbindlist and setcbindlist with keys and secondary indices (src/mergelist.c)
+  function(x) {
+    n <- as.numeric(x)
+    d1 <- data.table(a = x, b = n)
+    d2 <- data.table(c = rev(x), d = seq_along(x))
+    d3 <- data.table(e = as.integer(n))
+    setkey(d1, a)
+    setindex(d1, b)
+    setindex(d2, c)
+    cbindlist(list(d1, d2, d3))
+    setcbindlist(list(copy(d1), copy(d2), data.table()))
   }
 )
+
