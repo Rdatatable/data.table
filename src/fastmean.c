@@ -49,7 +49,7 @@ SEXP fastmean(SEXP args)
   const int *xi = x_type == REALSXP ? NULL : INTEGER_RO(x);
   const double *xd = x_type == REALSXP ? REAL_RO(x) : NULL;
   if (narm) {
-    switch(TYPEOF(x)) {
+    switch(x_type) {
     case LGLSXP:
     case INTSXP:
       for (int i=0; i<l; ++i) {
