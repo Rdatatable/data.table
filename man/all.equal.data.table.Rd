@@ -9,7 +9,7 @@
 \usage{
   \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE,
     ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
-    \dots)
+    by=NULL, fun.aggregate=sum, \dots)
 }
 
 \arguments{
@@ -37,6 +37,14 @@
 
   \item{tolerance}{
     A numeric value used when comparing numeric columns, by default \code{sqrt(.Machine$double.eps)}. Unless non-default value provided it will be forced to \code{0} if used together with \code{ignore.row.order} and duplicate rows detected or factor columns present.
+  }
+
+  \item{by}{
+    A character vector of column names to group and sub-aggregate both \code{target} and \code{current} before comparison.
+  }
+
+  \item{fun.aggregate}{
+    A function to use for aggregation when \code{by} is provided. Defaults to \code{sum}.
   }
 
   \item{\dots}{
@@ -91,5 +99,10 @@ y <- data.table(A = factor(letters[1:5])[1:4]) # 5 levels
 all.equal(x, y, trim.levels = FALSE)
 all.equal(x, y, trim.levels = FALSE, check.attributes = FALSE)
 all.equal(x, y)
+
+# sub-aggregation before comparison
+d1 = data.table(a = 1:2, b=c(1,2))
+d2 = data.table(a = c(1:2,2L), b=c(1,1,1))
+all.equal(d1, d2, by = "a") # Returns TRUE
 }
 
