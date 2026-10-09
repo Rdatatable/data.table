@@ -1,0 +1,53 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: print.data.table 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: print.data.table.R:19
+msgid "Valid options for col.names are 'auto', 'top', and 'none'"
+msgstr ""
+
+#: print.data.table.R:21
+msgid "Valid options for trunc.cols are TRUE and FALSE"
+msgstr ""
+
+#: print.data.table.R:23
+msgid "Column classes will be suppressed when col.names is 'none'"
+msgstr ""
+
+#: print.data.table.R:50
+msgid "Key: <%s>"
+msgstr ""
+
+#: print.data.table.R:60
+msgid "Null data.%s (0 rows and 0 cols)"
+msgstr ""
+
+#: print.data.table.R:62
+msgid "Empty data.%s (%d rows and %d cols)"
+msgstr ""
+
+#: print.data.table.R:156
+msgid ""
+"Internal structure doesn't seem to be a list. Possibly corrupt data.table."
+msgstr ""
+
+#: print.data.table.R:53
+msgid "Index: %s\n"
+msgid_plural "Indices: %s\n"
+msgstr[0] ""
+msgstr[1] ""
+
+#: print.data.table.R:286
+msgid "%d variable not shown: %s\n"
+msgid_plural "%d variables not shown: %s\n"
+msgstr[0] ""
+msgstr[1] ""

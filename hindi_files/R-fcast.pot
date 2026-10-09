@@ -1,0 +1,98 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fcast 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fcast.R:7
+msgid "Using '%s' as value column. Use 'value.var' to override"
+msgstr ""
+
+#: fcast.R:20
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s "
+"currently only has a method for data.tables. Please confirm your input is a "
+"data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a "
+"method from reshape2, try installing that package first, but do note that "
+"reshape2 is superseded and is no longer actively developed."
+msgstr ""
+
+#: fcast.R:21
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s and will attempt to "
+"redirect to the relevant reshape2 method; please note that reshape2 is "
+"superseded and is no longer actively developed, and this redirection is now "
+"deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). "
+"In the next version, this warning will become an error."
+msgstr ""
+
+#: fcast.R:31
+msgid ""
+"Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + "
+"b ~ c."
+msgstr ""
+
+#: fcast.R:38
+msgid "data.table to cast must have unique column names"
+msgstr ""
+
+#: fcast.R:83
+msgid "value.var values %s are not found in 'data'."
+msgstr ""
+
+#: fcast.R:99
+msgid ""
+"When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be "
+"either of length =1 or =length(fun.aggregate)."
+msgstr ""
+
+#: fcast.R:132
+msgid "'data' must be a data.table."
+msgstr ""
+
+#: fcast.R:134
+msgid "'drop' must be logical TRUE/FALSE"
+msgstr ""
+
+#: fcast.R:136
+msgid "Argument 'value.var.in.dots' should be logical TRUE/FALSE"
+msgstr ""
+
+#: fcast.R:138
+msgid ""
+"Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical "
+"TRUE/FALSE"
+msgstr ""
+
+#: fcast.R:155
+msgid "Column [%s] not found or of unknown type."
+msgstr ""
+
+#: fcast.R:170
+msgid "Columns specified in formula can not be of type list"
+msgstr ""
+
+#: fcast.R:185
+msgid ""
+"'fun.aggregate' is NULL, but found duplicate row/column combinations, so "
+"defaulting to length(). That is, the variables %s used in 'formula' do not "
+"uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' "
+"is used to derive a single representative value for each combination in the "
+"output data.table, for example by summing or averaging (fun.aggregate=sum or "
+"fun.aggregate=mean, respectively). Check the resulting table for values "
+"larger than 1 to see which combinations were not unique. See ?dcast.data."
+"table for more details."
+msgstr ""
+
+#: fcast.R:195
+msgid ""
+"Aggregating functions should take a vector as input and return a single "
+"value (length=1), but they do not, so the result is undefined. Please fix by "
+"modifying your function so that a single value is always returned."
+msgstr ""
