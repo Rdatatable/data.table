@@ -45,8 +45,9 @@ SEXP fastmean(SEXP args)
     error(_("fastmean was passed type %s, not numeric or logical"), type2char(TYPEOF(x)));
   }
   l = LENGTH(x);
-  const int *xi = isReal(x) ? NULL : INTEGER_RO(x);
-  const double *xd = isReal(x) ? REAL_RO(x) : NULL;
+  const SEXPTYPE x_type = TYPEOF(x);
+  const int *xi = x_type == REALSXP ? NULL : INTEGER_RO(x);
+  const double *xd = x_type == REALSXP ? REAL_RO(x) : NULL;
   if (narm) {
     switch(TYPEOF(x)) {
     case LGLSXP:
