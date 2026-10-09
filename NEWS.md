@@ -88,6 +88,8 @@
 
 19. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
 
+20. `setnafill()` with `type = "locf"` or `type = "nocb"` on a 0-row table no longer segfaults, [#7910](https://github.com/Rdatatable/data.table/issues/7910). Thanks @MichaelChirico for the report and fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
