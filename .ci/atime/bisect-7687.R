@@ -50,9 +50,15 @@ for(result.RData in Sys.glob(file.path(Test.dir, "RData", "*"))){
 
 limit.dt <- data.table(seconds=tpred$seconds.limit)
 library(animint2)
-(version.colors <- atime:::default.version.colors)
-version.colors[setdiff(unique(dot.dt$version), names(version.colors))] <- "black"
-animint(
+version.colors <- c(
+  Slow="violet",
+  Fast="red",
+  Regression="violet",
+  Before="red",
+  HEAD= "blue")
+viz <- animint(
+  title=paste("Performance testing with git bisect in data.table", basename(Test.dir)),
+  source="https://github.com/Rdatatable/data.table/pull/7912/files#diff-e7f10716f0ff9f29e3186a43cfed95d970b167dc4d6a92c00b9e0736bf4b05ae",
   overview=ggplot()+
     ggtitle("Overview, select commit")+
     theme_bw()+
@@ -66,7 +72,6 @@ animint(
       rank, value, color=version, group=version),
       data=results.long)+
     facet_grid(variable ~ ., scales="free")+
-    theme(axis.text.x=element_text(angle=30, hjust=1))+
     geom_label_aligned(aes(
       rank, value, label=version, color=version),
       data=results.long[rank==max(rank)],
@@ -77,7 +82,9 @@ animint(
       "1"="white"))+
     scale_color_manual(values=version.colors)+
     scale_y_continuous("")+
-    scale_x_continuous("commit rank over time")+
+    scale_x_continuous(
+      "commit rank over time",
+      breaks=results.wide$rank)+
     geom_tallrect(aes(
       xmin=rank-0.5, xmax=rank+0.5),
       clickSelects="commit",
@@ -91,7 +98,7 @@ animint(
     ggtitle("Details for selected commit")+
     theme_bw()+
     theme(legend.position="none")+
-    theme_animint(width=1000)+
+    theme_animint(width=500, last_in_row=TRUE)+
     geom_hline(aes(
       yintercept=seconds),
       color="grey",
@@ -119,7 +126,7 @@ animint(
       color="grey50",
       showSelected="commit")+
     geom_text(aes(
-      0, 0, label=commit,
+      0, 0, label=substring(commit, 1, 10),
       href=paste0("https://github.com/Rdatatable/data.table/commit/", commit),
       key=1),
       hjust=0,
@@ -130,7 +137,7 @@ animint(
       N, ymin=min, ymax=max,
       key=version, fill=version, group=version),
       showSelected=c("version","commit"),
-      alpha=0.5,
+      alpha=0.2,
       color=NA,
       data=details.dt)+
     geom_line(aes(
@@ -154,9 +161,13 @@ animint(
       data=dot.dt)+
     scale_color_manual(values=version.colors)+
     scale_fill_manual(values=version.colors)+
-    scale_x_log10()+
+    scale_x_log10("N = number of data")+
     scale_y_log10("seconds"),
   duration=list(
     commit=1000)
 )
+viz
 
+if(FALSE){
+  animint2::animint2pages(viz, paste0("2026-10-09-performance-bisect-", basename(Test.dir)), chromote_sleep_seconds=3)
+}
