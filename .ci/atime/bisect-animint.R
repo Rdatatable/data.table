@@ -1,7 +1,13 @@
 remotes::install_github("tdhock/atime@bisect")
 pkg.path <- "~/R/data.table"
+
 Test <- "fread N=cols regression"
 atime::bisect(pkg.path, Test)
+
+if(FALSE){
+  Test <- "DT[by] fixed in #4558"
+  atime::bisect(pkg.path, Test, "Regression", "Before")
+}
 
 Test.dir <- file.path(pkg.path, ".ci", "atime", "bisect", atime:::test_file_name(Test))
 library(data.table)
