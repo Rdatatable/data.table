@@ -276,10 +276,10 @@ test.list <- atime::atime_test_list(
       data.table::fwrite(input.dt, input.csv)
     },
     seconds.limit=0.1,
-    #Fast="1.14.8",
-    Fast="1685a3b47d48f323afeae589545f7cbb7717ec28", #not as fast as Fast, but use as Fast in bisect with Slow.
-    #"67db7f7fb33b99da8cc5dc575714924b96d0f0fe", #not as slow as Slow, but use as Slow in bisect with Fast.
-    Slow="1.18.6",
+    Fast="1.14.8",
+    #Fast="1685a3b47d48f323afeae589545f7cbb7717ec28", #not as fast as Fast, but use as Fast in bisect with Slow.
+    Slow="67db7f7fb33b99da8cc5dc575714924b96d0f0fe", #not as slow as Slow, but use as Slow in bisect with Fast.
+    #Slow="1.18.6",
     expr=data.table::fread(input.csv, showProgress = FALSE, nThread=1)),
 
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
