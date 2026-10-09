@@ -1,8 +1,9 @@
+remotes::install_github("tdhock/atime@bisect")
 atime::bisect("~/R/data.table", "fread N=cols regression")
 
 library(data.table)
 (results.wide <- data.table(
-  csv=Sys.glob("~/R/data.table/.ci/atime/bisect/fread_N=cols_regression/results/*")
+  csv=Sys.glob("~/R/data.table/.ci/atime/bisect/fread_N=cols_regression/csv/*")
 )[
 , fread(csv), by=csv
 ][
@@ -15,7 +16,6 @@ library(data.table)
   results.wide,
   measure.vars=measure(variable, version, sep=".")))
 library(ggplot2)
-
 gg <- ggplot()+
   geom_vline(aes(
     xintercept=Rank,
