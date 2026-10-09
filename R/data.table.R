@@ -3337,8 +3337,8 @@ gfuns = c(gdtfuns,
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n))
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
-gfirst = function(x, n=1L) .Call(Cgfirst, x, as.integer(n))
-glast = function(x, n=1L) .Call(Cglast, x, as.integer(n))
+gfirst = function(x, n=1L, na.rm=FALSE) .Call(Cgfirst, x, as.integer(n), na.rm)
+glast = function(x, n=1L, na.rm=FALSE) .Call(Cglast, x, as.integer(n), na.rm)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gweighted.mean = function(x, w, ..., na.rm=FALSE) {
@@ -3390,11 +3390,14 @@ is_constantish = function(q, check_singleton=FALSE) {
   length(q) == 3L &&
     is_constantish(q[[3L]], check_singleton = TRUE)
 }
-# first(x, n) / last(x, n) with n>1, #4446 #4239.
+# first(x, n=, na.rm=) / last(x, n=, na.rm=), #4446 #4239. Called only when length(q)>=3
+# (the length(q)==2L case, i.e. first(x)/last(x), is already handled earlier in .gforce_ok).
 .gfirstlast_ok = function(q, envir) {
-  length(q) == 3L &&
-    is_constantish(q[[3L]], check_singleton = TRUE) &&
-    is.numeric(n <- eval(q[[3L]], envir)) && length(n)==1L && !is.na(n) && n>=1
+  q = match.call(first, q)  # first's signature is the same as last's: first(x, n=1L, na.rm=FALSE, ...)
+  (is.null(q[["n"]]) || (is_constantish(q[["n"]], check_singleton=TRUE) &&
+    is.numeric(n <- eval(q[["n"]], envir)) && length(n)==1L && !is.na(n) && n>=1)) &&
+  (is.null(q[["na.rm"]]) || (is_constantish(q[["na.rm"]], check_singleton=TRUE) &&
+    isTRUEorFALSE(eval(q[["na.rm"]], envir))))
 }
 `.g[_ok` = function(q, x, envir=parent.frame(3L)) {
   length(q) == 3L &&
@@ -3449,7 +3452,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   if (!is.null(q1)) {
     q2 = .unwrap_conversions(q[[2L]])
     if (!is.symbol(q2) || (!q2 %chin% names(x) && q2 != ".I")) return(FALSE)
-    if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]) &&
+    if (length(q)==2L || (length(q)==3L && .arg_is_narm(q) && is_constantish(q[[3L]]) &&
         !(is.symbol(q[[3L]]) && q[[3L]] %chin% names(x)))) return(TRUE)
     return(switch(as.character(q1),
       "shift" = .gshift_ok(q),

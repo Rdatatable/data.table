@@ -8,13 +8,18 @@ or data.table. The main difference to head/tail is that the default for \code{n}
 rather than 6.
 }
 \usage{
-first(x, n=1L, \dots)
-last(x, n=1L, \dots)
+first(x, n=1L, na.rm=FALSE, \dots)
+last(x, n=1L, na.rm=FALSE, \dots)
 }
 \arguments{
 \item{x}{ A vector, list, data.frame or data.table. Otherwise the S3 method
 of \code{xts::first} is deployed. }
 \item{n}{ A numeric vector length 1. How many items to select. }
+\item{na.rm}{ \code{TRUE} or \code{FALSE} (default). When \code{TRUE}, missing values in \code{x}
+(\code{NA}, or \code{NULL} list elements) are skipped, so that the first/last \code{n}
+\emph{non-missing} items are returned; fewer than \code{n} are returned if fewer than \code{n}
+non-missing items are found. Only supported when \code{x} is a plain vector or list (not
+\code{data.frame}, \code{data.table}, matrix/array, or \code{xts}). }
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }
@@ -37,5 +42,12 @@ first(x) # same as head(x, 1)
 last(1:5) # [1] 5
 x = data.table(x=1:5, y=6:10)
 last(x) # same as tail(x, 1)
+
+first(c(NA, 2, NA, 4), na.rm=TRUE) # [1] 2
+last(c(1, NA, 3, NA), n=2, na.rm=TRUE) # [1] 1 3
+
+DT = data.table(g=c(1,1,1,2,2), x=c(1,NA,3,NA,5))
+DT[, first(x, na.rm=TRUE), by=g] # first non-missing x per group
+DT[, first(x, n=2, na.rm=TRUE), by=g] # up to 2 non-missing x per group; fewer rows if fewer are non-missing
 }
 \keyword{ data }

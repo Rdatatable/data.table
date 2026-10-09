@@ -39,30 +39,59 @@ static int nbit(int n)
 
 /* Some GForce functions (currently gfirst/glast/ghead/gtail with n>1, and gshift) return, for at least
    one group, a different number of items than 1 (the norm for e.g. gmean, gsum). Such a column carries
-   a 'gforce_dynamic' attribute (set by gfirstlast and gshift, below): a scalar integer w, meaning the
-   column has MIN(w, grpsize[g]) items for group g (gshift sets w=INT_MAX, since it always returns
-   exactly grpsize[g]). When a query combines such a column with an ordinary (fixed, 1-per-group) result
-   in the same by= (e.g. .(shift(x), mean(y))), this function replicates the fixed result out to match,
-   #1414. When a query combines two dynamic columns that don't actually agree in length for some group
-   (e.g. .(head(x,2), head(y,3)) where the group has >=3 rows), this errors rather than reconciling them
-   with NA. Otherwise optimize>=2 (GForce) would succeed at a query that optimize<2 (dogroups.c) can't
-   do at all, making the optimize level change correctness rather than just speed Returns gans unchanged
-   (no allocation) when no column carries the attribute, so the (very common) case of no dynamic-length
-   GForce result in the query costs nothing extra. */
+   a 'gforce_dynamic' attribute (set by gfirstlast and gshift, below), which is either:
+     - a scalar integer w, meaning the column has MIN(w, grpsize[g]) items for group g: deterministic
+       from w and grpsize[] alone (gshift sets w=INT_MAX, since it always returns exactly grpsize[g]);
+       or
+     - an integer vector of length ngrp giving the actual number of items for each group directly: used
+       when na.rm=TRUE (first/last with n>1), since how many non-NA values are found per group is data-
+       dependent and can't be derived from w and grpsize[] alone, #4239 #4446.
+   When a query combines such a column with an ordinary (fixed, 1-per-group) result in the same by=
+   (e.g. .(shift(x), mean(y))), this function replicates the fixed result out to match, #1414. When a
+   query combines two dynamic columns that don't actually agree in length for some group (e.g.
+   .(head(x,2), head(y,3)) where the group has >=3 rows, or .(first(x,n=2,na.rm=TRUE), first(y,n=3))
+   where a group has fewer than 2 non-NA x values), this errors rather than reconciling them with NA.
+   Otherwise optimize>=2 (GForce) would succeed at a query that optimize<2 (dogroups.c) can't do at all,
+   making the optimize level change correctness rather than just speed, #4446 #4239 #5060 #523. Returns
+   gans unchanged (no allocation) when no column carries the attribute, so the (very common) case of no
+   dynamic-length GForce result in the query costs nothing extra. */
 static SEXP gforce_align_dynamic(SEXP gans) {
   const int nans = length(gans);
   int max_w = 0;
+  SEXP lens = NULL;
+  bool lensCopied = false;
+  int nprotect = 0;
   for (int i=0; i<nans; ++i) {
     SEXP att = getAttrib(VECTOR_ELT(gans, i), sym_gforce_dynamic);
     if (isNull(att)) continue;
-    const int this_w = INTEGER(att)[0];
-    if (this_w>max_w) max_w=this_w;
+    if (LENGTH(att)==1) {
+      const int this_w = INTEGER(att)[0];
+      if (this_w>max_w) max_w=this_w;
+    } else if (!lens) {
+      lens = att;  // first data-dependent (na.rm) column found; use its counts directly unless another is found below
+    } else {
+      if (!lensCopied) { lens=PROTECT(duplicate(lens)); nprotect++; lensCopied=true; }
+      int *lensp = INTEGER(lens);
+      const int *ss = INTEGER(att);
+      for (int g=0; g<ngrp; ++g) if (ss[g]>lensp[g]) lensp[g]=ss[g];
+    }
   }
-  if (!max_w) return gans;  // nothing in this j is gforce_dynamic; most common case, return untouched with no allocation
-  int nprotect = 0;
-  SEXP lens = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
-  int *lensp = INTEGER(lens);
-  for (int g=0; g<ngrp; ++g) lensp[g] = MIN(grpsize[g], max_w);
+  if (!lens && !max_w) return gans;  // nothing in this j is gforce_dynamic; most common case, return untouched with no allocation
+  if (!lens) {
+    lens = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
+    int *lensp = INTEGER(lens);
+    for (int g=0; g<ngrp; ++g) lensp[g] = MIN(grpsize[g], max_w);
+  } else if (max_w) {
+    if (!lensCopied) { lens=PROTECT(duplicate(lens)); nprotect++; lensCopied=true; }
+    int *lensp = INTEGER(lens);
+    for (int g=0; g<ngrp; ++g) {
+      const int this_w = MIN(grpsize[g], max_w);
+      if (this_w>lensp[g]) lensp[g]=this_w;
+    }
+  }
+  const int *lensp = INTEGER(lens);
+  int anslen=0;
+  for (int g=0; g<ngrp; ++g) anslen += lensp[g];
 
   SEXP ans = PROTECT(allocVector(VECSXP, nans)); nprotect++;
   for (int i=0; i<nans; ++i) {
@@ -74,16 +103,45 @@ static SEXP gforce_align_dynamic(SEXP gans) {
       UNPROTECT(1);
       continue;
     }
-    const int w = INTEGER(att)[0];
+    const bool scalar_w = LENGTH(att)==1;
+    const int w = scalar_w ? INTEGER(att)[0] : 0;
+    const int *ss = scalar_w ? NULL : INTEGER(att);
+    bool needsRecycle = false;  // any group where this column's own length is 1 but lensp[g] isn't
     for (int g=0; g<ngrp; ++g) {
-      const int thislen = MIN(grpsize[g], w);
-      if (thislen != lensp[g])
-        error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, i+1, g+1, lensp[g]);
+      const int thislen = scalar_w ? MIN(grpsize[g], w) : ss[g];
+      if (thislen != lensp[g]) {
+        // allow recycle for lone values
+        if (thislen != 1)
+          error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, i+1, g+1, lensp[g]);
+        needsRecycle = true;
+      }
     }
-    // this column's own length, MIN(grpsize[g],w) summed over g, already equals sum(lensp) (just
-    // checked above) and is already in the right group-by-group order; use it as-is, no copy needed
     setAttrib(tt, sym_gforce_dynamic, R_NilValue);
-    SET_VECTOR_ELT(ans, i, tt);
+    if (!needsRecycle) {
+      // this column's own length, summed over g, already equals sum(lensp)
+      // use it as-is, no copy needed
+      SET_VECTOR_ELT(ans, i, tt);
+      continue;
+    }
+    // build a 1-based index recycling any lone (thislen==1) group's single value to fill lensp[g]
+    SEXP idx = PROTECT(allocVector(INTSXP, anslen));
+    int *idxp = INTEGER(idx);
+    int idxi=0, srcpos=1;
+    for (int g=0; g<ngrp; ++g) {
+      const int thislen = scalar_w ? MIN(grpsize[g], w) : ss[g];
+      if (thislen==lensp[g]) {
+        for (int k=0; k<thislen; ++k) idxp[idxi++] = srcpos+k;
+        srcpos += thislen;
+      } else {  // thislen==1, recycle
+        for (int k=0; k<lensp[g]; ++k) idxp[idxi++] = srcpos;
+        srcpos += 1;
+      }
+    }
+    SEXP newcol = PROTECT(allocVector(TYPEOF(tt), anslen));
+    copyMostAttrib(tt, newcol);
+    subsetVectorRaw(newcol, tt, idx, /*anyNA=*/false);
+    SET_VECTOR_ELT(ans, i, newcol);
+    UNPROTECT(2); // idx, newcol
   }
   setAttrib(ans, sym_gforce_dynamic, lens);  // expose the final per-group lengths so [.data.table can align/replicate the group columns to match
   UNPROTECT(nprotect);
@@ -974,110 +1032,206 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) {
+static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw, const bool narm) {
   // w: which item (1 other than for gnthvalue when could be >1)
   // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail).
   //        When TRUE, the result is marked with a 'gforce_dynamic' attribute #4239
   //        so that gforce() can correctly replicate ordinary (fixed, 1-per-group) results
   //        against it, and validate it against other dynamic results, when combined in the same by=.
+  // narm: skip NA values while selecting, #4239 #4446. When headw (w>1), the number of non-NA values
+  //       found per group is data-dependent (0 to w), so a first pass counts them (and finds, for
+  //       first=FALSE, where the write pass should start scanning forward from) before ans is
+  //       allocated; the gforce_dynamic attribute then carries these actual per-group counts rather
+  //       than just w. When !headw (w==1), each group still contributes exactly one slot (NA when no
+  //       non-NA value is found, like gmedian/gvar do for insufficient data), so no such marking, or
+  //       counting pass, is needed there.
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
   if (w==1 && headw) internal_error(__func__, "headw should only be true when w>1");
   int anslen = ngrp;
+  int nprotect = 0;
+  SEXP takeSxp=NULL, startSxp=NULL;
+  int *takep=NULL, *startp=NULL;
   if (headw) {
-    anslen = 0;
-    for (int i=0; i<ngrp; ++i) {
-      anslen += MIN(w, grpsize[i]);
+    if (narm) {
+      takeSxp = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
+      startSxp = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
+      takep = INTEGER(takeSxp);
+      startp = INTEGER(startSxp);
+      anslen = 0;
+      #define COUNT(CTYPE, RTYPE, RNA, ISNAT) {                                                      \
+        const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                   \
+        for (int i=0; i<ngrp; ++i) {                                                                 \
+          const int grpn = grpsize[i];                                                               \
+          const int inc = first ? +1 : -1;                                                           \
+          int j = ff[i]-1 + (!first)*(grpn-1);                                                       \
+          int found = 0, lastj = j;                                                                  \
+          for (int r=0; r<grpn && found<w; ++r, j+=inc) {                                            \
+            const int k = issorted ? j : oo[j]-1;                                                    \
+            const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);      \
+            if (!(ISNAT)) { found++; lastj = j; }                                                    \
+          }                                                                                          \
+          takep[i] = found;                                                                          \
+          startp[i] = first ? (ff[i]-1) : lastj;                                                     \
+          anslen += found;                                                                           \
+        }                                                                                            \
+      } break;
+      switch(TYPEOF(x)) {
+      case LGLSXP:  COUNT(int, LOGICAL_RO, NA_LOGICAL, val==NA_INTEGER)
+      case INTSXP:  COUNT(int, INTEGER_RO, NA_INTEGER, val==NA_INTEGER)
+      case REALSXP: if (INHERITS(x, char_integer64)) {
+        COUNT(int64_t, REAL_RO, NA_INTEGER64, val==NA_INTEGER64)
+      } else {
+        COUNT(double, REAL_RO, NA_REAL, ISNAN(val))
+      }
+      case CPLXSXP: COUNT(Rcomplex, COMPLEX_RO, NA_CPLX, ISNAN_COMPLEX(val))
+      case STRSXP:  COUNT(SEXP, STRING_PTR_RO, NA_STRING, val==NA_STRING)
+      case VECSXP:  COUNT(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), isNull(val) || (isLogical(val) && LENGTH(val)==1 && LOGICAL(val)[0]==NA_LOGICAL))
+      default:
+        error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+      }
+      #undef COUNT
+    } else {
+      anslen = 0;
+      for (int i=0; i<ngrp; ++i) {
+        anslen += MIN(w, grpsize[i]);
+      }
     }
   }
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), anslen));
+  SEXP ans = PROTECT(allocVector(TYPEOF(x), anslen)); nprotect++;
   int ansi = 0;
-  #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                          \
-    const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                     \
-    if (headw) {                                                                                   \
-      /* returning more than 1 per group; w>1 */                                                   \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int grpn = grpsize[i];                                                               \
-        const int thisn = MIN(w, grpn);                                                            \
-        const int jstart = ff[i]-1+ (!first)*(grpn-thisn);                                         \
-        const int jend = jstart+thisn;                                                             \
-        for (int j=jstart; j<jend; ++j) {                                                          \
-          const int k = issorted ? j : oo[j]-1;                                                    \
-          /* ternary on const-bool assumed to be branch-predicted and ok inside loops */           \
-          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);      \
-          ASSIGN;                                                                                  \
-        }                                                                                          \
-      }                                                                                            \
-    } else if (w==1) {                                                                             \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int j = ff[i]-1 + (first ? 0 : grpsize[i]-1);                                        \
-        const int k = issorted ? j : oo[j]-1;                                                      \
-        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
-        ASSIGN;                                                                                    \
-      }                                                                                            \
-    } else if (w>1 && first) {                                                                     \
-      /* gnthvalue */                                                                              \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int grpn = grpsize[i];                                                               \
-        if (w>grpn) { const CTYPE val=RNA; ASSIGN; continue; }                                     \
-        const int j = ff[i]-1+w-1;                                                                 \
-        const int k = issorted ? j : oo[j]-1;                                                      \
-        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
-        ASSIGN;                                                                                    \
-      }                                                                                            \
-    } else {                                                                                       \
-      /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
-      /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);      \
-    }                                                                                              \
+  #define DO(CTYPE, RTYPE, RNA, ASSIGN, ISNAT) {                                                \
+    const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                  \
+    if (headw && narm) {                                                                        \
+      /* the count pass above already determined how many, and where to start, for each group */\
+      for (int i=0; i<ngrp; ++i) {                                                              \
+        const int jend = ff[i]-1+grpsize[i];  /* one past the group's last valid position */    \
+        int j = startp[i], found = 0;                                                           \
+        while (found < takep[i]) {                                                              \
+          if (j>=jend)
+            internal_error(__func__, "gfirstlast narm write pass ran past group %d end", i);    \
+          const int k = issorted ? j : oo[j]-1;                                                 \
+          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);   \
+          if (!(ISNAT)) { ASSIGN; found++; }                                                    \
+          j++;                                                                                  \
+        }                                                                                       \
+      }                                                                                         \
+    } else if (headw) {                                                                         \
+      /* returning more than 1 per group; w>1 */                                                \
+      for (int i=0; i<ngrp; ++i) {                                                              \
+        const int grpn = grpsize[i];                                                            \
+        const int thisn = MIN(w, grpn);                                                         \
+        const int jstart = ff[i]-1+ (!first)*(grpn-thisn);                                      \
+        const int jend = jstart+thisn;                                                          \
+        for (int j=jstart; j<jend; ++j) {                                                       \
+          const int k = issorted ? j : oo[j]-1;                                                 \
+          /* ternary on const-bool assumed to be branch-predicted and ok inside loops */        \
+          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);   \
+          ASSIGN;                                                                               \
+        }                                                                                       \
+      }                                                                                         \
+    } else if (w==1 && narm) {                                                                  \
+      for (int i=0; i<ngrp; ++i) {                                                              \
+        const int grpn = grpsize[i];                                                            \
+        const int inc = first ? +1 : -1;                                                        \
+        int j = ff[i]-1 + (!first)*(grpn-1);                                                    \
+        CTYPE val = RNA;                                                                        \
+        for (int r=0; r<grpn; ++r, j+=inc) {                                                    \
+          const int k = issorted ? j : oo[j]-1;                                                 \
+          val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);               \
+          if (!(ISNAT)) break;                                                                  \
+          val = RNA;                                                                            \
+        }                                                                                       \
+        ASSIGN;                                                                                 \
+      }                                                                                         \
+    } else if (w==1) {                                                                          \
+      for (int i=0; i<ngrp; ++i) {                                                              \
+        const int j = ff[i]-1 + (first ? 0 : grpsize[i]-1);                                     \
+        const int k = issorted ? j : oo[j]-1;                                                   \
+        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);     \
+        ASSIGN;                                                                                 \
+      }                                                                                         \
+    } else if (w>1 && first) {                                                                  \
+      /* gnthvalue */                                                                           \
+      for (int i=0; i<ngrp; ++i) {                                                              \
+        const int grpn = grpsize[i];                                                            \
+        if (w>grpn) { const CTYPE val=RNA; ASSIGN; continue; }                                  \
+        const int j = ff[i]-1+w-1;                                                              \
+        const int k = issorted ? j : oo[j]-1;                                                   \
+        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);     \
+        ASSIGN;                                                                                 \
+      }                                                                                         \
+    } else {                                                                                    \
+      /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */    \
+      /* currently takes n>0 only. However, we could still support n'th from the end, somehow */\
+      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);   \
+    }                                                                                           \
   }
   switch(TYPEOF(x)) {
-  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL_RO, NA_LOGICAL,   ansd[ansi++]=val) } break;
-  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER_RO, NA_INTEGER,   ansd[ansi++]=val) } break;
+  case LGLSXP:  {
+    int      *ansd=LOGICAL(ans); DO(int,      LOGICAL_RO, NA_LOGICAL,   ansd[ansi++]=val, val==NA_INTEGER)
+  } break;
+  case INTSXP:  {
+    int      *ansd=INTEGER(ans); DO(int,      INTEGER_RO, NA_INTEGER,   ansd[ansi++]=val, val==NA_INTEGER)
+  } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
-           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL_RO,    NA_INTEGER64, ansd[ansi++]=val) }
-           else { double      *ansd=REAL(ans); DO(double,   REAL_RO,    NA_REAL,      ansd[ansi++]=val) } break;
-  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX_RO, NA_CPLX,      ansd[ansi++]=val) } break;
-  case STRSXP:  DO(SEXP, STRING_PTR_RO, NA_STRING,              SET_STRING_ELT(ans,ansi++,val))        break;
-  case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
+    int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL_RO,    NA_INTEGER64, ansd[ansi++]=val, val==NA_INTEGER64)
+  } else {
+    double      *ansd=REAL(ans); DO(double,   REAL_RO,    NA_REAL,      ansd[ansi++]=val, ISNAN(val))
+  } break;
+  case CPLXSXP: {
+    Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX_RO, NA_CPLX,      ansd[ansi++]=val, ISNAN_COMPLEX(val))
+  } break;
+  case STRSXP: {
+    DO(SEXP, STRING_PTR_RO, NA_STRING, SET_STRING_ELT(ans,ansi++,val), val==NA_STRING)
+  } break;
+  case VECSXP: {
+    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val), isNull(val) || (isLogical(val) && LENGTH(val)==1 && LOGICAL(val)[0]==NA_LOGICAL))
+  } break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
-  if (headw) setAttrib(ans, sym_gforce_dynamic, ScalarInteger(w));  // so gforce() can recompute MIN(w, grpsize[g]) per group
+  #undef DO
+  if (headw && narm) setAttrib(ans, sym_gforce_dynamic, takeSxp);  // actual per-group counts; data-dependent, #4239 #4446
+  else if (headw) setAttrib(ans, sym_gforce_dynamic, ScalarInteger(w));  // so gforce() can recompute MIN(w, grpsize[g]) per group
   copyMostAttrib(x, ans);
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return(ans);
 }
 
-SEXP glast(SEXP x, SEXP nArg) {
+SEXP glast(SEXP x, SEXP nArg, SEXP narmArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "glast is only implemented for n>0. This should have been caught before"); // # nocov
+  if (!IS_TRUE_OR_FALSE(narmArg)) error(_("'%s' must be TRUE or FALSE"), "na.rm"); // # nocov
   const int n=INTEGER(nArg)[0];
-  return gfirstlast(x, false, n, n>1);
+  const bool narm=LOGICAL(narmArg)[0];
+  return gfirstlast(x, false, n, n>1, narm);
 }
 
-SEXP gfirst(SEXP x, SEXP nArg) {
+SEXP gfirst(SEXP x, SEXP nArg, SEXP narmArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gfirst is only implemented for n>0. This should have been caught before"); // # nocov
+  if (!IS_TRUE_OR_FALSE(narmArg)) error(_("'%s' must be TRUE or FALSE"), "na.rm"); // # nocov
   const int n=INTEGER(nArg)[0];
-  return gfirstlast(x, true, n, n>1);
+  const bool narm=LOGICAL(narmArg)[0];
+  return gfirstlast(x, true, n, n>1, narm);
 }
 
 SEXP gtail(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
-  return gfirstlast(x, false, n, n>1);
+  return gfirstlast(x, false, n, n>1, false);
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "ghead is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
-  return gfirstlast(x, true, n, n>1);
+  return gfirstlast(x, true, n, n>1, false);
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
-  return gfirstlast(x, true, INTEGER(nArg)[0], false);
+  return gfirstlast(x, true, INTEGER(nArg)[0], false, false);
 }
 
 // TODO: gwhich.min, gwhich.max
