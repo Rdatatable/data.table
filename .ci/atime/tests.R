@@ -330,6 +330,7 @@ test.list <- atime::atime_test_list(
     },
     Before = "166e0bab317e9d9f4f1844997a315e6482ab5fd9",#a few click of parent up from first commit in PR4164 gets to https://github.com/Rdatatable/data.table/commit/166e0bab317e9d9f4f1844997a315e6482ab5fd9
     Regression="6f360be0b2a6cf425f6df751ca9a99ec5d35ed93", #parent of Slow (https://github.com/Rdatatable/data.table/commit/ba32f3cba38ec270587e395f6e6c26a80be36be6)
+    PR4164="4aadde8f5a51cd7c8f3889964e7280432ec65bbc", # Merge commit of the PR that causes the regression.
     Slow = "ba32f3cba38ec270587e395f6e6c26a80be36be6", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4558) that fixes the regression
     Fast="master",
     expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id)),

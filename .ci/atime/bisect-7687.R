@@ -4,8 +4,8 @@ Test <- "DT[by] fixed in #4558"
 atime::bisect(pkg.path, Test, "Before", "Regression")#returns PR4164, consistent with https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420
 atime::bisect(pkg.path, Test, "Slow", "Fast")#returns PR7401, consistent with https://github.com/Rdatatable/data.table/issues/7687#issuecomment-4162931822
 
-Test.dir <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_Slow_Fast"
 Test.dir <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_Before_Regression"
+Test.dir <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_Slow_Fast"
 library(data.table)
 (results.wide <- data.table(
   csv=Sys.glob(file.path(Test.dir, "csv", "*"))
