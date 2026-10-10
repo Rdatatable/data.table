@@ -667,20 +667,24 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, ansloc++, STRING_ELT(out_col, j));
           break;
-        case REALSXP :
+        case REALSXP : {
+          double *td = REAL(target);
+          const double val = REAL_RO(out_col)[j];
           for (int k=0; k<thislen; ++k)
-            REAL(target)[ansloc++] = REAL(out_col)[j];
-          break;
+            td[ansloc++] = val;
+        } break;
         case INTSXP :
-        case LGLSXP :
+        case LGLSXP : {
+          int *td = INTEGER(target);
+          const int val = INTEGER_RO(out_col)[j];
           for (int k=0; k<thislen; ++k)
-            INTEGER(target)[ansloc++] = INTEGER(out_col)[j];
+            td[ansloc++] = val;
           if (isFactor(out_col)) {
             // Do we need a copy here?
             setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
             setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
           }
-          break;
+        } break;
         default :
           error(_("variable_table does not support column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));
         }
