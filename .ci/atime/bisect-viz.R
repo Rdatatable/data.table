@@ -1,7 +1,7 @@
 library(animint2)
 library(data.table)
-Test.dir.vec <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_PR4164_Fast"
 Test.dir.vec <- Sys.glob("bisect/*")
+Test.dir.vec <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_PR4164_Parent5463"
 for(Test.dir in Test.dir.vec){
   print(Test.dir)
   (results.wide <- data.table(
