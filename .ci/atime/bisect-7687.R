@@ -1,12 +1,15 @@
 remotes::install_github("tdhock/atime@bisect")
 pkg.path <- "~/R/data.table"
 Test <- "DT[by] fixed in #4558"
-atime::bisect(pkg.path, Test, "Before", "Regression")#returns PR4164, consistent with https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420
-atime::bisect(pkg.path, Test, "Slow", "Fast")#returns PR7401, consistent with https://github.com/Rdatatable/data.table/issues/7687#issuecomment-4162931822
-atime::bisect(pkg.path, Test, "PR4164", "Fast")#two speed increases between these two commits.
+atime::bisect(pkg.path, Test, "Before", "PR4164")#returns PR4164, consistent with https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420
+atime::bisect(pkg.path, Test, "PR4558", "Fast")#returns PR7401, consistent with https://github.com/Rdatatable/data.table/issues/7687#issuecomment-4162931822
+atime::bisect(pkg.path, Test, "PR4164", "Fast")#two speed increases between these two commits, bisect finds the larger one: PR7401.
+atime::bisect(pkg.path, Test, "PR4164", "Parent7401")#two speed increases between these two commits, bisect finds the larger one: PR7401.
+atime::bisect(pkg.path, Test, "PR7401", "Fast")#two speed increases between these two commits, bisect finds the larger one: PR7401.
 
 Test.dir <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_Before_Regression"
 Test.dir <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_Slow_Fast"
+Test.dir <- "~/R/data.table/.ci/atime/bisect/DT_by__fixed_in__4558_PR4164_Fast"
 library(data.table)
 (results.wide <- data.table(
   csv=Sys.glob(file.path(Test.dir, "csv", "*"))
@@ -52,14 +55,13 @@ for(result.RData in Sys.glob(file.path(Test.dir, "RData", "*"))){
 limit.dt <- data.table(seconds=tpred$seconds.limit)
 library(animint2)
 version.colors <- c(
-  Slow="violet",
-  Fast="red",
-  Regression="violet",
-  Before="red",
   HEAD= "blue")
+version.colors[c("Slow", "Regression", "PR4164")] <- "violet"
+version.colors[c("Fast", "Before")] <- "red"
 viz <- animint(
   title=paste("Performance testing with git bisect in data.table", basename(Test.dir)),
   source="https://github.com/Rdatatable/data.table/pull/7912/files#diff-e7f10716f0ff9f29e3186a43cfed95d970b167dc4d6a92c00b9e0736bf4b05ae",
+  out.dir=file.path("bisect-viz", basename(Test.dir)),
   overview=ggplot()+
     ggtitle("Overview, select commit")+
     theme_bw()+
