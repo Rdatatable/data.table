@@ -1,4 +1,6 @@
-remotes::install_github("tdhock/atime@bisect")
+if(FALSE){
+  remotes::install_github("tdhock/atime@bisect")
+}
 pkg.path <- "~/R/data.table"
 Test <- "DT[by] fixed in #4558"
 atime::bisect(pkg.path, Test, "Before", "PR4164")#returns PR4164, consistent with https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420
