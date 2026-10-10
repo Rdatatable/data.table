@@ -10,4 +10,5 @@ atime::bisect(pkg.path, Test, "PR4164", "Parent7401")#should find one small spee
 atime::bisect(pkg.path, Test, "PR4164", "Parent5463")#expected speed increase, found PR4491.
 atime::bisect(pkg.path, Test, "PR4164", "Parent4491")#expected speed increase, found PR4558. DONE.
 atime::bisect(pkg.path, Test, "PR7401", "Fast")#no speed changes, returns PR7650, but atime plot clearly shows no real change.
+atime::bisect(pkg.path, Test, "PR5463", "Parent7401")#slight speed decrease.
 
