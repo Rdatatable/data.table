@@ -611,7 +611,8 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
           snprintf(buff, sizeof(buff), "%d", level++); // # notranslate
-          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
+          SEXP str = mkChar(buff);
+          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
         }
       }
     } else {// varfactor==TRUE
