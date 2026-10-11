@@ -453,6 +453,7 @@ test.list <- atime::atime_test_list(
 
   # Regression introduced by https://github.com/Rdatatable/data.table/pull/6890 and discussed in https://github.com/Rdatatable/data.table/issues/7404 (grouped by factor).
   "DT[by] max regression fixed in #7480" = atime::atime_test(
+    N=2^seq(1, 20),
     setup = {
       dt = data.table(
         id = as.factor(rep(seq_len(N), each = 100L)),
