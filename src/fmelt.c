@@ -663,10 +663,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       for (int j=0, ansloc=0; j<data->lmax; ++j) {
         const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
         switch (TYPEOF(target)) {
-        case STRSXP :
+        case STRSXP : {
+          const SEXP val = STRING_ELT(out_col, j);
           for (int k=0; k<thislen; ++k)
-            SET_STRING_ELT(target, ansloc++, STRING_ELT(out_col, j));
-          break;
+            SET_STRING_ELT(target, ansloc++, val);
+        } break;
         case REALSXP : {
           double *td = REAL(target);
           const double val = REAL_RO(out_col)[j];
