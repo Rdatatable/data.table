@@ -19,7 +19,7 @@ for(bisect.i in 1:nrow(bisect.dt)){
   done <- FALSE
   while(!done){
     done <- tryCatch({
-      bisect.row[, atime::bisect(pkg.path, Test, old, new)]
+      bisect.row[, atime::bisect(pkg.path, Test, old, new, reps=1)]
       TRUE
     }, error=function(e){
       FALSE

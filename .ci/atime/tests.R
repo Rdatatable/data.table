@@ -320,6 +320,8 @@ test.list <- atime::atime_test_list(
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
+    N=2^seq(1, 20),
+    seconds.limit=0.1,
     setup = {
       N9 <- as.integer(N * 0.9)
       d <- data.table(
@@ -453,7 +455,6 @@ test.list <- atime::atime_test_list(
 
   # Regression introduced by https://github.com/Rdatatable/data.table/pull/6890 and discussed in https://github.com/Rdatatable/data.table/issues/7404 (grouped by factor).
   "DT[by] max regression fixed in #7480" = atime::atime_test(
-    N=2^seq(1, 20),
     setup = {
       dt = data.table(
         id = as.factor(rep(seq_len(N), each = 100L)),
