@@ -846,10 +846,14 @@ replace_dot_alias = function(e) {
 
         if (haskey(i)) check_duplicate_key(i)
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
-        naturaljoin = TRUE
-      }
+  		common_names = intersect(names_x, names(i))
+  		if (!length(common_names))
+    			stopf("Attempting to do natural join but no common columns in provided tables")
+  		on = common_names
+	}
       if (naturaljoin) { # natural join #629
         common_names = intersect(names_x, names(i))
+	print(common_names)
         len_common_names = length(common_names)
         if (!len_common_names) stopf("Attempting to do natural join but no common columns in provided tables")
         if (verbose) {

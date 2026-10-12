@@ -90,6 +90,9 @@
 
 20. `setnafill()` with `type = "locf"` or `type = "nocb"` on a 0-row table no longer segfaults, [#7910](https://github.com/Rdatatable/data.table/issues/7910). Thanks @MichaelChirico for the report and fix.
 
+11. `.NAUTRAL` now unpacks early enough to detect common columns, the same as `on=` join, [#6667] (https://github.com/Rdatatable/data.table/issues/6667). Thanks you @MichaelChirico for the report and @aam936 for the fix. 
+
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
