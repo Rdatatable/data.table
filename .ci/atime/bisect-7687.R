@@ -15,7 +15,7 @@ if(FALSE){
   "PR4164", "Parent7401", "PR5463",
   "PR4491", "Parent7401", "PR5463",#should find one small speed increase in PR4558? Finds PR5463??
   ## "PR5463", "Parent7401", "TODO",#slight speed decrease.
-  "PR4164", "Parent5463", "PR4491",#expected speed increase, found PR4491.
+  ##"PR4164", "Parent5463", "PR4491",#expected speed increase, found PR4491.
   "PR4164", "Parent4491", "PR4558"))#expected speed increase, found PR4558. DONE.
 for(bisect.i in 1:nrow(bisect.dt)){
   print(bisect.row <- bisect.dt[bisect.i])
