@@ -335,6 +335,7 @@ test.list <- atime::atime_test_list(
     Parent4558="6f360be0b2a6cf425f6df751ca9a99ec5d35ed93", #parent of PR4558 (https://github.com/Rdatatable/data.table/commit/ba32f3cba38ec270587e395f6e6c26a80be36be6)
     PR4558 = "ba32f3cba38ec270587e395f6e6c26a80be36be6", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4558) that fixes the regression
     Parent4491="3fa8b20435d33b3d4b5c26fd9b0ac14c10b98800", # PR4491 is bisect result of PR4164 and Parent5463.
+    PR4491="85adf09e3463838d547977ae9bc75e3b37f9cbaf",
     Parent5463="052f8da6", # PR5463 is bisect result of PR4164 and Parent7401.
     PR5463="19b7866112614db53eb3e909c097407d91cd6738",
     Parent7401="20b463c9592c07d05ad2e89a25f84f0b998d6154", # master parent of the PR7401 which caused the recent speedup.
