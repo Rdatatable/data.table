@@ -15,7 +15,7 @@ library(data.table)
   "PR4164", "Parent5463", "PR4491",#expected speed increase, found PR4491.
   "PR4164", "Parent4491", "PR4558"))#expected speed increase, found PR4558. DONE.
 for(bisect.i in 1:nrow(bisect.dt)){
-  bisect.row <- bisect.dt[bisect.i]
+  print(bisect.row <- bisect.dt[bisect.i])
   bisect.row[, atime::bisect(pkg.path, Test, old, new, reps=1)]
 }
 
