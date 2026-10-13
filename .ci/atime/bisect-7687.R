@@ -1,9 +1,11 @@
-if(FALSE){
-  remotes::install_github("tdhock/atime@bisect")
-}
 pkg.path <- "~/R/data.table"
 Test <- "DT[by] fixed in #4558"
 library(data.table)
+if(FALSE){
+  remotes::install_github("tdhock/atime@bisect")
+  atime::bisect(pkg.path, Test, "PR7401", "Fast")
+}
+
 (bisect.dt <- rowwiseDT(
   old=, new=, label=,
   "Before", "Parent4558", "PR4164",#returns PR4164, consistent with https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420
@@ -16,6 +18,6 @@ library(data.table)
   "PR4164", "Parent4491", "PR4558"))#expected speed increase, found PR4558. DONE.
 for(bisect.i in 1:nrow(bisect.dt)){
   print(bisect.row <- bisect.dt[bisect.i])
-  bisect.row[, atime::bisect(pkg.path, Test, old, new, reps=1)]
+  bisect.row[, atime::bisect(pkg.path, Test, old, new)]
 }
 
