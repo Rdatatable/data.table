@@ -459,5 +459,26 @@ test.list <- atime::atime_test_list(
     seconds.limit = 1,
     expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id)),
 
+  # https://github.com/Rdatatable/data.table/pull/7917 creates the variable string once per measure group instead of once per row.
+  "melt(variable.factor=FALSE) improved in #7917" = atime::atime_test(
+    setup = {
+      DT = data.table(id = seq_len(N), a_1 = 1, a_2 = 2, b_1 = 3, b_2 = 4)
+    },
+    Slow = "df59dd637403e65d7fa90d48bb0dfec2764d6744", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7c73bf0d4f760066feb7256896375727656e398d) in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that improves efficiency
+    Fast = "7c73bf0d4f760066feb7256896375727656e398d", # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that creates the variable string once per measure group
+    expr = data.table:::melt(DT, measure.vars = list(c("a_1", "a_2"), c("b_1", "b_2")), variable.factor = FALSE)),
+
+  # https://github.com/Rdatatable/data.table/pull/7917 hoists REAL()/INTEGER() out of the row loop when filling variable_table columns.
+  "melt(variable_table) improved in #7917" = atime::atime_test(
+    setup = {
+      DT = data.table(id = seq_len(N), a_1 = 1, a_2 = 2, b_1 = 3, b_2 = 4)
+      # Same as measure(value.name, num=as.integer), which errors under atime since cedta() does not recognize the renamed package.
+      measure.vars = list(a = c("a_1", "a_2"), b = c("b_1", "b_2"))
+      attr(measure.vars, "variable_table") = data.table(num = 1:2)
+    },
+    Slow = "df59dd637403e65d7fa90d48bb0dfec2764d6744", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7c73bf0d4f760066feb7256896375727656e398d) in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that improves efficiency
+    Fast = "96b9ab84a87d2c115e006e52027045f82549d377", # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that hoists REAL()/INTEGER() out of the row loop
+    expr = data.table:::melt(DT, measure.vars = measure.vars)),
+
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
