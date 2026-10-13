@@ -320,7 +320,7 @@ test.list <- atime::atime_test_list(
   # Test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
-    N=2^seq(1, 20),
+    N=2^seq(1, 30),
     seconds.limit=0.1,
     setup = {
       N9 <- as.integer(N * 0.9)
