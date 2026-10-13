@@ -340,7 +340,7 @@ test.list <- atime::atime_test_list(
     PR5463="19b7866112614db53eb3e909c097407d91cd6738",
     Parent7401="20b463c9592c07d05ad2e89a25f84f0b998d6154", # master parent of the PR7401 which caused the recent speedup.
     PR7401="0216983c51e03e3f61d5e6f08f4ba0c42cceb22c",
-    Fast="master",
+    Fast="a3eeb4c0caec51afd66bdf9bbc16817e12a47a40", #master 10 Sept 2026
     expr = data.table:::`[.data.table`(d, , max(v1) - min(v2), by = id)),
 
   # Issue with sorting again when already sorted, as reported in https://github.com/Rdatatable/data.table/issues/4498
