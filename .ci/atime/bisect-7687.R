@@ -3,6 +3,7 @@ Test <- "DT[by] fixed in #4558"
 library(data.table)
 if(FALSE){
   remotes::install_github("tdhock/atime@bisect")
+  atime::atime_versions_remove("data.table")
   atime::bisect(pkg.path, Test, "PR7401", "Fast") #should error
   atime::bisect(pkg.path, Test, "PR4491", "Parent7401") #should find PR5463
 }
