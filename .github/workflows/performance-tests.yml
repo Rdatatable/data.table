@@ -48,10 +48,6 @@ jobs:
           cache-version: ${{ hashFiles('.ci/atime/tests.R') }}
           extra-packages: cran::data.table, any::atime, any::ggplot2, any::directlabels
 
-      - name: Adjust compilation flags for old data.table versions
-        shell: bash
-        run: sudo sed -i 's|-Werror=format-security||' "$(Rscript -e 'cat(R.home("etc"))')/Makeconf"
-
       - name: Run atime
         shell: bash
         run: |
