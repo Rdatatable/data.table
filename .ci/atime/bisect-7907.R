@@ -4,6 +4,10 @@ library(data.table)
 if(FALSE){
   remotes::install_github("tdhock/atime@bisect")
   atime::atime_versions_remove("data.table")
+  tinfo <- atime::atime_pkg_test_info(pkg.path)
+  tcall <- tinfo$test.call[[Test]]
+  tres <- eval(tcall)
+  plot(tres)
 }
 library(data.table)
 (bisect.dt <- rowwiseDT(
