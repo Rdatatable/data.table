@@ -265,7 +265,7 @@ test.list <- atime::atime_test_list(
   },
 
   "fread N=cols regression" = atime::atime_test(
-    N = unique(as.integer(2^seq(0, 20, by=0.5))), # finer N grid for git bisect.
+    N = unique(as.integer(2^seq(0, 20, by=0.25))), # finer N grid for git bisect.
     setup={
       set.seed(1)
       n.rows <- 100
