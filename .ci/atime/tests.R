@@ -469,7 +469,7 @@ test.list <- atime::atime_test_list(
     expr = data.table:::melt(DT, measure.vars = list(c("a_1", "a_2"), c("b_1", "b_2")), variable.factor = FALSE)),
 
   # https://github.com/Rdatatable/data.table/pull/7917 hoists INTEGER()/STRING_ELT() out of the row loop when filling variable_table columns.
-  "melt(variable_table) improved in #7917" = atime::atime_test(
+  "melt(measure()) improved in #7917" = atime::atime_test(
     setup = {
       DT = data.table(id = seq_len(N), a_1 = 1, a_2 = 2, b_1 = 3, b_2 = 4)
     },
