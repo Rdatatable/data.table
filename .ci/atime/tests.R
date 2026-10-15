@@ -474,7 +474,7 @@ test.list <- atime::atime_test_list(
       DT = data.table(id = seq_len(N), a_1 = 1, a_2 = 2, b_1 = 3, b_2 = 4)
     },
     Slow = "df59dd637403e65d7fa90d48bb0dfec2764d6744", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7c73bf0d4f760066feb7256896375727656e398d) in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that improves efficiency
-    Fast = "45c63fa0410c441cbc3764d3fa19b47344d0e418", # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that hoists REAL()/INTEGER()/STRING_ELT() out of the row loop
+    Fast = "45c63fa0410c441cbc3764d3fa19b47344d0e418", # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that hoists REAL()/INTEGER()/STRING_ELT() out of the row loop TODO after merging PR7917, change to its merge commit
     expr = data.table:::melt(DT, measure.vars = measure(letter, number = as.integer))),
 
   tests=extra.test.list)
