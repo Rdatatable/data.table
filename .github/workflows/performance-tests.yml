@@ -90,7 +90,6 @@ jobs:
 
           ARTIFACT_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
           cat <<EOF > comment.md
-          <!-- automatic comment for atime -->
           $(cat .ci/atime/HEAD_issues.md)
 
           [![Comparison Plot]($PREVIEW_URL)]($ALL_URL)
@@ -109,11 +108,5 @@ jobs:
           cat comment.md >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY" ]; then
-            COMMENT_ID=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-              --jq '.[] | select(.body | startswith("<!-- automatic comment for atime -->")) | .id' | head -n 1)
-            if [ -z "$COMMENT_ID" ]; then
-              gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@comment.md
-            else
-              gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" -F body=@comment.md
-            fi
+            gh pr comment "$PR_NUMBER" --edit-last --create-if-none -F comment.md
           fi
