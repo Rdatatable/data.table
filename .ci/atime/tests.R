@@ -1,5 +1,5 @@
 bisect.restore.fun <- function(tinfo){
-  cat("", file.path(tinfo$checkout.path, ".gitattributes"))
+  cat("", file=file.path(tinfo$checkout.path, ".gitattributes"))
   gert::git_restore(".", repo=tinfo$checkout.path)
 }
 pval.thresh <- 0.001 # to reduce false positives.
