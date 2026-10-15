@@ -18,7 +18,6 @@ permissions:
 
 jobs:
   comment:
-    if: github.event.pull_request.head.repo.full_name == 'Rdatatable/data.table'
     runs-on: ubuntu-latest
     steps:
       - name: Start timer
@@ -33,8 +32,12 @@ jobs:
       - name: Retrieve branch references, necessary for perf testing past versions
         shell: bash
         run: |
-          git switch "${GITHUB_BASE_REF}"
-          git switch "${GITHUB_HEAD_REF}"
+          git branch -f "${GITHUB_BASE_REF}" "origin/${GITHUB_BASE_REF}"
+          HEAD_BRANCH="${GITHUB_HEAD_REF}"
+          if [ "$HEAD_BRANCH" = "$GITHUB_BASE_REF" ]; then
+            HEAD_BRANCH="pr-${{ github.event.number }}"
+          fi
+          git switch -C "$HEAD_BRANCH"
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -107,10 +110,14 @@ jobs:
           | Running and plotting the test cases | $(formatTime "$ATIME_TESTS_DURATION") |
           EOF
 
-          COMMENT_ID=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
-            --jq '.[] | select(.body | startswith("<!-- automatic comment for atime -->")) | .id' | head -n 1)
-          if [ -z "$COMMENT_ID" ]; then
-            gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@comment.md
-          else
-            gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" -F body=@comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY" ]; then
+            COMMENT_ID=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+              --jq '.[] | select(.body | startswith("<!-- automatic comment for atime -->")) | .id' | head -n 1)
+            if [ -z "$COMMENT_ID" ]; then
+              gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@comment.md
+            else
+              gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" -F body=@comment.md
+            fi
           fi
