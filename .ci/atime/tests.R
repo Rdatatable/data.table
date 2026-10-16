@@ -1,4 +1,6 @@
 bisect.restore.fun <- function(tinfo){
+  ## necessary to avoid failed checkout when bisecting some old commits
+  ## https://github.com/Rdatatable/data.table/issues/7909
   cat("", file=file.path(tinfo$checkout.path, ".gitattributes"))
   gert::git_restore(".", repo=tinfo$checkout.path)
 }
