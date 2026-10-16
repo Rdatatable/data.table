@@ -32,6 +32,11 @@
 # DT[i, names(.SD) := lapply(.SD, fx), by = ..., .SDcols = ...]
 
 set(x, i = NULL, j, value)
+
+# Exported as:
+`:=`(...)
+let(...)
+# Please don't call from outside j-expressions on data.tables.
 }
 \arguments{
 \item{LHS}{ A character vector of column names (or numeric positions) or a variable that evaluates as such. If the column doesn't exist, it is added, \emph{by reference}. }
@@ -42,6 +47,7 @@ set(x, i = NULL, j, value)
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
 \item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
 \item{value}{ A list or vector of replacement values to be assigned by reference to \code{x[i, j]}. }
+\item{...}{Ignored by the exported functions \code{`:=`} and \code{let} when called from outside a \code{j}-expression.}
 }
 \details{
 \code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Please read \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and follow with examples. Some typical usages are:

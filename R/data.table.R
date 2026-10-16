@@ -1781,7 +1781,7 @@ replace_dot_alias = function(e) {
     lockBinding(".I",SDenv)
     lockBinding(".GRP",SDenv)
     lockBinding(".NGRP", SDenv)
-    for (ii in ansvars) assign(ii, SDenv$.SDall[[ii]], SDenv)
+    for (ii in ansvars) assign(ii, .subset2(SDenv$.SDall, ii), SDenv)
     # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
     # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
@@ -2074,7 +2074,7 @@ replace_dot_alias = function(e) {
   if (verbose) {last.started.at=proc.time();catf("Making each group and running j (GForce %s) ... ", GForce);flush.console()}
   if (GForce) {
     thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
-    for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
+    for (ii in ansvars) assign(ii, .subset2(x, ii), thisEnv)
     assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)

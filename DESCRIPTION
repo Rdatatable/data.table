@@ -111,5 +111,4 @@ Authors@R: c(
   person("Tarun", "Thammisetty",   role="ctb"),
   person("Marco", "Colombo",       role="ctb", comment = c(ORCID = "0000-0001-6672-0623")),
   person("Tim", "Taylor",          role="ctb", comment = c(ORCID = "0000-0002-8587-7113")),
-  NULL
-  )
+  person("Maximilian", "Mücke",    role="ctb", comment = c(ORCID = "0009-0000-9432-9795")))

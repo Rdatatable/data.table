@@ -181,7 +181,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   const bool verbose = GetVerbose();
 
   if (!xlength(obj))
-    return(obj);
+    return obj;
 
   double tic=0.0;
   if (verbose)
@@ -205,6 +205,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     SEXP obj1 = obj;
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(obj, 0, obj1);
+  } else if (!xlength(VECTOR_ELT(obj, 0))) {
+     return obj;
   }
   SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
