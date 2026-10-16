@@ -1,17 +1,21 @@
+## This script is for running the git bisect analysis in PR7907, which
+## revealed two slowdowns in fread().
 pkg.path <- "~/R/data.table"
 Test <- "fread N=cols regression"
 library(data.table)
 if(FALSE){
+  ## atime functions for git bisect were added in this branch:
   remotes::install_github("tdhock/atime@bisect")
+  ## if you want to start the bisect over from scratch, first remove
+  ## all historical versions of data.table installed by atime:
   atime::atime_versions_remove("data.table")
-  tinfo <- atime::atime_pkg_test_info(pkg.path)
-  tcall <- tinfo$test.call[[Test]]
-  tres <- eval(tcall)
-  plot(tres)
 }
-library(data.table)
+## Commits other than Fast and Slow have been commented in tests.R so
+## to re-run the bisect, you would first have to uncomment them in
+## tests.R. These are the commits visualized on
+## https://tdhock.github.io/2026-10-15-bisect-performance-pr7907
 (bisect.dt <- rowwiseDT(
-      old=,     new=, label=, expected=, stage=,
+  old=,     new=, label=, expected=, stage=,
   "Fast", "Slow", "PR7406", "?", "discovery",
   "PR7406", "Slow", "PR7370", "?", "discovery",
   "Fast", "PR7383", "PR4164", "?", "discovery",

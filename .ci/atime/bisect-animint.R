@@ -1,11 +1,8 @@
-remotes::install_github("tdhock/atime@bisect")
-pkg.path <- "~/R/data.table"
-
-Test <- "fread N=cols regression"
-atime::bisect(pkg.path, Test)
-
-Test.dir <- file.path(pkg.path, ".ci", "atime", "bisect", atime:::test_file_name(Test))
+## This script is for visualizing results computed in bisect-7907.R
+library(animint2)
 library(data.table)
+
+Test.dir <- "bisect/fread_N_cols_regression/Fast-Slow"
 (results.wide <- data.table(
   csv=Sys.glob(file.path(Test.dir, "csv", "*"))
 )[
@@ -18,41 +15,37 @@ library(data.table)
 )][])
 (results.long <- melt(
   results.wide,
-  measure.vars=measure(variable, version, sep=".")))
+  measure.vars=measure(variable, expr.name, sep=".")))
 
-show.versions <- unique(results.long$version)
 details.dt.list <- list()
 dot.dt.list <- list()
 common.dt.list <- list()
 for(result.RData in Sys.glob(file.path(Test.dir, "RData", "*"))){
   (objs <- load(result.RData))
   commit <- sub(".RData", "", basename(result.RData))
-  details <- tres.or.status$measurements[
-    show.versions,
-    on="version",
-    data.table(commit, expr.name, version, N, median, min, max)
-  ]
+  details <- tres.or.status$measurements[, .(
+    commit, expr.name, N, median, min, max
+  )]
   common.dt.list[[commit]] <- details[, .(
     versions=.N
   ), by=N][
     versions==max(versions)
   ][.N, data.table(commit, N)]
-  evers <- unique(details[, .(expr.name, version)])
   details.dt.list[[commit]] <- details
   dot.dt.list[[commit]] <- data.table(
     commit,
-    tpred$prediction[evers, on="expr.name"])
+    tpred$prediction)
 }
 (details.dt <- rbindlist(details.dt.list))
 (dot.dt <- rbindlist(dot.dt.list))
 (common.dt <- rbindlist(common.dt.list))
 
 limit.dt <- data.table(seconds=tpred$seconds.limit)
-library(animint2)
 animint(
   overview=ggplot()+
     ggtitle("Overview, select commit")+
     theme_bw()+
+    theme_animint(height=600)+
     geom_tallrect(aes(
       xmin=rank-0.5, xmax=rank+0.5,
       key=rank,
@@ -60,12 +53,12 @@ animint(
       color=NA,
       data=results.wide)+
     geom_line(aes(
-      rank, value, color=version, group=version),
+      rank, value, color=expr.name, group=expr.name),
       data=results.long)+
     facet_grid(variable ~ ., scales="free")+
     theme(axis.text.x=element_text(angle=30, hjust=1))+
     geom_label_aligned(aes(
-      rank, value, label=version, color=version),
+      rank, value, label=expr.name, color=expr.name),
       data=results.long[rank==max(rank)],
       hjust=0,
       alignment="vertical")+
@@ -87,7 +80,7 @@ animint(
     ggtitle("Details for selected commit")+
     theme_bw()+
     theme(legend.position="none")+
-    theme_animint(width=1000)+
+    theme_animint(width=600, height=600, last_in_row=TRUE)+
     geom_hline(aes(
       yintercept=seconds),
       color="grey",
@@ -123,26 +116,26 @@ animint(
       showSelected="commit")+
     geom_ribbon(aes(
       N, ymin=min, ymax=max,
-      key=version, fill=version, group=version),
-      showSelected=c("version","commit"),
+      key=expr.name, fill=expr.name, group=expr.name),
+      showSelected=c("expr.name","commit"),
       alpha=0.5,
       color=NA,
       data=details.dt)+
     geom_line(aes(
       N, median,
-      key=version, color=version, group=version),
-      showSelected=c("version","commit"),
+      key=expr.name, color=expr.name, group=expr.name),
+      showSelected=c("expr.name","commit"),
       data=details.dt)+
     geom_point(aes(
       N, unit.value,
-      key=version, color=version),
-      showSelected=c("version","commit"),
+      key=expr.name, color=expr.name),
+      showSelected=c("expr.name","commit"),
       fill="white",
       data=dot.dt)+
     geom_label_aligned(aes(
-      N, unit.value, label=version,
-      key=version, color=version),
-      showSelected=c("version","commit"),
+      N, unit.value, label=expr.name,
+      key=expr.name, color=expr.name),
+      showSelected=c("expr.name","commit"),
       alignment="horizontal",
       vjust=-0.1,
       alpha=0.5,
