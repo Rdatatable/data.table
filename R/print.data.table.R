@@ -91,7 +91,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   trunc.char = getOption("datatable.prettyprint.char")
   if (is.null(trunc.char)) {
     rn_w = if (isTRUE(row.names)) nchar(as.character(max(rn))) + 2L else 0L
-    trunc.char = max(0L, getOption("width") - rn_w - 3L)
+    trunc.char = max(0L, getOption("width") - rn_w)
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, trunc.char = trunc.char, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
@@ -119,7 +119,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # allow truncation of columns to print only what will fit in console PR #4074
     widths = dt_width(toprint, n_x, class, row.names, col.names)
     cons_width = getOption("width")
-    cols_to_print = widths < cons_width
+    cols_to_print = widths <= cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (!any(cols_to_print)) {
       trunc_cols_message(not_printed, abbs, class, col.names)

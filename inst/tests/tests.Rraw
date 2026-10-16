@@ -22011,3 +22011,6 @@ test(2388.21, nafill(c(1, NA, NA, 5), type="nocb", limit=1, nan=NaN), c(1, NA, 5
 test(2388.22, nafill(c(1L, NA, NA, 5L), type="nocb", limit=1), c(1L, NA, 5L, 5L))
 test(2388.23, nafill(c("a", NA, NA), type="const", fill="x", limit=1), c("a", "x", NA))
 test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z", "z"))
+
+# print.data.table truncates a table exactly matching console width, #7716
+test(2388.25, print(data.table(x="1234567")), output="         x\n    <char>\n1: 1234567", options=list(width=10, datatable.print.trunc.cols=TRUE))
