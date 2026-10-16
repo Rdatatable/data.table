@@ -48,6 +48,8 @@
 
 13. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 and @ben-schwen for the PR.
 
+14. `melt()` is faster on large inputs when `measure.vars` is a list with `variable.factor=FALSE` (e.g. 3x) or uses `measure()` (e.g. 2x). Thanks @m-muecke for the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
