@@ -22014,3 +22014,6 @@ test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z",
 
 # print.data.table truncates a table exactly matching console width, #7716
 test(2388.25, print(data.table(x="1234567")), output="         x\n    <char>\n1: 1234567", options=list(width=10, datatable.print.trunc.cols=TRUE))
+
+# print.trunc.cols shows nothing if first column is too long #7717
+test(2388.26, print(data.table(x="123456789012", y=1, z=2, a=3)), output="1 variable not shown: [x <num>]\n       y\n   <num>\n1:     1\n2 variables not shown: [z <num>, a <num>]", options=list(width=10, datatable.print.trunc.cols=TRUE))
