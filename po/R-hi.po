@@ -3997,8 +3997,9 @@ msgstr ""
 "श्रृंखला चलाई जा रही है।"
 
 #: test.data.table.R:209
+#, fuzzy
 msgid "Running %d of %d tests matching '%s'"
-msgstr "'%s' से मेल खाते हुए %d में से %d परीक्षण चलाए जा रहे हैं"
+msgstr "'%3$s' से मेल खाते हुए %1$d में से %2$d परीक्षण चलाए जा रहे हैं"
 
 #: test.data.table.R:279
 #, c-format
