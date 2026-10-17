@@ -8,19 +8,100 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: between.c:18
+#: assign.c:67
+msgid ""
+"The data.table internal attributes of this table are invalid. This is "
+"expected and normal for a data.table loaded from disk. Please remember to "
+"always setDT() immediately after loading to prevent unexpected behavior. If "
+"this table was not loaded from disk or you've already run setDT(), please "
+"report to the data.table issue tracker.\n"
+msgstr ""
+
+#: assign.c:138
 #, c-format
 msgid ""
-"Incompatible vector lengths: length(x)==%d length(lower)==%d "
-"length(upper)==%d. Each should be either length 1 or the length of the "
-"longest."
+"Some columns are a multi-column type (such as a matrix column), for example "
+"column %d. setDT will retain these columns as-is but subsequent operations "
+"like grouping and joining may fail. Please consider as.data.table() instead "
+"which will create a new column for each embedded column."
 msgstr ""
-"असंगत वेक्टर (vector) लेंथ (length): length(x)==%d length(lower)==%d "
-"length(upper)==%d।प्रत्येक की लेंथ (length) या तो 1 होनी चाहिए या सबसे लंबी लेंथ "
-"(length) के बराबर होनी चाहिए।"
 
-#: between.c:22 between.c:28 frollR.c:41 frollR.c:95 fsort.c:119 nafill.c:108
-#: openmp-utils.c:79 uniqlist.c:354 utils.c:107 utils.c:109
+#: assign.c:155
+#, c-format
+msgid ""
+"Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as."
+"POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at "
+"all because it uses 40 bytes to store one date."
+msgstr ""
+
+#: assign.c:172
+#, c-format
+msgid ""
+"All elements in argument 'x' to 'setDT' must be of equal length, but input "
+"%d has length %d whereas the first non-empty input had length %d"
+msgstr ""
+
+#: assign.c:182
+msgid "alloccol has been passed a NULL dt"
+msgstr ""
+
+#: assign.c:183
+msgid "dt passed to alloccol isn't type VECSXP"
+msgstr ""
+
+#: assign.c:185
+#, fuzzy
+msgid ""
+"dt passed to alloccol has no class attribute. Please report result of "
+"traceback() to data.table issue tracker."
+msgstr ""
+"आंतरिक (internal) एरर (error) %s में: %s। कृपया इसे data.table के इश्यू ट्रैकर (issue "
+"tracker) पर रिपोर्ट (report) करें"
+
+#: assign.c:202
+#, c-format
+msgid ""
+"tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't "
+"set the datatable.alloccol option to be very large, please report to data."
+"table issue tracker including the result of sessionInfo()."
+msgstr ""
+
+#: assign.c:204
+#, c-format
+msgid ""
+"Attempt to reduce allocation from %d to %d ignored. Can only increase "
+"allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. "
+"Use := inside DT[...] instead."
+msgstr ""
+
+#: assign.c:212
+msgid ""
+"Has getOption('datatable.alloccol') somehow become unset? It should be a "
+"number, by default 1024."
+msgstr ""
+
+#: assign.c:214
+#, c-format
+msgid ""
+"getOption('datatable.alloccol') should be a number, by default 1024. But its "
+"type is '%s'."
+msgstr ""
+
+#: assign.c:216
+#, c-format
+msgid ""
+"getOption('datatable.alloccol') is a numeric vector ok but its length is %d. "
+"Its length should be 1."
+msgstr ""
+
+#: assign.c:219
+#, c-format
+msgid "getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."
+msgstr ""
+
+#: assign.c:225 between.c:22 between.c:28 frollR.c:97 frollR.c:112 fsort.c:117
+#: gsumm.c:351 gsumm.c:587 gsumm.c:733 gsumm.c:871 gsumm.c:1026 gsumm.c:1118
+#: nafill.c:108 openmp-utils.c:97 uniqlist.c:358 utils.c:122 utils.c:124
 #, fuzzy, c-format
 msgid "%s must be TRUE or FALSE"
 msgstr ""
@@ -39,25 +120,498 @@ msgstr ""
 "#-#-#-#-#  utils-hi_IN.po (R 0.0)  #-#-#-#-#\n"
 "%s TRUE या FALSE होना चाहिए"
 
+#: assign.c:273
+msgid "assign has been passed a NULL dt"
+msgstr ""
+
+#: assign.c:274
+msgid "dt passed to assign isn't type VECSXP"
+msgstr ""
+
+#: assign.c:276
+msgid ""
+".SD is locked. Updating .SD by reference using := or set are reserved for "
+"future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, "
+"until shallow() is exported."
+msgstr ""
+
+#: assign.c:288
+msgid "dt passed to assign has no names"
+msgstr ""
+
+#: assign.c:298
+#, c-format
+msgid "Assigning to all %d rows\n"
+msgstr ""
+
+#: assign.c:304 assign.c:358
+#, c-format
+msgid ""
+"Coerced %s from numeric to integer. Passing integer directly may be more "
+"efficient, e.g., 2L rather than 2"
+msgstr ""
+
+#: assign.c:307
+#, c-format
+msgid ""
+"i is type '%s'. Must be integer, or numeric is coerced with warning. If i is "
+"a logical subset, simply wrap with which(), and take the which() outside the "
+"loop if possible for efficiency."
+msgstr ""
+
+#: assign.c:313 subset.c:170
+#, c-format
+msgid "i[%d] is %d which is out of range [1,nrow=%d]"
+msgstr "i[%d] का मान %d है जो सीमा [1,nrow=%d] से बाहर है"
+
+#: assign.c:316
+#, c-format
+msgid "Assigning to %d row subset of %d rows\n"
+msgstr ""
+
+#: assign.c:332
+msgid "length(LHS)==0; no columns to delete or assign RHS to."
+msgstr ""
+
+#: assign.c:346
+msgid ""
+"set() on a data.frame is for changing existing columns, not adding new ones. "
+"Please use a data.table for that. data.table's are over-allocated and don't "
+"shallow copy."
+msgstr ""
+
+#: assign.c:361
+#, c-format
+msgid ""
+"j is type '%s'. Must be integer, character, or numeric is coerced with "
+"warning."
+msgstr ""
+
+#: assign.c:363
+msgid ""
+"Can't assign to the same column twice in the same query (duplicates "
+"detected)."
+msgstr ""
+
+#: assign.c:364
+msgid "newcolnames is supplied but isn't a character vector"
+msgstr ""
+
+#: assign.c:366
+msgid ""
+"Values of type POSIXlt detected and converted to POSIXct. We do not "
+"recommend the use of POSIXlt at all because it typically takes more than 6 "
+"times the storage as an equivalent POSIXct column. Use as.POSIXct() to avoid "
+"this warning."
+msgstr ""
+
+#: assign.c:376
+#, c-format
+msgid ""
+"RHS_list_of_columns revised to true because RHS list has 1 item which is "
+"NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n"
+msgstr ""
+
+#: assign.c:381
+#, c-format
+msgid ""
+"Supplied %d columns to be assigned an empty list (which may be an empty data."
+"table or data.frame since they are lists too). To delete multiple columns "
+"use NULL instead. To add multiple empty list columns, use list(list())."
+msgstr ""
+
+#: assign.c:386
+#, c-format
+msgid "Recycling single RHS list item across %d columns. Please unwrap RHS.\n"
+msgstr ""
+
+#: assign.c:388
+#, c-format
+msgid ""
+"Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2."
+msgstr ""
+
+#: assign.c:396
+#, c-format
+msgid ""
+"Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. "
+"set() on a data.frame is for changing existing columns, not adding new ones. "
+"Please use a data.table for that."
+msgstr ""
+
+#: assign.c:397
+#, fuzzy, c-format
+msgid ""
+"Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use "
+"column names instead in j to add new columns."
+msgstr "cols का आइटम (item) %d का मान %d है जो सीमा [1,ncol(x)=%d] से बाहर है"
+
+#: assign.c:403
+msgid ""
+"Doubly-invalid attempt to delete a non-existent column while also providing i"
+msgstr ""
+
+#: assign.c:405
+msgid ""
+"Invalid attempt to delete a list column while also providing i; did you "
+"intend to add NULL to those rows instead? If so, use list_col := "
+"list(list(NULL))."
+msgstr ""
+
+#: assign.c:406
+msgid "When deleting columns, i should not be provided"
+msgstr ""
+
+#: assign.c:414
+#, c-format
+msgid ""
+"RHS of assignment to existing column '%s' is zero length but not NULL. If "
+"you intend to delete the column use NULL. Otherwise, the RHS must have "
+"length > 0; e.g., NA_integer_. If you are trying to change the column type "
+"to be an empty list column then, as with all column type changes, provide a "
+"full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the "
+"new column."
+msgstr ""
+
+#: assign.c:421
+#, c-format
+msgid ""
+"Tried to assign NULL to column '%s', but this column does not exist to remove"
+msgstr ""
+
+#: assign.c:429
+#, c-format
+msgid "%d column matrix RHS of := will be treated as one vector"
+msgstr ""
+
+#: assign.c:434
+#, c-format
+msgid ""
+"Can't assign to column '%s' (type 'factor') a value of type '%s' (not "
+"character, factor, integer or numeric)"
+msgstr ""
+
+#: assign.c:440
+#, fuzzy, c-format
+msgid ""
+"Supplied %d items to be assigned to %d items of column '%s'. If you wish to "
+"'recycle' the RHS please use rep() to make this intent clear to readers of "
+"your code."
+msgstr ""
+"कॉलम (column) '%s' में साइज़ %d के समूह %d को नियत (assignment) करने के लिए %d आइटम "
+"(items) दिए गए हैं। RHS की लेंथ (length) या तो 1 होनी चाहिए (सिंगल (single) मान "
+"ठीक हैं) या LHS की लेंथ (length) से बिल्कुल मेल खानी चाहिए। यदि आप RHS की पुनरावृत्ति "
+"करना चाहते हैं तो कृपया अपने कोड (code) के पाठकों को यह स्पष्ट करने के लिए स्पष्ट रूप से "
+"rep() का उपयोग करें।"
+
+#: assign.c:447
+msgid ""
+"This data.table has either been loaded from disk (e.g. using readRDS()/"
+"load()) or constructed manually (e.g. using structure()). Please run setDT() "
+"or setalloccol() on it first (to pre-allocate space for new columns) before "
+"assigning by reference to it."
+msgstr ""
+
+#: assign.c:453
+#, c-format
+msgid ""
+"truelength (%d) is greater than 10,000 items over-allocated (length = %d). "
+"See ?truelength. If you didn't set the datatable.alloccol option very large, "
+"please report to data.table issue tracker including the result of "
+"sessionInfo()."
+msgstr ""
+
+#: assign.c:457
+msgid ""
+"It appears that at some earlier point, names of this data.table have been "
+"reassigned. Please ensure to use setnames() rather than names<- or "
+"colnames<-. Otherwise, please report to data.table issue tracker."
+msgstr ""
+
+#: assign.c:464
+msgid ""
+"It appears that at some earlier point, attributes of this data.table have "
+"been reassigned. Please use setattr(DT, name, value) rather than attr(DT, "
+"name) <- value. If that doesn't apply to you, please report your case to the "
+"data.table issue tracker."
+msgstr ""
+
+#: assign.c:496
+#, c-format
+msgid ""
+"RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
+"MAYBE_SHARED==%d ALTREP==%d, but then is being plonked. length(values)==%d; "
+"length(cols)==%d\n"
+msgstr ""
+
+#: assign.c:501
+#, c-format
+msgid ""
+"Direct plonk of unnamed RHS, no copy. MAYBE_REFERENCED==%d, "
+"MAYBE_SHARED==%d\n"
+msgstr ""
+
+#: assign.c:570
+#, c-format
+msgid ""
+"Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
+"was very likely created by v1.9.4 of data.table.\n"
+msgstr ""
+
+#: assign.c:615 assign.c:631
+#, c-format
+msgid "Dropping index '%s' due to an update on a key column\n"
+msgstr ""
+
+#: assign.c:624
+#, c-format
+msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
+msgstr ""
+
+#: assign.c:682
+#, fuzzy, c-format
+msgid "(column %d named '%s')"
+msgstr "कॉलम (column) नाम '%s' (%s) नहीं मिला"
+
+#: assign.c:716
+#, c-format
+msgid ""
+"Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
+"character or list columns."
+msgstr ""
+
+#: assign.c:731
+#, c-format
+msgid ""
+"Assigning factor numbers to target vector. But %d is outside the level range "
+"[1,%d]"
+msgstr ""
+
+#: assign.c:733
+#, c-format
+msgid ""
+"Assigning factor numbers to column %d named '%s'. But %d is outside the "
+"level range [1,%d]"
+msgstr ""
+
+#: assign.c:743
+#, c-format
+msgid ""
+"Assigning factor numbers to target vector. But %f is outside the level range "
+"[1,%d], or is not a whole number."
+msgstr ""
+
+#: assign.c:745
+#, c-format
+msgid ""
+"Assigning factor numbers to column %d named '%s'. But %f is outside the "
+"level range [1,%d], or is not a whole number."
+msgstr ""
+
+#: assign.c:751
+#, c-format
+msgid ""
+"Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
+"character, NA in any type, or level numbers."
+msgstr ""
+
+#: assign.c:822
+#, c-format
+msgid "Coercing 'character' RHS to '%s' to match the type of target vector."
+msgstr ""
+
+#: assign.c:824
+#, c-format
+msgid ""
+"Coercing 'character' RHS to '%s' to match the type of column %d named '%s'."
+msgstr ""
+
+#: assign.c:832
+msgid ""
+"Cannot coerce 'list' RHS to 'integer64' to match the type of target vector."
+msgstr ""
+
+#: assign.c:834
+#, c-format
+msgid ""
+"Cannot coerce 'list' RHS to 'integer64' to match the type of column %d named "
+"'%s'."
+msgstr ""
+
+#: assign.c:840
+#, c-format
+msgid "Coercing 'list' RHS to '%s' to match the type of target vector."
+msgstr ""
+
+#: assign.c:842
+#, c-format
+msgid "Coercing 'list' RHS to '%s' to match the type of column %d named '%s'."
+msgstr ""
+
+#: assign.c:850
+#, c-format
+msgid "Zero-copy coerce when assigning '%s' to '%s' target vector.\n"
+msgstr ""
+
+#: assign.c:852
+#, c-format
+msgid ""
+"Zero-copy coerce when assigning '%s' to column %d named '%s' which is '%s'.\n"
+msgstr ""
+
+#: assign.c:868
+#, c-format
+msgid "(target vector)"
+msgstr ""
+
+#: assign.c:878 assign.c:879
+#, c-format
+msgid ""
+"%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' "
+"%s"
+msgstr ""
+
+#: assign.c:881
+#, c-format
+msgid ""
+"%<PRId64> (type '%s') at RHS position %d taken as TRUE when assigning to "
+"type '%s' %s"
+msgstr ""
+
+#: assign.c:882
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' "
+"%s"
+msgstr ""
+
+#: assign.c:886
+#, c-format
+msgid ""
+"%d (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:888
+#, c-format
+msgid ""
+"%<PRId64> (type '%s') at RHS position %d taken as 0 when assigning to type "
+"'%s' %s"
+msgstr ""
+
+#: assign.c:889
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d either truncated (precision lost) or taken "
+"as 0 when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:894
+#, c-format
+msgid ""
+"%<PRId64> (type '%s') at RHS position %d out-of-range (NA) when assigning to "
+"type '%s' %s"
+msgstr ""
+
+#: assign.c:895 assign.c:902
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision "
+"lost) when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:897 assign.c:906
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d either imaginary part discarded or real "
+"part truncated (precision lost) when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:907
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d imaginary part discarded when assigning to "
+"type '%s' %s"
+msgstr ""
+
+#: assign.c:952
+#, c-format
+msgid "type '%s' cannot be coerced to '%s'"
+msgstr ""
+
+#: assign.c:1110
+#, fuzzy, c-format
+msgid "Unsupported column type in assign.c:memrecycle '%s'"
+msgstr "fcast val में असमर्थित कॉलम (column) प्रकार: '%s'"
+
+#: assign.c:1193
+#, fuzzy
+msgid "x must be a character vector"
+msgstr ""
+"गुण का नाम लेंथ (length) 1 के कैरेक्टर (character) वेक्टर (character) होना चाहिए"
+
+#: assign.c:1194
+#, fuzzy
+msgid "'which' must be an integer vector"
+msgstr "cols को एक पूर्णांक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) >= 1 हो"
+
+#: assign.c:1195
+#, fuzzy
+msgid "'new' must be a character vector"
+msgstr ""
+"'integer64' एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए"
+
+#: assign.c:1196
+#, c-format
+msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
+msgstr ""
+
+#: assign.c:1199
+#, fuzzy, c-format
+msgid ""
+"Item %d of 'which' is %d which is outside range of the length %d character "
+"vector"
+msgstr "cols का आइटम (item) %d है जो कि सीमा [1, length(l)=%d] के बाहर है"
+
+#: between.c:18
+#, c-format
+msgid ""
+"Incompatible vector lengths: length(x)==%d length(lower)==%d "
+"length(upper)==%d. Each should be either length 1 or the length of the "
+"longest."
+msgstr ""
+"असंगत वेक्टर (vector) लेंथ (length): length(x)==%d length(lower)==%d "
+"length(upper)==%d।प्रत्येक की लेंथ (length) या तो 1 होनी चाहिए या सबसे लंबी लेंथ "
+"(length) के बराबर होनी चाहिए।"
+
 #: between.c:25
 msgid "NAbounds must be TRUE or NA"
 msgstr "NAbounds को TRUE या NA होना चाहिए"
 
-#: between.c:70
+#: between.c:35 between.c:37
+#, fuzzy, c-format
+msgid "x is integer64 but %s is not. Please align classes."
+msgstr ""
+"x integer64 नहीं है, लेकिन lower और/या upper integer64 हैं। कृपया क्लासेस (classes) "
+"को संरेखित करें।"
+
+#: between.c:40 between.c:42
+#, fuzzy, c-format
+msgid "x is not integer64 but %s is. Please align classes."
+msgstr ""
+"x integer64 नहीं है, लेकिन lower और/या upper integer64 हैं। कृपया क्लासेस (classes) "
+"को संरेखित करें।"
+
+#: between.c:83
 #, c-format
 msgid "Item %d of lower (%d) is greater than item %d of upper (%d)"
 msgstr "lower (%d) का आइटम (item) %d upper (%d) के आइटम (item) %d से बड़ा है"
 
-#: between.c:88
+#: between.c:101
 #, c-format
 msgid "between parallel processing of integer took %8.3fs\n"
 msgstr "समांतर प्रोसेसिंग (processing) में पूर्णांक %8.3fs में लिया गया\n"
 
-#: between.c:94
-msgid "x is integer64 but lower and/or upper are not."
-msgstr "x integer64 है लेकिन lower और/या upper नहीं हैं।"
-
-#: between.c:101
+#: between.c:112
 #, c-format
 msgid ""
 "Item %d of lower (%<PRId64>) is greater than item %d of upper (%<PRId64>)"
@@ -65,87 +619,95 @@ msgstr ""
 "lower (%<PRId64>) का आइटम (item) %d (%<PRId64>) upper (%<PRId64>) के आइटम "
 "(item) %d (%<PRId64>) से बड़ा है।"
 
-#: between.c:118
+#: between.c:129
 #, c-format
 msgid "between parallel processing of integer64 took %8.3fs\n"
 msgstr "integer64 की समांतर प्रोसेसिंग (processing) में %8.3fs लिया गया\n"
 
-#: between.c:121
-msgid ""
-"x is not integer64 but lower and/or upper is integer64. Please align classes."
-msgstr ""
-"x integer64 नहीं है, लेकिन lower और/या upper integer64 हैं। कृपया क्लासेस (classes) "
-"को संरेखित करें।"
-
-#: between.c:128
+#: between.c:137
 #, c-format
 msgid "Item %d of lower (%f) is greater than item %d of upper (%f)"
 msgstr "lower (%f) का आइटम (item) %d upper (%f) के आइटम (item) %d से बड़ा है"
 
-#: between.c:146
+#: between.c:155
 #, c-format
 msgid "between parallel processing of double with open bounds took %8.3fs\n"
 msgstr ""
 "double की समांतर प्रोसेसिंग (processing) (open) बाउंड्स (bounds) के साथ %8.3fs में "
 "लिया गया\n"
 
-#: between.c:163
+#: between.c:172
 #, c-format
 msgid "between parallel processing of double with closed bounds took %8.3fs\n"
 msgstr ""
 "double की समांतर प्रोसेसिंग (processing) (closed) बाउंड्स (bounds) के साथ %8.3fs में "
 "लिया गया\n"
 
-#: between.c:178
+#: between.c:187
 #, c-format
 msgid "Item %d of lower ('%s') is greater than item %d of upper ('%s')"
 msgstr "lower ('%s') का आइटम (item) %d upper ('%s') के आइटम (item) %d से बड़ा है"
 
-#: between.c:193
+#: between.c:202
 #, c-format
 msgid "between non-parallel processing of character took %8.3fs\n"
 msgstr "character की गैर-समांतर प्रोसेसिंग (processing) में %8.3fs लिया गया\n"
 
-#: bmerge.c:65
-#, c-format
-msgid "icols[%d]=%d outside range [1,length(i)=%d]"
-msgstr "icols[%d]=%d रेंज [1,length(i)=%d] के बाहर है"
-
-#: bmerge.c:66
-#, c-format
-msgid "xcols[%d]=%d outside range [1,length(x)=%d]"
-msgstr "xcols[%d]=%d रेंज [1,length(x)=%d] के बाहर है"
-
-#: bmerge.c:72
+#: bmerge.c:78
 #, c-format
 msgid "Type '%s' is not supported for joining/merging"
 msgstr "प्रकार '%s' को जोड़ने/मर्ज करने के लिए समर्थित नहीं है"
 
-#: bmerge.c:78
-msgid "roll is character but not 'nearest'"
-msgstr "roll एक चर है लेकिन 'nearest' नहीं है"
-
-#: bmerge.c:79
+#: bmerge.c:87
 msgid "roll='nearest' can't be applied to a character column, yet."
 msgstr ""
 "roll='nearest' को अभी तक एक चर कॉलम (column) पर लागू नहीं किया जा सकता है।"
 
-#: bmerge.c:87
+#: bmerge.c:96
 msgid "rollends must be a length 2 logical vector"
 msgstr "rollends की लंबाई 2 का एक तार्किक वेक्टर (vector) होना चाहिए"
 
-#: bmerge.c:116
+#: bmerge.c:131
 msgid "Only '==' operator is supported for columns of type character."
 msgstr ""
 "केवल '==' ऑपरेटर (operator) को चर प्रकार के कॉलम (column) के लिए समर्थित किया गया "
 "है।"
+
+#: bmerge.c:209
+#, c-format
+msgid "bmerge: looping bmerge_r took %.3fs\n"
+msgstr ""
+
+#: bmerge.c:241
+#, fuzzy, c-format
+msgid "bmerge: took %.3fs\n"
+msgstr ""
+"#-#-#-#-#  froll-hi_IN.po (froll 0.0)  #-#-#-#-#\n"
+"%s: इसमें %.3fs का समय लगा\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s: %.3fs में लिया\n"
+
+#: bmerge.c:417
+msgid "mult='error' and multiple matches during merge"
+msgstr ""
+
+#: chmatch.c:5
+#, fuzzy, c-format
+msgid "table is type '%s' (must be 'character' or NULL)"
+msgstr ""
+"colClasses type '%s' है लेकिन लिस्ट (list) या कैरेक्टर (character) होना चाहिए"
+
+#: chmatch.c:19
+#, c-format
+msgid "x is type '%s' (must be 'character' or NULL)"
+msgstr ""
 
 #: cj.c:95
 #, c-format
 msgid "Type '%s' is not supported by CJ."
 msgstr "प्रकार '%s' CJ द्वारा समर्थित नहीं है।"
 
-#: coalesce.c:20
+#: coalesce.c:22
 msgid ""
 "The first argument is a list, data.table or data.frame. In this case there "
 "should be no other arguments provided."
@@ -153,7 +715,7 @@ msgstr ""
 "पहला आर्ग्युमेंट (argument) एक लिस्ट (list), data.table, या data.frame है।इस स्थिति "
 "में कोई अन्य आर्ग्युमेंट (argument) प्रदान नहीं किया जाना चाहिए।"
 
-#: coalesce.c:36
+#: coalesce.c:38
 #, c-format
 msgid ""
 "Item 1 is a factor but item %d is not a factor. When factors are involved, "
@@ -162,7 +724,7 @@ msgstr ""
 "आइटम (item) 1 एक फ़ैक्टर (factor) है लेकिन आइटम (item) %d फ़ैक्टर (factor) नहीं है। जब "
 "फ़ैक्टर (factor) शामिल होते हैं,तो सभी आइटम (items) फ़ैक्टर (factor) होने चाहिए।"
 
-#: coalesce.c:38
+#: coalesce.c:40
 #, c-format
 msgid ""
 "Item %d is a factor but its levels are not identical to the first item's "
@@ -171,7 +733,7 @@ msgstr ""
 "आइटम (item) %d एक फ़ैक्टर (factor) है लेकिन इसके स्तर पहले आइटम (item) के स्तर से समान "
 "नहीं हैं।"
 
-#: coalesce.c:42
+#: coalesce.c:44
 #, c-format
 msgid ""
 "Item %d is a factor but item 1 is not a factor. When factors are involved, "
@@ -180,7 +742,7 @@ msgstr ""
 "आइटम (item) %d एक फ़ैक्टर (factor) है लेकिन आइटम (item) 1 फ़ैक्टर (factor) नहीं है। जब "
 "फ़ैक्टर (factor) शामिल होते हैं, तो सभी आइटम (items) फ़ैक्टर (factor) होने चाहिए।"
 
-#: coalesce.c:45
+#: coalesce.c:47
 #, c-format
 msgid ""
 "Item %d is type %s but the first item is type %s. Please coerce before "
@@ -189,12 +751,12 @@ msgstr ""
 "आइटम (item) %d प्रकार %s है लेकिन पहला आइटम (item) प्रकार %s है। कृपया संयोजन "
 "(coalescing) से पहले इसे बलपूर्वक परिवर्तित करें।"
 
-#: coalesce.c:47
+#: coalesce.c:49
 #, c-format
 msgid "Item %d has a different class than item 1."
 msgstr "आइटम (item) %d की कक्षा (class) आइटम (item) 1 से भिन्न है।"
 
-#: coalesce.c:50
+#: coalesce.c:52
 #, c-format
 msgid ""
 "Item %d is length %d but the first item is length %d. Only singletons are "
@@ -203,12 +765,12 @@ msgstr ""
 "आइटम (item) %d की लंबाई (length) %d है लेकिन पहले आइटम (item) की लंबाई (length) "
 "%d है। केवल एकल तत्वों को पुनः उपयोग किया जाता है।"
 
-#: coalesce.c:54
+#: coalesce.c:56
 msgid "coalesce copied first item (inplace=FALSE)\n"
 msgstr "coalesce ने पहले आइटम (item) को कॉपी किया (inplace=FALSE)\n"
 
-#: coalesce.c:170 fifelse.c:199 shift.c:171 uniqlist.c:98 uniqlist.c:130
-#: uniqlist.c:211 uniqlist.c:248 uniqlist.c:321
+#: coalesce.c:193 fifelse.c:199 shift.c:177 uniqlist.c:98 uniqlist.c:130
+#: uniqlist.c:215 uniqlist.c:252 uniqlist.c:325
 #, fuzzy, c-format
 msgid "Type '%s' is not supported"
 msgstr ""
@@ -221,15 +783,15 @@ msgstr ""
 "#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
 "प्रकार '%s' समर्थित नहीं है"
 
-#: dogroups.c:85
+#: dogroups.c:82 gsumm.c:48
 msgid "env is not an environment"
 msgstr "env एक एनवायरनमेंट (environment) नहीं है"
 
-#: dogroups.c:132
+#: dogroups.c:136
 msgid "row.names attribute of .SD not found"
 msgstr ".SD का row.names एट्रिब्यूट (attribute) नहीं मिला"
 
-#: dogroups.c:134
+#: dogroups.c:138
 #, c-format
 msgid ""
 "row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
@@ -238,24 +800,24 @@ msgstr ""
 ".SD का row.names पहले आइटम (item) के रूप में NA के साथ इंटीजर (integer) लेंथ (length) "
 "2 नहीं है; यानी, .set_row_names(). [%s %d %d]"
 
-#: dogroups.c:165
+#: dogroups.c:169
 #, c-format
 msgid "length(iSD)[%d] != length(jiscols)[%d]"
 msgstr "length(iSD)[%d] != length(jiscols)[%d]"
 
-#: dogroups.c:166
+#: dogroups.c:170
 #, c-format
 msgid "length(xSD)[%d] != length(xjiscols)[%d]"
 msgstr "length(xSD)[%d] != length(xjiscols)[%d]"
 
-#: dogroups.c:277
+#: dogroups.c:282
 #, c-format
 msgid "j evaluates to type '%s'. Must evaluate to atomic vector or list."
 msgstr ""
 "j का परिणाम type '%s' है। इसका परिणाम एटॉमिक (atomic) वेक्टर (vector) या लिस्ट "
 "(list) होना चाहिए।"
 
-#: dogroups.c:286
+#: dogroups.c:291
 #, c-format
 msgid ""
 "Entry %d for group %d in j=list(...) should be atomic vector or list. If you "
@@ -266,7 +828,7 @@ msgstr ""
 "(list) होनी चाहिए। यदि आप j=list(.SD,newcol=mean(colA)) जैसा कुछ प्रयास कर रहे हैं "
 "तो इसके बजाय := by group का उपयोग करें (बहुत तेज़), या बाद में cbind या merge करें।"
 
-#: dogroups.c:293
+#: dogroups.c:298
 #, c-format
 msgid ""
 "Entry %d for group %d in j=list(...) is an array with %d dimensions > 1, "
@@ -277,7 +839,7 @@ msgstr ""
 "(dimensions) > 1 हैं, जो वर्जित है। यदि यह जानबूझकर किया गया है तो एरे (array) को "
 "स्वयं \"Break\" c() या as.vector() के साथ करें।"
 
-#: dogroups.c:303
+#: dogroups.c:308
 msgid ""
 "RHS of := is NULL during grouped assignment, but it's not possible to delete "
 "parts of a column."
@@ -285,7 +847,7 @@ msgstr ""
 "समूहीकृत नियत (assignment) के दौरान := का RHS NULL है, लेकिन कॉलम (column) के "
 "हिस्सों को हटाना संभव नहीं है।"
 
-#: dogroups.c:307
+#: dogroups.c:312
 #, c-format
 msgid ""
 "Supplied %d items to be assigned to group %d of size %d in column '%s'. The "
@@ -299,16 +861,16 @@ msgstr ""
 "करना चाहते हैं तो कृपया अपने कोड (code) के पाठकों को यह स्पष्ट करने के लिए स्पष्ट रूप से "
 "rep() का उपयोग करें।"
 
-#: dogroups.c:339
+#: dogroups.c:345
 #, c-format
 msgid "Group %d column '%s': %s"
 msgstr "समूह %d कॉलम (column) '%s': %s"
 
-#: dogroups.c:346
+#: dogroups.c:352
 msgid "j doesn't evaluate to the same number of columns for each group"
 msgstr "j प्रत्येक समूह के लिए कॉलम (column) की समान संख्या का परिणाम नहीं देता है"
 
-#: dogroups.c:380
+#: dogroups.c:386
 #, c-format
 msgid ""
 "Column %d of j's result for the first group is NULL. We rely on the column "
@@ -325,7 +887,7 @@ msgstr ""
 "लिए नहीं। कृपया इसके बजाय एक typed खाली वेक्टर (vector) का उपयोग करें, जैसे कि "
 "integer() या न्यूमेरिक (numeric) ()।"
 
-#: dogroups.c:383
+#: dogroups.c:389
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
@@ -336,7 +898,7 @@ msgstr ""
 "data.table अनुकूलित (optimize) करता है) या एक अनाम list() पास (pass) करने का "
 "प्रयास करें।\n"
 
-#: dogroups.c:385
+#: dogroups.c:391
 #, c-format
 msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
@@ -347,7 +909,7 @@ msgstr ""
 "आइटम (item) नामित है)। दक्षता के लिए कृपया उन नामों को हटा दें (प्रत्येक समूह के लिए उन्हें "
 "बार-बार बनाने से बचने के लिए)। वैसे भी उन्हें अनदेखा कर दिया जाता है।\n"
 
-#: dogroups.c:393
+#: dogroups.c:399
 msgid ""
 "The result of j is a named list. It's very inefficient to create the same "
 "names over and over again for each group. When j=list(...), any names are "
@@ -362,12 +924,12 @@ msgstr ""
 "(इसे := में बदलने पर विचार करें)। भविष्य में इस संदेश को चेतावनी के रूप में अपग्रेड (upgrade) "
 "किया जा सकता है।\n"
 
-#: dogroups.c:405
+#: dogroups.c:411
 #, c-format
 msgid "dogroups: growing from %d to %d rows\n"
 msgstr "dogroups: %d से %d रोज़(rows) तक बढ़ रहा है\n"
 
-#: dogroups.c:425
+#: dogroups.c:431
 #, c-format
 msgid ""
 "Item %d of j's result for group %d is zero length. This will be filled with "
@@ -380,7 +942,7 @@ msgstr ""
 "इसी तरह की समस्या हो सकती है लेकिन चेतावनी बफर (buffer) को भरने से बचाने के लिए केवल "
 "पहले को सूचित किया जाता है।"
 
-#: dogroups.c:432
+#: dogroups.c:438
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
@@ -389,7 +951,7 @@ msgstr ""
 "समूह %d के परिणाम का कॉलम (column) %d, type '%s' है लेकिन type '%s' की अपेक्षा है। "
 "प्रत्येक समूह के लिए कॉलम (column) types सुसंगत होने चाहिए।"
 
-#: dogroups.c:434
+#: dogroups.c:440
 #, c-format
 msgid ""
 "Supplied %d items for column %d of group %d which has %d rows. The RHS "
@@ -402,24 +964,24 @@ msgstr ""
 "लेंथ (length) से बिल्कुल मेल खानी चाहिए। यदि आप RHS की पुनरावृत्ति करना चाहते हैं तो "
 "कृपया अपने कोड (code) के पाठकों को यह स्पष्ट करने के लिए स्पष्ट रूप से rep() का उपयोग करें।"
 
-#: dogroups.c:452 fsort.c:266 fwrite.c:718
+#: dogroups.c:459 fsort.c:264 fwrite.c:749
 msgid "\n"
 msgstr "\n"
 
-#: dogroups.c:453 dogroups.c:467
+#: dogroups.c:461 dogroups.c:478
 #, c-format
 msgid ""
-"\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
+"Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
-"\r%d में से %d समूहों को संसाधित किया गया। %.0f%% पूर्ण। समय बीता: %ds. ईटीए (ETA): "
+"%d में से %d समूहों को संसाधित किया गया। %.0f%% पूर्ण। समय बीता: %ds. ईटीए (ETA): "
 "%ds."
 
-#: dogroups.c:472
+#: dogroups.c:484
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr "आवंटित (%d) की तुलना में कम रोज़(rows) (%d) लिखे गए।\n"
 
-#: dogroups.c:496
+#: dogroups.c:493
 #, c-format
 msgid ""
 "\n"
@@ -428,7 +990,7 @@ msgstr ""
 "\n"
 "  %d गैर-निरंतर समूहों को एकत्रित करने में %.3fs का समय लगा\n"
 
-#: dogroups.c:497
+#: dogroups.c:494
 #, c-format
 msgid ""
 "\n"
@@ -437,16 +999,16 @@ msgstr ""
 "\n"
 "  %d निरंतर समूहों के memcpy में %.3fs का समय लगा\n"
 
-#: dogroups.c:499
+#: dogroups.c:496
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr "  eval(j) ने %d कॉल (calls) के लिए %.3fs का समय लिया\n"
 
-#: dogroups.c:528
+#: dogroups.c:510
 msgid "growVector passed NULL"
 msgstr "growVector ने NULL पास (pass) किया"
 
-#: fastmean.c:39
+#: fastmean.c:39 rbindlist.c:8 rbindlist.c:12
 #, c-format
 msgid "%s should be TRUE or FALSE"
 msgstr "%s TRUE या FALSE होना चाहिए"
@@ -655,13 +1217,537 @@ msgstr ""
 msgid "Type '%s' is not supported."
 msgstr "प्रकार '%s' का समर्थन नहीं किया जाता है।"
 
-#: frank.c:14 frank.c:192
+#: fmelt.c:18
+#, fuzzy
+msgid "'x' must be an integer"
+msgstr "n को पूर्णांक (integer) होना चाहिए"
+
+#: fmelt.c:19
+#, fuzzy
+msgid "'n' must be a positive integer"
+msgstr "n को सकारात्मक पूर्णांक (integer) मान (> 0) होना चाहिए"
+
+#: fmelt.c:41
+#, fuzzy
+msgid "Argument to 'which' must be logical"
+msgstr "आर्गुमेंट (argument) 'test' लॉजिकल (logical) होना चाहिए।"
+
+#: fmelt.c:65
+#, fuzzy
+msgid "concat: 'vec' must be a character vector"
+msgstr ""
+"गुण का नाम लेंथ (length) 1 के कैरेक्टर (character) वेक्टर (character) होना चाहिए"
+
+#: fmelt.c:67
+#, fuzzy
+msgid "concat: 'idx' must be an integer vector"
+msgstr ""
+"इनपुट (Input) तर्क 'x' को 'uniqlengths' में एक पूर्णांक वेक्टर (vector) होना चाहिए"
+
+#: fmelt.c:137
+#, c-format
+msgid "Unknown 'measure.vars' type %s at index %d of list"
+msgstr ""
+
+#: fmelt.c:190
+msgid "One or more values in 'measure.vars' is invalid."
+msgstr ""
+
+#: fmelt.c:192
+msgid "One or more values in 'id.vars' is invalid."
+msgstr ""
+
+#: fmelt.c:216
+#, c-format
+msgid ""
+"Unknown 'measure.vars' type %s, must be character or integer vector/list"
+msgstr ""
+
+#: fmelt.c:218
+#, c-format
+msgid "Unknown 'id.vars' type %s, must be character or integer vector"
+msgstr ""
+
+#: fmelt.c:243
+#, c-format
+msgid ""
+"id.vars and measure.vars are internally guessed when both are 'NULL'. All "
+"non-numeric/integer/logical type columns are considered id.vars, which in "
+"this case are columns [%s]. Consider providing at least one of 'id' or "
+"'measure' vars in future."
+msgstr ""
+
+#: fmelt.c:249
+msgid ""
+"'measure.vars' is missing. Assigning all columns other than 'id.vars' "
+"columns as 'measure.vars'.\n"
+msgstr ""
+
+#: fmelt.c:251
+#, c-format
+msgid "Assigned 'measure.vars' are [%s].\n"
+msgstr ""
+
+#: fmelt.c:262
+msgid ""
+"'id.vars' is missing. Assigning all columns other than 'measure.vars' "
+"columns as 'id.vars'.\n"
+msgstr ""
+
+#: fmelt.c:263
+#, c-format
+msgid "Assigned 'id.vars' are [%s].\n"
+msgstr ""
+
+#: fmelt.c:317
+msgid ""
+"When 'measure.vars' is a list, 'value.name' must be a character vector of "
+"length =1 or =length(measure.vars)."
+msgstr ""
+
+#: fmelt.c:318
+msgid ""
+"When 'measure.vars' is either not specified or a character/integer vector, "
+"'value.name' must be a character vector of length =1."
+msgstr ""
+
+#: fmelt.c:321
+#, fuzzy
+msgid "'variable.name' must be a character/integer vector of length 1."
+msgstr ""
+"गुण का नाम लेंथ (length) 1 के कैरेक्टर (character) वेक्टर (character) होना चाहिए"
+
+#: fmelt.c:374
+msgid ""
+"variable_table attribute of measure.vars should be a data table with at "
+"least one column"
+msgstr ""
+
+#: fmelt.c:379
+#, c-format
+msgid ""
+"variable_table attribute of measure.vars should be a data table with same "
+"number of rows as max length of measure.vars vectors =%d"
+msgstr ""
+
+#: fmelt.c:383
+msgid ""
+"variable_table attribute of measure.vars should be either NULL or a data "
+"table"
+msgstr ""
+
+#: fmelt.c:465
+#, c-format
+msgid ""
+"'measure.vars' [%s] are not all of the same type. By order of hierarchy, the "
+"molten data value column will be of type '%s'. All measure variables not of "
+"type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on "
+"coercion.\n"
+msgstr ""
+
+#: fmelt.c:577
+#, fuzzy, c-format
+msgid "Unknown column type '%s' for column '%s'."
+msgstr "fcast val में असमर्थित कॉलम (column) प्रकार: '%s'"
+
+#: fmelt.c:684
+#, c-format
+msgid "variable_table does not support column type '%s' for column '%s'."
+msgstr ""
+
+#: fmelt.c:778
+#, c-format
+msgid "Unknown column type '%s' for column '%s' in 'data'"
+msgstr ""
+
+#: fmelt.c:789
+msgid "Input is not of type VECSXP, expected a data.table, data.frame or list"
+msgstr ""
+
+#: fmelt.c:790
+#, fuzzy
+msgid "Argument 'value.factor' should be logical TRUE/FALSE"
+msgstr "list.cols तार्किक TRUE/FALSE होना चाहिए।"
+
+#: fmelt.c:791
+#, fuzzy
+msgid "Argument 'variable.factor' should be logical TRUE/FALSE"
+msgstr "ignore.empty तार्किक TRUE/FALSE होना चाहिए।"
+
+#: fmelt.c:792
+#, fuzzy
+msgid "Argument 'na.rm' should be logical TRUE/FALSE."
+msgstr "ignore.empty तार्किक TRUE/FALSE होना चाहिए।"
+
+#: fmelt.c:793
+#, fuzzy
+msgid "Argument 'variable.name' must be a character vector"
+msgstr ""
+"गुण का नाम लेंथ (length) 1 के कैरेक्टर (character) वेक्टर (character) होना चाहिए"
+
+#: fmelt.c:794
+#, fuzzy
+msgid "Argument 'value.name' must be a character vector"
+msgstr ""
+"गुण का नाम लेंथ (length) 1 के कैरेक्टर (character) वेक्टर (character) होना चाहिए"
+
+#: fmelt.c:795
+#, fuzzy
+msgid "Argument 'verbose' should be logical TRUE/FALSE"
+msgstr "list.cols तार्किक TRUE/FALSE होना चाहिए।"
+
+#: fmelt.c:799
+msgid "ncol(data) is 0. Nothing to melt. Returning original data.table."
+msgstr ""
+
+#: forder.c:108 utils.c:652
+msgid "Internal error in"
+msgstr "इसमें आंतरिक त्रुटि"
+
+#: forder.c:108 utils.c:652
+msgid "Please report to the data.table issues tracker."
+msgstr "कृपया data.table इश्यू ट्रैकर पर रिपोर्ट करें।"
+
+#: forder.c:119
+#, c-format
+msgid "Failed to realloc thread private group size buffer to %d*4bytes"
+msgstr ""
+
+#: forder.c:135
+#, c-format
+msgid "Failed to realloc group size result to %d*4bytes"
+msgstr ""
+
+#: forder.c:270
+#, c-format
+msgid ""
+"Logical error. counts[0]=%d in cradix but should have been decremented to 0. "
+"radix=%d"
+msgstr ""
+
+#: forder.c:290
+msgid "Failed to alloc cradix_counts and/or cradix_tmp"
+msgstr ""
+
+#: forder.c:322
+#, fuzzy, c-format
+msgid "Unable to realloc %d * %d bytes in range_str"
+msgstr ""
+"कॉलम (column) के नाम के पॉइंटर्स (pointers) के लिए %d*%d बाइट्स (bytes) आवंटित करने "
+"में असमर्थ: %s"
+
+#: forder.c:404
+#, fuzzy
+msgid "Must an integer or numeric vector length 1"
+msgstr "cols को एक पूर्णांक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) >= 1 हो"
+
+#: forder.c:405
+msgid "Must be 2, 1 or 0"
+msgstr ""
+
+#: forder.c:440
+msgid "Unknown non-finite value; not NA, NaN, -Inf or +Inf"
+msgstr ""
+
+#: forder.c:479
+msgid ""
+"Input is an atomic vector (not a list of columns) but order= is not a length "
+"1 integer"
+msgstr ""
+
+#: forder.c:481
+#, c-format
+msgid "forder.c received a vector type '%s' length %d\n"
+msgstr ""
+
+#: forder.c:489
+#, c-format
+msgid "forder.c received %d rows and %d columns\n"
+msgstr ""
+
+#: forder.c:499
+#, c-format
+msgid "'order' length (%d) is different to by='s length (%d)"
+msgstr ""
+
+#: forder.c:512
+#, c-format
+msgid ""
+"Column %d is length %d which differs from length of column 1 (%d), are you "
+"attempting to order by a list column?\n"
+msgstr ""
+
+#: forder.c:516 forder.c:1688
+#, fuzzy
+msgid "retGrp must be TRUE or FALSE"
+msgstr ""
+"#-#-#-#-#  between-hi_IN.po (between 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  frollR-hi_IN.po (frollR 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  fsort-hi_IN.po (fsort 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  openmp-utils-hi_IN.po (openmp-utils 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  utils-hi_IN.po (R 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए"
+
+#: forder.c:519 forder.c:1691
+#, fuzzy
+msgid "retStats must be TRUE or FALSE"
+msgstr ""
+"#-#-#-#-#  between-hi_IN.po (between 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  frollR-hi_IN.po (frollR 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  fsort-hi_IN.po (fsort 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  openmp-utils-hi_IN.po (openmp-utils 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  utils-hi_IN.po (R 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए"
+
+#: forder.c:522 forder.c:1694
+msgid "retStats must be TRUE whenever retGrp is TRUE"
+msgstr ""
+
+#: forder.c:524 forder.c:1696
+#, fuzzy
+msgid "sort must be TRUE or FALSE"
+msgstr ""
+"#-#-#-#-#  between-hi_IN.po (between 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  frollR-hi_IN.po (frollR 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  fsort-hi_IN.po (fsort 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  openmp-utils-hi_IN.po (openmp-utils 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  utils-hi_IN.po (R 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए"
+
+#: forder.c:527
+msgid "At least one of retGrp= or sort= must be TRUE"
+msgstr ""
+
+#: forder.c:529 forder.c:1699
+#, fuzzy
+msgid "na.last must be logical TRUE, FALSE or NA of length 1"
+msgstr "hasNA को TRUE, FALSE या NA होना चाहिए"
+
+#: forder.c:562 forder.c:680
+#, fuzzy, c-format
+msgid "Unable to allocate %<PRIu64> bytes of working memory"
+msgstr "कार्य स्मृति आवंटित करने में असमर्थ"
+
+#: forder.c:580
+#, c-format
+msgid "Item %d of order (ascending/descending) is %d. Must be +1 or -1."
+msgstr ""
+
+#: forder.c:611
+#, c-format
+msgid ""
+"\n"
+"*** Column %d passed to forder is a date stored as an 8 byte double but no "
+"fractions are present. Please consider a 4 byte integer date such as IDate "
+"to save space and time.\n"
+msgstr ""
+
+#: forder.c:625
+#, c-format
+msgid "Column %d passed to [f]order is type '%s', not yet supported."
+msgstr ""
+
+#: forder.c:804
+#, c-format
+msgid ""
+"Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"
+msgstr ""
+
+#: forder.c:813
+msgid "Could not allocate (very tiny) group size thread buffers"
+msgstr ""
+
+#: forder.c:881
+#, c-format
+msgid "Timing block %2d%s = %8.3f   %8d\n"
+msgstr ""
+
+#: forder.c:932 forder.c:1002 forder.c:1024 forder.c:1131 forder.c:1267
+#: forder.c:1323
+#, c-format
+msgid "Failed to allocate %d bytes for '%s'."
+msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
+
+#: forder.c:1167
+#, c-format
+msgid "Failed to allocate parallel counts. my_n=%d, nBatch=%d"
+msgstr ""
+
+#: forder.c:1179
+#, c-format
+msgid "Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."
+msgstr ""
+
+#: forder.c:1284
+#, c-format
+msgid "Unable to allocate TMP for my_n=%d items in parallel batch counting"
+msgstr ""
+
+#: forder.c:1410 forder.c:1461
+#, fuzzy, c-format
+msgid "issorted 'by' [%d] out of range [1,%d]"
+msgstr "i[%d] का मान %d है जो सीमा [1,nrow=%d] से बाहर है"
+
+#: forder.c:1415
+msgid "is.sorted does not work on list columns"
+msgstr ""
+
+#: forder.c:1448 forder.c:1478 forder.c:1512
+#, fuzzy, c-format
+msgid "type '%s' is not yet supported"
+msgstr ""
+"#-#-#-#-#  coalesce-hi_IN.po (coalesce 0.0)  #-#-#-#-#\n"
+"प्रकार '%s' समर्थित नहीं है\n"
+"#-#-#-#-#  fifelse-hi_IN.po (fifelse 0.0)  #-#-#-#-#\n"
+"प्रकार '%s' का समर्थन नहीं किया जाता है\n"
+"#-#-#-#-#  shift-hi_IN.po (shift 0.0)  #-#-#-#-#\n"
+"प्रकार '%s' समर्थित नहीं है\n"
+"#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
+"प्रकार '%s' समर्थित नहीं है"
+
+#: forder.c:1525
+#, fuzzy
+msgid "x must be either NULL or an integer vector"
+msgstr ""
+"n को पूर्णांक (integer) वेक्टर (vector) या पूर्णांक (integer) वेक्टर (vector) की लिस्ट "
+"(list) होना चाहिए।"
+
+#: forder.c:1527
+#, fuzzy
+msgid "nrow must be integer vector length 1"
+msgstr "cols को एक पूर्णांक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) >= 1 हो"
+
+#: forder.c:1529
+#, c-format
+msgid "nrow==%d but must be >=0"
+msgstr ""
+
+#: forder.c:1546
+#, fuzzy
+msgid "x must be type 'double'"
+msgstr "x को वर्तमान में double प्रकार का वेक्टर (vector) होना चाहिए"
+
+#: forder.c:1656
+#, fuzzy
+msgid "'datatable.use.index' option must be TRUE or FALSE"
+msgstr ""
+"#-#-#-#-#  between-hi_IN.po (between 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  frollR-hi_IN.po (frollR 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  fsort-hi_IN.po (fsort 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  openmp-utils-hi_IN.po (openmp-utils 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  utils-hi_IN.po (R 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए"
+
+#: forder.c:1669
+msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
+msgstr ""
+
+#: forder.c:1686
+msgid "DT is NULL"
+msgstr ""
+
+#: forder.c:1702
+#, fuzzy
+msgid "order must be integer"
+msgstr "n को पूर्णांक (integer) होना चाहिए"
+
+#: forder.c:1704
+#, fuzzy
+msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
+msgstr "hasNA को TRUE, FALSE या NA होना चाहिए"
+
+#: forder.c:1716
+#, c-format
+msgid ""
+"forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
+"all1(ascArg)=%d\n"
+msgstr ""
+
+#: forder.c:1735
+#, c-format
+msgid "forderReuseSorting: using key: %s\n"
+msgstr ""
+
+#: forder.c:1770
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
+msgstr ""
+
+#: forder.c:1773
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp: %s\n"
+msgstr ""
+
+#: forder.c:1776
+#, c-format
+msgid "forderReuseSorting: index found but not for retStats: %s\n"
+msgstr ""
+
+#: forder.c:1783
+#, c-format
+msgid ""
+"forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
+msgstr ""
+
+#: forder.c:1786
+#, c-format
+msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
+msgstr ""
+
+#: forder.c:1794
+#, c-format
+msgid "forderReuseSorting: using existing index: %s\n"
+msgstr ""
+
+#: forder.c:1806
+#, c-format
+msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
+msgstr ""
+
+#: forder.c:1810
+#, c-format
+msgid "forderReuseSorting: opt=%d, took %.3fs\n"
+msgstr ""
+
+#: frank.c:17 frank.c:196
 #, c-format
 msgid "Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"
 msgstr ""
 "आइटम (item) %d 'cols' का %d है, जो 1-based सीमा [1, ncol(x)=%d] के बाहर है"
 
-#: frank.c:24 frank.c:200
+#: frank.c:28 frank.c:204
 #, c-format
 msgid ""
 "Column %d of input list x is length %d, inconsistent with first column of "
@@ -670,23 +1756,23 @@ msgstr ""
 "इनपुट (input) सूची x के कॉलम (column) %d की लेंथ (length) %d है,उस वस्तु के पहले कॉलम "
 "(column) की लेंथ (length) %d के साथ असंगत है।"
 
-#: frank.c:101 frank.c:234 transpose.c:97
+#: frank.c:105 frank.c:238 transpose.c:97
 #, c-format
 msgid "Unsupported column type '%s'"
 msgstr "असमर्थित कॉलम (column) प्रकार '%s'"
 
-#: fread.c:154
+#: fread.c:180
 #, c-format
 msgid "System error %lu unmapping view of file\n"
 msgstr ""
 "फाइल (file) के दृश्य की अनमैपिंग (unmapping) में सिस्टम (system) एरर (error) %lu\n"
 
-#: fread.c:157
+#: fread.c:183
 #, c-format
 msgid "System errno %d unmapping file: %s\n"
 msgstr "फाइल (file) अनमैपिंग (unmapping) में सिस्टम (system) errno %d: %s\n"
 
-#: fread.c:1291
+#: fread.c:1407
 msgid ""
 "Previous fread() session was not cleaned up properly. Cleaned up ok at the "
 "beginning of this fread() call.\n"
@@ -694,23 +1780,23 @@ msgstr ""
 "पिछला fread() सेशन (session) ठीक से साफ़ नहीं किया गया था। इस fread() कॉल (call) "
 "की शुरुआत में इसे ठीक से साफ़ किया गया।\n"
 
-#: fread.c:1294
+#: fread.c:1410
 msgid "[01] Check arguments\n"
 msgstr "[01] आर्गुमेंट्स (arguments) जांचें\n"
 
-#: fread.c:1301
-#, c-format
-msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
+#: fread.c:1417
+#, fuzzy, c-format
+msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
 msgstr ""
 "  %d थ्रेड्स (threads) का उपयोग किया जा रहा है (omp_get_max_threads()=%d, "
 "nth=%d)\n"
 
-#: fread.c:1323
+#: fread.c:1439
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
 msgstr "freadMain: NAstring <<%s>> की शुरुआत या अंत में whitespace है"
 
-#: fread.c:1327
+#: fread.c:1443
 #, c-format
 msgid ""
 "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
@@ -719,113 +1805,132 @@ msgstr ""
 "freadMain: NAstring <<%s>> को बूलियन (boolean) type के रूप में पहचाना गया है, इसकी "
 "अनुमति नहीं है।"
 
-#: fread.c:1329
-#, c-format
-msgid "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
+#: fread.c:1445 fread.c:1447
+#, fuzzy, c-format
+msgid "freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."
 msgstr "freadMain: NAstring <<%s>> और logical01=TRUE, इसकी अनुमति नहीं है।"
 
-#: fread.c:1341
-msgid "  No NAstrings provided.\n"
+#: fread.c:1462
+#, fuzzy
+msgid "  No NAstrings provided.\n"
 msgstr "  कोई NAstrings प्रदान नहीं किया गया।\n"
 
-#: fread.c:1348
-msgid "  One or more of the NAstrings looks like a number.\n"
+#: fread.c:1469
+#, fuzzy
+msgid "  One or more of the NAstrings looks like a number.\n"
 msgstr "  एक या अधिक NAstrings संख्या की तरह दिखते हैं।\n"
 
-#: fread.c:1350
-msgid "  None of the NAstrings look like numbers.\n"
+#: fread.c:1471
+#, fuzzy
+msgid "  None of the NAstrings look like numbers.\n"
 msgstr "  कोई भी NAstrings संख्या की तरह नहीं दिखता है।\n"
 
-#: fread.c:1352
-#, c-format
-msgid "  skip num lines = %<PRId64>\n"
+#: fread.c:1473
+#, fuzzy, c-format
+msgid "  skip num lines = %<PRId64>\n"
 msgstr "  छोड़ी गई लाइनों की संख्या = %<PRId64>\n"
 
-#: fread.c:1353
-#, c-format
-msgid "  skip to string = <<%s>>\n"
+#: fread.c:1474
+#, fuzzy, c-format
+msgid "  skip to string = <<%s>>\n"
 msgstr "  स्ट्रिंग (string) तक छोड़ें = <<%s>>\n"
 
-#: fread.c:1354
-#, c-format
-msgid "  show progress = %d\n"
+#: fread.c:1475
+#, fuzzy, c-format
+msgid "  show progress = %d\n"
 msgstr "  प्रगति दिखाएं = %d\n"
 
-#: fread.c:1355
-#, c-format
-msgid "  0/1 column will be read as %s\n"
+#: fread.c:1476
+#, fuzzy, c-format
+msgid "  0/1 column will be read as %s\n"
 msgstr "  0/1 कॉलम (column) को %s के रूप में पढ़ा जाएगा\n"
 
-#: fread.c:1367
+#: fread.c:1477
+#, fuzzy, c-format
+msgid "  Y/N column will be read as %s\n"
+msgstr "  0/1 कॉलम (column) को %s के रूप में पढ़ा जाएगा\n"
+
+#: fread.c:1490
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
 msgstr "sep == quote ('%c') की अनुमति नहीं है"
 
-#: fread.c:1368
+#: fread.c:1491
 #, c-format
 msgid "sep == dec ('%c') is not allowed"
 msgstr "sep == dec ('%c') की अनुमति नहीं है"
 
-#: fread.c:1369
+#: fread.c:1492
 #, c-format
 msgid "quote == dec ('%c') is not allowed"
 msgstr "quote == dec ('%c') की अनुमति नहीं है"
 
-#: fread.c:1386
+#: fread.c:1509
 msgid "[02] Opening the file\n"
 msgstr "[02] फाइल (file) खोली जा रही है\n"
 
-#: fread.c:1389
+#: fread.c:1512
+#, fuzzy
 msgid ""
-"  `input` argument is provided rather than a file name, interpreting as raw "
+"  `input` argument is provided rather than a file name, interpreting as raw "
 "text to read\n"
 msgstr ""
 "  फाइल (file) नाम के बजाय `input` आर्ग्युमेंट (argument) प्रदान किया गया है, इसे पढ़ने "
 "के लिए रॉ (raw) टेक्स्ट के रूप में व्याख्या की जा रही है\n"
 
-#: fread.c:1396
-#, c-format
-msgid "  Opening file %s\n"
+#: fread.c:1519
+#, fuzzy, c-format
+msgid "  Opening file %s\n"
 msgstr "  फाइल (file) %s खोली जा रही है\n"
 
-#: fread.c:1400 fread.c:1429
+#: fread.c:1523
 #, c-format
-msgid "File not found: %s"
-msgstr "फाइल (file) नहीं मिली: %s"
+msgid "Couldn't open file %s: %s"
+msgstr ""
 
-#: fread.c:1404
+#: fread.c:1527
 #, c-format
 msgid "Opened file ok but couldn't obtain its size: %s"
 msgstr "फाइल (file) ठीक से खुल गई लेकिन इसका आकार प्राप्त नहीं किया जा सका: %s"
 
-#: fread.c:1407 fread.c:1439
+#: fread.c:1531 fread.c:1567
+#, c-format
+msgid "File size [%s] exceeds the address space: %s"
+msgstr ""
+
+#: fread.c:1534 fread.c:1570
 #, c-format
 msgid "File is empty: %s"
 msgstr "फाइल (file) खाली है: %s"
 
-#: fread.c:1408 fread.c:1440
-#, c-format
-msgid "  File opened, size = %s.\n"
+#: fread.c:1535 fread.c:1571
+#, fuzzy, c-format
+msgid "  File opened, size = %s.\n"
 msgstr "  फाइल (file) खुल गई, आकार = %s.\n"
 
-#: fread.c:1435
+#: fread.c:1556
+#, c-format
+msgid "File not found: %s"
+msgstr "फाइल (file) नहीं मिली: %s"
+
+#: fread.c:1562
 #, c-format
 msgid "Unable to open file after %d attempts (error %lu): %s"
 msgstr "%d प्रयासों के बाद फाइल (file) खोलने में असमर्थ (एरर (error) %lu): %s"
 
-#: fread.c:1437
+#: fread.c:1564
 #, c-format
 msgid "GetFileSizeEx failed (returned 0) on file: %s"
 msgstr "फाइल (file) पर GetFileSizeEx विफल रहा (0 वापस किया): %s"
 
-#: fread.c:1442
+#: fread.c:1573
 #, c-format
 msgid "This is Windows, CreateFileMapping returned error %lu for file %s"
 msgstr ""
 "यह Windows है, फाइल (file) %s के लिए CreateFileMapping ने एरर (error) %lu वापस "
 "किया"
 
-#: fread.c:1449
+#: fread.c:1580
 #, c-format
 msgid ""
 "Opened %s file ok but could not memory map it. This is a %dbit process. %s."
@@ -833,23 +1938,24 @@ msgstr ""
 "%s फाइल (file) ठीक से खुल गई लेकिन इसे मेमोरी (memory) मैप (map) नहीं किया जा सका। "
 "यह एक %dbit प्रोसेस (process) है। %s."
 
-#: fread.c:1450
+#: fread.c:1581
 msgid "Please upgrade to 64bit"
 msgstr "कृपया 64bit पर उन्नत करें"
 
-#: fread.c:1450
+#: fread.c:1581
 msgid "There is probably not enough contiguous virtual memory available"
 msgstr "शायद पर्याप्त सन्निहित आभासी मेमोरी (memory) उपलब्ध नहीं है"
 
-#: fread.c:1453
-msgid "  Memory mapped ok\n"
+#: fread.c:1584
+#, fuzzy
+msgid "  Memory mapped ok\n"
 msgstr "  मेमोरी (memory) मैपिंग (mapping) ठीक से हो गई\n"
 
-#: fread.c:1472
+#: fread.c:1603
 msgid "[03] Detect and skip BOM\n"
 msgstr "[03] BOM का पता लगाएं और छोड़ें\n"
 
-#: fread.c:1476
+#: fread.c:1607
 msgid ""
 "  UTF-8 byte order mark EF BB BF found at the start of the file and "
 "skipped.\n"
@@ -857,7 +1963,7 @@ msgstr ""
 "  फाइल (file) की शुरुआत में UTF-8 बाइट (byte) ऑर्डर मार्क EF BB BF मिला और छोड़ "
 "दिया गया।\n"
 
-#: fread.c:1481
+#: fread.c:1612
 msgid ""
 "GB-18030 encoding detected, however fread() is unable to decode it. Some "
 "character fields may be garbled.\n"
@@ -866,7 +1972,7 @@ msgstr ""
 "करने में असमर्थ है।\n"
 "कुछ कैरेक्टर (character) फ़ील्ड विकृत हो सकते हैं।\n"
 
-#: fread.c:1484
+#: fread.c:1615
 msgid ""
 "File is encoded in UTF-16, this encoding is not supported by fread(). Please "
 "recode the file to UTF-8."
@@ -875,43 +1981,41 @@ msgstr ""
 "द्वारा समर्थित नहीं है।\n"
 "कृपया फाइल (file) को UTF-8 में रीकोड (recode) करें।"
 
-#: fread.c:1489
+#: fread.c:1620
 #, c-format
 msgid "  Last byte(s) of input found to be %s and removed.\n"
 msgstr "  इनपुट (input) का अंतिम बाइट (byte) %s पाया गया और हटा दिया गया।\n"
 
-#: fread.c:1492
+#: fread.c:1623
 msgid "Input is empty or only contains BOM or terminal control characters"
 msgstr ""
 "इनपुट (input) खाली है या इसमें केवल BOM या टर्मिनल (terminal) कंट्रोल (control) "
 "कैरेक्टर्स (characters) हैं"
 
-#: fread.c:1499
+#: fread.c:1629
 msgid "[04] Arrange mmap to be \\0 terminated\n"
 msgstr "[04] mmap को \\0 समाप्त होने के लिए व्यवस्थित करें\n"
 
-#: fread.c:1506
+#: fread.c:1658
+#, c-format
 msgid ""
-"  No \\n exists in the file at all, so single \\r (if any) will be taken as "
-"one line ending. This is unusual but will happen normally when there is no "
-"\\r either; e.g. a single line missing its end of line.\n"
+"  An \\r by itself will be taken as one line ending (counts: %d \\r by "
+"themselves vs %d [\\r]*\\n). This happens with old Mac CSV or when there is "
+"no \\r at all.\n"
 msgstr ""
-"  फाइल (file) में \\n बिल्कुल मौजूद नहीं है, इसलिए सिंगल (single) \\r (यदि कोई हो) "
-"को एक पंक्ति अंत के\n"
-"रूप में लिया जाएगा। यह असामान्य है लेकिन सामान्य रूप से तब होगा जब कोई \\r भी न हो;\n"
-"जैसे कि एक सिंगल (single) पंक्ति जिसके अंत में अंत मौजूद नहीं है।\n"
 
-#: fread.c:1507
+#: fread.c:1659
+#, fuzzy, c-format
 msgid ""
-"  \\n has been found in the input and different lines can end with different "
-"line endings (e.g. mixed \\n and \\r\\n in one file). This is common and "
-"ideal.\n"
+"  \\n has been found in the input (counts: %d \\r by themselves vs %d "
+"[\\r]*\\n) and different lines can end with different line endings (e.g. "
+"mixed \\n and \\r\\n in one file). This is common and ideal.\n"
 msgstr ""
 "  इनपुट (input) में \\n पाया गया है और विभिन्न पंक्तियां अलग-अलग पंक्ति अंत के साथ समाप्त "
 "हो सकती हैं\n"
 "(जैसे कि एक फाइल में मिश्रित \\n और \\r\\n)। यह सामान्य और आदर्श है।\n"
 
-#: fread.c:1531
+#: fread.c:1684
 #, c-format
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
@@ -920,7 +2024,7 @@ msgstr ""
 "  फाइल (file) अचानक '%c' के साथ समाप्त होती है। अंतिम अंत गायब है।\n"
 "अंतिम बाइट (byte) पर 0 लिखने के लिए cow page का उपयोग किया जा रहा है।\n"
 
-#: fread.c:1537
+#: fread.c:1690
 msgid ""
 "This file is very unusual: it ends abruptly without a final newline, and "
 "also its size is a multiple of 4096 bytes. Please properly end the last row "
@@ -932,35 +2036,40 @@ msgstr ""
 "file' का\n"
 "उपयोग करके अंतिम पंक्ति को newline के साथ ठीक से समाप्त करें"
 
-#: fread.c:1539
-#, c-format
+#: fread.c:1692
+#, fuzzy, c-format
 msgid ""
-"  File ends abruptly with '%c'. Final end-of-line is missing. Copying file "
+"  File ends abruptly with '%c'. Final end-of-line is missing. Copying file "
 "in RAM. %s.\n"
 msgstr ""
 "  फाइल (file) अचानक '%c' के साथ समाप्त होती है। अंतिम अंत गायब है। फाइल (file) को "
 "RAM में कॉपी (copy) किया जा रहा है %s।\n"
 
-#: fread.c:1546 fread.c:1830
+#: fread.c:1698 fread.c:2002
+#, c-format
+msgid "%s. Attempt to copy file in RAM failed."
+msgstr ""
+
+#: fread.c:1699 fread.c:2003
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM."
 msgstr "सन्निहित आभासी RAM के %s आवंटित करने में असमर्थ।"
 
-#: fread.c:1550 fread.c:1834
-#, c-format
-msgid "  File copy in RAM took %.3f seconds.\n"
+#: fread.c:1703 fread.c:2007
+#, fuzzy, c-format
+msgid "  File copy in RAM took %.3f seconds.\n"
 msgstr "  RAM में फाइल (file) कॉपी (copy) करने में %.3f सेकंड लगे।\n"
 
-#: fread.c:1552 fread.c:1836
+#: fread.c:1705 fread.c:2009
 #, c-format
 msgid "Avoidable file copy in RAM took %.3f seconds. %s.\n"
 msgstr "RAM में परिहार्य फाइल (file) कॉपी (copy) करने में %.3f सेकंड लगे। %s.\n"
 
-#: fread.c:1584
+#: fread.c:1737
 msgid "[05] Skipping initial rows if needed\n"
 msgstr "[05] यदि आवश्यक हो तो शुरुआती पंक्तियां छोड़ रहे हैं\n"
 
-#: fread.c:1590
+#: fread.c:1743
 #, c-format
 msgid ""
 "skip='%s' not found in input (it is case sensitive and literal; i.e., no "
@@ -969,21 +2078,21 @@ msgstr ""
 "इनपुट (input) में skip='%s' नहीं मिला (यह केस-सेंसिटिव (case-sensitive) और शाब्दिक "
 "है; अर्थात, कोई स्वरूप, वाइल्डकार्ड्स (wildcards) या regex नहीं)"
 
-#: fread.c:1596
-#, c-format
+#: fread.c:1749
+#, fuzzy, c-format
 msgid ""
-"Found skip='%s' on line %<PRIu64>. Taking this to be header row or first row "
-"of data.\n"
+"Found skip='%s' on line %d. Taking this to be header row or first row of "
+"data.\n"
 msgstr ""
 "पंक्ति %<PRIu64> पर skip='%s' मिला। इसे हेडर (header) पंक्ति या डेटा (data) की पहली "
 "पंक्ति माना जा रहा है।\n"
 
-#: fread.c:1610
-#, c-format
-msgid "  Skipped to line %<PRIu64> in the file"
+#: fread.c:1763
+#, fuzzy, c-format
+msgid "  Skipped to line %d in the file"
 msgstr "  फाइल (file) में पंक्ति %<PRIu64> तक छोड़ दिया गया"
 
-#: fread.c:1624
+#: fread.c:1777
 msgid ""
 "Input is either empty, fully whitespace, or skip has been set after the last "
 "non-whitespace."
@@ -991,48 +2100,61 @@ msgstr ""
 "इनपुट (input) या तो खाली है, पूरी तरह से व्हाइटस्पेस (whitespace) है, या skip को "
 "अंतिम non-whitespace के बाद तय किया गया है।"
 
-#: fread.c:1626
-#, c-format
-msgid "  Moved forward to first non-blank line (%d)\n"
+#: fread.c:1779
+#, fuzzy, c-format
+msgid "  Moved forward to first non-blank line (%d)\n"
 msgstr "  पहली non-blank पंक्ति (%d) पर आगे बढ़े\n"
 
-#: fread.c:1627
-#, c-format
-msgid "  Positioned on line %d starting: <<%s>>\n"
+#: fread.c:1780
+#, fuzzy, c-format
+msgid "  Positioned on line %d starting: <<%s>>\n"
 msgstr "  पंक्ति %d पर स्थित, शुरुआत: <<%s>>\n"
 
-#: fread.c:1649
+#: fread.c:1803
 msgid "[06] Detect separator, quoting rule, and ncolumns\n"
 msgstr "[06] सेपरेटर (separator), कोटिंग नियम, और ncolumns का पता लगाएं\n"
 
-#: fread.c:1653
-msgid "  sep='\\n' passed in meaning read lines as single character column\n"
+#: fread.c:1807
+#, fuzzy
+msgid "  sep='\\n' passed in meaning read lines as single character column\n"
 msgstr ""
 "sep='\\n' पास किया गया जिसका अर्थ है पंक्तियों को सिंगल (single) कैरेक्टर (character) "
 "कॉलम (column) के रूप में पढ़ना\n"
 
-#: fread.c:1672
+#: fread.c:1826
 msgid "  Detecting sep automatically ...\n"
 msgstr "  स्वचालित रूप से sep का पता लगाया जा रहा है ...\n"
 
-#: fread.c:1679
+#: fread.c:1833
 #, c-format
 msgid "  Using supplied sep '%s'\n"
 msgstr "  प्रदान किए गए sep '%s' का उपयोग किया जा रहा है\n"
 
-#: fread.c:1713
-#, c-format
-msgid "  with %d fields using quote rule %d\n"
+#: fread.c:1867
+#, fuzzy, c-format
+msgid "  sep=%#02x  with %d fields using quote rule %d\n"
 msgstr "  %d फ़ील्ड्स (fields) के साथ कोट नियम (quote rule) %d का उपयोग करते हुए\n"
 
-#: fread.c:1763
-#, c-format
-msgid "  with %d lines of %d fields using quote rule %d\n"
+#: fread.c:1868
+#, fuzzy, c-format
+msgid "  sep='%c'  with %d fields using quote rule %d\n"
+msgstr "  %d फ़ील्ड्स (fields) के साथ कोट नियम (quote rule) %d का उपयोग करते हुए\n"
+
+#: fread.c:1934
+#, fuzzy, c-format
+msgid "  sep=%#02x  with %d lines of %d fields using quote rule %d\n"
 msgstr ""
 "  %d पंक्तियों की %d फ़ील्ड्स (fields) के साथ कोट नियम (quote rule) %d का उपयोग करते "
 "हुए\n"
 
-#: fread.c:1770
+#: fread.c:1935
+#, fuzzy, c-format
+msgid "  sep='%c'  with %d lines of %d fields using quote rule %d\n"
+msgstr ""
+"  %d पंक्तियों की %d फ़ील्ड्स (fields) के साथ कोट नियम (quote rule) %d का उपयोग करते "
+"हुए\n"
+
+#: fread.c:1943
 msgid ""
 "  No sep and quote rule found a block of 2x2 or greater. Single column "
 "input.\n"
@@ -1040,7 +2162,7 @@ msgstr ""
 "  किसी भी sep और कोट नियम (quote rule) को 2x2 या उससे बड़ा खंड नहीं मिला।\n"
 "सिंगल (single) कॉलम (column) इनपुट (input)।\n"
 
-#: fread.c:1786
+#: fread.c:1959
 msgid ""
 "Single column input contains invalid quotes. Self healing only effective "
 "when ncol>1"
@@ -1048,7 +2170,7 @@ msgstr ""
 "सिंगल (single) कॉलम (column) इनपुट (input) में अमान्य कोट्स (quotes) हैं। स्वतः सुधार\n"
 "केवल तभी प्रभावी होता है जब ncol>1 हो"
 
-#: fread.c:1791
+#: fread.c:1964
 #, c-format
 msgid ""
 "Found and resolved improper quoting in first %d rows. If the fields are not "
@@ -1061,7 +2183,7 @@ msgstr ""
 "नहीं दिखता है),\n"
 "तो इस वॉर्निंग (warning) से बचने के लिए quote=\"\" का प्रयास करें।"
 
-#: fread.c:1812
+#: fread.c:1985
 #, c-format
 msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
@@ -1071,17 +2193,17 @@ msgstr ""
 "है या\n"
 "डेटा (data) की पहली पंक्ति है। पंक्ति इस प्रकार शुरू होती है: <<%s>>\n"
 
-#: fread.c:1814
+#: fread.c:1987
 #, c-format
 msgid "  Quote rule picked = %d\n"
 msgstr "  चुना गया कोट नियम (quote rule) = %d\n"
 
-#: fread.c:1815
+#: fread.c:1988
 #, c-format
 msgid "  fill=%s and the most number of columns found is %d\n"
 msgstr "  fill=%s और पाए गए कॉलम (column) की अधिकतम संख्या %d है\n"
 
-#: fread.c:1821
+#: fread.c:1994
 msgid ""
 "This file is very unusual: it's one single column, ends with 2 or more end-"
 "of-line (representing several NA at the end), and the file size is a "
@@ -1092,21 +2214,22 @@ msgstr ""
 "समाप्त होती है (जो अंत में कई NA को दर्शाते हुए हैं), और फाइल (file) का आकार भी 4096 "
 "का गुणज है"
 
-#: fread.c:1823
-#, c-format
-msgid "  Copying file in RAM. %s\n"
+#: fread.c:1996
+#, fuzzy, c-format
+msgid "  Copying file in RAM. %s\n"
 msgstr "  RAM में फाइल (file) कॉपी (copy) की जा रही है। %s\n"
 
-#: fread.c:1840
+#: fread.c:2013
+#, fuzzy
 msgid ""
-"  1-column file ends with 2 or more end-of-line. Restoring last eol using "
+"  1-column file ends with 2 or more end-of-line. Restoring last eol using "
 "extra byte in cow page.\n"
 msgstr ""
 "  1-कॉलम (column) फाइल (file) 2 या अधिक पंक्ति अंत के साथ समाप्त होती है। cow page "
 "में अतिरिक्त बाइट (byte)\n"
 "का उपयोग करके अंतिम eol को बहाल किया जा रहा है।\n"
 
-#: fread.c:1859
+#: fread.c:2032
 msgid ""
 "[07] Detect column types, dec, good nrow estimate and whether first row is "
 "column names\n"
@@ -1115,68 +2238,69 @@ msgstr ""
 "कॉलम (column)\n"
 "के नाम है\n"
 
-#: fread.c:1860
-#, c-format
-msgid "  'header' changed by user from 'auto' to %s\n"
+#: fread.c:2033
+#, fuzzy, c-format
+msgid "  'header' changed by user from 'auto' to %s\n"
 msgstr "  'header' को यूजर (user) द्वारा 'auto' से %s में बदल दिया गया है\n"
 
-#: fread.c:1866
+#: fread.c:2039
 #, c-format
 msgid "Failed to allocate 2 x %d bytes for type and tmpType: %s"
 msgstr "type और tmpType के लिए 2 x %d बाइट्स (bytes) आवंटित करने में विफल: %s"
 
-#: fread.c:1871
-msgid "  sep=',' so dec set to '.'\n"
+#: fread.c:2044
+#, fuzzy
+msgid "  sep=',' so dec set to '.'\n"
 msgstr "  sep=',' इसलिए dec को '.' पर तय किया गया है\n"
 
-#: fread.c:1896
-#, c-format
+#: fread.c:2069
+#, fuzzy, c-format
 msgid ""
-"  Number of sampling jump points = %d because nrow limit (%<PRIu64>) "
+"  Number of sampling jump points = %d because nrow limit (%<PRId64>) "
 "supplied\n"
 msgstr ""
 "  सैंपलिंग (sampling) जंप (jump) पॉइंट्स (points) की संख्या = %d क्योंकि nrow लिमिट "
 "(limit)\n"
 "(%<PRIu64>) प्रदान की गई है\n"
 
-#: fread.c:1898
-#, c-format
-msgid "  Number of sampling jump points = %d because jump0size==0\n"
+#: fread.c:2071
+#, fuzzy, c-format
+msgid "  Number of sampling jump points = %d because jump0size==0\n"
 msgstr ""
 "  सैंपलिंग (sampling) जंप (jump) पॉइंट्स (points) की संख्या = %d क्योंकि jump0size==0 "
 "है\n"
 
-#: fread.c:1900
-#, c-format
+#: fread.c:2073
+#, fuzzy, c-format
 msgid ""
-"  Number of sampling jump points = %d because (%<PRIu64> bytes from row 1 to "
-"eof) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
+"  Number of sampling jump points = %d because (%td bytes from row 1 to "
+"eof) / (2 * %td jump0size) == %td\n"
 msgstr ""
 "  सैंपलिंग (sampling) जंप (jump) पॉइंट्स (points) की संख्या = %d क्योंकि (%<PRIu64> "
 "बाइट्स (bytes)\n"
 "पंक्ति 1 से eof तक) / (2 * %<PRIu64> jump0size) == %<PRIu64> है\n"
 
-#: fread.c:1941
-#, c-format
+#: fread.c:2129
+#, fuzzy, c-format
 msgid ""
-"  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. "
+"  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
 "  सैंपल (sample) जंप (jump) %d की पंक्ति %d पर बहुत कम फ़ील्ड्स (fields) (%d/%d) "
 "वाली\n"
 "एक पंक्ति मिली। %s\n"
 
-#: fread.c:1942
-#, c-format
+#: fread.c:2130
+#, fuzzy, c-format
 msgid ""
-"  A line with too-many fields (%d/%d) was found on line %d of sample jump "
+"  A line with too-many fields (%d/%d) was found on line %d of sample jump "
 "%d. %s\n"
 msgstr ""
 "  सैंपल (sample) जंप (jump) %d की पंक्ति %d पर बहुत अधिक फ़ील्ड्स (fields) (%d/%d) "
 "वाली\n"
 "एक पंक्ति मिली। %5$s\n"
 
-#: fread.c:1943
+#: fread.c:2131
 msgid ""
 "Most likely this jump landed awkwardly so type bumps here will be skipped."
 msgstr ""
@@ -1184,21 +2308,21 @@ msgstr ""
 "(type) परिवर्तन\n"
 "को छोड़ दिया जाएगा।"
 
-#: fread.c:1966 fread.c:1992
+#: fread.c:2154 fread.c:2180
 #, c-format
 msgid "  dec='%c' detected based on a balance of %d parsed fields\n"
 msgstr ""
 "  %2$d पार्स (parsed) किए गए फ़ील्ड्स (fields) के संतुलन के आधार पर dec='%1$c' का "
 "पता चला\n"
 
-#: fread.c:1976
-#, c-format
-msgid "  Type codes (jump %03d)    : %s    Quote rule %d\n"
+#: fread.c:2164
+#, fuzzy, c-format
+msgid "  Type codes (jump %03d)    : %s  Quote rule %d\n"
 msgstr ""
 "  टाइप कोड (Type codes) (जंप (jump) %03d)    : %s    कोट नियम (quote rule) "
 "%d\n"
 
-#: fread.c:1998
+#: fread.c:2186
 #, c-format
 msgid ""
 "  'header' determined to be true due to column %d containing a string on row "
@@ -1208,7 +2332,7 @@ msgstr ""
 "में एक स्ट्रिंग (string) है\n"
 "और बाकी %<PRId64> सैंपल (sample) रोज़(rows) में लोअर टाइप (lower type) (%s) है\n"
 
-#: fread.c:2012
+#: fread.c:2200
 #, c-format
 msgid ""
 "Types in 1st data row match types in 2nd data row but previous row has %d "
@@ -1218,7 +2342,7 @@ msgstr ""
 "हैं, लेकिन पिछली रो (row) में %d\n"
 "फ़ील्ड्स (fields) हैं। पिछली रो (row) को कॉलम (column) नामों के रूप में लिया जा रहा है।"
 
-#: fread.c:2016
+#: fread.c:2204
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
@@ -1237,7 +2361,7 @@ msgstr ""
 "ताकि एक मान्य\n"
 "फाइल (file) बन सके।\n"
 
-#: fread.c:2019
+#: fread.c:2207
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
@@ -1247,7 +2371,7 @@ msgstr ""
 "अमान्य फाइल (file))।\n"
 "अंत में %d अतिरिक्त डिफ़ॉल्ट (default) कॉलम (column) नाम जोड़े गए हैं।\n"
 
-#: fread.c:2023
+#: fread.c:2211
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
@@ -1258,12 +2382,12 @@ msgstr ""
 "स्वचालित रूप से भरी जा रही हैं। इस वॉर्निंग (warning) से बचने के लिए स्पष्ट रूप से\n"
 "fill=TRUE तय करें।\n"
 
-#: fread.c:2027
+#: fread.c:2215
 #, c-format
 msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
 msgstr "type और tmpType के लिए 2 x %d बाइट्स (bytes) को realloc करने में विफल: %s"
 
-#: fread.c:2048
+#: fread.c:2236
 msgid ""
 "  'header' determined to be TRUE because there are no number fields in the "
 "first and only row\n"
@@ -1272,7 +2396,7 @@ msgstr ""
 "अंक\n"
 "फ़ील्ड्स (fields) नहीं हैं\n"
 
-#: fread.c:2050
+#: fread.c:2238
 msgid ""
 "  'header' determined to be FALSE because there are number fields in the "
 "first and only row\n"
@@ -1280,7 +2404,7 @@ msgstr ""
 "  'header' को FALSE निर्धारित किया गया है क्योंकि पहली और एकमात्र रो (row) में अंक\n"
 "फ़ील्ड्स (fields) हैं\n"
 
-#: fread.c:2053
+#: fread.c:2241
 msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
@@ -1288,7 +2412,7 @@ msgstr ""
 "  'हेडर (header)' को true निर्धारित किया गया है क्योंकि सभी कॉलम (column) स्ट्रिंग "
 "(string) प्रकार के हैं औरइससे बेहतर अनुमान संभव नहीं है\n"
 
-#: fread.c:2055
+#: fread.c:2243
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
@@ -1297,90 +2421,89 @@ msgstr ""
 "हैं और उन\n"
 "कॉलम्स (columns) के शीर्ष पर कोई स्ट्रिंग (string) फ़ील्ड (field) नहीं है\n"
 
-#: fread.c:2071
-#, c-format
-msgid "  Type codes (first row)    : %s    Quote rule %d\n"
+#: fread.c:2259
+#, fuzzy, c-format
+msgid "  Type codes (first row)   : %s  Quote rule %d\n"
 msgstr ""
 "  टाइप कोड (Type codes) (पहली रो (row))    : %s    कोट नियम (quote rule) %d\n"
 
-#: fread.c:2080
-#, c-format
+#: fread.c:2268
+#, fuzzy, c-format
 msgid ""
-"  All rows were sampled since file is small so we know nrow=%<PRIu64> "
+"  All rows were sampled since file is small so we know nrow=%<PRId64> "
 "exactly\n"
 msgstr ""
 "  क्योंकि फाइल (file) छोटी है इसलिए सभी रोज़(rows) का सैंपल (sample) लिया गया था, "
 "इसलिए हमें\n"
 "सटीक रूप से nrow=%<PRIu64> पता है\n"
 
-#: fread.c:2093
-#, c-format
+#: fread.c:2281
+#, fuzzy, c-format
 msgid ""
-"  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
+"  Sampled %<PRId64> rows (handled \\n inside quoted fields) at %d jump "
 "points\n"
 msgstr ""
 "  %2$d jump points पर %1$<PRIu64> रोज़(rows) का सैंपल (sample) लिया गया\n"
 "(कोटेड (quoted) फ़ील्ड्स (fields) के अंदर \\n को संभाला गया)\n"
 
-#: fread.c:2094
-#, c-format
-msgid ""
-"  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
+#: fread.c:2282
+#, fuzzy, c-format
+msgid "  Bytes from first data row on line %d to the end of last row: %td\n"
 msgstr ""
 "पंक्ति %d पर पहली डेटा (data) रो (row) से लेकर अंतिम रो (row) के अंत तक बाइट्स "
 "(bytes): %<PRIu64>\n"
 
-#: fread.c:2095
+#: fread.c:2283
 #, c-format
 msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
 msgstr "  पंक्ति की लंबाई: मीन (mean)=%.2f एसडी (sd)=%.2f न्यूनतम=%.d अधिकतम=%d\n"
 
-#: fread.c:2096
-#, c-format
-msgid "  Estimated number of rows: %<PRIu64> / %.2f = %<PRIu64>\n"
+#: fread.c:2284
+#, fuzzy, c-format
+msgid "  Estimated number of rows: %td / %.2f = %<PRId64>\n"
 msgstr "  रोज़(rows) की अनुमानित संख्या: %<PRIu64> / %.2f = %<PRIu64>\n"
 
-#: fread.c:2097
-#, c-format
+#: fread.c:2285
+#, fuzzy, c-format
 msgid ""
-"  Initial alloc = %<PRIu64> rows (%<PRIu64> + %d%%) using bytes/"
+"  Initial alloc = %<PRId64> rows (%<PRId64> + %d%%) using bytes/"
 "max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
 "  शुरुआती alloc = %1$<PRIu64> रोज़(rows) (%2$<PRIu64> + %3$d%%),\n"
 "bytes/max(mean-2*sd, min) का उपयोग करते हुए जिसे [1.1*estn, 2.0*estn] के बीच\n"
 "सीमित किया गया है\n"
 
-#: fread.c:2105
-#, c-format
-msgid "  Alloc limited to lower nrows=%<PRIu64> passed in.\n"
+#: fread.c:2292
+#, fuzzy, c-format
+msgid "  Alloc limited to lower nrows=%<PRId64> passed in.\n"
 msgstr ""
 "  Alloc को पास (pass) किए गए निचले nrows=%<PRIu64> तक सीमित किया गया है।\n"
 
-#: fread.c:2117
+#: fread.c:2304
 msgid "[08] Assign column names\n"
 msgstr "[08] कॉलम (column) के नाम असाइन (assign) करें\n"
 
-#: fread.c:2126
+#: fread.c:2313
 #, c-format
 msgid "Unable to allocate %d*%d bytes for column name pointers: %s"
 msgstr ""
 "कॉलम (column) के नाम के पॉइंटर्स (pointers) के लिए %d*%d बाइट्स (bytes) आवंटित करने "
 "में असमर्थ: %s"
 
-#: fread.c:2166
+#: fread.c:2361
 msgid "[09] Apply user overrides on column types\n"
 msgstr "[09] कॉलम (column) के types पर यूजर ओवरराइड्स (user overrides) लागू करें\n"
 
-#: fread.c:2170
+#: fread.c:2365
 msgid "  Cancelled by user: userOverride() returned false."
 msgstr "  यूजर (user) द्वारा रद्द किया गया: userOverride() ने false लौटाया।"
 
-#: fread.c:2181
-#, c-format
-msgid "Failed to allocate %d bytes for '%s': %s"
+#: fread.c:2376
+#, fuzzy, c-format
+msgid "Failed to allocate %zu bytes for '%s': %s"
 msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल: %s"
 
-#: fread.c:2188
+#: fread.c:2383
 #, c-format
 msgid ""
 "Attempt to override column %d%s%.*s%s of inherent type '%s' down to '%s' "
@@ -1393,55 +2516,55 @@ msgstr ""
 "ओवरराइड्स (overrides) समर्थित हैं। यदि यह जानबूझकर किया गया था, तो कृपया बाद में\n"
 "लोअर टाइप (lower type) के लिए coerce करें।"
 
-#: fread.c:2203
+#: fread.c:2398
 #, c-format
 msgid "  After %d type and %d drop user overrides : %s\n"
 msgstr "  %d type और %d drop यूजर ओवरराइड्स (user overrides) के बाद : %s\n"
 
-#: fread.c:2211
+#: fread.c:2406
 msgid "[10] Allocate memory for the datatable\n"
 msgstr "[10] datatable के लिए मेमोरी (memory) आवंटित करें\n"
 
-#: fread.c:2212
-#, c-format
-msgid "  Allocating %d column slots (%d - %d dropped) with %<PRIu64> rows\n"
+#: fread.c:2407
+#, fuzzy, c-format
+msgid "  Allocating %d column slots (%d - %d dropped) with %<PRId64> rows\n"
 msgstr ""
 "  %d कॉलम (column) स्लॉट्स (slots) (%d - %d dropped) को %<PRIu64> रोज़(rows) के "
 "साथ आवंटित किया जा रहा है\n"
 
-#: fread.c:2267
+#: fread.c:2462
 #, c-format
 msgid "Buffer size %<PRId64> is too large\n"
 msgstr "बफर (buffer) का आकार (size) %<PRId64> बहुत बड़ा है\n"
 
-#: fread.c:2270
+#: fread.c:2465
 msgid "[11] Read the data\n"
 msgstr "[11] डेटा (data) पढ़ें\n"
 
-#: fread.c:2499
-#, c-format
+#: fread.c:2713
+#, fuzzy, c-format
 msgid ""
-"Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %<PRIu64>\n"
+"Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %<PRId64>\n"
 msgstr ""
 "रो (row) %<PRIu64> पर <<%.*s>> के कारण कॉलम (column) %d%s%.*s%s को '%s' से\n"
 "'%s' पर अपग्रेड (bumped) किया गया\n"
 
-#: fread.c:2617
+#: fread.c:2839
 #, c-format
 msgid "  Provided number of fill columns: %d but only found %d\n"
 msgstr "  प्रदान की गई fill कॉलम्स (columns) की संख्या: %d लेकिन केवल %d प्राप्त हुए\n"
 
-#: fread.c:2618
+#: fread.c:2840
 #, c-format
 msgid "  Dropping %d overallocated columns\n"
 msgstr "  %d अत्यधिक आवंटित कॉलम्स (columns) को हटाया जा रहा है\n"
 
-#: fread.c:2622
-#, c-format
-msgid "Failed to allocate %d bytes for '%s'."
+#: fread.c:2844
+#, fuzzy, c-format
+msgid "Failed to allocate %zu bytes for '%s'."
 msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
 
-#: fread.c:2636
+#: fread.c:2857
 #, c-format
 msgid ""
 "Internal error in %s: %s. Please report to the data.table issues tracker"
@@ -1449,29 +2572,29 @@ msgstr ""
 "आंतरिक (internal) एरर (error) %s में: %s। कृपया इसे data.table के इश्यू ट्रैकर (issue "
 "tracker) पर रिपोर्ट (report) करें"
 
-#: fread.c:2643
-#, c-format
+#: fread.c:2864
+#, fuzzy, c-format
 msgid ""
-"  Too few rows allocated. Allocating additional %<PRIu64> rows (now "
-"nrows=%<PRIu64>) and continue reading from jump %d\n"
+"  Too few rows allocated. Allocating additional %<PRId64> rows (now "
+"nrows=%<PRId64>) and continue reading from jump %d\n"
 msgstr ""
 "  बहुत कम रोज़(rows) आवंटित किए गए। अतिरिक्त %<PRIu64> रोज़(rows) आवंटित किए जा रहे "
 "हैं\n"
 "(अब nrows=%<PRIu64>) और जंप (jump) %d से पढ़ना जारी रखें\n"
 
-#: fread.c:2650
+#: fread.c:2871
 #, c-format
 msgid "  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"
 msgstr ""
 "  जंप (jump) %d से टीम (team) को पुनः आरंभ किया जा रहा है। nSwept==%d "
 "quoteRule==%d\n"
 
-#: fread.c:2670
+#: fread.c:2891
 #, c-format
 msgid "  %d out-of-sample type bumps: %s\n"
 msgstr "  %d out-of-sample टाइप (type) परिवर्तन: %s\n"
 
-#: fread.c:2705
+#: fread.c:2928
 #, c-format
 msgid ""
 "Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock "
@@ -1480,28 +2603,28 @@ msgstr ""
 "%s फाइल (file) से %<PRIu64> रोज़(rows) x %d कॉलम्स (columns) को %02d:%06.3f "
 "wall clock time में पढ़ा गया\n"
 
-#: fread.c:2712
+#: fread.c:2935
 msgid "[12] Finalizing the datatable\n"
 msgstr "[12] datatable को अंतिम रूप दिया जा रहा है\n"
 
-#: fread.c:2713
+#: fread.c:2936
 msgid "  Type counts:\n"
 msgstr "  प्रकार (Type) गणना:\n"
 
-#: fread.c:2715
+#: fread.c:2938
 #, c-format
 msgid "%10d : %-9s '%c'\n"
 msgstr "%10d : %-9s '%c'\n"
 
-#: fread.c:2731
+#: fread.c:2954
 #, c-format
 msgid "Discarded single-line footer: <<%s>>"
 msgstr "एकल-पंक्ति footer को खारिज कर दिया गया: <<%s>>"
 
-#: fread.c:2737
-#, c-format
+#: fread.c:2960
+#, fuzzy, c-format
 msgid ""
-"Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
+"Stopped early on line %<PRId64>. Expected %d fields but found %d. Consider "
 "fill=%d or even more based on your knowledge of the input file. Use fill=Inf "
 "for reading the whole file for detecting the number of fields. First "
 "discarded non-empty line: <<%s>>"
@@ -1511,69 +2634,52 @@ msgstr ""
 "का उपयोग करने पर विचार करें। फ़ील्ड्स (fields) की संख्या का पता लगाने के लिए पूरी फाइल "
 "(file) को पढ़ने हेतु fill=Inf का उपयोग करें। पहली खारिज की गई गैर-खाली पंक्ति: <<%s>>"
 
-#: fread.c:2740
-#, c-format
+#: fread.c:2963
+#, fuzzy, c-format
 msgid ""
-"Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
-"fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"
+"Stopped early on line %<PRId64>. Expected %d fields but found %d. Consider "
+"fill=TRUE. First discarded non-empty line: <<%s>>"
 msgstr ""
 "पंक्ति %<PRIu64> पर काम जल्दी रोक दिया गया। %d फ़ील्ड्स (fields) की अपेक्षा थी लेकिन "
 "%d प्राप्त हुए। fill=TRUE और comment.char= पर विचार करें। पहली खारिज की गई गैर-"
 "खाली पंक्ति: <<%s>>"
 
-#: fread.c:2747
-#, c-format
-msgid ""
-"Found and resolved improper quoting out-of-sample. First healed line "
-"%<PRIu64>: <<%s>>. If the fields are not quoted (e.g. field separator does "
-"not appear within any field), try quote=\"\" to avoid this warning."
-msgstr ""
-"out-of-sample में गलत कोटिंग (quoting) पाई गई और उसे हल किया गया। पहली सुधारे गए "
-"पंक्ति %<PRIu64>: <<%s>>। यदि फ़ील्ड्स (fields) कोटेड (quoted) नहीं हैं (जैसे, फ़ील्ड "
-"(field) सेपरेटर (separator) किसी फ़ील्ड (field) के अंदर दिखाई नहीं देता है), तो इस "
-"चेतावनी से बचने के लिए quote=\"\" का प्रयास करें।"
-
-#: fread.c:2753
-#, c-format
-msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
+#: fread.c:2976
+#, fuzzy, c-format
+msgid "%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"
 msgstr "%8.3fs (%3.0f%%) %.3fGB फाइल (file) का मेमोरी (memory) मैप (map)\n"
 
-#: fread.c:2754
-#, c-format
-msgid "%8.3fs (%3.0f%%) sep="
-msgstr "%8.3fs (%3.0f%%) sep="
-
-#: fread.c:2756
+#: fread.c:2979
 #, c-format
 msgid " ncol=%d and header detection\n"
 msgstr " ncol=%d और हेडर (header) पता लगाना\n"
 
-#: fread.c:2757
-#, c-format
-msgid "%8.3fs (%3.0f%%) Column type detection using %<PRIu64> sample rows\n"
+#: fread.c:2980
+#, fuzzy, c-format
+msgid "%8.3fs (%3.0f%%) Column type detection using %<PRId64> sample rows\n"
 msgstr ""
 "%8.3fs (%3.0f%%) %<PRIu64> सैंपल (sample) रोज़(rows) का उपयोग करके कॉलम (column) "
 "प्रकार का पता लगाना\n"
 
-#: fread.c:2759
-#, c-format
+#: fread.c:2982
+#, fuzzy, c-format
 msgid ""
-"%8.3fs (%3.0f%%) Allocation of %<PRIu64> rows x %d cols (%.3fGB) of which "
-"%<PRIu64> (%3.0f%%) rows used\n"
+"%8.3fs (%3.0f%%) Allocation of %<PRId64> rows x %d cols (%.3fGiB) of which "
+"%<PRId64> (%3.0f%%) rows used\n"
 msgstr ""
 "%8.3fs (%3.0f%%) %<PRIu64> रोज़(rows) x %d cols (%.3fGB) का आवंटन, जिसमें से "
 "%<PRIu64> (%3.0f%%) रोज़(rows) का उपयोग किया गया\n"
 
-#: fread.c:2763
-#, c-format
+#: fread.c:2986
+#, fuzzy, c-format
 msgid ""
-"%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) "
-"using %d threads\n"
+"%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMiB (each chunk "
+"%<PRId64> rows) using %d threads\n"
 msgstr ""
 "%8.3fs (%3.0f%%) %d threads का उपयोग करके %.3fMB के %d टुकड़ों (%d बहे हुए) को पढ़ना "
 "(प्रत्येक टुकड़े में %d रोज़(rows))\n"
 
-#: fread.c:2765
+#: fread.c:2988
 #, c-format
 msgid ""
 "   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"
@@ -1581,17 +2687,17 @@ msgstr ""
 "   + %8.3fs (%3.0f%%) row-major थ्रेड (thread) बफर्स (buffers) में पार्स (parse) "
 "करना (%d बार बढ़ाया गया)\n"
 
-#: fread.c:2766
+#: fread.c:2989
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Transpose\n"
 msgstr "   + %8.3fs (%3.0f%%) ट्रांसपोज़ (transpose)\n"
 
-#: fread.c:2767
+#: fread.c:2990
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Waiting\n"
 msgstr "   + %8.3fs (%3.0f%%) प्रतीक्षा\n"
 
-#: fread.c:2768
+#: fread.c:2991
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n"
@@ -1599,33 +2705,33 @@ msgstr ""
 "%8.3fs (%3.0f%%) out-of-sample प्रकार के अपवादों के कारण %d कॉलम्स (columns) को "
 "पुनः पढ़ना\n"
 
-#: fread.c:2770
+#: fread.c:2993
 #, c-format
 msgid "%8.3fs        Total\n"
 msgstr "%8.3fs        कुल\n"
 
-#: freadR.c:92
+#: freadR.c:96
 #, c-format
 msgid "freadR.c has been passed a filename: %s\n"
 msgstr "freadR.c को एक फाइल (file) नाम पास (pass) किया गया है: %s\n"
 
-#: freadR.c:96
+#: freadR.c:100
 msgid "freadR.c has been passed the data as text input (not a filename)\n"
 msgstr ""
 "freadR.c को डेटा (data) पाठ इनपुट (input) के रूप में पास (pass) किया गया है (फाइल "
 "(file) नाम नहीं)\n"
 
-#: freadR.c:114
+#: freadR.c:118
 msgid "quote= must be a single character, blank \"\", or FALSE"
 msgstr ""
 "quote= एक सिंगल (single) कैरेक्टर (character), खाली \"\", या False होना चाहिए"
 
-#: freadR.c:167
+#: freadR.c:175
 msgid "'integer64' must be a single character string"
 msgstr ""
 "'integer64' एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए"
 
-#: freadR.c:175
+#: freadR.c:183
 #, c-format
 msgid ""
 "Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or "
@@ -1634,11 +2740,11 @@ msgstr ""
 "अमान्य मान integer64='%s'। यह 'integer64', 'कैरेक्टर (character)', 'डबल "
 "(double)' या 'न्यूमेरिक (numeric)' होना चाहिए"
 
-#: freadR.c:183
+#: freadR.c:193
 msgid "Use either select= or drop= but not both."
 msgstr "या तो select= या drop= का उपयोग करें लेकिन दोनों का नहीं।"
 
-#: freadR.c:186
+#: freadR.c:196
 msgid ""
 "select= is type list for specifying types in select=, but colClasses= has "
 "been provided as well. Please remove colClasses=."
@@ -1646,7 +2752,7 @@ msgstr ""
 "select= में types निर्दिष्ट करने के लिए select= का type लिस्ट (list) है, लेकिन "
 "colClasses= भी प्रदान किया गया है। कृपया colClasses= हटा दें।"
 
-#: freadR.c:188
+#: freadR.c:198
 msgid ""
 "select= is type list but has no names; expecting list(type1=cols1, "
 "type2=cols2, ...)"
@@ -1654,7 +2760,7 @@ msgstr ""
 "select= type लिस्ट (list) है लेकिन इसका कोई नाम नहीं है; लिस्ट (list)(type1=cols1, "
 "type2=cols2, ...) की अपेक्षा है"
 
-#: freadR.c:195
+#: freadR.c:205
 msgid ""
 "select= is a named vector specifying the columns to select and their types, "
 "but colClasses= has been provided as well. Please remove colClasses=."
@@ -1662,31 +2768,31 @@ msgstr ""
 "select= एक नामित वेक्टर (vector) है जो चुनने के लिए कॉलम (column) और उनके types "
 "निर्दिष्ट करता है, लेकिन colClasses= भी प्रदान किया गया है। कृपया colClasses= हटा दें।"
 
-#: freadR.c:203 freadR.c:369
+#: freadR.c:213 freadR.c:379
 msgid "colClasses is type list but has no names"
 msgstr "colClasses type लिस्ट (list) है लेकिन इसके कोई नाम नहीं हैं"
 
-#: freadR.c:213
+#: freadR.c:223
 #, c-format
 msgid "encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'"
 msgstr "encoding='%s' अमान्य है। 'unknown', 'Latin-1' या 'UTF-8' होना चाहिए"
 
-#: freadR.c:236
+#: freadR.c:248
 #, c-format
 msgid "Column name '%s' (%s) not found"
 msgstr "कॉलम (column) नाम '%s' (%s) नहीं मिला"
 
-#: freadR.c:238
+#: freadR.c:250
 #, c-format
 msgid "%s is NA"
 msgstr "%s NA है"
 
-#: freadR.c:240
+#: freadR.c:252
 #, c-format
 msgid "%s is %d which is out of range [1,ncol=%d]"
 msgstr "%s, %d है जो range [1,ncol=%d] से बाहर है"
 
-#: freadR.c:289
+#: freadR.c:299
 #, c-format
 msgid ""
 "Column name '%s' not found in column name header (case sensitive), skipping."
@@ -1694,7 +2800,7 @@ msgstr ""
 "कॉलम (column) नाम '%s' कॉलम (column) नाम हेडर (header) (case sensitive) में नहीं "
 "मिला, छोड़ा जा रहा है।"
 
-#: freadR.c:299
+#: freadR.c:309
 #, c-format
 msgid ""
 "Column number %d (select[%d]) is negative but should be in the range [1,"
@@ -1703,7 +2809,7 @@ msgstr ""
 "कॉलम (column) संख्या %d (select[%d]) नकारात्मक है लेकिन range [1, ncol=%d] में होनी "
 "चाहिए। कॉलम (column) अपवर्जन के लिए drop= पर विचार करें।"
 
-#: freadR.c:300
+#: freadR.c:310
 #, c-format
 msgid ""
 "select = 0 (select[%d]) has no meaning. All values of select should be in "
@@ -1712,7 +2818,7 @@ msgstr ""
 "select = 0 (select[%d]) का कोई अर्थ नहीं है। select के सभी मानों range [1,"
 "ncol=%d] में होने चाहिए।"
 
-#: freadR.c:301
+#: freadR.c:311
 #, c-format
 msgid ""
 "Column number %d (select[%d]) is too large for this table, which only has %d "
@@ -1721,12 +2827,12 @@ msgstr ""
 "कॉलम (column) संख्या %d (select[%d]) इस टेबल के लिए बहुत बड़ी है, जिसमें केवल %d कॉलम "
 "(column) हैं।"
 
-#: freadR.c:302
+#: freadR.c:312
 #, c-format
 msgid "Column number %d ('%s') has been selected twice by select="
 msgstr "कॉलम (column) संख्या %d ('%s') को select= द्वारा दो बार चुना गया है"
 
-#: freadR.c:325
+#: freadR.c:335
 #, c-format
 msgid ""
 "colClasses= is an unnamed vector of types, length %d, but there are %d "
@@ -1740,29 +2846,29 @@ msgstr ""
 "सकते हैं, या colClasses= के बजाय select= का उपयोग करके types निर्दिष्ट कर सकते हैं। "
 "कृपया ?fread में उदाहरण देखें।"
 
-#: freadR.c:367
+#: freadR.c:377
 #, c-format
 msgid "colClasses is type '%s' but should be list or character"
 msgstr ""
 "colClasses type '%s' है लेकिन लिस्ट (list) या कैरेक्टर (character) होना चाहिए"
 
-#: freadR.c:391
+#: freadR.c:401
 #, c-format
 msgid "Column name '%s' (colClasses[[%d]][%d]) not found"
 msgstr "कॉलम (column) नाम '%s' (colClasses[[%d]][%d]) नहीं मिला"
 
-#: freadR.c:393
+#: freadR.c:403
 #, c-format
 msgid "colClasses[[%d]][%d] is NA"
 msgstr "colClasses[[%d]][%d] NA है"
 
-#: freadR.c:397
+#: freadR.c:407
 #, c-format
 msgid "Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"
 msgstr ""
 "कॉलम (column) संख्या %d (colClasses[[%d]][%d]) range [1,ncol=%d] से बाहर है"
 
-#: freadR.c:401
+#: freadR.c:411
 #, c-format
 msgid ""
 "Column %d ('%s') appears more than once in colClasses. The second time is "
@@ -1771,162 +2877,246 @@ msgstr ""
 "कॉलम (column) %d ('%s') colClasses में एक से अधिक बार दिखाई देता है। दूसरी बार "
 "colClasses[[%d]][%d] है।"
 
-#: freadR.c:643
+#: freadR.c:653
 #, c-format
 msgid "Field size is 1 but the field is of type %d\n"
 msgstr "फ़ील्ड (field) साइज़ 1 है लेकिन फ़ील्ड (field) type %d है\n"
 
-#: froll.c:23 froll.c:232 froll.c:416
+#: froll.c:28
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
 msgstr ""
 "%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
 "(vector) लौटा रहा है\n"
 
-#: froll.c:41 froll.c:249 froll.c:465
+#: froll.c:100
 #, c-format
 msgid "%s: align %d, shift answer by %d\n"
 msgstr "%s: संरेखित %d, उत्तर को %d से स्थानांतरित करें\n"
 
-#: froll.c:48 froll.c:256
-#, c-format
-msgid "%s: processing algo %u took %.3fs\n"
+#: froll.c:107 frolladaptive.c:75
+#, fuzzy, c-format
+msgid "%s: processing fun %d algo %u took %.3fs\n"
 msgstr "%s: एल्गोरिदम %u के संसाधन में %.3fs का समय लगा\n"
 
-#: froll.c:57 froll.c:260
-#, c-format
-msgid "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
+#: froll.c:173 froll.c:363 froll.c:540 froll.c:747 froll.c:986 froll.c:1153
+#: froll.c:1505
+#, fuzzy, c-format
+msgid "%s: running for input length %<PRIu64>, window %d, hasnf %d, narm %d\n"
 msgstr ""
 "%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए चल रहा है\n"
 
-#: froll.c:77 froll.c:87 froll.c:178 froll.c:280 froll.c:290 froll.c:371
-#, c-format
-msgid ""
-"%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
-"input, use default hasNA=NA to avoid this warning"
+#: froll.c:176 froll.c:239
+#, fuzzy, c-format
+msgid "%s: window width of size 0, returning all NaN vector\n"
 msgstr ""
-"%s: hasNA=FALSE का उपयोग किया गया है लेकिन इनपुट (input) में NA (या अन्य गैर-"
-"परिमित) मान मौजूद हैं, इस चेतावनी (warning) से बचने के लिए डिफ़ॉल्ट (default) "
-"hasNA=NA का उपयोग करें"
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
 
-#: froll.c:80 froll.c:182 froll.c:283 froll.c:375
-#, c-format
+#: froll.c:236 froll.c:424 froll.c:636 froll.c:840 froll.c:1072 froll.c:1767
+#, fuzzy, c-format
 msgid ""
-"%s: NA (or other non-finite) value(s) are present in input, re-running with "
-"extra care for NAs\n"
-msgstr ""
-"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, NAs के लिए अतिरिक्त "
-"सावधानी के साथ पुन: निष्पादन किया जा रहा है\n"
-
-#: froll.c:90 froll.c:293
-#, c-format
-msgid ""
-"%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
-"attempt and run with extra care for NAs\n"
-msgstr ""
-"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, गैर-NA प्रयास को छोड़ें और "
-"NAs के लिए अतिरिक्त सावधानी के साथ चलाएं\n"
-
-#: froll.c:146 froll.c:344
-#, c-format
-msgid ""
-"%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, "
+"%s: running in parallel for input length %<PRIu64>, window %d, hasnf %d, "
 "narm %d\n"
 msgstr ""
 "%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए समानांतर में "
 "चल रहा है\n"
 
-#: froll.c:184 froll.c:377
-#, c-format
-msgid ""
-"%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
-"so in 'exact' implementation NAs were handled already, no need to re-run\n"
-msgstr ""
-"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, na.rm FALSE था इसलिए "
-"'यथातथ्य' कार्यान्वयन में NAs को पहले ही संभाल लिया गया था, पुन: निष्पादन की आवश्यकता "
-"नहीं है\n"
-
-#: froll.c:433
-#, c-format
-msgid "%s: results from provided FUN are not length 1"
-msgstr "%s: प्रदान किए गए FUN के परिणाम की लेंथ (length) 1 नहीं है"
-
-#: froll.c:440
-#, c-format
-msgid ""
-"%s: results from provided FUN are not of type double, coercion from integer "
-"or logical will be applied on each iteration\n"
-msgstr ""
-"%s: प्रदान किए गए FUN के परिणाम डबल (double) type के नहीं हैं, प्रत्येक पुनरावृत्ति पर "
-"इंटीजर (integer) या लॉजिकल (logical) से ज़बरदस्ती परिवर्तन लागू किया जाएगा\n"
-
-#: froll.c:443
-#, c-format
-msgid "%s: results from provided FUN are not of type double"
-msgstr "%s: प्रदान किए गए FUN के परिणाम डबल (double) type के नहीं हैं"
-
-#: froll.c:472 nafill.c:87
+#: froll.c:366 froll.c:427
 #, fuzzy, c-format
-msgid "%s: took %.3fs\n"
+msgid "%s: window width of size 0, returning all 0 vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: froll.c:543 froll.c:639
+#, fuzzy, c-format
+msgid "%s: window width of size 0, returning all -Inf vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: froll.c:626
+#, c-format
+msgid "%s: nested window max calculation called %<PRIu64> times\n"
+msgstr ""
+
+#: froll.c:750 froll.c:843
+#, fuzzy, c-format
+msgid "%s: window width of size 0, returning all +Inf vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: froll.c:833
+#, c-format
+msgid "%s: nested window min calculation called %<PRIu64> times\n"
+msgstr ""
+
+#: froll.c:989 froll.c:1075
+#, fuzzy, c-format
+msgid "%s: window width of size 0, returning all 1 vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: froll.c:1156 froll.c:1222
+#, fuzzy, c-format
+msgid "%s: window width of size %d, returning all NA vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: froll.c:1209
+#, fuzzy, c-format
+msgid ""
+"%s: non-finite values are present in input, redirecting to frollvarExact "
+"using has.nf=TRUE\n"
+msgstr ""
+"%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, NAs के लिए अतिरिक्त "
+"सावधानी के साथ पुन: निष्पादन किया जा रहा है\n"
+
+#: froll.c:1219
+#, fuzzy, c-format
+msgid ""
+"%s: running %s for input length %<PRIu64>, window %d, hasnf %d, narm %d\n"
+msgstr ""
+"%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए चल रहा है\n"
+
+#: froll.c:1324
+#, c-format
+msgid "%s: calling sqrt(frollvarFast(...))\n"
+msgstr ""
+
+#: froll.c:1335
+#, c-format
+msgid "%s: calling sqrt(frollvarExact(...))\n"
+msgstr ""
+
+#: froll.c:1508 froll.c:1770
+#, fuzzy, c-format
+msgid "%s: window width of size 0, returning all NA vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: froll.c:1516
+#, c-format
+msgid "%s: window width of size %d, skip median and use simple loop\n"
+msgstr ""
+
+#: froll.c:1555
+#, c-format
+msgid "%s: NAs detected, fall back to frollmedianExact\n"
+msgstr ""
+
+#: froll.c:1567
+#, c-format
+msgid ""
+"%s: nx=%<PRIu64> is not multiple of k=%d, padding with %d elements, new "
+"nx=%<PRIu64>\n"
+msgstr ""
+
+#: froll.c:1628
+#, c-format
+msgid ""
+"%s: finding order and initializing links for %d blocks in parallel took "
+"%.3fs\n"
+msgstr ""
+
+#: froll.c:1629
+#, c-format
+msgid ""
+"%s: finding order and initializing links for %d blocks sequentially took "
+"%.3fs\n"
+msgstr ""
+
+#: froll.c:1639
+#, c-format
+msgid ""
+"%s: running implementation as described in the paper by Jukka Suomela, for "
+"uneven window size, length of input a multiple of window size, no NAs in the "
+"input data\n"
+msgstr ""
+
+#: froll.c:1689
+#, c-format
+msgid "%s: skip rolling for %d padded elements\n"
+msgstr ""
+
+#: froll.c:1722
+#, fuzzy, c-format
+msgid "%s: rolling took %.3f\n"
 msgstr ""
 "#-#-#-#-#  froll-hi_IN.po (froll 0.0)  #-#-#-#-#\n"
 "%s: इसमें %.3fs का समय लगा\n"
 "#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
 "%s: %.3fs में लिया\n"
 
-#: frollR.c:17
+#: froll.c:1819 frolladaptive.c:992
+#, c-format
+msgid "%s: no NAs detected, redirecting to itself using has.nf=FALSE\n"
+msgstr ""
+
+#: frollR.c:18
+#, fuzzy
 msgid ""
-"x must be of type numeric or logical, or a list, data.frame or data.table of "
-"such"
+"'x' must be of type numeric or logical, or a list, data.frame or data.table "
+"of such"
 msgstr ""
 "x का प्रकार संख्यात्मक या लॉजिकल (logical) होना चाहिए, या ऐसी लिस्ट (list), data."
 "frame या data.table होना चाहिए"
 
-#: frollR.c:38 frollR.c:244
-msgid "n must be non 0 length"
-msgstr "n की लेंथ (length) 0 से अधिक होनी चाहिए"
-
-#: frollR.c:49
-msgid "n must be integer, list is accepted for adaptive TRUE"
+#: frollR.c:31
+#, fuzzy
+msgid "'n' must be an integer, list is accepted for adaptive TRUE"
 msgstr ""
 "n को पूर्णांक (integer) होना चाहिए, लिस्ट (list) को adaptive TRUE के लिए स्वीकार "
 "किया जाता है"
 
-#: frollR.c:56 frollR.c:236 frollR.c:239
-msgid "n must be integer"
+#: frollR.c:37
+#, fuzzy
+msgid "'n' must be an integer"
 msgstr "n को पूर्णांक (integer) होना चाहिए"
 
-#: frollR.c:63
-msgid "n must be positive integer values (> 0)"
+#: frollR.c:44 frollR.c:74
+#, fuzzy
+msgid "'n' must be non-negative integer values (>= 0)"
 msgstr "n को सकारात्मक पूर्णांक (integer) मान (> 0) होना चाहिए"
 
-#: frollR.c:72 frollR.c:84
-msgid "n must be integer vector or list of integer vectors"
+#: frollR.c:53 frollR.c:64
+#, fuzzy
+msgid "'n' must be an integer vector or list of integer vectors"
 msgstr ""
 "n को पूर्णांक (integer) वेक्टर (vector) या पूर्णांक (integer) वेक्टर (vector) की लिस्ट "
 "(list) होना चाहिए।"
 
-#: frollR.c:98
-msgid "hasNA must be TRUE, FALSE or NA"
+#: frollR.c:94
+msgid "n must be non 0 length"
+msgstr "n की लेंथ (length) 0 से अधिक होनी चाहिए"
+
+#: frollR.c:115
+#, fuzzy
+msgid "has.nf must be TRUE, FALSE or NA"
 msgstr "hasNA को TRUE, FALSE या NA होना चाहिए"
 
-#: frollR.c:100
+#: frollR.c:117
+#, fuzzy
 msgid ""
-"using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
-"NA values use hasNA TRUE, otherwise leave it as default NA"
+"using has.nf FALSE and na.rm TRUE does not make sense, if you know there are "
+"non-finite values then use has.nf TRUE, otherwise leave it as default NA"
 msgstr ""
 "hasNA FALSE और na.rm TRUE का उपयोग करने का कोई मतलब नहीं है, यदि आप जानते हैं किNA "
 "मान हैं तो hasNA TRUE का उपयोग करें, अन्यथा इसे डिफ़ॉल्ट (default) NA पर छोड़ दें"
 
-#: frollR.c:113
-msgid ""
-"using adaptive TRUE and align argument different than 'right' is not "
-"implemented"
+#: frollR.c:130
+#, fuzzy
+msgid "using adaptive TRUE and align 'center' is not implemented"
 msgstr ""
 "adaptive TRUE का उपयोग करते समय align आर्ग्युमेंट (argument) 'right' से अलग लागू नहीं "
 "किया गया है"
 
-#: frollR.c:117 frollR.c:267 types.c:71
+#: frollR.c:134
 #, fuzzy, c-format
 msgid "%s: allocating memory for results %dx%d\n"
 msgstr ""
@@ -1935,7 +3125,7 @@ msgstr ""
 "#-#-#-#-#  types-hi_IN.po (types 0.0)  #-#-#-#-#\n"
 "%s: परिणामों के लिए %dx%d मेमोरी (memory) आवंटित कर रहा है\n"
 
-#: frollR.c:126
+#: frollR.c:143
 msgid ""
 "adaptive rolling function can only process 'x' having equal length of "
 "elements, like data.table or data.frame; If you want to call rolling "
@@ -1947,7 +3137,7 @@ msgstr ""
 "अलग-अलग लेंथ (length) के तत्वों वाली लिस्ट (list) पर कॉल (call) करना चाहते हैं, तो "
 "प्रत्येक फ़ील्ड (field) के लिए इसे अलग से कॉल (call) करें"
 
-#: frollR.c:128
+#: frollR.c:145
 msgid ""
 "length of integer vector(s) provided as list to 'n' argument must be equal "
 "to number of observations provided in 'x'"
@@ -1955,7 +3145,7 @@ msgstr ""
 "'n' आर्ग्युमेंट (argument) के लिए लिस्ट (list) के रूप में प्रदान किए गए पूर्णांक (integer) "
 "वेक्टर (vector) की लेंथ (length) 'x' में दी गई ऑब्ज़र्वेशन की संख्या के बराबर होनी चाहिए"
 
-#: frollR.c:146 frollR.c:259 shift.c:21
+#: frollR.c:175 gsumm.c:1204 shift.c:21
 #, fuzzy
 msgid "fill must be a vector of length 1"
 msgstr ""
@@ -1964,75 +3154,134 @@ msgstr ""
 "#-#-#-#-#  shift-hi_IN.po (shift 0.0)  #-#-#-#-#\n"
 "fill एक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) 1 हो"
 
-#: frollR.c:148 frollR.c:261
+#: frollR.c:177
 msgid "fill must be numeric or logical"
 msgstr "fill को संख्यात्मक या लॉजिकल (logical) होना चाहिए"
 
-#: frollR.c:178
-#, c-format
-msgid ""
-"%s: %d column(s) and %d window(s), if product > 1 then entering parallel "
-"execution\n"
+#: frollR.c:199
+#, fuzzy, c-format
+msgid "%s: computing %d column(s) and %d window(s) in parallel\n"
 msgstr ""
-"%s: %d कॉलम (column) और %d विंडो (window), यदि प्रोडक्ट (product) > 1 हैतो "
-"समानांतर निष्पादन में प्रवेश कर रहा है\n"
+"%s: %d कॉलम (column) और %d विंडो (window) का प्रोसेसिंग (process) %.3fs में हुआ\n"
 
-#: frollR.c:180
-#, c-format
+#: frollR.c:201
+#, fuzzy, c-format
 msgid ""
-"%s: %d column(s) and %d window(s), not entering parallel execution here "
-"because algo='exact' will compute results in parallel\n"
+"%s: computing %d column(s) and %d window(s) sequentially because "
+"algo='exact' is already parallelised within each rolling computation\n"
 msgstr ""
 "%s: %d कॉलम (column) और %d विंडो (window), यहां समानांतर निष्पादन में प्रवेश नहीं कर "
 "रहा क्योंकि algo='exact' समानांतर में परिणामों की गणना करेगा\n"
 
-#: frollR.c:207 frollR.c:299
+#: frollR.c:203
+#, c-format
+msgid ""
+"%s: computing %d column(s) and %d window(s) sequentially because "
+"adaptive=TRUE is already parallelised within each rolling computation\n"
+msgstr ""
+
+#: frollR.c:205
+#, fuzzy, c-format
+msgid ""
+"%s: computing %d column(s) and %d window(s) sequentially as there is only "
+"single rolling computation\n"
+msgstr ""
+"%s: %d कॉलम (column) और %d विंडो (window), यदि प्रोडक्ट (product) > 1 हैतो "
+"समानांतर निष्पादन में प्रवेश कर रहा है\n"
+
+#: frollR.c:222
 #, c-format
 msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
 msgstr ""
 "%s: %d कॉलम (column) और %d विंडो (window) का प्रोसेसिंग (process) %.3fs में हुआ\n"
 
-#: fsort.c:106
+#: frollR.c:234
+msgid "'n' must not have NAs"
+msgstr ""
+
+#: frollR.c:236
+#, fuzzy
+msgid "'n' must be positive integer values (>= 1)"
+msgstr "n को सकारात्मक पूर्णांक (integer) मान (> 0) होना चाहिए"
+
+#: frollR.c:241 frollR.c:244
+msgid "index provided to 'x' must: be sorted, have no duplicates, have no NAs"
+msgstr ""
+
+#: frolladaptive.c:32 frolladaptive.c:39 frolladaptive.c:46 frolladaptive.c:53
+#: frolladaptive.c:60 frolladaptive.c:67
+#, c-format
+msgid "%s: algo %u not implemented, fall back to %u\n"
+msgstr ""
+
+#: frolladaptive.c:118 frolladaptive.c:341
+#, fuzzy, c-format
+msgid "%s: running for input length %<PRIu64>, hasnf %d, narm %d\n"
+msgstr ""
+"%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए चल रहा है\n"
+
+#: frolladaptive.c:216 frolladaptive.c:437 frolladaptive.c:512
+#: frolladaptive.c:587 frolladaptive.c:673 frolladaptive.c:747
+#: frolladaptive.c:929
+#, fuzzy, c-format
+msgid "%s: running in parallel for input length %<PRIu64>, hasnf %d, narm %d\n"
+msgstr ""
+"%s: इनपुट (input) लंबाई %<PRIu64>, खिड़की %d, hasna %d, narm %d के लिए समानांतर में "
+"चल रहा है\n"
+
+#: frolladaptive.c:851
+#, c-format
+msgid "%s: calling sqrt(frolladaptivevarExact(...))\n"
+msgstr ""
+
+#: frolladaptive.c:937
+#, fuzzy, c-format
+msgid "%s: adaptive window width of size 0, returning all NA vector\n"
+msgstr ""
+"%s: खिड़की की चौड़ाई इनपुट (input) वेक्टर (vector) से अधिक लंबी है, सभी NA वेक्टर "
+"(vector) लौटा रहा है\n"
+
+#: fsort.c:104
 msgid "Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"
 msgstr "0 और 1 की गणनाओं को छोड़कर MSBsize को %zu से %zu तक कम कर दिया गया\n"
 
-#: fsort.c:121
+#: fsort.c:119
 msgid "x must be a vector of type double currently"
 msgstr "x को वर्तमान में double प्रकार का वेक्टर (vector) होना चाहिए"
 
-#: fsort.c:147
+#: fsort.c:145
 #, c-format
 msgid "Failed to allocate %d bytes in fsort()."
 msgstr "fsort() में %d बाइट्स (bytes) आवंटित करने में असफल।"
 
-#: fsort.c:173
+#: fsort.c:171
 #, c-format
 msgid "Range = [%g,%g]\n"
 msgstr "रेंज = [%g,%g]\n"
 
-#: fsort.c:174
+#: fsort.c:172
 msgid "Cannot yet handle negatives."
 msgstr "नकारात्मक संख्याओं को अभी तक संभाला नहीं जा सकता।"
 
-#: fsort.c:196
-#, c-format
+#: fsort.c:194
+#, fuzzy, c-format
 msgid ""
-"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
+"counts is %dMiB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
 "lastBatchSize=%<PRIu64>)\n"
 msgstr ""
 "counts %dMB है (%d पेज (page) प्रति nBatch=%d, batchSize=%<PRIu64>,"
 "lastBatchSize=%<PRIu64>)\n"
 
-#: fsort.c:266
+#: fsort.c:264
 msgid "Top 20 MSB counts: "
 msgstr "शीर्ष 20 MSB गणनाएं:"
 
-#: fsort.c:266
+#: fsort.c:264
 #, c-format
 msgid "%<PRId64> "
 msgstr "%<PRId64>"
 
-#: fsort.c:333
+#: fsort.c:331
 #, c-format
 msgid ""
 "OpenMP %d did not assign threads to iterations monotonically. Please search "
@@ -2041,60 +3290,16 @@ msgstr ""
 "OpenMP %d ने थ्रेड्स को क्रमिक रूप से इटरेशन (iterations) को असाइन (assign) नहीं किया।"
 "कृपया इस संदेश के लिए Stack Overflow पर खोजें।"
 
-#: fsort.c:335
+#: fsort.c:333
 msgid "Unable to allocate working memory"
 msgstr "कार्य स्मृति आवंटित करने में असमर्थ"
 
-#: fsort.c:345
+#: fsort.c:343
 #, c-format
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr "%d: %.3f (%4.1f%%)\n"
 
-#: fwrite.c:622
-#, c-format
-msgid "buffMB=%d outside [1,1024]"
-msgstr "buffMB=%d [1,1024] के बाहर है"
-
-#: fwrite.c:629
-#, c-format
-msgid ""
-"eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
-msgstr ""
-"eol 1 या अधिक बाइट्स (bytes) का होना चाहिए (आमतौर पर \\n या \\r\\n) लेकिन इसकी "
-"लेंथ (length) %d है"
-
-#: fwrite.c:632
-msgid "Column writers: "
-msgstr "कॉलम (column) लेखकों: "
-
-#: fwrite.c:683
-#, c-format
-msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
-msgstr "maxLineLen=%<PRIu64>. %.3fs में मिला\n"
-
-#: fwrite.c:703
-#, c-format
-msgid ""
-"%s: '%s'. Failed to open existing file for writing. Do you have write "
-"permission to it? Is this Windows and does another process such as Excel "
-"have it open?"
-msgstr ""
-"%s: '%s'. लिखने के लिए मौजूदा फाइल (file) खोलने में विफल। क्या आपके पास इसके लिए लिखने "
-"की अनुमति है? क्या यह Windows है और क्या Excel जैसी किसी अन्य प्रक्रिया ने इसे खोल रखा "
-"है?"
-
-#: fwrite.c:704
-#, c-format
-msgid ""
-"%s: '%s'. Unable to create new file for writing (it does not exist already). "
-"Do you have permission to write here, is there space on the disk and does "
-"the path exist?"
-msgstr ""
-"%s: '%s'. लिखने के लिए नई फाइल (file) बनाने में असमर्थ (यह पहले से मौजूद नहीं है)। क्या "
-"आपके पास यहाँ लिखने की अनुमति है, क्या डिस्क (disk) पर स्पेस (space) है और क्या पथ मौजूद "
-"है?"
-
-#: fwrite.c:711
+#: fwrite.c:641
 msgid ""
 "Compression in fwrite uses zlib library. Its header files were not found at "
 "the time data.table was compiled. To enable fwrite compression, please "
@@ -2105,73 +3310,97 @@ msgstr ""
 "था। fwrite कंप्रेशन (compression) को सक्षम करने के लिए, कृपया data.table को रीइंस्टॉल "
 "(reinstall) करें और आगे के मार्गदर्शन के लिए आउटपुट (output) का अध्ययन करें।"
 
-#: fwrite.c:716
+#: fwrite.c:657
 #, c-format
-msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+msgid ""
+"eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
+msgstr ""
+"eol 1 या अधिक बाइट्स (bytes) का होना चाहिए (आमतौर पर \\n या \\r\\n) लेकिन इसकी "
+"लेंथ (length) %d है"
+
+#: fwrite.c:660
+msgid "Column writers: "
+msgstr "कॉलम (column) लेखकों: "
+
+#: fwrite.c:706
+#, c-format
+msgid "type %d has no max length method implemented"
+msgstr ""
+
+#: fwrite.c:718
+#, c-format
+msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
+msgstr "maxLineLen=%<PRIu64>. %.3fs में मिला\n"
+
+#: fwrite.c:737
+#, c-format
+msgid ""
+"%s: '%s'. Failed to open existing file for writing. Do you have write "
+"permission to it? Is this Windows and does another process such as Excel "
+"have it open?"
+msgstr ""
+"%s: '%s'. लिखने के लिए मौजूदा फाइल (file) खोलने में विफल। क्या आपके पास इसके लिए लिखने "
+"की अनुमति है? क्या यह Windows है और क्या Excel जैसी किसी अन्य प्रक्रिया ने इसे खोल रखा "
+"है?"
+
+#: fwrite.c:738
+#, c-format
+msgid ""
+"%s: '%s'. Unable to create new file for writing (it does not exist already). "
+"Do you have permission to write here, is there space on the disk and does "
+"the path exist?"
+msgstr ""
+"%s: '%s'. लिखने के लिए नई फाइल (file) बनाने में असमर्थ (यह पहले से मौजूद नहीं है)। क्या "
+"आपके पास यहाँ लिखने की अनुमति है, क्या डिस्क (disk) पर स्पेस (space) है और क्या पथ मौजूद "
+"है?"
+
+#: fwrite.c:746
+#, fuzzy, c-format
+msgid "Writing bom (%s), yaml (%d characters) and column names (%s)\n"
 msgstr ""
 "bom (%s), yaml (%d कैरेक्टर्स (characters)) और कॉलम (column) नाम (%s) लिखे जा रहे "
 "हैं ... "
 
-#: fwrite.c:730
-#, c-format
-msgid "Unable to allocate %zu MiB for header: %s"
-msgstr "हेडर (header) के लिए %zu MiB आवंटित करने में असमर्थ: %s"
-
-#: fwrite.c:764 fwrite.c:828
-msgid "Can't allocate gzip stream structure"
-msgstr "gzip प्रवाह संरचना आवंटित नहीं की जा सकती"
-
-#: fwrite.c:772
-#, c-format
-msgid "Unable to allocate %zu MiB for zbuffer: %s"
-msgstr "zbuffer के लिए %zu MiB आवंटित करने में असमर्थ: %s"
-
-#: fwrite.c:788
-#, c-format
-msgid "Compress gzip error: %d"
-msgstr "कंप्रेस (compress) gzip एरर (error): %d"
-
-#: fwrite.c:789 fwrite.c:797
-#, c-format
-msgid "%s: '%s'"
-msgstr "%s: '%s'"
-
-#: fwrite.c:794
-#, c-format
-msgid "done in %.3fs\n"
-msgstr "%.3fs में पूर्ण हुआ\n"
-
-#: fwrite.c:796
-msgid "No data rows present (nrow==0)\n"
-msgstr "कोई डेटा (data) रोज़ (rows) मौजूद नहीं हैं (nrow==0)\n"
-
-#: fwrite.c:814
-#, c-format
+#: fwrite.c:798
+#, fuzzy, c-format
 msgid ""
-"Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
-"showProgress=%d, nth=%d)\n"
+"Writing %<PRId64> rows in %d batches of %d rows, each buffer size %zu bytes "
+"(%zu MiB), showProgress=%d, nth=%d\n"
 msgstr ""
 "%<PRId64> रोज़ (rows) को %d रोज़ (rows) के %d बैचों में लिखा जा रहा है (प्रत्येक बफर "
 "(buffer) साइज %dMB, showProgress=%d, nth=%d)\n"
 
-#: fwrite.c:830
-#, c-format
-msgid "zbuffSize=%d returned from deflateBound\n"
-msgstr "deflateBound से zbuffSize=%d प्राप्त हुआ\n"
+#: fwrite.c:806
+msgid "Allocate %zu bytes (%zu MiB) for buffPool\n"
+msgstr ""
 
-#: fwrite.c:839
-#, c-format
+#: fwrite.c:810
+#, fuzzy, c-format
 msgid ""
-"Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite "
-"for nThread, buffMB and verbose options."
+"Unable to allocate %zu MiB * %d thread buffers; '%d: %s'. Please read ?"
+"fwrite for nThread, buffMB and verbose options."
 msgstr ""
 "%zu MB * %d थ्रेड (thread) बफर्स (buffers) आवंटित करने में असमर्थ; '%d: %s'। कृपया "
 "nThread, buffMB और verbose विकल्पों के लिए ?fwrite पढ़ें।"
 
-#: fwrite.c:850
+#: fwrite.c:826
+#, fuzzy
+msgid "Can't init stream structure for deflateBound"
+msgstr "gzip प्रवाह संरचना आवंटित नहीं की जा सकती"
+
+#: fwrite.c:831
 #, c-format
+msgid "zbuffSize=%d returned from deflateBound\n"
+msgstr "deflateBound से zbuffSize=%d प्राप्त हुआ\n"
+
+#: fwrite.c:837
+msgid "Allocate %zu bytes (%zu MiB) for zbuffPool\n"
+msgstr ""
+
+#: fwrite.c:844
+#, fuzzy, c-format
 msgid ""
-"Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please "
+"Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please "
 "read ?fwrite for nThread, buffMB and verbose options."
 msgstr ""
 "%zu MB * %d थ्रेड (thread) कंप्रेस्ड (compressed) बफर्स (buffers) आवंटित करने में "
@@ -2179,19 +3408,48 @@ msgstr ""
 
 #: fwrite.c:864
 #, c-format
-msgid "Failed to allocated %d bytes for '%s'."
-msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
+msgid "Failed to write gzip header. Write returned %d"
+msgstr ""
 
-#: fwrite.c:1030
+#: fwrite.c:939
+#, c-format
+msgid "Failed to compress gzip. compressbuff() returned %d"
+msgstr ""
+
+#: fwrite.c:940 fwrite.c:963
+#, c-format
+msgid "%s: '%s'"
+msgstr "%s: '%s'"
+
+#: fwrite.c:952
+#, fuzzy, c-format
+msgid "Initialization done in %.3fs\n"
+msgstr "%.3fs में पूर्ण हुआ\n"
+
+#: fwrite.c:957
+msgid "No data rows present (nrow==0)\n"
+msgstr "कोई डेटा (data) रोज़ (rows) मौजूद नहीं हैं (nrow==0)\n"
+
+#: fwrite.c:1132
+msgid "Failed to write gzip trailer"
+msgstr ""
+
+#: fwrite.c:1151
 #, c-format
 msgid ""
-"zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
-"Z_FINISH=%d Z_BLOCK=%d. %s"
+"zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), "
+"ratio=%.1f%%, crc=%x\n"
+msgstr ""
+
+#: fwrite.c:1172
+#, fuzzy, c-format
+msgid ""
+"zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
 "zlib %s (zlib.h %s) deflate() से एरर (error) %d प्राप्त हुआ, z_stream-"
 ">msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d के साथ। %s"
 
-#: fwrite.c:1032
+#: fwrite.c:1174
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
@@ -2199,13 +3457,254 @@ msgstr ""
 "कृपया अपनी data.table बग (bug) रिपोर्ट (report) में इस संदेश के ऊपर और नीचे का पूर्ण "
 "आउटपुट (output) शामिल करें।"
 
-#: fwrite.c:1033
+#: fwrite.c:1175
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
 msgstr ""
 "कृपया verbose=TRUE के साथ fwrite() का पुन: प्रयास करें और अपनी data.table बग (bug) "
 "रिपोर्ट (report) में पूर्ण आउटपुट (output) शामिल करें।"
+
+#: fwriteR.c:103
+#, c-format
+msgid ""
+"Row %<PRId64> of list column is type '%s' - not yet implemented. fwrite() "
+"can write list columns containing items which are atomic vectors of type "
+"logical, integer, integer64, double, complex and character."
+msgstr ""
+
+#: fwriteR.c:179
+#, fuzzy
+msgid ""
+"fwrite must be passed an object of type list; e.g. data.frame, data.table"
+msgstr ""
+"प्रकार '%s' पास किया गया shift() में। यह एक वेक्टर (vector), लिस्ट (list), data."
+"frame, या data.table होना चाहिए"
+
+#: fwriteR.c:191
+msgid "fwrite was passed an empty list of no columns. Nothing to write."
+msgstr ""
+
+#: fwriteR.c:245
+#, c-format
+msgid ""
+"Column %d's length (%d) is not the same as column 1's length (%<PRId64>)"
+msgstr ""
+
+#: fwriteR.c:249
+#, c-format
+msgid "Column %d's type is '%s' - not yet implemented in fwrite."
+msgstr ""
+
+#: fwriteR.c:272
+#, c-format
+msgid ""
+"input has specific integer rownames but their length (%lld) != nrow "
+"(%<PRId64>)"
+msgstr ""
+
+#: fwriteR.c:287
+msgid ""
+"No list columns are present. Setting sep2='' otherwise quote='auto' would "
+"quote fields containing sep2.\n"
+msgstr ""
+
+#: fwriteR.c:291
+#, c-format
+msgid ""
+"If quote='auto', fields will be quoted if the field contains either sep "
+"('%c') or sep2 ('%c') because column %d is a list column.\n"
+msgstr ""
+
+#: fwriteR.c:295
+#, c-format
+msgid ""
+"sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
+"list column."
+msgstr ""
+
+#: gsumm.c:50 gsumm.c:51 gsumm.c:52
+#, fuzzy, c-format
+msgid "%s is not an integer vector"
+msgstr "x एक लॉजिकल (logical) वेक्टर (vector) नहीं है"
+
+#: gsumm.c:61
+msgid "irowsArg is neither an integer vector nor NULL"
+msgstr ""
+
+#: gsumm.c:72
+#, c-format
+msgid "o has length %d but sum(l)=%d"
+msgstr ""
+
+#: gsumm.c:104
+#, c-format
+msgid "gforce initial population of grp took %.3f\n"
+msgstr ""
+
+#: gsumm.c:124
+msgid "Failed to allocate counts or TMP when assigning g in gforce"
+msgstr ""
+
+#: gsumm.c:203
+#, fuzzy, c-format
+msgid "gforce assign high and low took %.3f\n"
+msgstr "%s: एल्गोरिदम %u के संसाधन में %.3fs का समय लगा\n"
+
+#: gsumm.c:209
+#, fuzzy, c-format
+msgid "gforce eval took %.3f\n"
+msgstr "%s: एल्गोरिदम %u के संसाधन में %.3fs का समय लगा\n"
+
+#: gsumm.c:342
+#, c-format
+msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
+msgstr ""
+
+#: gsumm.c:344
+#, fuzzy, c-format
+msgid "gather took %.3fs\n"
+msgstr ""
+"#-#-#-#-#  froll-hi_IN.po (froll 0.0)  #-#-#-#-#\n"
+"%s: इसमें %.3fs का समय लगा\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s: %.3fs में लिया\n"
+
+#: gsumm.c:354 gsumm.c:585 gsumm.c:736 gsumm.c:874 gsumm.c:1029 gsumm.c:1123
+#, c-format
+msgid "%s is not meaningful for factors."
+msgstr ""
+
+#: gsumm.c:358
+#, c-format
+msgid "This gsum (narm=%s) took ... "
+msgstr ""
+
+#: gsumm.c:359 gsumm.c:593 gsumm.c:741 gsumm.c:877 gsumm.c:929 gsumm.c:1031
+#: gsumm.c:1127
+#, fuzzy, c-format
+msgid "nrow [%d] != length(x) [%d] in %s"
+msgstr "length(xSD)[%d] != length(xjiscols)[%d]"
+
+#: gsumm.c:413
+msgid ""
+"The sum of an integer column for a group was more than type 'integer' can "
+"hold so the result has been coerced to 'numeric' automatically for "
+"convenience."
+msgstr ""
+
+#: gsumm.c:574 gsumm.c:849 gsumm.c:915 gsumm.c:1100 gsumm.c:1172
+#, c-format
+msgid ""
+"Type '%s' is not supported by GForce %s. Either add the prefix %s or turn "
+"off GForce optimization using options(datatable.optimize=1)"
+msgstr ""
+
+#: gsumm.c:577 gsumm.c:725
+#, fuzzy, c-format
+msgid "%.3fs\n"
+msgstr "%.3fs में पूर्ण हुआ\n"
+
+#: gsumm.c:592
+#, c-format
+msgid "This gmean took (narm=%s) ... "
+msgstr ""
+
+#: gsumm.c:630 gsumm.c:686
+#, fuzzy, c-format
+msgid "Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"
+msgstr ""
+"कॉलम (column) के नाम के पॉइंटर्स (pointers) के लिए %d*%d बाइट्स (bytes) आवंटित करने "
+"में असमर्थ: %s"
+
+#: gsumm.c:722
+#, c-format
+msgid ""
+"Type '%s' not supported by GForce mean (gmean). Either add the prefix base::"
+"mean(.) or turn off GForce optimization using options(datatable.optimize=1)"
+msgstr ""
+
+#: gsumm.c:734
+msgid ""
+"GForce min/max can only be applied to columns, not .SD or similar. To find "
+"min/max of all items in a list such as .SD, either add the prefix base::min(."
+"SD) or turn off GForce optimization using options(datatable.optimize=1). "
+"More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
+msgstr ""
+
+#: gsumm.c:846
+msgid "Type 'complex' has no well-defined min/max"
+msgstr ""
+
+#: gsumm.c:872
+msgid ""
+"GForce median can only be applied to columns, not .SD or similar. To find "
+"median of all items in a list such as .SD, either add the prefix stats::"
+"median(.SD) or turn off GForce optimization using options(datatable."
+"optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),"
+"by=,.SDcols=]'"
+msgstr ""
+
+#: gsumm.c:989
+#, c-format
+msgid ""
+"Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add "
+"the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization "
+"using options(datatable.optimize=1)"
+msgstr ""
+
+#: gsumm.c:1027
+msgid ""
+"GForce var/sd can only be applied to columns, not .SD or similar. For the "
+"full covariance matrix of all items in a list such as .SD, either add the "
+"prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization "
+"using options(datatable.optimize=1). Alternatively, if you only need the "
+"diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way "
+"to do this."
+msgstr ""
+
+#: gsumm.c:1121
+msgid ""
+"GForce prod can only be applied to columns, not .SD or similar. To multiply "
+"all items in a list such as .SD, either add the prefix base::prod(.SD) or "
+"turn off GForce optimization using options(datatable.optimize=1). More "
+"likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"
+msgstr ""
+
+#: gsumm.c:1130
+#, fuzzy, c-format
+msgid "Unable to allocate %d * %zu bytes for gprod"
+msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
+
+#: gsumm.c:1221 shift.c:34
+#, c-format
+msgid "Item %d of n is NA"
+msgstr "n का आइटम (item) %d NA है"
+
+#: gsumm.c:1278
+#, c-format
+msgid ""
+"Type '%s' is not supported by GForce gshift. Either add the namespace prefix "
+"(e.g. data.table::shift(.)) or turn off GForce optimization using "
+"options(datatable.optimize=1)"
+msgstr ""
+
+#: idatetime.c:124 vecseq.c:14
+#, fuzzy
+msgid "x must be an integer vector"
+msgstr "n को पूर्णांक (integer) होना चाहिए"
+
+#: idatetime.c:170
+msgid ""
+"The default behavior of week() is changing. Previously ('legacy' mode), week "
+"numbers advanced every 7th day of the year. The new 'sequential' mode "
+"ensures the first week always has 7 days. For example, as."
+"IDate('2023-01-07') returns week 2 in legacy mode but week 1 in sequential "
+"mode (week 2 starts on '2023-01-08'). To adopt the new behavior now, set "
+"options(datatable.week = 'sequential'). To keep the old results and silence "
+"this warning, set options(datatable.week = 'legacy'). See https://github.com/"
+"Rdatatable/data.table/issues/2611"
+msgstr ""
 
 #: ijoin.c:128
 #, c-format
@@ -2238,6 +3737,162 @@ msgstr ""
 "ओवरलैप (overlaps) में इंडेक्स (indices) लाने का अंतिम चरण ... %8.3f सेकंड (seconds) में "
 "पूरा हुआ\n"
 
+#: init.c:183
+msgid ""
+"Pointers are %zu bytes, greater than 8. We have not tested on any "
+"architecture greater than 64bit yet."
+msgstr ""
+
+#: init.c:197
+msgid "... failed. Please forward this message to maintainer('data.table')."
+msgstr ""
+
+#: init.c:198
+#, c-format
+msgid "Checking NA_INTEGER [%d] == INT_MIN [%d] %s"
+msgstr ""
+
+#: init.c:199
+#, c-format
+msgid "Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
+msgstr ""
+
+#: init.c:200 init.c:201 init.c:203 init.c:206 init.c:207 init.c:208 init.c:209
+#: init.c:210 init.c:211 init.c:212
+#, c-format
+msgid "Checking sizeof(%s) [%zu] is %d %s"
+msgstr ""
+
+#: init.c:204
+#, c-format
+msgid "Checking sizeof(pointer) [%zu] is 4 or 8 %s"
+msgstr ""
+
+#: init.c:205
+#, c-format
+msgid "Checking sizeof(SEXP) [%zu] == sizeof(pointer) [%zu] %s"
+msgstr ""
+
+#: init.c:215
+#, c-format
+msgid "Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"
+msgstr ""
+
+#: init.c:222
+#, c-format
+msgid "Checking memset(&i,0,sizeof(int)); i == (int)0 %s"
+msgstr ""
+
+#: init.c:225
+#, c-format
+msgid "Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
+msgstr ""
+
+#: init.c:228
+#, c-format
+msgid "Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
+msgstr ""
+
+#: init.c:231
+#, c-format
+msgid "Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
+msgstr ""
+
+#: init.c:234
+msgid ""
+"Unlike the very common case, e.g. ASCII, the character '/' is not just "
+"before '0'."
+msgstr ""
+
+#: init.c:235
+msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
+msgstr ""
+
+#: init.c:236
+msgid ""
+"Unlike the very common case, e.g. ASCII, the character ':' is not just after "
+"'9'."
+msgstr ""
+
+#: init.c:237
+msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
+msgstr ""
+
+#: init.c:242
+#, c-format
+msgid "Conversion of NA_INT64 via double failed %<PRId64>!=%<PRId64>"
+msgstr ""
+
+#: init.c:246
+msgid "NA_INT64_D (negative -0.0) is not == 0.0."
+msgstr ""
+
+#: init.c:247
+msgid "NA_INT64_D (negative -0.0) is not ==-0.0."
+msgstr ""
+
+#: init.c:248
+msgid "ISNAN(NA_INT64_D) is TRUE but should not be"
+msgstr ""
+
+#: init.c:249
+msgid "isnan(NA_INT64_D) is TRUE but should not be"
+msgstr ""
+
+#: init.c:283
+#, c-format
+msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
+msgstr ""
+
+#: init.c:342
+#, fuzzy
+msgid "verbose option must be length 1 non-NA logical or integer"
+msgstr "rollends की लंबाई 2 का एक तार्किक वेक्टर (vector) होना चाहिए"
+
+#: init.c:367
+msgid ".Last.updated in namespace is not a length 1 integer"
+msgstr ""
+
+#: mergelist.c:36
+#, fuzzy, c-format
+msgid "'%s' must be a list"
+msgstr "l एक list होनी चाहिए।"
+
+#: mergelist.c:47
+#, c-format
+msgid "Element %d of 'l' list is not a data.table."
+msgstr ""
+
+#: mergelist.c:56
+#, c-format
+msgid ""
+"For copy=FALSE all non-empty tables in 'l' have to have the same number of "
+"rows, but l[[%d]] has %d rows which differs from the previous non-zero "
+"number of rows (%d)."
+msgstr ""
+
+#: mergelist.c:62
+msgid "Recycling rows is not yet implemented."
+msgstr ""
+
+#: mergelist.c:92
+#, fuzzy, c-format
+msgid "cbindlist: took %.3fs\n"
+msgstr ""
+"#-#-#-#-#  froll-hi_IN.po (froll 0.0)  #-#-#-#-#\n"
+"%s: इसमें %.3fs का समय लगा\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s: %.3fs में लिया\n"
+
+#: nafill.c:43 nafill.c:65 nafill.c:87
+#, fuzzy, c-format
+msgid "%s: took %.3fs\n"
+msgstr ""
+"#-#-#-#-#  froll-hi_IN.po (froll 0.0)  #-#-#-#-#\n"
+"%s: इसमें %.3fs का समय लगा\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s: %.3fs में लिया\n"
+
 #: nafill.c:115
 msgid ""
 "'x' argument is atomic vector, in-place update is supported only for list/"
@@ -2252,11 +3907,26 @@ msgstr ""
 "'x' तर्क (argument) न्यूमेरिक (numeric) प्रकार का होना चाहिए, या न्यूमेरिक प्रकारों की "
 "लिस्ट (list)/data.table होना चाहिए"
 
-#: nafill.c:184
-msgid "fill must be a vector of length 1 or a list of length of x"
+#: nafill.c:185
+#, fuzzy
+msgid ""
+"fill must be a vector of length 1 or a list of length of x. Consider "
+"fcoalesce() to specify element-wise replacements."
 msgstr ""
 "fill एक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) 1 हो या x की लेंथ (length) "
 "के बराबर की लिस्ट (list) हो"
+
+#: nafill.c:187
+#, fuzzy
+msgid "fill must be a vector of length 1 or a list of length of x."
+msgstr ""
+"fill एक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) 1 हो या x की लेंथ (length) "
+"के बराबर की लिस्ट (list) हो"
+
+#: negate.c:6
+#, fuzzy
+msgid "not logical or integer vector"
+msgstr "x एक लॉजिकल (logical) वेक्टर (vector) नहीं है"
 
 #: openmp-utils.c:23
 #, c-format
@@ -2268,7 +3938,7 @@ msgstr ""
 "कैरेक्टर (character) को हटा दें जो अंक [0-9] नहीं है। अधिक जानकारी के लिए ?data."
 "table::setDTthreads देखें।"
 
-#: openmp-utils.c:44
+#: openmp-utils.c:56
 #, c-format
 msgid ""
 "Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an "
@@ -2278,17 +3948,17 @@ msgstr ""
 "उपयोग किया गया है, तो यह 2 और 100 के बीच का एक पूर्णांक होना चाहिए।डिफ़ॉल्ट "
 "(default) 50 है। अधिक जानकारी के लिए ?setDTthreads देखें।"
 
-#: openmp-utils.c:82
+#: openmp-utils.c:100
 msgid ""
 "This installation of data.table has not been compiled with OpenMP support.\n"
 msgstr "इस data.table की स्थापना में OpenMP समर्थन के साथ संकलित नहीं किया गया है।\n"
 
-#: openmp-utils.c:84
+#: openmp-utils.c:102
 #, c-format
 msgid "  OpenMP version (_OPENMP)       %d\n"
 msgstr "  OpenMP वर्जन (version) (_OPENMP)     %d\n"
 
-#: openmp-utils.c:100
+#: openmp-utils.c:118
 #, c-format
 msgid ""
 "  data.table is using %d threads with throttle==%d. See ?setDTthreads.\n"
@@ -2296,7 +3966,7 @@ msgstr ""
 "  data.table %d थ्रेड्स (threads) का उपयोग कर रहा है जिसमें throttle==%d है। अधिक "
 "जानकारी के लिए ?setDTthreads देखें।\n"
 
-#: openmp-utils.c:108
+#: openmp-utils.c:127
 msgid ""
 "restore_after_fork= must be TRUE, FALSE, or NULL (default). "
 "getDTthreads(verbose=TRUE) reports the current setting.\n"
@@ -2304,16 +3974,206 @@ msgstr ""
 "restore_after_fork= को TRUE, FALSE, या NULL (डिफ़ॉल्ट (default)) होना चाहिए।"
 "getDTthreads(verbose=TRUE) वर्तमान सेटिंग (setting) की सूचना देता है।\n"
 
-#: openmp-utils.c:114
+#: openmp-utils.c:133
 msgid "'throttle' must be a single number, non-NA, and >=1"
 msgstr "'throttle' एक सिंगल (single) संख्या, non-NA, और >=1 होना चाहिए।"
 
-#: openmp-utils.c:128
+#: openmp-utils.c:147
 msgid ""
 "threads= must be either NULL or a single number >= 0. See ?setDTthreads."
 msgstr ""
 "threads= या तो NULL होना चाहिए या एक सिंगल (single) संख्या >= 0। अधिक जानकारी के "
 "लिए ?setDTthreads देखें।"
+
+#: programming.c:18
+#, c-format
+msgid ""
+"Attempting to substitute '%s' element with object of type '%s' but it has to "
+"be 'symbol' type when substituting name of the call argument, functions 'as."
+"name' and 'I' can be used to work out proper substitution, see ?substitute2 "
+"examples."
+msgstr ""
+
+#: rbindlist.c:10
+msgid "use.names= should be TRUE, FALSE, or not used (\"check\" by default)"
+msgstr ""
+
+#: rbindlist.c:14
+msgid ""
+"Input to rbindlist must be a list. This list can contain data.tables, data."
+"frames or plain lists."
+msgstr ""
+
+#: rbindlist.c:33
+#, fuzzy, c-format
+msgid "Item %d of input is not a data.frame, data.table or list"
+msgstr ""
+"list इनपुट (input) का आइटम (item) %d न तो एक एटॉमिक (atomic) वेक्टर (vector) है "
+"और न ही एक list"
+
+#: rbindlist.c:41
+#, c-format
+msgid ""
+"Item %d has %d columns, inconsistent with item %d which has %d columns. To "
+"fill missing columns use fill=TRUE."
+msgstr ""
+
+#: rbindlist.c:44
+#, c-format
+msgid "Item %d has %d columns but %d column names. Invalid object."
+msgstr ""
+
+#: rbindlist.c:51
+#, fuzzy, c-format
+msgid ""
+"Column %d of item %d is length %d inconsistent with column %d which is "
+"length %d. Only length-1 columns are recycled."
+msgstr ""
+"इनपुट (input) सूची x के कॉलम (column) %d की लेंथ (length) %d है,उस वस्तु के पहले कॉलम "
+"(column) की लेंथ (length) %d के साथ असंगत है।"
+
+#: rbindlist.c:66
+#, c-format
+msgid ""
+"Total rows in the list is %<PRId64> which is larger than the maximum number "
+"of rows, currently %d"
+msgstr ""
+
+#: rbindlist.c:67
+msgid "use.names=TRUE but no item of input list has any names"
+msgstr ""
+
+#: rbindlist.c:106
+#, fuzzy, c-format
+msgid "Failed to allocate nuniq=%d items working memory in rbindlist.c"
+msgstr "fsort() में %d बाइट्स (bytes) आवंटित करने में असफल।"
+
+#: rbindlist.c:139
+#, fuzzy, c-format
+msgid "Failed to allocate ncol=%d items working memory in rbindlist.c"
+msgstr "fsort() में %d बाइट्स (bytes) आवंटित करने में असफल।"
+
+#: rbindlist.c:199
+msgid ""
+" use.names='check' (default from v1.12.2) emits this message and proceeds as "
+"if use.names=FALSE for  backwards compatibility. See news item 5 in v1.12.2 "
+"for options to control this message."
+msgstr ""
+
+#: rbindlist.c:213
+#, c-format
+msgid ""
+"Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill "
+"with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"
+msgstr ""
+
+#: rbindlist.c:222
+#, c-format
+msgid ""
+"Column %d ['%s'] of item %d appears in position %d in item %d. Set use."
+"names=TRUE to match by column name, or use.names=FALSE to ignore column "
+"names.%s"
+msgstr ""
+
+#: rbindlist.c:231
+msgid ""
+"options()$datatable.rbindlist.check is set but is not a single string. See "
+"news item 5 in v1.12.2."
+msgstr ""
+
+#: rbindlist.c:238
+#, c-format
+msgid ""
+"options()$datatable.rbindlist.check=='%s' which is not "
+"'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."
+msgstr ""
+
+#: rbindlist.c:301
+#, c-format
+msgid ""
+"Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
+msgstr ""
+
+#: rbindlist.c:330
+#, c-format
+msgid ""
+"Class attribute on column %d of item %d does not match with column %d of "
+"item %d. You can deactivate this safety-check by using ignore.attr=TRUE"
+msgstr ""
+
+#: rbindlist.c:380 rbindlist.c:389
+#, c-format
+msgid ""
+"Failed to allocate working memory for %d ordered factor levels of result "
+"column %d"
+msgstr ""
+
+#: rbindlist.c:408
+#, c-format
+msgid ""
+"Column %d of item %d is an ordered factor but level %d ['%s'] is missing "
+"from the ordered levels from column %d of item %d. Each set of ordered "
+"factor levels should be an ordered subset of the first longest. A regular "
+"factor will be created for this column."
+msgstr ""
+
+#: rbindlist.c:413
+#, c-format
+msgid ""
+"Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But "
+"'%s'<'%s' in the ordered levels from column %d of item %d. A regular factor "
+"will be created for this column due to this ambiguity."
+msgstr ""
+
+#: rbindlist.c:456 rbindlist.c:465
+#, c-format
+msgid ""
+"Failed to allocate working memory for %d factor levels of result column %d "
+"when reading item %d of item %d"
+msgstr ""
+
+#: rbindlist.c:553 rbindlist.c:556
+#, fuzzy, c-format
+msgid "Column %d of item %d: %s"
+msgstr "कॉलम (column) लेखकों: "
+
+#: reorder.c:22
+#, c-format
+msgid ""
+"Item %d of list is type '%s' which isn't yet supported (RTYPE_SIZEOF=%zu)"
+msgstr ""
+
+#: reorder.c:24
+#, fuzzy, c-format
+msgid ""
+"Column %d is length %d which differs from length of column 1 (%d). Invalid "
+"data.table."
+msgstr ""
+"कॉलम (column) %d ['%s'] की लेंथ (length) %d है, लेकिन कॉलम (column) 1 की लेंथ "
+"(length) %d है; गलत ढंग से बना हुआ data.table।"
+
+#: reorder.c:32
+#, c-format
+msgid ""
+"reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
+"supported (RTYPE_SIZEOF=%zu)"
+msgstr ""
+
+#: reorder.c:39
+#, fuzzy
+msgid "order must be an integer vector"
+msgstr "cols को एक पूर्णांक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) >= 1 हो"
+
+#: reorder.c:58
+#, c-format
+msgid ""
+"Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. "
+"The new order must be a strict permutation of 1:n"
+msgstr ""
+
+#: reorder.c:130
+msgid "dt passed to setcolorder has no names"
+msgstr ""
 
 #: shift.c:12
 msgid ""
@@ -2331,10 +4191,12 @@ msgstr ""
 "प्रकार '%s' पास किया गया shift() में। यह एक वेक्टर (vector), लिस्ट (list), data."
 "frame, या data.table होना चाहिए"
 
-#: shift.c:34
+#: shift.c:46
 #, c-format
-msgid "Item %d of n is NA"
-msgstr "n का आइटम (item) %d NA है"
+msgid ""
+"Filling %s with %s using shift() is unsupported. Please convert fill to %s "
+"first."
+msgstr ""
 
 #: snprintf.c:193 snprintf.c:196 snprintf.c:199 snprintf.c:202 snprintf.c:205
 #: snprintf.c:208 snprintf.c:211 snprintf.c:214 snprintf.c:217 snprintf.c:221
@@ -2348,11 +4210,6 @@ msgstr "dt_win_snprintf परीक्षण %d विफल हो गया: 
 #, c-format
 msgid "dt_win_snprintf test %d failed: %d"
 msgstr "dt_win_snprintf परीक्षण %d विफल हो गया: %d"
-
-#: subset.c:170
-#, c-format
-msgid "i[%d] is %d which is out of range [1,nrow=%d]"
-msgstr "i[%d] का मान %d है जो सीमा [1,nrow=%d] से बाहर है"
 
 #: subset.c:182
 #, c-format
@@ -2457,16 +4314,16 @@ msgstr ""
 "इनपुट (Input) तर्क 'n' को 'uniqlengths' में लेंथ (length) 1 का पूर्णांक वेक्टर (vector) "
 "होना चाहिए"
 
-#: uniqlist.c:170 uniqlist.c:267
+#: uniqlist.c:174 uniqlist.c:271
 msgid "cols must be an integer vector with length >= 1"
 msgstr "cols को एक पूर्णांक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) >= 1 हो"
 
-#: uniqlist.c:174
+#: uniqlist.c:178
 #, c-format
 msgid "Item %d of cols is %d which is outside the range [1,length(l)=%d]"
 msgstr "cols का आइटम (item) %d है जो कि सीमा [1, length(l)=%d] के बाहर है"
 
-#: uniqlist.c:177
+#: uniqlist.c:181
 #, c-format
 msgid ""
 "All elements to input list must be of same length. Element [%d] has length "
@@ -2475,20 +4332,20 @@ msgstr ""
 "इनपुट (Input) लिस्ट (list) के सभी तत्वों की लेंथ (length) समान होनी चाहिए।तत्व [%d] "
 "की लेंथ (length) %<PRIu64> पहली तत्व की लेंथ (length) = %<PRIu64> से अलग है।"
 
-#: uniqlist.c:352
+#: uniqlist.c:356
 msgid "x is not a logical vector"
 msgstr "x एक लॉजिकल (logical) वेक्टर (vector) नहीं है"
 
-#: utils.c:85
+#: utils.c:100
 #, c-format
 msgid "Unsupported type '%s' passed to allNA()"
 msgstr "असमर्थित type '%s' को allNA() में पास (passed) किया गया"
 
-#: utils.c:105
+#: utils.c:120
 msgid "'x' argument must be data.table compatible"
 msgstr "'x' आर्ग्युमेंट (argument) data.table संगत होना चाहिए"
 
-#: utils.c:129
+#: utils.c:144
 msgid ""
 "argument specifying columns is type 'double' and one or more items in it are "
 "not whole integers"
@@ -2496,7 +4353,7 @@ msgstr ""
 "कॉलम्स (columns) निर्दिष्ट करने वाला आर्ग्युमेंट (argument) double type का है और इसमें "
 "एक या अधिक आइटम (item) पूर्णांक नहीं हैं"
 
-#: utils.c:135
+#: utils.c:150
 #, c-format
 msgid ""
 "argument specifying columns received non-existing column(s): cols[%d]=%d"
@@ -2504,11 +4361,11 @@ msgstr ""
 "कॉलम्स (columns) निर्दिष्ट करने वाले आर्ग्युमेंट (argument) को गैर-मौजूद कॉलम्स (columns) "
 "प्राप्त हुए: cols[%d]=%d"
 
-#: utils.c:142
+#: utils.c:157
 msgid "'x' argument data.table has no names"
 msgstr "'x' आर्ग्युमेंट (argument) data.table का कोई नाम नहीं है"
 
-#: utils.c:148
+#: utils.c:163
 #, c-format
 msgid ""
 "argument specifying columns received non-existing column(s): cols[%d]='%s'"
@@ -2516,54 +4373,122 @@ msgstr ""
 "कॉलम्स (columns) निर्दिष्ट करने वाले आर्ग्युमेंट (argument) को गैर-मौजूद कॉलम्स (columns) "
 "प्राप्त हुए: cols[%d]='%s'"
 
-#: utils.c:152
+#: utils.c:167
 msgid "argument specifying columns must be character or numeric"
 msgstr ""
 "कॉलम्स (columns) निर्दिष्ट करने वाला आर्ग्युमेंट (argument) कैरेक्टर (character) या "
 "न्यूमेरिक (numeric) होना चाहिए"
 
-#: utils.c:155
+#: utils.c:170
 msgid "argument specifying columns received duplicate column(s)"
 msgstr ""
 "कॉलम्स (columns) निर्दिष्ट करने वाले आर्ग्युमेंट (argument) को डुप्लिकेट कॉलम्स (columns) "
 "प्राप्त हुए"
 
-#: utils.c:373
+#: utils.c:381
 msgid "'x' is not atomic"
 msgstr "'x' एटॉमिक (atomic) नहीं है"
 
-#: utils.c:375
+#: utils.c:383
 msgid "'x' must not be matrix or array"
 msgstr "'x' मैट्रिक्स (matrix) या एरे (array) नहीं होना चाहिए"
 
-#: utils.c:377
+#: utils.c:385
 msgid "input must not be matrix or array"
 msgstr "इनपुट (input) मैट्रिक्स (matrix) या एरे (array) नहीं होना चाहिए"
 
-#: utils.c:381
+#: utils.c:389
 #, c-format
 msgid "copy=false and input already of expected type and class %s[%s]\n"
 msgstr ""
 "copy=false और इनपुट (input) पहले से ही अपेक्षित type और क्लास (class) %s[%s] का है\n"
 
-#: utils.c:388
+#: utils.c:396
 #, c-format
 msgid "Coercing %s[%s] into %s[%s]\n"
 msgstr "%s[%s] को %s[%s] में ज़बरदस्ती बदला जा रहा है\n"
 
-#: utils.c:404
+#: utils.c:412
 #, c-format
 msgid "zlib header files were not found when data.table was compiled"
 msgstr ""
 "जब data.table को संकलित किया गया था तब zlib हेडर (header) फाइलें नहीं मिली थीं"
 
-#: utils.c:450
-msgid "Internal error in"
-msgstr "इसमें आंतरिक त्रुटि"
+#: utils.c:538
+#, fuzzy
+msgid "'x' should not be data.frame or data.table."
+msgstr ""
+"प्रकार '%s' पास किया गया shift() में। यह एक वेक्टर (vector), लिस्ट (list), data."
+"frame, या data.table होना चाहिए"
 
-#: utils.c:450
-msgid "Please report to the data.table issues tracker."
-msgstr "कृपया data.table इश्यू ट्रैकर पर रिपोर्ट करें।"
+#: utils.c:540
+#, fuzzy, c-format
+msgid "%s must be TRUE or FALSE."
+msgstr ""
+"#-#-#-#-#  between-hi_IN.po (between 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  frollR-hi_IN.po (frollR 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  fsort-hi_IN.po (fsort 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  nafill-hi_IN.po (nafill 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  openmp-utils-hi_IN.po (openmp-utils 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  uniqlist-hi_IN.po (uniqlist 0.0)  #-#-#-#-#\n"
+"%s को TRUE या FALSE होना चाहिए\n"
+"#-#-#-#-#  utils-hi_IN.po (R 0.0)  #-#-#-#-#\n"
+"%s TRUE या FALSE होना चाहिए"
+
+#: utils.c:621
+#, fuzzy, c-format
+msgid "Type '%s' is not supported by frev"
+msgstr "प्रकार '%s' CJ द्वारा समर्थित नहीं है।"
+
+#: vecseq.c:16
+#, fuzzy
+msgid "len must be an integer vector"
+msgstr "n को पूर्णांक (integer) होना चाहिए"
+
+#: vecseq.c:18
+#, fuzzy
+msgid "x and len must be the same length"
+msgstr "n की लेंथ (length) 0 से अधिक होनी चाहिए"
+
+#: vecseq.c:24
+msgid ""
+"Join results in more than 2^31 rows (internal vecseq reached physical "
+"limit). Very likely misspecified join. Check for duplicate key values in i "
+"each of which join to the same group in x over and over again. If that's ok, "
+"try by=.EACHI to run j for each group to avoid the large allocation. "
+"Otherwise, please search for this error message in the FAQ, Wiki, Stack "
+"Overflow and data.table issue tracker for advice."
+msgstr ""
+
+#: vecseq.c:29
+#, fuzzy
+msgid "clamp must be a double vector length 1"
+msgstr ""
+"#-#-#-#-#  frollR-hi_IN.po (frollR 0.0)  #-#-#-#-#\n"
+"fill को लेंथ (length) 1 का वेक्टर (vector) होना चाहिए\n"
+"#-#-#-#-#  shift-hi_IN.po (shift 0.0)  #-#-#-#-#\n"
+"fill एक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) 1 हो"
+
+#: vecseq.c:32
+#, fuzzy
+msgid "clamp must be positive"
+msgstr "n को पूर्णांक (integer) होना चाहिए"
+
+#: vecseq.c:34
+#, c-format
+msgid ""
+"Join results in %d rows; more than %d = nrow(x)+nrow(i). Check for duplicate "
+"key values in i each of which join to the same group in x over and over "
+"again. If that's ok, try by=.EACHI to run j for each group to avoid the "
+"large allocation. If you are sure you wish to proceed, rerun with allow."
+"cartesian=TRUE. Otherwise, please search for this error message in the FAQ, "
+"Wiki, Stack Overflow and data.table issue tracker for advice."
+msgstr ""
 
 #: wrappers.c:11
 msgid "Attribute name must be a character vector of length 1"
@@ -2580,25 +4505,16 @@ msgstr ""
 "सेट नहीं की जा सकती।कृपया इसके बजाय 'as.data.table()' या 'as.data.frame()' "
 "विधियों का उपयोग करें।"
 
-#: wrappers.c:66
-msgid "First argument to setlistelt must be a list()"
-msgstr "setlistelt के लिए पहला तर्क list() होना चाहिए"
-
-#: wrappers.c:67
-msgid "Second argument to setlistelt must a length 1 integer vector"
-msgstr ""
-"setlistelt के लिए दूसरा तर्क लेंथ (length) 1 का पूर्णांक वेक्टर (vector) होना चाहिए"
-
-#: wrappers.c:69
+#: wrappers.c:68
 #, c-format
 msgid "i (%d) is outside the range of items [1,%d]"
 msgstr "i (%d) वस्तुओं [1,%d] की सीमा के बाहर है"
 
-#: wrappers.c:91
+#: wrappers.c:99
 msgid "x isn't a VECSXP"
 msgstr "x VECSXP नहीं है"
 
-#: wrappers.c:106
+#: wrappers.c:114
 #, c-format
 msgid ""
 "dim.data.table expects a data.table as input (which is a list), but seems to "
@@ -2606,3 +4522,113 @@ msgid ""
 msgstr ""
 "dim.data.table को इनपुट (input) के रूप में एक data.table (जो कि एक लिस्ट (list) है) "
 "अपेक्षित है,लेकिन प्रतीत होता है कि यह प्रकार %s का है"
+
+#~ msgid "x is integer64 but lower and/or upper are not."
+#~ msgstr "x integer64 है लेकिन lower और/या upper नहीं हैं।"
+
+#, c-format
+#~ msgid "icols[%d]=%d outside range [1,length(i)=%d]"
+#~ msgstr "icols[%d]=%d रेंज [1,length(i)=%d] के बाहर है"
+
+#, c-format
+#~ msgid "xcols[%d]=%d outside range [1,length(x)=%d]"
+#~ msgstr "xcols[%d]=%d रेंज [1,length(x)=%d] के बाहर है"
+
+#~ msgid "roll is character but not 'nearest'"
+#~ msgstr "roll एक चर है लेकिन 'nearest' नहीं है"
+
+#~ msgid ""
+#~ "  No \\n exists in the file at all, so single \\r (if any) will be taken "
+#~ "as one line ending. This is unusual but will happen normally when there "
+#~ "is no \\r either; e.g. a single line missing its end of line.\n"
+#~ msgstr ""
+#~ "  फाइल (file) में \\n बिल्कुल मौजूद नहीं है, इसलिए सिंगल (single) \\r (यदि कोई "
+#~ "हो) को एक पंक्ति अंत के\n"
+#~ "रूप में लिया जाएगा। यह असामान्य है लेकिन सामान्य रूप से तब होगा जब कोई \\r भी न "
+#~ "हो;\n"
+#~ "जैसे कि एक सिंगल (single) पंक्ति जिसके अंत में अंत मौजूद नहीं है।\n"
+
+#, c-format
+#~ msgid ""
+#~ "Found and resolved improper quoting out-of-sample. First healed line "
+#~ "%<PRIu64>: <<%s>>. If the fields are not quoted (e.g. field separator "
+#~ "does not appear within any field), try quote=\"\" to avoid this warning."
+#~ msgstr ""
+#~ "out-of-sample में गलत कोटिंग (quoting) पाई गई और उसे हल किया गया। पहली सुधारे "
+#~ "गए पंक्ति %<PRIu64>: <<%s>>। यदि फ़ील्ड्स (fields) कोटेड (quoted) नहीं हैं (जैसे, "
+#~ "फ़ील्ड (field) सेपरेटर (separator) किसी फ़ील्ड (field) के अंदर दिखाई नहीं देता है), "
+#~ "तो इस चेतावनी से बचने के लिए quote=\"\" का प्रयास करें।"
+
+#, c-format
+#~ msgid "%8.3fs (%3.0f%%) sep="
+#~ msgstr "%8.3fs (%3.0f%%) sep="
+
+#, c-format
+#~ msgid ""
+#~ "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
+#~ "input, use default hasNA=NA to avoid this warning"
+#~ msgstr ""
+#~ "%s: hasNA=FALSE का उपयोग किया गया है लेकिन इनपुट (input) में NA (या अन्य गैर-"
+#~ "परिमित) मान मौजूद हैं, इस चेतावनी (warning) से बचने के लिए डिफ़ॉल्ट (default) "
+#~ "hasNA=NA का उपयोग करें"
+
+#, c-format
+#~ msgid ""
+#~ "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
+#~ "attempt and run with extra care for NAs\n"
+#~ msgstr ""
+#~ "%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, गैर-NA प्रयास को छोड़ें "
+#~ "और NAs के लिए अतिरिक्त सावधानी के साथ चलाएं\n"
+
+#, c-format
+#~ msgid ""
+#~ "%s: NA (or other non-finite) value(s) are present in input, na.rm was "
+#~ "FALSE so in 'exact' implementation NAs were handled already, no need to "
+#~ "re-run\n"
+#~ msgstr ""
+#~ "%s: इनपुट (input) में NA (या अन्य गैर-परिमित) मान मौजूद हैं, na.rm FALSE था इसलिए "
+#~ "'यथातथ्य' कार्यान्वयन में NAs को पहले ही संभाल लिया गया था, पुन: निष्पादन की "
+#~ "आवश्यकता नहीं है\n"
+
+#, c-format
+#~ msgid "%s: results from provided FUN are not length 1"
+#~ msgstr "%s: प्रदान किए गए FUN के परिणाम की लेंथ (length) 1 नहीं है"
+
+#, c-format
+#~ msgid ""
+#~ "%s: results from provided FUN are not of type double, coercion from "
+#~ "integer or logical will be applied on each iteration\n"
+#~ msgstr ""
+#~ "%s: प्रदान किए गए FUN के परिणाम डबल (double) type के नहीं हैं, प्रत्येक पुनरावृत्ति "
+#~ "पर इंटीजर (integer) या लॉजिकल (logical) से ज़बरदस्ती परिवर्तन लागू किया जाएगा\n"
+
+#, c-format
+#~ msgid "%s: results from provided FUN are not of type double"
+#~ msgstr "%s: प्रदान किए गए FUN के परिणाम डबल (double) type के नहीं हैं"
+
+#, c-format
+#~ msgid "buffMB=%d outside [1,1024]"
+#~ msgstr "buffMB=%d [1,1024] के बाहर है"
+
+#, c-format
+#~ msgid "Unable to allocate %zu MiB for header: %s"
+#~ msgstr "हेडर (header) के लिए %zu MiB आवंटित करने में असमर्थ: %s"
+
+#, c-format
+#~ msgid "Unable to allocate %zu MiB for zbuffer: %s"
+#~ msgstr "zbuffer के लिए %zu MiB आवंटित करने में असमर्थ: %s"
+
+#, c-format
+#~ msgid "Compress gzip error: %d"
+#~ msgstr "कंप्रेस (compress) gzip एरर (error): %d"
+
+#, c-format
+#~ msgid "Failed to allocated %d bytes for '%s'."
+#~ msgstr "'%s' के लिए %d बाइट्स (bytes) आवंटित करने में विफल।"
+
+#~ msgid "First argument to setlistelt must be a list()"
+#~ msgstr "setlistelt के लिए पहला तर्क list() होना चाहिए"
+
+#~ msgid "Second argument to setlistelt must a length 1 integer vector"
+#~ msgstr ""
+#~ "setlistelt के लिए दूसरा तर्क लेंथ (length) 1 का पूर्णांक वेक्टर (vector) होना चाहिए"
