@@ -1,0 +1,4529 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: data.table 1.17.99\n"
+"POT-Creation-Date: 2025-12-23 12:03-0700\n"
+"PO-Revision-Date: 2026-10-17 17:39+0000\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n==0 || n==1);\n"
+
+#: AllS4.R:2
+#, c-format
+msgid "data.table package loaded. When developing don't load package"
+msgstr ""
+"data.table पैकेज (package) लोड (load) हो गया है। विकास करते समय पैकेज (package) "
+"लोड (load) न करें"
+
+#: IDateTime.R:108
+#, c-format
+msgid "binary + is not defined for \"IDate\" objects"
+msgstr ""
+
+#: IDateTime.R:115
+#, c-format
+msgid "can only subtract from \"IDate\" objects"
+msgstr ""
+
+#: IDateTime.R:120
+#, c-format
+msgid "unary - is not defined for \"IDate\" objects"
+msgstr ""
+
+#: IDateTime.R:316
+#, fuzzy, c-format
+msgid "Valid options for ms are 'truncate', 'nearest', and 'ceil'."
+msgstr "col.names के लिए मान्य विकल्प 'auto', 'top', और 'none' हैं"
+
+#: as.data.table.R:89
+#, c-format
+msgid ""
+"as.data.table.array method should only be called for arrays with 3+ "
+"dimensions; use the matrix method for 2-dimensional arrays"
+msgstr ""
+"as.data.table.array विधि केवल 3+ आयामों वाले एरे (array) के लिए ही कॉल (call) की "
+"जानी चाहिए; 2-आयामी एरे (array) के लिए मैट्रिक्स (matrix) विधि का उपयोग करें"
+
+#: as.data.table.R:91
+#, c-format
+msgid ""
+"Argument 'value.name' must be scalar character, non-NA and at least one "
+"character"
+msgstr ""
+"तर्क 'value.name' स्केलर (scalar) कैरेक्टर (character), non-NA और कम से कम एक कैरेक्टर "
+"(character) का होना चाहिए"
+
+#: as.data.table.R:93
+#, c-format
+msgid "Argument 'sorted' must be scalar logical and non-NA"
+msgstr ""
+"आर्गुमेंट (argument) 'sorted' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
+
+#: as.data.table.R:95
+#, c-format
+msgid "Argument 'na.rm' must be scalar logical and non-NA"
+msgstr ""
+"आर्गुमेंट (argument) 'na.rm' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
+
+#: as.data.table.R:97
+#, c-format
+msgid "Please provide either 'key' or 'sorted', but not both."
+msgstr "कृपया 'key' या 'sorted' में से एक प्रदान करें, लेकिन दोनों नहीं।"
+
+#: as.data.table.R:112
+#, c-format
+msgid ""
+"Argument 'value.name' should not overlap with column names in result: %s"
+msgstr ""
+"तर्क 'value.name' परिणाम में कॉलम (column) नाम के साथ परस्पर नहीं होना चाहिए: %s"
+
+#: as.data.table.R:162
+#, c-format
+msgid ""
+"POSIXlt column type detected and converted to POSIXct. We do not recommend "
+"use of POSIXlt at all because it uses 40 bytes to store one date."
+msgstr ""
+"POSIXlt कॉलम (column) प्रकार का पता चला और इसे POSIXct में परिवर्तित किया गया।हम "
+"POSIXlt के उपयोग की सिफारिश बिल्कुल नहीं करते हैं क्योंकि यह एक तिथि को संग्रहीत करने के "
+"लिए 40 बाइट्स (bytes) का उपयोग करता है।"
+
+#: as.data.table.R:207
+#, c-format
+msgid "Item %d has %d rows but longest item has %d; recycled with remainder."
+msgstr ""
+"आइटम (item) %d में %d रोज़ (rows) हैं लेकिन सबसे लंबे आइटम (item) में %d है; शेष के साथ "
+"पुनः चक्रित किया गया।"
+
+#: as.data.table.R:222
+#, c-format
+msgid "A column may not be called .SD. That has special meaning."
+msgstr "कोई कॉलम (column) .SD नामित नहीं किया जा सकता। इसका विशेष अर्थ है।"
+
+#: as.data.table.R:248
+#, c-format
+msgid "class must be length 1"
+msgstr "क्लास (class) की लेन्थ (length) 1 होनी चाहिए"
+
+#: between.R:3
+#, c-format
+msgid "between has been passed an argument x of type logical"
+msgstr ""
+
+#: between.R:13 between.R:15
+#, c-format
+msgid ""
+"The 'x' argument of the 'between' function is POSIXct while '%s' was not, "
+"coercion to POSIXct failed with: %s"
+msgstr ""
+
+#: between.R:24
+#, c-format
+msgid ""
+"'between' lower= and upper= are both POSIXct but have different tzone "
+"attributes: %s. Please align their time zones."
+msgstr ""
+
+#: between.R:27
+#, c-format
+msgid ""
+"'between' arguments are all POSIXct but have mismatched tzone attributes: "
+"%s. The UTC times will be compared."
+msgstr ""
+
+#: between.R:32
+#, c-format
+msgid "trying to use integer64 class when 'bit64' package is not installed"
+msgstr ""
+
+#: between.R:43
+msgid ""
+"optimised between not available for this data type, fallback to slow R "
+"routine"
+msgstr ""
+
+#: between.R:44
+#, c-format
+msgid ""
+"Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
+msgstr ""
+
+#: between.R:45
+#, c-format
+msgid "Some lower>upper for this non-numeric and non-character type"
+msgstr ""
+
+#: between.R:59
+#, c-format
+msgid "Perhaps you meant %s?"
+msgstr ""
+
+#: between.R:60
+#, c-format
+msgid ""
+"RHS has length() %d; expecting length 2. %sThe first element should be the "
+"lower bound(s); the second element should be the upper bound(s)."
+msgstr ""
+
+#: between.R:73
+#, fuzzy
+msgid "forderv(query) took ..."
+msgstr "forder ने लिया ..."
+
+#: between.R:86
+#, fuzzy
+msgid "Generating final logical vector ..."
+msgstr "मूल क्रम में वापस आना ..."
+
+#: between.R:88 bmerge.R:205 bmerge.R:209 bmerge.R:216 data.table.R:516
+msgid "done in %s"
+msgstr "%s में पूरा हुआ"
+
+#: bmerge.R:21
+#, fuzzy
+msgid "Coercing %s column %s%s to type %s to match type of %s%s."
+msgstr ""
+"%s कॉलम %s%s को type integer64 में परिवर्तित किया जा रहा है ताकि %s के type से मेल "
+"खा सके।"
+
+#: bmerge.R:34
+#, fuzzy, c-format
+msgid ""
+"Attempting roll join on factor column when joining x.%s to i.%s. Only "
+"integer, double or character columns may be roll joined."
+msgstr ""
+"%s को %s से जोड़ते समय factor कॉलम पर roll join करने का प्रयास किया जा रहा है।केवल "
+"पूर्णांक (integer), डबल (double) या कैरेक्टर (character) कॉलम पर ही roll join किया "
+"जा सकता है।"
+
+#: bmerge.R:72 bmerge.R:73
+#, c-format
+msgid "%s is type %s which is not supported by data.table join"
+msgstr "%s type %s है, जो data.table join द्वारा समर्थित नहीं है।"
+
+#: bmerge.R:77
+msgid "Matching %s factor levels to %s factor levels."
+msgstr "%s factor स्तरों को %s factor स्तरों से मिलाया जा रहा है।"
+
+#: bmerge.R:86
+msgid "Matching character column %s to factor levels in %s."
+msgstr "कैरेक्टर (character) कॉलम %s को %s में factor levels से मेल किया जा रहा है।"
+
+#: bmerge.R:93
+#, c-format
+msgid ""
+"Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
+"factor or character columns."
+msgstr ""
+"असंगत जॉइन (join) प्रकार: %s (%s) और %s (%s)। फ़ैक्टर (factor) कॉलम (column) केवल "
+"फ़ैक्टर (factor) या कैरेक्टर (character) कॉलम (column) से ही जोड़े जा सकते हैं।"
+
+#: bmerge.R:96
+msgid "%s has same type (%s) as %s. No coercion needed."
+msgstr "%s का type (%s) %s के समान है। कोई रूपांतरण आवश्यक नहीं।"
+
+#: bmerge.R:102 bmerge.R:106
+msgid "(all-NA)"
+msgstr ""
+
+#: bmerge.R:109
+#, c-format
+msgid "Incompatible join types: %s (%s) and %s (%s)"
+msgstr "असंगत join types: %s (%s) और %s (%s)"
+
+#: bmerge.R:115
+msgid "(which has integer64 representation, e.g. no fractions)"
+msgstr ""
+
+#: bmerge.R:117
+#, fuzzy, c-format
+msgid ""
+"Incompatible join types: %s is type integer64 but %s is type double and "
+"cannot be coerced to integer64 (e.g. has fractions)"
+msgstr ""
+"असंगत join प्रकार: %s का type integer64 है, लेकिन %s का type double है औरइसमें "
+"भिन्नांश (fractions) शामिल हैं।"
+
+#: bmerge.R:137
+msgid "(which contains no fractions)"
+msgstr ""
+
+#: bmerge.R:149
+msgid "(which contains fractions)"
+msgstr ""
+
+#: bmerge.R:152
+msgid "(for join)"
+msgstr ""
+
+#: bmerge.R:170
+msgid "on= matches existing key, using key"
+msgstr "on= मौजूदा key से मेल खाता है, key का उपयोग करके"
+
+#: bmerge.R:175
+msgid "on= matches existing index, using index"
+msgstr "on= मौजूदा इंडेक्स (index) से मेल खाता है, इंडेक्स (index) का उपयोग करके"
+
+#: bmerge.R:180
+msgid "Calculated ad hoc index in %s"
+msgstr "%s में ad hoc इंडेक्स (index) की गणना की गई"
+
+#: bmerge.R:191
+msgid "Non-equi join operators detected ..."
+msgstr "non-equi join ऑपरेटर (operators) का पता चला ..."
+
+#: bmerge.R:192
+#, c-format
+msgid "roll is not implemented for non-equi joins yet."
+msgstr "non-equi joins के लिए अभी तक रोल (roll) लागू नहीं किया गया है।"
+
+#: bmerge.R:193
+msgid "forder took ..."
+msgstr "forder ने लिया ..."
+
+#: bmerge.R:202
+msgid "Generating group lengths ..."
+msgstr "समूह लेंथ्स (lengths) उत्पन्न कर रहे हैं ..."
+
+#: bmerge.R:207
+msgid "Generating non-equi group ids ..."
+msgstr "non-equi समूह ids उत्पन्न कर रहे हैं ..."
+
+#: bmerge.R:212
+#, c-format
+msgid "Column name '_nqgrp_' is reserved for non-equi joins."
+msgstr "कॉलम (column) नाम 'nqgrp' non-equi joins के लिए आरक्षित है।"
+
+#: bmerge.R:213
+msgid "Recomputing forder with non-equi ids ..."
+msgstr "non-equi ids के साथ forder की फिर से गणना की जा रही है ..."
+
+#: bmerge.R:222
+msgid "Starting bmerge ..."
+msgstr "bmerge शुरू हो रहा है ..."
+
+#: bmerge.R:224
+msgid "bmerge done in %s"
+msgstr "bmerge %s में पूरा हुआ"
+
+#: cedta.R:77
+msgid ""
+"cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
+"applied:"
+msgstr ""
+"cedta ने निर्णय लिया कि '%s' data.table के प्रति जागरूक नहीं था। यह कॉल (call) स्टैक "
+"(stack) [[1L]] के साथलागू किया गया:"
+
+#: data.table.R:55
+#, c-format
+msgid "key argument of data.table() must be character"
+msgstr "data.table() का key आर्ग्युमेंट (argument) कैरेक्टर (character) होना चाहिए"
+
+#: data.table.R:123
+#, c-format
+msgid "Object '%s' not found. Perhaps you intended %s"
+msgstr "ऑब्जेक्ट (Object) '%s' नहीं मिला। शायद आप %s का उपयोग करना चाहते थे"
+
+#: data.table.R:125
+#, c-format
+msgid "Object '%s' not found amongst %s"
+msgstr "ऑब्जेक्ट (Object) '%s' %s में नहीं मिला"
+
+#: data.table.R:134
+#, c-format
+msgid ""
+"Invalid set* operation on a recursive index L[[i]] where i has length %d. "
+"Chain [[ instead."
+msgstr ""
+
+#: data.table.R:139
+#, c-format
+msgid "Item '%s' not found in names of input list"
+msgstr "इनपुट (input) लिस्ट (list) के नामों में आइटम (item) '%s' नहीं मिला"
+
+#: data.table.R:159
+#, c-format
+msgid ""
+"[ was called on a data.table in an environment that is not data.table-aware "
+"(i.e. cedta()), but '%s' was used, implying the owner of this call really "
+"intended for data.table methods to be called. See vignette('datatable-"
+"importing') for details on properly importing data.table."
+msgstr ""
+"data.table में [ का कॉल (call) ऐसे वातावरण में किया गया जो data.table से अवगत नहीं "
+"है (जैसे cedta()), लेकिन '%s' का उपयोग किया गया है, जो दर्शाता है कि इस कॉल (call) "
+"के मालिक ने वास्तव में data.table विधि को कॉल (call) करने का इरादा किया था। सही "
+"तरीके से data.table को आयात करने के लिए vignette('datatable-importing') देखें।"
+
+#: data.table.R:170
+#, c-format
+msgid "verbose must be logical or integer"
+msgstr "verbose लॉजिकल (logical) या पूर्णांक (integer) होना चाहिए"
+
+#: data.table.R:171
+#, c-format
+msgid "verbose must be length 1 non-NA"
+msgstr "verbose की length 1 होनी चाहिए और यह non-NA होना चाहिए"
+
+#: data.table.R:179
+#, c-format
+msgid "Ignoring by/keyby because 'j' is not supplied"
+msgstr "j' प्रदान नहीं किया गया है, इसलिए by/keyby को अनदेखा किया जा रहा है"
+
+#: data.table.R:193
+#, c-format
+msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
+msgstr "जब by और keyby दोनों प्रदान किए जाते हैं, तो keyby TRUE या FALSE होना चाहिए"
+
+#: data.table.R:196 data.table.R:261 data.table.R:351
+msgid "Argument '%s' after substitute: %s"
+msgstr "सब्स्टिटूट (substitute) के बाद आर्ग्युमेंट (argument) '%s': %s"
+
+#: data.table.R:205
+#, c-format
+msgid ""
+"When on= is provided but not i=, on= must be a named list or data.table|"
+"frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
+"on= which is '%s'."
+msgstr ""
+"जब on= प्रदान किया जाता है लेकिन i= नहीं, तो on= को एक नामांकित लिस्ट (named list) "
+"या data.table|फ्रेम (frame) होना चाहिए और एक प्राकृतिक जॉइन (join) को प्रेरित किया "
+"जाता है (जैसे सामान्य नामों पर जॉइन)। on= को अनदेखा किया जा रहा है, जो '%s' है।"
+
+#: data.table.R:218
+#, c-format
+msgid ""
+"i and j are both missing so ignoring the other arguments. This warning will "
+"be upgraded to error in future."
+msgstr ""
+"i और j दोनों अनुपस्थित हैं, इसलिए अन्य आर्ग्युमेंट्स (arguments) को अनदेखा किया जा रहा है। "
+"यह चेतावनी भविष्य में एरर (error) में बदल दी जाएगी।"
+
+#: data.table.R:222
+#, fuzzy, c-format
+msgid "mult argument can only be 'first', 'last', 'all' or 'error'"
+msgstr "mult आर्ग्युमेंट (argument) केवल 'first', 'last' या 'all' हो सकता है।"
+
+#: data.table.R:224
+#, c-format
+msgid ""
+"roll must be a single TRUE, FALSE, positive/negative integer/double "
+"including +Inf and -Inf or 'nearest'"
+msgstr ""
+"roll एकल TRUE, FALSE, सकारात्मक/नकारात्मक पूर्णांक (integer)/डबल (double) होना "
+"चाहिए, जिसमें +Inf और -Inf शामिल हों, या 'nearest'"
+
+#: data.table.R:226
+#, c-format
+msgid "roll is '%s' (type character). Only valid character value is 'nearest'."
+msgstr ""
+"roll '%s' (प्रकार कैरेक्टर (character)) है। केवल मान्य कैरेक्टर (character) मान "
+"'nearest' है।"
+
+#: data.table.R:231
+#, c-format
+msgid "rollends must be a logical vector"
+msgstr "rollends एक लॉजिकल (logical) वेक्टर (vector) होना चाहिए"
+
+#: data.table.R:232
+#, c-format
+msgid "rollends must be length 1 or 2"
+msgstr "rollends की लेंथ length 1 या 2 होनी चाहिए"
+
+#: data.table.R:240
+#, c-format
+msgid ""
+"nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
+"is the same as NULL but please use NULL)"
+msgstr ""
+"nomatch= या तो NA या NULL (या पिछड़े संगतता के लिए 0, जो NULL के समान है, लेकिन "
+"कृपया NULL का उपयोग करें) होना चाहिए"
+
+#: data.table.R:243
+#, c-format
+msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
+msgstr ""
+"which= एक लॉजिकल (logical) वेक्टर (vector) length 1 होना चाहिए। या तो FALSE, "
+"TRUE या NA।"
+
+#: data.table.R:244
+#, c-format
+msgid ""
+"which==%s (meaning return row numbers) but j is also supplied. Either you "
+"need row numbers or the result of j, but only one type of result can be "
+"returned."
+msgstr ""
+"which==%s (अर्थात पंक्ति (row) संख्या लौटाना) लेकिन j भी प्रदान किया गया है। या तो "
+"आपको पंक्ति (row) संख्या चाहिए या j का परिणाम, लेकिन केवल एक प्रकार का परिणाम "
+"लौटाया जा सकता है।"
+
+#: data.table.R:245
+#, c-format
+msgid ""
+"which=NA with nomatch=0|NULL would always return an empty vector. Please "
+"change or remove either which or nomatch."
+msgstr ""
+"which=NA और nomatch=0|NULL के साथ हमेशा एक खाली वेक्टर (vector) लौटाया जाएगा। "
+"कृपया which या nomatch को बदलें या हटा दें।"
+
+#: data.table.R:246
+#, c-format
+msgid "j must be provided when with=FALSE"
+msgstr "जब with=FALSE होता है तो j प्रदान किया जाना चाहिए"
+
+#: data.table.R:247
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr "%s TRUE या FALSE होना चाहिए"
+
+#: data.table.R:290
+#, c-format
+msgid ""
+"The symbol .. is invalid. The .. prefix must be followed by at least one "
+"character."
+msgstr ""
+"प्रतीक .. अमान्य है। .. उपसर्ग के बाद कम से कम एक कैरेक्टर (character) होना चाहिए।"
+
+#: data.table.R:294
+#, c-format
+msgid ""
+"Variable '..%s' does exist in calling scope though, so please just removed "
+"the .. prefix from that variable name in calling scope."
+msgstr ""
+"वेरिएबल (variable) '..%s' कॉलिंग (call) दायरा में मौजूद है, इसलिए कृपया उस वेरिएबल "
+"(variable) नाम से .. उपसर्ग को हटा दें।"
+
+#: data.table.R:298
+#, c-format
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because you used the .. prefix.%s"
+msgstr ""
+"वेरिएबल (variable) '%s' कॉलिंग (call) दायरा में नहीं मिला। कॉलिंग (call) दायरा में "
+"खोज की जा रही है क्योंकि आपने .. उपसर्ग का उपयोग किया है। %s"
+
+#: data.table.R:300
+#, c-format
+msgid ""
+"Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' "
+"variable in calling scope for clarity."
+msgstr ""
+"कॉलिंग (call) दायरा में '%1$s' और '..%1$s' दोनों मौजूद हैं। कृपया स्पष्टता के लिए कॉलिंग "
+"(call) दायरा में '..%1$s' वेरिएबल (variable) को हटा दें।"
+
+#: data.table.R:308
+#, c-format
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because you set with=FALSE. Also, please use .. symbol prefix and remove "
+"with=FALSE."
+msgstr ""
+"वेरिएबल (variable) '%s' कॉलिंग (call) दायरा में नहीं मिला। कॉलिंग (call) दायरा में "
+"खोज की जा रही है क्योंकि आपने with=FALSE सेट किया है। साथ ही, कृपया .. प्रतीक उपसर्ग "
+"का उपयोग करें और with=FALSE को हटा दें।"
+
+#: data.table.R:316
+#, c-format
+msgid ""
+"Invalid use of `:=` inside `{}`. `:=` must be the only expression inside `{}"
+"` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := "
+"tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]"
+msgstr ""
+
+#: data.table.R:334
+#, c-format
+msgid ""
+":= with keyby is only possible when i is not supplied since you can't setkey "
+"on a subset of rows. Either change keyby to by or remove i"
+msgstr ""
+":= के साथ keyby केवल तभी संभव है जब i प्रदान नहीं किया गया हो क्योंकि आप पंक्ति "
+"(row)यों के सबसेट (subset) पर setkey नहीं कर सकते। या तो keyby को by में बदलें या i "
+"को हटा दें"
+
+#: data.table.R:336
+#, c-format
+msgid "nomatch isn't relevant together with :=, ignoring nomatch"
+msgstr "nomatch := के साथ प्रासंगिक नहीं है, nomatch को नजरअंदाज किया जा रहा है"
+
+#: data.table.R:392
+#, c-format
+msgid ""
+"not-join '!' prefix is present on i but nomatch is provided. Please remove "
+"nomatch."
+msgstr ""
+"i पर not-join '!' उपसर्ग मौजूद है लेकिन nomatch दिया गया है। कृपया nomatch को हटा "
+"दें।"
+
+#: data.table.R:420
+#, c-format
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting "
+"the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). "
+"Please double-check the syntax. Run traceback(), and debugger() to get a "
+"line number."
+msgstr ""
+"ऑपरेटर (operator) := i में पाया गया, DT[...] के अंदर पहला आर्ग्युमेंट (argument), लेकिन "
+"यह केवल दूसरे आर्ग्युमेंट (argument), j में मान्य है। अक्सर, यह पहले कॉमा (comma) को भूलने "
+"पर होता है (जैसे DT[newvar := 5] के बजाय DT[, new_var := 5])। कृपया सिंटैक्स "
+"(syntax) की दोबारा जांच करें। लाइन नंबर प्राप्त करने के लिए traceback() और "
+"debugger() चलाएं।"
+
+#: data.table.R:430
+#, c-format
+msgid "'%s' is not found in calling scope and it is not a column name either"
+msgstr ""
+"%s' कॉलिंग (call) दायरा में नहीं पाया गया है और यह कॉलम (column) का नाम भी नहीं है"
+
+#: data.table.R:433
+#, c-format
+msgid ""
+"'%s' is not found in calling scope, but it is a column of type %s. If you "
+"wish to select rows where that column contains TRUE, or perhaps that column "
+"contains row numbers of itself to select, try DT[(col)], DT[DT$col], or "
+"DT[col==TRUE] is particularly clear and is optimized"
+msgstr ""
+"%s' कॉलिंग (call) दायरा में नहीं पाया गया, लेकिन यह प्रकार %s का कॉलम (column) है। "
+"यदि आप पंक्ति (row)यों का चयन करना चाहते हैं जहां वह कॉलम (column) TRUE हो, या शायद "
+"वह कॉलम (column) अपनी पंक्ति (row) संख्या शामिल करता है, तो DT[(col)], "
+"DT[DT$col], या DT[col==TRUE] का उपयोग करें, यह विशेष रूप से स्पष्ट है और अनुकूलित है"
+
+#: data.table.R:436
+#, c-format
+msgid ""
+"%s. When the first argument inside DT[...] is a single symbol (e.g. "
+"DT[var]), data.table looks for var in calling scope."
+msgstr ""
+"%s। जब DT[...] के अंदर पहला आर्ग्युमेंट (argument) एकल प्रतीक होता है (जैसे DT[var]), "
+"data.table कॉलिंग (call) दायरा में var की तलाश करता है।"
+
+#: data.table.R:448
+#, c-format
+msgid ""
+"i is invalid type (matrix). Perhaps in future a 2 column matrix could return "
+"a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report "
+"to data.table issue tracker if you'd like this, or add your comments to FR "
+"#657."
+msgstr ""
+"i अमान्य प्रकार (मैट्रिक्स (matrix)) है। शायद भविष्य में 2 कॉलम (column) मैट्रिक्स "
+"(matrix) DT के तत्वों की लिस्ट (list) लौटा सकती है (FAQ 2.14 में A[B] की भावना में)। "
+"यदि आप इसे चाहें, तो कृपया data.table इशू ट्रैकर (tracker) पर रिपोर्ट करें, या FR #657 "
+"पर अपनी टिप्पणियां जोड़ें।"
+
+#: data.table.R:471
+#, fuzzy, c-format
+msgid ""
+"When i is a data.table (or character vector), the columns to join by must be "
+"specified using the 'on=' argument (see ?data.table); by keying x (i.e., x "
+"is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to "
+"indicate using the shared column names between x and i (i.e., a natural "
+"join). Keyed joins might have further speed benefits on very large data due "
+"to x being sorted in RAM."
+msgstr ""
+"जब i एक data.table (या कैरेक्टर वेक्टर (character vector)) होता है, तो कॉलम "
+"(column) को 'on=' आर्ग्युमेंट (argument) का उपयोग करके निर्दिष्ट किया जाना चाहिए "
+"(देखें ?data.table), x को key बनाकर (यानी, सॉर्ट किया गया और, सॉर्ट किया गया "
+"चिह्नित, ?setkey देखें), या x और i के बीच कॉलम (column) नाम साझा करके (यानी, एक "
+"प्राकृतिक जॉइन)। बहुत बड़े डेटा पर key-आधारित जॉइन RAM में x के सॉर्ट किए जाने के कारण "
+"आगे की गति लाभ प्रदान कर सकते हैं।"
+
+#: data.table.R:479
+#, c-format
+msgid "Attempting to do natural join but no common columns in provided tables"
+msgstr ""
+"प्राकृतिक जॉइन (join) करने का प्रयास किया जा रहा है, लेकिन दिए गए टेबल में कोई सामान्य "
+"कॉलम (column) नहीं है"
+
+#: data.table.R:482
+msgid "Joining but 'x' has no key, natural join using all 'x' columns"
+msgstr ""
+"जॉइन (join) कर रहा है लेकिन 'x' में कोई key नहीं है, सभी 'x' कॉलम (column) का "
+"उपयोग करके प्राकृतिक जॉइन (join)"
+
+#: data.table.R:484
+msgid "Joining but 'x' has no key, natural join using: %s"
+msgstr ""
+"जॉइन (join) कर रहा है लेकिन 'x' में कोई key नहीं है, प्राकृतिक जॉइन (join) का उपयोग "
+"कर रहा है: %s"
+
+#: data.table.R:513
+msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
+msgstr ""
+"not-join 'by=.EACHI' के साथ कॉल (call) किया गया; !i को i=setdiff_(x,i) से बदल "
+"रहा है ..."
+
+#: data.table.R:544
+msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
+msgstr "!byjoin || nqbyjoin' के लिए irows का निर्माण कर रहा है ..."
+
+#: data.table.R:558 mergelist.R:124
+#, c-format
+msgid ""
+"Joining resulted in many-to-many join. Perform quality check on your data, "
+"use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows "
+"explosion."
+msgstr ""
+
+#: data.table.R:596
+msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
+msgstr "mult=='all' && !allGrp1' के लिए irows को पुनः व्यवस्थित कर रहा है ..."
+
+#: data.table.R:608
+msgid "Reordering %d rows after bmerge done in ..."
+msgstr "bmerge के बाद %d पंक्ति (row)यों का पुनः क्रमबद्ध कर रहा है ..."
+
+#: data.table.R:625
+#, c-format
+msgid "logical error. i is not a data.table, but 'on' argument is provided."
+msgstr ""
+"लॉजिकल एरर (logical error)। i एक data.table नहीं है, लेकिन 'on' आर्ग्युमेंट "
+"(argument) दिया गया है।"
+
+#: data.table.R:629
+#, c-format
+msgid "i has evaluated to type %s. Expecting logical, integer or double."
+msgstr ""
+"i का प्रकार %s के रूप में मूल्यांकन किया गया है। लॉजिकल, पूर्णांक (integer) या डबल "
+"(double) की अपेक्षा है।"
+
+#: data.table.R:651
+#, c-format
+msgid ""
+"i evaluates to a logical vector length %d but there are %d rows. Recycling "
+"of logical i is no longer allowed as it hides more bugs than is worth the "
+"rare convenience. Explicitly use rep(...,length=.N) if you really need to "
+"recycle."
+msgstr ""
+"i को लॉजिकल (logical) वेक्टर (vector) लेंथ (length) %d के रूप में मूल्यांकित किया गया "
+"है, लेकिन %d पंक्ति (row)याँ हैं। लॉजिकल (logical) i का पुनः उपयोग अब अनुमति नहीं है "
+"क्योंकि यह दुर्लभ सुविधा से अधिक बग छुपाता है। यदि आपको पुनः उपयोग करना आवश्यक है, तो "
+"स्पष्ट रूप से rep(...,length=.N) का उपयोग करें।"
+
+#: data.table.R:654
+#, c-format
+msgid ""
+"Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 "
+"(Jan 2019)"
+msgstr ""
+"कृपया nomatch=0 के बजाय nomatch=NULL का उपयोग करें; v1.12.0 (जनवरी 2019) में "
+"समाचार आइटम (item) 5 देखें"
+
+#: data.table.R:669
+msgid "Inverting irows for notjoin done in ..."
+msgstr "notjoin के लिए irows को उलटने का कार्य पूरा हुआ ..."
+
+#: data.table.R:725
+#, c-format
+msgid "`:=` is only supported under with=TRUE, see ?`:=`."
+msgstr ""
+
+#: data.table.R:767
+#, c-format
+msgid "Item %d of j is %d which is outside the column number range [1,ncol=%d]"
+msgstr "j का आइटम (item) %d, %d है जो कॉलम (column) नंबर रेंज [1,ncol=%d] के बाहर है"
+
+#: data.table.R:770
+#, c-format
+msgid "j mixes positives and negatives"
+msgstr "j सकारात्मक और नकारात्मक को मिलाता है"
+
+#: data.table.R:778
+#, c-format
+msgid ""
+"When with=FALSE, j-argument should be of type logical/character/integer "
+"indicating the columns to select."
+msgstr ""
+"जब with=FALSE होता है, तो j-आर्ग्युमेंट (argument) लॉजिकल (logical)/कैरेक्टर "
+"(character)/पूर्णांक प्रकार का होना चाहिए जो चयनित कॉलम (column) को इंगित करता है।"
+
+#: data.table.R:792
+#, c-format
+msgid ""
+"'by' contains .I but only the following are currently supported: by=.I, by=."
+"(.I), by=c(.I), by=list(.I)"
+msgstr ""
+"by' में .I शामिल है, लेकिन वर्तमान में केवल निम्नलिखित का समर्थन है: by=.I, by=.(.I), "
+"by=c(.I), by=list(.I)"
+
+#: data.table.R:816
+#, c-format
+msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
+msgstr ""
+"by=c(...), key(...) या names(...) का मूल्यांकन 'कैरेक्टर (character)' में होना चाहिए"
+
+#: data.table.R:826
+#, c-format
+msgid ""
+"'by' is a character vector length %d but one or more items include a comma. "
+"Either pass a vector of column names (which can contain spaces, but no "
+"commas), or pass a vector length 1 containing comma separated column names. "
+"See ?data.table for other possibilities."
+msgstr ""
+"by' एक कैरेक्टर (character) वेक्टर (vector) लेंथ (length) %d है, लेकिन एक या अधिक "
+"आइटम (item) में कॉमा (comma) शामिल है। या तो कॉलम (column) नामों वाला वेक्टर "
+"(vector) पास करें (जिसमें स्पेस हो सकते हैं, लेकिन कॉमा (comma) नहीं), या कॉमा (comma) "
+"सेपरेटेड (separated) कॉलम (column) नामों वाली लेंथ (length) 1 का वेक्टर (vector) पास "
+"करें। अन्य संभावनाओं के लिए ?data.table देखें।"
+
+#: data.table.R:833
+#, c-format
+msgid "At least one entry of by is empty"
+msgstr "by में कम से कम एक प्रविष्टि खाली है"
+
+#: data.table.R:860
+msgid "by index '%s' but that index has 0 length. Ignoring."
+msgstr "by index '%s' है लेकिन उस index की लेंथ (length) 0 है। इसे अनदेखा कर रहा है।"
+
+#: data.table.R:883
+msgid "i clause present and columns used in by detected, only these subset: %s"
+msgstr ""
+"i क्लॉज (clause) मौजूद है और by में उपयोग किए गए कॉलम (column) का पता लगाया गया "
+"है, केवल यह सबसेट (subset): %s"
+
+#: data.table.R:886
+msgid ""
+"i clause present but columns used in by not detected. Having to subset all "
+"columns before evaluating 'by': '%s'"
+msgstr ""
+"i क्लॉज (clause) मौजूद है लेकिन by में उपयोग किए गए कॉलम (column) का पता नहीं चला। "
+"'by' का मूल्यांकन करने से पहले सभी कॉलम (column) को सबसेट (subset) बनाना होगा: '%s'"
+
+#: data.table.R:908
+#, c-format
+msgid ""
+"'by' appears to evaluate to column names but isn't c() or key(). Use "
+"by=list(...) if you can. Otherwise, by=eval%s should work. This is for "
+"efficiency so data.table can detect which columns are needed."
+msgstr ""
+"by' कॉलम (column) नामों का मूल्यांकन करता प्रतीत होता है, लेकिन यह c() या key() नहीं "
+"है। यदि संभव हो, तो by=list(...) का उपयोग करें। अन्यथा, by=eval%s कार्य करना "
+"चाहिए। यह दक्षता के लिए है ताकि data.table यह पहचान सके कि किन कॉलमों (column) की "
+"आवश्यकता है।"
+
+#: data.table.R:919
+#, c-format
+msgid ""
+"'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
+"includes data.table and data.frame which are lists, too)"
+msgstr ""
+"by' या 'keyby' का मूल्यांकन एक वेक्टर (vector) या वेक्टरों (vector) की सूची के रूप में "
+"होना चाहिए (जहां 'लिस्ट' में data.table और data.frame भी शामिल हैं, जो लिस्ट (list) "
+"हैं)"
+
+#: data.table.R:923
+#, c-format
+msgid ""
+"Column or expression %d of 'by' or 'keyby' is type '%s' which is not "
+"currently supported. If you have a compelling use case, please add it to "
+"https://github.com/Rdatatable/data.table/issues/1597. As a workaround, "
+"consider converting the column to a supported type, e.g. by=sapply(list_col, "
+"toString), whilst taking care to maintain distinctness in the process."
+msgstr ""
+"by' या 'keyby' का कॉलम (column) या अभिव्यक्ति %d प्रकार '%s' है, जो वर्तमान में "
+"समर्थित नहीं है। यदि आपके पास एक महत्वपूर्ण उपयोग का मामला है, तो कृपया इसे https://"
+"github.com/Rdatatable/data.table/issues/1597 पर जोड़ें। एक कारगर युक्ति के रूप में, "
+"कॉलम (column) को समर्थित प्रकार में बदलने पर विचार करें, उदाहरण के लिए "
+"by=sapply(list_col, toString), इस प्रक्रिया में विशिष्टता बनाए रखने का ध्यान रखते हुए।"
+
+#: data.table.R:951
+msgid ""
+"by-expression '%s' is not named, and the auto-generated name '%s' clashed "
+"with variable(s) in j. Therefore assigning the entire by-expression as name."
+msgstr ""
+"by-अभिव्यक्ति '%s' का नाम नहीं है, और स्वचालित रूप से उत्पन्न नाम '%s' j में वैरिएबल "
+"(variable)(s) के साथ टकरा गया। इसलिए संपूर्ण by-अभिव्यक्ति को नाम के रूप में असाइन "
+"(assign) कर रहा है।"
+
+#: data.table.R:985
+#, c-format
+msgid "Item %d of the .() or list() passed to j is missing"
+msgstr ".() या list() का आइटम (item) %d, जो j को पास किया गया है, गायब है"
+
+#: data.table.R:991
+#, c-format
+msgid ""
+"j may not evaluate to the same number of columns for each group; if you're "
+"sure this warning is in error, please put the branching logic outside of "
+"[ for efficiency"
+msgstr ""
+"j प्रत्येक समूह के लिए समान संख्या में कॉलम (column) का मूल्यांकन नहीं कर सकता; यदि आपको "
+"यकीन है कि यह चेतावनी त्रुटि में है, तो कृपया शाखा-तर्क को दक्षता के लिए [ के बाहर रखें"
+
+#: data.table.R:993
+#, c-format
+msgid ""
+"Different branches of j expression produced different auto-named columns: "
+"%s; using the most \"last\" names. If this was intentional (e.g., you know "
+"only one branch will ever be used in a given query because the branch is "
+"controlled by a function argument), please (1) pull this branch out of the "
+"call; (2) explicitly provide missing defaults for each branch in all cases; "
+"or (3) use the same name for each branch and re-name it in a follow-up call."
+msgstr ""
+"j अभिव्यक्ति की विभिन्न शाखाओं ने विभिन्न स्वचालित नामित कॉलम (column) बनाए: %s; "
+"सबसे \"अंतिम\" नामों का उपयोग कर रहा है। यदि यह जानबूझकर किया गया था (उदाहरण के "
+"लिए, आपको पता है कि किसी दिए गए क्वेरी (query) में केवल एक शाखा का ही उपयोग किया "
+"जाएगा क्योंकि शाखा को एक फ़ंक्शन (function) आर्ग्युमेंट (argument) द्वारा नियंत्रित किया "
+"जाता है), तो कृपया (1) इस शाखा को कॉल (call) से बाहर निकालें; (2) प्रत्येक मामले में "
+"प्रत्येक शाखा के लिए स्पष्ट रूप से गायब डिफ़ॉल्ट्स (default) प्रदान करें; या (3) प्रत्येक "
+"शाखा के लिए समान नाम का उपयोग करें और इसे एक अनुवर्ती कॉल (call) में पुनः नामित करें।"
+
+#: data.table.R:1063
+#, c-format
+msgid ""
+"When .SDcols is a function, it is applied to each column; the output of this "
+"function must be a non-missing boolean scalar signalling inclusion/exclusion "
+"of the column. However, these conditions were not met for: %s"
+msgstr ""
+"जब .SDcols एक फ़ंक्शन (function) है, तो इसे प्रत्येक कॉलम (column) पर लागू किया जाता "
+"है; इस फ़ंक्शन (function) का आउटपुट (output) एक गैर-गायब बूलियन (boolean) स्केलर "
+"(scalar) होना चाहिए जो कॉलम (column) के सम्मिलन/बहिष्करण का संकेत देता हो। हालांकि, "
+"ये शर्तें इसके लिए पूरी नहीं हुईं: %s"
+
+#: data.table.R:1069
+#, c-format
+msgid ".SDcols missing at the following indices: %s"
+msgstr ".SDcols निम्नलिखित इंडेक्स (indices) पर गायब है: %s"
+
+#: data.table.R:1071
+#, c-format
+msgid ".SDcols is a logical vector of length %d but there are %d columns"
+msgstr ""
+".SDcols की लेंथ (length) %d का एक लॉजिकल (logical) वेक्टर (vector) है, लेकिन कॉलम "
+"(column) की संख्या %d है।"
+
+#: data.table.R:1077
+#, c-format
+msgid ".SDcols is numeric but has both +ve and -ve indices"
+msgstr ".SDcols संख्यात्मक है लेकिन इसमें सकारात्मक और नकारात्मक दोनों इंडेक्स (indices) हैं"
+
+#: data.table.R:1079
+#, c-format
+msgid ".SDcols is numeric but out of bounds [1, %d] at: %s"
+msgstr ".SDcols संख्यात्मक है लेकिन [1, %d] की सीमा से बाहर है: %s"
+
+#: data.table.R:1083
+#, c-format
+msgid ".SDcols should be column numbers or names"
+msgstr ".SDcols कॉलम (column) संख्या या नाम होना चाहिए"
+
+#: data.table.R:1085
+#, c-format
+msgid "Some items of .SDcols are not column names: %s"
+msgstr ".SDcols के कुछ आइटम (item) कॉलम (column) नाम नहीं हैं: %s"
+
+#: data.table.R:1098
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+"(m)get' j में पाया गया। ansvars को सभी कॉलम (column) पर सेट किया जा रहा है। इसके "
+"बजाय .SDcols या एकल j=eval(macro) का उपयोग करें। दोनों उपयोग किए गए कॉलम "
+"(column) का पता लगाएंगे जो दक्षता के लिए महत्वपूर्ण हैं।\n"
+"पुराने ansvars: %s।"
+
+#: data.table.R:1118
+msgid "New ansvars: %s"
+msgstr "नए ansvars: %s"
+
+#: data.table.R:1127
+#, c-format
+msgid ""
+"This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
+"data.table."
+msgstr ""
+"यह j .SD का उपयोग नहीं करता है, लेकिन .SDcols प्रदान किया गया है। .SDcols को "
+"अनदेखा कर रहा है। देखें ?data.table।"
+
+#: data.table.R:1130
+msgid "Detected that j uses these columns: %s"
+msgstr "पता चला कि j इन कॉलम (column) का उपयोग करता है: %s"
+
+#: data.table.R:1143
+#, c-format
+msgid ""
+".SD is locked. Using := in .SD's j is reserved for possible future use; a "
+"tortuously flexible way to modify by group. Use := in j directly to modify "
+"by group by reference."
+msgstr ""
+".SD लॉक है। .SD के j में := का उपयोग संभावित भविष्य के उपयोग के लिए आरक्षित है; समूह "
+"द्वारा संशोधित करने का एक जटिल लचीला तरीका। समूह द्वारा संदर्भ से संशोधित करने के लिए j "
+"में सीधे := का उपयोग करें।"
+
+#: data.table.R:1154
+#, c-format
+msgid "In %s(col1=val1, col2=val2, ...) form, all arguments must be named."
+msgstr ""
+"%s(col1=val1, col2=val2, ...) रूप में, सभी आर्ग्युमेंट (argument) का नाम होना चाहिए।"
+
+#: data.table.R:1177
+#, c-format
+msgid ""
+"In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the "
+"last argument has no name. Did you forget a trailing comma?"
+msgstr ""
+"%s(col1=val1, col2=val2, ...) रूप में, सभी आर्ग्युमेंट (argument) का नाम होना चाहिए, "
+"लेकिन अंतिम आर्ग्युमेंट (argument) का नाम नहीं है। क्या आपने अंतिम कॉमा (comma) जोड़ना भूल "
+"गए?"
+
+#: data.table.R:1179
+#, c-format
+msgid ""
+"In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but "
+"these arguments lack names: %s."
+msgstr ""
+"%s(col1=val1, col2=val2, ...) रूप में, सभी आर्ग्युमेंट (argument) का नाम होना चाहिए, "
+"लेकिन इन आर्ग्युमेंट (argument) में नाम नहीं है: %s।"
+
+#: data.table.R:1186
+#, c-format
+msgid ""
+"LHS of := must be a symbol, or an atomic vector (column names or positions)."
+msgstr ""
+":= का LHS एक प्रतीक, या एक एटॉमिक (atomic) वेक्टर (vector) (कॉलम (column) नाम "
+"या स्थिति) होना चाहिए।"
+
+#: data.table.R:1191
+#, c-format
+msgid ""
+"LHS of := appears to be column positions but are outside [1,ncol] range. New "
+"columns can only be added by name."
+msgstr ""
+":= का LHS कॉलम (column) की स्थिति प्रतीत होता है लेकिन [1,ncol] सीमा से बाहर है। "
+"नए कॉलम (column) केवल नाम द्वारा जोड़े जा सकते हैं।"
+
+#: data.table.R:1193
+#, c-format
+msgid ""
+"LHS of := isn't column names ('character') or positions ('integer' or "
+"'numeric')"
+msgstr ""
+":= का LHS कॉलम (column) नाम ('कैरेक्टर (character)') या स्थिति ('पूर्णांक' या "
+"'संख्यात्मक') नहीं है"
+
+#: data.table.R:1210
+msgid ""
+"No rows match i. No new columns to add so not evaluating RHS of :=\n"
+"Assigning to 0 row subset of %d rows"
+msgstr ""
+"कोई पंक्ति (row)यां i से मेल नहीं खाती हैं। कोई नया कॉलम (column) जोड़ने के लिए नहीं है, "
+"इसलिए := के RHS का मूल्यांकन नहीं किया जा रहा है\n"
+"%d पंक्तियों (row) के 0 पंक्ति (row) उपसमूह को असाइन (assign) किया जा रहा है"
+
+#: data.table.R:1226
+#, fuzzy, c-format
+msgid ""
+"A shallow copy of this data.table was taken so that := can add or remove %d "
+"columns by reference. At an earlier point, this data.table was copied by R "
+"(or was created manually using structure() or similar). Avoid names<- and "
+"attr<- which in R currently (and oddly) may copy the whole data.table. Use "
+"set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's "
+"also not unusual for data.table-agnostic packages to produce tables affected "
+"by this issue. If this message doesn't help, please report your use case to "
+"the data.table issue tracker so the root cause can be fixed or this message "
+"improved."
+msgstr ""
+"अवैध .internal.selfref का पता चला और इसे data.table की एक (शैलो (shallow)) कॉपी "
+"(copy) लेने से ठीक किया गया ताकि := इस नए कॉलम (column) को संदर्भ द्वारा जोड़ सके। "
+"पहले के किसी बिंदु पर, इस data.table को R द्वारा कॉपी (copy) किया गया था (या "
+"structure() या इसी तरह के उपयोग से मैन्युअल (manually) रूप से बनाया गया था)। नाम<- "
+"और attr<- से बचें जो वर्तमान में R में (और अजीब तरीके से) पूरे data.table की कॉपी (copy) "
+"कर सकते हैं। कॉपी (copy) करने से बचने के लिए set* सिंटैक्स (syntax) का उपयोग करें: ?"
+"set, ?setnames और ?setattr। यदि यह संदेश मदद नहीं करता है, तो कृपया अपने उपयोग के "
+"मामले को data.table इशू ट्रैकर (tracker) में रिपोर्ट करें ताकि मूल कारण को ठीक किया जा "
+"सके या इस संदेश को बेहतर किया जा सके।"
+
+#: data.table.R:1246
+msgid ""
+"Growing vector of column pointers from truelength %d to %d. A shallow copy "
+"has been taken, see ?setalloccol. Only a potential issue if two variables "
+"point to the same data (we can't yet detect that well) and if not you can "
+"safely ignore this. To avoid this message you could setalloccol() first, "
+"deep copy first using copy(), wrap with suppressWarnings() or increase the "
+"'datatable.alloccol' option."
+msgstr ""
+"कॉलम (column) पॉइंटर्स (pointers) के ट्रूलेंथ %d से %d तक बढ़ने के कारण शैलो (shallow) "
+"कॉपी (copy) ली गई है, देखें ?setalloccol। केवल संभावित मुद्दा अगर दो वेरिएबल्स एक ही "
+"डेटा की ओर इशारा करते हैं (हम अभी तक इसे अच्छी तरह से नहीं पकड़ सकते हैं) और यदि ऐसा नहीं "
+"है तो आप इसे सुरक्षित रूप से अनदेखा कर सकते हैं। इस संदेश से बचने के लिए आप पहले "
+"setalloccol() का उपयोग कर सकते हैं, पहले कॉपी (copy)() का उपयोग करके गहरी कॉपी "
+"(copy) करें, suppressWarnings() के साथ रैप करें या 'datatable.alloccol' विकल्प को "
+"बढ़ाएं।"
+
+#: data.table.R:1248
+msgid ""
+"Note that the shallow copy will assign to the environment from which := was "
+"called. That means for example that if := was called within a function, the "
+"original table may be unaffected."
+msgstr ""
+"ध्यान दें कि शैलो (shallow) कॉपी (copy) उस वातावरण को असाइन (assign) करेगी जिससे :"
+"= को कॉल (call) किया गया था। इसका मतलब है कि यदि := को किसी फ़ंक्शन (function) के "
+"भीतर कॉल (call) किया गया था, तो मूल तालिका अप्रभावित रह सकती है।"
+
+#: data.table.R:1326
+#, c-format
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because this symbol was prefixed with .. in the j= parameter."
+msgstr ""
+"कॉलिंग (call) दायरा में वैरिएबल (variable) '%s' नहीं मिला। j= पैरामीटर (parameter) "
+"में इस प्रतीक के साथ .. उपसर्ग होने के कारण कॉलिंग (call) दायरा में देख रहा हूं।"
+
+#: data.table.R:1399
+#, c-format
+msgid ""
+"j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' "
+"is not found. If you intended to select columns using a variable in calling "
+"scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar "
+"to a file system path."
+msgstr ""
+"j ( [... ] के भीतर दूसरा तर्क) एक एकल प्रतीक है, लेकिन कॉलम (column) नाम '%1$s' "
+"नहीं मिला। यदि आपने कॉलिंग (call) दायरा में वैरिएबल (variable) का उपयोग करके कॉलम "
+"(column) चुनने का इरादा किया था, तो कृपया DT[, ..%1$s] का प्रयास करें। .. उपसर्ग एक "
+"फाइल (file) सिस्टम (system) पथ के समान एक स्तर ऊपर का संकेत देता है।"
+
+#: data.table.R:1512
+#, c-format
+msgid ""
+"The column '.N' can't be grouped because it conflicts with the special .N "
+"variable. Try setnames(DT,'.N','N') first."
+msgstr ""
+"कॉलम (column) '.N' को समूहबद्ध नहीं किया जा सकता क्योंकि यह विशेष .N वैरिएबल "
+"(variable) के साथ टकराता है। पहले setnames(DT,'.N','N') आज़माएं।"
+
+#: data.table.R:1513
+#, c-format
+msgid ""
+"The column '.I' can't be grouped because it conflicts with the special .I "
+"variable. Try setnames(DT,'.I','I') first."
+msgstr ""
+"कॉलम (column) '.I' को समूहबद्ध नहीं किया जा सकता क्योंकि यह विशेष .I वैरिएबल "
+"(variable) के साथ टकराता है। पहले setnames(DT,'.I','I') आज़माएं।"
+
+#: data.table.R:1532
+msgid ""
+"Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
+"explicitly to choose custom units"
+msgstr ""
+"नोट: समूह द्वारा अंतर्निहित difftime पर units=\"secs\" को लागू करना; कस्टम "
+"(custom) यूनिट्स (unit) चुनने के लिए difftime को स्पष्ट रूप से कॉल (call) करें"
+
+#: data.table.R:1541
+#, fuzzy, c-format
+msgid "logical error. i is not a data.table, but mult='all' and 'by'=.EACHI"
+msgstr "तार्किक त्रुटि। i data.table नहीं है, लेकिन mult='all' और 'by'=.EACHI"
+
+#: data.table.R:1568
+msgid "Finding groups using forderv ..."
+msgstr "forderv का उपयोग करके समूह खोज रहा है ..."
+
+#: data.table.R:1582 data.table.R:1614
+msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
+msgstr "स्थितियों से समूह आकार ढूंढना (RAM बचाने के लिए इसे टाला जा सकता है) ..."
+
+#: data.table.R:1590
+msgid "Getting back original order ..."
+msgstr "मूल क्रम में वापस आना ..."
+
+#: data.table.R:1602
+msgid "Finding groups using uniqlist on key ..."
+msgstr "key पर uniqlist का उपयोग करके समूहों की खोज करना ..."
+
+#: data.table.R:1606
+msgid "Finding groups using uniqlist on index '%s' ..."
+msgstr "इंडेक्स (indices) '%s' पर uniqlist का उपयोग करके समूहों की खोज करना ..."
+
+#: data.table.R:1825
+msgid "lapply optimization changed j from '%s' to '%s'"
+msgstr "lapply अनुकूलन ने j को '%s' से '%s' में बदल दिया"
+
+#: data.table.R:1827
+msgid "lapply optimization is on, j unchanged as '%s'"
+msgstr "lapply अनुकूलन चालू है, j '%s' के रूप में अपरिवर्तित है"
+
+#: data.table.R:1836 data.table.R:1860
+msgid "GForce optimized j to '%s' (see ?GForce)"
+msgstr "GForce ने j को '%s' में अनुकूलित किया (देखें ?GForce)"
+
+#: data.table.R:1861
+msgid ""
+"GForce is on, but not activated for this query; left j unchanged (see ?"
+"GForce)"
+msgstr ""
+"GForce चालू है, लेकिन इस क्वेरी के लिए सक्रिय नहीं है; j को अपरिवर्तित छोड़ दिया गया "
+"(देखें ?GForce)"
+
+#: data.table.R:1880
+#, c-format
+msgid ""
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
+msgstr ""
+"mean() के कॉल (call) को अनुकूलित करने में असमर्थ और यह बहुत धीमा हो सकता है। आपको 'na."
+"rm' को इस तरह से नाम देना चाहिए अन्यथा यदि आप mean(x,TRUE) करते हैं तो TRUE का अर्थ "
+"'trim' के रूप में लिया जाता है जो mean का दूसरा तर्क है। 'trim' अभी तक अनुकूलित नहीं है।"
+
+#: data.table.R:1884
+msgid "Old mean optimization changed j from '%s' to '%s'"
+msgstr "पुराने mean अनुकूलन ने j को '%s' से '%s' में बदल दिया"
+
+#: data.table.R:1886
+msgid "Old mean optimization is on, left j unchanged."
+msgstr "पुराना mean अनुकूलन चालू है, j को अपरिवर्तित छोड़ दिया गया है।"
+
+#: data.table.R:1896
+msgid "All optimizations are turned off"
+msgstr "सभी अनुकूलन बंद कर दिए गए हैं"
+
+#: data.table.R:1897
+msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
+msgstr "अनुकूलन चालू है लेकिन j को अपरिवर्तित छोड़ दिया गया (सिंगल प्लेन प्रतीक): '%s'"
+
+#: data.table.R:1926
+msgid "Making each group and running j (GForce %s) ..."
+msgstr "प्रत्येक समूह बना रहा है और j को चला रहा है (GForce %s) ..."
+
+#: data.table.R:2022
+msgid "setkey() after the := with keyby= ..."
+msgstr ":= के साथ keyby= के बाद setkey() ..."
+
+#: data.table.R:2026
+#, c-format
+msgid ""
+"The setkey() normally performed by keyby= has been skipped (as if by= was "
+"used) because := is being used together with keyby= but the keyby= contains "
+"some expressions. To avoid this warning, use by= instead, or provide "
+"existing column names to keyby=."
+msgstr ""
+"keyby= द्वारा सामान्य रूप से निष्पादित setkey() को छोड़ दिया गया है (मानो by= का "
+"उपयोग किया गया हो) क्योंकि := का उपयोग keyby= के साथ किया जा रहा है लेकिन keyby= "
+"में कुछ अभिव्यक्तियां हैं। इस चेतावनी से बचने के लिए, इसके बजाय by= का उपयोग करें, या "
+"keyby= के लिए मौजूदा कॉलम (column) नाम प्रदान करें।"
+
+#: data.table.R:2052
+msgid "setkey() afterwards for keyby=.EACHI ..."
+msgstr "keyby=.EACHI के बाद setkey() ..."
+
+#: data.table.R:2161
+#, c-format
+msgid "rownames and rownames.value cannot both be used at the same time"
+msgstr ""
+"rownames और rownames.value को एक ही समय में दोनों का उपयोग नहीं किया जा सकता"
+
+#: data.table.R:2164
+#, c-format
+msgid ""
+"length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a "
+"single column name or number. Consider rownames.value= instead."
+msgstr ""
+"length(rownames)==%d लेकिन nrow(DT)==%d। rownames तर्क एकल कॉलम (column) नाम "
+"या संख्या निर्दिष्ट करता है। इसके बजाय rownames.value= पर विचार करें।"
+
+#: data.table.R:2168
+#, c-format
+msgid ""
+"length(rownames)==0 but should be a single column name or number, or NULL"
+msgstr ""
+"length(rownames)==0 है लेकिन इसे एकल कॉलम (column) नाम या संख्या, या NULL होना "
+"चाहिए"
+
+#: data.table.R:2172
+#, c-format
+msgid ""
+"rownames is TRUE but key has multiple columns %s; taking first column x[,1] "
+"as rownames"
+msgstr ""
+"rownames TRUE है लेकिन key में कई कॉलम (column) %s हैं; पहले कॉलम (column) x[,1] को "
+"rownames के रूप में लिया जा रहा है"
+
+#: data.table.R:2182
+#, c-format
+msgid "'%s' is not a column of x"
+msgstr "%s' x का एक कॉलम (column) नहीं है"
+
+#: data.table.R:2188
+#, c-format
+msgid ""
+"as.integer(rownames)==%d which is outside the column number range [1,"
+"ncol=%d]."
+msgstr ""
+"as.integer(rownames)==%d जो कॉलम (column) नंबर सीमा [1,ncol=%d] के बाहर है।"
+
+#: data.table.R:2193
+#, c-format
+msgid "length(rownames.value)==%d but should be nrow(x)==%d"
+msgstr "length(rownames.value)==%d है लेकिन इसे nrow(x)==%d होना चाहिए"
+
+#: data.table.R:2289
+#, c-format
+msgid ""
+"When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
+msgstr ""
+"जब i DT[i]<-value सिंटैक्स (syntax) में एक मैट्रिक्स (matrix) होता है, तो j प्रदान "
+"करना तर्कसंगत नहीं है"
+
+#: data.table.R:2299
+#, c-format
+msgid "j must be an atomic vector, see ?is.atomic"
+msgstr "j एक एटॉमिक (atomic) वेक्टर (vector) होना चाहिए, देखें ?is.atomic"
+
+#: data.table.R:2300
+#, c-format
+msgid "NA in j"
+msgstr "j में NA"
+
+#: data.table.R:2306
+#, c-format
+msgid "j must be vector of column name or positions"
+msgstr "j को कॉलम (column) नाम या पोजिशन का वेक्टर (vector) होना चाहिए"
+
+#: data.table.R:2307
+#, c-format
+msgid ""
+"Attempt to assign to column position greater than ncol(x). Create the column "
+"by name, instead. This logic intends to catch (most likely) user errors."
+msgstr ""
+"ncol(x) से अधिक कॉलम (column) स्थिति को असाइन (assign) करने का प्रयास। इसके बजाय "
+"कॉलम (column) को नाम से बनाएं। यह लॉजिक (logical) (संभवतः) उपयोगकर्ता त्रुटियों को "
+"पकड़ने के लिए है।"
+
+#: data.table.R:2374
+#, c-format
+msgid ""
+"data.table inherits from data.frame (from v1.5), but this data.table does "
+"not. Has it been created manually (e.g. by using 'structure' rather than "
+"'data.table') or saved to disk using a prior version of data.table?"
+msgstr ""
+"data.table data.frame (v1.5 से) से विरासत में प्राप्त होता है, लेकिन यह data.table "
+"नहीं करता। क्या इसे मैन्युअल (manually) रूप से बनाया गया है (जैसे 'structure' का उपयोग "
+"करके 'data.table' के बजाय) या data.table के पुराने संस्करण का उपयोग करके डिस्क (disk) "
+"में सहेजा गया है?"
+
+#: data.table.R:2383
+#, c-format
+msgid "attempting to assign invalid object to dimnames of a data.table"
+msgstr ""
+"data.table के dimnames को अमान्य ऑब्जेक्ट (object) असाइन (assign) करने का प्रयास"
+
+#: data.table.R:2384
+#, c-format
+msgid "data.tables do not have rownames"
+msgstr "data.tables में rownames नहीं होते"
+
+#: data.table.R:2385 data.table.R:2769
+#, c-format
+msgid "Can't assign %d names to a %d-column data.table"
+msgstr "%d नामों को %d-कॉलम (column) data.table में असाइन (assign) नहीं कर सकते"
+
+#: data.table.R:2449
+#, c-format
+msgid "'subset' must evaluate to logical"
+msgstr "'subset' को लॉजिकल (logical) के रूप में मूल्यांकित होना चाहिए"
+
+#: data.table.R:2492
+#, c-format
+msgid "Argument 'invert' must be logical TRUE/FALSE"
+msgstr "तर्क 'invert' को लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: data.table.R:2538
+#, c-format
+msgid "group length is 0 but data nrow > 0"
+msgstr "समूह की लेंथ (length) 0 है लेकिन डेटा (data) nrow > 0"
+
+#: data.table.R:2540
+#, c-format
+msgid ""
+"passing 'f' argument together with 'by' is not allowed, use 'by' when split "
+"by column in data.table and 'f' when split by external factor"
+msgstr ""
+"'by' के साथ 'f' तर्क को पास करना अनुमति नहीं है, कॉलम (column) द्वारा विभाजन के लिए "
+"data.table में 'by' का उपयोग करें और बाहरी कारक द्वारा विभाजन के लिए 'f' का उपयोग "
+"करें"
+
+#: data.table.R:2548
+#, c-format
+msgid "Either 'by' or 'f' argument must be supplied"
+msgstr "या तो 'by' या 'f' तर्क प्रदान किया जाना चाहिए"
+
+#: data.table.R:2550
+#, c-format
+msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
+msgstr ""
+"कॉलम (column) '.ll.tech.split' को split.data.table प्रोसेसिंग (process) के लिए "
+"आरक्षित किया गया है"
+
+#: data.table.R:2551
+#, c-format
+msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
+msgstr ""
+"कॉलम (column) '.nm.tech.split' को split.data.table प्रोसेसिंग (process) के लिए "
+"आरक्षित किया गया है"
+
+#: data.table.R:2552
+#, c-format
+msgid "Argument 'by' must refer to column names in x"
+msgstr "तर्क 'by' को x में कॉलम (column) नामों का संदर्भ देना चाहिए"
+
+#: data.table.R:2553
+#, c-format
+msgid ""
+"Argument 'by' must refer only to atomic-type columns, but the following "
+"columns are non-atomic: %s"
+msgstr ""
+"तर्क 'by' को केवल एटॉमिक (atomic)-प्रकार के कॉलम (column) का संदर्भ देना चाहिए, "
+"लेकिन निम्नलिखित कॉलम (column) गैर-एटॉमिक (atomic) हैं: %s"
+
+#: data.table.R:2600
+msgid "Processing split.data.table with: %s"
+msgstr "split.data.table को प्रोसेस (process) किया जा रहा है: %s"
+
+#: data.table.R:2700
+#, c-format
+msgid ""
+"x is not a data.table|frame. Shallow copy is a copy of the vector of column "
+"pointers (only), so is only meaningful for data.table|frame"
+msgstr ""
+"x data.table|फ्रेम नहीं है। शैलो (shallow) कॉपी (copy) कॉलम (column) पॉइंटर्स "
+"(pointers) के वेक्टर (vector) की कॉपी (copy) (केवल) है, इसलिए यह केवल data.table|"
+"फ्रेम के लिए सार्थक है"
+
+#: data.table.R:2709
+#, c-format
+msgid "setalloccol attempting to modify `*tmp*`"
+msgstr "setalloccol *tmp* को संशोधित करने का प्रयास कर रहा है"
+
+#: data.table.R:2744
+#, c-format
+msgid ""
+"Input is a length=1 logical that points to the same address as R's global "
+"value. Therefore the attribute has not been set by reference, rather on a "
+"copy. You will need to assign the result back to a variable. See issue #1281."
+msgstr ""
+"इनपुट एक लेंथ (length)=1 लॉजिकल (logical) है जो R के ग्लोबल (global) मान के समान पते "
+"की ओर इशारा करता है। इसलिए विशेषता को संदर्भ द्वारा सेट नहीं किया गया है, बल्कि एक "
+"कॉपी (copy) पर किया गया है। आपको परिणाम को एक वैरिएबल (variable) में वापस असाइन "
+"(assign) करने की आवश्यकता होगी। समस्या #1281 देखें।"
+
+#: data.table.R:2759
+#, c-format
+msgid "x is not a data.table or data.frame"
+msgstr "x एक data.table या data.frame नहीं है"
+
+#: data.table.R:2761
+#, c-format
+msgid "x has %d columns but its names are length %d"
+msgstr "x में %d कॉलम (column) हैं लेकिन इसके नाम की लेंथ (length) %d है"
+
+#: data.table.R:2768
+#, c-format
+msgid "Passed a vector of type '%s'. Needs to be type 'character'."
+msgstr ""
+"प्रकार '%s' का वेक्टर (vector) पास किया गया। इसे प्रकार 'कैरेक्टर (character)' होना "
+"चाहिए।"
+
+#: data.table.R:2781
+#, c-format
+msgid "'new' is not a character vector or a function"
+msgstr "new' एक कैरेक्टर (character) वेक्टर (vector) या फ़ंक्शन (function) नहीं है"
+
+#: data.table.R:2783
+#, c-format
+msgid "NA in 'new' at positions %s"
+msgstr "new' में %s पर NA"
+
+#: data.table.R:2784
+#, c-format
+msgid "Some duplicates exist in 'old': %s"
+msgstr "'old' में कुछ डुप्लिकेट (duplicate) मौजूद हैं: %s"
+
+#: data.table.R:2786
+#, fuzzy, c-format
+msgid "'old' is type %s but should be integer, double or character"
+msgstr "'text=' का प्रकार %s है लेकिन इसे कैरेक्टर (character) होना चाहिए।"
+
+#: data.table.R:2787
+#, c-format
+msgid "'old' is length %d but 'new' is length %d"
+msgstr ""
+
+#: data.table.R:2788
+#, fuzzy, c-format
+msgid "NA (or out of bounds) in 'old' at positions %s"
+msgstr "new' में %s पर NA"
+
+#: data.table.R:2791
+#, c-format
+msgid ""
+"Item %d of 'old' is '%s' which appears several times in column names. Just "
+"the first will be changed. There are %d other items in 'old' that are also "
+"duplicated in column names."
+msgstr ""
+
+#: data.table.R:2799
+#, c-format
+msgid ""
+"Items of 'old' not found in column names: %s. Consider skip_absent=TRUE."
+msgstr ""
+
+#: data.table.R:2840
+#, fuzzy, c-format
+msgid "Provide either before= or after= but not both"
+msgstr "कृपया 'key' या 'sorted' में से एक प्रदान करें, लेकिन दोनों नहीं।"
+
+#: data.table.R:2842
+#, c-format
+msgid "before=/after= accept a single column name or number, not more than one"
+msgstr ""
+
+#: data.table.R:2910
+#, c-format
+msgid "Input is %s but should be a plain list of items to be stacked"
+msgstr ""
+
+#: data.table.R:2914
+#, c-format
+msgid ""
+"idcol must be a logical or character vector of length 1. If logical TRUE the "
+"id column will named '.id'."
+msgstr ""
+
+#: data.table.R:2919
+#, c-format
+msgid "use.names=NA invalid"
+msgstr ""
+
+#: data.table.R:2921
+#, c-format
+msgid ""
+"use.names='check' cannot be used explicitly because the value 'check' is new "
+"in v1.12.2 and subject to change. It is just meant to convey default "
+"behavior. See ?rbindlist."
+msgstr ""
+
+#: data.table.R:2936
+#, c-format
+msgid ""
+"Check that is.data.table(DT) == TRUE. Otherwise, `:=` is defined for use in "
+"j, once only and in particular ways. See help(\":=\", \"data.table\"). A "
+"common reason for this error is allocating a new column in `j` and using `<-"
+"` instead of `:=`; e.g., `DT[, new_col <- 1]` should be `DT[, new_col := "
+"1]`. Another is using `:=` in a multi-statement `{...}` block; please use `:"
+"=` as the only statement in `j`."
+msgstr ""
+
+#: data.table.R:2953
+#, c-format
+msgid ""
+"setDF only accepts data.table, data.frame or list of equal length as input"
+msgstr ""
+
+#: data.table.R:2954
+#, c-format
+msgid "rownames contains duplicates"
+msgstr ""
+
+#: data.table.R:2961 data.table.R:2972 data.table.R:2995
+#, c-format
+msgid "rownames incorrect length; expected %d names, got %d"
+msgstr ""
+
+#: data.table.R:2980
+#, c-format
+msgid "All elements in argument 'x' to 'setDF' must be of same length"
+msgstr ""
+
+#: data.table.R:3009
+#, c-format
+msgid "Cannot find symbol %s"
+msgstr ""
+
+#: data.table.R:3016
+#, c-format
+msgid ""
+"Cannot convert '%1$s' to data.table by reference because binding is locked. "
+"It is very likely that '%1$s' resides within a package (or an environment) "
+"that is locked to prevent modifying its variable bindings. Try copying the "
+"object to your current environment, ex: var <- copy(var) and then using "
+"setDT again."
+msgstr ""
+
+#: data.table.R:3070
+#, c-format
+msgid ""
+"Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
+msgstr ""
+"'setDT' के तर्क 'x' को 'लिस्ट (list)', 'data.frame' या 'data.table' होना चाहिए"
+
+#: data.table.R:3103 data.table.R:3128
+#, c-format
+msgid "'prefix' must be NULL or a character vector of length 1."
+msgstr ""
+"'prefix' NULL या लेंथ (length) 1 का कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+
+#: data.table.R:3106 data.table.R:3131
+#, c-format
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
+msgstr "x एकल वेक्टर (vector) है, गैर-NULL 'cols' का कोई मतलब नहीं है।"
+
+#: data.table.R:3110 data.table.R:3135
+#, c-format
+msgid "x is a list, 'cols' cannot be 0-length."
+msgstr "x एक लिस्ट (list) है, 'cols' की लेंथ (length) 0 नहीं हो सकती।"
+
+#: data.table.R:3290
+#, c-format
+msgid ""
+"It looks like you re-used `:=` in argument %d a functional assignment call "
+"-- use `=` instead: %s(col1=val1, col2=val2, ...)"
+msgstr ""
+"ऐसा प्रतीत होता है कि आपने तर्क %d में := को पुनः उपयोग किया है, एक फंक्शनल (function) "
+"कार्यभार कॉल (call) के रूप में -- इसके बजाय = का उपयोग करें: %s(col1=val1, "
+"col2=val2, ...)"
+
+#: data.table.R:3356
+#, c-format
+msgid ""
+"RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no "
+"recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
+msgstr ""
+"%s का RHS लेंथ (length) %d है, जो 1 या nrow (%d) नहीं है। मजबूतता के लिए, पुनरावृत्ति "
+"की अनुमति नहीं है (लेंथ (length) 1 RHS को छोड़कर)। इसके बजाय %%in%% पर विचार करें।"
+
+#: data.table.R:3388
+msgid ""
+"Subsetting optimization disabled because the cross-product of RHS values "
+"exceeds 1e4, causing memory problems."
+msgstr ""
+"सबसेटिंग (subsetting) अनुकूलन को निष्क्रिय कर दिया गया है क्योंकि RHS मानों का गुणनफल "
+"1e4 से अधिक है, जिससे स्मृति की समस्या उत्पन्न हो रही है।"
+
+#: data.table.R:3406
+msgid "Optimized subsetting with key %s"
+msgstr "key %s के साथ अनुकूलन सबसेटिंग (subsetting)"
+
+#: data.table.R:3425 data.table.R:3437
+msgid "Optimized subsetting with index '%s'"
+msgstr "सूचकांक '%s' के साथ अनुकूलन सबसेटिंग (subsetting)"
+
+#: data.table.R:3432
+msgid "Creating new index '%s'"
+msgstr "नया सूचकांक '%s' बनाया जा रहा है"
+
+#: data.table.R:3433
+msgid "Creating index %s done in ..."
+msgstr "सूचकांक %s को बनाया गया ..."
+
+#: data.table.R:3466
+#, c-format
+msgid ""
+"'on' argument should be a named atomic vector of column names indicating "
+"which columns in 'i' should be joined with which columns in 'x'."
+msgstr ""
+"'on' तर्क को कॉलम (column) नामों का नामांकित एटॉमिक (atomic) वेक्टर (vector) होना "
+"चाहिए, जो इंगित करता है कि 'i' में कौन से कॉलम (column) 'x' में कौन से कॉलमों "
+"(column) के साथ जोड़े जाने चाहिए।"
+
+#: data.table.R:3507
+#, c-format
+msgid ""
+"Found more than one operator in one 'on' statement: %s. Please specify a "
+"single operator."
+msgstr ""
+"'on' कथन में एक से अधिक ऑपरेटर (operator) पाए गए: %s। कृपया एक ही ऑपरेटर "
+"(operator) निर्दिष्ट करें।"
+
+#: data.table.R:3530
+#, c-format
+msgid ""
+"'on' contains no column name: %s. Each 'on' clause must contain one or two "
+"column names."
+msgstr ""
+"'on' में कोई कॉलम (column) नाम नहीं है: %s। प्रत्येक 'on' खंड में एक या दो कॉलम "
+"(column) नाम होने चाहिए।"
+
+#: data.table.R:3532
+#, c-format
+msgid ""
+"'on' contains more than 2 column names: %s. Each 'on' clause must contain "
+"one or two column names."
+msgstr ""
+"'on' में 2 से अधिक कॉलम (column) नाम हैं: %s। प्रत्येक 'on' खंड में एक या दो कॉलम "
+"(column) नाम होने चाहिए।"
+
+#: data.table.R:3537
+#, c-format
+msgid "Invalid join operators %s. Only allowed operators are %s."
+msgstr "अमान्य जॉइन (join) ऑपरेटर (operator) %s। केवल अनुमत ऑपरेटर (operator) हैं %s।"
+
+#: devel.R:16
+#, c-format
+msgid "There is no package %s in provided repository."
+msgstr "प्रदान किए गए रिपॉजिटरी (repository) में पैकेज (package) %s उपलब्ध नहीं है।"
+
+#: devel.R:30
+msgid ""
+"No revision information found in DESCRIPTION file for %s package. Make sure "
+"that '%s' is correct field in PACKAGES file in your package repository '%s'. "
+"Otherwise package will be re-installed every time, proceeding to "
+"installation."
+msgstr ""
+"%s पैकेज (package) के लिए DESCRIPTION फ़ाइल (file) में कोई संशोधन जानकारी नहीं मिली।"
+"सुनिश्चित करें कि '%s' आपके पैकेज (package) रिपॉजिटरी (repository) '%s' में PACKAGES "
+"फ़ाइल (file) में सही फ़ील्ड (field) है।अन्यथा पैकेज (package) हर बार फिर से इंस्टॉल "
+"(install) किया जाएगा, इंस्टॉलेशन (installation) की प्रक्रिया जारी रहेगी।"
+
+#: devel.R:39
+msgid "R %s package has been updated to %s (%s)"
+msgstr "R %s पैकेज (package) को %s (%s) में अद्यतन किया गया है"
+
+#: devel.R:41
+msgid "R %s package is up-to-date at %s (%s)"
+msgstr "R %s पैकेज (package) %s (%s) पर अद्यतन है"
+
+#: devel.R:53
+msgid ""
+"Git revision is not available. Most likely data.table was installed from "
+"CRAN or local archive.\n"
+"Git revision is available when installing from our repositories 'https://"
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"table'."
+msgstr ""
+"Git संशोधन उपलब्ध नहीं है। सबसे अधिक संभावना है कि data.table CRAN से या स्थानीय संग्रह "
+"से इंस्टॉल (install) किया गया था।\n"
+"Git संशोधन उपलब्ध है जब हमारे रिपॉजिटरीज़ (repositories) 'https://Rdatatable."
+"gitlab.io/data.table' और 'https://Rdatatable.github.io/data.table' से इंस्टॉल "
+"(install) किया जाता है।"
+
+#: duplicated.R:7
+#, c-format
+msgid "'fromLast' must be TRUE or FALSE"
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
+
+#: duplicated.R:105
+#, c-format
+msgid "x must be an atomic vector or a data.frame/data.table"
+msgstr "x एक ऐटॉमिक (atomic) वेक्टर (vector) या data.frame/data.table होना चाहिए"
+
+#: fcast.R:7
+#, c-format
+msgid "Using '%s' as value column. Use 'value.var' to override"
+msgstr ""
+"%s' को मान कॉलम (column) के रूप में उपयोग किया जा रहा है। ओवरराइड (override) करने "
+"के लिए 'value.var' का उपयोग करें"
+
+#: fcast.R:17
+#, c-format
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s "
+"currently only has a method for data.tables. Please confirm your input is a "
+"data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a "
+"method from reshape2, try installing that package first, but do note that "
+"reshape2 is superseded and is no longer actively developed."
+msgstr ""
+"data.table में %1$s generic को %2$s पास (pass) किया गया है, लेकिन data.table::"
+"%1$s मैं अभी केवल data.tables के लिए एक विधि है। कृपया सुनिश्चित करें कि आपका इनपुट "
+"(input)data.table है, setDT(%3$s) या as.data.table(%3$s) से। यदि आप reshape2 से "
+"कोई विधि (method) उपयोग करना चाहते हैं, तो पहले उस पैकेज (package) को इंस्टॉल "
+"(install) करें, लेकिन ध्यान दें कि reshape2 अब सुपरसिडेड (superseded) है और सक्रिय रूप "
+"से डेवलप (develop) नहीं किया जा रहा है।"
+
+#: fcast.R:24
+#, c-format
+msgid ""
+"Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + "
+"b ~ c."
+msgstr "अमान्य सूत्र। कास्ट (cast) सूत्र LHS ~ RHS के रूप में होना चाहिए, जैसे, a + b ~ c।"
+
+#: fcast.R:31
+#, c-format
+msgid "data.table to cast must have unique column names"
+msgstr ""
+"कास्ट (cast) किए जाने वाले data.table में अद्वितीय कॉलम (column) नाम होने चाहिए"
+
+#: fcast.R:76
+#, c-format
+msgid "value.var values %s are not found in 'data'."
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: fcast.R:92
+#, c-format
+msgid ""
+"When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be "
+"either of length =1 or =length(fun.aggregate)."
+msgstr ""
+"जब 'fun.aggregate' और 'value.var' दोनों लिस्ट्स (lists) हो, तो 'value.var' की "
+"लेंथ (length) 1 या =length(fun.aggregate) होनी चाहिए।"
+
+#: fcast.R:125
+#, fuzzy, c-format
+msgid "'data' must be a data.table."
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: fcast.R:127
+#, c-format
+msgid "'drop' must be logical TRUE/FALSE"
+msgstr "'drop' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: fcast.R:129
+#, c-format
+msgid "Argument 'value.var.in.dots' should be logical TRUE/FALSE"
+msgstr ""
+"आर्ग्युमेंट (argument) 'value.var.in.dots' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: fcast.R:131
+#, c-format
+msgid ""
+"Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical "
+"TRUE/FALSE"
+msgstr ""
+"आर्गुमेंट्स (arguments) 'value.var.in.LHSdots', 'value.var.in.RHSdots' लॉजिकल "
+"(logical) TRUE/FALSE होने चाहिए"
+
+#: fcast.R:148
+#, c-format
+msgid "Column [%s] not found or of unknown type."
+msgstr "कॉलम (column) [%s] नहीं मिला या अज्ञात type का है।"
+
+#: fcast.R:163
+#, c-format
+msgid "Columns specified in formula can not be of type list"
+msgstr "सूत्र में निर्दिष्ट कॉलम (column) लिस्ट (list) प्रकार के नहीं हो सकते"
+
+#: fcast.R:178
+#, c-format
+msgid ""
+"'fun.aggregate' is NULL, but found duplicate row/column combinations, so "
+"defaulting to length(). That is, the variables %s used in 'formula' do not "
+"uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' "
+"is used to derive a single representative value for each combination in the "
+"output data.table, for example by summing or averaging (fun.aggregate=sum or "
+"fun.aggregate=mean, respectively). Check the resulting table for values "
+"larger than 1 to see which combinations were not unique. See ?dcast.data."
+"table for more details."
+msgstr ""
+"'fun.aggregate' NULL है, लेकिन डुप्लिकेट (duplicate) रो(row)/कॉलम(column) संयोजन "
+"मिले, इसलिए length() पर डिफॉल्ट (default) किया गया। यानी, 'formula' में उपयोग "
+"किए गए वेरिएबल्स (variables) %s'data' में रोज़(rows) को अद्वितीय रूप से पहचान नहीं "
+"सकते। ऐसे मामलों में, 'fun.aggregate' का उपयोग आउटपुट (output) data.table में प्रत्येक "
+"संयोजन के लिए सिंगल (single) प्रतिनिधि मान प्राप्त करने के लिए किया जाता है, उदाहरण के "
+"लिए summing या averaging (fun.aggregate=sum या fun.aggregate=mean, क्रमशः)। "
+
+#: fcast.R:188
+msgid ""
+"Aggregating functions should take a vector as input and return a single "
+"value (length=1), but they do not, so the result is undefined. Please fix by "
+"modifying your function so that a single value is always returned."
+msgstr ""
+"(length=1) लौटाना चाहिए, लेकिन वे ऐसा नहीं करते हैं, इसलिए परिणाम अज्ञात है|कृपया अपने "
+"फ़ंक्शन (function) को संशोधित करें ताकि हमेशा सिंगल (single) मान लौटाया जा सके।"
+
+#: fmelt.R:12
+#, fuzzy, c-format
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s and will attempt to "
+"redirect to the relevant reshape2 method; please note that reshape2 is "
+"superseded and is no longer actively developed, and this redirection is now "
+"deprecated. To continue using melt methods from reshape2 while both packages "
+"are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::"
+"%1$s(%3$s). In the next version, this warning will become an error."
+msgstr ""
+"data.table में %1$s generic को %2$s पास (pass) किया गया है और इसे संबंधित reshape2 "
+"विधि (method) पर रीडायरेक्ट (redirect) करने का प्रयास किया जाएगा; कृपया ध्यान दें कि "
+"reshape2 अब सुपरसिडेड (superseded) है और सक्रिय रूप से डेवलप (develop) नहीं किया जा "
+"रहा है, और यह रीडायरेक्शन (redirection) अब डिप्रिकेटेड (deprecated) है। कृपया इस "
+"रीडायरेक्शन (redirection) को स्वयं इस तरह करें: reshape2::%1$s(%3$s)। अगली वर्ज़न "
+"(version) में, यह वॉर्निंग (warning) एरर (error) में बदल जाएगी।"
+
+#: fmelt.R:19 fmelt.R:73
+#, fuzzy, c-format
+msgid "cols must be a character vector of column names"
+msgstr "j को कॉलम (column) नाम या पोजिशन का वेक्टर (vector) होना चाहिए"
+
+#: fmelt.R:24
+#, c-format
+msgid "Input patterns must be of type character."
+msgstr ""
+
+#: fmelt.R:42
+#, c-format
+msgid ""
+"each ... argument to measure must be either a symbol without argument name, "
+"or a function with argument name, problems: %s"
+msgstr ""
+
+#: fmelt.R:50
+#, c-format
+msgid ""
+"group names specified in ... conflict with measure argument names; please "
+"fix by changing group names: %s"
+msgstr ""
+
+#: fmelt.R:56
+#, c-format
+msgid ""
+"each ... argument to measure must be a function with at least one argument, "
+"problem: %s"
+msgstr ""
+
+#: fmelt.R:67
+#, c-format
+msgid ""
+"both sep and pattern arguments used; must use either sep or pattern (not "
+"both)"
+msgstr ""
+
+#: fmelt.R:70
+#, c-format
+msgid "multiple.keyword must be a character string with nchar>0"
+msgstr ""
+
+#: fmelt.R:81
+#, c-format
+msgid "in measurev, elements of fun.list must be named, problems: %s"
+msgstr ""
+
+#: fmelt.R:84
+#, c-format
+msgid "elements of fun.list should be uniquely named, problems: %s"
+msgstr ""
+
+#: fmelt.R:89
+#, c-format
+msgid "pattern must be character string"
+msgstr ""
+
+#: fmelt.R:94
+#, c-format
+msgid ""
+"pattern did not match any cols, so nothing would be melted; fix by changing "
+"pattern"
+msgstr ""
+
+#: fmelt.R:98
+#, c-format
+msgid ""
+"pattern must contain at least one capture group (parenthesized sub-pattern)"
+msgstr ""
+
+#: fmelt.R:101
+#, c-format
+msgid ""
+"number of elements of fun.list (%d) must be the same as the number of "
+"capture groups in pattern (%d)"
+msgstr ""
+
+#: fmelt.R:109
+#, c-format
+msgid "sep must be character string"
+msgstr ""
+
+#: fmelt.R:115
+#, c-format
+msgid ""
+"each column name results in only one item after splitting using sep, which "
+"means that all columns would be melted; to fix please either specify melt on "
+"all columns directly without using measure, or use a different sep/pattern "
+"specification"
+msgstr ""
+
+#: fmelt.R:118
+#, c-format
+msgid ""
+"number of elements of fun.list (%d) must be the same as the max number of "
+"items after splitting column names (%d)"
+msgstr ""
+
+#: fmelt.R:125
+#, c-format
+msgid "measured columns should be uniquely named, problems: %s"
+msgstr ""
+
+#: fmelt.R:129
+#, c-format
+msgid ""
+"number of unique column IDs =%d is less than number of melted columns =%d; "
+"fix by changing pattern/sep"
+msgstr ""
+
+#: fmelt.R:139
+#, c-format
+msgid ""
+"in the measurev fun.list, each non-NULL element must be a function with at "
+"least one argument, problem: %s"
+msgstr ""
+
+#: fmelt.R:143
+#, c-format
+msgid ""
+"each conversion function must return an atomic vector with same length as "
+"its first argument, problem: %s"
+msgstr ""
+
+#: fmelt.R:146
+#, c-format
+msgid "%s conversion function returned vector of all NA"
+msgstr ""
+
+#: fmelt.R:152
+#, c-format
+msgid ""
+"number of unique groups after applying type conversion functions less than "
+"number of groups, change type conversion"
+msgstr ""
+
+#: fmelt.R:157
+#, c-format
+msgid ""
+"%s column class=%s after applying conversion function, but must be character"
+msgstr ""
+
+#: fmelt.R:161
+#, c-format
+msgid "%s is the only group; fix by creating at least one more group"
+msgstr ""
+
+#: fmelt.R:184
+#, fuzzy, c-format
+msgid "'data' must be a data.table"
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: fmelt.R:207
+#, c-format
+msgid ""
+"'value.name' provided in both 'measure.vars' and 'value.name argument'; "
+"value provided in 'measure.vars' is given precedence."
+msgstr ""
+
+#: fmelt.R:210
+#, c-format
+msgid "Please provide a name to each element of 'measure.vars'."
+msgstr ""
+
+#: fmelt.R:221
+msgid ""
+"Duplicate column names found in molten data.table. Setting unique names "
+"using 'make.names'"
+msgstr ""
+
+#: foverlaps.R:3
+#, c-format
+msgid ""
+"y and x must both be data.tables. Use `setDT()` to convert list/data.frames "
+"to data.tables by reference or as.data.table() to convert to data.tables by "
+"copying."
+msgstr ""
+
+#: foverlaps.R:9
+#, c-format
+msgid "maxgap must be a non-negative integer value of length 1"
+msgstr ""
+
+#: foverlaps.R:11
+#, c-format
+msgid "minoverlap must be a positive integer value of length 1"
+msgstr ""
+
+#: foverlaps.R:13
+#, fuzzy, c-format
+msgid "which must be a logical vector of length 1. Either TRUE/FALSE"
+msgstr ""
+"which= एक लॉजिकल (logical) वेक्टर (vector) length 1 होना चाहिए। या तो FALSE, "
+"TRUE या NA।"
+
+#: foverlaps.R:15
+#, c-format
+msgid "nomatch must either be NA or NULL"
+msgstr ""
+
+#: foverlaps.R:20
+#, c-format
+msgid "maxgap and minoverlap arguments are not yet implemented."
+msgstr ""
+
+#: foverlaps.R:22
+#, c-format
+msgid ""
+"y must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) "
+"first, see ?setkey. Also check the examples in ?foverlaps."
+msgstr ""
+
+#: foverlaps.R:24
+#, c-format
+msgid ""
+"'by.x' and 'by.y' should contain at least two column names (or numbers) each "
+"- corresponding to 'start' and 'end' points of intervals. Please see ?"
+"foverlaps and examples for more info."
+msgstr ""
+
+#: foverlaps.R:27
+#, c-format
+msgid ""
+"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by."
+"x <= length(x)"
+msgstr ""
+
+#: foverlaps.R:32
+#, c-format
+msgid ""
+"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by."
+"y <= length(y)"
+msgstr ""
+
+#: foverlaps.R:36
+#, fuzzy, c-format
+msgid "A non-empty vector of column names or numbers is required for by.x"
+msgstr "`by` के लिए एक गैर-खाली कॉलम (column) नाम का वेक्टर (vector) आवश्यक है।"
+
+#: foverlaps.R:38
+#, fuzzy, c-format
+msgid "A non-empty vector of column names or numbers is required for by.y"
+msgstr "`by` के लिए एक गैर-खाली कॉलम (column) नाम का वेक्टर (vector) आवश्यक है।"
+
+#: foverlaps.R:40
+#, c-format
+msgid ""
+"The first %d columns of y's key must be identical to the columns specified "
+"in by.y."
+msgstr ""
+
+#: foverlaps.R:42
+#, fuzzy, c-format
+msgid "Elements listed in 'by.x' must be valid names in data.table x"
+msgstr "`by.x` में सूचीबद्ध तत्वों को x में मान्य कॉलम (column) नाम होना चाहिए।"
+
+#: foverlaps.R:44
+#, c-format
+msgid ""
+"Duplicate columns are not allowed in overlap joins. This may change in the "
+"future."
+msgstr ""
+
+#: foverlaps.R:46
+#, c-format
+msgid ""
+"length(by.x) != length(by.y). Columns specified in by.x should correspond to "
+"columns specified in by.y and should be of same lengths."
+msgstr ""
+
+#: foverlaps.R:57
+#, c-format
+msgid ""
+"The last two columns in by.x should correspond to the 'start' and 'end' "
+"intervals in data.table x and must be integer/numeric type."
+msgstr ""
+
+#: foverlaps.R:61 foverlaps.R:63 foverlaps.R:70 foverlaps.R:72
+#, c-format
+msgid ""
+"NA values in data.table %s '%s' column: '%s'. All rows with NA values in the "
+"range columns must be removed for foverlaps() to work."
+msgstr ""
+
+#: foverlaps.R:64
+#, c-format
+msgid ""
+"All entries in column '%s' should be <= corresponding entries in column '%s' "
+"in data.table x."
+msgstr ""
+
+#: foverlaps.R:67
+#, c-format
+msgid ""
+"The last two columns in by.y should correspond to the 'start' and 'end' "
+"intervals in data.table y and must be integer/numeric type."
+msgstr ""
+
+#: foverlaps.R:73
+#, c-format
+msgid ""
+"All entries in column '%s' should be <= corresponding entries in column '%s' "
+"in data.table y."
+msgstr ""
+
+#: foverlaps.R:78
+#, c-format
+msgid ""
+"Some interval cols are of type POSIXct while others are not. Please ensure "
+"all interval cols are (or are not) of POSIXct type"
+msgstr ""
+
+#: foverlaps.R:84
+#, c-format
+msgid ""
+"POSIXct interval cols have mixed timezones. Overlaps are performed on the "
+"internal numerical representation of POSIXct objects (always in UTC epoch "
+"time), therefore printed values may give the impression that values don't "
+"overlap but their internal representations do Please ensure that POSIXct "
+"type interval cols have identical 'tzone' attributes to avoid confusion."
+msgstr ""
+
+#: foverlaps.R:132
+msgid "unique() + setkey() operations done in ..."
+msgstr ""
+
+#: foverlaps.R:158
+msgid "binary search(es) done in ..."
+msgstr ""
+
+#: foverlaps.R:165 foverlaps.R:167 foverlaps.R:171
+#, c-format
+msgid "Not yet implemented"
+msgstr ""
+
+#: foverlaps.R:170
+#, c-format
+msgid "maxgap > minoverlap. maxgap will have no effect here."
+msgstr ""
+
+#: frank.R:3
+#, c-format
+msgid "length(na.last) = 0"
+msgstr "length(na.last) = 0"
+
+#: frank.R:5
+#, c-format
+msgid "length(na.last) > 1, only the first element will be used"
+msgstr "length(na.last) > 1, केवल पहला तत्व ही उपयोग किया जाएगा"
+
+#: frank.R:17
+#, c-format
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
+msgstr "x एक सिंगल (single)  वेक्टर (vector) है, non-NULL 'cols' का कोई अर्थ नहीं है"
+
+#: frank.R:23
+#, c-format
+msgid "x is a list, 'cols' can not be 0-length"
+msgstr "x एक list है, 'cols' की 0-length नहीं हो सकती"
+
+#: frank.R:31
+#, c-format
+msgid ""
+"Input column '..na_prefix..' conflicts with data.table internal usage; "
+"please rename"
+msgstr ""
+"इनपुट (Input) कॉलम (column) '..na_prefix..' का data.table के आंतरिक उपयोग के साथ "
+"टकराव हो रहा है; कृपया नाम बदलें"
+
+#: frank.R:46
+#, c-format
+msgid ""
+"Input column '..stats_runif..' conflicts with data.table internal usage; "
+"please rename"
+msgstr ""
+"इनपुट (Input) कॉलम (column) '..stats_runif..' का data.table के आंतरिक उपयोग के "
+"साथ टकराव हो रहा है; कृपया नाम बदलें"
+
+#: fread.R:12
+#, c-format
+msgid "Used more than one of the arguments input=, file=, text= and cmd=."
+msgstr ""
+"input=, file=, text= और cmd= में से एक से अधिक आर्ग्युमेंट (argument) का उपयोग किया "
+"गया है।"
+
+#: fread.R:25
+#, c-format
+msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
+msgstr ""
+"आर्ग्युमेंट (argument) 'encoding' 'unknown', 'UTF-8' या 'Latin-1' होना चाहिए।"
+
+#: fread.R:34
+#, c-format
+msgid "comment.char= must be a single non-NA character."
+msgstr ""
+
+#: fread.R:47
+#, c-format
+msgid "'text=' is type %s but must be character."
+msgstr "'text=' का प्रकार %s है लेकिन इसे कैरेक्टर (character) होना चाहिए।"
+
+#: fread.R:60
+#, c-format
+msgid ""
+"input= must be a single character string containing a file name, a system "
+"command containing at least one space, a URL starting 'http[s]://', "
+"'ftp[s]://' or 'file://', or, the input data itself containing at least one "
+"\\n or \\r"
+msgstr ""
+"input= एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए जिसमें एक "
+"फाइल (file) का नाम, कम से कम एक स्पेस (space) वाली सिस्टम (system) कमांड "
+"(command), 'http[s]://', 'ftp[s]://' या 'file://' से शुरू होने वाला URL, या स्वयं "
+"इनपुट (input) डेटा (data) हो जिसमें कम से कम एक \\n"
+" या \\r हो"
+
+#: fread.R:65
+#, c-format
+msgid ""
+"input= contains no \\n or \\r, but starts with a space. Please remove the "
+"leading space, or use text=, file= or cmd="
+msgstr ""
+"input= में कोई \\n"
+" या \\r नहीं है, लेकिन यह स्पेस (space) से शुरू होता है। कृपया प्रारंभिक स्पेस (space) को "
+"हटाएं, या text=, file= या cmd= का उपयोग करें"
+
+#: fread.R:69
+#, c-format
+msgid ""
+"Taking input= as a system command because it contains a space ('%s'). If "
+"it's a filename please remove the space, or use file= explicitly. A variable "
+"is being passed to input= and when this is taken as a system command there "
+"is a security concern if you are creating an app, the app could have a "
+"malicious user, and the app is not running in a secure environment; e.g. the "
+"app is running as root. Please read item 5 in the NEWS file for v1.11.6 for "
+"more information and for the option to suppress this message."
+msgstr ""
+"input= को एक सिस्टम (system) कमांड (command) के रूप में लिया जा रहा है क्योंकि इसमें एक "
+"स्पेस (space) ('%s') है। अगर यह एक फाइल (file) का नाम है, तो कृपया स्पेस (space) को "
+"हटा दें, या file= को स्पष्ट रूप से उपयोग करें। जब एक वैरिएबल (variable) input= में पास "
+"किया जाता है और इसे सिस्टम (system) कमांड (command) के रूप में लिया जाता है, तो यदि "
+"आप एक ऐप बना रहे हैं तो सुरक्षा का मुद्दा हो सकता है, ऐप में एक दुर्भावनापूर्ण उपयोगकर्ता "
+"हो सकता है, और ऐप सुरक्षित वातावरण में नहीं चल रहा है; उदाहरण के लिए, ऐप रूट के रूप में "
+"चल रहा है। अधिक जानकारी के लिए कृपया v1.11.6 के NEWS फ़ाइल (file) में आइटम (item) 5 "
+"पढ़ें और इस संदेश को दबाने के विकल्प के लिए।"
+
+#: fread.R:80
+#, c-format
+msgid ""
+"External command failed with exit code %d. This can happen when the disk is "
+"full in the temporary directory ('%s'). See ?fread for the tmpdir argument."
+msgstr ""
+
+#: fread.R:86
+#, c-format
+msgid ""
+"file= must be a single character string containing a filename, or URL "
+"starting 'http[s]://', 'ftp[s]://' or 'file://'"
+msgstr ""
+"file= एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए जिसमें एक "
+"फाइल (file) का नाम, या 'http[s]://', 'ftp[s]://' या 'file://' से शुरू होने वाला "
+"URL हो"
+
+#: fread.R:99
+#, c-format
+msgid "File '%s' does not exist or is non-readable. getwd()=='%s'"
+msgstr "फाइल (file) '%s' मौजूद नहीं है या पढ़ने योग्य नहीं है। getwd()=='%s'"
+
+#: fread.R:100
+#, c-format
+msgid "File '%s' is a directory. Not yet implemented."
+msgstr "फाइल (file) '%s' एक डायरेक्टरी (directory) है। अभी तक लागू नहीं किया गया है।"
+
+#: fread.R:102
+#, c-format
+msgid "File '%s' has size 0. Returning a NULL %s."
+msgstr "फाइल (file) '%s' का आकार 0 है। NULL %s लौटाई जा रही है।"
+
+#: fread.R:114
+#, c-format
+msgid ""
+"Compressed files containing more than 1 file are currently not supported."
+msgstr ""
+"एक से अधिक फाइलें (file) वाली कंप्रेस्ड (compressed) फाइलें (file) वर्तमान में समर्थित "
+"नहीं हैं।"
+
+#: fread.R:124
+#, c-format
+msgid ""
+"To read %s files directly, fread() requires 'R.utils' package which cannot "
+"be found. Please install 'R.utils' using 'install.packages('R.utils')'."
+msgstr ""
+"%s फाइलों (file) को सीधे पढ़ने के लिए, fread() को 'R.utils' पैकेज (package) की "
+"आवश्यकता होती है जो उपलब्ध नहीं है। कृपया 'install.packages('R.utils')' का उपयोग "
+"करके इसे इंस्टॉल  (install) करें।"
+
+#: fread.R:127
+#, c-format
+msgid ""
+"Reading compressed files in fread requires R.utils version 2.13.0 or higher. "
+"Please upgrade R.utils."
+msgstr ""
+
+#: fread.R:134
+#, c-format
+msgid ""
+"R.utils::decompressFile failed to decompress file '%s':\n"
+"  %s\n"
+". This can happen when the disk is full in the temporary directory ('%s'). "
+"See ?fread for the tmpdir argument."
+msgstr ""
+
+#: fread.R:143
+#, c-format
+msgid ""
+"colClasses is type 'logical' which is ok if all NA but it has some TRUE or "
+"FALSE values in it which is not allowed. Please consider the drop= or "
+"select= argument instead. See ?fread."
+msgstr ""
+"colClasses का प्रकार 'logical' है, जो सभी NA के लिए ठीक है लेकिन इसमें कुछ TRUE या "
+"FALSE मान हैं, जो स्वीकार्य नहीं हैं। कृपया इसके बजाय drop= या select= आर्ग्युमेंट "
+"(argument) का उपयोग करने पर विचार करें। ?fread देखें।"
+
+#: fread.R:147
+#, c-format
+msgid "colClasses is not type list or character vector"
+msgstr ""
+"colClasses का प्रकार लिस्ट (list) या कैरेक्टर (character) वेक्टर (vector) नहीं है"
+
+#: fread.R:152
+#, c-format
+msgid ""
+"colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) "
+"as opposed to dropping every column."
+msgstr ""
+"colClasses=\"NULL\" (उद्धृत) को colClasses=NULL (डिफ़ॉल्ट) के रूप में लिया जाता है, "
+"हर कॉलम को हटाने के विपरीत।"
+
+#: fread.R:164
+#, c-format
+msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
+msgstr "na.strings[%d]==\"%s\" केवल स्पेस (space) से बना है, इसे अनदेखा किया जा रहा है"
+
+#: fread.R:167
+#, c-format
+msgid ""
+"%s. Since strip.white=TRUE (default), use na.strings=\"\" to specify that "
+"any number of spaces in a string column should be read as <NA>."
+msgstr ""
+"%s. चूंकि strip.white=TRUE (डिफ़ॉल्ट (default)) है, na.strings= का उपयोग करें ताकि "
+"स्ट्रिंग (string) कॉलम (column) में किसी भी संख्या में स्पेस (space) को <NA> के रूप में पढ़ा "
+"जाए।"
+
+#: fread.R:169
+#, c-format
+msgid ""
+"%s. strip.white==TRUE (default) and \"\" is present in na.strings, so any "
+"number of spaces in string columns will already be read as <NA>."
+msgstr ""
+"%s. strip.white==TRUE (डिफ़ॉल्ट (default)) है और na.strings में  मौजूद है, इसलिए "
+"स्ट्रिंग (string) कॉलम (column) में किसी भी संख्या में स्पेस (space) को पहले से ही <NA> के "
+"रूप में पढ़ा जाएगा।"
+
+#: fread.R:173
+#, c-format
+msgid ""
+"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
+msgstr ""
+"%s. लेकिन strip.white=FALSE है। strip.white=TRUE (डिफ़ॉल्ट (default)) का उपयोग "
+"na.strings= के साथ करें ताकि स्ट्रिंग (string) कॉलम (column) में किसी भी संख्या में स्पेस "
+"(space) को <NA> में परिवर्तित किया जा सके"
+
+#: fread.R:180
+#, c-format
+msgid ""
+"'data.table' relies on the package 'yaml' to parse the file header; please "
+"add this to your library with install.packages('yaml') and try again."
+msgstr ""
+"'data.table' फाइल (file) हेडर (header) को पार्स (parse) करने के लिए 'yaml' पैकेज "
+"(package)पर निर्भर करता है; कृपया इसे अपनी लाइब्रेरी (library) में install."
+"packages('yaml') का उपयोग करके जोड़ें और फिर से प्रयास करें।"
+
+#: fread.R:184
+#, c-format
+msgid ""
+"Combining a search string as 'skip' and reading a YAML header may not work "
+"as expected -- currently, reading will proceed to search for 'skip' from the "
+"beginning of the file, NOT from the end of the metadata; please file an "
+"issue on GitHub if you'd like to see more intuitive behavior supported."
+msgstr ""
+"एक खोज स्ट्रिंग (string) को 'skip' के रूप में जोड़ना और YAML हेडर (header) पढ़ना "
+"अपेक्षित रूप से काम नहीं कर सकता -- वर्तमान में, पढ़ाई फाइल (file) की शुरुआत से 'skip' के "
+"लिए खोज  करने के लिए आगे बढ़ेगी, मेटाडेटा (metadata) के अंत से नहीं; यदि आप अधिक सहज "
+"व्यवहार देखना चाहते हैं तो कृपया GitHub पर एक इशू दर्ज करें।"
+
+#: fread.R:194
+#, fuzzy, c-format
+msgid ""
+"Encountered <%s%s> at the first unskipped line (%d), which does not "
+"constitute the start to a valid YAML header (expecting something matching "
+"regex \"%s\"); please check your input and try again."
+msgstr ""
+"पहले अनस्किप्ड पंक्ति (%d) पर <%s%s> का सामना किया, जो एक मान्य YAML हेडर (header) "
+"की शुरुआत का गठन नहीं करता (regex \"%s\" से मेल खाने की उम्मीद); कृपया अपनी इनपुट "
+"(input) जांचें और फिर से प्रयास करें।"
+
+#: fread.R:206
+#, c-format
+msgid ""
+"Reached the end of the file before finding a completion to the YAML header. "
+"A valid YAML header is bookended by lines matching the regex \"%s\". Please "
+"double check the input file is a valid csvy."
+msgstr ""
+"YAML हेडर (header) को पूर्ण करने से पहले फाइल (file) का अंत आ गया। एक मान्य YAML हेडर "
+"(header) regex \"%s\" से मेल खाने वाली पंक्तियों से बुकेंड (bookended) किया गया है। "
+"कृपया सुनिश्चित करें कि इनपुट (input) फाइल (file) एक वैध csvy है।"
+
+#: fread.R:217
+msgid ""
+"Processed %d lines of YAML metadata with the following top-level fields: %s"
+msgstr ""
+"निम्नलिखित उच्च-स्तरीय फ़ील्ड (field) के साथ YAML मेटाडेटा (metadata) की %d पंक्तियां "
+"प्रोसेस की गईं: %s"
+
+#: fread.R:220
+#, c-format
+msgid "User-supplied 'header' will override that found in metadata."
+msgstr ""
+"यूजर द्वारा दी गई 'header' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) "
+"करेगी।"
+
+#: fread.R:238
+#, c-format
+msgid ""
+"User-supplied column names in 'col.names' will override those found in YAML "
+"metadata."
+msgstr ""
+"'col.names' में यूजर द्वारा दी गई कॉलम (column) के नाम YAML मेटाडेटा (metadata) में "
+"पाए गए को ओवरराइड (override) करेंगे।"
+
+#: fread.R:247
+#, c-format
+msgid ""
+"colClasses dictated by user input and those read from YAML header are in "
+"conflict (specifically, for column(s) [%s]); the proceeding assumes the user "
+"input was an intentional override and will ignore the type(s) implied by the "
+"YAML header; please exclude the column(s) from colClasses if this was "
+"unintentional."
+msgstr ""
+"यूजर इनपुट (input) द्वारा दिए गए colClasses और YAML हेडर (header) से पढ़े गए के बीच "
+"विरोध है (विशेष रूप से, कॉलम (column) [%s] के लिए); आगे की प्रक्रिया यह मानती है कि "
+"यूजर इनपुट (input) एक जानबूझकर ओवरराइड (override) था और YAML हेडर (header) द्वारा "
+"निहित प्रकारों को अनदेखा करेगी; यदि यह अनजाने में था तो कृपया कॉलम (column) को "
+"colClasses से हटा दें।"
+
+#: fread.R:268
+#, c-format
+msgid "User-supplied 'sep' will override that found in metadata."
+msgstr ""
+"यूजर द्वारा दी गई 'sep' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) करेगी।"
+
+#: fread.R:273
+#, c-format
+msgid "User-supplied 'quote' will override that found in metadata."
+msgstr ""
+"यूजर द्वारा दी गई 'quote' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) "
+"करेगी।"
+
+#: fread.R:278
+#, c-format
+msgid "User-supplied 'dec' will override that found in metadata."
+msgstr ""
+"यूजर द्वारा दिया गया 'dec' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) "
+"करेगा।"
+
+#: fread.R:282
+#, c-format
+msgid "User-supplied 'na.strings' will override that found in metadata."
+msgstr ""
+"यूजर द्वारा दी गई 'na.strings' मेटाडेटा (metadata) में पाई गई को ओवरराइड "
+"(override) करेगी।"
+
+#: fread.R:334
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following "
+"warning:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
+msgstr ""
+"कॉलम (column) '%s' को '%s' अनुरोधित किया गया था लेकिन fread ने निम्नलिखित चेतावनी "
+"का सामना किया:\n"
+"\t%s\n"
+"इसलिए कॉलम (column) को '%s' प्रकार के रूप में छोड़ दिया गया है"
+
+#: fread.R:336
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following "
+"error:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
+msgstr ""
+"कॉलम (column) '%s' को '%s' अनुरोधित किया गया था लेकिन fread ने निम्नलिखित एरर "
+"(error) का सामना किया:\n"
+"\t%s\n"
+"इसलिए कॉलम (column) को '%s' प्रकार के रूप में छोड़ दिया गया है"
+
+#: fread.R:363
+#, c-format
+msgid ""
+"key argument of data.table() must be a character vector naming columns (NB: "
+"col.names are applied before this)"
+msgstr ""
+"data.table() का key आर्ग्युमेंट (argument) कॉलम (column) के नामकरण के लिए एक कैरेक्टर "
+"(character) वेक्टर (vector) होना चाहिए (ध्यान दें: col.names इसके पहले लागू होते हैं)"
+
+#: fread.R:371
+#, c-format
+msgid ""
+"index argument of data.table() must be a character vector naming columns "
+"(NB: col.names are applied before this)"
+msgstr ""
+"data.table() का index आर्ग्युमेंट (argument) कॉलम (column) के नामकरण के लिए एक "
+"कैरेक्टर (character) वेक्टर (vector) होना चाहिए (ध्यान दें: col.names इसके पहले लागू "
+"होते हैं)"
+
+#: froll.R:30
+#, fuzzy, c-format
+msgid "n must be non 0 length"
+msgstr "क्लास (class) की लेन्थ (length) 1 होनी चाहिए"
+
+#: froll.R:32
+#, c-format
+msgid "'partial' cannot be used together with align='center'"
+msgstr ""
+
+#: froll.R:35
+#, c-format
+msgid "'partial' does not support variable length of columns in x"
+msgstr ""
+
+#: froll.R:37
+#, c-format
+msgid "'partial' does not support variable nrow of data.tables in x"
+msgstr ""
+
+#: froll.R:48
+#, c-format
+msgid "n must be an integer, list is accepted for adaptive TRUE"
+msgstr ""
+
+#: froll.R:50 froll.R:62
+#, c-format
+msgid "n must be an integer vector or a list of integer vectors"
+msgstr ""
+
+#: froll.R:52
+msgid ""
+"partial2adaptive: froll partial=TRUE trimming n and redirecting to "
+"adaptive=TRUE"
+msgstr ""
+
+#: froll.R:64
+#, c-format
+msgid "adaptive windows provided in n must not to have different lengths"
+msgstr ""
+
+#: froll.R:66
+#, c-format
+msgid ""
+"length of n argument must be equal to number of observations provided in x"
+msgstr ""
+
+#: froll.R:68
+#, c-format
+msgid "length of vectors in x must match to length of adaptive window in n"
+msgstr ""
+
+#: froll.R:70
+msgid "partial2adaptive: froll adaptive=TRUE and partial=TRUE trimming n"
+msgstr ""
+
+#: froll.R:86
+#, c-format
+msgid ""
+"internal error: misuse of make.roll.names, n must be numeric for !adaptive"
+msgstr ""
+
+#: froll.R:92
+#, c-format
+msgid ""
+"internal error: misuse of make.roll.names, non-null length 0 n is not "
+"possible for !adaptive"
+msgstr ""
+
+#: froll.R:106
+#, c-format
+msgid ""
+"internal error: make.roll.names call should have been escaped in frollapply "
+"during 'unpack atomic input'"
+msgstr ""
+
+#: froll.R:110
+#, c-format
+msgid "internal error: make.roll.names generated names of wrong length"
+msgstr ""
+
+#: froll.R:118
+#, c-format
+msgid "'x' must be of a numeric type"
+msgstr ""
+
+#: froll.R:122 froll.R:127
+#, fuzzy, c-format
+msgid "'n' must be an integer"
+msgstr "verbose लॉजिकल (logical) या पूर्णांक (integer) होना चाहिए"
+
+#: froll.R:132
+#, fuzzy, c-format
+msgid "'n' must be non 0 length"
+msgstr "तर्क 'nan' की लंबाई 1 होनी चाहिए"
+
+#: froll.R:134
+#, c-format
+msgid "'align' other than 'right' has not yet been implemented"
+msgstr ""
+
+#: froll.R:136 froll.R:138 mergelist.R:61
+#, fuzzy, c-format
+msgid "'%s' must be TRUE or FALSE"
+msgstr "%s TRUE या FALSE होना चाहिए"
+
+#: froll.R:157 froll.R:158
+#, c-format
+msgid "hasNA is deprecated, use has.nf instead"
+msgstr ""
+
+#: froll.R:183
+msgid "froll: adaptive=TRUE && align='left' pre-processing for align='right'"
+msgstr ""
+
+#: froll.R:191
+msgid "froll: adaptive=TRUE && align='left' post-processing from align='right'"
+msgstr ""
+
+#: frollapply.R:130
+#, c-format
+msgid "'x' is deprecated in frollapply, use 'X' instead"
+msgstr ""
+
+#: frollapply.R:134
+#, c-format
+msgid "'n' is deprecated in frollapply, use 'N' instead"
+msgstr ""
+
+#: frollapply.R:138
+#, fuzzy, c-format
+msgid "'by.column' must be TRUE or FALSE"
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
+
+#: frollapply.R:140
+#, fuzzy, c-format
+msgid "'adaptive' must be TRUE or FALSE"
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
+
+#: frollapply.R:142
+#, fuzzy, c-format
+msgid "'partial' must be TRUE or FALSE"
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
+
+#: frollapply.R:144
+#, fuzzy, c-format
+msgid "'give.names' must be TRUE or FALSE"
+msgstr "%s TRUE या FALSE होना चाहिए"
+
+#: frollapply.R:146
+#, fuzzy, c-format
+msgid "'simplify' must be TRUE or FALSE or a function"
+msgstr "%s TRUE या FALSE होना चाहिए"
+
+#: frollapply.R:170
+#, c-format
+msgid ""
+"frollapply by.column=TRUE requires 'X' argument to be atomic or a list of "
+"those"
+msgstr ""
+
+#: frollapply.R:182
+#, c-format
+msgid ""
+"frollapply by.column=FALSE, when provided a list in 'X' then all vectors "
+"must have equal lengths, like data.frame"
+msgstr ""
+
+#: frollapply.R:191
+#, c-format
+msgid ""
+"frollapply by.column=FALSE got vectorized input in 'X', list of data.frames/"
+"data.tables, but not all columns of data.frames/data.tables are atomic"
+msgstr ""
+
+#: frollapply.R:197
+#, c-format
+msgid ""
+"frollapply by.column=FALSE supports vectorized input in 'X' as a list of "
+"data.frames/data.tables, not a list of lists. Turn nested lists into data."
+"frames/data.table and retry."
+msgstr ""
+
+#: frollapply.R:199
+#, c-format
+msgid ""
+"frollapply by.column=FALSE got list in 'X' but it is not valid one. If "
+"intent is to pass a list as non-vectorized input, but a single object to "
+"apply function to, then the list must have all its vectors atomic. For a "
+"vectorized input, passing multiple objects to apply function to, it must be "
+"a list of data.frames/data.tables."
+msgstr ""
+
+#: frollapply.R:202
+#, c-format
+msgid ""
+"frollapply by.column=FALSE requires 'X' argument to be a data.table/data."
+"frame or a list of equal length vectors. For vectorized input can be a list "
+"of data.frames/data.tables, but not a list of lists. All columns/vectors "
+"must be atomic."
+msgstr ""
+
+#: frollapply.R:206
+#, fuzzy, c-format
+msgid "'N' must be non 0 length"
+msgstr "क्लास (class) की लेन्थ (length) 1 होनी चाहिए"
+
+#: frollapply.R:209
+#, c-format
+msgid "'N' must be an integer, list is accepted for adaptive TRUE"
+msgstr ""
+
+#: frollapply.R:211
+#, fuzzy, c-format
+msgid "'N' must be an integer"
+msgstr "verbose लॉजिकल (logical) या पूर्णांक (integer) होना चाहिए"
+
+#: frollapply.R:216 frollapply.R:227 frollapply.R:241
+#, c-format
+msgid "'N' must be non-negative integer values (>= 0)"
+msgstr ""
+
+#: frollapply.R:220
+#, c-format
+msgid ""
+"adaptive rolling function can only process 'X' having equal length of "
+"elements; If you want to call rolling function on list having variable "
+"length of elements call it for each field separately"
+msgstr ""
+
+#: frollapply.R:223 frollapply.R:233
+#, c-format
+msgid ""
+"length of integer vector(s) provided as list to 'N' argument must be equal "
+"to number of observations provided in 'X'"
+msgstr ""
+
+#: frollapply.R:235
+#, c-format
+msgid "adaptive windows provided in 'N' must not to have different lengths"
+msgstr ""
+
+#: frollapply.R:237 frollapply.R:245
+#, c-format
+msgid "'N' must be an integer vector or list of integer vectors"
+msgstr ""
+
+#: frollapply.R:257
+#, c-format
+msgid "using adaptive TRUE and align 'center' is not implemented"
+msgstr ""
+
+#: frollapply.R:262
+msgid ""
+"frollapply: adaptive=TRUE && align='left' pre-processing for align='right'"
+msgstr ""
+
+#: frollapply.R:319
+msgid ""
+"frollapply calling parallel::mccollect to collect results from forked "
+"processes raised an error.\n"
+"%s"
+msgstr ""
+
+#: frollapply.R:320
+msgid ""
+"frollapply internal call to parallel::mccollect raised a warning, FUN "
+"warnings should have been suppressed by parallel.\n"
+"%s"
+msgstr ""
+
+#: frollapply.R:322
+msgid ""
+"frollapply completed successfully but raised an error when attempting to "
+"simplify results using user specified function in 'simplify' argument. Be "
+"sure to provide 'fill' argument matching the type and shape of results "
+"returned by the your function. Use simplify=FALSE to obtain a list instead.\n"
+"%s"
+msgstr ""
+
+#: frollapply.R:323
+msgid ""
+"frollapply completed successfully but raised a warning when attempting to "
+"simplify results using user specified function in 'simplify' argument. Be "
+"sure to provide 'fill' argument matching the type and shape of results "
+"returned by the your function. Use simplify=FALSE to obtain a list instead.\n"
+"%s"
+msgstr ""
+
+#: frollapply.R:325
+msgid ""
+"frollapply completed successfully but raised an error when attempting to "
+"simplify results using our internal 'simplifylist' function. Be sure to "
+"provide 'fill' argument matching the type and shape of results returned by "
+"the your function. Use simplify=FALSE to obtain a list instead. If you "
+"believe your results could be automatically simplified please submit your "
+"use case as new issue in our issue tracker.\n"
+"%s"
+msgstr ""
+
+#: frollapply.R:326
+msgid ""
+"frollapply completed successfully but raised a warning when attempting to "
+"simplify results using our internal 'simplifylist' function. Be sure to "
+"provide 'fill' argument matching the type and shape of results returned by "
+"the your function. Use simplify=FALSE to obtain a list instead. If you "
+"believe your results could be automatically simplified please submit your "
+"use case as new issue in our issue tracker.\n"
+"%s"
+msgstr ""
+
+#: frollapply.R:332
+msgid "frollapply running on single CPU thread"
+msgstr ""
+
+#: frollapply.R:348
+msgid ""
+"frollapply run on %d CPU threads throttled to %d threads, input length %d"
+msgstr ""
+
+#: frollapply.R:350
+msgid "frollapply running on %d CPU threads"
+msgstr ""
+
+#: frollapply.R:409 frollapply.R:433
+#, c-format
+msgid ""
+"frollapply received an error(s) when evaluating FUN:\n"
+"%s"
+msgstr ""
+
+#: fwrite.R:20
+#, fuzzy, c-format
+msgid "Argument 'encoding' must be '', 'UTF-8' or 'native'."
+msgstr ""
+"आर्ग्युमेंट (argument) 'encoding' 'unknown', 'UTF-8' या 'Latin-1' होना चाहिए।"
+
+#: fwrite.R:33
+#, c-format
+msgid "x being coerced from class: matrix to data.table"
+msgstr ""
+
+#: fwrite.R:67
+msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
+msgstr ""
+
+#: fwrite.R:80
+#, c-format
+msgid ""
+"If you intended to overwrite the file at %s with an empty one, please use "
+"file.remove first."
+msgstr ""
+
+#: fwrite.R:81
+#, c-format
+msgid "Input has no columns; doing nothing.%s"
+msgstr ""
+
+#: fwrite.R:84
+#, c-format
+msgid "Input has no columns; creating an empty file at '%s' and exiting."
+msgstr ""
+
+#: fwrite.R:92
+#, fuzzy, c-format
+msgid ""
+"'data.table' relies on the package 'yaml' to write the file header; please "
+"add this to your library with install.packages('yaml') and try again."
+msgstr ""
+"'data.table' फाइल (file) हेडर (header) को पार्स (parse) करने के लिए 'yaml' पैकेज "
+"(package)पर निर्भर करता है; कृपया इसे अपनी लाइब्रेरी (library) में install."
+"packages('yaml') का उपयोग करके जोड़ें और फिर से प्रयास करें।"
+
+#: groupingsets.R:7 groupingsets.R:25 groupingsets.R:47
+#, fuzzy, c-format
+msgid "Argument 'x' must be a data.table object"
+msgstr "x तर्क एक data.table होना चाहिए"
+
+#: groupingsets.R:9 groupingsets.R:27 groupingsets.R:53
+#, fuzzy, c-format
+msgid ""
+"Argument 'by' must be a character vector of column names used in grouping."
+msgstr "तर्क 'by' को x में कॉलम (column) नामों का संदर्भ देना चाहिए"
+
+#: groupingsets.R:11 groupingsets.R:29 groupingsets.R:59
+#, fuzzy, c-format
+msgid "Argument 'id' must be a logical scalar."
+msgstr ""
+"आर्गुमेंट (argument) 'sorted' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
+
+#: groupingsets.R:31
+#, c-format
+msgid "Argument 'j' is required"
+msgstr ""
+
+#: groupingsets.R:49
+#, c-format
+msgid ""
+"Argument 'x' is a 0-column data.table; no measure to apply grouping over."
+msgstr ""
+
+#: groupingsets.R:51
+#, fuzzy, c-format
+msgid "Input data.table must not contain duplicate column names."
+msgstr ""
+"कास्ट (cast) किए जाने वाले data.table में अद्वितीय कॉलम (column) नाम होने चाहिए"
+
+#: groupingsets.R:55
+#, fuzzy, c-format
+msgid "Argument 'by' must have unique column names for grouping."
+msgstr "तर्क 'by' को x में कॉलम (column) नामों का संदर्भ देना चाहिए"
+
+#: groupingsets.R:57
+#, fuzzy, c-format
+msgid "Argument 'sets' must be a list of character vectors."
+msgstr "'names' TRUE/FALSE या कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+
+#: groupingsets.R:63
+#, fuzzy, c-format
+msgid ""
+"Argument 'label', if not NULL, must be a scalar or a named list of scalars."
+msgstr ""
+"तर्क 'value.name' स्केलर (scalar) कैरेक्टर (character), non-NA और कम से कम एक कैरेक्टर "
+"(character) का होना चाहिए"
+
+#: groupingsets.R:65
+#, c-format
+msgid ""
+"When argument 'label' is a list, all of the list elements must be named."
+msgstr ""
+
+#: groupingsets.R:67
+#, c-format
+msgid ""
+"When argument 'label' is a list, the element names must not contain "
+"duplicates."
+msgstr ""
+
+#: groupingsets.R:70
+#, c-format
+msgid ""
+"All columns used in 'sets' argument must be in 'by' too. Columns used in "
+"'sets' but not present in 'by': %s"
+msgstr ""
+
+#: groupingsets.R:72
+#, c-format
+msgid ""
+"When using `id=TRUE` the 'x' data.table must not have a column named "
+"'grouping'."
+msgstr ""
+
+#: groupingsets.R:74
+#, c-format
+msgid ""
+"Character vectors in 'sets' list must not have duplicated column names "
+"within a single grouping set."
+msgstr ""
+
+#: groupingsets.R:76
+#, c-format
+msgid ""
+"'sets' contains a duplicate (i.e., equivalent up to sorting) element at "
+"index %d; as such, there will be duplicate rows in the output -- note that "
+"grouping by A,B and B,A will produce the same aggregations. Use "
+"`sets=unique(lapply(sets, sort))` to eliminate duplicates."
+msgstr ""
+
+#: groupingsets.R:82
+#, c-format
+msgid ""
+"When argument 'label' is a list, all element names must be (1) in 'by', or "
+"(2) the first element of the class in the data.table 'x' of a variable in "
+"'by', or (3) one of %s. Element names not satisfying this condition: %s"
+msgstr ""
+
+#: groupingsets.R:92
+#, c-format
+msgid "%s (label: %s; data: %s)"
+msgstr ""
+
+#: groupingsets.R:96
+#, c-format
+msgid ""
+"When argument 'label' is a list, the class of each 'label' element with name "
+"in 'by' must match the class of the corresponding column of the data.table "
+"'x'. Class mismatch for: %s"
+msgstr ""
+
+#: groupingsets.R:100
+#, c-format
+msgid "(label name: %s; label class[1]: %s)"
+msgstr ""
+
+#: groupingsets.R:103
+#, c-format
+msgid ""
+"When argument 'label' is a list, the name of each element of 'label' not in "
+"'by' must match the first element of the class of the element value. "
+"Mismatches: %s"
+msgstr ""
+
+#: groupingsets.R:110
+#, c-format
+msgid ""
+"Expression passed to grouping sets function must not update by reference. "
+"Use ':=' on results of your grouping function."
+msgstr ""
+
+#: groupingsets.R:121
+#, c-format
+msgid ""
+"When using `id=TRUE` the 'j' expression must not evaluate to a column named "
+"'grouping'."
+msgstr ""
+
+#: groupingsets.R:123
+#, c-format
+msgid ""
+"There exists duplicated column names in the results, ensure the column "
+"passed/evaluated in `j` and those in `by` are not overlapping."
+msgstr ""
+
+#: groupingsets.R:146
+#, c-format
+msgid "%s (label: %s)"
+msgstr ""
+
+#: groupingsets.R:147
+#, c-format
+msgid ""
+"For the following variables, the 'label' value was already in the data: %s"
+msgstr ""
+
+#: groupingsets.R:154
+#, c-format
+msgid ""
+"Using integer64 class columns require to have 'bit64' package installed."
+msgstr ""
+
+#: helpers.R:6
+#, fuzzy, c-format
+msgid "argument 'sort' must be TRUE or FALSE"
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
+
+#: helpers.R:8
+#, fuzzy, c-format
+msgid "argument 'rev' must be TRUE or FALSE"
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
+
+#: helpers.R:17
+#, c-format
+msgid ".selfref.ok expects data.table class object."
+msgstr ""
+
+#: last.R:11 last.R:16 last.R:24 last.R:29 last.R:33 last.R:41 last.R:52
+#: last.R:57 last.R:65 last.R:70 last.R:74 last.R:82
+#, fuzzy
+msgid "%s: using %s: %s"
+msgstr "कुल: %sMB उपयोग कर रहे हैं %s"
+
+#: last.R:39 last.R:80
+#, c-format
+msgid ""
+"'xts' class passed to %s function but 'xts' is not available, you should "
+"have 'xts' installed already"
+msgstr ""
+
+#: merge.R:4
+#, c-format
+msgid "Argument 'sort' should be logical TRUE/FALSE"
+msgstr "आर्गुमेंट (argument) 'sort' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: merge.R:6
+#, c-format
+msgid "Argument 'no.dups' should be logical TRUE/FALSE"
+msgstr "आर्गुमेंट (argument) 'no.dups' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: merge.R:18
+#, c-format
+msgid "Neither of the input data.tables to join have columns."
+msgstr ""
+"कोई भी इनपुट (input) data.tables, जिन्हें जोड़ा जाना है, में कॉलम (column) नहीं हैं।"
+
+#: merge.R:20 merge.R:22
+#, c-format
+msgid "Input data.table '%s' has no columns."
+msgstr "इनपुट (input) data.table '%s' में कोई कॉलम (column) नहीं हैं।"
+
+#: merge.R:32
+#, c-format
+msgid "`by.x` and `by.y` must be of same length."
+msgstr "`by.x` और `by.y` की लेंथ (length) समान होनी चाहिए|"
+
+#: merge.R:34
+#, fuzzy, c-format
+msgid "Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored."
+msgstr ""
+"दोनों `by` और `by.x/by.y` प्रदान किए गए। `by` आर्गुमेंट (argument) की अनदेखी की "
+"जाएगी।"
+
+#: merge.R:37
+#, c-format
+msgid "A non-empty vector of column names is required for `by.x` and `by.y`."
+msgstr ""
+"`by.x` और `by.y` के लिए एक गैर-खाली कॉलम (column) नाम का वेक्टर (vector) आवश्यक है।"
+
+#: merge.R:39 merge.R:42 merge.R:56 merge.R:59
+#, c-format
+msgid "The following columns listed in `%s` are missing from %s: %s"
+msgstr ""
+
+#: merge.R:54
+#, c-format
+msgid "A non-empty vector of column names for `by` is required."
+msgstr "`by` के लिए एक गैर-खाली कॉलम (column) नाम का वेक्टर (vector) आवश्यक है।"
+
+#: merge.R:116
+#, c-format
+msgid "column names %s are duplicated in the result"
+msgstr "कॉलम (column) नाम %s परिणाम में दोहराए गए हैं"
+
+#: merge.R:146
+#, c-format
+msgid "merge.data.table() received %s and %s, all of which will be ignored: %s"
+msgstr ""
+
+#: mergelist.R:52
+#, fuzzy, c-format
+msgid "'x' must be data.table"
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: mergelist.R:54
+#, c-format
+msgid "'on' must be character column names of 'x' argument"
+msgstr ""
+
+#: mergelist.R:59
+#, c-format
+msgid ""
+"'cols' must be non-zero length, non-NA, integer or character columns of 'x' "
+"argument"
+msgstr ""
+
+#: mergelist.R:98
+#, c-format
+msgid "cross join must be used with zero-length on, mult='all', join.many=TRUE"
+msgstr ""
+
+#: mergelist.R:104
+#, fuzzy, c-format
+msgid "'on' must be non-zero length character vector"
+msgstr "'names' TRUE/FALSE या कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+
+#: mergelist.R:106
+#, c-format
+msgid "semi and anti joins must be used with mult!='all'"
+msgstr ""
+
+#: mergelist.R:157
+#, c-format
+msgid "'on' is missing and necessary key is not present"
+msgstr ""
+
+#: mergelist.R:160 mergelist.R:162
+#, c-format
+msgid ""
+"'on' argument specifies columns to join %s that are not present in %s table "
+"%s"
+msgstr ""
+
+#: mergelist.R:206
+#, fuzzy, c-format
+msgid ""
+"merge result has duplicated column names %s, use 'cols' argument or rename "
+"columns in 'l' tables"
+msgstr ""
+"%s में डुप्लिकेट (duplicate) कॉलम (column) नाम %s है। कृपया डुप्लिकेट (duplicate) को "
+"हटाएं या उसका नाम बदलें औरपुनः प्रयास करें।"
+
+#: mergelist.R:266 mergelist.R:304
+#, c-format
+msgid "'%s' must be a list"
+msgstr ""
+
+#: mergelist.R:268
+#, c-format
+msgid "Every element of 'l' list must be data.table objects"
+msgstr ""
+
+#: mergelist.R:270
+#, c-format
+msgid "Tables in 'l' must all have columns, but these entries have 0: %s"
+msgstr ""
+
+#: mergelist.R:272
+#, c-format
+msgid ""
+"Column names in individual 'l' entries must be unique, but these have some "
+"duplicates: %s"
+msgstr ""
+
+#: mergelist.R:279
+msgid "mergelist: merging %d table(s), took %.3fs"
+msgstr ""
+
+#: mergelist.R:286
+#, c-format
+msgid ""
+"'join.many' must be TRUE or FALSE, or a list of such whose length must be "
+"length(l)-1L"
+msgstr ""
+
+#: mergelist.R:293
+#, c-format
+msgid ""
+"'mult' must be one of [error, all, first, last] or NULL, or a list of such "
+"whose length must be length(l)-1L"
+msgstr ""
+
+#: mergelist.R:298
+#, c-format
+msgid ""
+"'how' must be one of [left, inner, full, right, semi, anti, cross], or a "
+"list of such whose length must be length(l)-1L"
+msgstr ""
+
+#: mergelist.R:306
+#, c-format
+msgid "'cols' must be same length as 'l' (%d != %d)"
+msgstr ""
+
+#: mergelist.R:309
+#, c-format
+msgid ""
+"'cols' must be a list of non-zero length, non-NA, non-duplicated, character "
+"vectors, or eventually NULLs (all columns)"
+msgstr ""
+
+#: mergelist.R:311
+#, c-format
+msgid "'cols' specify columns not present in corresponding table"
+msgstr ""
+
+#: mergelist.R:320
+#, c-format
+msgid ""
+"'on' must be non-NA, non-duplicated, character vector, or a list of such "
+"which length must be length(l)-1L"
+msgstr ""
+
+#: mergelist.R:343
+msgid "mergelist: merging %d tables, took %.3fs"
+msgstr ""
+
+#: onAttach.R:23
+#, c-format
+msgid ""
+"data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads)."
+msgstr ""
+
+#: onAttach.R:25
+#, c-format
+msgid "data.table %s using %d threads (see ?getDTthreads)."
+msgstr ""
+
+#: onAttach.R:26
+#, fuzzy, c-format
+msgid "Latest news: r-datatable.com"
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: onAttach.R:27
+msgid "TRANSLATION CHECK"
+msgstr ""
+
+#: onAttach.R:29
+#, c-format
+msgid ""
+"**********\n"
+"Running data.table in English; package support is available in English only. "
+"When searching for online help, be sure to also check for the English error "
+"message. This can be obtained by looking at the po/R-<locale>.po and po/"
+"<locale>.po files in the package source, where the native language and "
+"English error messages can be found side-by-side.%s\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:30
+msgid ""
+"You can also try calling Sys.setLanguage('en') prior to reproducing the "
+"error message."
+msgstr ""
+
+#: onAttach.R:34
+#, c-format
+msgid ""
+"**********\n"
+"This development version of data.table was built more than 4 weeks ago. "
+"Please update: data.table::update_dev_pkg()\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:36
+#, c-format
+msgid ""
+"**********\n"
+"This installation of data.table has not detected OpenMP support. It should "
+"still work but in single-threaded mode."
+msgstr ""
+
+#: onAttach.R:38
+#, c-format
+msgid ""
+"This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage "
+"with Apple and ask them for support. Check r-datatable.com for updates, and "
+"our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/"
+"Installation. After several years of many reports of installation problems "
+"on Mac, it's time to gingerly point out that there have been no similar "
+"problems on Windows or Linux.\n"
+"**********"
+msgstr ""
+
+#: onAttach.R:40
+#, c-format
+msgid ""
+"This is %s. This warning should not normally occur on Windows or Linux where "
+"OpenMP is turned on by data.table's configure script by passing -fopenmp to "
+"the compiler. If you see this warning on Windows or Linux, please file a "
+"GitHub issue.\n"
+"**********"
+msgstr ""
+
+#: onLoad.R:5
+#, c-format
+msgid ""
+"Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 "
+"in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2."
+msgstr ""
+"विकल्प 'datatable.nomatch' परिभाषित है लेकिन अब अनदेखा किया जा रहा है।कृपया "
+"v1.12.4 NEWS (अक्टूबर 2019) में नोट 11 और v1.14.2 में नोट 14 देखें।"
+
+#: onLoad.R:21
+#, c-format
+msgid ""
+"The data_table.%s version (%s) does not match the package (%s). Please close "
+"all R sessions to release the old %s and reinstall data.table in a fresh R "
+"session. Prior to R version 3.6.0 patched, R's package installer could leave "
+"a package in an apparently functional state where new R code was calling old "
+"C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. "
+"Once a package is in this mismatch state it may produce wrong results "
+"silently until you next upgrade the package. This mismatch between R and C "
+"code can happen with any package not just data.table. It is just that data."
+"table has added this check."
+msgstr ""
+"data_table.%s वर्ज़न (version) (%s) पैकेज (%s) से मेल नहीं खाता।कृपया सभी R सेशंस "
+"(sessions) को बंद करें ताकि पुराने %s को रिलीज़ (release) किया जा सके और एक नए R "
+"सेशन (session) में data.table को पुनः इंस्टॉल (install) करें।R वर्ज़न (version) 3.6.0 "
+"patched से पहले, R के पैकेज (package) इंस्टॉलर (installer) से पैकेज(package) को एक ऐसी "
+"स्थिति में छोड़ने की संभावना थी जहाँ नया R कोड पुराने C कोड को साइलेंटली (silently) कॉल "
+"कर रहा था: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478।एक बार "
+"जब पैकेज (package) इस असंगति स्थिति में आ जाता है, तो यह अगली बार पैकेज (package) को "
+"अपग्रेड (upgrade) करने तक साइलेंटली (silently) गलत परिणाम उत्पन्न कर सकता है।R और C "
+"कोड (code) के बीच यह असंगति किसी भी पैकेज (package) के साथ हो सकती है, न केवल data."
+"table के साथ।बस इतना है कि data.table ने इस जांच को जोड़ा है।"
+
+#: onLoad.R:25
+#, c-format
+msgid ""
+"This is R %s but data.table has been installed using R %s. The major version "
+"must match. Please reinstall data.table."
+msgstr ""
+"यह R %s है लेकिन data.table को R %s का उपयोग करके इंस्टॉल (install) किया गया है। "
+"मुख्य वर्ज़न (version)मेल खाना चाहिए। कृपया data.table को पुनः इंस्टॉल (install) करें।"
+
+#: onLoad.R:103
+#, c-format
+msgid "Unexpected base R behaviour: list(x) has copied x"
+msgstr "अप्रत्याशित base R व्यवहार: list(x) ने x को कॉपी (copy) कर दिया है"
+
+#: onLoad.R:111
+#, c-format
+msgid "Unexpected base R behaviour: names<- has copied column contents"
+msgstr ""
+"अप्रत्याशित base R व्यवहार: names<- ने कॉलम (column) की सामग्री को कॉपी (copy) कर "
+"दिया है"
+
+#: onLoad.R:121
+#, c-format
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was "
+"assigned to"
+msgstr ""
+"अप्रत्याशित base R व्यवहार: DF[2,2]<- ने कॉलम (column) 2 को कॉपी (copy) नहीं किया "
+"जिसेअसाइन (assign) किया गया था"
+
+#: onLoad.R:122
+#, c-format
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- copied the first column which was not "
+"assigned to, too"
+msgstr ""
+"अप्रत्याशित base R व्यवहार: DF[2,2]<- ने पहले कॉलम (column) को भी कॉपी (copy) कर "
+"दिया जोअसाइन (assign) नहीं किया गया था"
+
+#: onLoad.R:124
+#, c-format
+msgid "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)"
+msgstr ""
+"अप्रत्याशित base R व्यवहार: DF[2,2]<- ने address(DF) को कॉपी (copy) नहीं किया है"
+
+#: openmp-utils.R:3
+#, fuzzy, c-format
+msgid "Provide either threads= or percent= but not both"
+msgstr "कृपया 'key' या 'sorted' में से एक प्रदान करें, लेकिन दोनों नहीं।"
+
+#: openmp-utils.R:4
+#, c-format
+msgid "percent= is provided but is length %d"
+msgstr ""
+
+#: openmp-utils.R:6
+#, c-format
+msgid "percent==%d but should be a number between 2 and 100"
+msgstr ""
+
+#: print.data.table.R:19
+#, c-format
+msgid "Valid options for col.names are 'auto', 'top', and 'none'"
+msgstr "col.names के लिए मान्य विकल्प 'auto', 'top', और 'none' हैं"
+
+#: print.data.table.R:21
+#, c-format
+msgid "Valid options for trunc.cols are TRUE and FALSE"
+msgstr "trunc.cols के लिए मान्य विकल्प TRUE और FALSE हैं"
+
+#: print.data.table.R:24
+#, c-format
+msgid "Column classes will be suppressed when col.names is 'none'"
+msgstr "कॉलम (column) क्लासेस (classes) को दबा दिया जाएगा जब col.names 'none' हो"
+
+#: print.data.table.R:48
+msgid "Key: <%s>"
+msgstr "कुंजी: <%s>"
+
+#: print.data.table.R:58
+#, fuzzy
+msgid "Null %s (0 rows and 0 cols)"
+msgstr "NULL data.%s (0 रोज़ (rows) और 0 कॉलम (columns))"
+
+#: print.data.table.R:60
+#, fuzzy
+msgid "Empty %s (%d rows and %d cols)"
+msgstr "रिक्त data.%s (%d रोज़ (rows) और %d कॉलम (columns))"
+
+#: print.data.table.R:161
+#, c-format
+msgid ""
+"Internal structure doesn't seem to be a list. Possibly corrupt data.table."
+msgstr "आंतरिक संरचना लिस्ट (list) प्रतीत नहीं होती। संभवतः data.table में भ्रष्टता है।"
+
+#: programming.R:14 programming.R:40
+#, fuzzy, c-format
+msgid "'x' must be a list"
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: programming.R:22
+#, c-format
+msgid ""
+"Character objects provided in the input are not scalar objects, if you need "
+"them as character vector rather than a name, then wrap each into 'I' call: %s"
+msgstr ""
+
+#: programming.R:50
+#, c-format
+msgid "'env' must not be missing"
+msgstr ""
+
+#: programming.R:56
+#, c-format
+msgid "'env' must be a list or an environment"
+msgstr ""
+
+#: programming.R:63
+#, fuzzy, c-format
+msgid "'env' argument does not have names"
+msgstr "data.tables में rownames नहीं होते"
+
+#: programming.R:65
+#, c-format
+msgid "'env' argument has zero char names"
+msgstr ""
+
+#: programming.R:67
+#, c-format
+msgid "'env' argument has NA names"
+msgstr ""
+
+#: programming.R:69
+#, c-format
+msgid "'env' argument has duplicated names"
+msgstr ""
+
+#: rowwiseDT.R:4
+#, c-format
+msgid ""
+"Must provide at least one column (use `name=`). See ?rowwiseDT for details"
+msgstr ""
+"कम से कम एक कॉलम (column) प्रदान करना अनिवार्य है (कृपया name= का उपयोग करें)। "
+"विवरण के लिए ?rowwiseDT देखें"
+
+#: rowwiseDT.R:7
+#, c-format
+msgid "Named arguments must be empty"
+msgstr "नामित तर्क (arguments) रिक्त होने चाहिए"
+
+#: rowwiseDT.R:9
+#, c-format
+msgid "Header must be the first N arguments"
+msgstr "हेडर (header) पहले N तर्क (arguments) होने चाहिए"
+
+#: rowwiseDT.R:15
+#, c-format
+msgid ""
+"There are %d columns but the number of cells is %d, which is not an integer "
+"multiple of the columns"
+msgstr ""
+"यहाँ %d कॉलम (column) हैं, लेकिन सेल्स (cells) की संख्या %d है,जो कॉलम्स (columns) के "
+"पूर्णांक गुणक (integer multiple) के बराबर नहीं है"
+
+#: setkey.R:3
+#, c-format
+msgid ""
+"x may no longer be the character name of the data.table. The possibility was "
+"undocumented and has been removed."
+msgstr ""
+"x अब data.table का कैरेक्टर (character) नाम नहीं हो सकता है।यह संभावना अप्रलेखित थी "
+"और हटा दी गई है।"
+
+#: setkey.R:34
+#, c-format
+msgid "x is not a data.table"
+msgstr "x एक data.table नहीं है"
+
+#: setkey.R:35
+#, c-format
+msgid ""
+"cols is not a character vector. Please see further information in ?setkey."
+msgstr ""
+"cols एक कैरेक्टर (character) वेक्टर (vector) नहीं है। कृपया ?setkey में आगे की जानकारी "
+"देखें।"
+
+#: setkey.R:36
+#, c-format
+msgid ""
+"Setting a physical key on .SD is reserved for possible future use; to modify "
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
+msgstr ""
+".SD पर एक भौतिक कुंजी सेट (set) करना भविष्य के संभावित उपयोग के लिए आरक्षित है; समूह के "
+"अनुसार मूल डेटा (data) के क्रम को परिवर्तित करने के लिए।इसके बजाय setindex() का उपयोग "
+"करें।या, set*(copy(.SD)) को एक (धीमे) अंतिम उपाय के रूप में उपयोग करें।"
+
+#: setkey.R:38
+#, c-format
+msgid ""
+"cols is a character vector of zero length. Removed the key, but use NULL "
+"instead, or wrap with suppressWarnings() to avoid this warning."
+msgstr ""
+"cols एक शून्य लेंथ (length) का कैरेक्टर (character) वेक्टर (vector) है।कुंजी हटा दी गई, "
+"लेकिन इसके बजाय NULL का उपयोग करें, या इस चेतावनी से बचने के लिए suppressWarnings() "
+"के साथ रैप (wrap) करें।"
+
+#: setkey.R:42
+#, c-format
+msgid "cols is the empty string. Use NULL to remove the key."
+msgstr "cols खाली स्ट्रिंग (string) है। कुंजी हटाने के लिए NULL का उपयोग करें।"
+
+#: setkey.R:43 setkey.R:265
+#, c-format
+msgid "cols contains some blanks."
+msgstr "cols में कुछ रिक्त स्थान हैं।"
+
+#: setkey.R:46 setkey.R:269
+#, c-format
+msgid "some columns are not in the data.table: %s"
+msgstr "कुछ कॉलम (column) data.table में नहीं हैं: %s"
+
+#: setkey.R:54 setkey.R:270
+#, c-format
+msgid ""
+"x contains a column called '.xi'. Conflicts with internal use by data.table."
+msgstr ""
+"x में '.xi' नामक एक कॉलम (column) है। यह data.table के आंतरिक उपयोग से टकराव करता "
+"है।"
+
+#: setkey.R:57
+#, c-format
+msgid ""
+"Column '%s' is type '%s' which is not supported as a key column type, "
+"currently."
+msgstr ""
+"कॉलम (column) '%s' का प्रकार '%s' है जो वर्तमान में मुख्य कॉलम (column) प्रकार के रूप "
+"में समर्थित नहीं है।"
+
+#: setkey.R:65
+msgid "forder took %.03f sec"
+msgstr "forder ने %.03f सेकंड लिया"
+
+#: setkey.R:77
+msgid "reorder took %s"
+msgstr "reorder ने %s लिया"
+
+#: setkey.R:79
+msgid "x is already ordered by these columns, no need to call reorder"
+msgstr ""
+"x पहले से इन कॉलम्स (columns) द्वारा क्रमबद्ध है, reorder कॉल (call) करने की आवश्यकता "
+"नहीं है"
+
+#: setkey.R:132
+#, c-format
+msgid "x is vector but 'by' is supplied"
+msgstr "x एक वेक्टर (vector) है लेकिन 'by' प्रदान किया गया है"
+
+#: setkey.R:148
+#, c-format
+msgid "x is a single vector, non-NULL 'by' doesn't make sense"
+msgstr "x एक एकल वेक्टर (vector) है, non-NULL 'by' का कोई मतलब नहीं है"
+
+#: setkey.R:160
+#, c-format
+msgid ""
+"data.table has no support for sorting by method='%s'. Use base::order(), not "
+"order(), if you really need this."
+msgstr ""
+
+#: setkey.R:181
+#, c-format
+msgid "Attempting to order a 0-column data.table or data.frame."
+msgstr ""
+"0-कॉलम (column) data.table या data.frame को क्रमबद्ध करने का प्रयास किया जा रहा "
+"है।"
+
+#: setkey.R:186
+#, c-format
+msgid ""
+"The first item passed to [f]order is a plain list but there are more items. "
+"It should be a data.table or data.frame."
+msgstr ""
+"पहला आइटम (item) जो [f]order को पास किया गया है वह एक साधारण list है लेकिन और "
+"भी आइटम्स (items) हैं।यह एक data.table या data.frame होना चाहिए।"
+
+#: setkey.R:194
+#, c-format
+msgid "Mixing '-' with vector decreasing= is not supported."
+msgstr ""
+
+#: setkey.R:195
+#, c-format
+msgid "decreasing= has length %d applied to sorting %d columns."
+msgstr ""
+
+#: setkey.R:211
+#, c-format
+msgid "Internal code should not be being called on type double"
+msgstr "आंतरिक कोड (code) को प्रकार डबल (double) पर नहीं चलाना चाहिए"
+
+#: setkey.R:218
+#, c-format
+msgid ""
+"Input is not a vector of type double. New parallel sort has only been done "
+"for double vectors so far. Using one thread."
+msgstr ""
+"इनपुट (input) डबल (double) प्रकार का वेक्टर (vector) नहीं है। अब तक नए समानांतर "
+"सॉर्ट (sort) केवल डबल (double) वेक्टर (vector) के लिए किया गया है।एक थ्रेड (thread) "
+"का उपयोग किया जा रहा है।"
+
+#: setkey.R:219
+#, c-format
+msgid ""
+"New parallel sort has not been implemented for decreasing=TRUE so far. Using "
+"one thread."
+msgstr ""
+"अब तक decreasing=TRUE के लिए नया समानांतर सॉर्ट (sort) लागू नहीं किया गया है।एक "
+"थ्रेड (thread) का उपयोग किया जा रहा है।"
+
+#: setkey.R:220
+#, c-format
+msgid ""
+"New parallel sort has not been implemented for vectors containing NA values "
+"so far. Using one thread."
+msgstr ""
+"नए समानांतर क्रम (sort) को अब तक NA मान वाले वेक्टर (vector) के लिए लागू नहीं किया "
+"गया है।एक थ्रेड (thread) का उपयोग किया जा रहा है।"
+
+#: setkey.R:231 setkey.R:257
+#, c-format
+msgid "x must be a data.frame or data.table"
+msgstr "x एक data.table या data.frame होना चाहिए"
+
+#: setkey.R:259
+#, c-format
+msgid "na.last must be logical TRUE/FALSE"
+msgstr "na.last को लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: setkey.R:260
+#, c-format
+msgid ""
+"cols is not a character vector. Please see further information in ?setorder."
+msgstr ""
+"cols एक कैरेक्टर (character) वेक्टर (vector) नहीं है। कृपया अधिक जानकारी के लिए ?"
+"setorder देखें।"
+
+#: setkey.R:262
+#, c-format
+msgid ""
+"cols is a character vector of zero length. Use NULL instead, or wrap with "
+"suppressWarnings() to avoid this warning."
+msgstr ""
+"cols एक शून्य लेंथ (length) का कैरेक्टर (character) वेक्टर (vector) है।इसके बजाय NULL "
+"का उपयोग करें, या इस चेतावनी से बचने के लिए suppressWarnings() के साथ रैप (wrap) करें।"
+
+#: setkey.R:273
+#, c-format
+msgid "Column '%s' is type '%s' which is not supported for ordering currently."
+msgstr ""
+"कॉलम (column) '%s' का प्रकार '%s' है, जो वर्तमान में क्रमबद्ध करने के लिए समर्थित नहीं "
+"है।"
+
+#: setkey.R:317
+#, c-format
+msgid ""
+"'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try "
+"setting sorted = FALSE"
+msgstr ""
+"'sorted' TRUE है लेकिन तत्व %d non-atomic है, जिसे सॉर्ट (sort) नहीं किया जा सकता है।"
+"sorted = FALSE सेट (set) करने का प्रयास करें"
+
+#: setkey.R:332
+#, c-format
+msgid ""
+"Cross product of elements provided to CJ() would result in %.0f rows which "
+"exceeds .Machine$integer.max == %d"
+msgstr ""
+"CJ() को प्रदान किए गए तत्वों का क्रॉस (cross) प्रोडक्ट (product) %.0f रोज़ (rows) में "
+"परिणामित होगा, जो .Machine$integer.max == %d से अधिक है"
+
+#: setops.R:3 setops.R:40
+#, fuzzy, c-format
+msgid "x and y must both be data.tables"
+msgstr "x तर्क एक data.table होना चाहिए"
+
+#: setops.R:17
+#, c-format
+msgid ""
+"When x's column ('%s') is character, the corresponding column in y ('%s') "
+"should be factor or character, but found incompatible type '%s'."
+msgstr ""
+
+#: setops.R:19
+#, c-format
+msgid ""
+"When x's column ('%s') is factor, the corresponding column in y ('%s') "
+"should be character or factor, but found incompatible type '%s'."
+msgstr ""
+
+#: setops.R:21
+#, c-format
+msgid ""
+"When x's column ('%s') is integer or numeric, the corresponding column in y "
+"('%s') can not be character or logical types, but found incompatible type "
+"'%s'."
+msgstr ""
+
+#: setops.R:39
+#, fuzzy, c-format
+msgid "argument 'all' should be logical of length one"
+msgstr "आर्गुमेंट (argument) 'sort' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: setops.R:41
+#, fuzzy, c-format
+msgid "x and y must have the same column names"
+msgstr ""
+"कास्ट (cast) किए जाने वाले data.table में अद्वितीय कॉलम (column) नाम होने चाहिए"
+
+#: setops.R:42
+#, c-format
+msgid "x and y must have the same column order"
+msgstr ""
+
+#: setops.R:55
+#, c-format
+msgid "Item %d of x is '%s' but the corresponding item of y is '%s'."
+msgstr ""
+
+#: setops.R:57
+#, c-format
+msgid "None of the datasets should contain a column named '.seqn'"
+msgstr ""
+
+#: setops.R:162
+msgid "Datasets have different keys"
+msgstr ""
+
+#: setops.R:163 setops.R:164
+msgid "has no key"
+msgstr ""
+
+#: setops.R:173
+msgid "Datasets have different indices"
+msgstr ""
+
+#: setops.R:174 setops.R:175
+msgid "has no index"
+msgstr ""
+
+#: setops.R:192
+#, c-format
+msgid "None of the datasets to compare should contain a column named '.seqn'"
+msgstr ""
+
+#: setops.R:195
+#, c-format
+msgid ""
+"Datasets to compare with 'ignore.row.order' must not have unsupported column "
+"types: %s"
+msgstr ""
+
+#: setops.R:197
+#, c-format
+msgid ""
+"Argument 'tolerance' was forced to lowest accepted value `sqrt(."
+"Machine$double.eps)` from provided %s"
+msgstr ""
+
+#: setops.R:210
+#, c-format
+msgid ""
+"Duplicate rows in datasets, numeric columns and ignore.row.order cannot be "
+"used with non 0 tolerance argument"
+msgstr ""
+
+#: setops.R:224
+#, c-format
+msgid ""
+"Factor columns and ignore.row.order cannot be used with non 0 tolerance "
+"argument"
+msgstr ""
+
+#: shift.R:3
+#, c-format
+msgid "Provided argument fill=%s will be ignored since type='cyclic'."
+msgstr ""
+"दिया गया आर्गुमेंट (argument) fill=%s अनदेखा किया जाएगा क्योंकि type='cyclic' है।"
+
+#: tables.R:31
+msgid "No objects of class data.table exist in %s"
+msgstr "%s में क्लास (class) data.table की कोई वस्तुएँ नहीं हैं"
+
+#: tables.R:46
+#, c-format
+msgid "order.col='%s' not a column name of info"
+msgstr "order.col='%s' info का कॉलम (column) नाम नहीं है"
+
+#: tables.R:59
+msgid "Total: %sMB using %s"
+msgstr "कुल: %sMB उपयोग कर रहे हैं %s"
+
+#: test.data.table.R:23
+#, c-format
+msgid "data.table package is loaded. Unload or start a fresh R session."
+msgstr ""
+"data.table पैकेज (package) लोडेड (loaded) है। इसे अनलोड (unload) करें या एक नई R "
+"सेशन (session) शुरू करें।"
+
+#: test.data.table.R:39
+#, c-format
+msgid ""
+"script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
+"be found and used."
+msgstr ""
+"स्क्रिप्ट (script) को '.Rraw' पर समाप्त होना चाहिए। यदि '.Rraw.bz2' से समाप्त होने "
+"वाली फ़ाइल मौजूद है,वह पाई जाएगी और उपयोग की जाएगी।"
+
+#: test.data.table.R:69
+#, c-format
+msgid "Neither %s nor %s exist in %s"
+msgstr "न तो %s और न ही %s %s में मौजूद है"
+
+#: test.data.table.R:121
+msgid "test.data.table() running: %s"
+msgstr "test.data.table() चल रहा है: %s"
+
+#: test.data.table.R:125
+msgid "object '%s' not found"
+msgstr "ऑब्जेक्ट (object) '%s' नहीं मिला"
+
+#: test.data.table.R:128
+msgid ""
+"**** This R session's language is not English. Each test will still check "
+"that the correct number of errors and/or\n"
+"**** warnings are produced. However, to test the text of each error/warning "
+"too, please restart R with LANGUAGE=en"
+msgstr ""
+"**** इस R सेशन (session) की भाषा अंग्रेज़ी नहीं है। प्रत्येक परीक्षण अभी भी यह जाँच "
+"करेगाकि त्रुटियों और/या\n"
+"**** चेतावनियों की सही संख्या उत्पन्न होती है। हालाँकि, प्रत्येक त्रुटि/चेतावनी के पाठ का "
+"परीक्षण करने के लिएकृपया LANGUAGE=en के साथ R को पुनः प्रारंभ करें"
+
+#: test.data.table.R:149
+msgid ""
+"***\n"
+"*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R "
+"session for best results. Ctrl-C now if not.\n"
+"***"
+msgstr ""
+"***\n"
+"memtest=%d. सर्वश्रेष्ठ परिणामों के लिए यह एक नई R_GC_MEM_GROW=0 R सेशन (session) में "
+"पहली कॉल होनी चाहिए।यदि ऐसा नहीं है, तो अभी Ctrl-C दबाएँ।\n"
+"***"
+
+#: test.data.table.R:150
+#, c-format
+msgid ""
+"memtest intended for Linux. Step through data.table:::rss() to see what went "
+"wrong."
+msgstr ""
+"memtest केवल Linux के लिए है। क्या गलत हुआ यह देखने के लिए data.table:::rss() के "
+"माध्यम से जाँच करें।"
+
+#: test.data.table.R:204
+#, c-format
+msgid "Attempt to subset to %d tests matching '%s' failed, running full suite."
+msgstr ""
+"%d परीक्षणों को '%s' से मेल खाते हुए सबसेट (subset) करने का प्रयास विफल रहा, पूरी "
+"श्रृंखला चलाई जा रही है।"
+
+#: test.data.table.R:209
+#, fuzzy
+msgid "Running %d of %d tests matching '%s'"
+msgstr "'%3$s' से मेल खाते हुए %1$d में से %2$d परीक्षण चलाए जा रहे हैं"
+
+#: test.data.table.R:279
+#, c-format
+msgid "Failed in %s after test %s before the next test() call in %s"
+msgstr "%s में, अगले test() कॉल (call) से पहले %s परीक्षण के बाद %s में विफल"
+
+#: test.data.table.R:308
+#, c-format
+msgid ""
+"Tests succeeded, but non-test code caused warnings. Search %s for tests "
+"shown above."
+msgstr ""
+
+#: test.data.table.R:318
+#, c-format
+msgid "Timings count mismatch: %d vs %d"
+msgstr "समय की गणना में असमानता: %d बनाम %d"
+
+#: test.data.table.R:320
+msgid "10 longest running tests took %ds (%d%% of %ds)"
+msgstr "10 सबसे लंबे चलने वाले परीक्षणों में %ds समाय लगा (%ds का %d%%)"
+
+#: test.data.table.R:326
+#, fuzzy
+msgid "10 largest RAM increases (MiB); see plot for cumulative effect (if any)"
+msgstr "10 सबसे बड़े RAM वृद्धि (MB); संचयी प्रभाव (अगर कोई हो) के लिए प्लॉट (plot) देखें"
+
+#: test.data.table.R:336
+msgid "Skipped %d tests for translated messages."
+msgstr ""
+
+#: test.data.table.R:337
+msgid "All %d tests (last %.8g) in %s completed ok in %s"
+msgstr "सभी %d परीक्षण (आखिरी %.8g) %s में ठीक से पूरे हुए %s"
+
+#: test.data.table.R:434
+#, fuzzy
+msgid "Running test id %s"
+msgstr "'%s' से मेल खाते हुए %d में से %d परीक्षण चलाए जा रहे हैं"
+
+#: test.data.table.R:452
+#, c-format
+msgid ""
+"Test %s is invalid: when error= is provided it does not make sense to pass y "
+"as well"
+msgstr ""
+"परिक्षण %s अमान्य है: जब error= दिया गया है, तो y को भी पास (pass) करना समझ में "
+"नहीं आता है"
+
+#: test.data.table.R:506
+msgid "Test id %s is not in increasing order"
+msgstr "परीक्षण संख्या %s बढ़ती क्रम में नहीं है"
+
+#: test.data.table.R:523
+msgid ""
+"Test %s produced %d %ss but expected %d\n"
+"%s\n"
+"%s"
+msgstr ""
+"परीक्षण %s ने %d %ss उत्पन्न किए लेकिन अपेक्षित %d थे%s\n"
+"%s"
+
+#: test.data.table.R:531
+msgid ""
+"Test %s didn't produce the correct %s:\n"
+"Expected: %s\n"
+"Observed: %s"
+msgstr ""
+"परीक्षण %s ने सही %s उत्पन्न नहीं किया:\n"
+"अपेक्षित: %s\n"
+"देखा गया: %s"
+
+#: test.data.table.R:540
+msgid "Output captured before unexpected warning/error/message:"
+msgstr "अप्रत्याशित चेतावनी/त्रुटि/संदेश से पहले अंकित किया गया आउटपुट (output):"
+
+#: test.data.table.R:551
+msgid "Test %s did not produce correct output:"
+msgstr "परीक्षण %s ने सही आउटपुट (output) उत्पन्न नहीं किया:"
+
+#: test.data.table.R:552
+msgid "Expected: <<%s>>"
+msgstr "अपेक्षित: <<%s>>"
+
+#: test.data.table.R:553 test.data.table.R:565
+msgid "Observed: <<%s>>"
+msgstr "देखा गया: <<%s>>"
+
+#: test.data.table.R:555
+msgid "Expected (raw): <<%s>>"
+msgstr "अपेक्षित (असंसाधित): <<%s>>"
+
+#: test.data.table.R:556 test.data.table.R:568
+msgid "Observed (raw): <<%s>>"
+msgstr "देखा गया (असंसाधित): <<%s>>"
+
+#: test.data.table.R:563
+msgid "Test %s produced output but should not have:"
+msgstr "परीक्षण %s ने आउटपुट (output) उत्पन्न किया लेकिन ऐसा नहीं होना चाहिए था:"
+
+#: test.data.table.R:564
+msgid "Expected absent (case insensitive): <<%s>>"
+msgstr "अनुपस्थित की अपेक्षा (केस (case) निरपेक्ष): <<%s>>"
+
+#: test.data.table.R:567
+msgid "Expected absent (raw): <<%s>>"
+msgstr "अनुपस्थित की अपेक्षा (असंसाधित): <<%s>>"
+
+#: test.data.table.R:583
+msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
+msgstr "परीक्षण %s बिना किसी त्रुटि के चला लेकिन selfrefok(%s) FALSE है"
+
+#: test.data.table.R:608
+msgid "Test %s ran without errors but failed check that x equals y:"
+msgstr "परीक्षण %s बिना किसी त्रुटि के चला लेकिन यह जाँच असफल रही कि x y के बराबर है:"
+
+#: test.data.table.R:613
+msgid "First %d of %d (type '%s'):"
+msgstr "पहले %d में से %d (प्रकार '%s'):"
+
+#: test.data.table.R:618
+msgid "Non-ASCII string detected, raw representation:"
+msgstr ""
+
+#: timetaken.R:3
+#, c-format
+msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
+msgstr "started.at=proc.time() का उपयोग करें, Sys.time() (POSIXt और धीमा) का नहीं"
+
+#: transpose.R:7
+#, c-format
+msgid "make.names='%s' not found in names of input"
+msgstr "make.names='%s' इनपुट (input) के नामों में नहीं मिला"
+
+#: transpose.R:12
+#, c-format
+msgid "make.names=%d is out of range [1,ncol=%d]"
+msgstr "make.names=%d सीमा [1,ncol=%d] से बाहर है"
+
+#: transpose.R:28
+#, c-format
+msgid "'names' must be TRUE/FALSE or a character vector."
+msgstr "'names' TRUE/FALSE या कैरेक्टर (character) वेक्टर (vector) होना चाहिए।"
+
+#: transpose.R:34
+#, c-format
+msgid "'keep' should contain integer values between %d and %d."
+msgstr "'keep' में %d से %d के बीच पूर्णांक (integer) मान होने चाहिए।"
+
+#: transpose.R:51
+#, c-format
+msgid "The argument 'type.convert' does not support empty list."
+msgstr "आर्ग्युमेंट (argument) 'type.convert' रिक्त लिस्ट (list) का समर्थन नहीं करता है।"
+
+#: transpose.R:57
+#, c-format
+msgid ""
+"When the argument 'type.convert' contains an unnamed element, it is expected "
+"to be the last element and should be a function. More than one unnamed "
+"element is not allowed unless all elements are functions with length equal "
+"to %d (the length of the transpose list or 'keep' argument if it is "
+"specified)."
+msgstr ""
+"जब आर्ग्युमेंट (argument) 'type.convert' में कोई नामरहित तत्व होता है,तो उससे अंतिम तत्व "
+"होने की अपेक्षा होती है और वह फ़ंक्शन (function) होना चाहिए।एक से अधिक नामरहित तत्व "
+"की अनुमति नहीं है जब तक कि सभी तत्व फ़ंक्शन (function) न हों जिनकी लेंथ (length)%d "
+"(transpose लिस्ट (list) या 'keep' आर्ग्युमेंट (argument) की लेंथ (length) यदि "
+"निर्दिष्ट है) के बराबर हो।"
+
+#: transpose.R:66
+#, c-format
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, it should "
+"be a named list of non-missing integer values (with no duplicate) except the "
+"last element that should be unnamed if it is a function."
+msgstr ""
+"जब आर्ग्युमेंट (argument) 'type.convert' में transpose लिस्ट (list) इंडिसेज़ (indices) "
+"होते हैं,तो यह नाम सहित गैर-लापता पूर्णांक (integer) मानों की लिस्ट (list) होनी चाहिए "
+"(कोई डुप्लिकेट (duplicate) नहीं)सिवाय अंतिम तत्व के, जो कि नामरहित होना चाहिए यदि "
+"वह एक फ़ंक्शन (function) है।"
+
+#: transpose.R:68
+#, c-format
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, they "
+"should be integer values contained in the argument 'keep' (if it is "
+"specified) or be between %d and %d (if it is not). But '%s' is/are not "
+"contained in '%s'."
+msgstr ""
+"जब आर्ग्युमेंट (argument) 'type.convert' में transpose लिस्ट (list) इंडिसेज़ (indices) "
+"होते हैं,तो वे आर्ग्युमेंट (argument) 'keep' (यदि निर्दिष्ट हो) में मौजूद पूर्णांक (integer) "
+"मान होने चाहिए या %d और %dके बीच होने चाहिए (यदि निर्दिष्ट नहीं है)। लेकिन '%s' '%s' "
+"में शामिल नहीं है/हैं।"
+
+#: transpose.R:74
+#, c-format
+msgid ""
+"In the argument 'type.convert', '%s' was ignored because all elements in the "
+"transpose list or elements corresponding to indices specified in the 'keep' "
+"argument have already been converted."
+msgstr ""
+"आर्ग्युमेंट (argument) 'type.convert' में, '%s' को अनदेखा कर दिया गया क्योंकिtranspose "
+"लिस्ट (list) के सभी तत्व या 'keep' आर्ग्युमेंट (argument) में निर्दिष्टइंडिसेज़ (indices) से "
+"जुड़े तत्व पहले ही रूपांतरित किए जा चुके हैं।"
+
+#: transpose.R:83
+#, c-format
+msgid ""
+"The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
+"functions, or a named list of pairs 'fun=indices' with optionally one "
+"unnamed element (a function) but an object of type '%s' was provided."
+msgstr ""
+"आर्ग्युमेंट (argument) 'type.convert' TRUE/FALSE, एक फ़ंक्शन (function), फंक्शन्स "
+"(functions) की लिस्ट (list),या 'fun=indices' की नाम सहित जोड़े की लिस्ट (list) "
+"होनी चाहिए, जिसमें वैकल्पिक रूप से एक नामरहित तत्व (एक फ़ंक्शन (function)) हो सकता है,"
+"लेकिन '%s' प्रकार की ऑब्जेक्ट (object) दी गई थी।"
+
+#: transpose.R:88
+#, c-format
+msgid "length(names) (= %d) is not equal to length(%s) (= %d)."
+msgstr "length(names) (= %d) length(%s) (= %d) के बराबर नहीं है।"
+
+#: uniqlist.R:11
+#, c-format
+msgid "l not type list"
+msgstr "l लिस्ट (list) प्रकार नहीं है"
+
+#: utils.R:19
+#, c-format
+msgid "Argument 'nan' must be length 1"
+msgstr "तर्क 'nan' की लंबाई 1 होनी चाहिए"
+
+#: utils.R:22
+#, c-format
+msgid "Argument 'nan' must be NA or NaN"
+msgstr "तर्क 'nan' को NA या NaN होना चाहिए"
+
+#: utils.R:32
+msgid "Internal error in"
+msgstr "आंतरिक एरर (error)"
+
+#: utils.R:35
+msgid "Please report to the data.table issues tracker."
+msgstr "कृपया data.table मुद्दों के ट्रैकर पर रिपोर्ट करें।"
+
+#: utils.R:79 utils.R:88
+#, c-format
+msgid "x not boolean"
+msgstr "x बूलियन (boolean) नहीं है"
+
+#: utils.R:99
+#, c-format
+msgid ""
+"Some columns are type 'integer64' but package bit64 is not installed. Those "
+"columns will print as strange looking floating point data. There is no need "
+"to reload the data. Simply install.packages('bit64') to obtain the integer64 "
+"print method and print the data again."
+msgstr ""
+"कुछ कॉलम (column) 'integer64' प्रकार के हैं, लेकिन पैकेज (package) bit64 इंस्टॉल "
+"(installed) नहीं हैवे कॉलम (column) अजीब दिखने वाले फ्लोटिंग (floating) पॉइंट "
+"(point) डेटा (data)के रूप में प्रिंट (print) होंगेडेटा (data) को पुनः लोड (load) करने की "
+"आवश्यकता नहीं हैबस install.packages('bit64') चलाएँ ताकि integer64 प्रिंट (print) "
+"विधि उपलब्ध हो सके और डेटा (data) को फिर से प्रिंट (print) करें।"
+
+#: xts.R:4
+#, c-format
+msgid "keep.rownames must be length 1"
+msgstr "keep.rownames की length 1 होनी चाहिए"
+
+#: xts.R:5
+#, c-format
+msgid "keep.rownames must not be NA"
+msgstr "keep.rownames NA नहीं हो सकता"
+
+#: xts.R:11
+#, c-format
+msgid ""
+"Input xts object should not have '%s' column because it would result in "
+"duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
+"change the index column name."
+msgstr ""
+"इनपुट (Input) xts ऑब्जेक्ट (object) में '%s' कॉलम (column) नहीं होना चाहिए क्योंकि "
+"इससे डुप्लिकेट (duplicate) कॉलम (column) नाम हो जाएंगे।xts में '%s' कॉलम (column) का "
+"नाम बदलें या keep.rownames का उपयोग करें।"
+
+#: xts.R:21
+#, c-format
+msgid ""
+"data.table must have a time based column in first position, use "
+"`setcolorder` function to change the order, or see ?timeBased for supported "
+"types"
+msgstr ""
+"data.table के पहले स्थान पर एक समय-आधारित कॉलम (column) होना चाहिए, क्रम बदलने के "
+"लिए'setcolorder' फ़ंक्शन (function) का उपयोग करें, या समर्थित प्रकारों के लिए ?"
+"timeBased देखें"
+
+#: xts.R:25
+#, c-format
+msgid "Following columns are not numeric and will be omitted: %s"
+msgstr "निम्नलिखित कॉलम (column) संख्यात्मक नहीं हैं और इन्हें छोड़ दिया जाएगा: %s"
+
+#: bmerge.R:219
+msgid "  Found %d non-equi group ...\n"
+msgid_plural "  Found %d non-equi groups ...\n"
+msgstr[0] "   %d non-equi समूह मिला ...\n"
+msgstr[1] "   %d non-equi समूह मिले ...\n"
+
+#: data.table.R:745
+msgid "column not removed because not found: %s"
+msgid_plural "columns not removed because not found: %s"
+msgstr[0] "कॉलम (column) को नहीं हटाया गया क्योंकि नहीं मिला: %s"
+msgstr[1] "कॉलमों (columns) को नहीं हटाया गया क्योंकि नहीं मिले: %s"
+
+#: data.table.R:760
+msgid "column not found: %s"
+msgid_plural "columns not found: %s"
+msgstr[0] "कॉलम (column) नहीं मिला: %s"
+msgstr[1] "कॉलम (columns) नहीं मिले: %s"
+
+#: data.table.R:928
+#, fuzzy
+msgid ""
+"The item in the 'by' or 'keyby' list is length %s. Each must be length %d; "
+"the same length as there are rows in x (after subsetting if i is provided)."
+msgid_plural ""
+"The items in the 'by' or 'keyby' list have lengths %s. Each must be length "
+"%d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
+msgstr[0] ""
+"%s प्रत्येक की लेंथ (length) %d होनी चाहिए; x में पंक्तियों (row) की समान लेंथ (length) "
+"(यदि i दिया गया है तो सबसेट (subset) बनाने के बाद)।"
+msgstr[1] ""
+"%s प्रत्येक की लेंथ (length) %d होनी चाहिए; x में पंक्तियों (row) की समान लेंथ (length) "
+"(यदि i दिया गया है तो सबसेट (subset) बनाने के बाद)।"
+
+#: fmelt.R:27
+#, fuzzy
+msgid "Pattern not found: [%s]"
+msgid_plural "Patterns not found: [%s]"
+msgstr[0] "कॉलम (column) नहीं मिला: %s"
+msgstr[1] "कॉलम (columns) नहीं मिले: %s"
+
+#: fread.R:354
+msgid "stringsAsFactors=%s converted %d column: %s\n"
+msgid_plural "stringsAsFactors=%s converted %d columns: %s\n"
+msgstr[0] "stringsAsFactors=%s ने %d कॉलम (column) को परिवर्तित किया: %s\n"
+msgstr[1] "stringsAsFactors=%s ने %d कॉलम (column) को परिवर्तित किया: %s\n"
+
+#: merge.R:131
+msgid ""
+"merge.data.table() received %d unnamed argument in '...' which will be "
+"ignored."
+msgid_plural ""
+"merge.data.table() received %d unnamed arguments in '...' which will be "
+"ignored."
+msgstr[0] ""
+msgstr[1] ""
+
+#: merge.R:138
+msgid ""
+"merge.data.table() received %d unknown keyword argument which will be "
+"ignored: %s"
+msgid_plural ""
+"merge.data.table() received %d unknown keyword arguments which will be "
+"ignored: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: merge.R:144
+msgid "%d unnamed argument in '...'"
+msgid_plural "%d unnamed arguments in '...'"
+msgstr[0] ""
+msgstr[1] ""
+
+#: merge.R:145
+#, fuzzy
+msgid "%d unknown keyword argument"
+msgid_plural "%d unknown keyword arguments"
+msgstr[0] "%d अज्ञात और अनाम आर्गुमेंट्स (arguments) पारित किए गए हैं।"
+msgstr[1] "%d अज्ञात और अनाम आर्गुमेंट्स (arguments) पारित किए गए हैं।"
+
+#: print.data.table.R:51
+msgid "Index: %s\n"
+msgid_plural "Indices: %s\n"
+msgstr[0] "सूची: %s\n"
+msgstr[1] "सूचियाँ: %s\n"
+
+#: print.data.table.R:290
+msgid "%d variable not shown: %s\n"
+msgid_plural "%d variables not shown: %s\n"
+msgstr[0] "%d वैरिएबल (variable) नहीं दिखाया गया: %s\n"
+msgstr[1] "%d वैरिएबल्स (variables) नहीं दिखाए गए: %s\n"
+
+#: setops.R:46
+msgid "unsupported column type found in x or y: %s"
+msgid_plural "unsupported column types found in x or y: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: test.data.table.R:290
+msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
+msgid_plural ""
+"%d errors out of %d. Search %s for test numbers %s. Duration: %s."
+msgstr[0] "%d त्रुटि %d में से। परीक्षण संख्या %s के लिए %s में खोजें। अवधि: %s।"
+msgstr[1] "%d त्रुटियाँ %d में से। परीक्षण संख्याओं %s के लिए %s में खोजें। अवधि: %s।"
+
+#: test.data.table.R:300
+msgid "Caught %d warning outside the test() calls:\n"
+msgid_plural "Caught %d warnings outside the test() calls:\n"
+msgstr[0] ""
+msgstr[1] ""
+
+#: utils.R:43
+msgid ""
+"%s has duplicated column name %s. Please remove or rename the duplicate and "
+"try again."
+msgid_plural ""
+"%s has duplicated column names %s. Please remove or rename the duplicates "
+"and try again."
+msgstr[0] ""
+"%s में डुप्लिकेट (duplicate) कॉलम (column) नाम %s है। कृपया डुप्लिकेट (duplicate) को "
+"हटाएं या उसका नाम बदलें औरपुनः प्रयास करें।"
+msgstr[1] ""
+"%s में डुप्लिकेट (duplicate) कॉलम (column) नाम %s हैं। कृपया डुप्लिकेट्स (duplicates) को "
+"हटाएं या उनके नाम बदलें औरपुनः प्रयास करें।"
+
+#~ msgid "Coercing factor column %s to type character to match type of %s."
+#~ msgstr ""
+#~ "factor कॉलम %s को कैरेक्टर (character) type में परिवर्तित किया जा रहा है ताकि %s "
+#~ "के type से मेल खा सके।"
+
+#~ msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
+#~ msgstr ""
+#~ "सभी-NA %s (%s) को type %s में रूपांतरित किया जा रहा है ताकि %s के type से मेल खा "
+#~ "सके।"
+
+#~ msgid ""
+#~ "Coercing double column %s (which contains no fractions) to type integer "
+#~ "to match type of %s."
+#~ msgstr ""
+#~ "double कॉलम %s (जिसमें कोई भिन्नांश (fractions) नहीं है) को type integer में "
+#~ "परिवर्तित किया जा रहा है ताकि%s के type से मेल खा सके।"
+
+#~ msgid ""
+#~ "Coercing integer column %s to type double to match type of %s which "
+#~ "contains fractions."
+#~ msgstr ""
+#~ "integer कॉलम %s को type double में परिवर्तित किया जा रहा है ताकि %s के type से "
+#~ "मेल खा सके, जिसमेंभिन्नांश (fractions) हैं।"
+
+#~ msgid ""
+#~ "Coercing integer column %s to type double for join to match type of %s."
+#~ msgstr ""
+#~ "जोइन (join) के लिए %s के प्रकार से मेल खाने के लिए  integer कॉलम %s को डबल "
+#~ "(double) type में बदला जा रहा है।"
+
+#~ msgid ""
+#~ "You have wrapped := with {} which is ok but then := must be the only "
+#~ "thing inside {}. You have something else inside {} as well. Consider "
+#~ "placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;"
+#~ "tmpVar2<-...;tmpVar1*tmpVar2}]"
+#~ msgstr ""
+#~ "आपने := को {} के साथ लपेटा है, जो ठीक है, लेकिन फिर := को {} के अंदर केवल एकमात्र "
+#~ "चीज़ होना चाहिए। आपके पास {} के अंदर कुछ और भी है। इसके बजाय := के RHS पर {} रखने "
+#~ "पर विचार करें; जैसे: DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1tmpVar2}]"
+
+#~ msgid ""
+#~ "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
+#~ "Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),"
+#~ "by=a] to assign to column name(s) held in variable myVar. See ?':=' for "
+#~ "other examples. As warned in 2014, this is now a warning."
+#~ msgstr ""
+#~ "v1.9.4 (अक्टूबर 2014) में with=FALSE और := को साथ में प्रयोग करना अप्रचलित कर "
+#~ "दिया गया था। कृपया := के LHS को कोष्ठकों में रखें; जैसे, DT[,(myVar):=sum(b),by=a] "
+#~ "का उपयोग करके कॉलम (column) नाम को वैरिएबल (variable) myVar में असाइन "
+#~ "(assign) करें। अन्य उदाहरणों के लिए ?':=' देखें। 2014 में चेतावनी दी गई थी, यह अब एक "
+#~ "चेतावनी है।"
+
+#~ msgid ""
+#~ "with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+#~ msgstr ""
+#~ "with=FALSE को अनदेखा कर दिया गया है, := का उपयोग करते समय इसकी आवश्यकता नहीं "
+#~ "है। उदाहरणों के लिए ?':=' देखें।"
+
+#~ msgid ""
+#~ "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:"
+#~ "=] syntax is only valid when i is length 1, but its length is %d"
+#~ msgstr ""
+#~ "कम-आवंटित पुनरावर्ती अनुक्रमित लिस्ट (list) को असाइन (assign) नहीं किया जा सकता "
+#~ "है -- L[[i]][,:=] सिंटैक्स (syntax) केवल तब मान्य होता है जब i की लेंथ (length) 1 "
+#~ "हो, लेकिन इसकी लेंथ (length) %d है"
+
+#~ msgid "The item in the 'by' or 'keyby' list is length %s."
+#~ msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
+#~ msgstr[0] "by' या 'keyby' लिस्ट (list) में आइटम (item) की लेंथ (length) %s है।"
+#~ msgstr[1] "by' या 'keyby' लिस्ट (list) में आइटम्स (items) की लेंथ (lengths) %s हैं।"
+
+#~ msgid ""
+#~ "droplevels() with in.place=TRUE is deprecated. Use setdroplevels() "
+#~ "instead."
+#~ msgstr ""
+#~ "droplevels() के साथ in.place=TRUE का अब उपयोग नहीं किया जाएगा। इसके स्थान पर "
+#~ "setdroplevels() का उपयोग करें।"
+
+#~ msgid ""
+#~ "'autostart' is now deprecated and ignored. Consider skip='string' or "
+#~ "skip=n"
+#~ msgstr ""
+#~ "'autostart' अब अप्रचलित (deprecated) है और इसे अनदेखा किया जा रहा है। कृपया "
+#~ "skip='string' या skip=n का उपयोग करने पर विचार करें"
+
+#~ msgid "Elements listed in `by.y` must be valid column names in y."
+#~ msgstr "`by.y` में सूचीबद्ध तत्वों को y में मान्य कॉलम (column) नाम होना चाहिए।"
+
+#~ msgid "Elements listed in `by` must be valid column names in x and y"
+#~ msgstr "`by` में सूचीबद्ध तत्वों को x और y में मान्य कॉलम (column) नाम होना चाहिए"
+
+#~ msgid "Unknown argument '%s' has been passed."
+#~ msgstr "अज्ञात आर्गुमेंट (argument) '%s' को पारित किया गया है।"
+
+#~ msgid ""
+#~ "key(x)<-value is deprecated and not supported. Please change to use "
+#~ "setkey() with perhaps copy(). Has been warning since 2012."
+#~ msgstr ""
+#~ "key(x)<-value को हटाया जा चुका है और इसका समर्थन नहीं किया जाता है। कृपया "
+#~ "setkey() का उपयोग करें, संभवतः copy() के साथ।२०१२ से चेतावनी दी जा रही है।"
