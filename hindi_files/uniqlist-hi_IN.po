@@ -41,7 +41,7 @@ msgid ""
 "%<PRIu64> != length of first element = %<PRIu64>."
 msgstr ""
 "इनपुट (Input) लिस्ट (list) के सभी तत्वों की लेंथ (length) समान होनी चाहिए।"
-"तत्व [%d] की लेंथ (length) "%<PRIu64> पहली तत्व की लेंथ (length) = %<PRIu64> से अलग है।"
+"तत्व [%d] की लेंथ (length) %<PRIu64> पहली तत्व की लेंथ (length) = %<PRIu64> से अलग है।"
 
 #: uniqlist.c:352
 msgid "x is not a logical vector"

@@ -125,7 +125,7 @@ msgstr ""
 #: fread.R:148
 #, c-format
 msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
-msgstr "na.strings[%d]=="%s" केवल स्पेस (space) से बना है, इसे अनदेखा किया जा रहा है"
+msgstr "na.strings[%d]==\"%s\" केवल स्पेस (space) से बना है, इसे अनदेखा किया जा रहा है"
 
 #: fread.R:151
 msgid ""
@@ -178,7 +178,7 @@ msgid ""
 "regex \"%s\"); please check your input and try again."
 msgstr ""
 "पहले अनस्किप्ड पंक्ति (%d) पर <%s%s> का सामना किया, जो एक मान्य YAML"
-" हेडर (header) की शुरुआत का गठन नहीं करता (regex "%s" से मेल खाने की उम्मीद); कृपया अपनी"
+" हेडर (header) की शुरुआत का गठन नहीं करता (regex \"%s\" से मेल खाने की उम्मीद); कृपया अपनी"
 " इनपुट (input) जांचें और फिर से प्रयास करें।"
 
 #: fread.R:190
@@ -188,7 +188,7 @@ msgid ""
 "double check the input file is a valid csvy."
 msgstr ""
 "YAML हेडर (header) को पूर्ण करने से पहले फाइल (file) का अंत आ गया। एक मान्य YAML हेडर (header)"
-" regex "%s" से मेल खाने वाली पंक्तियों से बुकेंड (bookended) किया गया है। कृपया"
+" regex \"%s\" से मेल खाने वाली पंक्तियों से बुकेंड (bookended) किया गया है। कृपया"
 " सुनिश्चित करें कि इनपुट (input) फाइल (file) एक वैध csvy है।"
 
 #: fread.R:201

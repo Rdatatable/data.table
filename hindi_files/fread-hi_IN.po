@@ -571,7 +571,7 @@ msgid ""
 "better guess is not possible\n"
 msgstr ""
 "  'हेडर (header)' को true निर्धारित किया गया है क्योंकि सभी कॉलम (column) स्ट्रिंग (string) प्रकार के हैं और"
-इससे बेहतर अनुमान संभव नहीं है\n
+"इससे बेहतर अनुमान संभव नहीं है\n"
 
 #: fread.c:2055
 msgid ""
@@ -750,10 +750,6 @@ msgstr ""
 #: fread.c:2712
 msgid "[12] Finalizing the datatable\n"
 msgstr "[12] datatable को अंतिम रूप दिया जा रहा है\n"
-
-#: fread.c:2713
-msgid "  Type counts:\n"
-msgstr "  प्रकार (Type) गणना:\n"
 
 #: fread.c:2713
 msgid "  Type counts:\n"

@@ -16,7 +16,7 @@ msgid ""
 "Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any "
 "characters that are not a digit [0-9]. See ?data.table::setDTthreads."
 msgstr ""
-"अमान्य %s=="%s" को अनदेखा किया जा रहा है। यह एक पूर्णांक >= 1 नहीं है।"
+"अमान्य %s==\"%s\" को अनदेखा किया जा रहा है। यह एक पूर्णांक >= 1 नहीं है।"
 "कृपया किसी भी कैरेक्टर (character) को हटा दें जो अंक [0-9] नहीं है। अधिक जानकारी के लिए ?data.table::setDTthreads देखें।"
 
 #: openmp-utils.c:44

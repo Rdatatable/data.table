@@ -1,3 +1,7 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
 #: freadR.c:92
 #, c-format
 msgid "freadR.c has been passed a filename: %s\n"
@@ -33,7 +37,7 @@ msgid ""
 "select= is type list for specifying types in select=, but colClasses= has "
 "been provided as well. Please remove colClasses=."
 msgstr ""
-"select= में types निर्दिष्ट करने के लिए select= का type लिस्ट (list) है, लेकिन colClasses= भी प्रदान किया गया है। कृपया colClasses= हटा दें।" हटा दें।"
+"select= में types निर्दिष्ट करने के लिए select= का type लिस्ट (list) है, लेकिन colClasses= भी प्रदान किया गया है। कृपया colClasses= हटा दें।"
 
 #: freadR.c:188
 msgid ""
