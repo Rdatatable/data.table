@@ -1,0 +1,68 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: subset 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: subset.c:170
+#, c-format
+msgid "i[%d] is %d which is out of range [1,nrow=%d]"
+msgstr "i[%d] का मान %d है जो सीमा [1,nrow=%d] से बाहर है"
+
+#: subset.c:182
+#, c-format
+msgid ""
+"Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."
+msgstr ""
+"i का आइटम (item) %d का मान %d है और आइटम (item) %d का मान %d है। सकारात्मक और नकारात्मक को मिलाया नहीं जा सकता।"
+
+#: subset.c:192
+#, c-format
+msgid "Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."
+msgstr "i का आइटम (item) %d का मान %d है और आइटम (item) %d का मान NA है। नकारात्मक और NA को मिलाया नहीं जा सकता।"
+
+#: subset.c:239
+#, c-format
+msgid ""
+"Item %d of i is %d but there are only %d rows. Ignoring this and %d more like "
+"it out of %d."
+msgstr ""
+"i का आइटम (item) %d का मान %d है लेकिन केवल %d पंक्तियाँ (rows) हैं। इसे और %d अन्य इसी "
+"प्रकार के को %d में से अनदेखा कर रहे हैं।"
+
+#: subset.c:241
+#, c-format
+msgid ""
+"Item %d of i is %d which removes that item but that has occurred before. "
+"Ignoring this dup and %d other dups."
+msgstr ""
+"i का आइटम (item) %d का मान %d है जो उस आइटम (item) को हटा देता है, लेकिन यह पहले भी हुआ है।"
+"इस dup और %d अन्य dups को अनदेखा कर रहे हैं।"
+
+#: subset.c:255
+#, c-format
+msgid "Column %d is NULL; malformed data.table."
+msgstr "कॉलम (column) %d NULL है; गलत ढंग से बना हुआ data.table।"
+
+#: subset.c:258
+#, c-format
+msgid "Column %d ['%s'] is a data.frame or data.table; malformed data.table."
+msgstr "कॉलम (column) %d ['%s'] एक data.frame या data.table है; गलत ढंग से बना हुआ data.table।"
+
+#: subset.c:263
+#, c-format
+msgid ""
+"Column %d ['%s'] is length %d but column 1 is length %d; malformed data.table."
+msgstr ""
+"कॉलम (column) %d ['%s'] की लेंथ (length) %d है, लेकिन कॉलम (column) 1 की लेंथ (length) %d है; गलत ढंग से बना हुआ data.table।"
+
+#: subset.c:296
+#, c-format
+msgid "Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"
+msgstr "cols का आइटम (item) %d का मान %d है जो सीमा [1,ncol(x)=%d] से बाहर है"
