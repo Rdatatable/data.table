@@ -377,8 +377,8 @@ gc_mem = function() {
 # defers parsing to runtime, allowing the encoding check to run first and avoid source() warnings.
 utf8_check = function(test_str) identical(test_str, enc2native(test_str))
 
-test = function(num, x, y=TRUE,
-                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL,
+test = function(num, x, y=TRUE, ...,
+                error=NULL, warning=NULL, message=NULL, output=NULL, notOutput=NULL, ignore.warning=NULL, check_value=TRUE,
                 options=NULL, env=NULL,
                 context=NULL, requires_utf8=FALSE, optimize=NULL) {
   # if optimization is provided, test across multiple optimization levels
@@ -442,7 +442,7 @@ test = function(num, x, y=TRUE,
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
-  # ii) tests that x is TRUE when y isn't supplied
+  # ii) tests that x is TRUE when y isn't supplied, or ignores y entirely when check_value=FALSE
   # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
   # iv) if warning is supplied, y is checked to equal x, and x should result in a warning message matching the pattern
   # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
@@ -636,7 +636,7 @@ test = function(num, x, y=TRUE,
       # nocov end
     }
   }
-  if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
+  if (check_value && !fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
     if (inherits(x, c("Date", "POSIXct"))) storage.mode(x) <- "numeric"
     if (inherits(y, c("Date", "POSIXct"))) storage.mode(y) <- "numeric"
@@ -671,13 +671,23 @@ test = function(num, x, y=TRUE,
     # nocov start
     if (!fail) {
       catf("Test %s ran without errors but failed check that x equals y:\n", numStr)
-      failPrint = function(x, xsub) {
-        cat(">", substitute(x), "=", xsub, "\n") # notranslate
+      failPrint = function(x, y, xsub) {
+        label = as.character(substitute(x))
+        cat(">", label, "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
-          nn = length(x)
-          catf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x))
+          if (is.atomic(x) && is.atomic(y) && length(x) == length(y) && identical(dim(x), dim(y))) {
+            total = length(x)
+            diff_idx = which(x != y | xor(is.na(x), is.na(y))) # careful to only evaluate '!=' for atomic inputs; which: drop NA-NA
+            x = x[diff_idx]
+            nn = length(x)
+            names(x) = sprintf("%s[%d]", label, diff_idx)
+            catf("First %d different of %d (%d total, type '%s'): \n", min(nn, 6L), nn, total, typeof(x))
+          } else {
+            nn = length(x)
+            catf("First %d of %d (type '%s'): \n", min(nn, 6L), nn, typeof(x))
+          }
           # head.matrix doesn't restrict columns
-          if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
+          if (length(d <- dim(x))) print(do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len))))
           else print(head(x))
           if (typeof(x) == 'character' && anyNonAscii(x)) {
             catf("Non-ASCII string detected, raw representation:\n")
@@ -685,8 +695,8 @@ test = function(num, x, y=TRUE,
           }
         }
       }
-      failPrint(x, deparse(xsub))
-      failPrint(y, deparse(ysub))
+      failPrint(x, y, deparse(xsub))
+      failPrint(y, x, deparse(ysub))
       if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
@@ -704,4 +714,4 @@ test = function(num, x, y=TRUE,
   invisible(!fail)
 }
 
-anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov
+anyNonAscii = function(x) anyNA(iconv(x[!is.na(x)], to="ASCII")) # nocov

@@ -525,7 +525,7 @@ copied in bulk (`memcpy` in C) rather than looping in C.
 
 ## What are primary and secondary indexes in data.table?
 
-Manual: [`?setkey`](https://www.rdocumentation.org/packages/data.table/functions/setkey)
+Manual: [`?setkey`](https://r-datatable.com/reference/setkey.html)
 S.O.: [What is the purpose of setting a key in data.table?](https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table/20057411#20057411)
 
 `setkey(DT, col1, col2)` orders the rows by column `col1` then within each group of `col1` it orders by `col2`. This is a _primary index_. The row order is changed _by reference_ in RAM. Subsequent joins and groups on those key columns then take advantage of the sort order for efficiency. (Imagine how difficult looking for a phone number in a printed telephone directory would be if it wasn't sorted by surname then forename. That's literally all `setkey` does. It sorts the rows by the columns you specify.) The index doesn't use any RAM. It simply changes the row order in RAM and marks the key columns. Analogous to a _clustered index_ in SQL.

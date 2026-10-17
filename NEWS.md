@@ -12,6 +12,8 @@
 
 3. options `"datatable.old.matrix.autoname"` is now `FALSE` by default, meaning `names(data.table(x=1, cbind(1)))` is now `c("x", "V2")`. Toggle the option to retain the old behavior for now; future releases will work to remove this possibility. See the release notes for 1.18.0, item 1 under `NOTE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES`.
 
+4. `is.numeric()` now returns `FALSE` for `IDate` and `ITime`, since these classes don't support arbitrary numeric operations, [#7746](https://github.com/Rdatatable/data.table/issues/7746). Thanks @aitap for the report and fix.
+
 ### NEW FEATURES
 
 1. `nafill()`, `setnafill()` extended to work on logical, factor and character vectors (part of [#3992](https://github.com/Rdatatable/data.table/issues/3992)). Includes support for `Date`, `IDate`, `POSIXct` and character vectors. Thanks @jangorecki for the request and @jangorecki, @MichaelChirico and @ben-schwen for the PRs.
@@ -31,6 +33,22 @@
 5. `tables()` can now optionally report `data.table` objects stored one level deep inside list objects when `depth=1L`, [#2606](https://github.com/Rdatatable/data.table/issues/2606). Thanks @MichaelChirico for the report and @manmita for the PR
 
 6. `yearqtr()` and `yearmon()` now gain an optional format specifier [#7694](https://github.com/Rdatatable/data.table/issues/7694). 'numeric' is the default, which preserves the original behavior, but 'character' formats `yearqtr()` as YYYYQ# (e.g. 2025Q2) and `yearmon()` as YYYYM## (e.g. 2025M02, 2025M10). Thanks to @jan-swissre for the report and @LunaticSage218 for the implementation.
+
+7. `tstrsplit()` gains a `rev` argument to facilitate extracting elements anchored from the end of the string, [#6341](https://github.com/Rdatatable/data.table/issues/6341). This is especially useful when strings have a varying number of components and you only want to extract the last or second-to-last element. Thanks to @JBrownArcGen for the suggestion and @venom1204 for the implementation.
+
+8. The `give.names` argument of rolling functions (`froll*()`, `frollapply()`, and `frolladapt()`) now accepts a character vector to directly specify output names, [#5744](https://github.com/Rdatatable/data.table/issues/5744). Thanks to @jangorecki for the suggestion and @ben-schwen for the implementation.
+
+9. `subset()` method for data.tables supports `drop = TRUE` for consistency to data.frame, [#7859](https://github.com/Rdatatable/data.table/issues/7859). Thanks @MichaelChirico for the report and fix.
+
+10. `setorderv()` now accepts a named vector for the `order` argument. When provided, the names are used to identify the columns, allowing the `cols` argument to be omitted, [#6932](https://github.com/Rdatatable/data.table/issues/6932). Thanks to @MichaelChirico for the suggestion and @venom1204 for the implementation.
+
+11. `frank()` gains an `order` argument (matching `frankv()`) and now intercepts the unary minus symbol (e.g., `frank(-dates)`) to support reverse ranking even for types where unary `-` is not defined in R, such as `Date` or `character` vectors, [#5489](https://github.com/Rdatatable/data.table/issues/5489). Thanks @hope-data-science for the request and @venom1204 for the implementation.
+
+12. `setnafill()` now accepts a logical vector for the `cols` argument, which must be the same length as the number of columns in `x`, [#4113](https://github.com/Rdatatable/data.table/issues/4113). Thanks to @MichaelChirico for the suggestion and @venom1204 for the PR.
+
+13. `nafill()` and `setnafill()` gain a `limit` argument to restrict the maximum number of consecutive `NA` values filled, [#7677](https://github.com/Rdatatable/data.table/issues/7677). Thanks to @jaynewton for the suggestion and @venom1204 and @ben-schwen for the PR.
+
+14. `melt()` is faster on large inputs when `measure.vars` is a list with `variable.factor=FALSE` (e.g. 3x) or uses `measure()` (e.g. 2x). Thanks @m-muecke for the PR.
 
 ### BUG FIXES
 
@@ -52,6 +70,28 @@
 
 9. Grouping operations on empty (0-row, 0-column) data.tables work as intended, [#7749](https://github.com/Rdatatable/data.table/issues/7749). Thanks @rickhelmus for the report and @MichaelChirico for the fix.
 
+10. `setkey()`, `setindex()`, `CJ()`, and `setnames()` now prevent creating ambiguous keys from duplicated column names, and keyed joins now error on existing duplicated key columns rather than silently giving incorrect results, [#4888](https://github.com/Rdatatable/data.table/issues/4888) and [#4891](https://github.com/Rdatatable/data.table/issues/4891). Thanks @magerton and @MichaelChirico for the reports, and @ben-schwen for the fix.
+
+11. `between()` now supports `Date` and `IDate` bounds with default `NAbounds=TRUE`, avoiding errors like "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type" when date bounds contain `NA`, [#7281](https://github.com/Rdatatable/data.table/issues/7281). Thanks @grcatlin for the report and fix, and @ben-schwen and @aitap for assistance.
+
+12. `print.data.table()` now truncates long character columns and list-column summaries by default to avoid horizontal console overflow, [#7718](https://github.com/Rdatatable/data.table/issues/7718). When `datatable.prettyprint.char` is `NULL` (the default), the truncation limit is now dynamically calculated based on the available console width. Use `options(datatable.prettyprint.char=Inf)` for the old default behavior (never truncate). Thanks @tdhock for the report and @venom1204 for the fix.
+
+13. Subtracting an `IDate` from a `Date` is fast again by avoiding unnecessary conversion to `POSIXlt`/`POSIXct`, [#7825](https://github.com/Rdatatable/data.table/issues/7825). Thanks @gilesheywood for the report and @ben-schwen for the fix.
+
+14. `as.IDate()` and `as.ITime()` now preserve names, matching base `as.Date()` behavior, [#7252](https://github.com/Rdatatable/data.table/issues/7252). Thanks @DavisVaughan for the report, @venom1204 for the PR, and @MichaelChirico for patching the fix back to old versions of R.
+
+15. `copy()` is now more consistent about reallocating nested `data.table`s, [#7456](https://github.com/Rdatatable/data.table/issues/7456). The resulting list is now only overwritten when necessary, list columns inside data.tables are searched recursively, and their attributes are walked in search of data.tables to reallocate as well. Thanks to @be-marc for the report, @david-cortes for additional information, and @aitap for the fix.
+
+16. `print()` works with multi-byte characters on R before 4.2.0, [#7848](https://github.com/Rdatatable/data.table/pull/7848). Thanks @MichaelChirico for the fix and @aitap for the improvement.
+
+17. `example(local=TRUE)` where the example uses `[.data.table` works again (e.g. `example(':=', package='data.table', local=TRUE, echo=FALSE)`), [#7855](https://github.com/Rdatatable/data.table/issues/7855) re-fixing [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @michaelChirico for the fix.
+
+18. `DT[order(double, ..., -non_double, na.last=TRUE)]`, i.e., a double/complex column (in any order) followed by a non-double column in descending order with `na.last=TRUE`, is fixed to respect `na.last` again, [#7875](https://github.com/Rdatatable/data.table/issues/7875). The problematic behavior only occurred under specific conditions on the cardinality of the non-double column.
+
+19. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
+
+20. `setnafill()` with `type = "locf"` or `type = "nocb"` on a 0-row table no longer segfaults, [#7910](https://github.com/Rdatatable/data.table/issues/7910). Thanks @MichaelChirico for the report and fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
@@ -64,9 +104,32 @@
 
 5. `melt()` and `dcast()` no longer provide nudges when receiving incompatible inputs (e.g. data.frames). As of now, we only define methods for `data.table` inputs.
 
-6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
+6. Enhanced tests for OpenMP support, detecting incompatibilities such as R-bundled runtime _vs._ newer Xcode and testing for a manually installed runtime from <https://mac.r-project.org/openmp/>, [#6622](https://github.com/Rdatatable/data.table/issues/6622). Thanks to @dvg-p4 for initial report and testing, @twitched for the pointers, @tdhock and @aitap for the fix.
 
 7. Verbose outputs from `frolladaptivefun()` and `frollfun()` are now clearer and more user friendly [#7021](https://github.com/Rdatatable/data.table/issues/7021). Thanks to @Omartech312, @aidengseay, @kkarissa, and @heb229 for the implementation, to @ben-schwen for the review, and to @jangorecki for the extensive guidance and review.
+
+8. Clarified `fread()` documentation and vignette regarding the interaction between `keepLeadingZeros = TRUE` and automatic header detection, [#5405](https://github.com/Rdatatable/data.table/issues/5405). Thanks @clemenskuehn for the report and @venom1204 for updating the documentation.
+
+9. `fread()` returns a clearer error message when `dec = NA` is used, [#7737](https://github.com/Rdatatable/data.table/issues/7737). Thanks @mcol for the report and the fix.
+
+10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
+
+
+## data.table [v1.18.6.1](https://github.com/Rdatatable/data.table/milestone/47) (22 August 2026)
+
+### NEW FEATURES
+
+1. Rows can now be deleted by reference using `DT[i, .ROW := NULL]`, avoiding a full copy of the table for large row-removal operations, [#635](https://github.com/Rdatatable/data.table/issues/635). This has been one of data.table's most requested features. Target rows must be selected with the `i` expression, `by`/`keyby` are not supported, and keys/indices are cleared after deletion. The new experimental helper `setallocrow()` prepares columns for by-reference row operations. Thanks @arunsrinivasan for the feature request, @ben-schwen for the implementation, and @aitap for review and assistance.
+
+### BUG FIXES
+
+1. Adapted the tests to stop using the "special" attribute names in `structure()` calls, [#7813](https://github.com/Rdatatable/data.table/issues/7813) & [#7814](https://github.com/Rdatatable/data.table/issues/7814), avoiding deprecation warnings on R-devel. Thanks @ben-schwen for the report and @ben-schwen & @MichaelChirico for the fix.
+
+2. `rbindlist()` (and therefore the `rbind()` method for `data.table`s) no longer raises an error upon encountering more than approximately 50000 columns in a list entry, [#7793](https://github.com/Rdatatable/data.table/issues/7793). The bug was introduced in `data.table` version 1.18.2.1. Thanks to @rickhelmus for the report and @aitap for the fix.
+
+### NOTES
+
+1. Handled OpenMP deprecation of `master` construct, [#7882](https://github.com/Rdatatable/data.table/pull/7882). Thanks @TimTaylor for the PR.
 
 ## data.table [v1.18.4](https://github.com/Rdatatable/data.table/milestone/45) (6 May 2026)
 

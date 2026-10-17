@@ -53,7 +53,7 @@
   \item{has.nf}{ Logical. If it is known whether \code{x} contains non-finite values (\code{NA}, \code{NaN}, \code{Inf}, \code{-Inf}), then setting this to \code{TRUE} or \code{FALSE} may speed up computation. Defaults to \code{NA}. See \emph{has.nf argument} section below for details. }
   \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See \emph{Adaptive rolling functions} section below for details. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{n} be computed also for leading incomplete running window? See \emph{\code{partial} argument} section below for details. }
-  \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{x} and names of \code{n}. If answer is an atomic vector, then the argument is ignored, see examples. }
+  \item{give.names}{ Logical or character vector, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{x} and names of \code{n}. A character vector supplies the output names directly. If the answer is an atomic vector, then the argument is ignored, see examples. }
   \item{hasNA}{ Logical. Deprecated, use \code{has.nf} argument instead. }
 }
 \details{
@@ -165,6 +165,10 @@ all.equal(ans1, ans3)
 
 # give.names
 frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
+# supply output names
+frollsum(x=1:5, c(2,4), give.names=c("tiny", "big"))
+# output is atomic, so names are ignored
+frollsum(x=1:5, 2, give.names="tiny")
 
 # has.nf=FALSE should be used with care
 frollmax(c(1,2,NA,4,5), 2)

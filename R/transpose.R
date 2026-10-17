@@ -23,10 +23,15 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
   ans[]
 }
 
-tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
+tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE, rev=FALSE) {
   if (!isTRUEorFALSE(names) && !is.character(names))
     stopf("'names' must be TRUE/FALSE or a character vector.")
-  ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty=FALSE)
+  if (!isTRUEorFALSE(rev))
+    stopf("'rev' must be TRUE or FALSE.")
+  ans = strsplit(as.character(x), ...)
+  if (rev) ans = lapply(ans, base::rev)
+  ans = transpose(ans, fill=fill, ignore.empty=FALSE)
+
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
     chk = min(keep) >= min(1L, length(ans)) & max(keep) <= length(ans)
@@ -51,7 +56,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
       if(!n) stopf("The argument 'type.convert' does not support empty list.")
       is_named = nzchar(names(type.convert))
       all_is_named = length(is_named) && all(is_named)                  # because all(is_named)=TRUE if is_named=NULL <-- names(type.convert)=NULL
-      last_item = paste(deparse(substitute(type.convert)[[n + 1L]], width.cutoff=500L), collapse=" ")
+      last_item = deparse1(substitute(type.convert)[[n + 1L]])
       if (!all_is_named) {
         if (!(sum(!is_named) == 1L && !is_named[n] && is.function(type.convert[[n]])))
           stopf("When the argument 'type.convert' contains an unnamed element, it is expected to be the last element and should be a function. More than one unnamed element is not allowed unless all elements are functions with length equal to %d (the length of the transpose list or 'keep' argument if it is specified).", length(keep))

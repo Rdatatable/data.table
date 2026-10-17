@@ -138,8 +138,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     stopf("'%s' must be TRUE or FALSE", "adaptive")
   if (!isTRUEorFALSE(partial))
     stopf("'%s' must be TRUE or FALSE", "partial")
-  if (!isTRUEorFALSE(give.names))
-    stopf("'%s' must be TRUE or FALSE", "give.names")
+  if (!isTRUEorFALSE(give.names) && !is.character(give.names))
+    stopf("'%s' must be TRUE or FALSE, or a character vector", "give.names")
   if (!isTRUEorFALSE(simplify) && !is.function(simplify))
     stopf("'%s' must be TRUE or FALSE or a function", "simplify")
 
@@ -148,7 +148,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   verbose = getOption("datatable.verbose")
   if (!length(X))
     return(vector(mode=typeof(X), length=0L))
-  if (give.names)
+  if (isTRUE(give.names))
     orig = list(N=N, adaptive=adaptive)
 
   ## by.column, x validation, x preprocess
@@ -471,9 +471,8 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
   if (length(ans)) {
     if (!xvec && length(ans)==1L) {
       ans = ans[[1L]] ## unpack atomic input
-    } else if (give.names) {
-      nms = make.roll.names(x.len=nx, n.len=nn, n=orig$N, x.nm=xnam, n.nm=nnam, fun="apply", adaptive=orig$adaptive)
-      setattr(ans, "names", nms)
+    } else if (isTRUE(give.names) || is.character(give.names)) {
+      set.roll.names(ans, give.names, make.roll.names(x.len=nx, n.len=nn, n=orig$N, x.nm=xnam, n.nm=nnam, fun="apply", adaptive=orig$adaptive))
     }
   }
   ans

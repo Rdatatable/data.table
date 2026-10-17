@@ -7,11 +7,13 @@
 }
 
 \usage{
+dcast(data, formula, fun.aggregate = NULL, ..., margins = NULL,
+    subset = NULL, fill = NULL, value.var = guess(data))
 \method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_",
     \dots, margins = NULL, subset = NULL, fill = NULL,
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"),
-    value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, 
+    value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots,
     value.var.in.RHSdots = value.var.in.dots)
 }
 \arguments{

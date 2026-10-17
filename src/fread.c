@@ -2496,7 +2496,11 @@ int freadMain(freadMainArgs _args)
     {
       int me = omp_get_thread_num();
       bool myShowProgress = false;
+#if defined(_OPENMP) && _OPENMP >= 202011
+      #pragma omp masked
+#else
       #pragma omp master
+#endif
       {
         nth = omp_get_num_threads();
         if (me != 0) {

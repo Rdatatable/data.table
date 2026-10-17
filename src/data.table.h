@@ -308,11 +308,14 @@ SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
 SEXP copyAsGrowable(SEXP x);
+SEXP resizeVector(SEXP x, SEXP size);
 
 // nafill.c
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
-void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols);
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose, uint_fast64_t limit);
+void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose, uint_fast64_t limit);
+void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose, uint_fast64_t limit);
+void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill, ans_t *ans, bool verbose, uint_fast64_t limit);
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols, SEXP limit);
 
 // between.c
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
@@ -331,8 +334,12 @@ bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 void copyVectorElements(SEXP dst, SEXP src, R_xlen_t n, bool deep_copy, const char *caller);
-SEXP copyAsPlain(SEXP x);
+SEXP copyAsPlain(SEXP x, R_xlen_t overalloc);
+SEXP allocrow(SEXP dt, R_xlen_t n);
 void copySharedColumns(SEXP x);
+
+// deleterows.c
+SEXP deleteRows(SEXP dt, SEXP rows_to_delete);
 SEXP lock(SEXP x);
 SEXP unlock(SEXP x);
 bool islocked(SEXP x);
@@ -404,9 +411,10 @@ SEXP copyCols(SEXP x, SEXP cols);
 // where there are no arguments, it must be (void) not () to be a strict prototype
 SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP copy(SEXP);
+SEXP copy(SEXP, SEXP);
 SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
+SEXP allocrowwrapper(SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
 SEXP setcharvec(SEXP, SEXP, SEXP);

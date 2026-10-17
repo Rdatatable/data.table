@@ -15,7 +15,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            verbose=getOption("datatable.verbose", FALSE),
            encoding = "",
            forceDecimal = FALSE) {
-  na = as.character(na[1L]) # fix for #1725
+  na = as.character(na) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
   }

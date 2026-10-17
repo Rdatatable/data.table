@@ -5,6 +5,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, 
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
   is.i64 = function(x) inherits(x, "integer64")   # this is true for nanotime too
+  is.Date = function(x) inherits(x, "Date")
   # POSIXct special handling to auto coerce character
   if (is.px(x) && (is.character(lower) || is.character(upper))) {
     tz = attr(x, "tzone", exact=TRUE)
@@ -33,7 +34,14 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, 
     if (!is.i64(lower) && (is.integer(lower) || fitsInInt64(lower))) lower = bit64::as.integer64(lower)
     if (!is.i64(upper) && (is.integer(upper) || fitsInInt64(upper))) upper = bit64::as.integer64(upper)
   }
-  is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x)
+  # Date special handling #7281
+  if (is.Date(x)) {
+    if (is.character(lower)) lower = tryCatch(as.Date(lower), error = function(e) stopf(
+      "The 'x' argument of the 'between' function is Date while '%s' was not, coercion to Date failed with: %s", 'lower', conditionMessage(e)))
+    if (is.character(upper)) upper = tryCatch(as.Date(upper), error = function(e) stopf(
+      "The 'x' argument of the 'between' function is Date while '%s' was not, coercion to Date failed with: %s", 'upper', conditionMessage(e)))
+  }
+  is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x) || is.Date(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
     # faster parallelised version for int/double/character
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).

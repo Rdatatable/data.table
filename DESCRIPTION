@@ -2,7 +2,7 @@ Package: data.table
 Version: 1.18.99
 Title: Extension of `data.frame`
 Depends: R (>= 3.5.0)
-Imports: methods
+Imports: methods, stats, utils
 Suggests: bit64 (>= 4.0.0), R.utils, xts, zoo (>= 1.8-1), yaml, litedown, codetools
 Enhances: knitr, xfun
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
@@ -83,7 +83,7 @@ Authors@R: c(
   person("Boniface Christian","Kamgang", role="ctb"),
   person("Olivier","Delmarcell",   role="ctb"),
   person("Josh","O'Brien",         role="ctb"),
-  person("Dereck","de Mezquita",   role="ctb"),
+  person("Dereck","Mezquita",      role="ctb", comment = c(ORCID="0000-0002-9307-6762")),
   person("Michael","Czekanski",    role="ctb"),
   person("Dmitry", "Shemetov",     role="ctb"),
   person("Nitish", "Jha",          role="ctb"),
@@ -108,5 +108,7 @@ Authors@R: c(
   person("Mukul", "Kumar",         role="ctb"),
   person("Ildikó", "Czeller",      role="ctb"),
   person("Manmita", "Das",         role="ctb"),
-  person("Tarun", "Thammisetty",   role="ctb")
-  )
+  person("Tarun", "Thammisetty",   role="ctb"),
+  person("Marco", "Colombo",       role="ctb", comment = c(ORCID = "0000-0001-6672-0623")),
+  person("Tim", "Taylor",          role="ctb", comment = c(ORCID = "0000-0002-8587-7113")),
+  person("Maximilian", "Mücke",    role="ctb", comment = c(ORCID = "0009-0000-9432-9795")))

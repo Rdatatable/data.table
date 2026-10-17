@@ -5,9 +5,10 @@
   An internal testing function used in \code{data.table} test scripts that are run by \code{\link{test.data.table}}.
 }
 \usage{
-test(num, x, y = TRUE,
+test(num, x, y = TRUE, ...,
      error = NULL, warning = NULL, message = NULL,
      output = NULL, notOutput = NULL, ignore.warning = NULL,
+     check_value = TRUE,
      options = NULL, env = NULL, context = NULL,
      requires_utf8 = FALSE, optimize = NULL)
 }
@@ -15,17 +16,19 @@ test(num, x, y = TRUE,
 \item{num}{ A unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as \code{n.m}, where essentially \code{n} indexes an issue and \code{m} indexes aspects of that issue. For the most part, your new PR should only have one value of \code{n} (scroll to the end of \code{inst/tests/tests.Rraw} to see the next available ID) and then index the tests within your PR by increasing \code{m}. Note -- \code{n.m} is interpreted as a number, so \code{123.4} and \code{123.40} are actually the same -- please \code{0}-pad as appropriate. Test identifiers are checked to be in increasing order at runtime to prevent duplicates being possible. }
 \item{x}{ An input expression to be evaluated. }
 \item{y}{ Pre-defined value to compare to \code{x}, by default \code{TRUE}. }
+\item{...}{ Ignored; used to prevent providing subsequent arguments positionally. }
 \item{error}{ When you are testing behaviour of code that you expect to fail with an error, supply the expected error message to this argument. It is interpreted as a regular expression, so you can be abbreviated, but try to include the key portion of the error so as not to accidentally include a different error message. }
 \item{warning}{ Same as \code{error}, in the case that you expect your code to issue a warning. Note that since the code evaluates successfully, you should still supply \code{y}. }
 \item{message}{ Same as \code{warning} but expects \code{message} exception. }
 \item{output}{ If you are testing the printing/console output behaviour; e.g. with \code{verbose=TRUE} or \code{options(datatable.verbose=TRUE)}. Again, regex-compatible and case sensitive. }
 \item{notOutput}{ Or if you are testing that a feature does \emph{not} print particular console output. Case insensitive (unlike output) so that the test does not incorrectly pass just because the string is not found due to case. }
 \item{ignore.warning}{ A single character string. Any warnings emitted by \code{x} that contain this string are dropped. Remaining warnings are compared to the expected \code{warning} as normal. }
+\item{check_value}{ Logical, default \code{TRUE}. If \code{FALSE}, \code{y} is ignored entirely. Useful, for example, when writing a test that \code{x} doesn't error. }
 \item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to \code{test()} (usually, \code{x}, or maybe \code{y}) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
 \item{env}{ A named list of environment variables to set for the duration of the test, much like \code{options}. A list entry set to \code{NULL} will unset (i.e., \code{\link{Sys.unsetenv}}) the corresponding variable. }
 \item{context}{ String, default \code{NULL}. Used to provide context where this is useful, e.g. in a test run in a loop where we can't just search for the test number. }
 \item{requires_utf8}{ \code{FALSE} (default), \code{TRUE}, or a character string. When set, the test is skipped if UTF-8 characters cannot be represented in the native encoding. Use \code{TRUE} for default UTF-8 test characters or provide a custom string of test characters. }
-\item{optimize}{ A vector of different optimization levels to test. The code in \code{x} will be run once for each optimization level, with \code{options(datatable.optimize=optimize)} set accordingly. All optimization levels must pass the test for the overall test to pass. If no \code{y} is supplied, the results from the different levels are compared to each other for equality. If a \code{y} is supplied, the results from each level are compared to \code{y}. }
+\item{optimize}{ A vector of different optimization levels to test. The code in \code{x} will be run once for each optimization level, with \code{options(datatable.optimize=optimize)} set accordingly. All optimization levels must pass the test for the overall test to pass. If no \code{y} is supplied, the results from the different levels are compared to each other for equality. If a \code{y} is supplied, the results from each level are compared to \code{y}. Note that since \code{x} is evaluated multiple times, any in-place modifications to a \code{data.table} (e.g. \code{:=}) will persist across runs; use \code{\link{copy}} if a fresh state is required for each level. }
 }
 \note{
    \code{NA_real_} and \code{NaN} are treated as equal, use \code{identical} if distinction is needed. See examples below.

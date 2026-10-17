@@ -12,13 +12,13 @@
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
   if (!exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # check when installed package is loaded but skip when developing the package with cc()
-    dllV = if (is.loaded("CdllVersion",PACKAGE="data_table")) .Call(CdllVersion) else "before 1.12.0"
+    dllV = if (is.loaded("CdllVersion",PACKAGE="data.table")) .Call(CdllVersion) else "before 1.18.99"
     RV = as.character(packageVersion("data.table"))
     if (dllV != RV) {
-      dll = if (.Platform$OS.type=="windows") "dll" else "so"
+      dll = .Platform$dynlib.ext
       # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
       # TODO(R>=4.0.0): Remove or adjust this message once we're sure all users are unaffected
-      stopf("The data_table.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. Prior to R version 3.6.0 patched, R's package installer could leave a package in an apparently functional state where new R code was calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll))
+      stopf("The data.table.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. Prior to R version 3.6.0 patched, R's package installer could leave a package in an apparently functional state where new R code was calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll))
     }
     builtPath = system.file("Meta", "package.rds", package="data.table")
     if (builtPath != "" && !identical(session_r_version>="4.0.0", (build_r_version <- readRDS(builtPath)$Built$R)>="4.0.0")) {
@@ -143,7 +143,7 @@ getRversion = function(...) stopf("Reminder to data.table developers: don't use 
 # 4) Defining getRversion with a stopf() here helps prevent new switches on getRversion() being added in future. Easily circumvented but the point is to issue the message above.
 
 .onUnload = function(libpath) {
-  library.dynam.unload("data_table", libpath)
+  library.dynam.unload("data.table", libpath)
 }
 
 # nocov end

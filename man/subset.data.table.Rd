@@ -9,7 +9,7 @@
 }
 
 \usage{
-  \method{subset}{data.table}(x, subset, select, ...)
+  \method{subset}{data.table}(x, subset, select, drop=FALSE, ...)
 }
 
 \arguments{
@@ -21,6 +21,9 @@
   }
   \item{select}{
     expression indicating columns to select from \code{data.table}
+  }
+  \item{drop}{
+    logical, default \code{FALSE}; if \code{TRUE} and, after applying \code{select}, there is only one column, the column vector is returned.
   }
   \item{\ldots}{
     further arguments to be passed to or from other methods

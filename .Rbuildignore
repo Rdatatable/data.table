@@ -21,8 +21,8 @@
 ^\.vscode$
 ^\.zed$
 ^\.lintr$
-
 ^\.gitlab-ci\.yml$
+^AGENTS\.md$
 
 ^Makefile$
 ^NEWS\.0\.md$
