@@ -1,0 +1,444 @@
+---
+title: "रेफरेंस सेमांटिक्स"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Reference semantics}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+यह विगनेट *data.table* की reference semantics पर चर्चा करता है, जो किसी *data.table* के columns को *by reference add/update/delete* करने और उन्हें `i` तथा `by` के साथ combine करने की अनुमति देती है। यह उन पाठकों के लिए है जो पहले से *data.table* syntax, उसके general form, `i` में rows subset करने, columns पर select और compute करने तथा group द्वारा aggregations करने से परिचित हैं। यदि आप इन concepts से परिचित नहीं हैं, तो पहले [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट पढ़ें।
+
+***
+
+## डेटा {#data}
+
+हम वही `flights` डेटा उपयोग करेंगे जो [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में उपयोग किया गया है।
+
+```{r, echo = FALSE}
+options(width = 100L)
+```
+
+```{r}
+flights <- fread("flights14.csv")
+flights
+dim(flights)
+```
+
+## परिचय
+
+इस विगनेट में हम
+
+1. पहले reference semantics पर संक्षेप में चर्चा करेंगे और `:=` operator के उपयोग के दो अलग-अलग forms देखेंगे
+
+2. फिर देखेंगे कि `:=` operator का उपयोग करके `j` में columns को *by reference add/update/delete* कैसे किया जा सकता है और इसे `i` तथा `by` के साथ कैसे combine करें।
+
+3. और अंत में `:=` को उसके *side-effect* के लिए उपयोग करना तथा `copy()` का उपयोग करके उन side effects से बचना देखेंगे।
+
+## 1. Reference semantics
+
+पिछले विगनेट में अब तक देखे गए सभी operations ने एक नया dataset बनाया था। अब हम देखेंगे कि original data में नए column(s) को कैसे *add* करें, existing column(s) को कैसे *update* या *delete* करें।
+
+### a) पृष्ठभूमि
+
+*Reference semantics* देखने से पहले नीचे दिए गए *data.frame* पर विचार करें:
+
+```{r}
+DF = data.frame(ID = c("b","b","b","a","a","c"), a = 1:6, b = 7:12, c = 13:18)
+DF
+```
+
+जब हमने यह किया:
+
+```r
+DF$c <- 18:13               # (1) -- replace entire column
+# or
+DF$c[DF$ID == "b"] <- 15:13 # (2) -- subassign in column 'c'
+```
+
+`R < 3.1` के versions में (1) और (2) दोनों के कारण पूरे data.frame की deep copy बनती थी। [यह एक से अधिक बार copy करता था](https://stackoverflow.com/q/23898969/559784)। इन अनावश्यक copies से बचकर performance सुधारने के लिए *data.table* ने [R में उपलब्ध लेकिन उपयोग न किए गए `:=` operator](https://stackoverflow.com/q/7033106/559784) का उपयोग किया।
+
+`R v3.1` में बड़े performance improvements किए गए, जिसके परिणामस्वरूप (1) के लिए केवल *shallow* copy बनती है, *deep* copy नहीं। हालाँकि (2) के लिए `R v3.1+` में भी पूरा column *deep* copy होता है। इसका अर्थ है कि एक ही query में जितने अधिक columns पर subassign किया जाएगा, R उतनी ही अधिक *deep* copies बनाएगा।
+
+#### *shallow* बनाम *deep* copy
+
+*Shallow* copy केवल column pointers के vector की copy होती है (जो *data.frame* या *data.table* के columns से संबंधित होते हैं)। Actual data को memory में भौतिक रूप से copy नहीं किया जाता।
+
+इसके विपरीत, *deep* copy पूरे data को memory में किसी दूसरे स्थान पर copy करती है।
+
+`i` का उपयोग करके *data.table* subset करने पर (जैसे `DT[1:10]`) *deep* copy बनती है। लेकिन जब `i` नहीं दिया जाता या `TRUE` के बराबर होता है, तब *shallow* copy बनती है।
+
+#
+*data.table* के `:=` operator के साथ (1) और (2) दोनों में, आपके उपयोग किए जा रहे R version से स्वतंत्र रूप से, कोई copy नहीं बनती। ऐसा इसलिए क्योंकि `:=` operator *data.table* columns को *in-place* (by reference) update करता है।
+
+### b) `:=` operator
+
+इसे `j` में दो तरीकों से उपयोग किया जा सकता है:
+
+(a) `LHS := RHS` form
+
+```r
+DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
+
+# when you have only one column to assign to you
+# can drop the quotes and list(), for convenience
+DT[, colA := valA]
+```
+
+(b) Functional form
+
+```r
+DT[, `:=`(colA = valA, # valA is assigned to colA
+          colB = valB, # valB is assigned to colB
+          ...
+)]
+```
+
+ध्यान दें कि ऊपर का code केवल यह समझाता है कि `:=` का उपयोग कैसे किया जा सकता है। ये working examples नहीं हैं। अगले section से हम इसे `flights` *data.table* पर उपयोग करना शुरू करेंगे।
+
+#
+
+* (a) में `LHS` column names का character vector लेता है और `RHS` *values की list* लेता है। `RHS` को केवल `list` होना चाहिए, चाहे वह किसी भी तरह generate की गई हो (जैसे `lapply()`, `list()`, `mget()`, `mapply()` आदि का उपयोग करके)। यह form आमतौर पर program करना आसान होता है और विशेष रूप से तब उपयोगी है जब आपको पहले से पता न हो कि किन columns को values assign करनी हैं।
+
+* दूसरी ओर, यदि आप बाद के लिए कुछ comments लिखना चाहते हैं तो (b) उपयोगी है।
+
+* Result *invisibly* लौटाया जाता है।
+
+* क्योंकि `:=`, `j` में उपलब्ध है, हम इसे `i` और `by` operations के साथ उसी तरह combine कर सकते हैं जैसे पिछले विगनेट में aggregation operations के साथ किया था।
+
+#
+
+ऊपर दिखाए गए `:=` के दोनों forms में ध्यान दें कि हम result को वापस किसी variable को assign नहीं करते। इसकी आवश्यकता ही नहीं है। Input *data.table* by reference modify होता है। उदाहरणों से समझते हैं कि इसका क्या अर्थ है।
+
+बाकी विगनेट में हम `flights` *data.table* के साथ काम करेंगे।
+
+## 2. Columns को *by reference* add/update/delete करना
+
+### a) Columns को by reference जोड़ना {#ref-j}
+
+#### -- `flights` *data.table* में प्रत्येक flight के *speed* और *total delay* columns कैसे जोड़ें?
+
+```{r}
+flights[, `:=`(speed = distance / (air_time/60), # speed in mph (mi/h)
+               delay = arr_delay + dep_delay)]   # delay in minutes
+head(flights)
+
+## alternatively, using the 'LHS := RHS' form
+# flights[, c("speed", "delay") := list(distance/(air_time/60), arr_delay + dep_delay)]
+```
+
+#### ध्यान दें कि
+
+* हमें result को वापस `flights` को assign नहीं करना पड़ा।
+
+* `flights` *data.table* में अब दो नए जोड़े गए columns हैं। इसी को हम *by reference जोड़ना* कहते हैं।
+
+* हमने functional form का उपयोग किया ताकि computation क्या करता है यह समझाने के लिए साथ में comments जोड़ सकें। आप `LHS := RHS` form भी देख सकते हैं (commented)।
+
+### b) Columns की कुछ rows को by reference update करना - *sub-assign* by reference {#ref-i-j}
+
+आइए `flights` *data.table* में उपलब्ध सभी `hours` देखें:
+
+```{r}
+# get all 'hours' in flights
+flights[, sort(unique(hour))]
+```
+
+हम देखते हैं कि डेटा में कुल `25` unique values हैं। *0* और *24* दोनों घंटे मौजूद प्रतीत होते हैं। आइए *24* को *0* से बदलें।
+
+#### -- उन rows में जहाँ `hour == 24`, value को `0` से बदलें
+
+```{r}
+# subassign by reference
+flights[hour == 24L, hour := 0L]
+```
+
+* हम `j` में `:=` के साथ `i` का ठीक उसी तरह उपयोग कर सकते हैं जैसा [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में पहले देख चुके हैं।
+
+* Column `hour` को केवल उन *row indices* पर `0` से बदला जाता है जहाँ `i` में दी गई condition `hour == 24L`, `TRUE` evaluate होती है।
+
+* `:=` result invisibly लौटाता है। कभी-कभी assignment के बाद result देखना आवश्यक हो सकता है। इसके लिए query के अंत में खाली `[]` जोड़ सकते हैं, जैसा नीचे दिखाया गया है:
+
+    ```{r}
+    flights[hour == 24L, hour := 0L][]
+    ```
+
+#
+सत्यापित करने के लिए सभी `hours` देखते हैं।
+
+```{r}
+# check again for '24'
+flights[, sort(unique(hour))]
+```
+
+#### अभ्यास: {#update-by-reference-question}
+
+`flights[hour == 24L, hour := 0L]` और `flights[hour == 24L][, hour := 0L]` में क्या अंतर है? संकेत: यदि आप बाद में result का उपयोग करना चाहते हैं तो दूसरे form को assignment (`<-`) की आवश्यकता होगी।
+
+यदि आप इसे समझ नहीं पा रहे हैं, तो `?":="` के `Note` section को देखें।
+
+### c) Column को by reference delete करना
+
+#### -- `delay` column हटाएँ
+
+```{r}
+flights[, c("delay") := NULL]
+head(flights)
+
+## or using the functional form
+# flights[, `:=`(delay = NULL)]
+```
+
+#### {#delete-convenience}
+
+* किसी column को `NULL` assign करने से वह column *delete* हो जाता है। और यह *तुरंत* होता है।
+
+* हम `LHS` में names के बजाय column numbers भी दे सकते हैं, हालाँकि अच्छे programming practice के लिए column names उपयोग करना बेहतर है।
+
+* जब केवल एक column delete करना हो, तो सुविधा के लिए `c()` और double quotes हटाकर column name को सीधे *unquoted* उपयोग कर सकते हैं। अर्थात:
+
+    ```r
+    flights[, delay := NULL]
+    ```
+
+    ऊपर के code के बराबर है।
+
+### d) `by` द्वारा grouping के साथ `:=` {#ref-j-by}
+
+[Section 2b](#ref-i-j) में हम `:=` के साथ `i` का उपयोग पहले ही देख चुके हैं। अब देखते हैं कि `:=` को `by` के साथ कैसे उपयोग करें।
+
+#### -- ऐसा नया column कैसे जोड़ें जिसमें प्रत्येक `orig,dest` pair के लिए maximum speed हो?
+
+```{r}
+flights[, max_speed := max(speed), by = .(origin, dest)]
+head(flights)
+```
+
+* हम `:=` operator का उपयोग करके by reference नया column `max_speed` जोड़ते हैं।
+
+* Group करने के लिए columns उसी तरह देते हैं जैसा *Introduction to data.table* विगनेट में दिखाया गया है। प्रत्येक group के लिए `max(speed)` compute होता है, जो single value लौटाता है। उस value को group की length के अनुरूप recycle किया जाता है। फिर से, कोई copies नहीं बनतीं। `flights` *data.table* *in-place* modify होता है।
+
+* हम `by` को *character vector* भी दे सकते थे, जैसा [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में देखा था, उदाहरण के लिए `by = c("origin", "dest")`।
+
+#### Zero-length RHS और `by` पर टिप्पणी
+
+* यदि `:=` assignment का `RHS` zero-length vector evaluate होता है, तो सामान्यतः error उठती है। लेकिन जब `:=` को `by` के साथ उपयोग किया जाता है, तो किसी group के लिए zero-length result उस group के लिए no-op माना जाता है और error नहीं फेंकी जाती। इससे grouped operations तब भी जारी रह सकते हैं जब कुछ groups कोई result उत्पन्न न करें।
+
+#
+
+### e) Multiple columns और `:=`
+
+#### -- `.SD` का उपयोग करके प्रत्येक month के लिए `dep_delay` और `arr_delay` का `max()` compute करने वाले दो और columns कैसे जोड़ें?
+
+```{r}
+in_cols  = c("dep_delay", "arr_delay")
+out_cols = c("max_dep_delay", "max_arr_delay")
+flights[, c(out_cols) := lapply(.SD, max), by = month, .SDcols = in_cols]
+head(flights)
+```
+
+* हम `LHS := RHS` form का उपयोग करते हैं। Input column names और जोड़ने वाले नए columns को अलग variables में store करते हैं और उन्हें `.SDcols` तथा `LHS` में देते हैं (बेहतर readability के लिए)।
+
+* ध्यान दें कि [Section 2c](#delete-convenience) में समझाए अनुसार, एक ही column होने पर हम बिना quote किए column names के साथ by-reference assignment की अनुमति देते हैं। इसलिए हम `out_cols := lapply(.SD, max)` नहीं कर सकते। इससे `out_cols` नाम का एक नया column जुड़ जाएगा। इसके बजाय हमें `c(out_cols)` या केवल `(out_cols)` करना चाहिए। Variable name को `(` में wrap करना दोनों cases के बीच अंतर करने के लिए पर्याप्त है।
+
+* `LHS := RHS` form हमें multiple columns पर operation करने देता है। RHS में `.SDcols` में निर्दिष्ट columns पर `max` compute करने के लिए हम base function `lapply()` को `.SD` के साथ उसी तरह उपयोग करते हैं जैसा [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में पहले देखा था। यह दो elements की list लौटाता है, जिसमें प्रत्येक group के लिए `dep_delay` और `arr_delay` के maximum values होते हैं।
+
+#
+अगले section पर जाने से पहले नए बनाए गए columns `speed`, `max_speed`, `max_dep_delay` और `max_arr_delay` को साफ़ कर देते हैं।
+
+```{r}
+# RHS gets automatically recycled to length of LHS
+flights[, c("speed", "max_speed", "max_dep_delay", "max_arr_delay") := NULL]
+head(flights)
+```
+
+#### -- `.SD` का उपयोग करके multiple existing columns को in place कैसे update करें?
+
+```{r}
+flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
+```
+आइए फिर से साफ़ करें और हमारे नए बनाए गए factor columns को वापस character columns में बदलें। इस बार हम `.SDcols` की उस क्षमता का उपयोग करेंगे जिसमें एक function देकर तय किया जाता है कि कौन से columns शामिल हों। यहाँ `is.factor()` वे columns लौटाएगा जो factors हैं। **S**ubset of the **D**ata के बारे में अधिक जानकारी के लिए [SD Usage vignette](https://cran.r-project.org/package=data.table/vignettes/datatable-sd-usage.html) भी देखें।
+
+कभी-कभी उन columns का track रखना भी उपयोगी होता है जिन्हें हम transform करते हैं। इस तरह, conversion के बाद भी हम उन specific columns को reference कर सकते हैं जिन्हें update किया गया था।
+```{r}
+factor_cols <- sapply(flights, is.factor)
+flights[, names(.SD) := lapply(.SD, as.character), .SDcols = factor_cols]
+str(flights[, ..factor_cols])
+```
+
+#### {.bs-callout .bs-callout-info}
+
+* हम `LHS` पर `names(.SD)` के बजाय `(factor_cols)` भी उपयोग कर सकते थे।
+
+## 3. `:=` और `copy()`
+
+`:=` input object को by reference modify करता है। अब तक चर्चा की गई features के अलावा, कभी-कभी हम update-by-reference feature को उसके side effect के लिए उपयोग करना चाहते हैं। और कभी original object modify करना उचित नहीं होता; ऐसी स्थिति में हम `copy()` function का उपयोग कर सकते हैं, जैसा अभी देखेंगे।
+
+### a) `:=` का उसके side effect के लिए उपयोग
+
+मान लें हम ऐसा function बनाना चाहते हैं जो प्रत्येक month के लिए *maximum speed* लौटाए। साथ ही हम *flights* में `speed` column भी जोड़ना चाहते हैं। हम एक simple function इस प्रकार लिख सकते हैं:
+
+```{r}
+foo <- function(DT) {
+  DT[, speed := distance / (air_time/60)]
+  DT[, .(max_speed = max(speed)), by = month]
+}
+ans = foo(flights)
+head(flights)
+head(ans)
+```
+
+* ध्यान दें कि नया column `speed`, `flights` *data.table* में जुड़ गया है। ऐसा इसलिए क्योंकि `:=` operations by reference करता है। चूँकि `DT` (function argument) और `flights` memory में उसी object को refer करते हैं, इसलिए `DT` को modify करने का असर `flights` पर भी दिखाई देता है।
+
+* और `ans` में प्रत्येक month के लिए maximum speed है।
+
+### b) `copy()` function
+
+पिछले section में हमने `:=` को उसके side effect के लिए उपयोग किया। लेकिन निश्चित रूप से यह हमेशा वांछनीय नहीं होता। कभी हम किसी *data.table* object को function में pass करना चाहते हैं और `:=` operator उपयोग करना चाहते हैं, लेकिन original object को update *नहीं* करना चाहते। इसे `copy()` function से किया जा सकता है।
+
+`copy()` function input object की *deep* copy बनाता है, इसलिए copied object पर बाद में किए गए किसी भी by-reference update operation का original object पर कोई प्रभाव नहीं पड़ता।
+
+#
+
+तीन विशेष स्थितियाँ हैं जहाँ `copy()` function आवश्यक है:
+
+1. पिछले point में देखी स्थिति के विपरीत, हम function को दिए गए input data.table को *by reference* modify नहीं करना चाह सकते। उदाहरण के लिए पिछले section वाला task लेते हैं, लेकिन इस बार `flights` को by reference modify नहीं करना चाहते।
+
+    पहले पिछले section में बनाए गए `speed` column को delete करते हैं।
+
+    ```{r}
+    flights[, speed := NULL]
+    ```
+    अब task इस प्रकार पूरा किया जा सकता है:
+
+    ```{r}
+    foo <- function(DT) {
+      DT <- copy(DT)                              ## deep copy
+      DT[, speed := distance / (air_time/60)]     ## doesn't affect 'flights'
+      DT[, .(max_speed = max(speed)), by = month]
+    }
+    ans <- foo(flights)
+    head(flights)
+    head(ans)
+    ```
+
+* `copy()` function के उपयोग से `flights` *data.table* by reference update नहीं हुआ। इसमें `speed` column नहीं है।
+
+* और `ans` में प्रत्येक month से संबंधित maximum speed है।
+
+हालाँकि इस functionality को *deep* copy के बजाय *shallow* copy करके और बेहतर किया जा सकता है। वास्तव में हम [`v1.9.8` के लिए यह functionality प्रदान करना चाहते हैं](https://github.com/Rdatatable/data.table/issues/617)। *data.table design* विगनेट में हम इस पर फिर बात करेंगे।
+
+#
+
+2. जब हम column names को किसी variable में store करते हैं, जैसे `DT_n = names(DT)`, और फिर column(s) को *by reference add/update/delete* करते हैं, तो `DT_n` भी modify हो जाएगा, जब तक हम `copy(names(DT))` का उपयोग न करें।
+
+    ```{r}
+    DT = data.table(x = 1L, y = 2L)
+    DT_n = names(DT)
+    DT_n
+
+    ## add a new column by reference
+    DT[, z := 3L]
+
+    ## DT_n also gets updated
+    DT_n
+
+    ## use `copy()`
+    DT_n = copy(names(DT))
+    DT[, w := 4L]
+
+    ## DT_n doesn't get updated
+    DT_n
+    ```
+
+3. जब दो names एक ही *data.table* को refer करते हैं (जैसे `DT2 = DT1`), तो उनके columns memory में *shared* होते हैं। इसलिए `.ROW := NULL` से by-reference row deletion दोनों names को एक साथ प्रभावित करता है:
+
+    ```{r}
+    DT1 = data.table(i = 1:10)
+    DT2 = DT1                    ## shallow copy; same columns in memory
+
+    DT2[i > 5, .ROW := NULL]
+    nrow(DT1)                    ## 5 -- DT1 is modified too
+    ```
+
+    पहले एक independent object प्राप्त करने के लिए `copy()` का उपयोग करें:
+
+    ```{r}
+    DT1 = data.table(i = 1:10)
+    DT2 = copy(DT1)              ## deep copy; independent object
+
+    DT2[i > 5, .ROW := NULL]
+    nrow(DT1)                    ## 10 -- unchanged
+    nrow(DT2)                    ## 5
+    ```
+
+### c) Columns चुनना: `$` / `[[...]]` बनाम `[, col]`
+
+जब आप single column को vector के रूप में extract करते हैं, तो standard R methods ($ और [[...]]) तथा data.table की j expression के बीच एक subtle लेकिन महत्वपूर्ण अंतर है। `DT$col` और `DT[['col']]` column का reference लौटा सकते हैं, जबकि `DT[, col]` हमेशा copy लौटाता है।
+
+एक छोटा उदाहरण:
+```{r}
+DT = data.table(a = 1:3)
+
+# three ways to get the column
+x_ref = DT$a        # may be a reference
+y_cpy = DT[, a]     # always a copy
+z_cpy = copy(DT$a)  # forced copy
+
+# modify DT by reference
+DT[, a := a + 10L]
+
+# observe results
+x_ref   # may show 11 12 13
+y_cpy   # 1 2 3
+z_cpy   # 1 2 3
+```
+
+Single column को vector के रूप में select करते समय याद रखें:
+- `DT[, mycol]` अधिक सुरक्षित है क्योंकि यह हमेशा एक नई, independent copy लौटाता है।
+- `DT$mycol` तेज़ है लेकिन reference लौटा सकता है। Independence सुनिश्चित करने के लिए `copy(DT$mycol)` का उपयोग करें।
+
+### d) Side effects और testing
+
+क्योंकि `:=` अपने input को in-place modify करता है, changes बने रहते हैं। Internal `test()` function से किसी expression को multiple optimization levels पर चलाते समय यह महत्वपूर्ण है: प्रत्येक evaluation को उसी data से शुरू होना चाहिए। `test()` को दी गई expression के अंदर `copy()` का उपयोग करें।
+
+```r
+DT = data.table(a = 1L)
+# Run the expression with optimization levels 0, 1, 2, and 3.
+# copy(DT) gives every evaluation an independent input.
+test(1, copy(DT)[, a := a + 1L][], data.table(a = 2L), optimize = 0:3)
+```
+
+`copy(DT)` के बिना, प्रत्येक optimization level अगले evaluation से पहले `DT` को modify कर देगा।
+
+## सारांश
+
+#### `:=` operator
+
+* इसका उपयोग columns को by reference *add/update/delete* करने के लिए होता है।
+
+* हमने यह भी देखा कि `:=` को `i` और `by` के साथ उसी तरह कैसे उपयोग करें जैसा [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में देखा था। उसी तरह हम `keyby` उपयोग कर सकते हैं, operations को chain कर सकते हैं और `by` को expressions दे सकते हैं। Syntax *consistent* है।
+
+* हम `:=` को उसके side effect के लिए उपयोग कर सकते हैं, या by reference update करते समय original object modify न हो इसके लिए `copy()` उपयोग कर सकते हैं।
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
+
+#
+
+अब तक हमने `j` में बहुत कुछ देखा है, उसे `by` के साथ combine करना और `i` का थोड़ा उपयोग भी देखा है। [अगले विगनेट (`vignette("datatable-keys-fast-subset", package="data.table")`)](datatable-keys-fast-subset.html) में अपना ध्यान फिर `i` पर केंद्रित करेंगे और *data.tables को key करके* *बहुत तेज़ subsets* करेंगे।
+
+***
