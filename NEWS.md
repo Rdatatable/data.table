@@ -114,6 +114,8 @@
 
 10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
 
+11. GForce grouping is faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `sum()` and `mean()` is skipped when only one thread is available, and with up to 65,536 groups those functions now read the column directly instead of first copying it. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
+
 
 ## data.table [v1.18.6.1](https://github.com/Rdatatable/data.table/milestone/47) (22 August 2026)
 

@@ -22011,3 +22011,22 @@ test(2388.21, nafill(c(1, NA, NA, 5), type="nocb", limit=1, nan=NaN), c(1, NA, 5
 test(2388.22, nafill(c(1L, NA, NA, 5L), type="nocb", limit=1), c(1L, NA, 5L, 5L))
 test(2388.23, nafill(c("a", NA, NA), type="const", fill="x", limit=1), c("a", "x", NA))
 test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z", "z"))
+
+# single-threaded GForce uses one batch and, with up to 65536 groups, gsum/gmean read x directly instead of gathering it, #3330
+old = setDTthreads(1L)
+set.seed(3330L)
+N = 2e5L
+DT = data.table(g1=sample(100L, N, TRUE), g2=sample(70000L, N, TRUE), i=sample(c(1:10, NA), N, TRUE), k=sample(5L, N, TRUE), d=rnorm(N), c=complex(real=rnorm(N), imaginary=rnorm(N)))
+DT[c(3L, 7L), d := NA][c(5L, 9L), c := NA]
+test(2389.1, optimize=c(0L, Inf), DT[, .(sum(i), sum(i, na.rm=TRUE), mean(i), mean(i, na.rm=TRUE), sum(k), mean(k), sum(d), sum(d, na.rm=TRUE), mean(d), mean(d, na.rm=TRUE), sum(c), sum(c, na.rm=TRUE), mean(c), mean(c, na.rm=TRUE)), keyby=g1])
+test(2389.2, optimize=c(0L, Inf), DT[, .(sum(i), sum(i, na.rm=TRUE), mean(i), mean(i, na.rm=TRUE), sum(k), mean(k), sum(d), sum(d, na.rm=TRUE), mean(d), mean(d, na.rm=TRUE), sum(c), sum(c, na.rm=TRUE), mean(c), mean(c, na.rm=TRUE)), by=g2])
+test(2389.3, optimize=c(0L, Inf), DT[d > 0, .(sum(i), mean(i, na.rm=TRUE), sum(k), mean(d), sum(c)), by=g1])
+setkey(DT, g1)
+test(2389.4, optimize=c(0L, Inf), DT[, .(sum(i), sum(i, na.rm=TRUE), mean(i), mean(i, na.rm=TRUE), sum(k), mean(k), sum(d), sum(d, na.rm=TRUE), mean(d), mean(d, na.rm=TRUE), sum(c), sum(c, na.rm=TRUE), mean(c), mean(c, na.rm=TRUE)), by=g1])
+test(2389.5, options=list(datatable.optimize=Inf), data.table(g=c(1L, 1L, 2L), x=c(.Machine$integer.max, 1L, 1L))[, sum(x), by=g], data.table(g=1:2, V1=c(2147483648, 1)), warning="coerced to 'numeric'")
+if (test_bit64) {
+  DT[, i64 := as.integer64(i)]
+  test(2389.6, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g1])
+  test(2389.7, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g2])
+}
+setDTthreads(old)

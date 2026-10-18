@@ -75,8 +75,11 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) internal_error(__func__, "o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
   }
 
+  // Single-threaded, the batching below is pure overhead (#3330). Use one batch and put as much of g into low as fits in
+  // uint16_t, so that for ngrp<=65536 there is one high bucket and gather/gsum/gmean reduce to direct loops.
+  const bool single = getDTthreads(nrow, false)==1;
   int nb = nbit(ngrp-1);
-  bitshift = nb/2;    // /2 so that high and low can be uint16_t, and no limit (even for nb=4) to stress-test.
+  bitshift = single ? MIN(nb, 16) : nb/2;    // /2 so that high and low can be uint16_t, and no limit (even for nb=4) to stress-test.
   // bitshift=MAX(nb-8,0); if (bitshift>16) bitshift=nb/2;     // TODO: when we have stress-test off mode, do this
   mask = (1<<bitshift)-1;
   highSize = ((ngrp-1)>>bitshift) + 1;
@@ -85,7 +88,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER_RO(f);
 
-  nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
+  nBatch = single ? 1 : MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
   batchSize = MAX(1, (nrow-1)/nBatch);
   lastBatchSize = nrow - (nBatch-1)*batchSize;
   // We deliberate use, for example, 40 batches of just 14 rows, to stress-test tests. This strategy proved to be a good one as #3204 immediately came to light.
@@ -222,6 +225,32 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
+  if (nBatch==1 && highSize==1 && irowslen==-1) {
+    // gather would be an identical copy of x, so return x itself after checking for NA (#3330). Callers only read gx.
+    switch (TYPEOF(x)) {
+    case LGLSXP: case INTSXP: {
+      const int *xp = INTEGER_RO(x);
+      for (int i=0; i<nrow; i++) if (xp[i]==NA_INTEGER) { *anyNA=true; break; }
+    } break;
+    case REALSXP: {
+      if (INHERITS(x, char_integer64)) {
+        const int64_t *xp = (const int64_t *)REAL_RO(x);
+        for (int i=0; i<nrow; i++) if (xp[i]==INT64_MIN) { *anyNA=true; break; }
+      } else {
+        const double *xp = REAL_RO(x);
+        for (int i=0; i<nrow; i++) if (ISNAN(xp[i])) { *anyNA=true; break; }
+      }
+    } break;
+    case CPLXSXP: {
+      const Rcomplex *xp = COMPLEX_RO(x);
+      for (int i=0; i<nrow; i++) if (ISNAN(xp[i].r) && ISNAN(xp[i].i)) { *anyNA=true; break; }
+    } break;
+    default : // # nocov
+      error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
+    }
+    if (verbose) { Rprintf(_("gather took %.3fs\n"), wallclock()-started); }
+    return (void *)DATAPTR_RO(x);
+  }
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER_RO(x);
