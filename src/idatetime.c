@@ -5,7 +5,7 @@ static const int YEARS100 = 36524;
 static const int YEARS4 = 1461;
 static const int YEARS1 = 365;
 
-typedef enum { YDAY, WDAY, MDAY, WEEK, MONTH, QUARTER, YEAR, YEARMON, YEARQTR} datetype;
+typedef enum { YDAY, WDAY, MDAY, WEEK, ISOWEEK, ISOYEAR, MONTH, QUARTER, YEAR, YEARMON, YEARQTR} datetype;
 
 static inline bool isLeapYear(int year) {
     return (year % 100 != 0 || year % 400 == 0) && year % 4 == 0;
@@ -26,6 +26,22 @@ void convertSingleDate(int x, datetype type, void *out)
         int wday = (x + 4) % 7;
         if (wday < 0) wday += 7;
         *(int *)out = ++wday;
+        return;
+    }
+
+    if (type == ISOWEEK || type == ISOYEAR) {
+        // ISO 8601-conformant week, as described at https://en.wikipedia.org/wiki/ISO_week_date
+        // The ISO week and year are those of the nearest Thursday
+        // Thursdays are multiples of 7, since x=0 (1970-01-01) was a Thursday
+        int thu = x + (3 - (x % 7 + 10) % 7);
+        int res;
+        if (type == ISOWEEK) {
+            convertSingleDate(thu, YDAY, &res);
+            res = (res - 1) / 7 + 1;
+        } else {
+            convertSingleDate(thu, YEAR, &res);
+        }
+        *(int *)out = res;
         return;
     }
 
@@ -134,6 +150,8 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(ctype_str, "wday")) ctype = WDAY;
     else if (!strcmp(ctype_str, "mday")) ctype = MDAY;
     else if (!strcmp(ctype_str, "week")) ctype = WEEK;
+    else if (!strcmp(ctype_str, "isoweek")) ctype = ISOWEEK;
+    else if (!strcmp(ctype_str, "isoyear")) ctype = ISOYEAR;
     else if (!strcmp(ctype_str, "month")) ctype = MONTH;
     else if (!strcmp(ctype_str, "quarter")) ctype = QUARTER;
     else if (!strcmp(ctype_str, "year")) ctype = YEAR;
