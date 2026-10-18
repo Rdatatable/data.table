@@ -225,7 +225,11 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
+<<<<<<< HEAD
   if (nBatch==1 && highSize==1 && irowslen==-1) { // hot path for single threads and ngrp<=65536
+=======
+  if (nBatch==1 && highSize==1 && irowslen==-1) {
+>>>>>>> 9bc4dd94f3fbe8efa1d9258944e097c9315fdaf9
     // gather would be an identical copy of x, so return x itself after checking for NA (#3330). Callers only read gx.
     switch (TYPEOF(x)) {
     case LGLSXP: case INTSXP: {

@@ -94,6 +94,7 @@
 
 21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
+22. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
 ### Notes
 
