@@ -459,5 +459,23 @@ test.list <- atime::atime_test_list(
     seconds.limit = 1,
     expr = data.table:::`[.data.table`(dt, , base::max(V1, na.rm = TRUE), by = id)),
 
+  # https://github.com/Rdatatable/data.table/pull/7917 creates the variable string once per measure group instead of once per row.
+  "melt(list measure.vars, variable.factor=FALSE) improved in #7917" = atime::atime_test(
+    setup = {
+      DT = data.table(id = seq_len(N), a_1 = 1, a_2 = 2, b_1 = 3, b_2 = 4)
+    },
+    Slow = "df59dd637403e65d7fa90d48bb0dfec2764d6744", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7c73bf0d4f760066feb7256896375727656e398d) in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that improves efficiency
+    Fast = "10bfd70ffbcf880d74e0a0f0377be76e9556333b", # Merge commit in the PR (https://github.com/Rdatatable/data.table/pull/7917) that creates the variable string once per measure group
+    expr = data.table:::melt(DT, measure.vars = list(c("a_1", "a_2"), c("b_1", "b_2")), variable.factor = FALSE)),
+
+  # https://github.com/Rdatatable/data.table/pull/7917 hoists INTEGER()/STRING_ELT() out of the row loop when filling variable_table columns.
+  "melt(measure()) improved in #7917" = atime::atime_test(
+    setup = {
+      DT = data.table(id = seq_len(N), a_1 = 1, a_2 = 2, b_1 = 3, b_2 = 4)
+    },
+    Slow = "df59dd637403e65d7fa90d48bb0dfec2764d6744", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7c73bf0d4f760066feb7256896375727656e398d) in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that improves efficiency
+    Fast = "10bfd70ffbcf880d74e0a0f0377be76e9556333b", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/7917) that hoists REAL()/INTEGER()/STRING_ELT() out of the row loop
+    expr = data.table:::melt(DT, measure.vars = measure(letter, number = as.integer))),
+
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

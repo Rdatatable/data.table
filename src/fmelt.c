@@ -611,7 +611,8 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
           snprintf(buff, sizeof(buff), "%d", level++); // # notranslate
-          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
+          SEXP str = mkChar(buff);
+          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
         }
       }
     } else {// varfactor==TRUE
@@ -662,24 +663,29 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       for (int j=0, ansloc=0; j<data->lmax; ++j) {
         const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
         switch (TYPEOF(target)) {
-        case STRSXP :
+        case STRSXP : {
+          const SEXP val = STRING_ELT(out_col, j);
           for (int k=0; k<thislen; ++k)
-            SET_STRING_ELT(target, ansloc++, STRING_ELT(out_col, j));
-          break;
-        case REALSXP :
+            SET_STRING_ELT(target, ansloc++, val);
+        } break;
+        case REALSXP : {
+          double *td = REAL(target);
+          const double val = REAL_RO(out_col)[j];
           for (int k=0; k<thislen; ++k)
-            REAL(target)[ansloc++] = REAL(out_col)[j];
-          break;
+            td[ansloc++] = val;
+        } break;
         case INTSXP :
-        case LGLSXP :
+        case LGLSXP : {
+          int *td = INTEGER(target);
+          const int val = INTEGER_RO(out_col)[j];
           for (int k=0; k<thislen; ++k)
-            INTEGER(target)[ansloc++] = INTEGER(out_col)[j];
+            td[ansloc++] = val;
           if (isFactor(out_col)) {
             // Do we need a copy here?
             setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
             setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
           }
-          break;
+        } break;
         default :
           error(_("variable_table does not support column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));
         }

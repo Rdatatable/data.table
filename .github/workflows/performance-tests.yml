@@ -2,23 +2,111 @@ name: atime performance tests
 
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
     paths:
       - 'R/**'
       - 'src/**'
       - '.ci/atime/**'
-  workflow_dispatch:
+      - '.github/workflows/performance-tests.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   comment:
-    if: github.repository == 'Rdatatable/data.table'
     runs-on: ubuntu-latest
-    container: ghcr.io/iterative/cml:0-dvc2-base1
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: Anirban166/Autocomment-atime-results@v1.4.3
+      - name: Start timer
+        shell: bash
+        run: echo "START_SETUP_TIME=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Retrieve branch references, necessary for perf testing past versions
+        shell: bash
+        run: |
+          git branch -f "${GITHUB_BASE_REF}" "origin/${GITHUB_BASE_REF}"
+          HEAD_BRANCH="${GITHUB_HEAD_REF}"
+          if [ "$HEAD_BRANCH" = "$GITHUB_BASE_REF" ]; then
+            HEAD_BRANCH="pr-${{ github.event.number }}"
+          fi
+          git switch -C "$HEAD_BRANCH"
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          cache-version: ${{ hashFiles('.ci/atime/tests.R') }}
+          extra-packages: cran::data.table, any::atime, any::ggplot2, any::directlabels
+
+      - name: Run atime
+        shell: bash
+        run: |
+          echo "END_SETUP_START_TESTS_TIME=$(date +%s)" >> "$GITHUB_ENV"
+          Rscript -e 'atime::atime_pkg(Sys.getenv("GITHUB_WORKSPACE"), tests.dir = ".ci")'
+          echo "END_TESTS_TIME=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        id: artifact-upload-step
+        uses: actions/upload-artifact@v7
+        with:
+          name: atime-results
+          path: .ci/atime/
+
+      - name: Post or update PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        shell: bash
+        run: |
+          uploadImage() {
+            curl --fail --retry 3 -sS -F "file=@$1" -F "visibility=unlisted" https://picrd.com/api/upload | jq -r '.image_url'
+          }
+          PREVIEW_URL=$(uploadImage .ci/atime/tests_preview_facet.png)
+          ALL_URL=$(uploadImage .ci/atime/tests_all_facet.png)
+
+          R_SETUP_DURATION=$((END_SETUP_START_TESTS_TIME - START_SETUP_TIME))
+          VERSION_SETUP_DURATION=$(cut -d '.' -f 1 ./.ci/atime/install_seconds.txt)
+          ATIME_TESTS_DURATION=$((END_TESTS_TIME - END_SETUP_START_TESTS_TIME - VERSION_SETUP_DURATION))
+          formatTime() {
+            local totalSeconds=$1
+            if [ "$totalSeconds" -lt 0 ]; then
+              echo "Time calculation error: negative duration"
+            elif [ "$totalSeconds" -lt 60 ]; then
+              echo "${totalSeconds} seconds"
+            else
+              echo "$((totalSeconds / 60)) minutes and $((totalSeconds % 60)) seconds"
+            fi
+          }
+
+          ARTIFACT_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
+          cat <<EOF > comment.md
+          $(cat .ci/atime/HEAD_issues.md)
+
+          [![Comparison Plot]($PREVIEW_URL)]($ALL_URL)
+
+          Generated via commit ${{ github.event.pull_request.head.sha }}
+
+          Download link for the artifact containing the test results: [↓ atime-results.zip]($ARTIFACT_URL)
+
+          | Task | Duration |
+          |---|---|
+          | R setup and installing dependencies | $(formatTime "$R_SETUP_DURATION") |
+          | Installing different package versions | $(formatTime "$VERSION_SETUP_DURATION") |
+          | Running and plotting the test cases | $(formatTime "$ATIME_TESTS_DURATION") |
+          EOF
+
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY" ]; then
+            gh pr comment "$PR_NUMBER" --edit-last --create-if-none -F comment.md
+          fi
