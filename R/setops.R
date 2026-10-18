@@ -17,7 +17,7 @@ setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE)
       stopf("When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]), class="dt_join_type_mismatch_error")
     } else if ( is.factor(x[[rc]]) && !(is.character(y[[lc]]) || is.factor(y[[lc]])) ) {
       stopf("When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]), class="dt_join_type_mismatch_error")
-    } else if ( (is.integer(x[[rc]]) || is.double(x[[rc]])) && (is.logical(y[[lc]]) || is.character(y[[lc]])) ) {
+    } else if ( is.numeric(x[[rc]]) && (is.logical(y[[lc]]) || is.character(y[[lc]])) ) {
       stopf("When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]), class="dt_join_type_mismatch_error")
     }
   }
