@@ -22011,3 +22011,8 @@ test(2388.21, nafill(c(1, NA, NA, 5), type="nocb", limit=1, nan=NaN), c(1, NA, 5
 test(2388.22, nafill(c(1L, NA, NA, 5L), type="nocb", limit=1), c(1L, NA, 5L, 5L))
 test(2388.23, nafill(c("a", NA, NA), type="const", fill="x", limit=1), c("a", "x", NA))
 test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z", "z"))
+
+# isoweek() and isoyear() use date arithmetic instead of format()
+x = seq(as.IDate("1999-01-01"), as.IDate("2027-12-31"), by="day")
+test(2389.1, isoweek(x), as.integer(format(x, "%V")))
+test(2389.2, isoyear(x), as.integer(format(x, "%G")))
