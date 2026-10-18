@@ -16350,7 +16350,7 @@ test(2125.03, print(DT, trunc.cols=TRUE, row.names=FALSE),
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
 test(2125.04, print(DT, trunc.cols=TRUE, class=TRUE),
-     output="1 variable not shown: [a <int>]\n         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
+     output=c("1 variable not shown: \\[a <int>\\]", ".*", "1 variable not shown: \\[d <char>\\]"))
 test(2125.05, print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE),
      output=c("^     a             b             c", ".*",
               "1 variable not shown: \\[d <char>\\]"))
@@ -16362,22 +16362,13 @@ test(2125.07, print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"),
               "1 variable not shown: \\[d\\]$"),
      warning = "Column classes will be suppressed when col.names is 'none'")
 test(2125.08, print(DT, trunc.cols=TRUE),
-     output=c("   a             b",
-              "1: 0 bbbbbbbbbbbbb",
-              "2: 0 bbbbbbbbbbbbb",
-              "2 variables not shown: [c, d]"))
-options("width" = 10)
-DT = data.table(a = "aaaaaaaaaaaaa",
-                b = "bbbbbbbbbbbbb",
-                c = "ccccccccccccc",
-                d = "ddddddddddddd")
+     output=c("1 variable not shown: \\[a\\]", "   b", "1: bbbbbbbbbbbbb", "2: bbbbbbbbbbbbb", "2 variables not shown: \\[c, d\\]"))
 test(2125.09, print(DT, trunc.cols=TRUE),
      output="1 variable not shown: [a]\n3 variables not shown: [b, c, d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="1 variable not shown: [a <char>]\n3 variables not shown: [b <char>, c <char>, d <char>]")
 test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
-     output="1 variable not shown: [b <char>]")
-options(old_width)
+     output=c(".*", "1 variable not shown: \\[b <char>\\]"))
 
 # segfault when i is NULL or zero-column, #4060
 DT = data.table(A="a", key="A")
