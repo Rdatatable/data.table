@@ -16350,7 +16350,7 @@ test(2125.03, print(DT, trunc.cols=TRUE, row.names=FALSE),
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
 test(2125.04, print(DT, trunc.cols=TRUE, class=TRUE),
-     output="2 variables not shown: [c <char>, d <char>]")
+     output="1 variable not shown: [a <int>]\n         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
 test(2125.05, print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE),
      output=c("^     a             b             c", ".*",
               "1 variable not shown: \\[d <char>\\]"))
@@ -16358,14 +16358,9 @@ test(2125.06, print(DT, trunc.cols=TRUE, col.names="none"),
      output=c("^  1: 0 bbbbbbbbbbbbb ccccccccccccc", ".*",
               "1 variable not shown: \\[d\\]$"))
 test(2125.07, print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"),
-     output=c("^  1: 0 bbbbbbbbbbbbb", ".*",
-              "2 variables not shown: \\[c, d\\]$"),
+     output=c("^  1: 0 bbbbbbbbbbbbb ccccccccccccc", ".*",
+              "1 variable not shown: \\[d\\]$"),
      warning = "Column classes will be suppressed when col.names is 'none'")
-options("width" = 20)
-DT = data.table(a = vector("integer", 2),
-                b = "bbbbbbbbbbbbb",
-                c = "ccccccccccccc",
-                d = "ddddddddddddd")
 test(2125.08, print(DT, trunc.cols=TRUE),
      output=c("   a             b",
               "1: 0 bbbbbbbbbbbbb",
@@ -16377,13 +16372,9 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.09, print(DT, trunc.cols=TRUE),
-     output="4 variables not shown: [a, b, c, d]")
+     output="1 variable not shown: [a]\n3 variables not shown: [b, c, d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
-     output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
-options("width" = 20L)
-# truncated cols with class and printing class at bottom #6929
-DT = data.table(a = 1:30,
-                b = "bbbbbbbbbbbbb")
+     output="1 variable not shown: [a <char>]\n3 variables not shown: [b <char>, c <char>, d <char>]")
 test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
      output="1 variable not shown: [b <char>]")
 options(old_width)
@@ -22013,7 +22004,7 @@ test(2388.23, nafill(c("a", NA, NA), type="const", fill="x", limit=1), c("a", "x
 test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z", "z"))
 
 # print.data.table truncates a table exactly matching console width, #7716
-test(2388.25, print(data.table(x="1234567")), output="         x\n    <char>\n1: 1234567", options=list(width=10, datatable.print.trunc.cols=TRUE))
+test(2388.25, print(data.table(x="1234567")), output="         x\n    <char>\n1: 1234567", options=list(width=10, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE))
 
-# print.trunc.cols shows nothing if first column is too long #7717
-test(2388.26, print(data.table(x="123456789012", y=1, z=2, a=3)), output="1 variable not shown: [x <num>]\n       y\n   <num>\n1:     1\n2 variables not shown: [z <num>, a <num>]", options=list(width=10, datatable.print.trunc.cols=TRUE))
+# print.trunc.cols shows nothing if first column is too long, #7717
+test(2388.26, print(data.table(x="123456789012", y=1, z=2, a=3)), output="1 variable not shown: [x <num>]\n       y\n   <num>\n1:     1\n2 variables not shown: [z <num>, a <num>]", options=list(width=10, datatable.print.trunc.cols=TRUE, datatable.print.class=TRUE))
