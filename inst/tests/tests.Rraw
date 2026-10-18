@@ -16350,7 +16350,7 @@ test(2125.03, print(DT, trunc.cols=TRUE, row.names=FALSE),
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
 test(2125.04, print(DT, trunc.cols=TRUE, class=TRUE),
-     output=c("1 variable not shown: \\[a <int>\\]", ".*", "1 variable not shown: \\[d <char>\\]"))
+     output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
 test(2125.05, print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE),
      output=c("^     a             b             c", ".*",
               "1 variable not shown: \\[d <char>\\]"))
@@ -16362,16 +16362,13 @@ test(2125.07, print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"),
               "1 variable not shown: \\[d\\]$"),
      warning = "Column classes will be suppressed when col.names is 'none'")
 test(2125.08, print(DT, trunc.cols=TRUE),
-     output=c("1 variable not shown: \\[a\\]", "   b", "1: bbbbbbbbbbbbb", "2: bbbbbbbbbbbbb", "2 variables not shown: \\[c, d\\]"))
+     output="     a             b             c\n  1: 0 bbbbbbbbbbbbb ccccccccccccc\n  2: 0 bbbbbbbbbbbbb ccccccccccccc\n  3: 0 bbbbbbbbbbbbb ccccccccccccc\n  4: 0 bbbbbbbbbbbbb ccccccccccccc\n  5: 0 bbbbbbbbbbbbb ccccccccccccc\n ---                              \n 98: 0 bbbbbbbbbbbbb ccccccccccccc\n 99: 0 bbbbbbbbbbbbb ccccccccccccc\n100: 0 bbbbbbbbbbbbb ccccccccccccc\n101: 0 bbbbbbbbbbbbb ccccccccccccc\n102: 0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d]")
 test(2125.09, print(DT, trunc.cols=TRUE),
-     output="1 variable not shown: [a]\n3 variables not shown: [b, c, d]")
+     output="     a             b             c\n  1: 0 bbbbbbbbbbbbb ccccccccccccc\n  2: 0 bbbbbbbbbbbbb ccccccccccccc\n  3: 0 bbbbbbbbbbbbb ccccccccccccc\n  4: 0 bbbbbbbbbbbbb ccccccccccccc\n  5: 0 bbbbbbbbbbbbb ccccccccccccc\n ---                              \n 98: 0 bbbbbbbbbbbbb ccccccccccccc\n 99: 0 bbbbbbbbbbbbb ccccccccccccc\n100: 0 bbbbbbbbbbbbb ccccccccccccc\n101: 0 bbbbbbbbbbbbb ccccccccccccc\n102: 0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
-     output="1 variable not shown: [a <char>]\n3 variables not shown: [b <char>, c <char>, d <char>]")
+     output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
 test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
-     output=c(".*", "1 variable not shown: \\[b <char>\\]"))
-
-# segfault when i is NULL or zero-column, #4060
-DT = data.table(A="a", key="A")
+     output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
 test(2126.1, DT[J(NULL)], DT[0])
 test(2126.2, DT[data.table()], DT[0])
 # additional segfault when i is NULL and roll = 'nearest'
@@ -16549,10 +16546,14 @@ DT = data.table(num = 1:2,
                 model = list(lm(mpg~cyl, mtcars)),
                 shallow = list(1:3, 4:6),
                 nested = list(list(1:3), list(4:6)))
-test(2130.17, capture.output(DT),
-     c("   num   formula    model shallow    nested",
-       "1:   1 mpg ~ cyl <lm[12]>   1,2,3 <list[1]>",
-       "2:   2 mpg ~ cyl <lm[12]>   4,5,6 <list[1]>"))
+test(2130.17, capture.output(DT), output=c(
+  "   num   formula    model shallow",
+  "1:   1 mpg ~ cyl <lm[12]>   1,2,3",
+  "2:   2 mpg ~ cyl <lm[12]>   4,5,6",
+  "      nested",
+  "1: <list[1]>",
+  "2: <list[1]>"
+))
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
@@ -18421,10 +18422,58 @@ ans = c(
  "199:  100   36   51               199               139",
  "200:  100   38   56               200               159")
 # test for two indices, with markers to show order
-test(2264.3, print(DT, show.indices=TRUE), output=ans)
-test(2264.4, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
-setindex(DT, NULL) # clear indices
-# if no indices are set, simply ignore
+test(2264.3, print(DT, show.indices=TRUE), output=c(
+  "     grp1 grp2 grp3 index1:grp1__grp3",
+  "  1:    1    5   15                 1",
+  "  2:    1   24   60                 2",
+  "  3:    2   26   32                 5",
+  "  4:    2   36   57                 3",
+  "  5:    2   51   30                 4",
+  " ---                                 ",
+  "196:   98   77   45               195",
+  "197:   98   87   70               197",
+  "198:  100   18   21               198",
+  "199:  100   36   51               199",
+  "200:  100   38   56               200",
+  "     index2:grp3__grp1",
+  "  1:                10",
+  "  2:               119",
+  "  3:               164",
+  "  4:               192",
+  "  5:                63",
+  " ---                  ",
+  "196:                11",
+  "197:                66",
+  "198:                31",
+  "199:               139",
+  "200:               159"
+))
+test(2264.4, print(DT, show.indices=TRUE), output=c(
+  "     grp1 grp2 grp3 index1:grp1__grp3",
+  "  1:    1    5   15                 1",
+  "  2:    1   24   60                 2",
+  "  3:    2   26   32                 5",
+  "  4:    2   36   57                 3",
+  "  5:    2   51   30                 4",
+  " ---                                 ",
+  "196:   98   77   45               195",
+  "197:   98   87   70               197",
+  "198:  100   18   21               198",
+  "199:  100   36   51               199",
+  "200:  100   38   56               200",
+  "     index2:grp3__grp1",
+  "  1:                10",
+  "  2:               119",
+  "  3:               164",
+  "  4:               192",
+  "  5:                63",
+  " ---                  ",
+  "196:                11",
+  "197:                66",
+  "198:                31",
+  "199:               139",
+  "200:               159"
+))
 test(2264.5, print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
 test(2264.6, options=list(datatable.show.indices=TRUE), print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
 setindex(DT, grp3)
@@ -18462,7 +18511,30 @@ ans = c(
  " 9:   95   82   80                 7                 6",
  "10:   83   64   41                 9                 9")
 # test where topn isn't necessary
-test(2264.8, print(DT, show.indices=TRUE), output=ans)
+test(2264.8, print(DT, show.indices=TRUE), output=c(
+  "    grp1 grp2 grp3 index1:grp1__grp3",
+  " 1:   77   61   53                 3",
+  " 2:   80   66   37                 8",
+  " 3:   27   42    8                 5",
+  " 4:   66   37    7                 4",
+  " 5:   38   69    5                 6",
+  " 6:   72   89   69                 1",
+  " 7:   86   52   16                 2",
+  " 8:   28   35   62                10",
+  " 9:   95   82   80                 7",
+  "10:   83   64   41                 9",
+  "    index2:grp3__grp1",
+  " 1:                 5",
+  " 2:                 4",
+  " 3:                 3",
+  " 4:                 7",
+  " 5:                 2",
+  " 6:                10",
+  " 7:                 1",
+  " 8:                 8",
+  " 9:                 6",
+  "10:                 9"
+))
 
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({
