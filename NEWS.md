@@ -94,8 +94,6 @@
 
 21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
-22. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
-
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
@@ -117,6 +115,7 @@
 9. `fread()` returns a clearer error message when `dec = NA` is used, [#7737](https://github.com/Rdatatable/data.table/issues/7737). Thanks @mcol for the report and the fix.
 
 10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
+
 
 ## data.table [v1.18.6.1](https://github.com/Rdatatable/data.table/milestone/47) (22 August 2026)
 
