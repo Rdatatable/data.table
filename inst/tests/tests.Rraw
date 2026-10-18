@@ -16369,11 +16369,10 @@ test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
 test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
      output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
-test(2126.1, DT[J(NULL)], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
-test(2126.2, DT[data.table()], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
-# additional segfault when i is NULL and roll = 'nearest'
-test(2126.3, DT[J(NULL), roll = 'nearest'], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
-test(2126.4, DT[data.table(), roll = 'nearest'], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+test(2126.1, DT[J(NULL)], error="When i is a data.table.*must be specified using the 'on=' argument")
+test(2126.2, DT[data.table()], error="When i is a data.table.*must be specified using the 'on=' argument")
+test(2126.3, DT[J(NULL), roll = 'nearest'], error="When i is a data.table.*must be specified using the 'on=' argument")
+test(2126.4, DT[data.table(), roll = 'nearest'], error="When i is a data.table.*must be specified using the 'on=' argument")
 
 # fcase, #3823
 test_vec1 = -5L:5L < 0L
@@ -16546,12 +16545,12 @@ DT = data.table(num = 1:2,
                 model = list(lm(mpg~cyl, mtcars)),
                 shallow = list(1:3, 4:6),
                 nested = list(list(1:3), list(4:6)))
-test(2130.17, capture.output(DT), output=c("   num   formula    model shallow",
-                                           "1:   1 mpg ~ cyl <lm[12]>   1,2,3",
-                                           "2:   2 mpg ~ cyl <lm[12]>   4,5,6",
-                                           "      nested",
-                                           "1: <list[1]>",
-                                           "2: <list[1]>"))
+test(2130.17, capture.output(DT), c("   num   formula    model shallow",
+                                    "1:   1 mpg ~ cyl <lm[12]>   1,2,3",
+                                    "2:   2 mpg ~ cyl <lm[12]>   4,5,6",
+                                    "      nested",
+                                    "1: <list[1]>",
+                                    "2: <list[1]>"))
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
