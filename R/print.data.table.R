@@ -119,26 +119,22 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cons_width = getOption("width")
     widths = dt_width(toprint, n_x, class, row.names, col.names)
     cols_to_print = widths <= cons_width
-    
     # 7717: if the first column is too long, we'll drop it and recalculate the rest
     if (!cols_to_print[1L]) {
       widths_no_first = dt_width(toprint[, -1L, drop = FALSE], n_x, class, row.names, col.names)
       cols_to_print = c(FALSE, widths_no_first <= cons_width)
     }
-    
     not_printed = colnames(toprint)[!cols_to_print]
-    
     # Print front msg if first column was dropped
     if (!cols_to_print[1L]) {
       trunc_cols_message(not_printed[1L], abbs, class, col.names)
       not_printed = not_printed[-1L]
     }
-    
+
     if (!any(cols_to_print)) {
       trunc_cols_message(not_printed, abbs, class, col.names)
       return(invisible(x))
     }
-    
     toprint = toprint_subset(toprint, cols_to_print)
     trunc.cols = length(not_printed) > 0L
   }
