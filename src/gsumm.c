@@ -37,6 +37,59 @@ static int nbit(int n)
   return nb;
 }
 
+/* Some GForce functions (currently gfirst/glast/ghead/gtail with n>1, and gshift) return, for at least
+   one group, a different number of items than 1 (the norm for e.g. gmean, gsum). Such a column carries
+   a 'gforce_dynamic' attribute (set by gfirstlast and gshift, below): a scalar integer w, meaning the
+   column has MIN(w, grpsize[g]) items for group g (gshift sets w=INT_MAX, since it always returns
+   exactly grpsize[g]). When a query combines such a column with an ordinary (fixed, 1-per-group) result
+   in the same by= (e.g. .(shift(x), mean(y))), this function replicates the fixed result out to match,
+   #1414. When a query combines two dynamic columns that don't actually agree in length for some group
+   (e.g. .(head(x,2), head(y,3)) where the group has >=3 rows), this errors rather than reconciling them
+   with NA. Otherwise optimize>=2 (GForce) would succeed at a query that optimize<2 (dogroups.c) can't
+   do at all, making the optimize level change correctness rather than just speed Returns gans unchanged
+   (no allocation) when no column carries the attribute, so the (very common) case of no dynamic-length
+   GForce result in the query costs nothing extra. */
+static SEXP gforce_align_dynamic(SEXP gans) {
+  const int nans = length(gans);
+  int max_w = 0;
+  for (int i=0; i<nans; ++i) {
+    SEXP att = getAttrib(VECTOR_ELT(gans, i), sym_gforce_dynamic);
+    if (isNull(att)) continue;
+    const int this_w = INTEGER(att)[0];
+    if (this_w>max_w) max_w=this_w;
+  }
+  if (!max_w) return gans;  // nothing in this j is gforce_dynamic; most common case, return untouched with no allocation
+  int nprotect = 0;
+  SEXP lens = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
+  int *lensp = INTEGER(lens);
+  for (int g=0; g<ngrp; ++g) lensp[g] = MIN(grpsize[g], max_w);
+
+  SEXP ans = PROTECT(allocVector(VECSXP, nans)); nprotect++;
+  for (int i=0; i<nans; ++i) {
+    SEXP tt = VECTOR_ELT(gans, i);
+    SEXP att = getAttrib(tt, sym_gforce_dynamic);
+    if (isNull(att)) {
+      // an ordinary (1-per-group) result combined with a dynamic one; rep it out to match
+      SET_VECTOR_ELT(ans, i, eval(PROTECT(lang3(install("rep.int"), tt, lens)), R_GlobalEnv));
+      UNPROTECT(1);
+      continue;
+    }
+    const int w = INTEGER(att)[0];
+    for (int g=0; g<ngrp; ++g) {
+      const int thislen = MIN(grpsize[g], w);
+      if (thislen != lensp[g])
+        error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, i+1, g+1, lensp[g]);
+    }
+    // this column's own length, MIN(grpsize[g],w) summed over g, already equals sum(lensp) (just
+    // checked above) and is already in the right group-by-group order; use it as-is, no copy needed
+    setAttrib(tt, sym_gforce_dynamic, R_NilValue);
+    SET_VECTOR_ELT(ans, i, tt);
+  }
+  setAttrib(ans, sym_gforce_dynamic, lens);  // expose the final per-group lengths so [.data.table can align/replicate the group columns to match
+  UNPROTECT(nprotect);
+  return ans;
+}
+
 /*
   Functions with GForce optimization are internally parallelized to speed up
     grouped summaries over a large data.table. OpenMP is used here to
@@ -205,16 +258,17 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   oo = INTEGER(o);
   ff = INTEGER(f);
 
-  SEXP ans = PROTECT( eval(jsub, env) );
+  int nprotect = 0;
+  SEXP ans = PROTECT( eval(jsub, env) ); nprotect++;
   if (verbose) { Rprintf(_("gforce eval took %.3f\n"), wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
-    SEXP tt = PROTECT(allocVector(VECSXP, 1));
+    SEXP tt = PROTECT(allocVector(VECSXP, 1)); nprotect++;
     SET_VECTOR_ELT(tt, 0, ans);
-    UNPROTECT(2);
-    return tt;
+    ans = tt;
   }
-  UNPROTECT(1);
+  ans = PROTECT(gforce_align_dynamic(ans)); nprotect++;  // no-op (no extra allocation) unless a gfirst()/glast() with n>1 is present, #4446 #4239
+  UNPROTECT(nprotect);
   return ans;
 }
 
@@ -922,7 +976,10 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
 
 static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) {
   // w: which item (1 other than for gnthvalue when could be >1)
-  // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail)
+  // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail).
+  //        When TRUE, the result is marked with a 'gforce_dynamic' attribute #4239
+  //        so that gforce() can correctly replicate ordinary (fixed, 1-per-group) results
+  //        against it, and validate it against other dynamic results, when combined in the same by=.
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
@@ -988,29 +1045,34 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
+  if (headw) setAttrib(ans, sym_gforce_dynamic, ScalarInteger(w));  // so gforce() can recompute MIN(w, grpsize[g]) per group
   copyMostAttrib(x, ans);
   UNPROTECT(1);
   return(ans);
 }
 
-SEXP glast(SEXP x) {
-  return gfirstlast(x, false, 1, false);
+SEXP glast(SEXP x, SEXP nArg) {
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "glast is only implemented for n>0. This should have been caught before"); // # nocov
+  const int n=INTEGER(nArg)[0];
+  return gfirstlast(x, false, n, n>1);
 }
 
-SEXP gfirst(SEXP x) {
-  return gfirstlast(x, true, 1, false);
+SEXP gfirst(SEXP x, SEXP nArg) {
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gfirst is only implemented for n>0. This should have been caught before"); // # nocov
+  const int n=INTEGER(nArg)[0];
+  return gfirstlast(x, true, n, n>1);
 }
 
 SEXP gtail(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
-  return n==1 ? glast(x) : gfirstlast(x, false, n, true);
+  return gfirstlast(x, false, n, n>1);
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "ghead is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
-  return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
+  return gfirstlast(x, true, n, n>1);
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
@@ -1279,7 +1341,14 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     }
     copyMostAttrib(x, tmp); // needed for integer64 because without not the correct class of int64 is assigned
   }
-  UNPROTECT(nprotect);
   // consistency with plain shift(): "strip" the list in the 1-input case, for convenience
-  return isVectorAtomic(x) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+  if (isVectorAtomic(x) && length(ans) == 1) {
+    SEXP tmp = VECTOR_ELT(ans, 0);
+    // mark single gshift with gforce_dynamic to use MIN(w, grpsize[g])
+    setAttrib(tmp, sym_gforce_dynamic, ScalarInteger(INT_MAX));
+    UNPROTECT(nprotect);
+    return tmp;
+  }
+  UNPROTECT(nprotect);
+  return ans;
 }
