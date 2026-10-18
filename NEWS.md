@@ -50,6 +50,8 @@
 
 14. `melt()` is faster on large inputs when `measure.vars` is a list with `variable.factor=FALSE` (e.g. 3x) or uses `measure()` (e.g. 2x). Thanks @m-muecke for the PR.
 
+15. `isoweek()` and `isoyear()` are much faster (e.g. 25x and 45x) by computing the result with date arithmetic instead of `format()`. Thanks @m-muecke for the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
