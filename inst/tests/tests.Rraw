@@ -16369,11 +16369,11 @@ test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
 test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
      output="         a             b             c\n     <int>        <char>        <char>\n  1:     0 bbbbbbbbbbbbb ccccccccccccc\n  2:     0 bbbbbbbbbbbbb ccccccccccccc\n  3:     0 bbbbbbbbbbbbb ccccccccccccc\n  4:     0 bbbbbbbbbbbbb ccccccccccccc\n  5:     0 bbbbbbbbbbbbb ccccccccccccc\n ---                                  \n 98:     0 bbbbbbbbbbbbb ccccccccccccc\n 99:     0 bbbbbbbbbbbbb ccccccccccccc\n100:     0 bbbbbbbbbbbbb ccccccccccccc\n101:     0 bbbbbbbbbbbbb ccccccccccccc\n102:     0 bbbbbbbbbbbbb ccccccccccccc\n1 variable not shown: [d <char>]")
-test(2126.1, DT[J(NULL)], DT[0])
-test(2126.2, DT[data.table()], DT[0])
+test(2126.1, DT[J(NULL)], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+test(2126.2, DT[data.table()], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
 # additional segfault when i is NULL and roll = 'nearest'
-test(2126.3, DT[J(NULL), roll = 'nearest'], DT[0])
-test(2126.4, DT[data.table(), roll = 'nearest'], DT[0])
+test(2126.3, DT[J(NULL), roll = 'nearest'], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+test(2126.4, DT[data.table(), roll = 'nearest'], output="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
 
 # fcase, #3823
 test_vec1 = -5L:5L < 0L
@@ -16546,14 +16546,12 @@ DT = data.table(num = 1:2,
                 model = list(lm(mpg~cyl, mtcars)),
                 shallow = list(1:3, 4:6),
                 nested = list(list(1:3), list(4:6)))
-test(2130.17, capture.output(DT), output=c(
-  "   num   formula    model shallow",
-  "1:   1 mpg ~ cyl <lm[12]>   1,2,3",
-  "2:   2 mpg ~ cyl <lm[12]>   4,5,6",
-  "      nested",
-  "1: <list[1]>",
-  "2: <list[1]>"
-))
+test(2130.17, capture.output(DT), output=c("   num   formula    model shallow",
+                                           "1:   1 mpg ~ cyl <lm[12]>   1,2,3",
+                                           "2:   2 mpg ~ cyl <lm[12]>   4,5,6",
+                                           "      nested",
+                                           "1: <list[1]>",
+                                           "2: <list[1]>"))
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
@@ -18477,19 +18475,30 @@ test(2264.4, print(DT, show.indices=TRUE), output=c(
 test(2264.5, print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
 test(2264.6, options=list(datatable.show.indices=TRUE), print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
 setindex(DT, grp3)
-ans = c(
- "     grp1 grp2 grp3 index:grp3",
- "  1:    1    5   15         10",
- "  2:    1   24   60        119",
- "  3:    2   26   32        164",
- "  4:    2   36   57        192",
- "  5:    2   51   30         63",
- " ---                          ",
- "196:   98   77   45         11",
- "197:   98   87   70         66",
- "198:  100   18   21         31",
- "199:  100   36   51        139",
- "200:  100   38   56        159")
+ans = c("     grp1 grp2 grp3 index1:grp1__grp3",
+        "  1:    1    5   15                 1",
+        "  2:    1   24   60                 2",
+        "  3:    2   26   32                 5",
+        "  4:    2   36   57                 3",
+        "  5:    2   51   30                 4",
+        " ---                                 ",
+        "196:   98   77   45               195",
+        "197:   98   87   70               197",
+        "198:  100   18   21               198",
+        "199:  100   36   51               199",
+        "200:  100   38   56               200",
+        "     index2:grp3__grp1 index3:grp3",
+        "  1:                10          10",
+        "  2:               119         119",
+        "  3:               164         164",
+        "  4:               192         192",
+        "  5:                63          63",
+        " ---                              ",
+        "196:                11          11",
+        "197:                66          66",
+        "198:                31          31",
+        "199:               139         139",
+        "200:               159         159")
 test(2264.7, print(DT, show.indices=TRUE), output=ans)
 NN = 10
 DT = data.table(
