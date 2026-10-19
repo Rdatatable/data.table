@@ -92,7 +92,7 @@
 
 20. `setnafill()` with `type = "locf"` or `type = "nocb"` on a 0-row table no longer segfaults, [#7910](https://github.com/Rdatatable/data.table/issues/7910). Thanks @MichaelChirico for the report and fix.
 
-21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
+21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Also, `mean()` of an `integer` or `logical` column by group no longer coerces the whole column to `double` first, which made it slower than in v1.12.0 regardless of the number of threads. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
 ### Notes
 

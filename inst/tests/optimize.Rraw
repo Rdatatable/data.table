@@ -508,4 +508,3 @@ if (test_bit64) {
   test(2284.6, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g1])
   test(2284.7, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g2])
 }
-setDTthreads(old)
