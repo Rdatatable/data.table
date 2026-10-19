@@ -393,20 +393,15 @@ yday    = function(x) convertDate(as.IDate(x), "yday")
 wday    = function(x) convertDate(as.IDate(x), "wday")
 mday    = function(x) convertDate(as.IDate(x), "mday")
 week    = function(x) convertDate(as.IDate(x), "week")
-# TODO(#3279): Investigate if improved as.IDate() makes our below implementation faster than this
-isoweek = function(x) as.integer(format(as.IDate(x), "%V"))
-  # ISO 8601-conformant week, as described at
-  #   https://en.wikipedia.org/wiki/ISO_week_date
-  # Approach:
-  # * Find nearest Thursday to each element of x
-  # * Find the number of weeks having passed between
-  #   January 1st of the year of the nearest Thursdays and x
-
-#  x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
-#  nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
-#  year_start = as.IDate(format(nearest_thurs, '%Y-01-01'))
-#  1L + (nearest_thurs - year_start) %/% 7L
-isoyear = function(x) as.integer(format(as.IDate(x), "%G"))
+# ISO 8601-conformant week, as described at
+#   https://en.wikipedia.org/wiki/ISO_week_date
+# Approach:
+# * Find nearest Thursday to each element of x
+# * Find the number of weeks having passed between
+#   January 1st of the year of the nearest Thursdays and x
+nearest_thurs = function(x) 7L * ((as.integer(as.IDate(x)) + 3L) %/% 7L)
+isoweek = function(x) (convertDate(nearest_thurs(x), "yday") - 1L) %/% 7L + 1L
+isoyear = function(x) convertDate(nearest_thurs(x), "year")
 
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")

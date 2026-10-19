@@ -110,7 +110,7 @@ test(1184.2,optimize=1L, DT[, mean(v), by=x, verbose=TRUE], output="(GForce FALS
 test(1185.1,optimize=c(0L, 1L, 2L), DT[, list(sum(y), sum(v), sum(y,na.rm=TRUE), sum(v,na.rm=TRUE)), by=x],
            data.table(x=c("a","b","c","d"), V1=c(NA,10L,NA,NA), V2=c(6,NA,NA,NA), V3=c(4L,10L,7L,0L), V4=c(6,10,15,0)))
 # test 1185.1 subsumes 1185.1 and 1187.1 for testing all levels
-test(1185.2,optimize=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE], 
+test(1185.2,optimize=c(0L,1L,Inf), DT[, list(mean(y), mean(v), mean(y,na.rm=TRUE), mean(v,na.rm=TRUE)), by=x, verbose=TRUE],
   output=c("All optimizations.*off", "Old mean.*changed j", "GForce optimized j to"))
 # test 1185.2 subsumes 1185.2, 1185.3, and 1185.4 for testing all levels
 MyVar = TRUE
@@ -334,7 +334,7 @@ test(1594.08,optimize=opt, DT[(idx), var(z1, na.rm=TRUE), by=x], ans)
 test(1594.09,optimize=opt,DT[, lapply(.SD, sd, na.rm=FALSE), by=x])
 test(1594.10,optimize=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
 test(1594.11,optimize=opt, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output=out)
- 
+
 test(1594.12,optimize=opt, DT[, lapply(.SD, prod, na.rm=FALSE), by=x])
 test(1594.13,optimize=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x])
 test(1594.14,optimize=opt, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output=out)
@@ -490,3 +490,26 @@ test(2283 + 0.19, optimize=opts,
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "V2", "b", "vs", "am"),
        context=sprintf("optimize=%s [XIX]", format(opt)))
+
+# single-threaded GForce uses one batch and gsum/gmean read x directly instead of gathering it, #3330
+old = setDTthreads(1L)
+set.seed(3330L)
+N = 2e5L
+DT = data.table(g1=sample(100L, N, TRUE), g2=sample(70000L, N, TRUE), i=sample(c(1:10, NA), N, TRUE), k=sample(5L, N, TRUE), d=rnorm(N), c=complex(real=rnorm(N), imaginary=rnorm(N)))
+DT[c(3L, 7L), d := NA][c(5L, 9L), c := NA]
+test(2284.1, optimize=c(0L, Inf), DT[, .(sum(i), sum(i, na.rm=TRUE), mean(i), mean(i, na.rm=TRUE), sum(k), mean(k), sum(d), sum(d, na.rm=TRUE), mean(d), mean(d, na.rm=TRUE), sum(c), sum(c, na.rm=TRUE), mean(c), mean(c, na.rm=TRUE)), keyby=g1])
+test(2284.2, optimize=c(0L, Inf), DT[, .(sum(i), sum(i, na.rm=TRUE), mean(i), mean(i, na.rm=TRUE), sum(k), mean(k), sum(d), sum(d, na.rm=TRUE), mean(d), mean(d, na.rm=TRUE), sum(c), sum(c, na.rm=TRUE), mean(c), mean(c, na.rm=TRUE)), by=g2])
+test(2284.3, optimize=c(0L, Inf), DT[d > 0, .(sum(i), mean(i, na.rm=TRUE), sum(k), mean(d), sum(c)), by=g1])
+setkey(DT, g1)
+test(2284.4, optimize=c(0L, Inf), DT[, .(sum(i), sum(i, na.rm=TRUE), mean(i), mean(i, na.rm=TRUE), sum(k), mean(k), sum(d), sum(d, na.rm=TRUE), mean(d), mean(d, na.rm=TRUE), sum(c), sum(c, na.rm=TRUE), mean(c), mean(c, na.rm=TRUE)), by=g1])
+test(2284.5, options=list(datatable.optimize=Inf), data.table(g=c(1L, 1L, 2L), x=c(.Machine$integer.max, 1L, 1L))[, sum(x), by=g], data.table(g=1:2, V1=c(2147483648, 1)), warning="coerced to 'numeric'")
+if (test_bit64) {
+  DT[, i64 := as.integer64(i)]
+  test(2284.6, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g1])
+  test(2284.7, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g2])
+}
+
+# GForce skips the gforce() setup when j is only .N
+DT = data.table(a=c(2L,1L,2L,3L,2L))
+test(2285.1, optimize=2L, DT[, .N, by=a, verbose=TRUE], output="GForce optimized j to '.N'", notOutput="gforce initial population")
+test(2285.2, optimize=0:2, DT[, list(".N"), by=a], data.table(a=c(2L,1L,3L), V1=".N"))

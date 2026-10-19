@@ -50,6 +50,8 @@
 
 14. `melt()` is faster on large inputs when `measure.vars` is a list with `variable.factor=FALSE` (e.g. 3x) or uses `measure()` (e.g. 2x). Thanks @m-muecke for the PR.
 
+15. `isoweek()` and `isoyear()` are much faster (e.g. 25x and 45x) by computing the result with date arithmetic instead of `format()`. Thanks @m-muecke for the PR.
+
 ### BUG FIXES
 
 1. `fread()` with `skip=0` and `(header=TRUE|FALSE)` no longer skips the first row when it has fewer fields than subsequent rows, [#7463](https://github.com/Rdatatable/data.table/issues/7463). Thanks @emayerhofer for the report and @ben-schwen for the fix.
@@ -91,6 +93,8 @@
 19. `print.data.table()` now correctly displays data when `col.names="none"` and `row.names=FALSE`, [#7735](https://github.com/Rdatatable/data.table/issues/7735). Thanks to @jan-swissre for the report and @venom1204 for the fix.
 
 20. `setnafill()` with `type = "locf"` or `type = "nocb"` on a 0-row table no longer segfaults, [#7910](https://github.com/Rdatatable/data.table/issues/7910). Thanks @MichaelChirico for the report and fix.
+
+21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Also, `mean()` of an `integer` or `logical` column by group no longer coerces the whole column to `double` first, which made it slower than in v1.12.0 regardless of the number of threads. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
 ### Notes
 
