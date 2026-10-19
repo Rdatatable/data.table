@@ -75,8 +75,12 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) internal_error(__func__, "o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
   }
 
+  // Single-threaded, the batching below is pure overhead (#3330). Use one batch and, when all of g fits in uint16_t low,
+  // a single high bucket so that gather/gsum/gmean reduce to direct loops. With more groups keep nb/2: the small blocks
+  // of ans per high bucket stay in cache and are faster than one large block.
+  const bool single = getDTthreads(nrow, false)==1;
   int nb = nbit(ngrp-1);
-  bitshift = nb/2;    // /2 so that high and low can be uint16_t, and no limit (even for nb=4) to stress-test.
+  bitshift = single && nb<=16 ? nb : nb/2;    // /2 so that high and low can be uint16_t, and no limit (even for nb=4) to stress-test.
   // bitshift=MAX(nb-8,0); if (bitshift>16) bitshift=nb/2;     // TODO: when we have stress-test off mode, do this
   mask = (1<<bitshift)-1;
   highSize = ((ngrp-1)>>bitshift) + 1;
@@ -85,7 +89,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER_RO(f);
 
-  nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
+  nBatch = single ? 1 : MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
   batchSize = MAX(1, (nrow-1)/nBatch);
   lastBatchSize = nrow - (nBatch-1)*batchSize;
   // We deliberate use, for example, 40 batches of just 14 rows, to stress-test tests. This strategy proved to be a good one as #3204 immediately came to light.
@@ -222,6 +226,32 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
+  if (nBatch==1 && highSize==1 && irowslen==-1) { // hot path for single threads and ngrp<=65536
+    // gather would be an identical copy of x, so return x itself after checking for NA (#3330). Callers only read gx.
+    switch (TYPEOF(x)) {
+    case LGLSXP: case INTSXP: {
+      const int *xp = INTEGER_RO(x);
+      for (int i=0; i<nrow; i++) if (xp[i]==NA_INTEGER) { *anyNA=true; break; }
+    } break;
+    case REALSXP: {
+      if (INHERITS(x, char_integer64)) {
+        const int64_t *xp = (const int64_t *)REAL_RO(x);
+        for (int i=0; i<nrow; i++) if (xp[i]==NA_INTEGER64) { *anyNA=true; break; }
+      } else {
+        const double *xp = REAL_RO(x);
+        for (int i=0; i<nrow; i++) if (ISNAN(xp[i])) { *anyNA=true; break; }
+      }
+    } break;
+    case CPLXSXP: {
+      const Rcomplex *xp = COMPLEX_RO(x);
+      for (int i=0; i<nrow; i++) if (ISNAN(xp[i].r) && ISNAN(xp[i].i)) { *anyNA=true; break; }
+    } break;
+    default : // # nocov
+      error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
+    }
+    if (verbose) { Rprintf(_("gather took %.3fs\n"), wallclock()-started); }
+    return (void *)DATAPTR_RO(x);
+  }
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER_RO(x);
@@ -595,8 +625,43 @@ SEXP gmean(SEXP x, SEXP narmArg)
   SEXP ans=R_NilValue;
   int protecti=0;
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP:
-    x = PROTECT(coerceVector(x, REALSXP)); protecti++;
+  case LGLSXP: case INTSXP: {
+    // accumulate the gathered ints into double directly; coerceVector(x, REALSXP) first would copy all of x (#3330)
+    const int *restrict gx = gather(x, &anyNA);
+    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
+    double *restrict ansp = REAL(ans);
+    memset(ansp, 0, ngrp*sizeof(double));
+    const bool count = narm && anyNA;
+    int *restrict nna_counts = count ? calloc(ngrp, sizeof(*nna_counts)) : NULL;
+    if (count && !nna_counts)
+      error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(*nna_counts)); // # nocov
+    #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+    for (int h=0; h<highSize; h++) {
+      double *restrict _ans = ansp + (h<<bitshift);
+      for (int b=0; b<nBatch; b++) {
+        const int pos = counts[ b*highSize + h ];
+        const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+        const int *my_gx = gx + b*batchSize + pos;
+        const uint16_t *my_low = low + b*batchSize + pos;
+        if (!anyNA) {
+          for (int i=0; i<howMany; i++) _ans[my_low[i]] += my_gx[i];
+        } else {
+          for (int i=0; i<howMany; i++) {
+            const int elem = my_gx[i];
+            if (elem==NA_INTEGER) {
+              if (!narm) _ans[my_low[i]] = NA_REAL;  // and let NA propagate
+            } else {
+              _ans[my_low[i]] += elem;
+              if (count) nna_counts[(h<<bitshift) + my_low[i]]++;
+            }
+          }
+        }
+      }
+    }
+    #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
+    for (int i=0; i<ngrp; i++) ansp[i] /= count ? nna_counts[i] : grpsize[i];
+    free(nna_counts);
+  } break;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
       SEXP as = PROTECT(ScalarReal(1));
