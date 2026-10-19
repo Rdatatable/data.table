@@ -417,7 +417,7 @@ replace_dot_alias = function(e) {
     return(list(GForce=FALSE, jsub=jsub))
 
   if (!length(ansvars) && !use.I) {
-    if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
+    if ( (is.N(jsub) || (jsub %iscall% 'list' && length(jsub)==2L && is.N(jsub[[2L]]))) && !length(lhs) ) {
       if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
       return(list(GForce=TRUE, jsub=jsub))
     }
@@ -2073,12 +2073,16 @@ replace_dot_alias = function(e) {
   }
   if (verbose) {last.started.at=proc.time();catf("Making each group and running j (GForce %s) ... ", GForce);flush.console()}
   if (GForce) {
-    thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
-    for (ii in ansvars) assign(ii, .subset2(x, ii), thisEnv)
-    assign(".N", len__, thisEnv) # For #334
-    #fix for #1683
-    if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    if (!length(ansvars) && !use.I) { # j is only .N (see .optimize_gforce), so gforce() isn't needed
+      ans = list(len__)
+    } else {
+      thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
+      for (ii in ansvars) assign(ii, .subset2(x, ii), thisEnv)
+      assign(".N", len__, thisEnv) # For #334
+      # fix for #1683
+      if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
+      ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    }
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
 

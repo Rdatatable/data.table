@@ -508,3 +508,8 @@ if (test_bit64) {
   test(2284.6, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g1])
   test(2284.7, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g2])
 }
+
+# GForce skips the gforce() setup when j is only .N
+DT = data.table(a=c(2L,1L,2L,3L,2L))
+test(2285.1, optimize=2L, DT[, .N, by=a, verbose=TRUE], output="GForce optimized j to '.N'", notOutput="gforce initial population")
+test(2285.2, optimize=0:2, DT[, list(".N"), by=a], data.table(a=c(2L,1L,3L), V1=".N"))
