@@ -22395,3 +22395,17 @@ test(2405.2, names(DT[, .(a, .N, s=sum(b)), by=b]), c("b", "a", "N", "s"))
 test(2405.3, names(DT[, .SD, by=a]), c("a", "b"))
 test(2405.4, names(DT[, {x = 1L; .(b, x)}, by=a]), c("a", "b", "x"))
 rm(DT)
+
+# columns used by j and .SD, .dt_analyze_sd(), #852
+DT = data.table(a=1:2, b=3:4, c=5:6)
+callof = function(expr) as.character(tryCatch(expr, error=function(e) conditionCall(e)[[1L]], warning=function(w) conditionCall(w)[[1L]]))
+# .SDcols=patterns() takes patterns from the calling scope of [ if it is a function there
+f = function(DT) { patterns = function(...) "c"; DT[, lapply(.SD, sum), .SDcols=patterns("zzz")] }
+test(2406.01, f(DT), data.table(c=11L))
+f = function(DT) { cols = c("c", "a"); keep = function(x) x[1L] > 2L; list(DT[, lapply(.SD, sum), .SDcols=cols], DT[, lapply(.SD, sum), .SDcols=keep]) }
+test(2406.02, f(DT), list(data.table(c=11L, a=3L), data.table(b=7L, c=11L)))
+test(2406.03, callof(DT[, .SD, .SDcols="zz"]), "[.data.table")
+test(2406.04, callof(DT[, .SD, .SDcols=list(1)]), "[.data.table")
+test(2406.05, callof(DT[, a, .SDcols="b"]), "[.data.table")
+test(2406.06, DT[, c(.N, lapply(.SD, sum)), by=a, .SDcols="b"], data.table(a=1:2, N=1L, b=3:4))
+rm(DT, f, callof)

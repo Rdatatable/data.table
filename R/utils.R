@@ -169,8 +169,8 @@ cols_from_csv = function(x) strsplit(x, ',', fixed=TRUE)[[1L]]
 
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
 # was called do_patterns() before PR#4731
-eval_with_cols = function(orig_call, all_cols) {
-  parent = parent.frame(2L)
+# parent is where the function and its arguments are looked up: the caller of the caller, unless given
+eval_with_cols = function(orig_call, all_cols, parent=parent.frame(2L)) {
   fun_uneval = orig_call[[1L]]
   # take fun from either calling env (parent) or from data.table
   fun = tryCatch({

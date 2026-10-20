@@ -1486,6 +1486,155 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# which columns j uses: q$av (all symbols in j), q$use.I, and the columns of x and i needed as q$ansvars/q$ansvals, of which
+#   q$sdvars form .SD (from .SDcols, or all non-by columns when j uses .SD, get, mget or eval) and q$non_sdvars are used
+#   in j alongside .SD.
+.dt_analyze_sd = function(q) {
+  x = q$x
+  names_x = q$names_x
+  names_i = q$names_i
+  callenv = q$callenv
+  verbose = q$verbose
+  jsub = q$jsub
+  missing_SDcols = q$missing_SDcols
+  SDcols_sub = q$SDcols_sub
+  xdotprefix = q$xdotprefix
+  idotprefix = q$idotprefix
+  bynames = q$bynames
+  allbyvars = q$allbyvars
+  non_sdvars = q$non_sdvars
+  ansvars = q$ansvars
+  ansvals = q$ansvals
+  sdvars = q$sdvars
+  av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
+  use.I = ".I" %chin% av
+  if (any(c(".SD","eval","get","mget") %chin% av)) {
+    if (missing_SDcols) {
+      # here we need to use '.dt_dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
+      # slight memory efficiency boost if we only store sdvars if it differs from ansvars, but a bit tricky to examine all the uses here
+      ansvars = sdvars = .dt_dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
+      # just using .SD in j triggers all non-by columns in the subset even if some of
+      # those columns are not used. It would be tricky to detect whether the j expression
+      # really does use all of the .SD columns or not, hence .SDcols for grouping
+      # over a subset of columns
+
+      # all duplicate columns must be matched, because nothing is provided
+      ansvals = chmatchdup(ansvars, names_x)
+    } else {
+      # FR #355 - negative numeric and character indices for SDcols
+      colsub = SDcols_sub
+      # peel from parentheses before negation so (-1L) works as well: as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)] #4231
+      while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
+      # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
+      # NB: _unary_ '-', not _binary_ '-' (#5826). Test for '!' length-2 should be redundant but low-cost & keeps code concise.
+      if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
+        negate_sdcols = TRUE
+        colsub = colsub[[2L]]
+      } else negate_sdcols = FALSE
+      # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
+      while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
+      if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
+        # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
+        .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), callenv)
+      } else {
+        if (colsub %iscall% 'patterns') {
+          patterns_list_or_vector = eval_with_cols(colsub, names_x, callenv)
+          .SDcols = if (is.list(patterns_list_or_vector)) {
+            # each pattern gives a new filter condition, intersect the end result
+            Reduce(intersect, patterns_list_or_vector)
+          } else {
+            patterns_list_or_vector
+          }
+        } else {
+          .SDcols = eval(colsub, callenv, callenv)
+          # allow filtering via function in .SDcols, #3950
+          if (is.function(.SDcols)) {
+            .SDcols = lapply(x, .SDcols)
+            if (any(idx <- lengths(.SDcols) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
+              stopf("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: %s", brackify(names(x)[idx]))
+            .SDcols = unlist(.SDcols, use.names = FALSE)
+          }
+        }
+      }
+      if (anyNA(.SDcols))
+        stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
+      if (is.logical(.SDcols)) {
+        if (length(.SDcols)!=length(x)) stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(x))
+        ansvals = which_(.SDcols, !negate_sdcols)
+        ansvars = sdvars = names_x[ansvals]
+      } else if (is.numeric(.SDcols)) {
+        .SDcols = as.integer(.SDcols)
+        # if .SDcols is numeric, use '.dt_dupdiff' instead of 'setdiff'
+        if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
+        if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
+          stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
+        ansvars = sdvars = if (negate_sdcols) .dt_dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
+        ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
+      } else {
+        if (!is.character(.SDcols)) stopf(".SDcols should be column numbers or names")
+        if (!all(idx <- .SDcols %chin% names_x))
+          stopf("Some items of .SDcols are not column names: %s", brackify(.SDcols[!idx]))
+        ansvars = sdvars = if (negate_sdcols) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
+        # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
+        ansvals = chmatch(ansvars, names_x)
+      }
+    }
+    # fix for long standing FR/bug, #495 and #484
+    allcols = c(names_x, xdotprefix, names_i, idotprefix)
+    non_sdvars = setdiff(intersect(av, allcols), c(bynames, ansvars))
+
+    # added 'mget' - fix for #994
+    if (any(c("get", "mget") %chin% av)){
+      if (verbose)
+        catf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars))
+        # get('varname') is too difficult to detect which columns are used in general
+        # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
+
+      # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
+      if (jsub %iscall% ":=" && is.symbol(jsub[[2L]])) {
+        jsub_lhs_symbol = as.character(jsub[[2L]])
+        if (jsub_lhs_symbol %chin% non_sdvars) {
+          sdvars = setdiff(sdvars, jsub_lhs_symbol)
+        }
+      }
+
+      if (missing_SDcols) {
+        ansvars = setdiff(allcols, bynames) # fix for bug #34
+      } else {
+        # fixes #4089 - if .SDcols was already evaluated, we do not want the order of the columns to change.
+        ansvars = union(ansvars, setdiff(setdiff(allcols, ansvars), bynames))
+      }
+      non_sdvars = setdiff(ansvars, sdvars)
+      ansvals = chmatch(ansvars, names_x)
+      if (verbose) catf("New ansvars: %s \n", brackify(ansvars))
+    } else if (length(non_sdvars)) {
+      # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
+      # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
+      ansvars = union(ansvars, non_sdvars)
+      ansvals = chmatch(ansvars, names_x)
+    }
+    # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
+  } else {
+    if (!missing_SDcols) warningf("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
+    allcols = c(names_x, xdotprefix, names_i, idotprefix)
+    ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
+    if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackify(ansvars))
+    # using a few named columns will be faster
+    # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
+    # and:        DT[,lapply(.SD,sum),by=month(date)]
+    # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
+    ansvals = chmatch(ansvars, names_x)
+  }
+  # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
+  q$av = av
+  q$use.I = use.I
+  q$ansvars = ansvars
+  q$ansvals = ansvals
+  q$sdvars = sdvars
+  q$non_sdvars = non_sdvars
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -1574,6 +1723,7 @@ replace_dot_alias = function(e) {
   # substitute(on) gives the expression passed as on= only until on is reassigned below, then its value; on_sub mirrors that
   #   so helpers never need substitute(on). Keep it in sync wherever on is reassigned.
   on_sub = substitute(on)
+  SDcols_sub = if (!missing_SDcols) substitute(.SDcols)  # likewise; .SDcols has no default so only when supplied
   # the state of the query is this frame: stage helpers (.dt_*(q, ...)) read and write it through q, e.g. q$irows
   q = environment()
   # cedta() and nargs() depend on this frame so are evaluated here
@@ -1732,126 +1882,7 @@ replace_dot_alias = function(e) {
       jsub_names = .dt_j_names(jsub)
       jsub = jsub_names$jsub
       jvnames = jsub_names$jvnames
-      av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
-      use.I = ".I" %chin% av
-      if (any(c(".SD","eval","get","mget") %chin% av)) {
-        if (missing_SDcols) {
-          # here we need to use '.dt_dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
-          # slight memory efficiency boost if we only store sdvars if it differs from ansvars, but a bit tricky to examine all the uses here
-          ansvars = sdvars = .dt_dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
-          # just using .SD in j triggers all non-by columns in the subset even if some of
-          # those columns are not used. It would be tricky to detect whether the j expression
-          # really does use all of the .SD columns or not, hence .SDcols for grouping
-          # over a subset of columns
-
-          # all duplicate columns must be matched, because nothing is provided
-          ansvals = chmatchdup(ansvars, names_x)
-        } else {
-          # FR #355 - negative numeric and character indices for SDcols
-          colsub = substitute(.SDcols)
-          # peel from parentheses before negation so (-1L) works as well: as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)] #4231
-          while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
-          # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
-          # NB: _unary_ '-', not _binary_ '-' (#5826). Test for '!' length-2 should be redundant but low-cost & keeps code concise.
-          if (colsub %iscall% c("!", "-") && length(colsub) == 2L) {
-            negate_sdcols = TRUE
-            colsub = colsub[[2L]]
-          } else negate_sdcols = FALSE
-          # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
-          while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
-          if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
-            # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
-            .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), callenv)
-          } else {
-            if (colsub %iscall% 'patterns') {
-              patterns_list_or_vector = eval_with_cols(colsub, names_x)
-              .SDcols = if (is.list(patterns_list_or_vector)) {
-                # each pattern gives a new filter condition, intersect the end result
-                Reduce(intersect, patterns_list_or_vector)
-              } else {
-                patterns_list_or_vector
-              }
-            } else {
-              .SDcols = eval(colsub, callenv, callenv)
-              # allow filtering via function in .SDcols, #3950
-              if (is.function(.SDcols)) {
-                .SDcols = lapply(x, .SDcols)
-                if (any(idx <- lengths(.SDcols) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
-                  stopf("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: %s", brackify(names(x)[idx]))
-                .SDcols = unlist(.SDcols, use.names = FALSE)
-              }
-            }
-          }
-          if (anyNA(.SDcols))
-            stopf(".SDcols missing at the following indices: %s", brackify(which(is.na(.SDcols))))
-          if (is.logical(.SDcols)) {
-            if (length(.SDcols)!=length(x)) stopf(".SDcols is a logical vector of length %d but there are %d columns", length(.SDcols), length(x))
-            ansvals = which_(.SDcols, !negate_sdcols)
-            ansvars = sdvars = names_x[ansvals]
-          } else if (is.numeric(.SDcols)) {
-            .SDcols = as.integer(.SDcols)
-            # if .SDcols is numeric, use '.dt_dupdiff' instead of 'setdiff'
-            if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
-            if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
-              stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
-            ansvars = sdvars = if (negate_sdcols) .dt_dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
-            ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
-          } else {
-            if (!is.character(.SDcols)) stopf(".SDcols should be column numbers or names")
-            if (!all(idx <- .SDcols %chin% names_x))
-              stopf("Some items of .SDcols are not column names: %s", brackify(.SDcols[!idx]))
-            ansvars = sdvars = if (negate_sdcols) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
-            # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
-            ansvals = chmatch(ansvars, names_x)
-          }
-        }
-        # fix for long standing FR/bug, #495 and #484
-        allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        non_sdvars = setdiff(intersect(av, allcols), c(bynames, ansvars))
-
-        # added 'mget' - fix for #994
-        if (any(c("get", "mget") %chin% av)){
-          if (verbose)
-            catf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars))
-            # get('varname') is too difficult to detect which columns are used in general
-            # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
-
-          # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
-          if (jsub %iscall% ":=" && is.symbol(jsub[[2L]])) {
-            jsub_lhs_symbol = as.character(jsub[[2L]])
-            if (jsub_lhs_symbol %chin% non_sdvars) {
-              sdvars = setdiff(sdvars, jsub_lhs_symbol)
-            }
-          }
-
-          if (missing_SDcols) {
-            ansvars = setdiff(allcols, bynames) # fix for bug #34
-          } else {
-            # fixes #4089 - if .SDcols was already evaluated, we do not want the order of the columns to change.
-            ansvars = union(ansvars, setdiff(setdiff(allcols, ansvars), bynames))
-          }
-          non_sdvars = setdiff(ansvars, sdvars)
-          ansvals = chmatch(ansvars, names_x)
-          if (verbose) catf("New ansvars: %s \n", brackify(ansvars))
-        } else if (length(non_sdvars)) {
-          # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
-          # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
-          ansvars = union(ansvars, non_sdvars)
-          ansvals = chmatch(ansvars, names_x)
-        }
-        # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
-      } else {
-        if (!missing_SDcols) warningf("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
-        allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
-        if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackify(ansvars))
-        # using a few named columns will be faster
-        # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
-        # and:        DT[,lapply(.SD,sum),by=month(date)]
-        # We don't want date in .SD in the latter, but we do in the former; hence the union() above.
-        ansvals = chmatch(ansvars, names_x)
-      }
-      # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
+      .dt_analyze_sd(q)
 
       lhs = NULL
       newnames = NULL
