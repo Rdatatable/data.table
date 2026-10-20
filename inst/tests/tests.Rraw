@@ -22248,3 +22248,10 @@ test(2393.10, naive(DT[, let(a = 1L)]), error="but 'let' was used")
 test(2393.11, class(naive(DT[2:3, ])), c("data.table","data.frame"))
 test(2393.12, as.character(tryCatch(naive(DT[, a := 1L]), error=conditionCall)[[1L]]), "[.data.table")  # not .dt_cedta_fallback
 rm(DT, naive)
+
+# argument validation moved to .dt_check_args() still reports the [.data.table call, #852
+DT = data.table(a=1:3)
+test(2394.1, as.character(tryCatch(DT[, a, mult="x"], error=conditionCall)[[1L]]), "[.data.table")
+test(2394.2, as.character(tryCatch(DT[.(1L), on="a", roll="x"], error=conditionCall)[[1L]]), "[.data.table")
+test(2394.3, as.character(tryCatch(DT[, a, showProgress=-1], error=conditionCall)[[1L]]), "[.data.table")
+rm(DT)
