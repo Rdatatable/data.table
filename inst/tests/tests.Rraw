@@ -22301,3 +22301,13 @@ test(2398.3, DT[!c(TRUE, FALSE, TRUE), a], 2L)
 test(2398.4, DT[list(data.frame(b="y")), on="b", a], 2L)
 test(2398.5, DT[factor("z"), on="b", a], 3L)
 rm(DT)
+
+# join planning moved into .dt_plan_join(), #852
+DT = data.table(a=1:3, b=c("x","y","z"))
+# on= given as a symbol or as eval() is evaluated in the calling scope of [, not of the helper
+f = function(DT) { cols = "b"; ex = quote(c("b")); list(DT[.("y"), on=cols, a], DT[.("z"), on=eval(ex), a]) }
+test(2399.1, f(DT), list(2L, 3L))
+test(2399.2, as.character(tryCatch(DT[data.table(b="y")], error=conditionCall)[[1L]]), "[.data.table")
+test(2399.3, DT[data.table(b="y"), on=.NATURAL, a, verbose=TRUE], 2L, output="natural join using")
+test(2399.4, DT[.(c("y","q")), on="b", which=NA], 2L)
+rm(DT, f)
