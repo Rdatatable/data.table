@@ -2146,6 +2146,137 @@ replace_dot_alias = function(e) {
   x
 }
 
+# by=.EACHI: the groups are the rows of i (q$byval = i), already in key order of i when its join columns lead its key.
+#   The columns of i that j uses (q$jisvars, q$xjisvars) are made available in SDenv as .iSD and as variables.
+.dt_plan_eachi = function(q, SDenv) {
+  x = q$x
+  i = q$i
+  names_x = q$names_x
+  names_i = q$names_i
+  missing_on = q$missing_on
+  leftcols = q$leftcols
+  rightcols = q$rightcols
+  roll = q$roll
+  f__ = q$f__
+  av = q$av
+  # The groupings come instead from each row of the i data.table.
+  # Much faster for a few known groups vs a 'by' for all followed by a subset
+  if (!is.data.table(i)) stopf("logical error. i is not a data.table, but mult='all' and 'by'=.EACHI")
+  byval = i
+  bynames = if (missing_on) head(key(x),length(leftcols)) else names(q$on)
+  allbyvars = NULL
+  bysameorder = (haskey(i) && identical(leftcols, chmatch(head(key(i),length(leftcols)), names(i)))) || # leftcols leading subset of key(i); see #4917
+                (roll==FALSE && is.sorted(f__)) # roll==FALSE is fix for #1010
+  ##  'av' correct here ??  *** TO DO ***
+  xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
+  # if 'get' is in 'av' use all cols in 'i', fix for bug #34
+  # added 'mget' - fix for #994
+  jisvars = if (any(c("get", "mget") %chin% av)) names_i else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names_i)
+  # JIS (non join cols) but includes join columns too (as there are named in i)
+  if (length(jisvars)) {
+    tt = min(nrow(i),1L)  # min() is here for when nrow(i)==0
+    SDenv$.iSD = i[tt,jisvars,with=FALSE]
+    for (ii in jisvars) {
+      assign(ii, SDenv$.iSD[[ii]], SDenv)
+      assign(paste0("i.",ii), SDenv$.iSD[[ii]], SDenv)
+    }
+  }
+  q$byval = byval
+  q$bynames = bynames
+  q$allbyvars = allbyvars
+  q$bysameorder = bysameorder
+  q$xjisvars = xjisvars
+  q$jisvars = jisvars
+  invisible()
+}
+
+# by=: find the groups of q$byval, as their starts q$f__ and lengths q$len__ in the order q$o__ (empty when x is already
+#   grouped), using the key or an index when by= matches it, otherwise forderv(); with by= (not keyby=) the groups are
+#   put back in order of first appearance.
+.dt_plan_groups = function(q) {
+  x = q$x
+  verbose = q$verbose
+  missingby = q$missingby
+  keyby = q$keyby
+  byval = q$byval
+  byindex = q$byindex
+  bysameorder = q$bysameorder
+  orderedirows = q$orderedirows
+  xnrow = q$xnrow
+  o__ = q$o__
+  f__ = q$f__
+  len__ = q$len__
+  # Find the groups, using 'byval' ...
+  if (missingby) internal_error("by= is missing")   # nocov
+
+  if (length(byval) && length(byval[[1L]])) {
+    if (!bysameorder && isFALSE(byindex)) {
+      if (verbose) {last.started.at=proc.time();catf("Finding groups using forderv ... ");flush.console()}
+      o__ = forderv(byval, sort=keyby, retGrp=TRUE)
+      # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
+      # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
+      # minimize data movement and benefit from skipping subgroups which happen to be grouped but not sorted. This byte
+      # appearance order is not the same as the order of group values within by= columns, so the 2nd forder below is
+      # still needed to get the group appearance order. Always passing sort=TRUE above won't change any result at all
+      # (tested and confirmed), it'll just make by= slower. It must be TRUE when keyby= though since the key is just
+      # marked afterwards.
+      # forderv() returns empty integer() if already ordered to save allocating 1:xnrow
+      bysameorder = orderedirows && !length(o__)
+      if (verbose) {
+        cat(timetaken(last.started.at),"\n")
+        last.started.at=proc.time()
+        catf("Finding group sizes from the positions (can be avoided to save RAM) ... ")
+        flush.console()  # for windows
+      }
+      f__ = attr(o__, "starts", exact=TRUE)
+      len__ = uniqlengths(f__, xnrow)
+      if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+      if (!bysameorder && !keyby) {
+        # TO DO: lower this into forder.c
+        if (verbose) {last.started.at=proc.time();catf("Getting back original order ... ");flush.console()}
+        firstofeachgroup = o__[f__]
+        if (length(origorder <- forderv(firstofeachgroup))) {
+          f__ = f__[origorder]
+          len__ = len__[origorder]
+        }
+        if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+      }
+      if (!orderedirows && !length(o__)) o__ = seq_len(xnrow)  # temp fix.  TODO: revisit orderedirows
+    } else {
+      if (verbose) last.started.at=proc.time();
+      if (bysameorder) {
+        if (verbose) {catf("Finding groups using uniqlist on key ... ");flush.console()}
+        f__ = uniqlist(byval)
+      } else {
+        if (!is.character(byindex) || length(byindex)!=1L) internal_error("byindex not the index name")  # nocov
+        if (verbose) {catf("Finding groups using uniqlist on index '%s' ... ", byindex);flush.console()}
+        o__ = getindex(x, byindex)
+        if (is.null(o__)) internal_error("byindex not found")  # nocov
+        f__ = uniqlist(byval, order=o__)
+      }
+      if (verbose) {
+        cat(timetaken(last.started.at),"\n")
+        last.started.at=proc.time()
+        catf("Finding group sizes from the positions (can be avoided to save RAM) ... ")
+        flush.console()  # for windows
+      }
+      len__ = uniqlengths(f__, xnrow)
+      # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
+      if (verbose) { cat(timetaken(last.started.at),"\n"); flush.console() }
+    }
+  } else {
+    f__=NULL
+    len__=0L
+    bysameorder=TRUE   # for test 724
+  }
+  # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
+  q$o__ = o__
+  q$f__ = f__
+  q$len__ = len__
+  q$bysameorder = bysameorder
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -2369,96 +2500,7 @@ replace_dot_alias = function(e) {
   if (".I" %chin% ansvars) stopf("The column '.%1$s' can't be grouped because it conflicts with the special .%1$s variable. Try setnames(DT,'.%1$s','%1$s') first.", "I")
   .dt_init_grouped_SDenv(SDenv, verbose)
 
-  if (byjoin) {
-    # The groupings come instead from each row of the i data.table.
-    # Much faster for a few known groups vs a 'by' for all followed by a subset
-    if (!is.data.table(i)) stopf("logical error. i is not a data.table, but mult='all' and 'by'=.EACHI")
-    byval = i
-    bynames = if (missing_on) head(key(x),length(leftcols)) else names(on)
-    allbyvars = NULL
-    bysameorder = (haskey(i) && identical(leftcols, chmatch(head(key(i),length(leftcols)), names(i)))) || # leftcols leading subset of key(i); see #4917
-                  (roll==FALSE && is.sorted(f__)) # roll==FALSE is fix for #1010
-    ##  'av' correct here ??  *** TO DO ***
-    xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
-    # if 'get' is in 'av' use all cols in 'i', fix for bug #34
-    # added 'mget' - fix for #994
-    jisvars = if (any(c("get", "mget") %chin% av)) names_i else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names_i)
-    # JIS (non join cols) but includes join columns too (as there are named in i)
-    if (length(jisvars)) {
-      tt = min(nrow(i),1L)  # min() is here for when nrow(i)==0
-      SDenv$.iSD = i[tt,jisvars,with=FALSE]
-      for (ii in jisvars) {
-        assign(ii, SDenv$.iSD[[ii]], SDenv)
-        assign(paste0("i.",ii), SDenv$.iSD[[ii]], SDenv)
-      }
-    }
-
-  } else {
-    # Find the groups, using 'byval' ...
-    if (missingby) internal_error("by= is missing")   # nocov
-
-    if (length(byval) && length(byval[[1L]])) {
-      if (!bysameorder && isFALSE(byindex)) {
-        if (verbose) {last.started.at=proc.time();catf("Finding groups using forderv ... ");flush.console()}
-        o__ = forderv(byval, sort=keyby, retGrp=TRUE)
-        # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
-        # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
-        # minimize data movement and benefit from skipping subgroups which happen to be grouped but not sorted. This byte
-        # appearance order is not the same as the order of group values within by= columns, so the 2nd forder below is
-        # still needed to get the group appearance order. Always passing sort=TRUE above won't change any result at all
-        # (tested and confirmed), it'll just make by= slower. It must be TRUE when keyby= though since the key is just
-        # marked afterwards.
-        # forderv() returns empty integer() if already ordered to save allocating 1:xnrow
-        bysameorder = orderedirows && !length(o__)
-        if (verbose) {
-          cat(timetaken(last.started.at),"\n")
-          last.started.at=proc.time()
-          catf("Finding group sizes from the positions (can be avoided to save RAM) ... ")
-          flush.console()  # for windows
-        }
-        f__ = attr(o__, "starts", exact=TRUE)
-        len__ = uniqlengths(f__, xnrow)
-        if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-        if (!bysameorder && !keyby) {
-          # TO DO: lower this into forder.c
-          if (verbose) {last.started.at=proc.time();catf("Getting back original order ... ");flush.console()}
-          firstofeachgroup = o__[f__]
-          if (length(origorder <- forderv(firstofeachgroup))) {
-            f__ = f__[origorder]
-            len__ = len__[origorder]
-          }
-          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-        }
-        if (!orderedirows && !length(o__)) o__ = seq_len(xnrow)  # temp fix.  TODO: revisit orderedirows
-      } else {
-        if (verbose) last.started.at=proc.time();
-        if (bysameorder) {
-          if (verbose) {catf("Finding groups using uniqlist on key ... ");flush.console()}
-          f__ = uniqlist(byval)
-        } else {
-          if (!is.character(byindex) || length(byindex)!=1L) internal_error("byindex not the index name")  # nocov
-          if (verbose) {catf("Finding groups using uniqlist on index '%s' ... ", byindex);flush.console()}
-          o__ = getindex(x, byindex)
-          if (is.null(o__)) internal_error("byindex not found")  # nocov
-          f__ = uniqlist(byval, order=o__)
-        }
-        if (verbose) {
-          cat(timetaken(last.started.at),"\n")
-          last.started.at=proc.time()
-          catf("Finding group sizes from the positions (can be avoided to save RAM) ... ")
-          flush.console()  # for windows
-        }
-        len__ = uniqlengths(f__, xnrow)
-        # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
-        if (verbose) { cat(timetaken(last.started.at),"\n"); flush.console() }
-      }
-    } else {
-      f__=NULL
-      len__=0L
-      bysameorder=TRUE   # for test 724
-    }
-    # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
-  }
+  if (byjoin) .dt_plan_eachi(q, SDenv) else .dt_plan_groups(q)
   if (length(xcols)) {
     #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
     #  TODO move down to dogroup.c, too.

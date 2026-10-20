@@ -22463,3 +22463,16 @@ test(2411.1, f(), data.table(a=c(1,2,3)), output="Direct plonk.*no copy")
 f = function() { DT = data.table(a=1:3, b=4:6, c=7:9); DT[, c("a", "c") := list(NULL, 0L)]; DT }
 test(2411.2, f(), data.table(b=4:6, c=0L))
 rm(f)
+
+# finding the groups, .dt_plan_eachi() and .dt_plan_groups(), #852
+DT = data.table(g=c(2L,1L,2L,3L), v=1:4)
+test(2412.1, DT[, sum(v), by=g], data.table(g=c(2L,1L,3L), V1=c(4L,2L,4L)))  # by= keeps the order of first appearance
+test(2412.2, DT[, sum(v), keyby=g], data.table(g=1:3, V1=c(2L,4L,4L), key="g"))
+K = setkey(copy(DT), g)
+test(2412.3, K[, sum(v), by=g, verbose=TRUE], data.table(g=1:3, V1=c(2L,4L,4L), key="g"), output="Finding groups using uniqlist on key")
+test(2412.4, DT[, sum(v), by=g, verbose=TRUE], data.table(g=c(2L,1L,3L), V1=c(4L,2L,4L)), output="Finding groups using forderv")
+Y = data.table(g=c(3L,2L), w=c(10L,20L))
+test(2412.5, DT[Y, on="g", .(s=sum(v) + w, n=.N), by=.EACHI], data.table(g=c(3L,2L), s=c(14L,24L), n=c(1L,2L)))
+test(2412.6, DT[Y, on="g", .(i.w, .iSD$w), by=.EACHI], data.table(g=c(3L,2L), i.w=c(10L,20L), V2=c(10L,20L)))
+test(2412.7, DT[0L][, .N, by=g], data.table(g=integer(), N=integer()))
+rm(DT, K, Y)
