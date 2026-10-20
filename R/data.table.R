@@ -1635,6 +1635,176 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# for := and let(): the target columns (q$lhs, q$cols, q$newnames), the RHS as q$jsub, and print suppression of the result
+#   (q$suppPrint). Over-allocates x when columns are added (writing it back to q$x and to the calling scope). .ROW := NULL,
+#   and := on no rows, are done here and return via the early return protocol.
+.dt_plan_assign = function(q) {
+  x = q$x
+  x_sub = q$x_sub
+  names_x = q$names_x
+  callenv = q$callenv
+  verbose = q$verbose
+  jsub = q$jsub
+  av = q$av
+  root = q$root
+  sdvars = q$sdvars
+  irows = q$irows
+  missingby = q$missingby
+  cols = q$cols
+  m = q$m
+  lhs = NULL
+  newnames = NULL
+  suppPrint = identity
+  if (length(av) && av[1L] == ":=") {
+    if (.Call(C_islocked, x)) stopf(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+    suppPrint = .dt_suppPrint
+    # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
+    # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
+
+    if (is.null(names(jsub))) {
+      # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
+      # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
+      this_call = if (root == "let") "let" else "`:=`"
+      .check_nested_walrus(jsub, 2:length(jsub), this_call)
+      if (length(jsub) != 3L)
+        stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", this_call)
+      lhs = jsub[[2L]]
+      jsub = jsub[[3L]]
+      if (is.name(lhs)) {
+        lhs = as.character(lhs)
+      } else {
+        #6033 revdep. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means
+        # jsub is actually substitute(names(.SD)) instead of just names(.SD)
+        if (lhs %iscall% 'substitute')
+          lhs = eval(lhs, callenv, callenv)
+
+        # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
+        lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), callenv)
+      }
+    } else {
+      # `:=`(c2=1L,c3=2L,...)
+      lhs = names(jsub)[-1L]
+      if (!all(named_idx <- nzchar(lhs))) {
+        # friendly error for common case: trailing terminal comma
+        n_lhs = length(lhs)
+        this_call = if (root == "let") "let" else "`:=`"
+        .check_nested_walrus(jsub, which(!named_idx)+1L, this_call)
+        if (!named_idx[n_lhs] && all(named_idx[-n_lhs])) {
+          stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", this_call)
+        } else {
+          stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but these arguments lack names: %s.", this_call, brackify(which(!named_idx)))
+        }
+      }
+      names(jsub)=""
+      jsub[[1L]]=as.name("list")
+    }
+
+    # Check for .ROW := NULL pattern (delete rows by reference)
+    if (identical(lhs, ".ROW") || identical(lhs, quote(.ROW))) {
+      if (!is.null(jsub) && !identical(jsub, quote(NULL)))
+        stopf(".ROW can only be used with := NULL to delete rows")
+      if (is.null(irows))
+        stopf(".ROW := NULL requires i= condition to specify rows to delete")
+      if (!missingby)
+        stopf(".ROW := NULL does not support 'by' or 'keyby'. To delete rows using by grouping, first compute the row indices (e.g. rows = DT[, .I[cond], by=grp]$V1) and then delete them DT[rows, .ROW := NULL].")
+      .Call(CdeleteRows, x, irows)
+      return(.dt_done(suppPrint(x)))
+    }
+    av = all.vars(jsub,TRUE)
+    if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
+    if (is.character(lhs)) {
+      m = chmatch(lhs, names_x)
+    } else if (is.numeric(lhs)) {
+      m = as.integer(lhs)
+      if (any(m<1L | ncol(x)<m)) stopf("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
+    } else
+      stopf("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
+    ok<-selfrefok(x, verbose=FALSE)
+    if (!anyNA(m)) {
+      # updates by reference to existing columns, or deletions
+      cols = as.integer(m)
+      newnames=NULL
+      if (identical(irows, integer())) {
+        # Empty integer() means no rows e.g. logical i with only FALSE and NA
+        # got converted to empty integer() by the which() above
+        # Short circuit and do-nothing since columns already exist. If some don't
+        # exist then for consistency with cases where irows is non-empty, we need to create
+        # them of the right type and populate with NA.  Which will happen via the regular
+        # alternative branches below, to cover #759.
+        # We need this short circuit at all just for convenience. Otherwise users may need to
+        # fix errors in their RHS when called on empty edge cases, even when the result won't be
+        # used anyway (so it would be annoying to have to fix it.)
+        if (verbose) {
+          catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
+        }
+        .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
+        .global$print = address(x)
+        return(.dt_done(x, visible=FALSE))
+      }
+    } else {
+      # Adding new column(s). Allocation for columns and recalculation of target cols moved after the jval = eval(jsub)
+      # in case of error or by-reference modifications to the DT
+      newnames=setdiff(lhs, names_x)
+      m[is.na(m)] = ncol(x)+seq_along(newnames)
+      cols = as.integer(m)
+      # don't pass verbose to selfrefok here -- only activated when
+      #   ok=-1 which will trigger setalloccol with verbose in the next branch
+      #   if a change in the number of columns is suspected
+      if (ok==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
+        if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
+    }
+    # ok <- selfrefok above called without verbose -- only activated when
+    #   ok=-1 which will trigger setalloccol with verbose in the next
+    #   branch, which again calls _selfrefok and returns the message then
+    # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
+    if (
+      (
+        !is.null(newnames) || # adding new columns
+        is.null(jsub) || (jsub %iscall% "list" && any(vapply_1b(jsub[-1], is.null))) # removing columns
+      ) && (
+        (ok<1L) || # unsafe to resize
+        (truelength(x) < ncol(x)+length(newnames)) # not enough space for new columns
+      )
+    ) {
+      DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
+      n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
+      # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
+      name = x_sub
+      if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
+        catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
+        # #1729 -- copying to the wrong environment here can cause some confusion
+        if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+
+        # Verbosity should not issue warnings, so cat rather than warning.
+        # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
+
+        # TO DO ... comments moved up from C ...
+        # Note that the NAMED(dt)>1 doesn't work because .Call
+        # always sets to 2 (see R-ints), it seems. Work around
+        # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+        # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+        # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+        # don't mind.
+      }
+      setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+      q$x = x  # ... which is this helper, so pass the re-allocated x on to [.data.table
+      if (is.name(name)) {
+        assign(as.character(name),x,callenv,inherits=TRUE)
+      } else if (.is_simple_extraction(name)) {
+        .reassign_extracted_table(name, x, callenv)
+      } # TO DO: else if env$<- or list$<-
+    }
+  }
+  q$lhs = lhs
+  q$newnames = newnames
+  q$cols = cols
+  q$m = m
+  q$jsub = jsub
+  q$av = av
+  q$suppPrint = suppPrint
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -1724,6 +1894,7 @@ replace_dot_alias = function(e) {
   #   so helpers never need substitute(on). Keep it in sync wherever on is reassigned.
   on_sub = substitute(on)
   SDcols_sub = if (!missing_SDcols) substitute(.SDcols)  # likewise; .SDcols has no default so only when supplied
+  x_sub = substitute(x)  # the caller's symbol for x (if a symbol), for := to assign a re-allocated x back to the calling scope
   # the state of the query is this frame: stage helpers (.dt_*(q, ...)) read and write it through q, e.g. q$irows
   q = environment()
   # cedta() and nargs() depend on this frame so are evaluated here
@@ -1884,148 +2055,7 @@ replace_dot_alias = function(e) {
       jvnames = jsub_names$jvnames
       .dt_analyze_sd(q)
 
-      lhs = NULL
-      newnames = NULL
-      suppPrint = identity
-      if (length(av) && av[1L] == ":=") {
-        if (.Call(C_islocked, x)) stopf(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        suppPrint = .dt_suppPrint
-        # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
-        # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
-
-        if (is.null(names(jsub))) {
-          # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
-          # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
-          this_call = if (root == "let") "let" else "`:=`"
-          .check_nested_walrus(jsub, 2:length(jsub), this_call)
-          if (length(jsub) != 3L)
-            stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", this_call)
-          lhs = jsub[[2L]]
-          jsub = jsub[[3L]]
-          if (is.name(lhs)) {
-            lhs = as.character(lhs)
-          } else {
-            #6033 revdep. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means
-            # jsub is actually substitute(names(.SD)) instead of just names(.SD)
-            if (lhs %iscall% 'substitute')
-              lhs = eval(lhs, callenv, callenv)
-
-            # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
-            lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), callenv)
-          }
-        } else {
-          # `:=`(c2=1L,c3=2L,...)
-          lhs = names(jsub)[-1L]
-          if (!all(named_idx <- nzchar(lhs))) {
-            # friendly error for common case: trailing terminal comma
-            n_lhs = length(lhs)
-            this_call = if (root == "let") "let" else "`:=`"
-            .check_nested_walrus(jsub, which(!named_idx)+1L, this_call)
-            if (!named_idx[n_lhs] && all(named_idx[-n_lhs])) {
-              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", this_call)
-            } else {
-              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but these arguments lack names: %s.", this_call, brackify(which(!named_idx)))
-            }
-          }
-          names(jsub)=""
-          jsub[[1L]]=as.name("list")
-        }
-
-        # Check for .ROW := NULL pattern (delete rows by reference)
-        if (identical(lhs, ".ROW") || identical(lhs, quote(.ROW))) {
-          if (!is.null(jsub) && !identical(jsub, quote(NULL)))
-            stopf(".ROW can only be used with := NULL to delete rows")
-          if (is.null(irows))
-            stopf(".ROW := NULL requires i= condition to specify rows to delete")
-          if (!missingby)
-            stopf(".ROW := NULL does not support 'by' or 'keyby'. To delete rows using by grouping, first compute the row indices (e.g. rows = DT[, .I[cond], by=grp]$V1) and then delete them DT[rows, .ROW := NULL].")
-          .Call(CdeleteRows, x, irows)
-          return(suppPrint(x))
-        }
-        av = all.vars(jsub,TRUE)
-        if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
-        if (is.character(lhs)) {
-          m = chmatch(lhs, names_x)
-        } else if (is.numeric(lhs)) {
-          m = as.integer(lhs)
-          if (any(m<1L | ncol(x)<m)) stopf("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
-        } else
-          stopf("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
-        ok<-selfrefok(x, verbose=FALSE)
-        if (!anyNA(m)) {
-          # updates by reference to existing columns, or deletions
-          cols = as.integer(m)
-          newnames=NULL
-          if (identical(irows, integer())) {
-            # Empty integer() means no rows e.g. logical i with only FALSE and NA
-            # got converted to empty integer() by the which() above
-            # Short circuit and do-nothing since columns already exist. If some don't
-            # exist then for consistency with cases where irows is non-empty, we need to create
-            # them of the right type and populate with NA.  Which will happen via the regular
-            # alternative branches below, to cover #759.
-            # We need this short circuit at all just for convenience. Otherwise users may need to
-            # fix errors in their RHS when called on empty edge cases, even when the result won't be
-            # used anyway (so it would be annoying to have to fix it.)
-            if (verbose) {
-              catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
-            }
-            .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
-            .global$print = address(x)
-            return(invisible(x))
-          }
-        } else {
-          # Adding new column(s). Allocation for columns and recalculation of target cols moved after the jval = eval(jsub)
-          # in case of error or by-reference modifications to the DT
-          newnames=setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x)+seq_along(newnames)
-          cols = as.integer(m)
-          # don't pass verbose to selfrefok here -- only activated when
-          #   ok=-1 which will trigger setalloccol with verbose in the next branch
-          #   if a change in the number of columns is suspected
-          if (ok==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
-        }
-        # ok <- selfrefok above called without verbose -- only activated when
-        #   ok=-1 which will trigger setalloccol with verbose in the next
-        #   branch, which again calls _selfrefok and returns the message then
-        # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
-        if (
-          (
-            !is.null(newnames) || # adding new columns
-            is.null(jsub) || (jsub %iscall% "list" && any(vapply_1b(jsub[-1], is.null))) # removing columns
-          ) && (
-            (ok<1L) || # unsafe to resize
-            (truelength(x) < ncol(x)+length(newnames)) # not enough space for new columns
-          )
-        ) {
-          DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
-          n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
-          # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
-          name = substitute(x)
-          if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-            catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
-            # #1729 -- copying to the wrong environment here can cause some confusion
-            if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
-
-            # Verbosity should not issue warnings, so cat rather than warning.
-            # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
-
-            # TO DO ... comments moved up from C ...
-            # Note that the NAMED(dt)>1 doesn't work because .Call
-            # always sets to 2 (see R-ints), it seems. Work around
-            # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-            # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-            # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
-            # don't mind.
-          }
-          setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
-          if (is.name(name)) {
-            assign(as.character(name),x,callenv,inherits=TRUE)
-          } else if (.is_simple_extraction(name)) {
-            .reassign_extracted_table(name, x, callenv)
-          } # TO DO: else if env$<- or list$<-
-        }
-      }
+      if (.is_dt_done(r <- .dt_plan_assign(q))) return(.dt_done_value(r))
     }
 
     if (length(ansvars)) {

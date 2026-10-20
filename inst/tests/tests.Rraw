@@ -22409,3 +22409,19 @@ test(2406.04, callof(DT[, .SD, .SDcols=list(1)]), "[.data.table")
 test(2406.05, callof(DT[, a, .SDcols="b"]), "[.data.table")
 test(2406.06, DT[, c(.N, lapply(.SD, sum)), by=a, .SDcols="b"], data.table(a=1:2, N=1L, b=3:4))
 rm(DT, f, callof)
+
+# planning of := and let(), .dt_plan_assign(), #852
+callof = function(expr) as.character(tryCatch(expr, error=function(e) conditionCall(e)[[1L]], warning=function(w) conditionCall(w)[[1L]]))
+# a table without spare column slots is over-allocated when := adds a column; the result and the caller's variable see it
+f = function() { DT = unserialize(serialize(data.table(a=1:2), NULL)); ans = DT[, b := 3L]; list(ans, DT, truelength(DT) > 2L) }
+test(2407.01, f(), list(data.table(a=1:2, b=3L), data.table(a=1:2, b=3L), TRUE))
+f = function() { L = list(DT=unserialize(serialize(data.table(a=1:2), NULL))); L$DT[, b := 3L]; L$DT }
+test(2407.02, f(), data.table(a=1:2, b=3L))
+DT = data.table(a=1:3, b=4:6)
+test(2407.03, copy(DT)[, 2L := 0L], data.table(a=1:3, b=0L))  # numeric LHS
+test(2407.04, copy(DT)[a > 1L, .ROW := NULL], data.table(a=1L, b=4L))
+test(2407.05, withVisible(getS3method("[", "data.table")(copy(DT), c(FALSE, FALSE, FALSE), b := 0L))$visible, FALSE)  # := on no rows returns invisibly (seen when [.data.table is called directly; the primitive [ makes it visible)
+test(2407.06, callof(copy(DT)[, `:=`(a=1L, 2L)]), "[.data.table")
+test(2407.07, callof(copy(DT)[, 9L := 1L]), "[.data.table")
+test(2407.08, callof(copy(DT)[, .ROW := NULL]), "[.data.table")
+rm(DT, f, callof)
