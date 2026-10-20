@@ -22456,3 +22456,10 @@ test(2410.4, f(), data.table(a=1L))
 test(2410.5, DT[, .(s=sum(a))], data.table(s=6L))
 test(2410.6, DT[2L, b], 5L)
 rm(DT, f, callof)
+
+# := without grouping, .dt_assign_ungrouped(), #852: the RHS is handed over without an extra reference so it is not copied
+f = function() { DT = data.table(a=1:3); DT[, a := as.numeric(a), verbose=TRUE] }
+test(2411.1, f(), data.table(a=c(1,2,3)), output="Direct plonk.*no copy")
+f = function() { DT = data.table(a=1:3, b=4:6, c=7:9); DT[, c("a", "c") := list(NULL, 0L)]; DT }
+test(2411.2, f(), data.table(b=4:6, c=0L))
+rm(f)

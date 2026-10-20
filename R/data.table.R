@@ -2057,34 +2057,10 @@ replace_dot_alias = function(e) {
   }
 
   if (!is.null(lhs)) {
-    # Re-matches characters names in the lhs after jval to account for jsub's that modify the columns of the data.table (#6768)
-    # Replaces numerical lhs with respective names_x
-    if(is.character(lhs)){
-      m = chmatch(lhs, names_x)
-      if(!anyNA(m)) {
-        # updates by reference to existing columns
-        cols = as.integer(m)
-        newnames = NULL
-      } else {
-        # Adding new column(s).
-        newnames = setdiff(lhs, names_x)
-        m[is.na(m)] = ncol(x) + seq_along(newnames)
-        cols = as.integer(m)
-      }
-    } else if (is.numeric(lhs)) {
-      lhs = names_x[m]
-    }
-    # cater for deleting columns by assigning NULL
-    if ((is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
-      name = x_sub
-      setalloccol(x, verbose=FALSE)
-      if (is.name(name)) {
-        assign(as.character(name), x, callenv, inherits=TRUE)
-      }
-    }
-    # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
-    .dt_in_caller(.Call(Cassign,x,irows,cols,newnames,jval))
-    return(suppPrint(x))
+    # hand jval over via q without keeping a reference here, so that Cassign can plonk it without a copy (test 754.05)
+    q$jval = jval
+    rm(jval)
+    return(suppPrint(.dt_assign_ungrouped(q)))
   }
   if ((is.call(jsub) && !jsub %iscall% "get" && is.list(jval) && !is.object(jval)) || !missingby) {
     # is.call: selecting from a list column should return list
@@ -2123,6 +2099,51 @@ replace_dot_alias = function(e) {
     if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
   }
   return(jval)
+}
+
+# := without grouping: assign q$jval, the evaluated RHS, to the target columns of x (rows q$irows) by reference and return x.
+#   Re-matches the target columns since j may have modified x (#6768), and over-allocates x when columns are deleted.
+#   jval is taken out of q so that this is its only reference and Cassign can use it without a copy.
+.dt_assign_ungrouped = function(q) {
+  jval = q$jval
+  rm("jval", envir=q)
+  x = q$x
+  x_sub = q$x_sub
+  names_x = q$names_x
+  callenv = q$callenv
+  irows = q$irows
+  lhs = q$lhs
+  m = q$m
+  cols = q$cols
+  newnames = q$newnames
+  # Re-matches characters names in the lhs after jval to account for jsub's that modify the columns of the data.table (#6768)
+  # Replaces numerical lhs with respective names_x
+  if(is.character(lhs)){
+    m = chmatch(lhs, names_x)
+    if(!anyNA(m)) {
+      # updates by reference to existing columns
+      cols = as.integer(m)
+      newnames = NULL
+    } else {
+      # Adding new column(s).
+      newnames = setdiff(lhs, names_x)
+      m[is.na(m)] = ncol(x) + seq_along(newnames)
+      cols = as.integer(m)
+    }
+  } else if (is.numeric(lhs)) {
+    lhs = names_x[m]
+  }
+  # cater for deleting columns by assigning NULL
+  if ((is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+    name = x_sub
+    setalloccol(x, verbose=FALSE)
+    if (is.name(name)) {
+      assign(as.character(name), x, callenv, inherits=TRUE)
+    }
+  }
+  # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
+  .dt_in_caller(.Call(Cassign,x,irows,cols,newnames,jval))
+  x
 }
 
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
