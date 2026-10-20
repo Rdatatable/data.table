@@ -1927,7 +1927,7 @@ replace_dot_alias = function(e) {
   if (!q$with) {
     if (.is_dt_done(r <- .dt_select_with_false(q))) return(r)
   } else {   # with=TRUE and byjoin could be TRUE
-    .dt_analyze_by(q)
+    if (q$byjoin || !q$missingby) .dt_analyze_by(q)  # otherwise there is nothing to do: bynames and allbyvars stay NULL
 
     jsub_names = .dt_j_names(q$jsub)
     q$jsub = jsub_names$jsub
