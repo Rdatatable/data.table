@@ -22230,3 +22230,21 @@ test(2392.12, tryCatch(f(1L), error=conditionCall), quote(f(1L)))
 g = function() f(1L)
 test(2392.13, tryCatch(g(), error=conditionCall), quote(f(1L)))
 rm(.dt_raise, .dt_warn, .dt_outer, f, g)
+
+# [ from a scope that is not data.table-aware dispatches to [.data.frame, #852
+DT = data.table(a=1:3, b=c("x","y","z"), key="b")
+naive = function(expr) eval(substitute(expr), list(DT=DT), new.env(parent=asNamespace("stats")))
+# results of [.data.frame are not over-allocated, hence compared as data.frame
+test(2393.01, setDF(naive(DT[2])), data.frame(b=c("x","y","z")))
+test(2393.02, setDF(naive(DT[2:3, ])), data.frame(a=2:3, b=c("y","z")))
+test(2393.03, naive(DT[, 2]), c("x","y","z"))
+test(2393.04, setDF(naive(DT[, 2, drop=FALSE])), data.frame(b=c("x","y","z")))
+test(2393.05, naive(DT[2, "a"]), 2L)
+test(2393.06, naive(DT[2, "a", drop=TRUE]), 2L)
+test(2393.07, key(naive(DT[])), "b")   # key retained when i is missing, dropped otherwise
+test(2393.08, key(naive(DT[1:3, ])), NULL)
+test(2393.09, naive(DT[, a := 1L]), error="[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used")
+test(2393.10, naive(DT[, let(a = 1L)]), error="but 'let' was used")
+test(2393.11, class(naive(DT[2:3, ])), c("data.table","data.frame"))
+test(2393.12, as.character(tryCatch(naive(DT[, a := 1L]), error=conditionCall)[[1L]]), "[.data.table")  # not .dt_cedta_fallback
+rm(DT, naive)
