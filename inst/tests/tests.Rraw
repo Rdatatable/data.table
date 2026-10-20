@@ -22102,6 +22102,9 @@ test(2390.48, DT[, a, by=NULL], data.table(a=1:6))
 test(2390.49, DT[, a, keyby=NULL], data.table(a=1:6))
 test(2390.50, DT[, a, .SDcols="b"], 1:6, warning="This j doesn't use .SD but .SDcols has been supplied")
 test(2390.51, DT[, .(a, )], error="Item 2 of the .() or list() passed to j is missing")
+# raised in .dt_do_j_names(), but reported as coming from [.data.table
+test(2390.511, as.character(tryCatch(DT[, .(a, )], error=conditionCall)[[1L]]), "[.data.table")
+test(2390.512, as.character(tryCatch(DT[, if (.N > 1L) .(a) else .(z=a), by=b], warning=conditionCall)[[1L]]), "[.data.table")
 test(2390.52, DT[on="b"], DT, warning=c("When on= is provided but not i=", "i and j are both missing so ignoring the other arguments"))
 # by= substituted to the empty symbol via env= is missing too, so j is not wrapped in a data.table
 test(2390.53, DT[, sum(v), by=B, env=list(B=quote(expr=))], 210)
