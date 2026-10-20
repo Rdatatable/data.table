@@ -531,6 +531,30 @@ replace_dot_alias = function(e) {
 .is_dt_done = function(x) !is.null(x) && inherits(x, "dt_done")  # helpers return NULL to continue; is.null() first as that is the common case
 .dt_done_value = function(done) if (done$visible) done$value else invisible(done$value)
 
+# raise_condition() makes stopf() etc. in .dt_* helpers report the caller, but errors and warnings raised in C (or base R)
+#   take the call of the innermost R function, i.e. the helper. Wrapping such an expression, typically a .Call(), in
+#   .dt_in_caller() re-signals them with the call of the first caller that is not a .dt_* helper, i.e. [.data.table.
+#   It costs ~1us per call (withCallingHandlers), so it is used only where C code raises errors users are expected to see.
+#   The handlers are top-level functions so that no closures are created per call; they find the frame only when needed.
+.dt_in_caller = function(expr) withCallingHandlers(expr, error=.dt_in_caller_error, warning=.dt_in_caller_warning)
+.dt_in_caller_error = function(e) {
+  e$call = .dt_in_caller_call()
+  stop(e)
+}
+.dt_in_caller_warning = function(w) {
+  w$call = .dt_in_caller_call()
+  warning(w)
+  invokeRestart("muffleWarning")
+}
+# the call of the first caller of the innermost .dt_in_caller() that is not a .dt_* helper
+.dt_in_caller_call = function() {
+  n = sys.nframe()
+  while (n > 0L && !identical(sys.function(n), .dt_in_caller)) n = n - 1L
+  parents = sys.parents()
+  while (n > 0L && parents[n] > 0L && .is_dt_helper_call(sys.call(n))) n = parents[n]
+  sys.call(n)
+}
+
 # [ called from a scope that is not data.table-aware (!cedta()) behaves like [.data.frame.
 #   i, j and drop are passed on as promises, so their missingness reaches [.data.frame unchanged.
 #   nargs is nargs() of the [.data.table call.
@@ -971,6 +995,85 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# plan the subset of rows of x when i is not a data.table (i.e. logical or numeric): sets q$irows (and q$i) with NULL
+#   meaning all rows. which=NA returns the non-matching rows via the early return protocol.
+.dt_plan_subset = function(q) {
+  x = q$x
+  i = q$i
+  irows = q$irows
+  which = q$which
+  notjoin = q$notjoin
+  nomatch = q$nomatch
+  nomatch0 = q$nomatch0
+  if (!is.null(q$on)) {
+    stopf("logical error. i is not a data.table, but 'on' argument is provided.")
+  }
+  # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
+  # i is not a data.table
+  if (!is.logical(i) && !is.numeric(i)) stopf("i has evaluated to type %s. Expecting logical, integer or double.", typeof(i))
+  if (is.logical(i)) {
+    if (is.na(which)) { # #4411 i filter not optimized to join: DT[A > 1, which = NA]
+      ## we need this branch here, not below next to which=TRUE because irows=i=which(i) will filter out NAs: DT[A > 10, which = NA] will be incorrect
+      if (notjoin) internal_error("notjoin and which=NA (non-matches), huh") # nocov
+      return(.dt_done(which(is.na(i) | !i)))
+    }
+    if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
+      && isTRUE(unname(i))) { irows=i=NULL }  # unname() for #2152 - length 1 named logical vector.
+    # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
+
+    else if (length(i)<=1L) { irows=i=integer(0L) }
+    # FALSE, NA and empty. All should return empty data.table. The NA here will be result of expression,
+    # where for consistency of edge case #1252 all NA to be removed. If NA is a single NA symbol, it
+    # was auto converted to NA_integer_ higher up for ease of use and convenience. We definitely
+    # don't want base R behaviour where DF[NA,] returns an entire copy filled with NA everywhere.
+
+    else if (length(i)==nrow(x)) { irows=i=which(i) }
+    # The which() here auto removes NA for convenience so user doesn't need to remember "!is.na() & ..."
+    # Also this which() is for consistency of DT[colA>3,which=TRUE] and which(DT[,colA>3])
+    # Assigning to 'i' here as well to save memory, #926.
+
+    else stopf("i evaluates to a logical vector length %d but there are %d rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.", length(i), nrow(x))
+  } else {
+    irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
+    if (nomatch0) warningf("Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)")
+                  # warning only for this case where nomatch was ignored before v1.14.2; #3109
+    irows = .dt_in_caller(.Call(CconvertNegAndZeroIdx, irows, nrow(x),
+                  is.null(q$jsub) || q$root!=":=",   # allowOverMax (NA when selecting, error when assigning)
+                  !is.null(nomatch)))            # allowNA=false when nomatch=NULL #3109, true when nomatch=NA #3666
+    # simplifies logic from here on: can assume positive subscripts (no zeros), for nomatch=NULL also no NAs
+    # maintains Arun's fix for #2697 (test 1042)
+    # efficient in C with more detailed helpful messages when user mixes positives and negatives
+    # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives
+    # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
+  }
+  q$i = i
+  q$irows = irows
+  invisible()
+}
+
+# not-join, DT[!i]: invert q$irows into the rows of x not matched by i, after which the query proceeds as a row subset
+.dt_invert_notjoin = function(q) {
+  x = q$x
+  irows = q$irows
+  byjoin = q$byjoin
+  nomatch = q$nomatch
+  verbose = q$verbose
+  if (byjoin || !is.integer(irows) || !is.null(nomatch)) internal_error("notjoin but byjoin or !integer or nomatch==NA") # nocov
+  irows = irows[irows!=0L]
+  if (verbose) {last.started.at=proc.time();catf("Inverting irows for notjoin done in ... ");flush.console()}
+  i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
+  if (verbose) cat(timetaken(last.started.at), "\n") # notranslate
+  leftcols = integer()  # proceed as if row subset from now on, length(leftcols) is switched on later
+  rightcols = integer()
+  # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
+  # column when irows contains negatives.
+  q$i = i
+  q$irows = irows
+  q$leftcols = leftcols
+  q$rightcols = rightcols
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -1244,59 +1347,9 @@ replace_dot_alias = function(e) {
       if (.is_dt_done(r <- .dt_plan_join(q, allow.cartesian))) return(.dt_done_value(r))
     }
     else {
-      if (!is.null(on)) {
-        stopf("logical error. i is not a data.table, but 'on' argument is provided.")
-      }
-      # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
-      # i is not a data.table
-      if (!is.logical(i) && !is.numeric(i)) stopf("i has evaluated to type %s. Expecting logical, integer or double.", typeof(i))
-      if (is.logical(i)) {
-        if (is.na(which)) { # #4411 i filter not optimized to join: DT[A > 1, which = NA]
-          ## we need this branch here, not below next to which=TRUE because irows=i=which(i) will filter out NAs: DT[A > 10, which = NA] will be incorrect
-          if (notjoin) internal_error("notjoin and which=NA (non-matches), huh") # nocov
-          return(which(is.na(i) | !i))
-        }
-        if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
-          && isTRUE(unname(i))) { irows=i=NULL }  # unname() for #2152 - length 1 named logical vector.
-        # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
-
-        else if (length(i)<=1L) { irows=i=integer(0L) }
-        # FALSE, NA and empty. All should return empty data.table. The NA here will be result of expression,
-        # where for consistency of edge case #1252 all NA to be removed. If NA is a single NA symbol, it
-        # was auto converted to NA_integer_ higher up for ease of use and convenience. We definitely
-        # don't want base R behaviour where DF[NA,] returns an entire copy filled with NA everywhere.
-
-        else if (length(i)==nrow(x)) { irows=i=which(i) }
-        # The which() here auto removes NA for convenience so user doesn't need to remember "!is.na() & ..."
-        # Also this which() is for consistency of DT[colA>3,which=TRUE] and which(DT[,colA>3])
-        # Assigning to 'i' here as well to save memory, #926.
-
-        else stopf("i evaluates to a logical vector length %d but there are %d rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.", length(i), nrow(x))
-      } else {
-        irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        if (nomatch0) warningf("Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)")
-                      # warning only for this case where nomatch was ignored before v1.14.2; #3109
-        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x),
-                      is.null(jsub) || root!=":=",   # allowOverMax (NA when selecting, error when assigning)
-                      !is.null(nomatch))             # allowNA=false when nomatch=NULL #3109, true when nomatch=NA #3666
-        # simplifies logic from here on: can assume positive subscripts (no zeros), for nomatch=NULL also no NAs
-        # maintains Arun's fix for #2697 (test 1042)
-        # efficient in C with more detailed helpful messages when user mixes positives and negatives
-        # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives
-        # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
-      }
+      if (.is_dt_done(r <- .dt_plan_subset(q))) return(.dt_done_value(r))
     }
-    if (notjoin) {
-      if (byjoin || !is.integer(irows) || !is.null(nomatch)) internal_error("notjoin but byjoin or !integer or nomatch==NA") # nocov
-      irows = irows[irows!=0L]
-      if (verbose) {last.started.at=proc.time();catf("Inverting irows for notjoin done in ... ");flush.console()}
-      i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
-      if (verbose) cat(timetaken(last.started.at), "\n") # notranslate
-      leftcols = integer()  # proceed as if row subset from now on, length(leftcols) is switched on later
-      rightcols = integer()
-      # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
-      # column when irows contains negatives.
-    }
+    if (notjoin) .dt_invert_notjoin(q)
     if (which) return(irows %||% seq_len(nrow(x)))
   } else {  # missing_i
     i = NULL
