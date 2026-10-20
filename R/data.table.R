@@ -1861,6 +1861,80 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# no j: all columns. DT[i] is returned via the early return protocol; for a join X[Y] the columns of x and of i
+#   (prefixed i. where names clash) are set up as q$ansvars/q$ansvals with q$xcols and q$icols.
+.dt_select_all = function(q) {
+  x = q$x
+  i = q$i
+  names_x = q$names_x
+  names_i = q$names_i
+  irows = q$irows
+  leftcols = q$leftcols
+  rightcols = q$rightcols
+  # missingby was already checked above before dealing with i
+  if (!length(x)) return(.dt_done(null.data.table()))
+  if (!length(leftcols)) {
+    # basic x[i] subset, #2951
+    if (is.null(irows)) return(.dt_done(shallow(x)))   # e.g. DT[TRUE] (#3214); otherwise CsubsetDT would materialize a deep copy
+    else                return(.dt_done(.Call(CsubsetDT, x, irows, seq_along(x))))
+  } else {
+    jisvars = names_i[-leftcols]
+    tt = jisvars %chin% names_x
+    if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
+    if (length(duprightcols <- rightcols[duplicated(rightcols)])) {
+      nx = c(names_x, names_x[duprightcols])
+      ansrightcols = chmatchdup(names_x[rightcols], nx) # indices into result namespace nx, #7641
+      nx = make.unique(nx)
+    } else {
+      nx = names_x
+      ansrightcols = rightcols
+    }
+    ansvars = make.unique(c(nx, jisvars))
+    icols = c(leftcols, seq_along(i)[-leftcols])
+    icolsAns = c(ansrightcols, seq.int(length(nx)+1L, length.out=ncol(i)-length(unique(leftcols))))
+    xcols = xcolsAns = seq_along(x)[-rightcols]
+  }
+  ansvals = chmatch(ansvars, nx)
+  q$ansvars = ansvars
+  q$ansvals = ansvals
+  q$icols = icols
+  q$icolsAns = icolsAns
+  q$xcols = xcols
+  q$xcolsAns = xcolsAns
+  invisible()
+}
+
+# the j stage of [.data.table: the columns to select (with=FALSE), or by= and the columns j uses (with=TRUE), the target
+#   of := and the mapping of the columns to x and i; see .dt_select_with_false(), .dt_analyze_by(), .dt_j_names(),
+#   .dt_analyze_sd(), .dt_plan_assign() and .dt_resolve_ansvals(). Results returned directly go via the early return protocol.
+.dt_analyze_j = function(q) {
+  if (is.data.frame(q$i)) {
+    q$idotprefix = paste0("i.", q$names_i)
+    q$xdotprefix = paste0("x.", q$names_x)
+  } else {
+    q$idotprefix = q$xdotprefix = character(0L)
+  }
+
+  # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
+  if (is.null(q$jsub)) return(.dt_done(NULL))
+
+  if (!q$with) {
+    if (.is_dt_done(r <- .dt_select_with_false(q))) return(r)
+  } else {   # with=TRUE and byjoin could be TRUE
+    .dt_analyze_by(q)
+
+    jsub_names = .dt_j_names(q$jsub)
+    q$jsub = jsub_names$jsub
+    q$jvnames = jsub_names$jvnames
+    .dt_analyze_sd(q)
+
+    if (.is_dt_done(r <- .dt_plan_assign(q))) return(r)
+  }
+
+  if (length(q$ansvars)) .dt_resolve_ansvals(q)
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -2066,56 +2140,10 @@ replace_dot_alias = function(e) {
   #   see e.g. #484, #495, #1744, #1965.
   non_sdvars = character(0L)
   if (missing_j) {
-    # missingby was already checked above before dealing with i
-    if (!length(x)) return(null.data.table())
-    if (!length(leftcols)) {
-      # basic x[i] subset, #2951
-      if (is.null(irows)) return(shallow(x))   # e.g. DT[TRUE] (#3214); otherwise CsubsetDT would materialize a deep copy
-      else                return(.Call(CsubsetDT, x, irows, seq_along(x)) )
-    } else {
-      jisvars = names_i[-leftcols]
-      tt = jisvars %chin% names_x
-      if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
-      if (length(duprightcols <- rightcols[duplicated(rightcols)])) {
-        nx = c(names_x, names_x[duprightcols])
-        ansrightcols = chmatchdup(names_x[rightcols], nx) # indices into result namespace nx, #7641
-        nx = make.unique(nx)
-      } else {
-        nx = names_x
-        ansrightcols = rightcols
-      }
-      ansvars = make.unique(c(nx, jisvars))
-      icols = c(leftcols, seq_along(i)[-leftcols])
-      icolsAns = c(ansrightcols, seq.int(length(nx)+1L, length.out=ncol(i)-length(unique(leftcols))))
-      xcols = xcolsAns = seq_along(x)[-rightcols]
-    }
-    ansvals = chmatch(ansvars, nx)
+    if (.is_dt_done(r <- .dt_select_all(q))) return(.dt_done_value(r))
   } else {
-    if (is.data.frame(i)) {
-      idotprefix = paste0("i.", names_i)
-      xdotprefix = paste0("x.", names_x)
-    } else {
-      idotprefix = xdotprefix = character(0L)
-    }
-
-    # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
-    if (is.null(jsub)) return(NULL)
-
-    if (!with) {
-      if (.is_dt_done(r <- .dt_select_with_false(q))) return(.dt_done_value(r))
-    } else {   # with=TRUE and byjoin could be TRUE
-      .dt_analyze_by(q)
-
-      jsub_names = .dt_j_names(jsub)
-      jsub = jsub_names$jsub
-      jvnames = jsub_names$jvnames
-      .dt_analyze_sd(q)
-
-      if (.is_dt_done(r <- .dt_plan_assign(q))) return(.dt_done_value(r))
-    }
-
-    if (length(ansvars)) .dt_resolve_ansvals(q)
-  }  # end of  if !missing_j
+    if (.is_dt_done(r <- .dt_analyze_j(q))) return(.dt_done_value(r))
+  }
 
   SDenv = .dt_new_SDenv(jsub, names_x, callenv)
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
