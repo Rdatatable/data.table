@@ -22106,6 +22106,10 @@ test(2390.54, DT[, sum(v), keyby=B, env=list(B=quote(expr=))], 210)
 test(2390.55, DT[, a, verbose="yes"], error="verbose must be logical or integer")
 test(2390.56, DT[, a, verbose=c(TRUE, FALSE)], error="verbose must be length 1 non-NA")
 test(2390.57, DT[, a, verbose=NA], error="verbose must be length 1 non-NA")
+test(2390.58, DT[, a, showProgress="x"], error="showProgress must be TRUE, FALSE, or a single non-negative number")
+# on= without i is a natural join, after which i is no longer missing
+test(2390.59, DT[on=list(b="b"), j=v], c(30,40))
+test(2390.60, DT[on=list(b="b"), j=sum(v), by=.EACHI], data.table(b="b", V1=70))
 
 # forms of i
 test(2390.61, DT[matrix(1:2, ncol=1L), a], 1:2)
