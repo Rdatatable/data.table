@@ -1191,6 +1191,78 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# j with with=FALSE (explicit or decided by .dt_analyze_jsub()) selects columns by name, number or logical, optionally
+#   negated with ! or -. Without a join the result is returned via the early return protocol; with a join q$ansvars and
+#   q$ansvals are set for the subsetting of x and i together further on.
+.dt_select_with_false = function(q) {
+  x = q$x
+  names_x = q$names_x
+  callenv = q$callenv
+  jsub = q$jsub
+  ..syms = q$..syms
+  irows = q$irows
+  leftcols = q$leftcols
+  if (jsub %iscall% ":=") stopf("`:=` is only supported under with=TRUE, see ?`:=`.")
+  # missingby was already checked above before dealing with i
+  if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
+    notj = TRUE
+    jsub = jsub[[2L]]
+  } else notj = FALSE
+  # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
+  while (jsub %iscall% "(") jsub = as.list(jsub)[[-1L]]
+  if (jsub %iscall% ":" && length(jsub)==3L) {
+    j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), callenv) # else j will be evaluated for the first time on next line
+  } else {
+    names(..syms) = ..syms
+    j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=callenv), callenv)
+  }
+  if (is.logical(j)) j = which(j)
+  if (!length(j) && !notj) return(.dt_done(null.data.table()))
+  if (is.factor(j)) j = as.character(j)  # fix for FR: #358
+  if (is.character(j)) {
+    if (notj) {
+      if (anyNA(idx <- chmatch(j, names_x)))
+        warningf(ngettext(sum(is.na(idx)), "column not removed because not found: %s", "columns not removed because not found: %s"),
+                 brackify(j[is.na(idx)]), domain=NA)
+      # all duplicates of the name in names(x) must be removed; e.g. data.table(x=1, y=2, x=3)[, !"x"] should just output 'y'.
+      w = !names_x %chin% j
+      ansvars = names_x[w]
+      ansvals = which(w)
+    } else {
+      # if DT[, c("x","x")] and "x" is duplicated in names(DT), we still subset only the first. Because dups are unusual and
+      # it's more common to select the same column a few times. A syntax would be needed to distinguish these intents.
+      ansvars = j   # x. and i. prefixes may be in here, they'll result in NA and will be dealt with further below if length(leftcols)
+      ansvals = chmatch(ansvars, names_x)   # not chmatchdup()
+    }
+    if (!length(ansvals)) return(.dt_done(null.data.table()))
+    if (!length(leftcols)) {
+      if (!anyNA(ansvals)) return(.dt_done(.Call(CsubsetDT, x, irows, ansvals)))
+      else stopf(ngettext(sum(is.na(ansvals)), "column not found: %s", "columns not found: %s"),
+                 brackify(ansvars[is.na(ansvals)]), domain=NA)
+    }
+    # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
+    #   in both cases leave to the R-level subsetting of i and x together further below
+  } else if (is.numeric(j)) {
+    j = as.integer(j)
+    if (any(w <- (j>ncol(x)))) stopf("Item %d of j is %d which is outside the column number range [1,ncol=%d]", idx <- which.first(w), j[idx], ncol(x))
+    j = j[j!=0L]
+    if (any(j<0L)) {
+      if (any(j>0L)) stopf("j mixes positives and negatives")
+      j = seq_along(x)[j]  # all j are <0 here
+    }
+    # 3013 -- handle !FALSE in column subset in j via logical+with
+    if (notj) j = seq_along(x)[if (length(j)) -j else TRUE]
+    if (!length(j)) return(.dt_done(null.data.table()))
+    return(.dt_done(.Call(CsubsetDT, x, irows, j)))
+  } else {
+    stopf("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
+  }
+  q$jsub = jsub
+  q$ansvars = ansvars
+  q$ansvals = ansvals
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -1430,61 +1502,7 @@ replace_dot_alias = function(e) {
     if (is.null(jsub)) return(NULL)
 
     if (!with) {
-      if (jsub %iscall% ":=") stopf("`:=` is only supported under with=TRUE, see ?`:=`.")
-      # missingby was already checked above before dealing with i
-      if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
-        notj = TRUE
-        jsub = jsub[[2L]]
-      } else notj = FALSE
-      # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
-      while (jsub %iscall% "(") jsub = as.list(jsub)[[-1L]]
-      if (jsub %iscall% ":" && length(jsub)==3L) {
-        j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), callenv) # else j will be evaluated for the first time on next line
-      } else {
-        names(..syms) = ..syms
-        j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=callenv), callenv)
-      }
-      if (is.logical(j)) j = which(j)
-      if (!length(j) && !notj) return( null.data.table() )
-      if (is.factor(j)) j = as.character(j)  # fix for FR: #358
-      if (is.character(j)) {
-        if (notj) {
-          if (anyNA(idx <- chmatch(j, names_x)))
-            warningf(ngettext(sum(is.na(idx)), "column not removed because not found: %s", "columns not removed because not found: %s"),
-                     brackify(j[is.na(idx)]), domain=NA)
-          # all duplicates of the name in names(x) must be removed; e.g. data.table(x=1, y=2, x=3)[, !"x"] should just output 'y'.
-          w = !names_x %chin% j
-          ansvars = names_x[w]
-          ansvals = which(w)
-        } else {
-          # if DT[, c("x","x")] and "x" is duplicated in names(DT), we still subset only the first. Because dups are unusual and
-          # it's more common to select the same column a few times. A syntax would be needed to distinguish these intents.
-          ansvars = j   # x. and i. prefixes may be in here, they'll result in NA and will be dealt with further below if length(leftcols)
-          ansvals = chmatch(ansvars, names_x)   # not chmatchdup()
-        }
-        if (!length(ansvals)) return(null.data.table())
-        if (!length(leftcols)) {
-          if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
-          else stopf(ngettext(sum(is.na(ansvals)), "column not found: %s", "columns not found: %s"),
-                     brackify(ansvars[is.na(ansvals)]), domain=NA)
-        }
-        # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
-        #   in both cases leave to the R-level subsetting of i and x together further below
-      } else if (is.numeric(j)) {
-        j = as.integer(j)
-        if (any(w <- (j>ncol(x)))) stopf("Item %d of j is %d which is outside the column number range [1,ncol=%d]", idx <- which.first(w), j[idx], ncol(x))
-        j = j[j!=0L]
-        if (any(j<0L)) {
-          if (any(j>0L)) stopf("j mixes positives and negatives")
-          j = seq_along(x)[j]  # all j are <0 here
-        }
-        # 3013 -- handle !FALSE in column subset in j via logical+with
-        if (notj) j = seq_along(x)[if (length(j)) -j else TRUE]
-        if (!length(j)) return(null.data.table())
-        return(.Call(CsubsetDT, x, irows, j))
-      } else {
-        stopf("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
-      }
+      if (.is_dt_done(r <- .dt_select_with_false(q))) return(.dt_done_value(r))
     } else {   # with=TRUE and byjoin could be TRUE
       bynames = NULL
       allbyvars = NULL
