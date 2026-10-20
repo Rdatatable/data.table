@@ -22370,3 +22370,20 @@ test(2403.06, DT[, !"zz", with=FALSE], DT, warning="column not removed because n
 test(2403.07, DT[.(2L), on="a", c("b", "a"), with=FALSE], data.table(b=5L, a=2L))
 test(2403.08, DT[.(2L), on="a", c("b", "i.V1"), with=FALSE], data.table(b=5L, i.V1=2L))
 rm(DT, callof)
+
+# analysis of by=, .dt_analyze_by(), #852
+DT = data.table(a=1:4, b=c(1L,1L,2L,2L), v=c(10,20,30,40))
+callof = function(expr) as.character(tryCatch(expr, error=function(e) conditionCall(e)[[1L]], warning=function(w) conditionCall(w)[[1L]]))
+test(2404.01, callof(DT[, sum(v), by=.(list(1))]), "[.data.table")
+test(2404.02, callof(DT[, sum(v), by=1:2]), "[.data.table")
+test(2404.03, callof(DT[, sum(v), by=c(a=1)]), "[.data.table")
+test(2404.04, callof(DT[, sum(v), by=c("a,b", "v")]), "[.data.table")
+# with i, by is evaluated on the subset x[irows], made by a recursive call of [ from the helper
+f = function(DT) { lim = 1L; g = "b"; DT[a > lim, sum(v), by=g] }
+test(2404.05, f(DT), data.table(b=1:2, V1=c(20,70)))
+f = function(DT) { lim = 1L; DT[a > lim, sum(v), by=.(bb = b * 10L)] }
+test(2404.06, f(DT), data.table(bb=c(10L,20L), V1=c(20,70)))
+f = function(DT) { k = c(2L, 2L, 1L); DT[a > 1L, sum(v), by=k] }
+test(2404.07, f(DT), data.table(k=2:1, V1=c(50,40)))
+test(2404.08, DT[, .N, by=.I], data.table(I=1:4, N=1L))
+rm(DT, f, callof)

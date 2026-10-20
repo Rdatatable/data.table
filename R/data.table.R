@@ -1263,6 +1263,229 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# evaluate by= (or keyby=) into q$byval, the list of grouping vectors, with q$bynames, and find whether the groups are
+#   already in key or index order (q$bysameorder, q$byindex). Done before j is analysed because .SD excludes the by columns.
+#   With i, by is evaluated on the subset x[irows].
+.dt_analyze_by = function(q) {
+  x = q$x
+  names_x = q$names_x
+  callenv = q$callenv
+  verbose = q$verbose
+  by = q$by
+  bysub = q$bysub
+  keyby = q$keyby
+  byjoin = q$byjoin
+  bynull = q$bynull
+  missingby = q$missingby
+  irows = q$irows
+  rightcols = q$rightcols
+  jsub = q$jsub
+  nomatch = q$nomatch
+  mult = q$mult
+  roll = q$roll
+  rollends = q$rollends
+  xnrow = q$xnrow
+  byval = q$byval
+  bysubl = q$bysubl
+  bysameorder = q$bysameorder
+  byindex = q$byindex
+  orderedirows = q$orderedirows
+  bynames = NULL
+  allbyvars = NULL
+  if (byjoin) {
+    bynames = names_x[rightcols]
+  } else if (!missingby) {
+    # deal with by before j because we need byvars when j contains .SD
+    # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
+    bysubl = as.list.default(bysub)
+    bysuborig = bysub
+    if (".I" %in% bysubl) {  #1732
+      if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
+        stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
+      bysub = irows %||% seq_len(nrow(x))
+      bysuborig = as.symbol("I")
+    }
+    if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
+      bysub = eval(bysub, callenv, callenv)
+      # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
+      # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
+      # note that if y is a list, this'll return an error (not sure if it should).
+      if (is.atomic(bysub)) bysubl = list(bysuborig) else bysubl = as.list.default(bysub)
+    }
+    if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
+      bysub = eval(bysubl[[2L]], callenv, callenv)
+      bysub = replace_dot_alias(bysub) # fix for #1298
+      if (is.expression(bysub)) bysub=bysub[[1L]]
+      bysubl = as.list.default(bysub)
+    } else if (bysub %iscall% c("c","key","names", "intersect", "setdiff")) {
+      # catch common cases, so we don't have to copy x[irows] for all columns
+      # *** TO DO ***: try() this eval first (as long as not list() or .()) and see if it evaluates to column names
+      # to avoid the explicit c,key,names which already misses paste("V",1:10) for example
+      #        tried before but since not wrapped in try() it failed on some tests
+      # or look for column names used in this by (since if none it wouldn't find column names anyway
+      # when evaled within full x[irows]).  Trouble is that colA%%2L is a call and should be within frame.
+      tt = eval(bysub, callenv, callenv)
+      if (!is.character(tt)) stopf("by=c(...), key(...) or names(...) must evaluate to 'character'")
+      bysub=tt
+    } else if (is.call(bysub) && !(bysub %iscall% c("list", "as.list", "{", ".", ":"))) {
+      # potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
+      bysub = as.call(c(as.name('('), list(bysub)))
+      bysubl = as.list.default(bysub)
+    } else if (bysub %iscall% ".") bysub[[1L]] = quote(list)
+
+    if (mode(bysub) == "character") {
+      if (any(grepl(",", bysub, fixed = TRUE))) {
+        if (length(bysub) > 1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
+        bysub = cols_from_csv(bysub)
+      }
+      bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
+      nzidx = nzchar(bysub)
+      # by='' means by=NULL, tests 592&596
+      if (!all(nzidx)) {
+        if (length(bysub) > 1L) stopf("At least one entry of by is empty")
+        bysub = NULL
+      } else {
+        bysub = as.call(c(list(quote(list)), lapply(bysub, as.name)))
+      }
+      bysubl = as.list.default(bysub)
+    }
+    if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% all.names(bysub)))
+      # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
+      allbyvars = NULL
+    else
+      allbyvars = intersect(all.vars(bysub), names_x)
+
+    orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
+    bysameorder = byindex = FALSE
+    if (!bysub %iscall% ":" && ##Fix #4285
+        all(vapply_1b(bysubl, is.name))) {
+      bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
+      # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
+      if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
+        # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
+        # find if allbyvars is leading subset of any of the indices; add a trailing "__" to fix #3498 where a longer column name starts with a shorter column name
+        tt = paste(c(allbyvars,""), collapse="__")
+        w = which.first(startsWith(paste0(indices(x), "__"), tt))
+        if (!is.na(w)) {
+          byindex = indices(x)[w]
+          if (!length(getindex(x, byindex))) {
+            if (verbose) catf("by index '%s' but that index has 0 length. Ignoring.\n", byindex)
+            byindex=FALSE
+          }
+        }
+      }
+    }
+
+    if (is.null(irows)) {
+      if (bysub %iscall% ':' && length(bysub)==3L && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
+        byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names_x), callenv)
+        byval = as.list(x)[byval]
+      } else byval = eval(bysub, x, callenv)
+    } else {
+      # length 0 when i returns no rows
+      if (!is.integer(irows)) internal_error("irows isn't integer") # nocov
+      # Passing irows as i to x[] below has been troublesome in a rare edge case.
+      # irows may contain NA, 0, negatives and >nrow(x) here. That's all ok.
+      # But we may need i join column values to be retained (where those rows have no match), hence we tried eval(isub)
+      # in 1.8.3, but this failed test 876.
+      # TO DO: Add a test like X[i,sum(v),by=i.x2], or where by includes a join column (both where some i don't match).
+      # TO DO: Make xss directly, rather than recursive call.
+      if (is.null(nomatch)) irows = irows[irows!=0L]   # TO DO: can be removed now we have CisSortedSubset
+      if (length(allbyvars)) {    ###############  TO DO  TO DO  TO DO  ###############
+        if (verbose) catf("i clause present and columns used in by detected, only these subset: %s\n", brackify(allbyvars))
+        xss = `[.data.table`(x,irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
+      } else {
+        if (verbose) catf("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '%s'\n", deparse(by))
+        xss = `[.data.table`(x,irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
+      }
+      if (bysub %iscall% ':' && length(bysub)==3L) {
+        byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), callenv)
+        byval = as.list(xss)[byval]
+      } else byval = eval(bysub, xss, callenv)
+      xnrow = nrow(xss)
+      # TO DO: pass xss (x subset) through into dogroups. Still need irows there (for :=), but more condense
+      # and contiguous to use xss to form .SD in dogroups than going via irows
+    }
+    if (!length(byval) && xnrow>0L) {
+      # see missingby up above for comments
+      # by could be NULL or character(0L) for example (e.g. passed in as argument in a loop of different bys)
+      bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
+                 # a key of empty character()
+      byval = list()
+      bynames = allbyvars = NULL
+      # the rest now fall through
+    } else bynames = names(byval)
+    if (is.atomic(byval) || is.null(byval)) {
+      if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && bysub %chin% names_x) ) {
+        stopf("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval%s should work. This is for efficiency so data.table can detect which columns are needed.", deparse(bysub))
+      } else {
+        # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
+        byval = list(byval)
+        bysubl = c(as.name("list"),bysuborig)  # for guessing the column name below
+        if (is.name(bysuborig))
+          bynames = as.character(bysuborig)
+        else
+          bynames = names(byval)
+      }
+    }
+    if (!is.list(byval)) stopf("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
+    if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
+    if (!bynull) for (jj in seq_along(byval)) {
+      if (!(this_type <- typeof(byval[[jj]])) %chin% ORDERING_TYPES) {
+        stopf("Column or expression %d of 'by' or 'keyby' is type '%s' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.", jj, this_type)
+      }
+    }
+    tt = lengths(byval)
+    if (any(tt!=xnrow)) {
+      stopf(ngettext(length(tt),
+                     "The item in the 'by' or 'keyby' list is length %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).",
+                     "The items in the 'by' or 'keyby' list have lengths %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."),
+            brackify(tt), xnrow, domain=NA)
+    }
+    if (is.null(bynames)) bynames = rep.int("",length(byval))
+    if (length(idx <- which(!nzchar(bynames))) && !bynull) {
+      # TODO: improve this and unify auto-naming of jsub and bysub
+      if (is.name(bysubl[[1L]]) && bysubl[[1L]] == '{') bysubl = bysubl[[length(bysubl)]] # fix for #3156
+      for (jj in idx) {
+        # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
+        byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
+        if (length(byvars) == 1L) tt = byvars
+        else {
+          # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
+          tt = grepv("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE)
+          # byvars but exclude functions or `0`+`1` becomes `+`
+          tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
+        }
+        # fix for #497
+        if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
+          bynames[jj] = deparse(bysubl[[jj+1L]])
+          if (verbose)
+            catf("by-expression '%s' is not named, and the auto-generated name '%s' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", bynames[jj], tt)
+        }
+        else bynames[jj] = tt
+        # if user doesn't like this inferred name, user has to use by=list() to name the column
+      }
+      # Fix for #1334
+      if (anyDuplicated(bynames)) {
+        bynames = make.unique(bynames)
+      }
+    }
+    setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
+  }
+  q$allbyvars = allbyvars
+  q$byindex = byindex
+  q$bynames = bynames
+  q$bynull = bynull
+  q$bysameorder = bysameorder
+  q$bysub = bysub
+  q$bysubl = bysubl
+  q$byval = byval
+  q$irows = irows
+  q$xnrow = xnrow
+  q$orderedirows = orderedirows
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -1504,188 +1727,7 @@ replace_dot_alias = function(e) {
     if (!with) {
       if (.is_dt_done(r <- .dt_select_with_false(q))) return(.dt_done_value(r))
     } else {   # with=TRUE and byjoin could be TRUE
-      bynames = NULL
-      allbyvars = NULL
-      if (byjoin) {
-        bynames = names_x[rightcols]
-      } else if (!missingby) {
-        # deal with by before j because we need byvars when j contains .SD
-        # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
-        bysubl = as.list.default(bysub)
-        bysuborig = bysub
-        if (".I" %in% bysubl) {  #1732
-          if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
-            stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
-          bysub = irows %||% seq_len(nrow(x))
-          bysuborig = as.symbol("I")
-        }
-        if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
-          bysub = eval(bysub, callenv, callenv)
-          # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
-          # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
-          # note that if y is a list, this'll return an error (not sure if it should).
-          if (is.atomic(bysub)) bysubl = list(bysuborig) else bysubl = as.list.default(bysub)
-        }
-        if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
-          bysub = eval(bysubl[[2L]], callenv, callenv)
-          bysub = replace_dot_alias(bysub) # fix for #1298
-          if (is.expression(bysub)) bysub=bysub[[1L]]
-          bysubl = as.list.default(bysub)
-        } else if (bysub %iscall% c("c","key","names", "intersect", "setdiff")) {
-          # catch common cases, so we don't have to copy x[irows] for all columns
-          # *** TO DO ***: try() this eval first (as long as not list() or .()) and see if it evaluates to column names
-          # to avoid the explicit c,key,names which already misses paste("V",1:10) for example
-          #        tried before but since not wrapped in try() it failed on some tests
-          # or look for column names used in this by (since if none it wouldn't find column names anyway
-          # when evaled within full x[irows]).  Trouble is that colA%%2L is a call and should be within frame.
-          tt = eval(bysub, callenv, callenv)
-          if (!is.character(tt)) stopf("by=c(...), key(...) or names(...) must evaluate to 'character'")
-          bysub=tt
-        } else if (is.call(bysub) && !(bysub %iscall% c("list", "as.list", "{", ".", ":"))) {
-          # potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
-          bysub = as.call(c(as.name('('), list(bysub)))
-          bysubl = as.list.default(bysub)
-        } else if (bysub %iscall% ".") bysub[[1L]] = quote(list)
-
-        if (mode(bysub) == "character") {
-          if (any(grepl(",", bysub, fixed = TRUE))) {
-            if (length(bysub) > 1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
-            bysub = cols_from_csv(bysub)
-          }
-          bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
-          nzidx = nzchar(bysub)
-          # by='' means by=NULL, tests 592&596
-          if (!all(nzidx)) {
-            if (length(bysub) > 1L) stopf("At least one entry of by is empty")
-            bysub = NULL
-          } else {
-            bysub = as.call(c(list(quote(list)), lapply(bysub, as.name)))
-          }
-          bysubl = as.list.default(bysub)
-        }
-        if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% all.names(bysub)))
-          # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
-          allbyvars = NULL
-        else
-          allbyvars = intersect(all.vars(bysub), names_x)
-
-        orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
-        bysameorder = byindex = FALSE
-        if (!bysub %iscall% ":" && ##Fix #4285
-            all(vapply_1b(bysubl, is.name))) {
-          bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
-          # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
-          if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
-            # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
-            # find if allbyvars is leading subset of any of the indices; add a trailing "__" to fix #3498 where a longer column name starts with a shorter column name
-            tt = paste(c(allbyvars,""), collapse="__")
-            w = which.first(startsWith(paste0(indices(x), "__"), tt))
-            if (!is.na(w)) {
-              byindex = indices(x)[w]
-              if (!length(getindex(x, byindex))) {
-                if (verbose) catf("by index '%s' but that index has 0 length. Ignoring.\n", byindex)
-                byindex=FALSE
-              }
-            }
-          }
-        }
-
-        if (is.null(irows)) {
-          if (bysub %iscall% ':' && length(bysub)==3L && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
-            byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names_x), callenv)
-            byval = as.list(x)[byval]
-          } else byval = eval(bysub, x, callenv)
-        } else {
-          # length 0 when i returns no rows
-          if (!is.integer(irows)) internal_error("irows isn't integer") # nocov
-          # Passing irows as i to x[] below has been troublesome in a rare edge case.
-          # irows may contain NA, 0, negatives and >nrow(x) here. That's all ok.
-          # But we may need i join column values to be retained (where those rows have no match), hence we tried eval(isub)
-          # in 1.8.3, but this failed test 876.
-          # TO DO: Add a test like X[i,sum(v),by=i.x2], or where by includes a join column (both where some i don't match).
-          # TO DO: Make xss directly, rather than recursive call.
-          if (is.null(nomatch)) irows = irows[irows!=0L]   # TO DO: can be removed now we have CisSortedSubset
-          if (length(allbyvars)) {    ###############  TO DO  TO DO  TO DO  ###############
-            if (verbose) catf("i clause present and columns used in by detected, only these subset: %s\n", brackify(allbyvars))
-            xss = `[.data.table`(x,irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
-          } else {
-            if (verbose) catf("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '%s'\n", deparse(by))
-            xss = `[.data.table`(x,irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
-          }
-          if (bysub %iscall% ':' && length(bysub)==3L) {
-            byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), callenv)
-            byval = as.list(xss)[byval]
-          } else byval = eval(bysub, xss, callenv)
-          xnrow = nrow(xss)
-          # TO DO: pass xss (x subset) through into dogroups. Still need irows there (for :=), but more condense
-          # and contiguous to use xss to form .SD in dogroups than going via irows
-        }
-        if (!length(byval) && xnrow>0L) {
-          # see missingby up above for comments
-          # by could be NULL or character(0L) for example (e.g. passed in as argument in a loop of different bys)
-          bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
-                     # a key of empty character()
-          byval = list()
-          bynames = allbyvars = NULL
-          # the rest now fall through
-        } else bynames = names(byval)
-        if (is.atomic(byval) || is.null(byval)) {
-          if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && bysub %chin% names_x) ) {
-            stopf("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval%s should work. This is for efficiency so data.table can detect which columns are needed.", deparse(bysub))
-          } else {
-            # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
-            byval = list(byval)
-            bysubl = c(as.name("list"),bysuborig)  # for guessing the column name below
-            if (is.name(bysuborig))
-              bynames = as.character(bysuborig)
-            else
-              bynames = names(byval)
-          }
-        }
-        if (!is.list(byval)) stopf("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
-        if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
-        if (!bynull) for (jj in seq_along(byval)) {
-          if (!(this_type <- typeof(byval[[jj]])) %chin% ORDERING_TYPES) {
-            stopf("Column or expression %d of 'by' or 'keyby' is type '%s' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.", jj, this_type)
-          }
-        }
-        tt = lengths(byval)
-        if (any(tt!=xnrow)) {
-          stopf(ngettext(length(tt),
-                         "The item in the 'by' or 'keyby' list is length %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).",
-                         "The items in the 'by' or 'keyby' list have lengths %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."),
-                brackify(tt), xnrow, domain=NA)
-        }
-        if (is.null(bynames)) bynames = rep.int("",length(byval))
-        if (length(idx <- which(!nzchar(bynames))) && !bynull) {
-          # TODO: improve this and unify auto-naming of jsub and bysub
-          if (is.name(bysubl[[1L]]) && bysubl[[1L]] == '{') bysubl = bysubl[[length(bysubl)]] # fix for #3156
-          for (jj in idx) {
-            # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
-            byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
-            if (length(byvars) == 1L) tt = byvars
-            else {
-              # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
-              tt = grepv("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE)
-              # byvars but exclude functions or `0`+`1` becomes `+`
-              tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
-            }
-            # fix for #497
-            if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
-              bynames[jj] = deparse(bysubl[[jj+1L]])
-              if (verbose)
-                catf("by-expression '%s' is not named, and the auto-generated name '%s' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", bynames[jj], tt)
-            }
-            else bynames[jj] = tt
-            # if user doesn't like this inferred name, user has to use by=list() to name the column
-          }
-          # Fix for #1334
-          if (anyDuplicated(bynames)) {
-            bynames = make.unique(bynames)
-          }
-        }
-        setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
-      }
+      .dt_analyze_by(q)
 
       jvnames = NULL
       if (is.name(jsub)) {
