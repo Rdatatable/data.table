@@ -22282,3 +22282,13 @@ rm(DT, locked, sym, k, f)
 DT = data.table(a=1:4, b=c(1L,1L,2L,2L))
 test(2396.1, as.character(tryCatch(DT[, s := sum(a), keyby=.(b2 = b*2L)], warning=conditionCall)[[1L]]), "[.data.table")
 rm(DT)
+
+# evaluation of i moved into .dt_eval_isub(), #852: its errors still report [.data.table
+DT = data.table(col2397=1:3)
+test(2397.1, as.character(tryCatch(DT[zz2397], error=conditionCall)[[1L]]), "[.data.table")
+test(2397.2, as.character(tryCatch(DT[col2397], error=conditionCall)[[1L]]), "[.data.table")
+test(2397.3, as.character(tryCatch(DT[!.(1L), on="col2397", nomatch=NA], error=conditionCall)[[1L]]), "[.data.table")
+# auto-indexing turns i into a join, which needs on/mult/nomatch to be updated
+test(2397.4, DT[col2397 == 2L, verbose=TRUE], DT[2L], output="Constructing irows for '!byjoin || nqbyjoin'")
+test(2397.5, DT[!(col2397 == 2L), col2397], c(1L, 3L))
+rm(DT)
