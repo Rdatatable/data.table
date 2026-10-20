@@ -22277,3 +22277,8 @@ f = function(DT) DT[, sum(a) + ..nosuchvar]
 test(2395.32, f(DT), error="Variable 'nosuchvar' is not found in calling scope")
 test(2395.33, as.character(tryCatch(f(DT), error=conditionCall)[[1L]]), "[.data.table")
 rm(DT, locked, sym, k, f)
+
+# finalizing := by group, moved into helpers, #852: the keyby= warning still reports [.data.table
+DT = data.table(a=1:4, b=c(1L,1L,2L,2L))
+test(2396.1, as.character(tryCatch(DT[, s := sum(a), keyby=.(b2 = b*2L)], warning=conditionCall)[[1L]]), "[.data.table")
+rm(DT)
