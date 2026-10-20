@@ -1729,16 +1729,9 @@ replace_dot_alias = function(e) {
     } else {   # with=TRUE and byjoin could be TRUE
       .dt_analyze_by(q)
 
-      jvnames = NULL
-      if (is.name(jsub)) {
-        # j is a single unquoted column name
-        if (jsub!=".SD") jvnames = .dt_drop_dot(jsub)
-        # jsub is list()ed after it's eval'd inside dogroups.
-      } else { # else maybe a call to transform or something which returns a list.
-        jsub_names = .dt_do_j_names(jsub, jvnames)
-        jsub = jsub_names$jsub
-        jvnames = jsub_names$jvnames
-      }
+      jsub_names = .dt_j_names(jsub)
+      jsub = jsub_names$jsub
+      jvnames = jsub_names$jvnames
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
       use.I = ".I" %chin% av
       if (any(c(".SD","eval","get","mget") %chin% av)) {
@@ -2422,6 +2415,17 @@ replace_dot_alias = function(e) {
 
 # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
 .dt_dupdiff = function(x, y) x[!x %chin% y]
+
+# the names of the columns j creates, as list(jsub=, jvnames=): a single symbol gives its name (.N gives N etc.), a list()
+#   the names of its items (also as the last item of {} or both branches of if/else), see .dt_do_j_names()
+.dt_j_names = function(jsub) {
+  if (is.name(jsub)) {
+    # j is a single unquoted column name
+    # jsub is list()ed after it's eval'd inside dogroups.
+    return(list(jsub=jsub, jvnames=if (jsub!=".SD") .dt_drop_dot(jsub)))
+  }
+  .dt_do_j_names(jsub, NULL) # else maybe a call to transform or something which returns a list.
+}
 
 # auto-name a symbol in j: special symbols .N, .I, .GRP, .NGRP and .BY lose their leading dot
 .dt_drop_dot = function(x) {

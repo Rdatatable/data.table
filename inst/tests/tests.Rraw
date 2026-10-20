@@ -22387,3 +22387,11 @@ f = function(DT) { k = c(2L, 2L, 1L); DT[a > 1L, sum(v), by=k] }
 test(2404.07, f(DT), data.table(k=2:1, V1=c(50,40)))
 test(2404.08, DT[, .N, by=.I], data.table(I=1:4, N=1L))
 rm(DT, f, callof)
+
+# auto-naming of j's columns, .dt_j_names(), #852
+DT = data.table(a=1:2, b=3:4)
+test(2405.1, names(DT[, .N, by=a]), c("a", "N"))
+test(2405.2, names(DT[, .(a, .N, s=sum(b)), by=b]), c("b", "a", "N", "s"))
+test(2405.3, names(DT[, .SD, by=a]), c("a", "b"))
+test(2405.4, names(DT[, {x = 1L; .(b, x)}, by=a]), c("a", "b", "x"))
+rm(DT)
