@@ -5,8 +5,8 @@ output:
   litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Joins in data.table}
-  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
+  %\VignetteEngine{litedown::vignette}
 editor_options: 
   chunk_output_type: console
 ---
@@ -27,6 +27,7 @@ It assumes familiarity with the `data.table` syntax. If that is not the case, pl
 - [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
 - [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
 - [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
+- [`vignette("datatable-secondary-indices-and-auto-indexing", package="data.table")`](datatable-secondary-indices-and-auto-indexing.html)
 
 ***
 
