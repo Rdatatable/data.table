@@ -1093,6 +1093,104 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# analyse the substituted j (q$jsub) before i is evaluated: alias .() to list(), decide with=FALSE for j such as
+#   DT[, 1:2], DT[, "a"] or DT[, ..cols] (checking ..var exist in calling scope), unwrap {} and a top level eval(), and for
+#   := or let() allow cartesian joins and ignore nomatch=. Sets q$jsub, q$root, q$av, q$with and q$..syms.
+.dt_analyze_jsub = function(q) {
+  x = q$x
+  names_x = q$names_x
+  callenv = q$callenv
+  missingby = q$missingby
+  missing_i = q$missing_i
+  missing_nomatch = q$missing_nomatch
+  keyby = q$keyby
+  jsub = q$jsub
+  with = q$with
+  ..syms = q$..syms
+  av = q$av
+  jsub = replace_dot_alias(jsub)
+  root = root_name(jsub)
+  # exclude '..1' etc. for #5460
+  av = grepv("^[.][.](?:[.]|[0-9]+)$", all.vars(jsub), invert=TRUE)
+  all..names = FALSE
+  if ((.is_withFALSE_range(jsub, x, root, av)) ||
+      (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
+      ( (!length(av) || (all..names <- all(startsWith(av, "..")))) &&                         ## x[, "V1"]; x[, ..v]
+        root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
+        missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
+    # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
+    # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
+    # Automatically set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
+    # work as expected.  As before, a vector will never be returned, but a single column data.table
+    # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
+    # The root==":" is to allow DT[,colC:colH] even though that contains two variable names.
+    # root == "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
+    # We don't want to evaluate j at all in making this decision because i) evaluating could itself
+    # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
+    # want decisions like this to depend on the data or vector lengths since that can introduce
+    # inconsistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
+    with=FALSE
+    if (all..names) {
+      for (..name in av) {
+        name = substr(..name, 3L, nchar(..name))
+        if (!nzchar(name)) stopf("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
+        parent_has_..name = exists(..name, where=callenv)
+        if (!exists(name, where=callenv)) {
+          suggested = if (parent_has_..name)
+            gettextf(" Variable '..%s' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.", name)
+          # We have recommended 'manual' .. prefix in the past, so try to be helpful
+          else
+            ""
+          stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix.%s", name, suggested)
+        } else if (parent_has_..name) {
+          warningf("Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' variable in calling scope for clarity.", name)
+        }
+      }
+      ..syms = av
+    }
+  } else if (is.name(jsub)) {
+    if (startsWith(as.character(jsub), "..")) internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
+    if (!with && !exists(as.character(jsub), where=callenv))
+      stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", as.character(jsub))
+  }
+  if (root=="{") {
+    if (length(jsub) == 2L) {
+      jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
+      root = root_name(jsub)
+    } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
+      #2142 -- j can be {} and have length 1
+      stopf("Invalid use of `:=` inside `{}`. `:=` must be the only expression inside `{}` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]")
+    }
+  }
+  if (root=="eval" && !any(all.vars(jsub[[2L]]) %chin% names_x)) {
+    # TODO: this && !any depends on data. Can we remove it?
+    # Grab the dynamic expression from calling scope now to give the optimizer a chance to optimize it
+    # Only when top level is eval call.  Not nested like x:=eval(...) or `:=`(x=eval(...), y=eval(...))
+    jsub = eval(jsub[[2L]], callenv, callenv)  # this evals the symbol to return the dynamic expression
+    if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
+    # Note that the dynamic expression could now be := (new in v1.9.7)
+    jsub = replace_dot_alias(jsub)
+    root = root_name(jsub)
+  }
+  if (root == ":=" || root == "let") { # let(...) as alias for :=(...) (#3795)
+    if (root == "let")
+      jsub[[1L]] = as.symbol(":=")
+    q$allow.cartesian=TRUE   # (see #800)
+    if (!missing_i && keyby)
+      stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
+    if (!missing_nomatch) {
+      warningf("nomatch isn't relevant together with :=, ignoring nomatch")
+      q$nomatch=NULL
+    }
+  }
+  q$jsub = jsub
+  q$root = root
+  q$av = av
+  q$with = with
+  q$..syms = ..syms
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -1268,83 +1366,7 @@ replace_dot_alias = function(e) {
       if (missing(jsub)) {j = substitute(); jsub=NULL; missing_j=TRUE} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", deparse1(jsub, collapse="\n"))
     }
   }
-  if (!missing_j) {
-    jsub = replace_dot_alias(jsub)
-    root = root_name(jsub)
-    # exclude '..1' etc. for #5460
-    av = grepv("^[.][.](?:[.]|[0-9]+)$", all.vars(jsub), invert=TRUE)
-    all..names = FALSE
-    if ((.is_withFALSE_range(jsub, x, root, av)) ||
-        (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
-        ( (!length(av) || (all..names <- all(startsWith(av, "..")))) &&                         ## x[, "V1"]; x[, ..v]
-          root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
-          missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
-      # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
-      # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
-      # Automatically set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
-      # work as expected.  As before, a vector will never be returned, but a single column data.table
-      # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
-      # The root==":" is to allow DT[,colC:colH] even though that contains two variable names.
-      # root == "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
-      # We don't want to evaluate j at all in making this decision because i) evaluating could itself
-      # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
-      # want decisions like this to depend on the data or vector lengths since that can introduce
-      # inconsistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
-      with=FALSE
-      if (all..names) {
-        for (..name in av) {
-          name = substr(..name, 3L, nchar(..name))
-          if (!nzchar(name)) stopf("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
-          parent_has_..name = exists(..name, where=callenv)
-          if (!exists(name, where=callenv)) {
-            suggested = if (parent_has_..name)
-              gettextf(" Variable '..%s' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.", name)
-            # We have recommended 'manual' .. prefix in the past, so try to be helpful
-            else
-              ""
-            stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix.%s", name, suggested)
-          } else if (parent_has_..name) {
-            warningf("Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' variable in calling scope for clarity.", name)
-          }
-        }
-        ..syms = av
-      }
-    } else if (is.name(jsub)) {
-      if (startsWith(as.character(jsub), "..")) internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
-      if (!with && !exists(as.character(jsub), where=callenv))
-        stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", as.character(jsub))
-    }
-    if (root=="{") {
-      if (length(jsub) == 2L) {
-        jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
-        root = root_name(jsub)
-      } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
-        #2142 -- j can be {} and have length 1
-        stopf("Invalid use of `:=` inside `{}`. `:=` must be the only expression inside `{}` when used in `j`. Instead of: DT[{tmp1 <- ...; tmp2 <- ...; someCol := tmp1 * tmp2}], Use: DT[, someCol := {tmp1 <- ...; tmp2 <- ...; tmp1 * tmp2}]")
-      }
-    }
-    if (root=="eval" && !any(all.vars(jsub[[2L]]) %chin% names_x)) {
-      # TODO: this && !any depends on data. Can we remove it?
-      # Grab the dynamic expression from calling scope now to give the optimizer a chance to optimize it
-      # Only when top level is eval call.  Not nested like x:=eval(...) or `:=`(x=eval(...), y=eval(...))
-      jsub = eval(jsub[[2L]], callenv, callenv)  # this evals the symbol to return the dynamic expression
-      if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
-      # Note that the dynamic expression could now be := (new in v1.9.7)
-      jsub = replace_dot_alias(jsub)
-      root = root_name(jsub)
-    }
-    if (root == ":=" || root == "let") { # let(...) as alias for :=(...) (#3795)
-      if (root == "let")
-        jsub[[1L]] = as.symbol(":=")
-      allow.cartesian=TRUE   # (see #800)
-      if (!missing_i && keyby)
-        stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
-      if (!missing_nomatch) {
-        warningf("nomatch isn't relevant together with :=, ignoring nomatch")
-        nomatch=NULL
-      }
-    }
-  }
+  if (!missing_j) .dt_analyze_jsub(q)
 
   isub = NULL
   if (!missing_i) {

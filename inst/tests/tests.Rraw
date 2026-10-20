@@ -22341,3 +22341,18 @@ test(2401.2, X[.(c(1L,1L)), on="a", w, allow.cartesian=stop("forced")], error="f
 test(2401.3, X[.(1L), on="a", which=TRUE], 1:2)
 test(2401.4, X[, which=TRUE], X, warning="i and j are both missing")  # which= needs i
 rm(X)
+
+# analysis of j before i, .dt_analyze_jsub(), #852
+DT = data.table(a=1:3, b=4:6)
+callof = function(expr) as.character(tryCatch(expr, error=function(e) conditionCall(e)[[1L]], warning=function(w) conditionCall(w)[[1L]]))
+f = function(DT) DT[, ..nosuchcol2402]
+test(2402.01, f(DT), error="Variable 'nosuchcol2402' is not found in calling scope. Looking in calling scope because you used the .. prefix")
+test(2402.02, callof(f(DT)), "[.data.table")
+test(2402.03, callof(DT[, {a := 1L; b}]), "[.data.table")  # Invalid use of `:=` inside `{}`
+test(2402.04, callof(copy(DT)[a > 1L, z := 1L, keyby=b]), "[.data.table")
+test(2402.05, callof(copy(DT)[, z := 1L, nomatch=NA]), "[.data.table")
+f = function(DT) { cols = c("b", "a"); DT[, ..cols] }
+test(2402.06, f(DT), DT[, .(b, a)])
+test(2402.07, DT[, eval(quote(sum(a)))], 6L)
+test(2402.08, DT[, {b}], 4:6)
+rm(DT, f)
