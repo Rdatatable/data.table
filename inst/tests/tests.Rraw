@@ -22499,3 +22499,10 @@ test(2414.3, DT[Y, on="g", sum(v), keyby=.EACHI], data.table(g=1:2, V1=c(3L,3L),
 test(2414.4, key(DT[, sum(v), keyby=g]), "g")
 test(2414.5, DT[0L, sum(v), by=g], data.table(g=integer(), V1=integer()))
 rm(DT, Y, callof)
+
+# order() in i is forder(); the environment providing it is only created when i uses order, #852
+DT = data.table(a=c(3L,1L,2L), b=4:6)
+f = function(DT) { k = 2L; list(DT[a > k, b], DT[order(-a), b], DT[(z2415 <- 1L), b], exists("z2415", inherits=FALSE)) }
+test(2415.1, f(DT), list(4L, c(4L,6L,5L), 4L, FALSE))
+test(2415.2, DT[order(a), b, verbose=TRUE], c(5L,6L,4L), output="forder")
+rm(DT, f)

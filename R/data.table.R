@@ -770,8 +770,12 @@ replace_dot_alias = function(e) {
     q$mult = "all"
   }
   else if (!is.name(isub)) {
-    ienv = new.env(parent=callenv)
-    if (getOption("datatable.optimize") >= 1L) assign("order", forder, ienv)
+    # order() in i is data.table's forder(); the extra environment providing it is only made when i uses order (~2us)
+    ienv = callenv
+    if ("order" %chin% all.names(isub) && getOption("datatable.optimize") >= 1L) {
+      ienv = new.env(parent=callenv)
+      assign("order", forder, ienv)
+    }
     # calling handlers rather than tryCatch(): they re-raise anyway, and tryCatch() costs ~2-5us on every call with i
     q$i = withCallingHandlers(eval(.massagei(isub), x, ienv),
       dt_invalid_let_error = function(e) stopf("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."),
