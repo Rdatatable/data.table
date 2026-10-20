@@ -22476,3 +22476,15 @@ test(2412.5, DT[Y, on="g", .(s=sum(v) + w, n=.N), by=.EACHI], data.table(g=c(3L,
 test(2412.6, DT[Y, on="g", .(i.w, .iSD$w), by=.EACHI], data.table(g=c(3L,2L), i.w=c(10L,20L), V2=c(10L,20L)))
 test(2412.7, DT[0L][, .N, by=g], data.table(g=integer(), N=integer()))
 rm(DT, K, Y)
+
+# evaluating j by group, .dt_fill_grouped_SDenv() and .dt_eval_grouped(), #852
+DT = data.table(g=c(1L,1L,2L), v=1:3)
+callof = function(expr) as.character(tryCatch(expr, error=function(e) conditionCall(e)[[1L]], warning=function(w) conditionCall(w)[[1L]]))
+# errors raised in dogroups (C) still report [.data.table
+test(2413.1, callof(copy(DT)[, v := 1:2, by=g]), "[.data.table")
+test(2413.2, callof(DT[, if (.GRP == 1L) list(a=1) else list(a=1, b=2), by=g]), "[.data.table")
+test(2413.3, DT[, sum(v), by=g, verbose=TRUE], data.table(g=1:2, V1=c(3L,3L)), output="GForce TRUE")
+test(2413.4, copy(DT)[, s := sum(v), by=g], data.table(g=c(1L,1L,2L), v=1:3, s=c(3L,3L,3L)))
+test(2413.5, DT[, head(.SD, 2L), by=g], DT)
+test(2413.6, DT[, .(v + 0L), by=g, verbose=TRUE], data.table(g=c(1L,1L,2L), V1=1:3), output="GForce FALSE")
+rm(DT, callof)

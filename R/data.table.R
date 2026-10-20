@@ -2277,6 +2277,152 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# fill SDenv for grouping: .SDall/.SD as growable copies with as many rows as the largest group (filled per group in C)
+.dt_fill_grouped_SDenv = function(q, SDenv) {
+  x = q$x
+  xcols = q$xcols
+  xcolsAns = q$xcolsAns
+  xdotcols = q$xdotcols
+  ansvars = q$ansvars
+  sdvars = q$sdvars
+  non_sdvars = q$non_sdvars
+  f__ = q$f__
+  len__ = q$len__
+  if (length(xcols)) {
+    #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
+    #  TODO move down to dogroup.c, too.
+    SDenv$.SDall = .Call(CcopyAsGrowable, .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols))  # must be deep copy when largest group is a subset
+    if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
+    if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
+    SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
+  }
+  if (nrow(SDenv$.SDall)==0L) {
+    setattr(SDenv$.SDall,"row.names",c(NA_integer_,0L))
+    setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
+  }
+  # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
+  SDenv$.NGRP = length(f__)
+  .dt_lock_SDenv(SDenv, c(".N", ".GRP", ".iSD", ".NGRP"))
+  invisible()
+}
+
+# evaluate j for each group and return the combined result: GForce-optimized j (gforce(), one vectorised call for all groups)
+#   or dogroups() in C. Sets q$GForce, q$jsub, q$jvnames and the grouping state the finalization uses (q$groups,
+#   q$grpcols, q$g, q$o__, q$f__, q$len__, q$cols).
+.dt_eval_grouped = function(q, SDenv) {
+  x = q$x
+  i = q$i
+  names_x = q$names_x
+  names_i = q$names_i
+  callenv = q$callenv
+  verbose = q$verbose
+  showProgress = q$showProgress
+  byjoin = q$byjoin
+  missing_on = q$missing_on
+  xo = q$xo
+  leftcols = q$leftcols
+  jisvars = q$jisvars
+  xjisvars = q$xjisvars
+  byval = q$byval
+  irows = q$irows
+  o__ = q$o__
+  f__ = q$f__
+  len__ = q$len__
+  jsub = q$jsub
+  jvnames = q$jvnames
+  sdvars = q$sdvars
+  ansvars = q$ansvars
+  use.I = q$use.I
+  xcols = q$xcols
+  lhs = q$lhs
+  cols = q$cols
+  newnames = q$newnames
+  g = NULL
+  # Determine GForce-optimized query
+  gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, callenv)
+  GForce = gforce_result$GForce
+  jsub = gforce_result$jsub
+  jvnames = gforce_result$jvnames
+  if (byjoin) {
+    groups = i
+    grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
+    jiscols = chmatch(jisvars, names_i)  # integer() if there are no jisvars (usually there aren't, advanced feature)
+    xjiscols = chmatch(xjisvars, names_x)
+    SDenv$.xSD = .Call(CcopyAsGrowable, x[min(nrow(i), 1L), xjisvars, with=FALSE])
+    if (!missing_on) o__ = xo else o__ = integer(0L)
+  } else {
+    groups = byval
+    grpcols = seq_along(byval)
+    jiscols = NULL   # NULL rather than integer() is used in C to know when using by
+    xjiscols = NULL
+  }
+  lockBinding(".xSD", SDenv)
+  grporder = o__
+  # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
+  if (length(irows) && !isTRUE(irows) && !GForce) {
+    # any zeros in irows were removed by convertNegAndZeroIdx earlier above; no need to check for zeros again. Test 1058-1061 check case #2758.
+    if (length(o__) && length(irows)!=length(o__)) internal_error("length(irows)!=length(o__)") # nocov
+    o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
+          else irows
+  } # else grporder is left bound to same o__ memory (no cost of copy)
+  if (is.null(lhs)) cols=NULL
+  if (!length(f__)) {
+    # for consistency of empty case in test 184
+    f__=len__=0L
+  }
+  if (verbose) {last.started.at=proc.time();catf("Making each group and running j (GForce %s) ... ", GForce);flush.console()}
+  if (GForce) {
+    if (!length(ansvars) && !use.I) { # j is only .N (see .optimize_gforce), so gforce() isn't needed
+      ans = list(len__)
+    } else {
+      thisEnv = new.env()  # not parent=callenv so that gsum is found
+      for (ii in ansvars) assign(ii, .subset2(x, ii), thisEnv)
+      assign(".N", len__, thisEnv) # For #334
+      # fix for #1683
+      if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
+      ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    }
+    gi = if (length(o__)) o__[f__] else f__
+    g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
+
+    # adding ghead/gtail(n) support for n > 1 #5060 #523
+    q3 = 0L
+    if (!is.symbol(jsub)) {
+      if (jsub %iscall% "list"){
+        q3 = max(sapply(jsub, .dt_headTail_arg))
+      } else if (length(jsub)==3L) {
+        q3 = .dt_headTail_arg(jsub)
+      }
+    }
+    if (q3 > 0L) {
+      grplens = pmin.int(q3, len__)
+      g = lapply(g, rep.int, times=grplens)
+    } else if (.dt_is_nrows(jsub)) {
+      g = lapply(g, rep.int, times=len__)
+      # unpack list of lists for nrows functions
+      if (all(vapply_1b(ans, is.list))) {
+        ans = lapply(ans, .dt_zip_items)
+      }
+    }
+    ans = c(g, ans)
+  } else {
+    ans = .dt_in_caller(.Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing_on, verbose, as.integer(showProgress)))
+  }
+  .dt_runlock(ans)
+  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  q$GForce = GForce
+  q$jsub = jsub
+  q$jvnames = jvnames
+  q$groups = groups
+  q$grpcols = grpcols
+  q$g = g
+  q$o__ = o__
+  q$f__ = f__
+  q$len__ = len__
+  q$cols = cols
+  ans
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -2501,94 +2647,8 @@ replace_dot_alias = function(e) {
   .dt_init_grouped_SDenv(SDenv, verbose)
 
   if (byjoin) .dt_plan_eachi(q, SDenv) else .dt_plan_groups(q)
-  if (length(xcols)) {
-    #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
-    #  TODO move down to dogroup.c, too.
-    SDenv$.SDall = .Call(CcopyAsGrowable, .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols))  # must be deep copy when largest group is a subset
-    if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
-    if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
-    SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
-  }
-  if (nrow(SDenv$.SDall)==0L) {
-    setattr(SDenv$.SDall,"row.names",c(NA_integer_,0L))
-    setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
-  }
-  # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
-  SDenv$.NGRP = length(f__)
-  .dt_lock_SDenv(SDenv, c(".N", ".GRP", ".iSD", ".NGRP"))
-
-  # Determine GForce-optimized query
-  gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, callenv)
-  GForce = gforce_result$GForce
-  jsub = gforce_result$jsub
-  jvnames = gforce_result$jvnames
-  if (byjoin) {
-    groups = i
-    grpcols = leftcols # 'leftcols' are the columns in i involved in the join (either head of key(i) or head along i)
-    jiscols = chmatch(jisvars, names_i)  # integer() if there are no jisvars (usually there aren't, advanced feature)
-    xjiscols = chmatch(xjisvars, names_x)
-    SDenv$.xSD = .Call(CcopyAsGrowable, x[min(nrow(i), 1L), xjisvars, with=FALSE])
-    if (!missing_on) o__ = xo else o__ = integer(0L)
-  } else {
-    groups = byval
-    grpcols = seq_along(byval)
-    jiscols = NULL   # NULL rather than integer() is used in C to know when using by
-    xjiscols = NULL
-  }
-  lockBinding(".xSD", SDenv)
-  grporder = o__
-  # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
-  if (length(irows) && !isTRUE(irows) && !GForce) {
-    # any zeros in irows were removed by convertNegAndZeroIdx earlier above; no need to check for zeros again. Test 1058-1061 check case #2758.
-    if (length(o__) && length(irows)!=length(o__)) internal_error("length(irows)!=length(o__)") # nocov
-    o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
-          else irows
-  } # else grporder is left bound to same o__ memory (no cost of copy)
-  if (is.null(lhs)) cols=NULL
-  if (!length(f__)) {
-    # for consistency of empty case in test 184
-    f__=len__=0L
-  }
-  if (verbose) {last.started.at=proc.time();catf("Making each group and running j (GForce %s) ... ", GForce);flush.console()}
-  if (GForce) {
-    if (!length(ansvars) && !use.I) { # j is only .N (see .optimize_gforce), so gforce() isn't needed
-      ans = list(len__)
-    } else {
-      thisEnv = new.env()  # not parent=callenv so that gsum is found
-      for (ii in ansvars) assign(ii, .subset2(x, ii), thisEnv)
-      assign(".N", len__, thisEnv) # For #334
-      # fix for #1683
-      if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-      ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
-    }
-    gi = if (length(o__)) o__[f__] else f__
-    g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
-
-    # adding ghead/gtail(n) support for n > 1 #5060 #523
-    q3 = 0L
-    if (!is.symbol(jsub)) {
-      if (jsub %iscall% "list"){
-        q3 = max(sapply(jsub, .dt_headTail_arg))
-      } else if (length(jsub)==3L) {
-        q3 = .dt_headTail_arg(jsub)
-      }
-    }
-    if (q3 > 0L) {
-      grplens = pmin.int(q3, len__)
-      g = lapply(g, rep.int, times=grplens)
-    } else if (.dt_is_nrows(jsub)) {
-      g = lapply(g, rep.int, times=len__)
-      # unpack list of lists for nrows functions
-      if (all(vapply_1b(ans, is.list))) {
-        ans = lapply(ans, .dt_zip_items)
-      }
-    }
-    ans = c(g, ans)
-  } else {
-    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing_on, verbose, as.integer(showProgress))
-  }
-  .dt_runlock(ans)
-  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  .dt_fill_grouped_SDenv(q, SDenv)
+  ans = .dt_eval_grouped(q, SDenv)
   # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
