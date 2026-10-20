@@ -2647,14 +2647,11 @@ replace_dot_alias = function(e) {
   notjoin = FALSE
   rightcols = leftcols = integer()
   optimizedSubset = FALSE ## flag: tells whether a normal query was optimized into a join.
-  # the query state that stage helpers (.dt_*(q)) set through q, declared here so that it is visible in this frame
-  #   (and to R CMD check); NULL means not set (yet) on this path
-  xo = indices__ = f__ = len__ = NULL                   # joins (i stage) and groups
-  root = lhs = cols = newnames = NULL                   # j and :=
-  suppPrint = identity
-  ansvars = sdvars = use.I = jvnames = NULL             # columns j uses
-  bynames = allbyvars = bysubl = byindex = bysameorder = orderedirows = NULL  # by=
-  jisvars = xjisvars = groups = grpcols = g = GForce = NULL  # by group
+  # Further query state is set by the stage helpers through q (reading q$x for an unset x gives NULL), e.g.
+  #   joins and groups: xo, indices__, f__, len__, o__; j and :=: root, lhs, cols, newnames, suppPrint;
+  #   columns j uses: ansvars, sdvars, use.I, jvnames; by=: byval, bynames, allbyvars, bysubl, byindex, bysameorder;
+  #   by group: jisvars, xjisvars, groups, grpcols, g, GForce. Only what is read here is initialised, as that costs time.
+  ansvars = NULL
   ..syms = NULL
   av = NULL
   jsub = NULL
