@@ -1935,6 +1935,196 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# evaluate j without grouping and return the result of the query: the subset of x (and i) j needs becomes .SD in SDenv,
+#   j is evaluated once, its result is copied if it shares memory with x, and := assigns it to x by reference.
+.dt_eval_ungrouped = function(q, SDenv) {
+  x = q$x
+  x_sub = q$x_sub
+  i = q$i
+  names_x = q$names_x
+  names_i = q$names_i
+  callenv = q$callenv
+  jsub = q$jsub
+  with = q$with
+  missing_j = q$missing_j
+  missingby = q$missingby
+  bynull = q$bynull
+  missing_on = q$missing_on
+  irows = q$irows
+  roll = q$roll
+  leftcols = q$leftcols
+  rightcols = q$rightcols
+  indices__ = q$indices__
+  len__ = q$len__
+  ansvars = q$ansvars
+  sdvars = q$sdvars
+  non_sdvars = q$non_sdvars
+  use.I = q$use.I
+  xcols = q$xcols
+  xcolsAns = q$xcolsAns
+  icols = q$icols
+  icolsAns = q$icolsAns
+  jvnames = q$jvnames
+  lhs = q$lhs
+  cols = q$cols
+  m = q$m
+  newnames = q$newnames
+  suppPrint = q$suppPrint
+  # No grouping: 'by' = missing | NULL | character() | "" | list()
+  # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
+  if (length(ansvars)) {
+    if (!(length(i) && length(icols))) {
+      # new in v1.12.0 to redirect to CsubsetDT in this case
+      if (!identical(xcolsAns, seq_along(xcolsAns)) || length(xcols)!=length(xcolsAns) || length(ansvars)!=length(xcolsAns)) {
+        internal_error("xcolAns does not pass checks: %d/%d/%d/%s", length(xcolsAns), length(ansvars), length(xcols), brackify(xcolsAns))   # nocov
+      }
+      # Retained from old R way below (test 1542.01 checks shallow at this point)
+      # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
+      # ' Unless 'with=FALSE' - can not be expressions but just column names.
+      ans = if (with && is.null(irows)) shallow(x, xcols) else .Call(CsubsetDT, x, irows, xcols)
+      setattr(ans, "names", ansvars)
+    } else {
+      # length(i) && length(icols)
+      if (is.null(irows)) {
+        internal_error("irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier.")  # nocov
+        # TODO: Make subsetDT do a shallow copy when irows is NULL (it currently copies). Then copy only when user uses := or set* on the result
+        # by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b would cause the next set or := to copy that
+        # column (so the warning is needed). To tackle that, we could have our own DT.NAMED attribute, perhaps.
+        # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
+      }
+      ans = vector("list", length(ansvars))
+      ii = rep.int(indices__, len__) # following #1991 fix
+      # TODO: if (allLen1 && allGrp1 && (!is.null(nomatch) || !any(f__==0L))) then ii will be 1:nrow(i)  [nomatch=NULL should drop rows in i that have no match]
+      #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
+      #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
+      #       That R level branch was taken out in PR #3213
+      ans[icolsAns] = .Call(CsubsetDT, i, ii,    icols)
+      ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
+      setattr(ans, "names", ansvars)
+      # NB: could be NULL
+      setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing_on) names(q$on), ansvars, leftcols, rightcols, names_i, irows, roll))
+      setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
+      setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
+      setalloccol(ans)
+    }
+    if (!with || missing_j) return(ans)
+    if (!is.data.table(ans)) setattr(ans, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...]) .SD should be data.table, test 2212.013
+    SDenv$.SDall = ans
+    SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
+    SDenv$.N = nrow(ans)
+
+  } else {
+    SDenv$.SDall = SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
+    SDenv$.N = if (is.null(irows)) nrow(x) else if(!length(irows) || identical(max(irows), 0L)) 0L else length(irows)
+    # Fix for #963.
+    # When irows is integer(0L), length(irows) = 0 will result in 0 (as expected).
+    # Binary search can return all 0 irows when none of the input matches. Instead of doing all(irows==0L) (previous method), which has to allocate a logical vector the size of irows, we can make use of 'max'. If max is 0, we return 0. The condition where only some irows > 0 won't occur.
+  }
+  # Temp fix for #921. Allocate `.I` only if j-expression uses it.
+  SDenv$.I = if (!missing_j && use.I) seq_len(SDenv$.N) else 0L
+  SDenv$.GRP = 1L
+  SDenv$.NGRP = 1L
+  .dt_lock_SDenv(SDenv, c(".N", ".I", ".GRP", ".NGRP"))
+  for (ii in ansvars) assign(ii, .subset2(SDenv$.SDall, ii), SDenv)
+  # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
+  # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
+
+  if (is.name(jsub) && is.null(lhs) && !exists(jsubChar<-as.character(jsub), SDenv, inherits=FALSE)) {
+    stopf("j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' is not found. If you intended to select columns using a variable in calling scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar to a file system path.", jsubChar)
+  }
+
+  jval = eval(jsub, SDenv, callenv)
+  .Call(C_unlock, jval) # in case jval inherits .SD's lock, #1341 #2245. .Call directly (not via an R function like setattr or unlock) to avoid bumping jval's MAYBE_SHARED.
+
+  # copy 'jval' when required
+  # More speedup - only check + copy if irows is NULL
+  # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #75 also related.
+  if (is.null(irows)) {
+    if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
+      jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
+      if (jcpy) jval = copy(jval)
+    } else if (address(jval) == address(SDenv$.SD)) {
+      jval = copy(jval)
+    } else {
+      sd_addresses = vapply_1c(SDenv, address)
+      jcpy = which(!vapply_1b(jval, is.null) & vapply_1c(jval, address) %chin% sd_addresses)
+      if (length(jcpy)) {
+        for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
+      } else if (address(jval) %chin% sd_addresses) {
+        jval = copy(jval) # fix for #4877, includes fix for #1212
+      }
+    }
+  }
+
+  if (!is.null(lhs)) {
+    # Re-matches characters names in the lhs after jval to account for jsub's that modify the columns of the data.table (#6768)
+    # Replaces numerical lhs with respective names_x
+    if(is.character(lhs)){
+      m = chmatch(lhs, names_x)
+      if(!anyNA(m)) {
+        # updates by reference to existing columns
+        cols = as.integer(m)
+        newnames = NULL
+      } else {
+        # Adding new column(s).
+        newnames = setdiff(lhs, names_x)
+        m[is.na(m)] = ncol(x) + seq_along(newnames)
+        cols = as.integer(m)
+      }
+    } else if (is.numeric(lhs)) {
+      lhs = names_x[m]
+    }
+    # cater for deleting columns by assigning NULL
+    if ((is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
+      name = x_sub
+      setalloccol(x, verbose=FALSE)
+      if (is.name(name)) {
+        assign(as.character(name), x, callenv, inherits=TRUE)
+      }
+    }
+    # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
+    .dt_in_caller(.Call(Cassign,x,irows,cols,newnames,jval))
+    return(suppPrint(x))
+  }
+  if ((is.call(jsub) && !jsub %iscall% "get" && is.list(jval) && !is.object(jval)) || !missingby) {
+    # is.call: selecting from a list column should return list
+    # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
+
+    # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0L), y)]
+    # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
+    if (!is.null(irows) && `||`(
+        identical(irows, integer(0L)) && !bynull,
+        length(irows) && !anyNA(irows) && all(irows==0L) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
+        ))
+      jval = lapply(jval, `[`, 0L)
+    if (is.atomic(jval)) {
+      setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
+      jval = list(jval)
+    }
+    if (!is.null(jvnames) && any(nzchar(jvnames))) {
+      if (length(jvnames) > length(jval)) jvnames = jvnames[seq_along(jval)]  #4274
+      setattr(jval, 'names', jvnames[seq_along(jval)])  # e.g. jvnames=="N" for DT[,.N,]
+    }
+    jval = as.data.table.list(jval, .named=NULL)
+  }
+
+  if (is.data.table(jval)) {
+    # should set the parent class only when jval is a plain data.table #4324
+    if (identical(class(jval), c('data.table', 'data.frame')))
+      setattr(jval, 'class', class(x)) # fix for #64
+    # can jval be sorted by the same key as x? improved for #4498
+    shared_keys = .dt_get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
+    if (is.null(irows) && !is.null(shared_keys)) {
+      if (!any(shared_keys %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', shared_keys)
+      # potentially inefficient backup -- check if jval is sorted by key(x)
+    } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
+      if (!any(key(x) %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', key(x))
+    }
+    if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
+  }
+  return(jval)
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -2147,161 +2337,7 @@ replace_dot_alias = function(e) {
 
   SDenv = .dt_new_SDenv(jsub, names_x, callenv)
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
-  if (missingby || bynull || (!byjoin && !length(byval))) {
-    # No grouping: 'by' = missing | NULL | character() | "" | list()
-    # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
-    if (length(ansvars)) {
-      if (!(length(i) && length(icols))) {
-        # new in v1.12.0 to redirect to CsubsetDT in this case
-        if (!identical(xcolsAns, seq_along(xcolsAns)) || length(xcols)!=length(xcolsAns) || length(ansvars)!=length(xcolsAns)) {
-          internal_error("xcolAns does not pass checks: %d/%d/%d/%s", length(xcolsAns), length(ansvars), length(xcols), brackify(xcolsAns))   # nocov
-        }
-        # Retained from old R way below (test 1542.01 checks shallow at this point)
-        # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
-        # ' Unless 'with=FALSE' - can not be expressions but just column names.
-        ans = if (with && is.null(irows)) shallow(x, xcols) else .Call(CsubsetDT, x, irows, xcols)
-        setattr(ans, "names", ansvars)
-      } else {
-        # length(i) && length(icols)
-        if (is.null(irows)) {
-          internal_error("irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier.")  # nocov
-          # TODO: Make subsetDT do a shallow copy when irows is NULL (it currently copies). Then copy only when user uses := or set* on the result
-          # by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b would cause the next set or := to copy that
-          # column (so the warning is needed). To tackle that, we could have our own DT.NAMED attribute, perhaps.
-          # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
-        }
-        ans = vector("list", length(ansvars))
-        ii = rep.int(indices__, len__) # following #1991 fix
-        # TODO: if (allLen1 && allGrp1 && (!is.null(nomatch) || !any(f__==0L))) then ii will be 1:nrow(i)  [nomatch=NULL should drop rows in i that have no match]
-        #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
-        #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
-        #       That R level branch was taken out in PR #3213
-        ans[icolsAns] = .Call(CsubsetDT, i, ii,    icols)
-        ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
-        setattr(ans, "names", ansvars)
-        # NB: could be NULL
-        setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing_on) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
-        setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
-        setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
-        setalloccol(ans)
-      }
-      if (!with || missing_j) return(ans)
-      if (!is.data.table(ans)) setattr(ans, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...]) .SD should be data.table, test 2212.013
-      SDenv$.SDall = ans
-      SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
-      SDenv$.N = nrow(ans)
-
-    } else {
-      SDenv$.SDall = SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
-      SDenv$.N = if (is.null(irows)) nrow(x) else if(!length(irows) || identical(max(irows), 0L)) 0L else length(irows)
-      # Fix for #963.
-      # When irows is integer(0L), length(irows) = 0 will result in 0 (as expected).
-      # Binary search can return all 0 irows when none of the input matches. Instead of doing all(irows==0L) (previous method), which has to allocate a logical vector the size of irows, we can make use of 'max'. If max is 0, we return 0. The condition where only some irows > 0 won't occur.
-    }
-    # Temp fix for #921. Allocate `.I` only if j-expression uses it.
-    SDenv$.I = if (!missing_j && use.I) seq_len(SDenv$.N) else 0L
-    SDenv$.GRP = 1L
-    SDenv$.NGRP = 1L
-    .dt_lock_SDenv(SDenv, c(".N", ".I", ".GRP", ".NGRP"))
-    for (ii in ansvars) assign(ii, .subset2(SDenv$.SDall, ii), SDenv)
-    # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
-    # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
-
-    if (is.name(jsub) && is.null(lhs) && !exists(jsubChar<-as.character(jsub), SDenv, inherits=FALSE)) {
-      stopf("j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' is not found. If you intended to select columns using a variable in calling scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar to a file system path.", jsubChar)
-    }
-
-    jval = eval(jsub, SDenv, callenv)
-    .Call(C_unlock, jval) # in case jval inherits .SD's lock, #1341 #2245. .Call directly (not via an R function like setattr or unlock) to avoid bumping jval's MAYBE_SHARED.
-
-    # copy 'jval' when required
-    # More speedup - only check + copy if irows is NULL
-    # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #75 also related.
-    if (is.null(irows)) {
-      if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
-        jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
-        if (jcpy) jval = copy(jval)
-      } else if (address(jval) == address(SDenv$.SD)) {
-        jval = copy(jval)
-      } else {
-        sd_addresses = vapply_1c(SDenv, address)
-        jcpy = which(!vapply_1b(jval, is.null) & vapply_1c(jval, address) %chin% sd_addresses)
-        if (length(jcpy)) {
-          for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
-        } else if (address(jval) %chin% sd_addresses) {
-          jval = copy(jval) # fix for #4877, includes fix for #1212
-        }
-      }
-    }
-
-    if (!is.null(lhs)) {
-      # Re-matches characters names in the lhs after jval to account for jsub's that modify the columns of the data.table (#6768)
-      # Replaces numerical lhs with respective names_x
-      if(is.character(lhs)){
-        m = chmatch(lhs, names_x)
-        if(!anyNA(m)) {
-          # updates by reference to existing columns
-          cols = as.integer(m)
-          newnames = NULL
-        } else {
-          # Adding new column(s).
-          newnames = setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x) + seq_along(newnames)
-          cols = as.integer(m)
-        }
-      } else if (is.numeric(lhs)) {
-        lhs = names_x[m]
-      }
-      # cater for deleting columns by assigning NULL
-      if ((is.null(jval) || (is.list(jval) && any(vapply_1b(jval, is.null)))) && selfrefok(x, verbose=FALSE) < 1L) {
-        name = substitute(x)
-        setalloccol(x, verbose=FALSE)
-        if (is.name(name)) {
-          assign(as.character(name), x, callenv, inherits=TRUE)
-        }
-      }
-      # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
-      .Call(Cassign,x,irows,cols,newnames,jval)
-      return(suppPrint(x))
-    }
-    if ((is.call(jsub) && !jsub %iscall% "get" && is.list(jval) && !is.object(jval)) || !missingby) {
-      # is.call: selecting from a list column should return list
-      # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
-
-      # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0L), y)]
-      # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
-      if (!is.null(irows) && `||`(
-          identical(irows, integer(0L)) && !bynull,
-          length(irows) && !anyNA(irows) && all(irows==0L) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
-          ))
-        jval = lapply(jval, `[`, 0L)
-      if (is.atomic(jval)) {
-        setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
-        jval = list(jval)
-      }
-      if (!is.null(jvnames) && any(nzchar(jvnames))) {
-        if (length(jvnames) > length(jval)) jvnames = jvnames[seq_along(jval)]  #4274
-        setattr(jval, 'names', jvnames[seq_along(jval)])  # e.g. jvnames=="N" for DT[,.N,]
-      }
-      jval = as.data.table.list(jval, .named=NULL)
-    }
-
-    if (is.data.table(jval)) {
-      # should set the parent class only when jval is a plain data.table #4324
-      if (identical(class(jval), c('data.table', 'data.frame')))
-        setattr(jval, 'class', class(x)) # fix for #64
-      # can jval be sorted by the same key as x? improved for #4498
-      shared_keys = .dt_get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
-      if (is.null(irows) && !is.null(shared_keys)) {
-        if (!any(shared_keys %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', shared_keys)
-        # potentially inefficient backup -- check if jval is sorted by key(x)
-      } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
-        if (!any(key(x) %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', key(x))
-      }
-      if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
-    }
-    return(jval)
-  }
+  if (missingby || bynull || (!byjoin && !length(byval))) return(.dt_eval_ungrouped(q, SDenv))
 
   ###########################################################################
   # Grouping ...
