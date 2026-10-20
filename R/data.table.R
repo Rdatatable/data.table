@@ -2061,9 +2061,10 @@ replace_dot_alias = function(e) {
   }
 
   if (!is.null(lhs)) {
-    # hand jval over via q without keeping a reference here, so that Cassign can plonk it without a copy (test 754.05)
+    # hand jval over via q without keeping a reference here, so that Cassign can plonk it without a copy (test 754.05).
+    #   Setting the binding to NULL drops the reference like rm() does, but rm() costs ~7us.
     q$jval = jval
-    rm(jval)
+    jval = NULL
     return(suppPrint(.dt_assign_ungrouped(q)))
   }
   if ((is.call(jsub) && !jsub %iscall% "get" && is.list(jval) && !is.object(jval)) || !missingby) {
@@ -2110,7 +2111,7 @@ replace_dot_alias = function(e) {
 #   jval is taken out of q so that this is its only reference and Cassign can use it without a copy.
 .dt_assign_ungrouped = function(q) {
   jval = q$jval
-  rm("jval", envir=q)
+  q$jval = NULL
   x = q$x
   x_sub = q$x_sub
   names_x = q$names_x
