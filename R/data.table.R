@@ -2423,6 +2423,62 @@ replace_dot_alias = function(e) {
   ans
 }
 
+# finish a grouped query and return its result: for := assign GForce results and update keys and indices of x; otherwise
+#   name the columns of the result and key it when the groups are known to be sorted.
+.dt_finalize_grouped = function(q, ans) {
+  x = q$x
+  names_x = q$names_x
+  verbose = q$verbose
+  irows = q$irows
+  keyby = q$keyby
+  byjoin = q$byjoin
+  byval = q$byval
+  bysub = q$bysub
+  bysubl = q$bysubl
+  bynames = q$bynames
+  allbyvars = q$allbyvars
+  bysameorder = q$bysameorder
+  groups = q$groups
+  grpcols = q$grpcols
+  g = q$g
+  o__ = q$o__
+  f__ = q$f__
+  len__ = q$len__
+  GForce = q$GForce
+  jsub = q$jsub
+  jvnames = q$jvnames
+  lhs = q$lhs
+  cols = q$cols
+  newnames = q$newnames
+  suppPrint = q$suppPrint
+  if (!is.null(lhs)) {
+    if (GForce) { # GForce should work with := #1414
+      jvals = .dt_gforce_assign_values(ans, length(g), len__, jsub, lhs)
+      .dt_in_caller(.Call(Cassign, x, .dt_group_rows(f__, len__, o__, irows), lhs, newnames, jvals))
+    }
+    .dt_drop_stale_key_index(x, names_x[cols])
+    if (keyby) .dt_setkey_after_assign(x, bysubl, names_x, verbose)
+    return(suppPrint(x))
+  }
+  if (is.null(ans)) {
+    ans = as.data.table.list(lapply(groups, `[`, 0L))  # side-effects only such as test 168
+    setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't groups have bynames in the first place?
+    return(ans)
+  }
+  setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
+  setattr(ans,"class",class(x)) # fix for #64
+  .dt_set_grouped_result_names(ans, bynames, jvnames)
+  if (byjoin && keyby && !bysameorder) {
+    if (verbose) {last.started.at=proc.time();catf("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
+    setkeyv(ans,names(ans)[seq_along(byval)])
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
+    grpnames = names(ans)[seq_along(grpcols)]
+    if (!any(grpnames %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", grpnames)
+  }
+  setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -2495,6 +2551,8 @@ replace_dot_alias = function(e) {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
   # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
+  ## 1. capture what is only available in this frame: missingness, the calling scope, unevaluated arguments, and the frame
+  ##    itself as the query state q. The stages below are .dt_* helpers, #852.
   # missing() is only valid in this frame, so it is captured once here and code moved into helpers uses these flags, #852.
   #   Keep them in sync when an argument is reassigned below: assigning a value clears missingness, `x = substitute()` restores it.
   missing_i = missing(i)
@@ -2515,6 +2573,7 @@ replace_dot_alias = function(e) {
   x_sub = substitute(x)  # the caller's symbol for x (if a symbol), for := to assign a re-allocated x back to the calling scope
   # the state of the query is this frame: stage helpers (.dt_*(q, ...)) read and write it through q, e.g. q$irows
   q = environment()
+  ## 2. from non-data.table-aware code behave as [.data.frame; then validate the arguments and substitute by= or keyby=
   # cedta() and nargs() depend on this frame so are evaluated here
   if (!cedta()) return(.dt_cedta_fallback(x, i, j, drop, substitute(j), nargs(), missing_i, missing_drop))
   if (!missing_verbose) {
@@ -2576,6 +2635,7 @@ replace_dot_alias = function(e) {
   rollends = args_ok$rollends
   nomatch = args_ok$nomatch
   nomatch0 = args_ok$nomatch0
+  ## 3. analyse j before i, since := allows cartesian joins and ignores nomatch= (#800)
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
@@ -2602,6 +2662,7 @@ replace_dot_alias = function(e) {
   }
   if (!missing_j) .dt_analyze_jsub(q)
 
+  ## 4. the i stage: a join to x, or a subset of its rows
   isub = NULL
   if (!missing_i) {
     if (is.null(env)) isub = substitute(i) else {
@@ -2617,6 +2678,7 @@ replace_dot_alias = function(e) {
   } else {  # missing_i
     i = NULL
   }
+  ## 5. the j stage: the columns to select, by=, the columns j uses, and the target of :=
   names_i = names(i) # value is now stable
   byval = NULL
   xnrow = nrow(x)
@@ -2633,13 +2695,12 @@ replace_dot_alias = function(e) {
     if (.is_dt_done(r <- .dt_analyze_j(q))) return(.dt_done_value(r))
   }
 
+  ## 6. evaluate j, without grouping (which returns the result) ...
   SDenv = .dt_new_SDenv(jsub, names_x, callenv)
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
   if (missingby || bynull || (!byjoin && !length(byval))) return(.dt_eval_ungrouped(q, SDenv))
 
-  ###########################################################################
-  # Grouping ...
-  ###########################################################################
+  ## 7. ... or by group: find the groups, evaluate j for each, and finalize the result
 
   o__ = integer()
   if (".N" %chin% ansvars) stopf("The column '.%1$s' can't be grouped because it conflicts with the special .%1$s variable. Try setnames(DT,'.%1$s','%1$s') first.", "N")
@@ -2653,32 +2714,7 @@ replace_dot_alias = function(e) {
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
-  if (!is.null(lhs)) {
-    if (GForce) { # GForce should work with := #1414
-      jvals = .dt_gforce_assign_values(ans, length(g), len__, jsub, lhs)
-      .Call(Cassign, x, .dt_group_rows(f__, len__, o__, irows), lhs, newnames, jvals)
-    }
-    .dt_drop_stale_key_index(x, names_x[cols])
-    if (keyby) .dt_setkey_after_assign(x, bysubl, names_x, verbose)
-    return(suppPrint(x))
-  }
-  if (is.null(ans)) {
-    ans = as.data.table.list(lapply(groups, `[`, 0L))  # side-effects only such as test 168
-    setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't groups have bynames in the first place?
-    return(ans)
-  }
-  setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
-  setattr(ans,"class",class(x)) # fix for #64
-  .dt_set_grouped_result_names(ans, bynames, jvnames)
-  if (byjoin && keyby && !bysameorder) {
-    if (verbose) {last.started.at=proc.time();catf("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
-    setkeyv(ans,names(ans)[seq_along(byval)])
-    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
-    grpnames = names(ans)[seq_along(grpcols)]
-    if (!any(grpnames %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", grpnames)
-  }
-  setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
+  .dt_finalize_grouped(q, ans)
 }
 
 # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
