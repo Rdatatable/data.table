@@ -615,7 +615,7 @@ replace_dot_alias = function(e) {
   SDenv = new.env(parent=callenv)
   syms = all.vars(jsub)
   syms = syms[startsWith(syms, "..")]
-  syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
+  if (length(syms)) syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
   for (sym in syms) {
     if (sym %chin% names_x) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
@@ -1116,7 +1116,8 @@ replace_dot_alias = function(e) {
   jsub = replace_dot_alias(jsub)
   root = root_name(jsub)
   # exclude '..1' etc. for #5460
-  av = grepv("^[.][.](?:[.]|[0-9]+)$", all.vars(jsub), invert=TRUE)
+  av = all.vars(jsub)
+  if (any(startsWith(av, ".."))) av = grepv("^[.][.](?:[.]|[0-9]+)$", av, invert=TRUE)  # the regex costs ~3us, only needed for ..x
   all..names = FALSE
   if ((.is_withFALSE_range(jsub, x, root, av)) ||
       (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
