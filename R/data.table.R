@@ -1805,6 +1805,62 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# map the columns j needs (q$ansvars) to columns of x (q$xcols) and, in a join, of i (q$icols), with their positions in the
+#   result (q$xcolsAns, q$icolsAns); x. and i. prefixes select the column of x or i explicitly (q$xdotcols).
+.dt_resolve_ansvals = function(q) {
+  i = q$i
+  names_i = q$names_i
+  names_x = q$names_x
+  ansvars = q$ansvars
+  ansvals = q$ansvals
+  leftcols = q$leftcols
+  rightcols = q$rightcols
+  missingby = q$missingby
+  xdotprefix = q$xdotprefix
+  xdotcols = q$xdotcols
+  w = ansvals
+  if (length(rightcols) && missingby) {
+    w[ w %in% rightcols ] = NA
+  }
+  # patch for #1615. Allow 'x.' syntax. Only useful during join op when x's join col needs to be used.
+  # Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] to refer to x's join column
+  # as well because x[i, col] == x[i][, col] will not be TRUE anymore..
+  if ( any(xdotprefixvals <- ansvars %chin% xdotprefix)) {
+    w[xdotprefixvals] = chmatch(ansvars[xdotprefixvals], xdotprefix)
+    xdotcols = TRUE
+  }
+  if (!any(wna <- is.na(w))) {
+    xcols = w
+    xcolsAns = seq_along(ansvars)
+    icols = icolsAns = integer()
+  } else {
+    if (!length(leftcols)) internal_error("column(s) not found: %s", brackify(ansvars[wna])) # nocov
+    xcols = w[!wna]
+    xcolsAns = which(!wna)
+    map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
+    names(map) = c(names_i, names_x[rightcols])
+    w2 = map[ansvars[wna]]
+    if (any(w2na <- is.na(w2))) {
+      ivars = paste0("i.", names_i)   # ivars is only used in this branch
+      ivars[leftcols] = names_i[leftcols]
+      w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
+      if (any(w2na <- is.na(w2))) {
+        ivars[leftcols] = paste0("i.",ivars[leftcols])
+        w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
+        if (any(w2na <- is.na(w2))) internal_error("column(s) not found: %s", paste(ansvars[wna][w2na],sep=", ")) # nocov
+      }
+    }
+    icols = w2
+    icolsAns = which(wna)
+  }
+  q$xcols = xcols
+  q$xcolsAns = xcolsAns
+  q$icols = icols
+  q$icolsAns = icolsAns
+  q$xdotcols = xdotcols
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -2058,43 +2114,7 @@ replace_dot_alias = function(e) {
       if (.is_dt_done(r <- .dt_plan_assign(q))) return(.dt_done_value(r))
     }
 
-    if (length(ansvars)) {
-      w = ansvals
-      if (length(rightcols) && missingby) {
-        w[ w %in% rightcols ] = NA
-      }
-      # patch for #1615. Allow 'x.' syntax. Only useful during join op when x's join col needs to be used.
-      # Note that I specifically have not implemented x[y, aa, on=c(aa="bb")] to refer to x's join column
-      # as well because x[i, col] == x[i][, col] will not be TRUE anymore..
-      if ( any(xdotprefixvals <- ansvars %chin% xdotprefix)) {
-        w[xdotprefixvals] = chmatch(ansvars[xdotprefixvals], xdotprefix)
-        xdotcols = TRUE
-      }
-      if (!any(wna <- is.na(w))) {
-        xcols = w
-        xcolsAns = seq_along(ansvars)
-        icols = icolsAns = integer()
-      } else {
-        if (!length(leftcols)) internal_error("column(s) not found: %s", brackify(ansvars[wna])) # nocov
-        xcols = w[!wna]
-        xcolsAns = which(!wna)
-        map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
-        names(map) = c(names_i, names_x[rightcols])
-        w2 = map[ansvars[wna]]
-        if (any(w2na <- is.na(w2))) {
-          ivars = paste0("i.", names_i)   # ivars is only used in this branch
-          ivars[leftcols] = names_i[leftcols]
-          w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
-          if (any(w2na <- is.na(w2))) {
-            ivars[leftcols] = paste0("i.",ivars[leftcols])
-            w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
-            if (any(w2na <- is.na(w2))) internal_error("column(s) not found: %s", paste(ansvars[wna][w2na],sep=", ")) # nocov
-          }
-        }
-        icols = w2
-        icolsAns = which(wna)
-      }
-    }
+    if (length(ansvars)) .dt_resolve_ansvals(q)
   }  # end of  if !missing_j
 
   SDenv = .dt_new_SDenv(jsub, names_x, callenv)
