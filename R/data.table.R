@@ -521,6 +521,16 @@ replace_dot_alias = function(e) {
   list(GForce=GForce, jsub=jsub, jvnames=jvnames)
 }
 
+# Early return protocol for code moved out of [.data.table, #852. A helper cannot return() on behalf of its caller,
+#   so a helper that fully answers the query returns .dt_done(value) and [.data.table does
+#     if (.is_dt_done(r <- .dt_helper(...))) return(.dt_done_value(r))
+#   Visibility is carried explicitly, e.g. .dt_done(x, visible=FALSE) for return(invisible(x)).
+# Such helpers are named .dt_* so that errors and warnings they raise via stopf() etc. still report the call
+#   of [.data.table rather than of the helper; see raise_condition().
+.dt_done = function(value, visible=TRUE) structure(list(value=value, visible=visible), class="dt_done")
+.is_dt_done = function(x) !is.null(x) && inherits(x, "dt_done")  # helpers return NULL to continue; is.null() first as that is the common case
+.dt_done_value = function(done) if (done$visible) done$value else invisible(done$value)
+
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could

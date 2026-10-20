@@ -74,6 +74,9 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setfrev = data.table:::setfrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
+  .dt_done = data.table:::.dt_done
+  .is_dt_done = data.table:::.is_dt_done
+  .dt_done_value = data.table:::.dt_done_value
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -22197,3 +22200,30 @@ D = data.table(g=1:2, t0=as.POSIXct("2020-01-01", tz="UTC"), t1=as.POSIXct(c("20
 test(2391.53, D[, .(d = as.numeric(t1 - t0)), by=g]$d, c(60, 86400))
 test(2391.54, units(D[, .(d = t1 - t0), by=g]$d), "secs")
 rm(D, X, Y, DT)
+
+# early return protocol for helpers extracted from [.data.table, #852
+test(2392.01, .is_dt_done(.dt_done(NULL)))
+test(2392.02, .dt_done_value(.dt_done(NULL)), NULL)
+test(2392.03, .is_dt_done(NULL), FALSE)
+test(2392.04, .is_dt_done(list(value=1L, visible=TRUE)), FALSE)
+test(2392.05, .is_dt_done(data.table(value=1L)), FALSE)
+f = function(r) if (.is_dt_done(r)) return(.dt_done_value(r)) else "not done"
+test(2392.06, withVisible(f(.dt_done(data.table(a=1L)))), list(value=data.table(a=1L), visible=TRUE))
+test(2392.07, withVisible(f(.dt_done(1L, visible=FALSE))), list(value=1L, visible=FALSE))
+test(2392.08, f(1L), "not done")
+rm(f)
+# conditions raised in .dt_* helpers report the call of whoever called the helper(s)
+.dt_raise = function() stopf("boom")
+.dt_warn = function() warningf("careful")
+.dt_outer = function() .dt_raise()
+f = function(x) .dt_raise()
+test(2392.09, tryCatch(f(1L), error=conditionCall), quote(f(1L)))
+f = function(x) .dt_outer()
+test(2392.10, tryCatch(f(1L), error=conditionCall), quote(f(1L)))
+f = function(x) .dt_warn()
+test(2392.11, tryCatch(f(1L), warning=conditionCall), quote(f(1L)))
+f = function(x) stopf("boom") # not a .dt_* helper: its own call, as before
+test(2392.12, tryCatch(f(1L), error=conditionCall), quote(f(1L)))
+g = function() f(1L)
+test(2392.13, tryCatch(g(), error=conditionCall), quote(f(1L)))
+rm(.dt_raise, .dt_warn, .dt_outer, f, g)
