@@ -527,7 +527,11 @@ replace_dot_alias = function(e) {
 #   Visibility is carried explicitly, e.g. .dt_done(x, visible=FALSE) for return(invisible(x)).
 # Such helpers are named .dt_* so that errors and warnings they raise via stopf() etc. still report the call
 #   of [.data.table rather than of the helper; see raise_condition().
-.dt_done = function(value, visible=TRUE) structure(list(value=value, visible=visible), class="dt_done")
+.dt_done = function(value, visible=TRUE) {
+  ans = list(value=value, visible=visible)
+  class(ans) = "dt_done"  # rather than structure(), which costs ~2us (most subsets return this way)
+  ans
+}
 .is_dt_done = function(x) !is.null(x) && inherits(x, "dt_done")  # helpers return NULL to continue; is.null() first as that is the common case
 .dt_done_value = function(done) if (done$visible) done$value else invisible(done$value)
 
