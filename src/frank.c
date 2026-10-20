@@ -59,7 +59,8 @@ SEXP dt_na(SEXP x, SEXP cols)
       break;
     case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
-      for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
+      const Rcomplex *cv = COMPLEX_RO(v);
+      for (int j=0; j<n; ++j) ians[j] |= (ISNAN(cv[j].r) || ISNAN(cv[j].i));
     }
       break;
     case VECSXP: {
