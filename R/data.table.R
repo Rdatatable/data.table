@@ -577,11 +577,18 @@ replace_dot_alias = function(e) {
   ans
 }
 
-# validate and normalise the arguments of [.data.table that don't depend on i, j or by. Returns
-#   list(roll=, rollends=, nomatch=, nomatch0=): roll as double or "nearest", rollends of length 2, nomatch NA or NULL,
-#   and nomatch0 TRUE when nomatch was given as 0|FALSE.
-# rollends' default is computed from roll as supplied rather than normalised; both give the same rollends.
-.dt_check_args = function(mult, roll, rollends, nomatch, which, with, showProgress, missing_j) {
+# validate and normalise the arguments of [.data.table that don't depend on i, j or by. Sets q$roll (double or "nearest"),
+#   q$rollends (length 2), q$nomatch (NA or NULL) and q$nomatch0 (TRUE when nomatch was given as 0|FALSE).
+# rollends' default is computed from roll as supplied rather than normalised; both give the same rollends. The arguments
+#   are read from q rather than passed, which would wrap each in another promise (~2us).
+.dt_check_args = function(q) {
+  mult = q$mult
+  roll = q$roll
+  nomatch = q$nomatch
+  which = q$which
+  with = q$with
+  showProgress = q$showProgress
+  missing_j = q$missing_j
   if (!mult %chin% c("first", "last", "all", "error")) stopf("mult argument can only be 'first', 'last', 'all' or 'error'")
   if (length(roll)!=1L || is.na(roll)) stopf("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -589,7 +596,7 @@ replace_dot_alias = function(e) {
   } else {
     roll = if (isTRUE(roll)) +Inf else as.double(roll)
   }
-  force(rollends)
+  rollends = q$rollends
   if (!is.logical(rollends)) stopf("rollends must be a logical vector")
   if (length(rollends)>2L) stopf("rollends must be length 1 or 2")
   if (length(rollends)==1L) rollends=rep.int(rollends,2L)
@@ -606,7 +613,11 @@ replace_dot_alias = function(e) {
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing_j) stopf("j must be provided when with=FALSE")
   if (!(isTRUEorFALSE(showProgress) || (is.numeric(showProgress) && length(showProgress)==1L && showProgress >= 0))) stopf("showProgress must be TRUE, FALSE, or a single non-negative number")
-  list(roll=roll, rollends=rollends, nomatch=nomatch, nomatch0=nomatch0)
+  q$roll = roll
+  q$rollends = rollends
+  q$nomatch = nomatch
+  q$nomatch0 = nomatch0
+  invisible()
 }
 
 # the environment j is evaluated in; its parent is the calling scope. Symbols ..x in j are looked up in the calling
@@ -2637,11 +2648,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  args_ok = .dt_check_args(mult, roll, rollends, nomatch, which, with, showProgress, missing_j)
-  roll = args_ok$roll
-  rollends = args_ok$rollends
-  nomatch = args_ok$nomatch
-  nomatch0 = args_ok$nomatch0
+  .dt_check_args(q)
   ## 3. analyse j before i, since := allows cartesian joins and ignores nomatch= (#800)
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
