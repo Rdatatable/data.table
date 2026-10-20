@@ -22332,3 +22332,12 @@ f = function(x) .dt_warn()
 test(2400.10, tryCatch(f(1L), warning=conditionCall), quote(f(1L)))
 test(2400.11, f(1L), "done", warning="careful")  # evaluation continues after the re-signalled warning
 rm(DT, f, .dt_err, .dt_warn)
+
+# the i stage as a whole, .dt_resolve_i(), #852: allow.cartesian is still only evaluated when the join has duplicates
+X = data.table(a=1:3, v=4:6)
+test(2401.1, X[.(2:3), on="a", v, allow.cartesian=stop("forced")], 5:6)
+X = data.table(a=c(1L,1L), w=7:8)
+test(2401.2, X[.(c(1L,1L)), on="a", w, allow.cartesian=stop("forced")], error="forced")
+test(2401.3, X[.(1L), on="a", which=TRUE], 1:2)
+test(2401.4, X[, which=TRUE], X, warning="i and j are both missing")  # which= needs i
+rm(X)

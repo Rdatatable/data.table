@@ -668,6 +668,25 @@ replace_dot_alias = function(e) {
   for (b in bindings) lockBinding(b, SDenv)
 }
 
+# the i stage of [.data.table: evaluate i, then plan either a join (i is a data.table) or a row subset (otherwise), and
+#   apply a not-join. Sets q$i and q$irows, and for joins q$on, q$leftcols, q$rightcols, q$f__, q$len__, q$xo and
+#   q$indices__. which= and empty results return via the early return protocol. allow.cartesian stays lazy.
+.dt_resolve_i = function(q, isub, allow.cartesian) {
+  q$xo = NULL
+  q$isnull_inames = FALSE
+  if (.is_dt_done(r <- .dt_eval_isub(q, isub))) return(r)
+  if (.is_dt_done(r <- .dt_coerce_i(q))) return(r)
+  if (is.data.frame(q$i)) {
+    if (.is_dt_done(r <- .dt_plan_join(q, allow.cartesian))) return(r)
+  } else {
+    if (.is_dt_done(r <- .dt_plan_subset(q))) return(r)
+  }
+  if (q$notjoin) .dt_invert_notjoin(q)
+  if (q$which) return(.dt_done(q$irows %||% seq_len(nrow(q$x))))
+  invisible()
+}
+
+
 # evaluate i (the substituted isub) into q$i. DT[NA] means a row of NAs; .N in i is nrow(x); eval() and a leading ! (not-join)
 #   are unwrapped; and simple conditions such as DT[a == 1] become a join on an index via .prepareFastSubset(), which also
 #   sets q$on, q$mult, q$nomatch and q$optimizedSubset. Returns .dt_done(null.data.table()) when i is NULL.
@@ -1338,19 +1357,7 @@ replace_dot_alias = function(e) {
     }
   }
   if (!missing_i) {
-    xo = NULL
-    isnull_inames = FALSE
-    if (.is_dt_done(r <- .dt_eval_isub(q, isub))) return(.dt_done_value(r))
-    if (.is_dt_done(r <- .dt_coerce_i(q))) return(.dt_done_value(r))
-
-    if (is.data.frame(i)) {
-      if (.is_dt_done(r <- .dt_plan_join(q, allow.cartesian))) return(.dt_done_value(r))
-    }
-    else {
-      if (.is_dt_done(r <- .dt_plan_subset(q))) return(.dt_done_value(r))
-    }
-    if (notjoin) .dt_invert_notjoin(q)
-    if (which) return(irows %||% seq_len(nrow(x)))
+    if (.is_dt_done(r <- .dt_resolve_i(q, isub, allow.cartesian))) return(.dt_done_value(r))
   } else {  # missing_i
     i = NULL
   }
