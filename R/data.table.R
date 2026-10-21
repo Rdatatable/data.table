@@ -526,21 +526,32 @@ replace_dot_alias = function(e) {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
   # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
+  # missing() is only valid in this frame, so it is captured once here and code moved into helpers uses these flags, #852.
+  #   Keep them in sync when an argument is reassigned below: assigning a value clears missingness, `x = substitute()` restores it.
+  missing_i = missing(i)
+  missing_j = missing(j)
+  missing_by = missing(by)
+  missing_keyby = missing(keyby)
+  missing_on = missing(on)
+  missing_nomatch = missing(nomatch)
+  missing_SDcols = missing(.SDcols)
+  missing_drop = missing(drop)
+  missing_verbose = missing(verbose)
   if (!cedta()) {
     # Fix for #500 (to do)
     if (substitute(j) %iscall% c(":=", "let")) {
         # Throw a specific error message
         stopf("[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but '%s' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.", as.character(substitute(j)[[1L]]))
     }
-    Nargs = nargs() - (!missing(drop))
+    Nargs = nargs() - (!missing_drop)
     ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
-        else if (missing(drop)) `[.data.frame`(x,i,j)
+        else if (missing_drop) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
     # added is.data.table(ans) check to fix bug #81
-    if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # drops index too; tested by plyr::arrange test in other.Rraw
+    if (!missing_i && is.data.table(ans)) setkey(ans, NULL)  # drops index too; tested by plyr::arrange test in other.Rraw
     return(ans)
   }
-  if (!missing(verbose)) {
+  if (!missing_verbose) {
     if (!is.integer(verbose) && !is.logical(verbose)) stopf("verbose must be logical or integer")
     if (length(verbose)!=1L || anyNA(verbose)) stopf("verbose must be length 1 non-NA")
     # set the global verbose option because that is fetched from C code without having to pass it through
@@ -548,42 +559,43 @@ replace_dot_alias = function(e) {
     on.exit(options(oldverbose))
   }
   .global$print=""
-  missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
-  if (missingby || missing(j)) {
+  missingby = missing_by && missing_keyby  # for tests 359 & 590 where passing by=NULL results in data.table not vector
+  if (missingby || missing_j) {
     if (!missingby) warningf("Ignoring by/keyby because 'j' is not supplied")
     by = bysub = NULL
     keyby = FALSE
   } else {
-    if (missing(by)) {
+    if (missing_by) {
       by = bysub = if (is.null(env)) substitute(keyby)
                                 else eval(substitute(substitute2(.keyby, env), list(.keyby = substitute(keyby))))
       keyby = TRUE
     } else {
       by = bysub = if (is.null(env)) substitute(by)
                                else  eval(substitute(substitute2(.by, env), list(.by = substitute(by))))
-      if (missing(keyby))
+      if (missing_keyby)
         keyby = FALSE
       else if (!isTRUEorFALSE(keyby))
         stopf("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
-    if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
+    if (missing(bysub)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
     else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", deparse1(bysub, collapse="\n"))
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
   names_x = names(x)
-  if (missing(i) && !missing(on)) {
+  if (missing_i && !missing_on) {
     on_tmp = eval.parent(.massagei(substitute(on)))
     if (!is.list(on_tmp) || !length(names(on_tmp))) {
       warningf("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '%s'.", class1(on_tmp))
       on = NULL
     } else {
       i = on_tmp
+      missing_i = FALSE
       naturaljoin = TRUE
     }
   }
-  if (missing(i) && missing(j)) {
+  if (missing_i && missing_j) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
     if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
@@ -594,7 +606,6 @@ replace_dot_alias = function(e) {
     return(x)
   }
   if (!mult %chin% c("first", "last", "all", "error")) stopf("mult argument can only be 'first', 'last', 'all' or 'error'")
-  missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stopf("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
     if (roll!="nearest") stopf("roll is '%s' (type character). Only valid character value is 'nearest'.", roll)
@@ -607,7 +618,6 @@ replace_dot_alias = function(e) {
   if (length(rollends)==1L) rollends=rep.int(rollends,2L)
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   .unsafe.opt() #3585
-  missingnomatch = missing(nomatch)
   nomatch0 = identical(nomatch,0.0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
   if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
   if (!is.null(nomatch)) {
@@ -615,10 +625,10 @@ replace_dot_alias = function(e) {
     nomatch=NA  # convert NA_character_ to NA-logical, PR#5216
   }
   if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
-  if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
+  if ((isTRUE(which)||is.na(which)) && !missing_j) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
-  if (!with && missing(j)) stopf("j must be provided when with=FALSE")
-  if (!missing(by) && !(isTRUEorFALSE(showProgress) || (is.numeric(showProgress) && length(showProgress)==1L && showProgress >= 0))) stopf("showProgress must be TRUE, FALSE, or a single non-negative number") # nocov
+  if (!with && missing_j) stopf("j must be provided when with=FALSE")
+  if (!(isTRUEorFALSE(showProgress) || (is.numeric(showProgress) && length(showProgress)==1L && showProgress >= 0))) stopf("showProgress must be TRUE, FALSE, or a single non-negative number") # nocov
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
@@ -626,16 +636,16 @@ replace_dot_alias = function(e) {
   ..syms = NULL
   av = NULL
   jsub = NULL
-  if (!missing(j)) {
+  if (!missing_j) {
     if (is.null(env)) jsub = substitute(j) else {
       jsub = eval(substitute(
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", deparse1(jsub, collapse="\n"))
+      if (missing(jsub)) {j = substitute(); jsub=NULL; missing_j=TRUE} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", deparse1(jsub, collapse="\n"))
     }
   }
-  if (!missing(j)) {
+  if (!missing_j) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
     # exclude '..1' etc. for #5460
@@ -704,9 +714,9 @@ replace_dot_alias = function(e) {
       if (root == "let")
         jsub[[1L]] = as.symbol(":=")
       allow.cartesian=TRUE   # (see #800)
-      if (!missing(i) && keyby)
+      if (!missing_i && keyby)
         stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
-      if (!missingnomatch) {
+      if (!missing_nomatch) {
         warningf("nomatch isn't relevant together with :=, ignoring nomatch")
         nomatch=NULL
       }
@@ -716,16 +726,16 @@ replace_dot_alias = function(e) {
   # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
   dupdiff = function(x, y) x[!x %chin% y]
   isub = NULL
-  if (!missing(i)) {
+  if (!missing_i) {
     if (is.null(env)) isub = substitute(i) else {
       isub = eval(substitute(
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", deparse1(isub, collapse="\n"))
+      if (missing(isub)) {i = substitute(); isub=NULL; missing_i=TRUE} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", deparse1(isub, collapse="\n"))
     }
   }
-  if (!missing(i)) {
+  if (!missing_i) {
     xo = NULL
     if (identical(isub, NA)) {
       # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
@@ -763,7 +773,7 @@ replace_dot_alias = function(e) {
     }
     if (isub %iscall% "!") {
       notjoin = TRUE
-      if (!missingnomatch) stopf("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
+      if (!missing_nomatch) stopf("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
       nomatch = NULL
       isub = isub[[2L]]
       # #932 related so that !(v1 == 1) becomes v1 == 1 instead of (v1 == 1) after removing "!"
@@ -782,6 +792,7 @@ replace_dot_alias = function(e) {
       notjoin = o$notjoin
       i = o$i
       on = o$on
+      missing_on = FALSE
       ## the following two are ignored if i is not a data.table.
       ## Since we are converting i to data.table, it is important to set them properly.
       nomatch = NULL
@@ -840,7 +851,7 @@ replace_dot_alias = function(e) {
     }
 
     if (is.data.frame(i)) {
-      if (missing(on)) {
+      if (missing_on) {
         if (haskey(x)) check_duplicate_key(x)
         else stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
 
@@ -860,8 +871,9 @@ replace_dot_alias = function(e) {
           }
         }
         on = common_names
+        missing_on = FALSE
       }
-      if (!missing(on)) {
+      if (!missing_on) {
         # on = .() is now possible, #1257
         on_ops = .parse_on(substitute(on), isnull_inames)
         on = on_ops[[1L]]
@@ -942,7 +954,7 @@ replace_dot_alias = function(e) {
           # unnecessary construction of logical vectors
           if (is.null(nomatch) && allLen1) irows = irows[irows != 0L]
         } else {
-          if (length(xo) && missing(on))
+          if (length(xo) && missing_on)
             internal_error("Cannot by=.EACHI when joining to an index, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows))
@@ -1050,7 +1062,7 @@ replace_dot_alias = function(e) {
       # column when irows contains negatives.
     }
     if (which) return(irows %||% seq_len(nrow(x)))
-  } else {  # missing(i)
+  } else {  # missing_i
     i = NULL
   }
   names_i = names(i) # value is now stable
@@ -1063,7 +1075,7 @@ replace_dot_alias = function(e) {
   #   except in cases like DT[ , lapply(.SD, function(x) x/V1), .SDcols = !'V1'],
   #   see e.g. #484, #495, #1744, #1965.
   non_sdvars = character(0L)
-  if (missing(j)) {
+  if (missing_j) {
     # missingby was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
     if (!length(leftcols)) {
@@ -1396,7 +1408,7 @@ replace_dot_alias = function(e) {
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
       use.I = ".I" %chin% av
       if (any(c(".SD","eval","get","mget") %chin% av)) {
-        if (missing(.SDcols)) {
+        if (missing_SDcols) {
           # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
           # slight memory efficiency boost if we only store sdvars if it differs from ansvars, but a bit tricky to examine all the uses here
           ansvars = sdvars = dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
@@ -1485,7 +1497,7 @@ replace_dot_alias = function(e) {
             }
           }
 
-          if (missing(.SDcols)) {
+          if (missing_SDcols) {
             ansvars = setdiff(allcols, bynames) # fix for bug #34
           } else {
             # fixes #4089 - if .SDcols was already evaluated, we do not want the order of the columns to change.
@@ -1502,7 +1514,7 @@ replace_dot_alias = function(e) {
         }
         # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
       } else {
-        if (!missing(.SDcols)) warningf("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
+        if (!missing_SDcols) warningf("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
         ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
         if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackify(ansvars))
@@ -1695,7 +1707,7 @@ replace_dot_alias = function(e) {
         icolsAns = which(wna)
       }
     }
-  }  # end of  if !missing(j)
+  }  # end of  if !missing_j
 
   SDenv = new.env(parent=parent.frame())
 
@@ -1751,12 +1763,12 @@ replace_dot_alias = function(e) {
         ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
         setattr(ans, "names", ansvars)
         # NB: could be NULL
-        setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing(on)) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
+        setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing_on) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
         setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
         setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setalloccol(ans)
       }
-      if (!with || missing(j)) return(ans)
+      if (!with || missing_j) return(ans)
       if (!is.data.table(ans)) setattr(ans, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...]) .SD should be data.table, test 2212.013
       SDenv$.SDall = ans
       SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
@@ -1770,7 +1782,7 @@ replace_dot_alias = function(e) {
       # Binary search can return all 0 irows when none of the input matches. Instead of doing all(irows==0L) (previous method), which has to allocate a logical vector the size of irows, we can make use of 'max'. If max is 0, we return 0. The condition where only some irows > 0 won't occur.
     }
     # Temp fix for #921. Allocate `.I` only if j-expression uses it.
-    SDenv$.I = if (!missing(j) && use.I) seq_len(SDenv$.N) else 0L
+    SDenv$.I = if (!missing_j && use.I) seq_len(SDenv$.N) else 0L
     SDenv$.GRP = 1L
     SDenv$.NGRP = 1L
     .Call(C_lock, SDenv$.SD) # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
@@ -1930,7 +1942,7 @@ replace_dot_alias = function(e) {
     # Much faster for a few known groups vs a 'by' for all followed by a subset
     if (!is.data.table(i)) stopf("logical error. i is not a data.table, but mult='all' and 'by'=.EACHI")
     byval = i
-    bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
+    bynames = if (missing_on) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
     bysameorder = (haskey(i) && identical(leftcols, chmatch(head(key(i),length(leftcols)), names(i)))) || # leftcols leading subset of key(i); see #4917
                   (roll==FALSE && is.sorted(f__)) # roll==FALSE is fix for #1010
@@ -2050,7 +2062,7 @@ replace_dot_alias = function(e) {
     jiscols = chmatch(jisvars, names_i)  # integer() if there are no jisvars (usually there aren't, advanced feature)
     xjiscols = chmatch(xjisvars, names_x)
     SDenv$.xSD = .Call(CcopyAsGrowable, x[min(nrow(i), 1L), xjisvars, with=FALSE])
-    if (!missing(on)) o__ = xo else o__ = integer(0L)
+    if (!missing_on) o__ = xo else o__ = integer(0L)
   } else {
     groups = byval
     grpcols = seq_along(byval)
@@ -2124,7 +2136,7 @@ replace_dot_alias = function(e) {
     }
     ans = c(g, ans)
   } else {
-    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose, as.integer(showProgress))
+    ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing_on, verbose, as.integer(showProgress))
   }
   # unlock any locked data.table components of the answer, #4159
   # MAX_DEPTH prevents possible infinite recursion from truly recursive object, #4173
