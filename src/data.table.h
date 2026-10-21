@@ -21,6 +21,8 @@
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
+#define INTEGER64(x) ((int64_t *)REAL(x))
+#define INTEGER64_RO(x) ((const int64_t *)REAL_RO(x))
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>

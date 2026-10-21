@@ -147,6 +147,8 @@
 
 4. `frollapply()` no longer produces output longer than the input when the window length is also longer than the input [#7646](https://github.com/Rdatatable/data.table/issues/7646). Thanks to @hadley-johnson for reporting and @jangorecki for the fix.
 
+7. `integer64` type from {bit64} now has `INTEGER64` and `INTEGER64_RO` accessors in `src/data.table.h` to avoid direct casts and inconsistency issues, providing a standardized accessor to improve readability, [#7618](https://github.com/Rdatatable/data.table/issues/7618). Thanks @MichaelChirico and @ben-schwen for the report, @aksh08022006 and @aitap for assistance, and @brycepanza, @cjl525, @ProjectsByFerm, and @lacyhamilton for the fix.
+
 ## data.table [v1.18.2.1](https://github.com/Rdatatable/data.table/milestone/44?closed=1)  (22 January 2026)
 
 ### BUG FIXES
