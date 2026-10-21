@@ -1,0 +1,170 @@
+require(methods)
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  null.data.table = data.table:::null.data.table
+}
+
+# characterization tests guarding the modularization of [.data.table, #852
+# they pin down behaviour that depends on the frame [ is evaluated in, on missing() and on early returns
+# names in calling scope must be resolved in the caller's frame, not in the global env nor in [.data.table's frame
+DT = data.table(a=1:6, b=c("a","a","b","b","c","c"), v=c(10,20,30,40,50,60))
+thr = 100L; col = "zzz"; cols = "zzz"; grp = "zzz"; fn = function(x) stop("wrong frame"); n = 0L; e = quote(stop("wrong frame"))
+f = function(DT) {
+  thr = 3L; col = "v"; cols = c("a","v"); grp = "b"; fn = sum; n = 1L; e = quote(a > thr)
+  list(
+    DT[a > thr, a],
+    DT[, ..cols],
+    DT[, get(col)],
+    DT[, mget(cols)],
+    DT[, .(s=fn(v)), by=grp],
+    DT[, .(s=fn(v)), keyby=grp],
+    DT[, lapply(.SD, fn), .SDcols=cols],
+    DT[, .(s=FUN(COL)), by=GRP, env=list(FUN="sum", COL=col, GRP=grp)],
+    DT[eval(e), a],
+    DT[.("b"), on=grp, v],
+    DT[, head(.SD, n), by=b],
+    DT[, .(s=sum(v)), by=.(g = a > thr)])
+}
+ans = f(DT)
+test(1.001, ans[[1L]], DT[a > 3L, a])
+test(1.002, ans[[2L]], DT[, c("a", "v")])
+test(1.003, ans[[3L]], DT[, v])
+test(1.004, ans[[4L]], DT[, mget(c("a", "v"))])
+test(1.005, ans[[5L]], DT[, .(s=sum(v)), by=b])
+test(1.006, ans[[6L]], DT[, .(s=sum(v)), keyby=b])
+test(1.007, ans[[7L]], DT[, lapply(.SD, sum), .SDcols=c("a", "v")])
+test(1.008, ans[[8L]], DT[, .(s=FUN(COL)), by=GRP, env=list(FUN="sum", COL="v", GRP="b")])
+test(1.009, ans[[9L]], DT[a > 3L, a])
+test(1.010, ans[[10L]], DT[.("b"), on="b", v])
+test(1.011, ans[[11L]], DT[, head(.SD, 1L), by=b])
+test(1.012, ans[[12L]], DT[, .(s=sum(v)), by=.(g = a > 3L)])
+# two levels of closures, and a local data.table used as i
+f = function(DT) { g = function() { lim = 40; X = data.table(b="c"); list(DT[v > lim, a], DT[X, on="b", a]) }; g() }
+test(1.021, f(DT), list(5:6, 5:6))
+# by= a vector in calling scope that is not a column
+f = function(DT) { g = c(1,1,1,2,2,2); DT[, sum(v), by=g] }
+test(1.022, f(DT), data.table(g=c(1,2), V1=c(60,150)))
+# arguments other than i/j/by taken from calling scope; 'q' rolls forward onto the last 'c' row
+f = function(DT) { r = TRUE; nm = NULL; m = "last"; o = "b"; X = data.table(b=c("b","q")); DT[X, on=o, mult=m, nomatch=nm, roll=r, a] }
+test(1.023, f(DT), c(4L, 6L))
+rm(thr, col, cols, grp, fn, n, e, f, ans)
+
+# .N in i means nrow(x) even when the caller has a .N; the caller's .N is restored and none is left behind
+f = function(DT) { .N = 100L; ans = list(DT[.N, a], DT[a < .N, a], DT[, .N]); c(ans, list(.N)) }
+test(1.11, f(DT), list(6L, 1:5, 6L, 100L))
+f = function(DT) { DT[.N, a]; exists(".N", inherits=FALSE) }
+test(1.12, f(DT), FALSE)
+rm(f)
+
+# early returns
+test(1.21, DT[NULL], null.data.table())
+test(1.22, DT[, NULL], NULL)
+test(1.23, DT[0L], DT[integer()])
+test(1.24, DT[NA], data.table(a=NA_integer_, b=NA_character_, v=NA_real_))
+test(1.25, DT[a > 3L, which=TRUE], 4:6)
+test(1.26, DT[.(c("b","q")), on="b", which=TRUE], c(3L, 4L, NA))
+test(1.27, DT[.(c("b","q")), on="b", which=NA], 2L)
+test(1.28, DT[.(c("b","q")), on="b", which=TRUE, nomatch=NULL], 3:4)
+test(1.29, DT[!.("b"), on="b", which=TRUE], c(1L,2L,5L,6L))
+test(1.30, DT[, character(0L), with=FALSE], null.data.table())
+test(1.31, DT[, !character(0L), with=FALSE], DT)
+test(1.32, DT[!(a > 2L), a], 1:2)
+test(1.33, DT[c(0L, 2L, 0L), a], 2L)
+
+# missing() semantics: an argument substituted to the empty symbol via env= counts as missing
+test(1.41, DT[, J, env=list(J=quote(expr=))], DT[,,])
+test(1.42, DT[I, env=list(I=quote(expr=))], DT[,,])
+test(1.43, DT[I, a, env=list(I=quote(expr=))], DT[, a])
+test(1.44, DT[a > 4L, J, env=list(J=quote(expr=))], DT[5:6,])
+test(1.45, DT[, a, by=B,    env=list(B=quote(expr=))], 1:6)
+test(1.46, DT[, a, keyby=B, env=list(B=quote(expr=))], 1:6)
+test(1.47, DT[, a, by=NULL], data.table(a=1:6))
+test(1.48, DT[, a, keyby=NULL], data.table(a=1:6))
+test(1.49, DT[, a, .SDcols="b"], 1:6, warning="This j doesn't use .SD but .SDcols has been supplied")
+test(1.50, DT[, .(a, )], error="Item 2 of the .() or list() passed to j is missing")
+test(1.51, DT[on="b"], DT, warning=c("When on= is provided but not i=", "i and j are both missing so ignoring the other arguments"))
+
+# forms of i
+test(1.61, DT[matrix(1:2, ncol=1L)], DT[1:2,])
+test(1.62, DT[list("b"), on="b"], DT[3:4,])
+test(1.63, DT[list(b="c"), on="b"], DT[5:6,])
+K = copy(DT); setkey(K, b)
+test(1.64, K["b"], K[3:4,])
+test(1.65, K[factor("c")], K[5:6,])
+test(1.66, DT["b"], error="When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument")
+test(1.67, DT[c(TRUE, FALSE)], error="i evaluates to a logical vector length 2 but there are 6 rows") # note that DT[c(TRUE)] just shallow copies
+test(1.68, DT[.(c("a","b")), on="b", mult="first"], DT[c(1L, 3L)])
+test(1.69, DT[.(c("a","b")), on="b", mult="last"], DT[c(2L, 4L)])
+test(1.70, DT[.("a"), on="b", mult="error"], error="mult='error' and multiple matches during merge")
+test(1.71, DT[.(c(3L, 5L)), on="a", mult="error"], DT[c(3L, 5L)])
+X = data.table(k=c(1L,1L), x=1:2)
+test(1.72, options=c(datatable.join.many=FALSE), X[data.table(k=c(1L, 1L)), on="k"], , error="Joining resulted in many-to-many join")
+test(1.73, options=c(datatable.join.many=TRUE),  X[data.table(k=c(1L, 1L)), on="k"], X[c(1L, 2L, 1L, 2L)])
+# := by group on a key column drops the key, with and without GForce
+K = data.table(k=c(2L,1L,2L), a=1:3, g=c(1L,1L,2L), key="k")
+test(1.74, optimize=c(0, Inf), key(copy(K)[, k := max(k), by=g]), NULL)
+test(1.75, optimize=c(0, Inf), key(copy(K)[, a := max(a), by=a]), "k")
+rm(K, X)
+
+# forms of j with with=FALSE, and their with=TRUE equivalents
+DT = data.table(x=1, y=2, z=3)
+test(1.81, DT[, c("x","z"), with=FALSE], DT[, .(x, z)])
+test(1.82, DT[, !"y", with=FALSE], DT[, .(x, z)])
+test(1.83, DT[, -c("y"), with=FALSE], DT[, .(x, z)])
+test(1.84, DT[, z:x, with=FALSE], DT[, .(z, y, x)])
+test(1.85, DT[, c(TRUE,FALSE,TRUE), with=FALSE], DT[, .(x, z)])
+test(1.86, DT[, x:y], DT[, .(x, y)])
+test(1.87, DT[, !c("x","y")], DT[, .(z)])
+DT = data.table(x=1, y=2, x=3)
+test(1.88, DT[, !"x"], data.table(y=2))
+test(1.89, DT[, c("x","x")], DT[, c(1L, 1L)]) # debatable if we want to test for this
+test(1.90, DT[, `:=`(z=1), with=FALSE], error="`:=` is only supported under with=TRUE")
+col = 5
+test(1.91, DT[, col], error="j (the 2nd argument inside [...]) is a single symbol but column name 'col' is not found")
+rm(col, DT)
+
+# joins combined with by=.EACHI, :=, roll and x./i. prefixes
+X = data.table(id=c(1L,1L,2L,3L), t=c(1,5,2,4), v=1:4)
+Y = data.table(id=c(1L,2L,4L), t=c(3,3,3), w=c(10,20,30))
+test(2.01, copy(X)[Y, on="id", s := sum(v) + i.w, by=.EACHI], data.table(id=c(1L,1L,2L,3L), t=c(1,5,2,4), v=1:4, s=c(13,13,23,NA)))
+test(2.02, X[Y, on="id", .(n=.N, s=sum(v)), by=.EACHI], data.table(id=c(1L,2L,4L), n=c(2L,1L,0L), s=c(3L,3L,NA)))
+test(2.03, X[Y, on="id", .(n=.N), by=.EACHI, nomatch=NULL], data.table(id=1:2, n=2:1))
+test(2.04, copy(Y)[X, on=c("id","t"), roll=TRUE, xv := i.v], data.table(id=c(1L,2L,4L), t=c(3,3,3), w=c(10,20,30), xv=c(2L,NA,NA)))
+test(2.05, X[Y, on=c("id","t"), roll=-Inf, v], c(2L,NA,NA))
+test(2.06, X[Y, on=c("id","t"), roll="nearest", v], c(1L,3L,NA))
+test(2.07, X[Y, on=c("id","t"), roll=TRUE, rollends=c(TRUE,TRUE), v], c(1L,3L,NA))
+test(2.08, X[Y, on=.(id, t<=t), .(id, x.t, v, w)], data.table(id=c(1L,2L,4L), x.t=c(1,2,NA), v=c(1L,3L,NA), w=c(10,20,30)))
+test(2.09, X[Y, on="id", .(x.id, i.id, x.t, i.t)], data.table(x.id=c(1L,1L,2L,NA), i.id=c(1L,1L,2L,4L), x.t=c(1,5,2,NA), i.t=c(3,3,3,3)))
+test(2.10, copy(X)[Y, on="id", w := i.w], data.table(id=c(1L,1L,2L,3L), t=c(1,5,2,4), v=1:4, w=c(10,10,20,NA)))
+
+# := forms
+test(2.21, copy(X)[, let(u = v*2L)], cbind(X, u=c(2L,4L,6L,8L)))
+test(2.22, copy(X)[, `:=`(a=1L, b=2L)], cbind(X, a=1L, b=2L))
+cols = c("p","q")
+test(2.23, copy(X)[, (cols) := list(1L, 2L)], cbind(X, p=1L, q=2L))
+rm(cols)
+test(2.24, copy(X)[, m := mean(v), by=id], cbind(X, m=c(1.5,1.5,3,4)))
+test(2.25, copy(X)[v > 2L, v := 0L], data.table(id=c(1L,1L,2L,3L), t=c(1,5,2,4), v=c(1L,2L,0L,0L)))
+test(2.26, copy(X)[v > 100L, nn := 1L], cbind(X, nn=NA_integer_))
+test(2.27, copy(X)[, z := a*2L, keyby=id, env=list(a="v")], setkey(cbind(X, z=c(2L,4L,6L,8L)), id))
+test(2.28, X[, .SD[, z := 1L], by=id], error=".SD is locked")
+test(2.29, X[, (function(d) d[, z := 1L])(.SD), by=id], error=".SD is locked")
+
+# special symbols in grouped j, and by= forms
+test(2.41, X[, .(.N, .GRP, .NGRP, first_I=.I[1L], b=.BY$id * 10L), by=id], data.table(id=1:3, N=c(2L,1L,1L), GRP=1:3, NGRP=3L, first_I=c(1L,3L,4L), b=c(10L,20L,30L)))
+test(2.42, X[, sum(v), keyby=.(g = -id)], data.table(g=-3:-1, V1=c(4L,3L,3L), key="g"))
+test(2.43, X[, sum(v), by=.(g = id %% 2L)], data.table(g=c(1L,0L), V1=c(7L,3L)))
+test(2.44, X[, sum(v), by="id,t"], data.table(id=c(1L,1L,2L,3L), t=c(1,5,2,4), V1=1:4))
+test(2.45, X[, sum(v), by=character()], data.table(V1=10L))
+DT = data.table(d=as.IDate(c("2020-01-05","2020-02-01","2020-01-20")), v=1:3, key="d")
+test(2.46, DT[, sum(v), by=month(d)], data.table(month=1:2, V1=c(4L,2L)))
+rm(DT)
+test(2.47, X[, lapply(.SD, sum), .SDcols=patterns("^[tv]$")], data.table(t=12, v=10L))
+test(2.48, X[, lapply(.SD, sum), .SDcols=is.integer], data.table(id=7L, v=10L))
+test(2.49, X[, lapply(.SD, sum), .SDcols=!"id"], data.table(t=12, v=10L))
+test(2.50, X[, lapply(.SD, sum), .SDcols=-(id:t)], data.table(v=10L))
+test(2.51, X[, lapply(.SD, function(x) x/v), .SDcols=!"v"], data.table(id=c(1,0.5,2/3,0.75), t=c(1,2.5,2/3,1)))

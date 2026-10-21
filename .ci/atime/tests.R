@@ -477,5 +477,18 @@ test.list <- atime::atime_test_list(
     Fast = "10bfd70ffbcf880d74e0a0f0377be76e9556333b", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/7917) that hoists REAL()/INTEGER()/STRING_ELT() out of the row loop
     expr = data.table:::melt(DT, measure.vars = measure(letter, number = as.integer))),
 
+  # Guards the constant per-call overhead of [.data.table while it is split into modules (#852).
+  "DT[i,j,by] per-call overhead for #852" = atime::atime_test(
+    N = 2^seq(0, 14),
+    setup = {
+      dt = data.table(a = 1:10, g = rep(1:2, 5L), v = as.numeric(1:10))
+    },
+    Before = "7b7f63b04693991e014e245c8d4a0bc6b9dc38c6", # master (https://github.com/Rdatatable/data.table/commit/7b7f63b04693991e014e245c8d4a0bc6b9dc38c6) before modularization of [.data.table started
+    expr = for (k in seq_len(N)) {
+      data.table:::`[.data.table`(dt, a > 2L, .(s = sum(v)), by = g)
+      data.table:::`[.data.table`(dt, .(2L), on = "g", v)
+      data.table:::`[.data.table`(dt, , w := v * 2)
+    }),
+
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
