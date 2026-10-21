@@ -521,11 +521,31 @@ replace_dot_alias = function(e) {
   list(GForce=GForce, jsub=jsub, jvnames=jvnames)
 }
 
-"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
+# [ called from a scope that is not data.table-aware (!cedta()) behaves like [.data.frame.
+#   i, j and drop are passed on as promises, so their missingness reaches [.data.frame unchanged.
+#   nargs is nargs() of the [.data.table call.
+.cedta_fallback = function(x, i, j, drop, jsub, nargs) {
+  # Fix for #500 (to do)
+  if (jsub %iscall% c(":=", "let")) {
+      # Throw a specific error message
+      stopf("[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but '%s' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.", as.character(jsub[[1L]]))
+  }
+  missing_drop = missing(drop)
+  Nargs = nargs - (!missing_drop)
+  ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
+      else if (missing_drop) `[.data.frame`(x,i,j)
+      else `[.data.frame`(x,i,j,drop)
+  # added is.data.table(ans) check to fix bug #81
+  if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # drops index too; tested by plyr::arrange test in other.Rraw
+  ans
+}
+class(.cedta_fallback) = "dt_query_helper"
+
+"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
-  # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
+  # the drop is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
   # missing() is only valid in this frame, so it is captured once here and code moved into helpers uses these flags, #852.
   #   Keep them in sync when an argument is reassigned below: assigning a value clears missingness, `x = substitute()` restores it.
   missing_i = missing(i)
@@ -539,20 +559,8 @@ replace_dot_alias = function(e) {
   missing_verbose = missing(verbose)
   # capture parent.frame() changes once as calling scope
   callenv = parent.frame()
-  if (!cedta()) {
-    # Fix for #500 (to do)
-    if (substitute(j) %iscall% c(":=", "let")) {
-        # Throw a specific error message
-        stopf("[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but '%s' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.", as.character(substitute(j)[[1L]]))
-    }
-    Nargs = nargs() - (!missing_drop)
-    ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
-        else if (missing_drop) `[.data.frame`(x,i,j)
-        else `[.data.frame`(x,i,j,drop)
-    # added is.data.table(ans) check to fix bug #81
-    if (!missing_i && is.data.table(ans)) setkey(ans, NULL)  # drops index too; tested by plyr::arrange test in other.Rraw
-    return(ans)
-  }
+  # cedta() and nargs() depend on this frame so are evaluated here
+  if (!cedta()) return(.cedta_fallback(x, i, j, drop, substitute(j), nargs()))
   if (!missing_verbose) {
     if (!is.integer(verbose) && !is.logical(verbose)) stopf("verbose must be logical or integer")
     if (length(verbose)!=1L || anyNA(verbose)) stopf("verbose must be length 1 non-NA")
