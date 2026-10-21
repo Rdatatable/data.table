@@ -91,7 +91,7 @@ test(1.51, DT[on="b"], DT, warning=c("When on= is provided but not i=", "i and j
 # forms of i
 test(1.61, DT[matrix(1:2, ncol=1L)], DT[1:2,])
 test(1.62, DT[list("b"), on="b"], DT[3:4,])
-test(1.63, DT[list(b="c"), on="b"], DT[5:6,])
+test(1.63, DT[on=list(b="c")], DT[5:6,])
 K = copy(DT); setkey(K, b)
 test(1.64, K["b"], K[3:4,])
 test(1.65, K[factor("c")], K[5:6,])
