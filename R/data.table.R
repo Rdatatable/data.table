@@ -539,6 +539,36 @@ replace_dot_alias = function(e) {
   ans
 }
 
+# validate and normalise the arguments of [.data.table that don't depend on i, j or by. Returns
+#   list(roll=, rollends=, nomatch=, nomatch0=).
+.dt_check_args = function(mult, roll, rollends, nomatch, which, with, showProgress, missing_j) {
+  if (!mult %chin% c("first", "last", "all", "error")) stopf("mult argument can only be 'first', 'last', 'all' or 'error'")
+  if (length(roll)!=1L || is.na(roll)) stopf("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
+  if (is.character(roll)) {
+    if (roll!="nearest") stopf("roll is '%s' (type character). Only valid character value is 'nearest'.", roll)
+  } else {
+    roll = if (isTRUE(roll)) +Inf else as.double(roll)
+  }
+  force(rollends)
+  if (!is.logical(rollends)) stopf("rollends must be a logical vector")
+  if (length(rollends)>2L) stopf("rollends must be length 1 or 2")
+  if (length(rollends)==1L) rollends=rep.int(rollends,2L)
+  # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
+  .unsafe.opt() #3585
+  nomatch0 = identical(nomatch,0.0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
+  if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
+  if (!is.null(nomatch)) {
+    if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
+    nomatch=NA  # convert NA_character_ to NA-logical, PR#5216
+  }
+  if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
+  if ((isTRUE(which)||is.na(which)) && !missing_j) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
+  if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
+  if (!with && missing_j) stopf("j must be provided when with=FALSE")
+  if (!(isTRUEorFALSE(showProgress) || (is.numeric(showProgress) && length(showProgress)==1L && showProgress >= 0))) stopf("showProgress must be TRUE, FALSE, or a single non-negative number") # nocov
+  list(roll=roll, rollends=rollends, nomatch=nomatch, nomatch0=nomatch0)
+}
+
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -613,30 +643,11 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first", "last", "all", "error")) stopf("mult argument can only be 'first', 'last', 'all' or 'error'")
-  if (length(roll)!=1L || is.na(roll)) stopf("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
-  if (is.character(roll)) {
-    if (roll!="nearest") stopf("roll is '%s' (type character). Only valid character value is 'nearest'.", roll)
-  } else {
-    roll = if (isTRUE(roll)) +Inf else as.double(roll)
-  }
-  force(rollends)
-  if (!is.logical(rollends)) stopf("rollends must be a logical vector")
-  if (length(rollends)>2L) stopf("rollends must be length 1 or 2")
-  if (length(rollends)==1L) rollends=rep.int(rollends,2L)
-  # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
-  .unsafe.opt() #3585
-  nomatch0 = identical(nomatch,0.0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
-  if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
-  if (!is.null(nomatch)) {
-    if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
-    nomatch=NA  # convert NA_character_ to NA-logical, PR#5216
-  }
-  if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
-  if ((isTRUE(which)||is.na(which)) && !missing_j) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
-  if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
-  if (!with && missing_j) stopf("j must be provided when with=FALSE")
-  if (!(isTRUEorFALSE(showProgress) || (is.numeric(showProgress) && length(showProgress)==1L && showProgress >= 0))) stopf("showProgress must be TRUE, FALSE, or a single non-negative number") # nocov
+  args_ok = .dt_check_args(mult, roll, rollends, nomatch, which, with, showProgress, missing_j)
+  roll = args_ok$roll
+  rollends = args_ok$rollends
+  nomatch = args_ok$nomatch
+  nomatch0 = args_ok$nomatch0
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
