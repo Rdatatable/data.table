@@ -142,14 +142,12 @@ test.list <- atime::atime_test_list(
     pkg_find_replace(
       file.path("src", "Makevars.*in"),
       "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
-    backports.dir =  file.path(new.pkg.path, ".ci", "atime", "backports")
-    backports.vec = c("src/data.table.h","src/backports.c")
-    for (relative.path in backports.vec) {
-      backports.lines = readLines(file.path(backports.dir, relative.path))
-      f = file(file.path(new.pkg.path, relative.path), "a")
-      writeLines(backports.lines, f)
-      close(f)
-    }
+    backports.dir = file.path(".ci", "atime", "backports")
+    backports.vec = c("src/data.table.h", "src/backports.c")
+    stopifnot(file.append(
+      file.path(new.pkg.path, backports.vec),
+      file.path(backports.dir, backports.vec)
+    ))
   },
 
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
