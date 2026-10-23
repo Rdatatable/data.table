@@ -96,6 +96,8 @@
 
 21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Also, `mean()` of an `integer` or `logical` column by group no longer coerces the whole column to `double` first, which made it slower than in v1.12.0 regardless of the number of threads. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
+22. `fread(text=, yaml=TRUE)` and `fread(input=, yaml=TRUE)` now work when the data is a single character string containing newlines, rather than failing with `cannot open the connection`, [#7896](https://github.com/Rdatatable/data.table/issues/7896). Thanks to @Noskario for the report and @AnKiT-GaRG2 for the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).

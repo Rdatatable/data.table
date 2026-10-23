@@ -453,7 +453,8 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 .read_yaml_header = function(f, skip, verbose) {
   # create connection to stream header lines from file:
   #   https://stackoverflow.com/questions/9871307
-  con = base::file(f, 'r')
+  # f can also be the data itself, a single string containing \n or \r from text= or input=, #7896
+  con = if (length(grep('\\n|\\r', f))) textConnection(f) else base::file(f, 'r')
   # NB: close() won't be right if 'f' itself can be a file connection (#561)
   on.exit(close(con))
 
