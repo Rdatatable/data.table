@@ -143,7 +143,7 @@ test.list <- atime::atime_test_list(
       file.path("src", "Makevars.*in"),
       "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
     backports.dir = file.path(".ci", "atime", "backports")
-    backports.vec = c("src/data.table.h", "src/backports.c")
+    backports.vec = list.files(backports.dir, recursive = TRUE)
     stopifnot(file.append(
       file.path(new.pkg.path, backports.vec),
       file.path(backports.dir, backports.vec)
