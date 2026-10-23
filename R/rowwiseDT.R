@@ -5,7 +5,7 @@ rowwiseDT = function(...) {
   if (length(key_pos <- which(nms == "key" & nzchar(x))) > 0L) {
     if (length(key_pos) > 1L)
       stopf("key specified more than once")
-    if (length(key <- eval(x[[key_pos]], parent.frame())) == 1L) 
+    if (length(key <- eval(x[[key_pos]], parent.frame())) == 1L)
       key = cols_from_csv(key)
     x = x[-key_pos]
     nms = nms[-key_pos]
@@ -39,7 +39,7 @@ rowwiseDT = function(...) {
   body = split(body, rep(seq_len(nrows), each = ncols))
   ans = rbindlist(body)
   setnames(ans, header)
-  if (key_pos) 
+  if (key_pos)
     setkeyv(ans, key)
   ans
 }
