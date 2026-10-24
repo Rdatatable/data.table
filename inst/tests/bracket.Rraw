@@ -190,8 +190,14 @@ test(3.10, class(naive(DT[2:3, ])), c("data.table","data.frame"))
 test(3.11, tryCatch(naive(DT[, a := 1L]), error=conditionCall)[[1L]], quote(`[.data.table`))  # not .dt_cedta_fallback
 rm(DT, DF, naive)
 
-# evaluation of i moved into .dt_eval_isub(), #852: its errors still report [.data.table
-DT = data.table(x=1:3)
-test(4.1, DT[x == 2L, verbose=TRUE], DT[2L], output="Constructing irows for '!byjoin || nqbyjoin'")
-test(4.2, DT[!(x == 2L), verbose=TRUE], DT[c(1L, 3L)], output="Inverting irows for notjoin")
+# evaluation of i moved into .dt_eval_isub()
+# coercion of the evaluated i moved into .dt_coerce_i()
+DT = data.table(a=1:3, b=c("x","y","z"))
+test(4.1, DT[a == 2L, verbose=TRUE], DT[2L], output="Constructing irows for '!byjoin || nqbyjoin'")
+test(4.2, DT[!(a == 2L), verbose=TRUE], DT[c(1L, 3L)], output="Inverting irows for notjoin")
+test(4.3, DT[matrix(1:2, ncol=1)], DT[1:2])
+test(4.4, tryCatch(DT[matrix(1:4, ncol=2L)], error=conditionCall)[[1L]], quote(`[.data.table`))
+test(4.5, DT[!c(TRUE, FALSE, TRUE),], DT[2L])
+test(4.6, DT[list(data.frame(b="y")), on="b",], DT[2L])
+test(4.7, DT[factor("z"), on="b",], DT[3L])
 rm(DT)
