@@ -139,6 +139,8 @@ test.list <- atime::atime_test_list(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
+    # extend onLoad to disable cedta()
+    cat("\n.datatable.aware = TRUE\n", file=file.path(new.pkg.path, "R", "onLoad.R"), append=TRUE)
     pkg_find_replace(
       file.path("src", "Makevars.*in"),
       "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
