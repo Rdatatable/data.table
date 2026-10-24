@@ -78,6 +78,7 @@ Basic CI checks are also run on every push to the GitLab repository. This can **
 ```shell
 # fetch changes from remote (GitHub) and push them to GitLab 
 git fetch git@github.com:Rdatatable/data.table.git new_branch:new_branch
+git checkout new_branch
 git push
 # after updating on GitHub, pull changes from remote and push to GitLab
 git pull git@github.com:Rdatatable/data.table.git new_branch
