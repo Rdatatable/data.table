@@ -279,12 +279,12 @@ test.list <- atime::atime_test_list(
     },
     seconds.limit=0.1,
     Fast="1.14.8",
-    ## PR7375="59f966cf6839a0494e42ed1ab98616eea03dcb36", #fread slowdown added comment.char arg
-    ## PR7383="67db7f7fb33b99da8cc5dc575714924b96d0f0fe", #not as slow as Slow, but using this as new in bisect with old=1.14.8 yields PR#7375.
-    ## PR7406="1685a3b47d48f323afeae589545f7cbb7717ec28", #not as fast as Fast, but using this as old in bisect with new=1.18.6 yields PR#7370.
-    ## Parent7370="1685a3b47d48f323afeae589545f7cbb7717ec28",
-    ## PR7370="df7fa8071c6b818d24e47cc1a84a6dc0491550d6", #fread slowdown sep detection single column quoted
     Slow="1.18.6",
+    bisect.commits=c(
+      PR7375="59f966cf6839a0494e42ed1ab98616eea03dcb36", #first fread slowdown to intermediate performance, added comment.char arg
+      PR7383="67db7f7fb33b99da8cc5dc575714924b96d0f0fe", #intermediate performance, using this as new in bisect with old=1.14.8 yields PR#7375.
+      Parent7370="1685a3b47d48f323afeae589545f7cbb7717ec28", #intermediate performance, using this as old in bisect with new=1.18.6 yields PR#7370.
+      PR7370="df7fa8071c6b818d24e47cc1a84a6dc0491550d6"), #second slowdown to same performance as Slow, sep detection single column quoted
     expr=data.table::fread(input.csv, showProgress = FALSE, nThread=1)),
 
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
