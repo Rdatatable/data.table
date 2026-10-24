@@ -4,8 +4,6 @@ pkg.path <- "~/R/data.table"
 Test <- "fread N=cols regression"
 library(data.table)
 if(FALSE){
-  ## atime functions for git bisect were added in this branch:
-  remotes::install_github("tdhock/atime@bisect")
   ## if you want to start the bisect over from scratch, first remove
   ## all historical versions of data.table installed by atime:
   atime::atime_versions_remove("data.table")
