@@ -623,6 +623,118 @@ replace_dot_alias = function(e) {
   invisible(SDenv)
 }
 
+# early return protocol
+.dt_done = function(value, visible=TRUE) {
+  ans = list(value=value, visible=visible)
+  class(ans) = "dt_done"
+  ans
+}
+.is_dt_done = function(x) !is.null(x) && inherits(x, "dt_done")  # helpers return NULL to continue
+.dt_done_value = function(done) if (done$visible) done$value else invisible(done$value)
+
+# evaluate i (the substituted isub) into q$i
+#   DT[NA] means a row of NAs
+#   .N in i is nrow(x)
+#   eval() and a leading ! (not-join) are unwrapped
+#   simple conditions such as DT[a == 1] become a join on an index via .prepareFastSubset(), which also sets q$on, q$mult, q$nomatch and q$optimizedSubset
+# Returns .dt_done(null.data.table()) when i is NULL
+.dt_eval_isub = function(q, isub) {
+  x = q$x
+  callenv = q$callenv
+  names_x = q$names_x
+  if (identical(isub, NA)) {
+    # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
+    # replace NA in this case with NA_integer_ as that's almost surely what user intended to
+    # return a single row with NA in all columns. (DT[0] returns an empty table, with correct types.)
+    # Any expression (including length 1 vectors) that evaluates to a single NA logical will
+    # however be left as NA logical since that's important for consistency to return empty in that
+    # case; e.g. DT[Col==3] where DT is 1 row and Col contains NA.
+    # Replacing the NA symbol makes DT[NA] and DT[c(1,NA)] consistent and provides
+    # an easy way to achieve a single row of NA as users expect rather than requiring them
+    # to know and change to DT[NA_integer_].
+    isub=NA_integer_
+  }
+  # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires
+  # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
+  restore.N = remove.N = FALSE
+  old.N = get0(".N", envir=callenv, inherits=FALSE)
+  if (!is.null(old.N)) {
+    locked.N = bindingIsLocked(".N", callenv)
+    if (locked.N) eval(call("unlockBinding", ".N", callenv))  # eval call to pass R CMD check NOTE until we find cleaner way
+    assign(".N", nrow(x), envir=callenv, inherits=FALSE)
+    restore.N = TRUE
+    # the comment below is invalid hereafter (due to fix for #1145)
+    # binding locked when .SD[.N] but that's ok as that's the .N we want anyway
+
+    # TO DO: change isub at C level s/.N/nrow(x); changing a symbol to a constant should be ok
+  } else {
+     assign(".N", nrow(x), envir=callenv, inherits=FALSE)
+     remove.N = TRUE
+  }
+  if (isub %iscall% "eval") {  # TO DO: or ..()
+    isub = eval(.massagei(isub[[2L]]), callenv, callenv)
+    if (is.expression(isub)) isub=isub[[1L]]
+  }
+  if (isub %iscall% "!") {
+    q$notjoin = TRUE
+    if (!q$missing_nomatch) stopf("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
+    q$nomatch = NULL
+    isub = isub[[2L]]
+    # #932 related so that !(v1 == 1) becomes v1 == 1 instead of (v1 == 1) after removing "!"
+    if (isub %iscall% "(" && !is.name(isub[[2L]]))
+      isub = isub[[2L]]
+  }
+
+  if (is.null(isub)) return(.dt_done(null.data.table()))
+
+  if (length(o <- .prepareFastSubset(isub = isub, x = x,
+                                            enclos =  callenv,
+                                            notjoin = q$notjoin, verbose = q$verbose))){
+    ## redirect to the is.data.table(x) == TRUE branch.
+    ## Additional flag to adapt things after bmerge:
+    q$optimizedSubset = TRUE
+    q$notjoin = o$notjoin
+    q$i = o$i
+    q$on = q$on_sub = o$on
+    q$missing_on = FALSE
+    ## the following two are ignored if i is not a data.table.
+    ## Since we are converting i to data.table, it is important to set them properly.
+    q$nomatch = NULL
+    q$mult = "all"
+  }
+  else if (!is.name(isub)) {
+    ienv = new.env(parent=callenv)
+    if (getOption("datatable.optimize") >= 1L) assign("order", forder, ienv)
+    q$i = tryCatch(eval(.massagei(isub), x, ienv),
+      dt_invalid_let_error = function(e) stopf("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."),
+      error = function(e) .checkTypos(e, names_x)
+    )
+  } else {
+    # isub is a single symbol name such as B in DT[B]
+    i = try(eval(isub, callenv, callenv), silent=TRUE)
+    if (inherits(i,"try-error") || is.function(i)) {
+      # must be "not found" since isub is a mere symbol
+      col = try(eval(isub, x), silent=TRUE)  # is it a column name?
+      msg = if (inherits(col, "try-error")) gettextf(
+        "'%s' is not found in calling scope and it is not a column name either",
+        as.character(isub)
+      ) else gettextf(
+        "'%s' is not found in calling scope, but it is a column of type %s. If you wish to select rows where that column contains TRUE, or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized",
+        as.character(isub), typeof(col)
+      )
+      stopf("%s. When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.", msg)
+    }
+    q$i = i
+  }
+  if (restore.N) {
+    assign(".N", old.N, envir=callenv)
+    if (locked.N) lockBinding(".N", callenv)
+  }
+  if (remove.N) rm(list=".N", envir=callenv)
+  invisible()
+}
+
+# rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
   if (length(o__)) rows = o__[rows]
@@ -703,6 +815,9 @@ replace_dot_alias = function(e) {
   missing_verbose = missing(verbose)
   # capture parent.frame() changes once as calling scope
   callenv = parent.frame()
+  on_sub = substitute(on)
+  # the state of the query is this frame: stage helpers read and write it through q, e.g. q$irows
+  q = environment()
   # cedta() and nargs() depend on this frame so are evaluated here
   if (!cedta()) return(.dt_cedta_fallback(x, i, j, drop, substitute(j), nargs(), missing_i, missing_drop))
   if (!missing_verbose) {
@@ -739,10 +854,10 @@ replace_dot_alias = function(e) {
   naturaljoin = FALSE
   names_x = names(x)
   if (missing_i && !missing_on) {
-    on_tmp = eval(.massagei(substitute(on)), callenv)
+    on_tmp = eval(.massagei(on_sub), callenv)
     if (!is.list(on_tmp) || !length(names(on_tmp))) {
       warningf("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '%s'.", class1(on_tmp))
-      on = NULL
+      on = on_sub = NULL
     } else {
       i = on_tmp
       missing_i = FALSE
@@ -768,6 +883,13 @@ replace_dot_alias = function(e) {
   notjoin = FALSE
   rightcols = leftcols = integer()
   optimizedSubset = FALSE ## flag: tells whether a normal query was optimized into a join.
+  # the query state that stage helpers use, so R CMD check does not complain
+  xo = indices__ = f__ = len__ = NULL                                         # joins (i stage) and groups
+  root = lhs = cols = newnames = NULL                                         # j and :=
+  suppPrint = identity
+  ansvars = sdvars = use.I = jvnames = NULL                                   # j
+  bynames = allbyvars = bysubl = byindex = bysameorder = orderedirows = NULL  # by=
+  jisvars = xjisvars = groups = grpcols = g = GForce = NULL                   # by group
   ..syms = NULL
   av = NULL
   jsub = NULL
@@ -870,95 +992,8 @@ replace_dot_alias = function(e) {
   }
   if (!missing_i) {
     xo = NULL
-    if (identical(isub, NA)) {
-      # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
-      # replace NA in this case with NA_integer_ as that's almost surely what user intended to
-      # return a single row with NA in all columns. (DT[0] returns an empty table, with correct types.)
-      # Any expression (including length 1 vectors) that evaluates to a single NA logical will
-      # however be left as NA logical since that's important for consistency to return empty in that
-      # case; e.g. DT[Col==3] where DT is 1 row and Col contains NA.
-      # Replacing the NA symbol makes DT[NA] and DT[c(1,NA)] consistent and provides
-      # an easy way to achieve a single row of NA as users expect rather than requiring them
-      # to know and change to DT[NA_integer_].
-      isub=NA_integer_
-    }
     isnull_inames = FALSE
-    # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires
-    # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
-    restore.N = remove.N = FALSE
-    old.N = get0(".N", envir=callenv, inherits=FALSE)
-    if (!is.null(old.N)) {
-      locked.N = bindingIsLocked(".N", callenv)
-      if (locked.N) eval(call("unlockBinding", ".N", callenv))  # eval call to pass R CMD check NOTE until we find cleaner way
-      assign(".N", nrow(x), envir=callenv, inherits=FALSE)
-      restore.N = TRUE
-      # the comment below is invalid hereafter (due to fix for #1145)
-      # binding locked when .SD[.N] but that's ok as that's the .N we want anyway
-
-      # TO DO: change isub at C level s/.N/nrow(x); changing a symbol to a constant should be ok
-    } else {
-       assign(".N", nrow(x), envir=callenv, inherits=FALSE)
-       remove.N = TRUE
-    }
-    if (isub %iscall% "eval") {  # TO DO: or ..()
-      isub = eval(.massagei(isub[[2L]]), callenv, callenv)
-      if (is.expression(isub)) isub=isub[[1L]]
-    }
-    if (isub %iscall% "!") {
-      notjoin = TRUE
-      if (!missing_nomatch) stopf("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
-      nomatch = NULL
-      isub = isub[[2L]]
-      # #932 related so that !(v1 == 1) becomes v1 == 1 instead of (v1 == 1) after removing "!"
-      if (isub %iscall% "(" && !is.name(isub[[2L]]))
-        isub = isub[[2L]]
-    }
-
-    if (is.null(isub)) return( null.data.table() )
-
-    if (length(o <- .prepareFastSubset(isub = isub, x = x,
-                                              enclos =  callenv,
-                                              notjoin = notjoin, verbose = verbose))){
-      ## redirect to the is.data.table(x) == TRUE branch.
-      ## Additional flag to adapt things after bmerge:
-      optimizedSubset = TRUE
-      notjoin = o$notjoin
-      i = o$i
-      on = o$on
-      missing_on = FALSE
-      ## the following two are ignored if i is not a data.table.
-      ## Since we are converting i to data.table, it is important to set them properly.
-      nomatch = NULL
-      mult = "all"
-    }
-    else if (!is.name(isub)) {
-      ienv = new.env(parent=callenv)
-      if (getOption("datatable.optimize") >= 1L) assign("order", forder, ienv)
-      i = tryCatch(eval(.massagei(isub), x, ienv),
-        dt_invalid_let_error = function(e) stopf("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."),
-        error = function(e) .checkTypos(e, names_x)
-      )
-    } else {
-      # isub is a single symbol name such as B in DT[B]
-      i = try(eval(isub, callenv, callenv), silent=TRUE)
-      if (inherits(i,"try-error") || is.function(i)) {
-        # must be "not found" since isub is a mere symbol
-        col = try(eval(isub, x), silent=TRUE)  # is it a column name?
-        msg = if (inherits(col, "try-error")) gettextf(
-          "'%s' is not found in calling scope and it is not a column name either",
-          as.character(isub)
-        ) else gettextf(
-          "'%s' is not found in calling scope, but it is a column of type %s. If you wish to select rows where that column contains TRUE, or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized",
-          as.character(isub), typeof(col)
-        )
-        stopf("%s. When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.", msg)
-      }
-    }
-    if (restore.N) {
-      assign(".N", old.N, envir=callenv)
-      if (locked.N) lockBinding(".N", callenv)
-    }
-    if (remove.N) rm(list=".N", envir=callenv)
+    if (.is_dt_done(r <- .dt_eval_isub(q, isub))) return(.dt_done_value(r))
     if (is.matrix(i)) {
       if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
         i = as.integer(i)
@@ -989,7 +1024,7 @@ replace_dot_alias = function(e) {
         else stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
 
         if (haskey(i)) check_duplicate_key(i)
-      } else if (identical(substitute(on), as.name(".NATURAL"))) {
+      } else if (identical(on_sub, as.name(".NATURAL"))) {
         naturaljoin = TRUE
       }
       if (naturaljoin) { # natural join #629
@@ -1003,12 +1038,12 @@ replace_dot_alias = function(e) {
             catf("Joining but 'x' has no key, natural join using: %s\n", brackify(common_names))
           }
         }
-        on = common_names
+        on = on_sub = common_names
         missing_on = FALSE
       }
       if (!missing_on) {
         # on = .() is now possible, #1257
-        on_ops = .parse_on(substitute(on), isnull_inames)
+        on_ops = .parse_on(on_sub, isnull_inames)
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         if (any(ops > 1L)) { ## fix for #4489;  ops = c("==", "<=", "<", ">=", ">", "!=")
