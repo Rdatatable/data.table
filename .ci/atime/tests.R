@@ -482,6 +482,7 @@ test.list <- atime::atime_test_list(
   # Guards the constant per-call overhead of [.data.table while it is split into modules (#852).
   "DT[i,j,by] per-call overhead for #852" = atime::atime_test(
     N = 2^seq(0, 14),
+    seconds.limit = 0.1,
     setup = {
       dt = data.table(a = 1:10, g = rep(1:2, 5L), v = as.numeric(1:10))
     },
