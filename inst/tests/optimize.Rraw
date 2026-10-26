@@ -508,8 +508,15 @@ if (test_bit64) {
   test(2284.6, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g1])
   test(2284.7, optimize=c(0L, Inf), DT[, .(sum(i64), sum(i64, na.rm=TRUE)), by=g2])
 }
+setDTthreads(old)
 
 # GForce skips the gforce() setup when j is only .N
 DT = data.table(a=c(2L,1L,2L,3L,2L))
 test(2285.1, optimize=2L, DT[, .N, by=a, verbose=TRUE], output="GForce optimized j to '.N'", notOutput="gforce initial population")
 test(2285.2, optimize=0:2, DT[, list(".N"), by=a], data.table(a=c(2L,1L,3L), V1=".N"))
+
+# gmedian/gvar/gsd run in parallel over groups using per-thread buffers of gx
+set.seed(3L)
+DT = data.table(g=sample(c(rep(0L, 600L), rep(1:200, 2L))), i=sample(c(1:3, NA), 1000L, TRUE), d=sample(c(rnorm(3), NA), 1000L, TRUE))
+test(2286.1, optimize=c(0L, Inf), DT[, .(var(i), var(i, na.rm=TRUE), sd(i), var(d), sd(d, na.rm=TRUE), median(d), median(d, na.rm=TRUE)), by=g])  # group 0 > nrow/2 gives each group its own buffer with >=2 threads
+test(2286.2, optimize=c(0L, Inf), DT[g > 0L, .(var(i), var(i, na.rm=TRUE), sd(i), var(d), sd(d, na.rm=TRUE), median(d), median(d, na.rm=TRUE)), by=g])  # per-thread buffers

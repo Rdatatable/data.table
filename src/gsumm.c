@@ -930,6 +930,12 @@ SEXP gmax(SEXP x, SEXP narm)
   return gminmax(x, narm, false);
 }
 
+// offset of group i's scratch space in gx for gmedian/gvarsd1: each thread reuses its own cache-hot buffer of maxgrpn,
+// unless nth*maxgrpn exceeds nrow due to a huge group; then each group gets its own buffer
+static inline size_t my_buffer(int i, bool pergroup) {
+  return pergroup ? ff[i]-1 : (size_t)omp_get_thread_num()*maxgrpn;
+}
+
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
 SEXP gmedian(SEXP x, SEXP narmArg) {
   if (!IS_TRUE_OR_FALSE(narmArg))
@@ -943,12 +949,15 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
+  const int nth = getDTthreads(ngrp, false);
+  const bool pergroup = (int64_t)nth*maxgrpn > nrow;
   switch(TYPEOF(x)) {
   case REALSXP: {
-    double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
     const int64_t *xi64 = (const int64_t *)REAL_RO(x);
     const double  *xd = REAL_RO(x);
+    #pragma omp parallel for schedule(dynamic) num_threads(nth)
     for (int i=0; i<ngrp; ++i) {
+      double *subd = (double *)gx + my_buffer(i, pergroup); // quickselect works in place on this buffer
       int thisgrpsize = grpsize[i], nacount=0;
       for (int j=0; j<thisgrpsize; ++j) {
         int k = ff[i]+j-1;
@@ -962,9 +971,10 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     }}
     break;
   case LGLSXP: case INTSXP: {
-    int *subi = INTEGER(PROTECT(allocVector(INTSXP, maxgrpn)));
     const int *xi = INTEGER_RO(x);
+    #pragma omp parallel for schedule(dynamic) num_threads(nth)
     for (int i=0; i<ngrp; i++) {
+      int *subi = (int *)gx + my_buffer(i, pergroup);
       const int thisgrpsize = grpsize[i];
       int nacount=0;
       for (int j=0; j<thisgrpsize; ++j) {
@@ -981,7 +991,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   }
   if (!isInt64) copyMostAttrib(x, ans);
   // else the integer64 class needs to be dropped since double is always returned by gmedian
-  UNPROTECT(2);  // ans, subd|subi
+  UNPROTECT(1);
   return ans;
 }
 
@@ -1094,16 +1104,18 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
     error(_("%s is not meaningful for factors."), isSD ? "sd" : "var");
   const int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
-  SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
+  SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
   const bool narm = LOGICAL(narmArg)[0];
+  const int nth = getDTthreads(ngrp, false);
+  const bool pergroup = (int64_t)nth*maxgrpn > nrow;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
-    sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
-    int *subd = INTEGER(sub);
     const int *xd = INTEGER_RO(x);
+    #pragma omp parallel for schedule(dynamic) num_threads(nth)
     for (int i=0; i<ngrp; ++i) {
+      int *subd = (int *)gx + my_buffer(i, pergroup);
       const int thisgrpsize = grpsize[i];
       if (thisgrpsize==1) {
         ansd[i] = NA_REAL;
@@ -1131,10 +1143,10 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
     }}
     break;
   case REALSXP: {
-    sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
-    double *subd = REAL(sub);
     const double *xd = REAL_RO(x);
+    #pragma omp parallel for schedule(dynamic) num_threads(nth)
     for (int i=0; i<ngrp; ++i) {
+      double *subd = (double *)gx + my_buffer(i, pergroup);
       const int thisgrpsize = grpsize[i];
       if (thisgrpsize==1) {
         ansd[i] = NA_REAL;
@@ -1166,7 +1178,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
             type2char(TYPEOF(x)), isSD?"sd (gsd)":"var (gvar)", isSD?"stats::sd(.)":"stats::var(.)");
   }
   // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
-  UNPROTECT(2); // ans,sub
+  UNPROTECT(1);
   return ans;
 }
 
