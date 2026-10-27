@@ -725,8 +725,6 @@ replace_dot_alias = function(e) {
     }
   }
 
-  # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
-  dupdiff = function(x, y) x[!x %chin% y]
   isub = NULL
   if (!missing_i) {
     if (is.null(env)) isub = substitute(i) else {
@@ -1354,66 +1352,22 @@ replace_dot_alias = function(e) {
       }
 
       jvnames = NULL
-      drop_dot = function(x) {
-        if (length(x)!=1L) internal_error("drop_dot passed %d items", length(x))  # nocov
-        if (startsWith(x<-as.character(x), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
-          substr(x, 2L, nchar(x))
-        else
-          x
-      }
-      # handle auto-naming of last item of j (e.g. within {} or if/else, #2478)
-      #   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
-      do_j_names = function(q) {
-        if (!is.call(q) || !is.name(q[[1L]])) return(q)
-        if (q[[1L]] %chin% c('list', '.')) {
-          q[[1L]] = quote(list)
-          qlen = length(q)
-          if (qlen>1L) {
-            nm = names(q[-1L])   # check list(a=sum(v),v)
-            if (is.null(nm)) nm = rep.int("", qlen-1L)
-            # attempt to auto-name unnamed columns
-            for (jj in which(!nzchar(nm))) {
-              thisq = q[[jj + 1L]]
-              if (missing(thisq)) stopf("Item %d of the .() or list() passed to j is missing", jj) #3507
-              if (is.name(thisq)) nm[jj] = drop_dot(thisq)
-              # TO DO: if call to a[1] for example, then call it 'a' too
-            }
-            if (!is.null(jvnames)) {
-              if (length(nm) != length(jvnames))
-                warningf("j may not evaluate to the same number of columns for each group; if you're sure this warning is in error, please put the branching logic outside of [ for efficiency")
-              else if (any(idx <- nm != jvnames))
-                warningf('Different branches of j expression produced different auto-named columns: %s; using the most "last" names. If this was intentional (e.g., you know only one branch will ever be used in a given query because the branch is controlled by a function argument), please (1) pull this branch out of the call; (2) explicitly provide missing defaults for each branch in all cases; or (3) use the same name for each branch and re-name it in a follow-up call.',  brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])))
-            }
-            # nolint next: undesirable_operator_linter. Workaround is clunkier, though a bigger refactor could be considered.
-            jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
-            setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
-          }
-          return(q) # else empty list is needed for test 468: adding an empty list column
-        }
-        if (q[[1L]] == '{') {
-          if (!is.null(q[[qlen<-length(q)]])) q[[qlen]] = do_j_names(q[[qlen]])
-          return(q)
-        }
-        if (q[[1L]] == 'if') {
-          #explicit NULL would return NULL, assigning NULL would delete that from the expression
-          if (!is.null(q[[3L]])) q[[3L]] = do_j_names(q[[3L]])
-          if (length(q) == 4L && !is.null(q[[4L]])) q[[4L]] = do_j_names(q[[4L]])
-          return(q)
-        }
-        q
-      }
       if (is.name(jsub)) {
         # j is a single unquoted column name
-        if (jsub!=".SD") jvnames = drop_dot(jsub)
+        if (jsub!=".SD") jvnames = .dt_drop_dot(jsub)
         # jsub is list()ed after it's eval'd inside dogroups.
-      } else jsub = do_j_names(jsub) # else maybe a call to transform or something which returns a list.
+      } else { # else maybe a call to transform or something which returns a list.
+        jsub_names = .dt_do_j_names(jsub, jvnames)
+        jsub = jsub_names$jsub
+        jvnames = jsub_names$jvnames
+      }
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
       use.I = ".I" %chin% av
       if (any(c(".SD","eval","get","mget") %chin% av)) {
         if (missing_SDcols) {
-          # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
+          # here we need to use '.dt_dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
           # slight memory efficiency boost if we only store sdvars if it differs from ansvars, but a bit tricky to examine all the uses here
-          ansvars = sdvars = dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
+          ansvars = sdvars = .dt_dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
           # just using .SD in j triggers all non-by columns in the subset even if some of
           # those columns are not used. It would be tricky to detect whether the j expression
           # really does use all of the .SD columns or not, hence .SDcols for grouping
@@ -1465,11 +1419,11 @@ replace_dot_alias = function(e) {
             ansvars = sdvars = names_x[ansvals]
           } else if (is.numeric(.SDcols)) {
             .SDcols = as.integer(.SDcols)
-            # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
+            # if .SDcols is numeric, use '.dt_dupdiff' instead of 'setdiff'
             if (length(unique(sign(.SDcols))) > 1L) stopf(".SDcols is numeric but has both +ve and -ve indices")
             if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
               stopf(".SDcols is numeric but out of bounds [1, %d] at: %s", ncol(x), brackify(which(idx)))
-            ansvars = sdvars = if (negate_sdcols) dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
+            ansvars = sdvars = if (negate_sdcols) .dt_dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
             ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
           } else {
             if (!is.character(.SDcols)) stopf(".SDcols should be column numbers or names")
@@ -1533,7 +1487,7 @@ replace_dot_alias = function(e) {
       suppPrint = identity
       if (length(av) && av[1L] == ":=") {
         if (.Call(C_islocked, x)) stopf(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        suppPrint = function(x) { .global$print=address(x); x }
+        suppPrint = .dt_suppPrint
         # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
         # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
 
@@ -1883,20 +1837,7 @@ replace_dot_alias = function(e) {
       if (identical(class(jval), c('data.table', 'data.frame')))
         setattr(jval, 'class', class(x)) # fix for #64
       # can jval be sorted by the same key as x? improved for #4498
-      get_shared_keys = function(jsub, jvnames, sdvars, key) {
-        if (is.null(key)) return(NULL)
-        if (!((SD_only <- jsub == quote(.SD)) || jsub %iscall% "list")) return(NULL)
-        if (SD_only)
-          jvnames = jnames = sdvars
-        else
-          jnames = vapply_1c(jsub, function(x) if (is.name(x)) as.character(x) else NA_character_)[-1L]
-        key_idx = chmatch(key, jnames)
-        missing_keys = which(is.na(key_idx))
-        if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
-        if (!length(missing_keys)) return(jvnames[key_idx])
-        jvnames[head(key_idx, missing_keys[1L] - 1L)]
-      }
-      shared_keys = get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
+      shared_keys = .dt_get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
       if (is.null(irows) && !is.null(shared_keys)) {
         if (!any(shared_keys %chin% duplicated_values(names(jval)))) setattr(jval, 'sorted', shared_keys)
         # potentially inefficient backup -- check if jval is sorted by key(x)
@@ -2101,58 +2042,30 @@ replace_dot_alias = function(e) {
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
 
-    # returns all rows instead of one per group
-    nrow_funs = c("gshift")
-    .is_nrows = function(q) {
-      if (!is.call(q)) return(FALSE)
-      if (q[[1L]] == "list") {
-        any(vapply(q, .is_nrows, FALSE))
-      } else {
-        q[[1L]] %chin% nrow_funs
-      }
-    }
-
     # adding ghead/gtail(n) support for n > 1 #5060 #523
     q3 = 0L
     if (!is.symbol(jsub)) {
-      headTail_arg = function(q) {
-        if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1L) q3
-        else 0L
-      }
       if (jsub %iscall% "list"){
-        q3 = max(sapply(jsub, headTail_arg))
+        q3 = max(sapply(jsub, .dt_headTail_arg))
       } else if (length(jsub)==3L) {
-        q3 = headTail_arg(jsub)
+        q3 = .dt_headTail_arg(jsub)
       }
     }
     if (q3 > 0L) {
       grplens = pmin.int(q3, len__)
       g = lapply(g, rep.int, times=grplens)
-    } else if (.is_nrows(jsub)) {
+    } else if (.dt_is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
       # unpack list of lists for nrows functions
-      zip_items = function(ll) do.call(mapply, c(list(FUN = c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
       if (all(vapply_1b(ans, is.list))) {
-        ans = lapply(ans, zip_items)
+        ans = lapply(ans, .dt_zip_items)
       }
     }
     ans = c(g, ans)
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing_on, verbose, as.integer(showProgress))
   }
-  # unlock any locked data.table components of the answer, #4159
-  # MAX_DEPTH prevents possible infinite recursion from truly recursive object, #4173
-  #   TODO: is there an efficient way to get around this MAX_DEPTH limit?
-  MAX_DEPTH = 5L
-  runlock = function(x, current_depth = 1L) {
-    if (is.list(x) && current_depth <= MAX_DEPTH) {  # is.list() used to be is.recursive(), #4814
-      if (inherits(x, 'data.table')) .Call(C_unlock, x)
-      else return(lapply(x, runlock, current_depth = current_depth + 1L))
-    }
-    invisible()
-  }
-  runlock(ans)
+  .dt_runlock(ans)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
@@ -2167,7 +2080,7 @@ replace_dot_alias = function(e) {
       if (length(o__)) jrows = o__[jrows]
       if (length(irows)) jrows = irows[jrows]
       if (length(jvals)==1L) jvals = jvals[[1L]]  # unwrap single column jvals for assign
-      if (.is_nrows(jsub)) { # 5403 unwrap multicolumn jvals for gfunctions that can return lists
+      if (.dt_is_nrows(jsub)) { # 5403 unwrap multicolumn jvals for gfunctions that can return lists
         jvals = if (length(jvals) != length(lhs)) split(unlist(jvals), rep(seq_along(jvals[[1L]]), length(jvals))) else lapply(jvals, unlist)
       }
       .Call(Cassign, x, jrows, lhs, newnames, jvals)
@@ -2224,6 +2137,121 @@ replace_dot_alias = function(e) {
     if (!any(grpnames %chin% duplicated_values(names(ans)))) setattr(ans, "sorted", grpnames)
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
+}
+
+# setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
+.dt_dupdiff = function(x, y) x[!x %chin% y]
+
+# auto-name a symbol in j: special symbols .N, .I, .GRP, .NGRP and .BY lose their leading dot
+.dt_drop_dot = function(x) {
+  if (length(x)!=1L) internal_error("drop_dot passed %d items", length(x))  # nocov
+  if (startsWith(x<-as.character(x), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
+    substr(x, 2L, nchar(x))
+  else
+    x
+}
+
+# handle auto-naming of last item of j (e.g. within {} or if/else, #2478)
+#   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
+# returns list(jsub=, jvnames=); jvnames is threaded through the recursion so that the names of different branches can be compared
+.dt_do_j_names = function(q, jvnames) {
+  if (!is.call(q) || !is.name(q[[1L]])) return(list(jsub=q, jvnames=jvnames))
+  if (q[[1L]] %chin% c('list', '.')) {
+    q[[1L]] = quote(list)
+    qlen = length(q)
+    if (qlen>1L) {
+      nm = names(q[-1L])   # check list(a=sum(v),v)
+      if (is.null(nm)) nm = rep.int("", qlen-1L)
+      # attempt to auto-name unnamed columns
+      for (jj in which(!nzchar(nm))) {
+        thisq = q[[jj + 1L]]
+        if (missing(thisq)) stopf("Item %d of the .() or list() passed to j is missing", jj) #3507
+        if (is.name(thisq)) nm[jj] = .dt_drop_dot(thisq)
+        # TO DO: if call to a[1] for example, then call it 'a' too
+      }
+      if (!is.null(jvnames)) {
+        if (length(nm) != length(jvnames))
+          warningf("j may not evaluate to the same number of columns for each group; if you're sure this warning is in error, please put the branching logic outside of [ for efficiency")
+        else if (any(idx <- nm != jvnames))
+          warningf('Different branches of j expression produced different auto-named columns: %s; using the most "last" names. If this was intentional (e.g., you know only one branch will ever be used in a given query because the branch is controlled by a function argument), please (1) pull this branch out of the call; (2) explicitly provide missing defaults for each branch in all cases; or (3) use the same name for each branch and re-name it in a follow-up call.',  brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])))
+      }
+      jvnames = nm # TODO: handle if() list(a, b) else list(b, a) better
+      setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
+    }
+    return(list(jsub=q, jvnames=jvnames)) # else empty list is needed for test 468: adding an empty list column
+  }
+  if (q[[1L]] == '{') {
+    if (!is.null(q[[qlen<-length(q)]])) {
+      ans = .dt_do_j_names(q[[qlen]], jvnames)
+      q[[qlen]] = ans$jsub
+      jvnames = ans$jvnames
+    }
+    return(list(jsub=q, jvnames=jvnames))
+  }
+  if (q[[1L]] == 'if') {
+    #explicit NULL would return NULL, assigning NULL would delete that from the expression
+    if (!is.null(q[[3L]])) {
+      ans = .dt_do_j_names(q[[3L]], jvnames)
+      q[[3L]] = ans$jsub
+      jvnames = ans$jvnames
+    }
+    if (length(q) == 4L && !is.null(q[[4L]])) {
+      ans = .dt_do_j_names(q[[4L]], jvnames)
+      q[[4L]] = ans$jsub
+      jvnames = ans$jvnames
+    }
+    return(list(jsub=q, jvnames=jvnames))
+  }
+  list(jsub=q, jvnames=jvnames)
+}
+
+.dt_suppPrint = function(x) { .global$print=address(x); x }
+
+# can jval be sorted by the same key as x? improved for #4498
+.dt_get_shared_keys = function(jsub, jvnames, sdvars, key) {
+  if (is.null(key)) return(NULL)
+  if (!((SD_only <- jsub == quote(.SD)) || jsub %iscall% "list")) return(NULL)
+  if (SD_only)
+    jvnames = jnames = sdvars
+  else
+    jnames = vapply_1c(jsub, function(x) if (is.name(x)) as.character(x) else NA_character_)[-1L]
+  key_idx = chmatch(key, jnames)
+  missing_keys = which(is.na(key_idx))
+  if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
+  if (!length(missing_keys)) return(jvnames[key_idx])
+  jvnames[head(key_idx, missing_keys[1L] - 1L)]
+}
+
+# GForce functions that return all rows instead of one per group
+.dt_is_nrows = function(q) {
+  nrow_funs = c("gshift")
+  if (!is.call(q)) return(FALSE)
+  if (q[[1L]] == "list") {
+    any(vapply(q, .dt_is_nrows, FALSE))
+  } else {
+    q[[1L]] %chin% nrow_funs
+  }
+}
+
+# n of ghead/gtail(x, n) when n > 1, otherwise 0, #5060 #523
+.dt_headTail_arg = function(q) {
+  if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
+   (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1L) q3
+  else 0L
+}
+
+# unpack list of lists for nrows functions
+.dt_zip_items = function(ll) do.call(mapply, c(list(FUN = c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+
+# unlock any locked data.table components of the answer, #4159
+# max_depth prevents possible infinite recursion from truly recursive object, #4173
+#   TODO: is there an efficient way to get around this max_depth limit?
+.dt_runlock = function(x, current_depth = 1L, max_depth = 5L) {
+  if (is.list(x) && current_depth <= max_depth) {  # is.list() used to be is.recursive(), #4814
+    if (inherits(x, 'data.table')) .Call(C_unlock, x)
+    else return(lapply(x, .dt_runlock, current_depth = current_depth + 1L, max_depth = max_depth))
+  }
+  invisible()
 }
 
 # can the specified merge of x and i be marked as sorted? return the columns for which this is true, otherwise NULL
