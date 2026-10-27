@@ -171,3 +171,21 @@ test(2.48, X[, lapply(.SD, sum), .SDcols=is.integer], data.table(id=7L, v=10L))
 test(2.49, X[, lapply(.SD, sum), .SDcols=!"id"], data.table(t=12, v=10L))
 test(2.50, X[, lapply(.SD, sum), .SDcols=-(id:t)], data.table(v=10L))
 test(2.51, X[, lapply(.SD, function(x) x/v), .SDcols=!"v"], data.table(id=c(1,0.5,2/3,0.75), t=c(1,2.5,2/3,1)))
+
+# [ from a scope that is not data.table-aware dispatches to [.data.frame, #852
+DT = data.table(a=1:3, b=c("x","y","z"), key="b")
+DF = as.data.frame(DT)
+naive = function(expr) eval(substitute(expr), list(DT=DT), new.env(parent=asNamespace("base"))) # use base as namespace to be sure its installed
+# results of [.data.frame are not over-allocated, hence compared as data.frame
+test(3.01, setDF(naive(DT[2])), DF[2])
+test(3.02, setDF(naive(DT[1:2,])), DF[1:2,]) # slice from front for rownames
+test(3.03, setDF(naive(DT[, 2, drop=FALSE])), DF[, 2, drop=FALSE])
+test(3.04, naive(DT[, 2]), DF[, 2])
+test(3.05, naive(DT[2, "a"]), DF[2, "a"])
+test(3.06, key(naive(DT[])), "b")   # key retained when i is missing, dropped otherwise
+test(3.07, key(naive(DT[1:3, ])), NULL)
+test(3.08, naive(DT[, a := 1L]), error="[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used")
+test(3.09, naive(DT[, let(a = 1L)]), error="but 'let' was used")
+test(3.10, class(naive(DT[2:3, ])), c("data.table","data.frame"))
+test(3.11, tryCatch(naive(DT[, a := 1L]), error=conditionCall)[[1L]], quote(`[.data.table`))  # not .dt_cedta_fallback
+rm(DT, DF, naive)
