@@ -18843,6 +18843,15 @@ test(2282.08, rowwiseDT(A=,B=,1,2,C=,4), error="Header must be the first N argum
 # evaluate arguments in the correct frame
 ncols = 1e6
 test(2282.09, rowwiseDT(A=,ncols), data.table(A=ncols))
+# tests involving key specification in rowwiseDT
+DT = data.table(A=1, B=2, key="B")
+test(2282.10, rowwiseDT(key="B", A=, B=, 1, 2), DT)
+test(2282.11, rowwiseDT(A=, B=, 1, 2, key="B"), DT)
+test(2282.12, rowwiseDT(A=, key=, B=, 1, 2, 3, key="B"), setDT(data.frame(A=1, key=2, B=3), key="B"))
+test(2282.13, rowwiseDT(A=, key="B", B=, 1, 2), error="Key specification must be either the first or the last argument")
+test(2282.14, rowwiseDT(key="A", key="B", A=, B=, key=, 1, 2, 3), error="Key specified more than once")
+# as "" equals to "missing", key = "" means column name (backwards compatible)
+test(2282.15, rowwiseDT(A="", B="", key="", 1, 2, 3), setDT(data.frame(A=1, B=2, key=3)))
 
 # test 2283 moved tests to optimize.Rraw
 
