@@ -623,6 +623,68 @@ replace_dot_alias = function(e) {
   invisible(SDenv)
 }
 
+.dt_group_rows = function(f__, len__, o__, irows) {
+  rows = vecseq(f__,len__,NULL)
+  if (length(o__)) rows = o__[rows]
+  if (length(irows)) rows = irows[rows]
+  rows
+}
+
+.dt_gforce_assign_values = function(ans, ngrpcols, len__, jsub, lhs) {
+  vlen = length(ans[[1L]])
+  # replicate vals if GForce returns 1 value per group
+  jvals = if (vlen==length(len__)) lapply(tail(ans, -ngrpcols), rep, times=len__) else tail(ans, -ngrpcols)  # see comment in #4245 for why rep instead of rep.int
+  if (length(jvals)==1L) jvals = jvals[[1L]]  # unwrap single column jvals for assign
+  if (.dt_is_nrows(jsub)) { # 5403 unwrap multicolumn jvals for gfunctions that can return lists
+    jvals = if (length(jvals) != length(lhs)) split(unlist(jvals), rep(seq_along(jvals[[1L]]), length(jvals))) else lapply(jvals, unlist)
+  }
+  jvals
+}
+
+# after := changed columns, drop the key and secondary indices that use them
+.dt_drop_stale_key_index = function(x, cols_changed) {
+  if (any(cols_changed %chin% key(x))) setkey(x,NULL)
+  # fixes #1479. Take care of secondary indices, TODO: cleaner way of doing this
+  attrs = attr(x, 'index', exact=TRUE)
+  skeys = names(attributes(attrs))
+  if (!is.null(skeys)) {
+    hits  = unlist(lapply(paste0("__", cols_changed), grep, skeys, fixed=TRUE))
+    hits  = skeys[unique(hits)]
+    for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
+  }
+  invisible(x)
+}
+
+.dt_setkey_after_assign = function(x, bysubl, names_x, verbose) {
+  cnames = as.character(bysubl)[-1L]
+  cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
+  if (all(cnames %chin% names_x)) {
+    if (verbose) {last.started.at=proc.time();catf("setkey() after the := with keyby= ... ");flush.console()}
+    setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  }
+  else warningf("The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=.\n")
+  invisible(x)
+}
+
+.dt_grouped_make_names = function(ans, bynames, jvnames) {
+  if (is.null(names(ans))) {
+    # Efficiency gain of dropping names has been successful. Ordinarily this will run.
+    if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
+    if (length(bynames)+length(jvnames)!=length(ans))
+      internal_error("jvnames is length %d but ans is %d and bynames is %d", length(jvnames), length(ans), length(bynames)) # nocov
+    ww = which(!nzchar(jvnames))
+    if (any(ww)) jvnames[ww] = paste0("V",ww)
+    setattr(ans, "names", c(bynames, jvnames))
+  } else {
+    nonbynames = names(ans)[-seq_along(bynames)] #related to 2311. make naming of empty columns names more consistent
+    ww = which(!nzchar(nonbynames))
+    if (length(ww)) nonbynames[ww] = paste0("V", ww)
+    setattr(ans, "names", c(bynames, nonbynames))   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
+  }
+  invisible(ans)
+}
+
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -2091,38 +2153,11 @@ replace_dot_alias = function(e) {
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
     if (GForce) { # GForce should work with := #1414
-      vlen = length(ans[[1L]])
-      # replicate vals if GForce returns 1 value per group
-      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep, times=len__) else tail(ans, -length(g))  # see comment in #4245 for why rep instead of rep.int
-      jrows = vecseq(f__,len__,NULL)
-      if (length(o__)) jrows = o__[jrows]
-      if (length(irows)) jrows = irows[jrows]
-      if (length(jvals)==1L) jvals = jvals[[1L]]  # unwrap single column jvals for assign
-      if (.dt_is_nrows(jsub)) { # 5403 unwrap multicolumn jvals for gfunctions that can return lists
-        jvals = if (length(jvals) != length(lhs)) split(unlist(jvals), rep(seq_along(jvals[[1L]]), length(jvals))) else lapply(jvals, unlist)
-      }
-      .Call(Cassign, x, jrows, lhs, newnames, jvals)
+      jvals = .dt_gforce_assign_values(ans, length(g), len__, jsub, lhs)
+      .Call(Cassign, x, .dt_group_rows(f__, len__, o__, irows), lhs, newnames, jvals)
     }
-    if (any(names_x[cols] %chin% key(x)))
-      setkey(x,NULL)
-    # fixes #1479. Take care of secondary indices, TODO: cleaner way of doing this
-    attrs = attr(x, 'index', exact=TRUE)
-    skeys = names(attributes(attrs))
-    if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names_x[cols]), grep, skeys, fixed=TRUE))
-      hits  = skeys[unique(hits)]
-      for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
-    }
-    if (keyby) {
-      cnames = as.character(bysubl)[-1L]
-      cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
-      if (all(cnames %chin% names_x)) {
-        if (verbose) {last.started.at=proc.time();catf("setkey() after the := with keyby= ... ");flush.console()}
-        setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
-        if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-      }
-      else warningf("The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=.\n")
-    }
+    .dt_drop_stale_key_index(x, names_x[cols])
+    if (keyby) .dt_setkey_after_assign(x, bysubl, names_x, verbose)
     return(suppPrint(x))
   }
   if (is.null(ans)) {
@@ -2132,20 +2167,7 @@ replace_dot_alias = function(e) {
   }
   setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
   setattr(ans,"class",class(x)) # fix for #64
-  if (is.null(names(ans))) {
-    # Efficiency gain of dropping names has been successful. Ordinarily this will run.
-    if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
-    if (length(bynames)+length(jvnames)!=length(ans))
-      internal_error("jvnames is length %d but ans is %d and bynames is %d", length(jvnames), length(ans), length(bynames)) # nocov
-    ww = which(!nzchar(jvnames))
-    if (any(ww)) jvnames[ww] = paste0("V",ww)
-    setattr(ans, "names", c(bynames, jvnames))
-  } else {
-    nonbynames = names(ans)[-seq_along(bynames)] #related to 2311. make naming of empty columns names more consistent
-    ww = which(!nzchar(nonbynames))
-    if (length(ww)) nonbynames[ww] = paste0("V", ww)
-    setattr(ans, "names", c(bynames, nonbynames))   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
-  }
+  .dt_grouped_make_names(ans, bynames, jvnames)
   if (byjoin && keyby && !bysameorder) {
     if (verbose) {last.started.at=proc.time();catf("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
