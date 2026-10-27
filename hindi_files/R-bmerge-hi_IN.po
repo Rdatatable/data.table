@@ -1,0 +1,146 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: bmerge 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: bmerge.R:48 bmerge.R:49
+msgid "%s is type %s which is not supported by data.table join"
+msgstr "%s type %s है, जो data.table join द्वारा समर्थित नहीं है।"
+
+#: bmerge.R:52
+msgid ""
+"Attempting roll join on factor column when joining %s to %s. Only integer, "
+"double or character columns may be roll joined."
+msgstr ""
+"%s को %s से जोड़ते समय factor कॉलम पर roll join करने का प्रयास किया जा रहा है।"
+"केवल पूर्णांक (integer), डबल (double) या कैरेक्टर (character) कॉलम पर ही roll join किया जा सकता है।"
+
+#: bmerge.R:54
+msgid "Matching %s factor levels to %s factor levels."
+msgstr "%s factor स्तरों को %s factor स्तरों से मिलाया जा रहा है।"
+
+#: bmerge.R:59
+msgid "Coercing factor column %s to type character to match type of %s."
+msgstr "factor कॉलम %s को कैरेक्टर (character) type में परिवर्तित किया जा रहा है ताकि %s के type से मेल खा सके।"
+
+#: bmerge.R:64
+msgid "Matching character column %s to factor levels in %s."
+msgstr "कैरेक्टर (character) कॉलम %s को %s में factor levels से मेल किया जा रहा है।"
+
+#: bmerge.R:71
+msgid ""
+"Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
+"factor or character columns."
+msgstr
+"असंगत जॉइन (join) प्रकार: %s (%s) और %s (%s)। फ़ैक्टर (factor) कॉलम (column) केवल फ़ैक्टर (factor)"
+" या कैरेक्टर (character) कॉलम (column) से ही जोड़े जा सकते हैं।"
+
+#: bmerge.R:74
+msgid "%s has same type (%s) as %s. No coercion needed."
+msgstr "%s का type (%s) %s के समान है। कोई रूपांतरण आवश्यक नहीं।"
+
+#: bmerge.R:81 bmerge.R:86
+msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
+msgstr "सभी-NA %s (%s) को type %s में रूपांतरित किया जा रहा है ताकि %s के type से मेल खा सके।"
+
+#: bmerge.R:90
+msgid "Incompatible join types: %s (%s) and %s (%s)"
+msgstr "असंगत join types: %s (%s) और %s (%s)"
+
+#: bmerge.R:96
+msgid "Coercing %s column %s%s to type integer64 to match type of %s."
+msgstr "%s कॉलम %s%s को type integer64 में परिवर्तित किया जा रहा है ताकि %s के type से मेल खा सके।"
+
+#: bmerge.R:98
+msgid ""
+"Incompatible join types: %s is type integer64 but %s is type double and "
+"contains fractions"
+msgstr ""
+"असंगत join प्रकार: %s का type integer64 है, लेकिन %s का type double है और"
+"इसमें भिन्नांश (fractions) शामिल हैं।"
+
+#: bmerge.R:105
+msgid ""
+"Coercing double column %s (which contains no fractions) to type integer to "
+"match type of %s."
+msgstr ""
+"double कॉलम %s (जिसमें कोई भिन्नांश (fractions) नहीं है) को type integer में परिवर्तित किया जा रहा है ताकि"
+"%s के type से मेल खा सके।"
+
+#: bmerge.R:111
+msgid ""
+"Coercing integer column %s to type double to match type of %s which contains "
+"fractions."
+msgstr ""
+"integer कॉलम %s को type double में परिवर्तित किया जा रहा है ताकि %s के type से मेल खा सके, जिसमें"
+"भिन्नांश (fractions) हैं।"
+
+#: bmerge.R:115
+msgid "Coercing integer column %s to type double for join to match type of %s."
+msgstr "जोइन (join) के लिए %s के प्रकार से मेल खाने के लिए  integer कॉलम %s को डबल (double) type में बदला जा रहा है।"
+
+#: bmerge.R:128
+msgid "on= matches existing key, using key"
+msgstr "on= मौजूदा key से मेल खाता है, key का उपयोग करके"
+
+#: bmerge.R:133
+msgid "on= matches existing index, using index"
+msgstr "on= मौजूदा इंडेक्स (index) से मेल खाता है, इंडेक्स (index) का उपयोग करके"
+
+#: bmerge.R:138
+msgid "Calculated ad hoc index in %s"
+msgstr "%s में ad hoc इंडेक्स (index) की गणना की गई"
+
+#: bmerge.R:149
+msgid "Non-equi join operators detected ..."
+msgstr "non-equi join ऑपरेटर (operators) का पता चला ..."
+
+#: bmerge.R:150
+msgid "roll is not implemented for non-equi joins yet."
+msgstr "non-equi joins के लिए अभी तक रोल (roll) लागू नहीं किया गया है।"
+
+#: bmerge.R:151
+msgid "forder took ..."
+msgstr "forder ने लिया ..."
+
+#: bmerge.R:160
+msgid "Generating group lengths ..."
+msgstr "समूह लेंथ्स (lengths) उत्पन्न कर रहे हैं ..."
+
+#: bmerge.R:163 bmerge.R:167 bmerge.R:174
+msgid "done in %s"
+msgstr "%s में पूरा हुआ"
+
+#: bmerge.R:165
+msgid "Generating non-equi group ids ..."
+msgstr "non-equi समूह ids उत्पन्न कर रहे हैं ..."
+
+#: bmerge.R:170
+msgid "Column name '_nqgrp_' is reserved for non-equi joins."
+msgstr "कॉलम (column) नाम 'nqgrp' non-equi joins के लिए आरक्षित है।"
+
+#: bmerge.R:171
+msgid "Recomputing forder with non-equi ids ..."
+msgstr "non-equi ids के साथ forder की फिर से गणना की जा रही है ..."
+
+#: bmerge.R:180
+msgid "Starting bmerge ..."
+msgstr "bmerge शुरू हो रहा है ..."
+
+#: bmerge.R:182
+msgid "bmerge done in %s"
+msgstr "bmerge %s में पूरा हुआ"
+
+#: bmerge.R:177
+msgid "  Found %d non-equi group ...\n"
+msgid_plural "  Found %d non-equi groups ...\n"
+msgstr[0] "   %d non-equi समूह मिला ...\n"
+msgstr[1] "   %d non-equi समूह मिले ...\n"

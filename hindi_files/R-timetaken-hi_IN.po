@@ -1,0 +1,15 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: timetaken 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: timetaken.R:3
+msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
+msgstr "started.at=proc.time() का उपयोग करें, Sys.time() (POSIXt और धीमा) का नहीं"

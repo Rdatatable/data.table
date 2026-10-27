@@ -1,0 +1,78 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fsort 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fsort.c:106
+msgid "Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"
+msgstr "0 और 1 की गणनाओं को छोड़कर MSBsize को %zu से %zu तक कम कर दिया गया\n"
+
+#: fsort.c:119
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr "%s TRUE या FALSE होना चाहिए"
+
+#: fsort.c:121
+msgid "x must be a vector of type double currently"
+msgstr "x को वर्तमान में double प्रकार का वेक्टर (vector) होना चाहिए"
+
+#: fsort.c:147
+#, c-format
+msgid "Failed to allocate %d bytes in fsort()."
+msgstr "fsort() में %d बाइट्स (bytes) आवंटित करने में असफल।"
+
+#: fsort.c:173
+#, c-format
+msgid "Range = [%g,%g]\n"
+msgstr "रेंज = [%g,%g]\n"
+
+#: fsort.c:174
+msgid "Cannot yet handle negatives."
+msgstr "नकारात्मक संख्याओं को अभी तक संभाला नहीं जा सकता।"
+
+#: fsort.c:196
+#, c-format
+msgid ""
+"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, "
+"lastBatchSize=%<PRIu64>)\n"
+msgstr ""
+"counts %dMB है (%d पेज (page) प्रति nBatch=%d, batchSize=%<PRIu64>,"
+"lastBatchSize=%<PRIu64>)\n"
+
+#: fsort.c:266
+msgid "Top 20 MSB counts: "
+msgstr "शीर्ष 20 MSB गणनाएं:"
+
+#: fsort.c:266
+#, c-format
+msgid "%<PRId64> "
+msgstr "%<PRId64>"
+
+#: fsort.c:266
+msgid "\n"
+msgstr "\n"
+
+#: fsort.c:333
+#, c-format
+msgid ""
+"OpenMP %d did not assign threads to iterations monotonically. Please search "
+"Stack Overflow for this message."
+msgstr ""
+"OpenMP %d ने थ्रेड्स को क्रमिक रूप से इटरेशन (iterations) को असाइन (assign) नहीं किया।"
+"कृपया इस संदेश के लिए Stack Overflow पर खोजें।"
+
+#: fsort.c:335
+msgid "Unable to allocate working memory"
+msgstr "कार्य स्मृति आवंटित करने में असमर्थ"
+
+#: fsort.c:345
+#, c-format
+msgid "%d: %.3f (%4.1f%%)\n"
+msgstr "%d: %.3f (%4.1f%%)\n"
