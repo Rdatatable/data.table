@@ -734,6 +734,41 @@ replace_dot_alias = function(e) {
   invisible()
 }
 
+# coerce the evaluated i: a one-column numeric matrix becomes integer, a logical i absorbs a not-join, and character, factor,
+#   list and data.frame i become a data.table to join to. Returns .dt_done(null.data.table()) when i is NULL.
+.dt_coerce_i = function(q) {
+  i = q$i
+  notjoin = q$notjoin
+  isnull_inames = q$isnull_inames
+  if (is.matrix(i)) {
+    if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
+      i = as.integer(i)
+    } else {
+      stopf("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report to data.table issue tracker if you'd like this, or add your comments to FR #657.")
+    }
+  }
+  if (is.logical(i)) {
+    if (notjoin) {
+      notjoin = FALSE
+      i = !i
+    }
+  }
+  if (is.null(i)) return(.dt_done(null.data.table()))
+  if (is.character(i) || is.factor(i)) {
+    isnull_inames = TRUE
+    i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
+  } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) { i = as.data.table(i[[1L]]) }
+  else if (identical(class(i),"data.frame")) { i = as.data.table(i) }   # TO DO: avoid these as.data.table() and use a flag instead
+  else if (identical(class(i),"list")) {
+    isnull_inames = is.null(names(i))
+    i = as.data.table(i)
+  }
+  q$i = i
+  q$notjoin = notjoin
+  q$isnull_inames = isnull_inames
+  invisible()
+}
+
 # rows of x covered by the groups: f__/len__ index o__ if x was reordered for grouping, and irows if i subset x
 .dt_group_rows = function(f__, len__, o__, irows) {
   rows = vecseq(f__,len__,NULL)
@@ -994,29 +1029,7 @@ replace_dot_alias = function(e) {
     xo = NULL
     isnull_inames = FALSE
     if (.is_dt_done(r <- .dt_eval_isub(q, isub))) return(.dt_done_value(r))
-    if (is.matrix(i)) {
-      if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
-        i = as.integer(i)
-      } else {
-        stopf("i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report to data.table issue tracker if you'd like this, or add your comments to FR #657.")
-      }
-    }
-    if (is.logical(i)) {
-      if (notjoin) {
-        notjoin = FALSE
-        i = !i
-      }
-    }
-    if (is.null(i)) return( null.data.table() )
-    if (is.character(i) || is.factor(i)) {
-      isnull_inames = TRUE
-      i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
-    } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) { i = as.data.table(i[[1L]]) }
-    else if (identical(class(i),"data.frame")) { i = as.data.table(i) }   # TO DO: avoid these as.data.table() and use a flag instead
-    else if (identical(class(i),"list")) {
-      isnull_inames = is.null(names(i))
-      i = as.data.table(i)
-    }
+    if (.is_dt_done(r <- .dt_coerce_i(q))) return(.dt_done_value(r))
 
     if (is.data.frame(i)) {
       if (missing_on) {
