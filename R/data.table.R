@@ -569,6 +569,60 @@ replace_dot_alias = function(e) {
   list(roll=roll, rollends=rollends, nomatch=nomatch, nomatch0=nomatch0)
 }
 
+# the environment j is evaluated in -> Symbols ..x in j are looked up in the calling scope and bound to ..x here, so that they also work inside .SD[] and by group.
+.dt_new_SDenv = function(jsub, names_x, callenv) {
+  SDenv = new.env(parent=callenv)
+
+  syms = all.vars(jsub)
+  syms = syms[startsWith(syms, "..")]
+  syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
+  for (sym in syms) {
+    if (sym %chin% names_x) {
+      # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
+      next
+      # TODO in future, as warned in NEWS item for v1.11.0 :
+      # warningf(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
+    }
+    getName = substr(sym, 3L, nchar(sym))
+    getNameVal = get0(getName, callenv)
+    if (is.null(getNameVal)) {
+      if (exists(sym, callenv)) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
+      stopf("Variable '%s' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.", getName)
+    }
+    assign(sym, getNameVal, SDenv)
+  }
+  SDenv
+}
+
+# the parts of SDenv specific to grouping; .N and .GRP are written to by reference at C level for each group
+.dt_init_grouped_SDenv = function(SDenv, verbose) {
+  SDenv$.iSD = NULL  # null.data.table()
+  SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
+
+  SDenv$print = function(x, ...){ base::print(x,...); NULL}
+  # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
+
+  SDenv$.SDall = SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
+  SDenv$.N = vector("integer", 1L)    # explicit new vector (not 0L or as.integer() which might return R's internal small-integer global)
+  SDenv$.GRP = vector("integer", 1L)  #   because written to by reference at C level (one write per group). TODO: move this alloc to C level
+
+  # #3694/#761 common gotcha -- doing t1-t0 by group, but -.POSIXt uses units='auto'
+  #   independently by group & attr mismatch among groups is ignored. The latter
+  #   is a more general issue but the former can be fixed by forcing units='secs'
+  # parent.frame() in here is the frame calling `-`, i.e. where j is evaluated for a group
+  SDenv$`-.POSIXt` = function(e1, e2) {
+    if (!inherits(e2, 'POSIXt')) {
+      return(base::`-.POSIXt`(e1, e2))
+    }
+    if (verbose && !get0('done_units_report', parent.frame(), ifnotfound = FALSE)) {
+      catf('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units\n')
+      assign('done_units_report', TRUE, parent.frame())
+    }
+    difftime(e1, e2, units='secs')
+  }
+  invisible(SDenv)
+}
+
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -1682,26 +1736,7 @@ replace_dot_alias = function(e) {
     }
   }  # end of  if !missing_j
 
-  SDenv = new.env(parent=callenv)
-
-  syms = all.vars(jsub)
-  syms = syms[startsWith(syms, "..")]
-  syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
-  for (sym in syms) {
-    if (sym %chin% names_x) {
-      # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
-      next
-      # TODO in future, as warned in NEWS item for v1.11.0 :
-      # warningf(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
-    }
-    getName = substr(sym, 3L, nchar(sym))
-    getNameVal = get0(getName, callenv)
-    if (is.null(getNameVal)) {
-      if (exists(sym, callenv)) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
-      stopf("Variable '%s' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.", getName)
-    }
-    assign(sym, getNameVal, SDenv)
-  }
+  SDenv = .dt_new_SDenv(jsub, names_x, callenv)
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
   if (missingby || bynull || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
@@ -1760,12 +1795,7 @@ replace_dot_alias = function(e) {
     SDenv$.NGRP = 1L
     .Call(C_lock, SDenv$.SD) # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
     .Call(C_lock, SDenv$.SDall)
-    lockBinding(".SD",SDenv)
-    lockBinding(".SDall",SDenv)
-    lockBinding(".N",SDenv)
-    lockBinding(".I",SDenv)
-    lockBinding(".GRP",SDenv)
-    lockBinding(".NGRP", SDenv)
+    for (b in c(".SD", ".SDall", ".N", ".I", ".GRP", ".NGRP")) lockBinding(b, SDenv)
     for (ii in ansvars) assign(ii, .subset2(SDenv$.SDall, ii), SDenv)
     # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
     # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
@@ -1873,30 +1903,7 @@ replace_dot_alias = function(e) {
   o__ = integer()
   if (".N" %chin% ansvars) stopf("The column '.%1$s' can't be grouped because it conflicts with the special .%1$s variable. Try setnames(DT,'.%1$s','%1$s') first.", "N")
   if (".I" %chin% ansvars) stopf("The column '.%1$s' can't be grouped because it conflicts with the special .%1$s variable. Try setnames(DT,'.%1$s','%1$s') first.", "I")
-  SDenv$.iSD = NULL  # null.data.table()
-  SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
-
-  SDenv$print = function(x, ...){ base::print(x,...); NULL}
-  # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
-
-  SDenv$.SDall = SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
-  SDenv$.N = vector("integer", 1L)    # explicit new vector (not 0L or as.integer() which might return R's internal small-integer global)
-  SDenv$.GRP = vector("integer", 1L)  #   because written to by reference at C level (one write per group). TODO: move this alloc to C level
-
-  # #3694/#761 common gotcha -- doing t1-t0 by group, but -.POSIXt uses units='auto'
-  #   independently by group & attr mismatch among groups is ignored. The latter
-  #   is a more general issue but the former can be fixed by forcing units='secs'
-  # parent.frame() in here is the frame calling `-`, i.e. where j is evaluated for a group, not callenv
-  SDenv$`-.POSIXt` = function(e1, e2) {
-    if (!inherits(e2, 'POSIXt')) {
-      return(base::`-.POSIXt`(e1, e2))
-    }
-    if (verbose && !get0('done_units_report', parent.frame(), ifnotfound = FALSE)) {
-      catf('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units\n')
-      assign('done_units_report', TRUE, parent.frame())
-    }
-    difftime(e1, e2, units='secs')
-  }
+  .dt_init_grouped_SDenv(SDenv, verbose)
 
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
@@ -2001,16 +2008,10 @@ replace_dot_alias = function(e) {
     setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
   }
   # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
+  SDenv$.NGRP = length(f__)
   .Call(C_lock, SDenv$.SD)  # stops := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
   .Call(C_lock, SDenv$.SDall)
-  lockBinding(".SD",SDenv)
-  lockBinding(".SDall",SDenv)
-  lockBinding(".N",SDenv)
-  lockBinding(".GRP",SDenv)
-  lockBinding(".iSD",SDenv)
-
-  SDenv$.NGRP = length(f__)
-  lockBinding(".NGRP", SDenv)
+  for (b in c(".SD", ".SDall", ".N", ".GRP", ".iSD", ".NGRP")) lockBinding(b, SDenv)
 
   # Determine GForce-optimized query
   gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, callenv)
