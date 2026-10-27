@@ -537,6 +537,8 @@ replace_dot_alias = function(e) {
   missing_SDcols = missing(.SDcols)
   missing_drop = missing(drop)
   missing_verbose = missing(verbose)
+  # capture parent.frame() changes once as calling scope
+  callenv = parent.frame()
   if (!cedta()) {
     # Fix for #500 (to do)
     if (substitute(j) %iscall% c(":=", "let")) {
@@ -585,7 +587,7 @@ replace_dot_alias = function(e) {
   naturaljoin = FALSE
   names_x = names(x)
   if (missing_i && !missing_on) {
-    on_tmp = eval.parent(.massagei(substitute(on)))
+    on_tmp = eval(.massagei(substitute(on)), callenv)
     if (!is.list(on_tmp) || !length(names(on_tmp))) {
       warningf("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '%s'.", class1(on_tmp))
       on = NULL
@@ -672,8 +674,8 @@ replace_dot_alias = function(e) {
         for (..name in av) {
           name = substr(..name, 3L, nchar(..name))
           if (!nzchar(name)) stopf("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
-          parent_has_..name = exists(..name, where=parent.frame())
-          if (!exists(name, where=parent.frame())) {
+          parent_has_..name = exists(..name, where=callenv)
+          if (!exists(name, where=callenv)) {
             suggested = if (parent_has_..name)
               gettextf(" Variable '..%s' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.", name)
             # We have recommended 'manual' .. prefix in the past, so try to be helpful
@@ -688,7 +690,7 @@ replace_dot_alias = function(e) {
       }
     } else if (is.name(jsub)) {
       if (startsWith(as.character(jsub), "..")) internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
-      if (!with && !exists(as.character(jsub), where=parent.frame()))
+      if (!with && !exists(as.character(jsub), where=callenv))
         stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", as.character(jsub))
     }
     if (root=="{") {
@@ -704,7 +706,7 @@ replace_dot_alias = function(e) {
       # TODO: this && !any depends on data. Can we remove it?
       # Grab the dynamic expression from calling scope now to give the optimizer a chance to optimize it
       # Only when top level is eval call.  Not nested like x:=eval(...) or `:=`(x=eval(...), y=eval(...))
-      jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
+      jsub = eval(jsub[[2L]], callenv, callenv)  # this evals the symbol to return the dynamic expression
       if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
       # Note that the dynamic expression could now be := (new in v1.9.7)
       jsub = replace_dot_alias(jsub)
@@ -753,22 +755,22 @@ replace_dot_alias = function(e) {
     # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires
     # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
     restore.N = remove.N = FALSE
-    old.N = get0(".N", envir=parent.frame(), inherits=FALSE)
+    old.N = get0(".N", envir=callenv, inherits=FALSE)
     if (!is.null(old.N)) {
-      locked.N = bindingIsLocked(".N", parent.frame())
-      if (locked.N) eval(call("unlockBinding", ".N", parent.frame()))  # eval call to pass R CMD check NOTE until we find cleaner way
-      assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
+      locked.N = bindingIsLocked(".N", callenv)
+      if (locked.N) eval(call("unlockBinding", ".N", callenv))  # eval call to pass R CMD check NOTE until we find cleaner way
+      assign(".N", nrow(x), envir=callenv, inherits=FALSE)
       restore.N = TRUE
       # the comment below is invalid hereafter (due to fix for #1145)
       # binding locked when .SD[.N] but that's ok as that's the .N we want anyway
 
       # TO DO: change isub at C level s/.N/nrow(x); changing a symbol to a constant should be ok
     } else {
-       assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
+       assign(".N", nrow(x), envir=callenv, inherits=FALSE)
        remove.N = TRUE
     }
     if (isub %iscall% "eval") {  # TO DO: or ..()
-      isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
+      isub = eval(.massagei(isub[[2L]]), callenv, callenv)
       if (is.expression(isub)) isub=isub[[1L]]
     }
     if (isub %iscall% "!") {
@@ -784,7 +786,7 @@ replace_dot_alias = function(e) {
     if (is.null(isub)) return( null.data.table() )
 
     if (length(o <- .prepareFastSubset(isub = isub, x = x,
-                                              enclos =  parent.frame(),
+                                              enclos =  callenv,
                                               notjoin = notjoin, verbose = verbose))){
       ## redirect to the is.data.table(x) == TRUE branch.
       ## Additional flag to adapt things after bmerge:
@@ -799,7 +801,7 @@ replace_dot_alias = function(e) {
       mult = "all"
     }
     else if (!is.name(isub)) {
-      ienv = new.env(parent=parent.frame())
+      ienv = new.env(parent=callenv)
       if (getOption("datatable.optimize") >= 1L) assign("order", forder, ienv)
       i = tryCatch(eval(.massagei(isub), x, ienv),
         dt_invalid_let_error = function(e) stopf("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."),
@@ -807,7 +809,7 @@ replace_dot_alias = function(e) {
       )
     } else {
       # isub is a single symbol name such as B in DT[B]
-      i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
+      i = try(eval(isub, callenv, callenv), silent=TRUE)
       if (inherits(i,"try-error") || is.function(i)) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
@@ -822,10 +824,10 @@ replace_dot_alias = function(e) {
       }
     }
     if (restore.N) {
-      assign(".N", old.N, envir=parent.frame())
-      if (locked.N) lockBinding(".N", parent.frame())
+      assign(".N", old.N, envir=callenv)
+      if (locked.N) lockBinding(".N", callenv)
     }
-    if (remove.N) rm(list=".N", envir=parent.frame())
+    if (remove.N) rm(list=".N", envir=callenv)
     if (is.matrix(i)) {
       if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
         i = as.integer(i)
@@ -1121,10 +1123,10 @@ replace_dot_alias = function(e) {
       # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
       while (jsub %iscall% "(") jsub = as.list(jsub)[[-1L]]
       if (jsub %iscall% ":" && length(jsub)==3L) {
-        j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame()) # else j will be evaluated for the first time on next line
+        j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), callenv) # else j will be evaluated for the first time on next line
       } else {
         names(..syms) = ..syms
-        j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=parent.frame()), parent.frame())
+        j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=callenv), callenv)
       }
       if (is.logical(j)) j = which(j)
       if (!length(j) && !notj) return( null.data.table() )
@@ -1184,14 +1186,14 @@ replace_dot_alias = function(e) {
           bysuborig = as.symbol("I")
         }
         if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
-          bysub = eval(bysub, parent.frame(), parent.frame())
+          bysub = eval(bysub, callenv, callenv)
           # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
           # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
           # note that if y is a list, this'll return an error (not sure if it should).
           if (is.atomic(bysub)) bysubl = list(bysuborig) else bysubl = as.list.default(bysub)
         }
         if (length(bysubl) && identical(bysubl[[1L]],quote(eval))) {    # TO DO: or by=..()
-          bysub = eval(bysubl[[2L]], parent.frame(), parent.frame())
+          bysub = eval(bysubl[[2L]], callenv, callenv)
           bysub = replace_dot_alias(bysub) # fix for #1298
           if (is.expression(bysub)) bysub=bysub[[1L]]
           bysubl = as.list.default(bysub)
@@ -1202,7 +1204,7 @@ replace_dot_alias = function(e) {
           #        tried before but since not wrapped in try() it failed on some tests
           # or look for column names used in this by (since if none it wouldn't find column names anyway
           # when evaled within full x[irows]).  Trouble is that colA%%2L is a call and should be within frame.
-          tt = eval(bysub, parent.frame(), parent.frame())
+          tt = eval(bysub, callenv, callenv)
           if (!is.character(tt)) stopf("by=c(...), key(...) or names(...) must evaluate to 'character'")
           bysub=tt
         } else if (is.call(bysub) && !(bysub %iscall% c("list", "as.list", "{", ".", ":"))) {
@@ -1256,9 +1258,9 @@ replace_dot_alias = function(e) {
 
         if (is.null(irows)) {
           if (bysub %iscall% ':' && length(bysub)==3L && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
-            byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
+            byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names_x), callenv)
             byval = as.list(x)[byval]
-          } else byval = eval(bysub, x, parent.frame())
+          } else byval = eval(bysub, x, callenv)
         } else {
           # length 0 when i returns no rows
           if (!is.integer(irows)) internal_error("irows isn't integer") # nocov
@@ -1277,9 +1279,9 @@ replace_dot_alias = function(e) {
             xss = `[.data.table`(x,irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
           }
           if (bysub %iscall% ':' && length(bysub)==3L) {
-            byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), parent.frame())
+            byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), callenv)
             byval = as.list(xss)[byval]
-          } else byval = eval(bysub, xss, parent.frame())
+          } else byval = eval(bysub, xss, callenv)
           xnrow = nrow(xss)
           # TO DO: pass xss (x subset) through into dogroups. Still need irows there (for :=), but more condense
           # and contiguous to use xss to form .SD in dogroups than going via irows
@@ -1434,7 +1436,7 @@ replace_dot_alias = function(e) {
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
           if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
             # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
-            .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
+            .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), callenv)
           } else {
             if (colsub %iscall% 'patterns') {
               patterns_list_or_vector = eval_with_cols(colsub, names_x)
@@ -1445,7 +1447,7 @@ replace_dot_alias = function(e) {
                 patterns_list_or_vector
               }
             } else {
-              .SDcols = eval(colsub, parent.frame(), parent.frame())
+              .SDcols = eval(colsub, callenv, callenv)
               # allow filtering via function in .SDcols, #3950
               if (is.function(.SDcols)) {
                 .SDcols = lapply(x, .SDcols)
@@ -1550,10 +1552,10 @@ replace_dot_alias = function(e) {
             #6033 revdep. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means
             # jsub is actually substitute(names(.SD)) instead of just names(.SD)
             if (lhs %iscall% 'substitute')
-              lhs = eval(lhs, parent.frame(), parent.frame())
+              lhs = eval(lhs, callenv, callenv)
 
             # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
-            lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), parent.frame())
+            lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), callenv)
           }
         } else {
           # `:=`(c2=1L,c3=2L,...)
@@ -1662,9 +1664,9 @@ replace_dot_alias = function(e) {
           }
           setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
           if (is.name(name)) {
-            assign(as.character(name),x,parent.frame(),inherits=TRUE)
+            assign(as.character(name),x,callenv,inherits=TRUE)
           } else if (.is_simple_extraction(name)) {
-            .reassign_extracted_table(name, x)
+            .reassign_extracted_table(name, x, callenv)
           } # TO DO: else if env$<- or list$<-
         }
       }
@@ -1709,7 +1711,7 @@ replace_dot_alias = function(e) {
     }
   }  # end of  if !missing_j
 
-  SDenv = new.env(parent=parent.frame())
+  SDenv = new.env(parent=callenv)
 
   syms = all.vars(jsub)
   syms = syms[startsWith(syms, "..")]
@@ -1722,9 +1724,9 @@ replace_dot_alias = function(e) {
       # warningf(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     }
     getName = substr(sym, 3L, nchar(sym))
-    getNameVal = get0(getName, parent.frame())
+    getNameVal = get0(getName, callenv)
     if (is.null(getNameVal)) {
-      if (exists(sym, parent.frame())) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
+      if (exists(sym, callenv)) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
       stopf("Variable '%s' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.", getName)
     }
     assign(sym, getNameVal, SDenv)
@@ -1801,7 +1803,7 @@ replace_dot_alias = function(e) {
       stopf("j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' is not found. If you intended to select columns using a variable in calling scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar to a file system path.", jsubChar)
     }
 
-    jval = eval(jsub, SDenv, parent.frame())
+    jval = eval(jsub, SDenv, callenv)
     .Call(C_unlock, jval) # in case jval inherits .SD's lock, #1341 #2245. .Call directly (not via an R function like setattr or unlock) to avoid bumping jval's MAYBE_SHARED.
 
     # copy 'jval' when required
@@ -1847,7 +1849,7 @@ replace_dot_alias = function(e) {
         name = substitute(x)
         setalloccol(x, verbose=FALSE)
         if (is.name(name)) {
-          assign(as.character(name), x, parent.frame(), inherits=TRUE)
+          assign(as.character(name), x, callenv, inherits=TRUE)
         }
       }
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
@@ -1926,6 +1928,7 @@ replace_dot_alias = function(e) {
   # #3694/#761 common gotcha -- doing t1-t0 by group, but -.POSIXt uses units='auto'
   #   independently by group & attr mismatch among groups is ignored. The latter
   #   is a more general issue but the former can be fixed by forcing units='secs'
+  # parent.frame() in here is the frame calling `-`, i.e. where j is evaluated for a group, not callenv
   SDenv$`-.POSIXt` = function(e1, e2) {
     if (!inherits(e2, 'POSIXt')) {
       return(base::`-.POSIXt`(e1, e2))
@@ -2052,7 +2055,7 @@ replace_dot_alias = function(e) {
   lockBinding(".NGRP", SDenv)
 
   # Determine GForce-optimized query
-  gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, parent.frame())
+  gforce_result = .attempt_optimize(jsub, jvnames, sdvars, SDenv, verbose, i, byjoin, f__, ansvars, use.I, lhs, names_x, callenv)
   GForce = gforce_result$GForce
   jsub = gforce_result$jsub
   jvnames = gforce_result$jvnames
@@ -2088,7 +2091,7 @@ replace_dot_alias = function(e) {
     if (!length(ansvars) && !use.I) { # j is only .N (see .optimize_gforce), so gforce() isn't needed
       ans = list(len__)
     } else {
-      thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
+      thisEnv = new.env()  # not parent=callenv so that gsum is found
       for (ii in ansvars) assign(ii, .subset2(x, ii), thisEnv)
       assign(".N", len__, thisEnv) # For #334
       # fix for #1683
