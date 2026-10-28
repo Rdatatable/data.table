@@ -1,0 +1,261 @@
+---
+title: "डेटा विश्लेषण के लिए .SD का उपयोग"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format:
+    options:
+      toc: true
+      number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Using .SD for Data Analysis}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+<style>
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
+</style>
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+यह विगनेट आपके `data.table` विश्लेषण में `.SD` variable का उपयोग करने के सबसे सामान्य तरीकों को समझाएगा। यह StackOverflow पर दिए गए [इस उत्तर](https://stackoverflow.com/a/47406952/3576984) का अनुकूलित रूप है।
+
+# `.SD` क्या है?
+
+सबसे व्यापक अर्थ में, `.SD` केवल उस variable को पकड़ने का एक संक्षिप्त तरीका है जो डेटा विश्लेषण के संदर्भ में बार-बार सामने आता है। इसे *S*ubset, *S*elfsame, या *D*ata के *S*elf-reference के रूप में समझा जा सकता है। अर्थात, अपने सबसे मूल रूप में `.SD`, `data.table` स्वयं के लिए एक _reflexive reference_ है -- जैसा कि हम नीचे के उदाहरणों में देखेंगे, यह "queries" (extractions/subsets आदि, `[` का उपयोग करके) को एक-दूसरे से जोड़ने में विशेष रूप से उपयोगी है। इसका अर्थ यह भी है कि `.SD` _स्वयं एक `data.table` है_ (इस अपवाद के साथ कि इसमें `:=` द्वारा assignment की अनुमति नहीं है)।
+
+`.SD` का सरल उपयोग column subsetting के लिए होता है (अर्थात जब `.SDcols` निर्दिष्ट किया जाता है); क्योंकि यह रूप समझने में अधिक सीधा है, हम पहले इसे देखेंगे। `.SD` का दूसरा उपयोग, grouping scenarios में (अर्थात जब `by = ` या `keyby = ` निर्दिष्ट हो), अवधारणात्मक रूप से थोड़ा अलग है (हालाँकि मूल रूप से वही है, क्योंकि non-grouped operation वास्तव में केवल एक group वाले grouping का edge case है)।
+
+## Lahman डेटा लोड करना और उसका पूर्वावलोकन करना
+
+इसे अधिक वास्तविक उदाहरण जैसा बनाने के लिए, काल्पनिक डेटा बनाने के बजाय [Lahman database](https://github.com/cdalzell/Lahman) से baseball से संबंधित कुछ datasets लोड करते हैं। सामान्य R उपयोग में हम इन datasets को सीधे `Lahman` R package से लोड करते; इस विगनेट में हमने इन्हें package के GitHub page से पहले ही डाउनलोड कर लिया है।
+
+```{r download_lahman}
+load('Teams.RData')
+setDT(Teams)
+Teams
+
+load('Pitching.RData')
+setDT(Pitching)
+Pitching
+```
+
+Baseball की शब्दावली से परिचित पाठकों को इन tables की सामग्री परिचित लगेगी; `Teams` किसी दिए गए वर्ष में किसी team के कुछ statistics दर्ज करता है, जबकि `Pitching` किसी दिए गए वर्ष में किसी pitcher के statistics दर्ज करता है। आगे बढ़ने से पहले [documentation](https://github.com/cdalzell/Lahman) अवश्य देखें और डेटा की संरचना समझने के लिए स्वयं थोड़ा अन्वेषण करें।
+
+# Ungrouped डेटा पर `.SD`
+
+`.SD` की reflexive प्रकृति से मेरा क्या तात्पर्य है, इसे दिखाने के लिए इसके सबसे साधारण उपयोग पर विचार करें:
+
+```{r plain_sd}
+Pitching[ , .SD]
+```
+
+अर्थात, `Pitching[ , .SD]` ने बस पूरी table लौटा दी है; दूसरे शब्दों में, यह `Pitching` या `Pitching[]` लिखने का अनावश्यक रूप से विस्तृत तरीका था:
+
+```{r plain_sd_is_table}
+identical(Pitching, Pitching[ , .SD])
+```
+
+Subsetting के संदर्भ में `.SD` अभी भी डेटा का subset है, बस यह एक साधारण subset है (पूरा set स्वयं)।
+
+## कॉलम Subsetting: `.SDcols`
+
+`.SD` में क्या शामिल होगा इसे प्रभावित करने का पहला तरीका है `.SDcols` argument का उपयोग करके `.SD` में शामिल _columns_ को सीमित करना:
+
+```{r simple_sdcols}
+# W: Wins; L: Losses; G: Games
+Pitching[ , .SD, .SDcols = c('W', 'L', 'G')]
+```
+
+यह केवल समझाने के लिए था और काफी साधारण उदाहरण था। Character vector स्वीकार करने के अलावा, `.SDcols` यह भी स्वीकार करता है:
+
+1. _columns_ को filter करने के लिए `is.character` जैसा कोई भी function
+2. regular expression द्वारा _column names_ को filter करने के लिए function[^*] `patterns()`
+3. integer और logical vectors
+
+[^*]: अधिक विवरण के लिए `?patterns` देखें
+
+यह सरल उपयोग कई अत्यंत उपयोगी और सामान्य data-manipulation operations में काम आता है:
+
+## कॉलम Type Conversion
+
+डेटा को व्यवस्थित करने में column type conversion एक सामान्य आवश्यकता है। यद्यपि [`fwrite` ने हाल में प्रत्येक column की class पहले से घोषित करने की क्षमता प्राप्त की है](https://github.com/Rdatatable/data.table/pull/2545), सभी datasets `fread` से नहीं आते (जैसे इस विगनेट में), और `character`/`factor`/`numeric` types के बीच बार-बार conversion सामान्य है। हम `.SD` और `.SDcols` का उपयोग करके columns के समूहों को एक common type में batch-convert कर सकते हैं।
+
+हम देखते हैं कि `Teams` dataset में निम्नलिखित columns `character` के रूप में stored हैं, जबकि तर्कसंगत रूप से इन्हें `factor` के रूप में रखना अधिक उचित हो सकता है:
+
+```{r identify_factors}
+# teamIDBR: Team ID used by Baseball Reference website
+# teamIDlahman45: Team ID used in Lahman database version 4.5
+# teamIDretro: Team ID used by Retrosheet
+fkt = c('teamIDBR', 'teamIDlahman45', 'teamIDretro')
+# confirm that they're stored as `character`
+str(Teams[ , ..fkt])
+```
+
+अब इन columns को `factor` में बदलने का सिंटैक्स सरल है:
+
+```{r assign_factors}
+Teams[ , names(.SD) := lapply(.SD, factor), .SDcols = patterns('teamID')]
+# print out the first column to demonstrate success
+head(unique(Teams[[fkt[1L]]]))
+```
+
+ध्यान दें:
+
+
+1. `:=` एक assignment operator है जो copy बनाए बिना `data.table` को उसी स्थान पर update करता है। अधिक जानकारी के लिए [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) देखें।
+2. LHS, `names(.SD)`, बताता है कि हम किन columns को update कर रहे हैं - इस स्थिति में हम पूरी `.SD` को update कर रहे हैं।
+3. RHS, `lapply()`, `.SD` के प्रत्येक column पर loop करता है और उस column को factor में बदलता है।
+4. हम `.SDcols` का उपयोग केवल उन columns को चुनने के लिए करते हैं जिनमें `teamID` pattern है।
+
+फिर से, `.SDcols` argument काफी flexible है; ऊपर हमने `patterns` दिया, लेकिन हम `fkt` या column names का कोई भी `character` vector दे सकते थे। अन्य स्थितियों में column _positions_ का `integer` vector या प्रत्येक column को शामिल/बहिष्कृत करने वाला `logical` vector देना अधिक सुविधाजनक हो सकता है। अंत में, columns को filter करने के लिए function का उपयोग बहुत उपयोगी है।
+
+उदाहरण के लिए, सभी `factor` columns को `character` में बदलने के लिए हम निम्न कर सकते हैं:
+
+```{r sd_as_logical}
+fct_idx = Teams[, which(sapply(.SD, is.factor))] # column numbers to show the class changing
+str(Teams[[fct_idx[1L]]])
+Teams[ , names(.SD) := lapply(.SD, as.character), .SDcols = is.factor]
+str(Teams[[fct_idx[1L]]])
+```
+
+अंत में, `.SDcols` में pattern-based column matching का उपयोग करके उन सभी columns को चुन सकते हैं जिनमें `team` शामिल है और उन्हें वापस `factor` में बदल सकते हैं:
+
+```{r sd_patterns}
+Teams[ , .SD, .SDcols = patterns('team')]
+Teams[ , names(.SD) := lapply(.SD, factor), .SDcols = patterns('team')]
+```
+
+** ऊपर दिए गए उदाहरण के लिए एक सावधानी: column numbers को _स्पष्ट रूप से_ उपयोग करना (जैसे `DT[ , (1) := rnorm(.N)]`) खराब अभ्यास है और समय के साथ column positions बदलने पर कोड बिना स्पष्ट त्रुटि के गलत परिणाम दे सकता है। Numbers का अप्रत्यक्ष उपयोग भी खतरनाक हो सकता है यदि numbered index बनाने और उपयोग करने के क्रम पर हमारा सख्त नियंत्रण न हो।
+
+## किसी Model के Right-Hand Side को नियंत्रित करना
+
+Model specification में बदलाव मजबूत statistical analysis का एक मुख्य भाग है। आइए `Pitching` table में उपलब्ध छोटे covariate set का उपयोग करके किसी pitcher के ERA (Earned Runs Average, performance का एक माप) का अनुमान लगाने का प्रयास करें। `W` (wins) और `ERA` के बीच (linear) संबंध इस बात पर कैसे बदलता है कि specification में कौन से अन्य covariates शामिल हैं?
+
+यहाँ `.SD` की शक्ति का उपयोग करने वाली एक छोटी script है जो इस प्रश्न की जाँच करती है:
+
+```{r sd_for_lm, cache = FALSE, fig.cap="Fit OLS coefficient on W, various specifications, depicted as bars with distinct colors."}
+# this generates a list of the 2^k possible extra variables
+#   for models of the form ERA ~ G + (...)
+extra_var = c('yearID', 'teamID', 'G', 'L')
+models = unlist(
+  lapply(0L:length(extra_var), combn, x = extra_var, simplify = FALSE),
+  recursive = FALSE
+)
+
+# here are 16 visually distinct colors, taken from the list of 20 here:
+#   https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
+col16 = c('#e6194b', '#3cb44b', '#ffe119', '#0082c8',
+          '#f58231', '#911eb4', '#46f0f0', '#f032e6',
+          '#d2f53c', '#fabebe', '#008080', '#e6beff',
+          '#aa6e28', '#fffac8', '#800000', '#aaffc3')
+
+par(oma = c(2, 0, 0, 0))
+lm_coef = sapply(models, function(rhs) {
+  # using ERA ~ . and data = .SD, then varying which
+  #   columns are included in .SD allows us to perform this
+  #   iteration over 16 models succinctly.
+  #   coef(.)['W'] extracts the W coefficient from each model fit
+  Pitching[ , coef(lm(ERA ~ ., data = .SD))['W'], .SDcols = c('W', rhs)]
+})
+barplot(lm_coef, names.arg = sapply(models, paste, collapse = '/'),
+        main = 'Wins Coefficient\nWith Various Covariates',
+        col = col16, las = 2L, cex.names = 0.8)
+```
+
+Coefficient का sign हमेशा अपेक्षित रहता है (बेहतर pitchers में अधिक wins और कम runs allowed होते हैं), लेकिन magnitude इस बात के आधार पर काफी बदल सकता है कि हम और किन variables को control करते हैं।
+
+## Conditional Joins
+
+`data.table` सिंटैक्स अपनी सरलता और robustness के कारण बहुत उपयोगी है। सिंटैक्स `x[i]` subsetting के तीन सामान्य तरीकों को लचीले ढंग से संभालता है -- जब `i` एक `logical` vector हो, तो `x[i]`, `x` की वे rows लौटाता है जहाँ `i` `TRUE` है; जब `i` _एक अन्य `data.table`_ (या `list`) हो, तो (right) `join` किया जाता है (साधारण रूप में `x` और `i` की `key`s का उपयोग करके, या `on = ` दिए जाने पर उन columns के matches का उपयोग करके); और जब `i` character हो, तो इसे `x[list(i)]` का shorthand माना जाता है, अर्थात join के रूप में।
+
+सामान्य तौर पर यह बहुत उपयोगी है, लेकिन तब पर्याप्त नहीं होता जब हमें _conditional join_ करना हो, जहाँ tables के बीच संबंध का सटीक स्वरूप एक या अधिक columns की rows की कुछ विशेषताओं पर निर्भर करता है।
+
+यह उदाहरण स्वीकार्य रूप से थोड़ा कृत्रिम है, लेकिन विचार को स्पष्ट करता है; अधिक जानकारी के लिए यहाँ देखें ([1](https://stackoverflow.com/questions/31329939/conditional-keyed-join-update-and-update-a-flag-column-for-matches), [2](https://stackoverflow.com/questions/29658627/conditional-binary-join-and-update-by-reference-using-the-data-table-package))।
+
+उद्देश्य `Pitching` table में `team_performance` नामक column जोड़ना है, जो प्रत्येक team के सर्वश्रेष्ठ pitcher (कम से कम 6 recorded games वाले pitchers में सबसे कम ERA के आधार पर) की team performance (rank) दर्ज करे।
+
+```{r conditional_join}
+# to exclude pitchers with exceptional performance in a few games,
+#   subset first; then define rank of pitchers within their team each year
+#   (in general, we should put more care into the 'ties.method' of frank)
+Pitching[G > 5, rank_in_team := frank(ERA), by = .(teamID, yearID)]
+Pitching[rank_in_team == 1, team_performance :=
+           Teams[.SD, Rank, on = c('teamID', 'yearID')]]
+```
+
+ध्यान दें कि `x[y]` सिंटैक्स `nrow(y)` values लौटाता है (अर्थात यह right join है), इसलिए `Teams[.SD]` में `.SD` दाईं ओर है (क्योंकि इस स्थिति में `:=` के RHS को `nrow(Pitching[rank_in_team == 1])` values चाहिए)।
+
+# Grouped `.SD` operations
+
+अक्सर हम अपने डेटा पर _group level_ पर कोई operation करना चाहते हैं। जब हम `by =` (या `keyby = `) निर्दिष्ट करते हैं, तो `data.table` द्वारा `j` process किए जाने को ऐसे समझ सकते हैं मानो आपका `data.table` कई छोटे sub-`data.table`s में विभाजित हो गया है, जिनमें से प्रत्येक आपके `by` variable(s) के एक मान से संबंधित है:
+
+![Grouping का चित्रण](plots/grouping_illustration.png)
+<!-- 'यह grouping के काम करने का एक दृश्य चित्रण है। बाईं ओर एक grid है। पहला column "ID COLUMN" शीर्षक वाला है जिसमें A से G तक के capital letters हैं, और बाकी data बिना label का है, गहरे रंग में है तथा केवल "Data" लिखा है जिससे संकेत मिलता है कि यह arbitrary है। एक दाईं ओर का arrow दिखाता है कि data कैसे groups में विभाजित होता है। A से G तक प्रत्येक capital letter के लिए दाईं ओर एक grid है; बाईं ओर की grid को विभाजित करके दाईं ओर की grids बनाई गई हैं।' -->
+
+Grouping की स्थिति में `.SD` का स्वरूप बहु-भागीय होता है -- यह इन प्रत्येक sub-`data.table`s को _एक समय में एक_ संदर्भित करता है (थोड़ा अधिक सटीक रूप से कहें तो `.SD` का scope एक single sub-`data.table` होता है)। इससे हम संक्षेप में वह operation व्यक्त कर सकते हैं जिसे re-assembled result लौटने से पहले _प्रत्येक sub-`data.table`_ पर करना चाहते हैं।
+
+यह कई परिस्थितियों में उपयोगी है; सबसे सामान्य उदाहरण यहाँ दिए गए हैं:
+
+## Group Subsetting
+
+Lahman data में प्रत्येक team के लिए सबसे हाल का season प्राप्त करते हैं। इसे बहुत सरलता से किया जा सकता है:
+
+```{r group_sd_last}
+# the data is already sorted by year; if it weren't
+#   we could do Teams[order(yearID), .SD[.N], by = teamID]
+Teams[ , .SD[.N], by = teamID]
+```
+
+याद रखें कि `.SD` स्वयं एक `data.table` है, और `.N` किसी group की कुल rows की संख्या को दर्शाता है (प्रत्येक group के भीतर यह `nrow(.SD)` के बराबर है), इसलिए `.SD[.N]` प्रत्येक `teamID` से संबंधित अंतिम row के लिए _पूरी `.SD`_ लौटाता है।
+
+इसका एक अन्य सामान्य रूप है प्रत्येक group की _पहली_ observation प्राप्त करने के लिए `.SD[1L]`, या प्रत्येक group से एक _random_ row लौटाने के लिए `.SD[sample(.N, 1L)]` का उपयोग करना।
+
+## Group Optima
+
+मान लीजिए हम प्रत्येक team का _सर्वश्रेष्ठ_ वर्ष लौटाना चाहते हैं, जिसका माप कुल runs scored (`R`; इसे अन्य metrics के लिए आसानी से बदला जा सकता है) से किया जाए। प्रत्येक sub-`data.table` से कोई _fixed_ element लेने के बजाय, अब हम वांछित index को _dynamically_ इस प्रकार परिभाषित करते हैं:
+
+```{r sd_team_best_year}
+Teams[ , .SD[which.max(R)], by = teamID]
+```
+
+ध्यान दें कि इस approach को `.SDcols` के साथ जोड़ा जा सकता है ताकि प्रत्येक `.SD` के लिए `data.table` के केवल कुछ हिस्से लौटाए जाएँ (इस सावधानी के साथ कि विभिन्न subsets में `.SDcols` स्थिर रहना चाहिए)।
+
+_NB_: `.SD[1L]` वर्तमान में [_`GForce`_](https://Rdatatable.gitlab.io/data.table/library/data.table/html/datatable-optimize.html) द्वारा optimized है ([यह भी देखें](https://stackoverflow.com/questions/22137591/about-gforce-in-data-table-1-9-2)), जो `data.table` की internal सुविधा है और `sum` या `mean` जैसे सामान्य grouped operations को बहुत तेज़ बनाती है -- अधिक जानकारी के लिए `?GForce` देखें और इस क्षेत्र में updates के लिए feature improvement requests पर नज़र रखें/समर्थन दें: [1](https://github.com/Rdatatable/data.table/issues/735), [2](https://github.com/Rdatatable/data.table/issues/2778), [3](https://github.com/Rdatatable/data.table/issues/523), [4](https://github.com/Rdatatable/data.table/issues/971), [5](https://github.com/Rdatatable/data.table/issues/1197), [6](https://github.com/Rdatatable/data.table/issues/1414)।
+
+## Grouped Regression
+
+ऊपर `ERA` और `W` के संबंध से जुड़े प्रश्न पर लौटते हुए, मान लें कि हम अपेक्षा करते हैं कि यह संबंध team के अनुसार अलग हो (अर्थात प्रत्येक team का slope अलग हो)। हम इस heterogeneity की जाँच करने के लिए regression को आसानी से दोबारा चला सकते हैं (ध्यान दें कि इस approach से standard errors सामान्यतः गलत होते हैं -- specification `ERA ~ W*teamID` बेहतर होगा -- यह approach पढ़ने में आसान है और _coefficients_ ठीक हैं):
+
+```{r group_lm, results = 'hide', fig.cap="A histogram depicting the distribution of fitted coefficients. It is vaguely bell-shaped and concentrated around -.2"}
+# Overall coefficient for comparison
+overall_coef = Pitching[ , coef(lm(ERA ~ W))['W']]
+# use the .N > 20 filter to exclude teams with few observations
+Pitching[ , if (.N > 20L) .(w_coef = coef(lm(ERA ~ W))['W']), by = teamID
+          ][ , hist(w_coef, 20L, las = 1L,
+                    xlab = 'Fitted Coefficient on W',
+                    ylab = 'Number of Teams', col = 'darkgreen',
+                    main = 'Team-Level Distribution\nWin Coefficients on ERA')]
+abline(v = overall_coef, lty = 2L, col = 'red')
+```
+
+वास्तव में पर्याप्त heterogeneity है, लेकिन observed overall value के आसपास स्पष्ट concentration भी दिखाई देती है।
+
+ऊपर दिया गया भाग केवल एक छोटा परिचय है कि `.SD`, `data.table` में सुंदर और efficient code लिखने को कितना आसान बना सकता है!
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
