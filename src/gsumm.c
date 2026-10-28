@@ -949,7 +949,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
-  const int nth = getDTthreads(ngrp, false);
+  const int nth = getDTthreads(nrow, true);
   const bool pergroup = (int64_t)nth*maxgrpn > nrow;
   switch(TYPEOF(x)) {
   case REALSXP: {
@@ -1108,7 +1108,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
   const bool narm = LOGICAL(narmArg)[0];
-  const int nth = getDTthreads(ngrp, false);
+  const int nth = getDTthreads(nrow, true);
   const bool pergroup = (int64_t)nth*maxgrpn > nrow;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
