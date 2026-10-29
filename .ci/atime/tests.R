@@ -1,3 +1,9 @@
+bisect.restore.fun <- function(tinfo){
+  ## necessary to avoid failed checkout when bisecting some old commits
+  ## https://github.com/Rdatatable/data.table/issues/7909
+  cat("", file=file.path(tinfo$checkout.path, ".gitattributes"))
+  gert::git_restore(".", repo=tinfo$checkout.path)
+}
 pval.thresh <- 0.001 # to reduce false positives.
 
 # Test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
@@ -259,6 +265,27 @@ test.list <- atime::atime_test_list(
       close(f)
     }
   },
+
+  "fread N=cols regression" = atime::atime_test(
+    N = unique(as.integer(2^seq(0, 20, by=0.25))), # finer N grid for git bisect.
+    setup={
+      set.seed(1)
+      n.rows <- 100
+      input.vec <- rnorm(n.rows*N)
+      input.mat <- matrix(input.vec, n.rows, N)
+      input.dt <- data.table(input.mat)
+      input.csv <- tempfile()
+      data.table::fwrite(input.dt, input.csv)
+    },
+    seconds.limit=0.1,
+    Fast="1.14.8",
+    Slow="1.18.6",
+    bisect.commits=c(
+      PR7375="59f966cf6839a0494e42ed1ab98616eea03dcb36", #first fread slowdown to intermediate performance, added comment.char arg
+      PR7383="67db7f7fb33b99da8cc5dc575714924b96d0f0fe", #intermediate performance, using this as new in bisect with old=1.14.8 yields PR#7375.
+      Parent7370="1685a3b47d48f323afeae589545f7cbb7717ec28", #intermediate performance, using this as old in bisect with new=1.18.6 yields PR#7370.
+      PR7370="df7fa8071c6b818d24e47cc1a84a6dc0491550d6"), #second slowdown to same performance as Slow, sep detection single column quoted
+    expr=data.table::fread(input.csv, showProgress = FALSE, nThread=1)),
 
   # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
