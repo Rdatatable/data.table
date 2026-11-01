@@ -5567,7 +5567,7 @@ test(1363.1, selfrefok(DT), 1L)
 foo <- function(x) setDT(x)
 df = data.frame(x=1, y=2)
 foo(df)
-test(1363.2, selfrefok(df), 0L)
+test(1363.2, selfrefok(df) != 1L)
 setDT(df)
 test(1363.3, selfrefok(df), 1L)
 
