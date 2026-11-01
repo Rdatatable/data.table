@@ -573,12 +573,10 @@ class(.cedta_fallback) = "dt_query_helper"
 class(.check_args) = "dt_query_helper"
 
 # the environment j is evaluated in -> Symbols ..x in j are looked up in the calling scope and bound to ..x here, so that they also work inside .SD[] and by group.
-.dt_new_SDenv = function(jsub, names_x, callenv) {
+.new_SDenv = function(syms, names_x, callenv) {
   SDenv = new.env(parent=callenv)
 
-  syms = all.vars(jsub)
-  syms = syms[startsWith(syms, "..")]
-  syms = grepv("^[.][.](?:[.]|[0-9]+)$", syms, invert=TRUE) # exclude ellipsis and '..n' ellipsis elements
+  syms = grepv("^[.][.](?:[^0-9.]|[.].|[0-9].*[^0-9])", syms) # '..x' symbols, excluding '..', '...' and '..n' ellipsis elements
   for (sym in syms) {
     if (sym %chin% names_x) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
@@ -596,9 +594,10 @@ class(.check_args) = "dt_query_helper"
   }
   SDenv
 }
+class(.new_SDenv) = "dt_query_helper"
 
 # the parts of SDenv specific to grouping; .N and .GRP are written to by reference at C level for each group
-.dt_init_grouped_SDenv = function(SDenv, verbose) {
+.init_grouped_SDenv = function(SDenv, verbose) {
   SDenv$.iSD = NULL  # null.data.table()
   SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
 
@@ -625,6 +624,7 @@ class(.check_args) = "dt_query_helper"
   }
   invisible(SDenv)
 }
+class(.init_grouped_SDenv) = "dt_query_helper"
 
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
@@ -1740,7 +1740,7 @@ class(.check_args) = "dt_query_helper"
     }
   }  # end of  if !missing_j
 
-  SDenv = .dt_new_SDenv(jsub, names_x, callenv)
+  SDenv = .new_SDenv(all.vars(jsub), names_x, callenv)
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
   if (missingby || bynull || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
@@ -1907,7 +1907,7 @@ class(.check_args) = "dt_query_helper"
   o__ = integer()
   if (".N" %chin% ansvars) stopf("The column '.%1$s' can't be grouped because it conflicts with the special .%1$s variable. Try setnames(DT,'.%1$s','%1$s') first.", "N")
   if (".I" %chin% ansvars) stopf("The column '.%1$s' can't be grouped because it conflicts with the special .%1$s variable. Try setnames(DT,'.%1$s','%1$s') first.", "I")
-  .dt_init_grouped_SDenv(SDenv, verbose)
+  .init_grouped_SDenv(SDenv, verbose)
 
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
