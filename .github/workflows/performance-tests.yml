@@ -69,10 +69,15 @@ jobs:
         shell: bash
         run: |
           uploadImage() {
-            curl --fail --retry 3 -sS -F "file=@$1" -F "visibility=unlisted" https://picrd.com/api/upload | jq -r '.image_url'
+            curl --fail --retry 3 -sS -F "file=@$1" -F "visibility=unlisted" https://picrd.com/api/upload | jq -r '.image_url // empty' || true
           }
           PREVIEW_URL=$(uploadImage .ci/atime/tests_preview_facet.png)
           ALL_URL=$(uploadImage .ci/atime/tests_all_facet.png)
+          if [ -n "$PREVIEW_URL" ] && [ -n "$ALL_URL" ]; then
+            PLOT_MD="[![Comparison Plot]($PREVIEW_URL)]($ALL_URL)"
+          else
+            PLOT_MD="*(Plot image upload to picrd.com failed; download the artifact below to view plots)*"
+          fi
 
           R_SETUP_DURATION=$((END_SETUP_START_TESTS_TIME - START_SETUP_TIME))
           VERSION_SETUP_DURATION=$(cut -d '.' -f 1 ./.ci/atime/install_seconds.txt)
@@ -92,7 +97,7 @@ jobs:
           cat <<EOF > comment.md
           $(cat .ci/atime/HEAD_issues.md)
 
-          [![Comparison Plot]($PREVIEW_URL)]($ALL_URL)
+          $PLOT_MD
 
           Generated via commit ${{ github.event.pull_request.head.sha }}
 
