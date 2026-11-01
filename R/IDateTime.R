@@ -393,15 +393,8 @@ yday    = function(x) convertDate(as.IDate(x), "yday")
 wday    = function(x) convertDate(as.IDate(x), "wday")
 mday    = function(x) convertDate(as.IDate(x), "mday")
 week    = function(x) convertDate(as.IDate(x), "week")
-# ISO 8601-conformant week, as described at
-#   https://en.wikipedia.org/wiki/ISO_week_date
-# Approach:
-# * Find nearest Thursday to each element of x
-# * Find the number of weeks having passed between
-#   January 1st of the year of the nearest Thursdays and x
-nearest_thurs = function(x) 7L * ((as.integer(as.IDate(x)) + 3L) %/% 7L)
-isoweek = function(x) (convertDate(nearest_thurs(x), "yday") - 1L) %/% 7L + 1L
-isoyear = function(x) convertDate(nearest_thurs(x), "year")
+isoweek = function(x) convertDate(as.IDate(x), "isoweek")
+isoyear = function(x) convertDate(as.IDate(x), "isoyear")
 
 month   = function(x) convertDate(as.IDate(x), "month")
 quarter = function(x) convertDate(as.IDate(x), "quarter")
@@ -432,6 +425,6 @@ yearqtr = function(x, format = c("numeric", "character")) {
 }
 
 convertDate = function(x, type) {
-  type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
+  type = match.arg(type, c("yday", "wday", "mday", "week", "isoweek", "isoyear", "month", "quarter", "year", "yearmon", "yearqtr"))
   .Call(CconvertDate, x, type)
 }
