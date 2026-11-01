@@ -642,6 +642,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
+      # !missing(j) && missing(jsub) can happen for DT[, j = expr, env = alist(j=)]
       if (missing(jsub)) {j = substitute(); jsub=NULL; missing_j=TRUE} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", deparse1(jsub, collapse="\n"))
     }
   }
