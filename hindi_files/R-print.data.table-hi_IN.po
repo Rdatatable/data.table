@@ -1,0 +1,54 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: print.data.table 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: print.data.table.R:19
+msgid "Valid options for col.names are 'auto', 'top', and 'none'"
+msgstr "col.names के लिए मान्य विकल्प 'auto', 'top', और 'none' हैं"
+
+#: print.data.table.R:21
+msgid "Valid options for trunc.cols are TRUE and FALSE"
+msgstr "trunc.cols के लिए मान्य विकल्प TRUE और FALSE हैं"
+
+#: print.data.table.R:23
+msgid "Column classes will be suppressed when col.names is 'none'"
+msgstr "कॉलम (column) क्लासेस (classes) को दबा दिया जाएगा जब col.names 'none' हो"
+
+#: print.data.table.R:50
+msgid "Key: <%s>"
+msgstr "कुंजी: <%s>"
+
+#: print.data.table.R:60
+msgid "Null data.%s (0 rows and 0 cols)"
+msgstr "NULL data.%s (0 रोज़ (rows) और 0 कॉलम (columns))"
+
+#: print.data.table.R:62
+msgid "Empty data.%s (%d rows and %d cols)"
+msgstr "रिक्त data.%s (%d रोज़ (rows) और %d कॉलम (columns))"
+
+#: print.data.table.R:156
+msgid ""
+"Internal structure doesn't seem to be a list. Possibly corrupt data.table."
+msgstr ""
+"आंतरिक संरचना लिस्ट (list) प्रतीत नहीं होती। संभवतः data.table में भ्रष्टता है।"
+
+#: print.data.table.R:53
+msgid "Index: %s\n"
+msgid_plural "Indices: %s\n"
+msgstr[0] "सूची: %s\n"
+msgstr[1] "सूचियाँ: %s\n"
+
+#: print.data.table.R:286
+msgid "%d variable not shown: %s\n"
+msgid_plural "%d variables not shown: %s\n"
+msgstr[0] "%d वैरिएबल (variable) नहीं दिखाया गया: %s\n"
+msgstr[1] "%d वैरिएबल्स (variables) नहीं दिखाए गए: %s\n"

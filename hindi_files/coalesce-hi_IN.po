@@ -1,0 +1,78 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: coalesce 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: coalesce.c:20
+msgid ""
+"The first argument is a list, data.table or data.frame. In this case there "
+"should be no other arguments provided."
+msgstr ""
+"पहला आर्ग्युमेंट (argument) एक लिस्ट (list), data.table, या data.frame है।"
+"इस स्थिति में कोई अन्य आर्ग्युमेंट (argument) प्रदान नहीं किया जाना चाहिए।"
+
+#: coalesce.c:36
+#, c-format
+msgid ""
+"Item 1 is a factor but item %d is not a factor. When factors are involved, "
+"all items must be factor."
+msgstr ""
+"आइटम (item) 1 एक फ़ैक्टर (factor) है लेकिन आइटम (item) %d फ़ैक्टर (factor) नहीं है। जब फ़ैक्टर (factor) शामिल होते हैं,"
+"तो सभी आइटम (items) फ़ैक्टर (factor) होने चाहिए।"
+
+#: coalesce.c:38
+#, c-format
+msgid ""
+"Item %d is a factor but its levels are not identical to the first item's "
+"levels."
+msgstr ""
+"आइटम (item) %d एक फ़ैक्टर (factor) है लेकिन इसके स्तर पहले आइटम (item) के "
+"स्तर से समान नहीं हैं।"
+
+#: coalesce.c:42
+#, c-format
+msgid ""
+"Item %d is a factor but item 1 is not a factor. When factors are involved, "
+"all items must be factor."
+msgstr ""
+"आइटम (item) %d एक फ़ैक्टर (factor) है लेकिन आइटम (item) 1 फ़ैक्टर (factor) नहीं है।"
+" जब फ़ैक्टर (factor) शामिल होते हैं, तो सभी आइटम (items) फ़ैक्टर (factor) होने चाहिए।"
+
+#: coalesce.c:45
+#, c-format
+msgid ""
+"Item %d is type %s but the first item is type %s. Please coerce before "
+"coalescing."
+msgstr ""
+"आइटम (item) %d प्रकार %s है लेकिन पहला आइटम (item) प्रकार %s है।"
+" कृपया संयोजन (coalescing) से पहले इसे बलपूर्वक परिवर्तित करें।"
+
+#: coalesce.c:47
+#, c-format
+msgid "Item %d has a different class than item 1."
+msgstr "आइटम (item) %d की कक्षा (class) आइटम (item) 1 से भिन्न है।"
+
+#: coalesce.c:50
+#, c-format
+msgid ""
+"Item %d is length %d but the first item is length %d. Only singletons are "
+"recycled."
+msgstr ""
+"आइटम (item) %d की लंबाई (length) %d है लेकिन पहले आइटम (item) की लंबाई (length) %d है।"
+" केवल एकल तत्वों को पुनः उपयोग किया जाता है।"
+
+#: coalesce.c:54
+msgid "coalesce copied first item (inplace=FALSE)\n"
+msgstr "coalesce ने पहले आइटम (item) को कॉपी किया (inplace=FALSE)\n"
+
+#: coalesce.c:170
+#, c-format
+msgid "Type '%s' is not supported"
+msgstr "प्रकार '%s' समर्थित नहीं है"

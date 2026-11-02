@@ -1,0 +1,1005 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: data.table 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: data.table.R:55
+msgid "key argument of data.table() must be character"
+msgstr ""
+
+#: data.table.R:121
+msgid "Object '%s' not found. Perhaps you intended %s"
+msgstr ""
+
+#: data.table.R:123
+msgid "Object '%s' not found amongst %s"
+msgstr ""
+
+#: data.table.R:139
+msgid ""
+"[ was called on a data.table in an environment that is not data.table-aware "
+"(i.e. cedta()), but '%s' was used, implying the owner of this call really "
+"intended for data.table methods to be called. See vignette('datatable-"
+"importing') for details on properly importing data.table."
+msgstr ""
+
+#: data.table.R:150
+msgid "verbose must be logical or integer"
+msgstr ""
+
+#: data.table.R:151
+msgid "verbose must be length 1 non-NA"
+msgstr ""
+
+#: data.table.R:159
+msgid "Ignoring by/keyby because 'j' is not supplied"
+msgstr ""
+
+#: data.table.R:173
+msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
+msgstr ""
+
+#: data.table.R:176 data.table.R:241 data.table.R:330
+msgid "Argument '%s' after substitute: %s"
+msgstr ""
+
+#: data.table.R:185
+msgid ""
+"When on= is provided but not i=, on= must be a named list or data.table|"
+"frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
+"on= which is '%s'."
+msgstr ""
+
+#: data.table.R:198
+msgid ""
+"i and j are both missing so ignoring the other arguments. This warning will "
+"be upgraded to error in future."
+msgstr ""
+
+#: data.table.R:202
+msgid "mult argument can only be 'first', 'last' or 'all'"
+msgstr ""
+
+#: data.table.R:204
+msgid ""
+"roll must be a single TRUE, FALSE, positive/negative integer/double "
+"including +Inf and -Inf or 'nearest'"
+msgstr ""
+
+#: data.table.R:206
+msgid "roll is '%s' (type character). Only valid character value is 'nearest'."
+msgstr ""
+
+#: data.table.R:211
+msgid "rollends must be a logical vector"
+msgstr ""
+
+#: data.table.R:212
+msgid "rollends must be length 1 or 2"
+msgstr ""
+
+#: data.table.R:220
+msgid ""
+"nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
+"is the same as NULL but please use NULL)"
+msgstr ""
+
+#: data.table.R:223
+msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
+msgstr ""
+
+#: data.table.R:224
+msgid ""
+"which==%s (meaning return row numbers) but j is also supplied. Either you "
+"need row numbers or the result of j, but only one type of result can be "
+"returned."
+msgstr ""
+
+#: data.table.R:225
+msgid ""
+"which=NA with nomatch=0|NULL would always return an empty vector. Please "
+"change or remove either which or nomatch."
+msgstr ""
+
+#: data.table.R:226
+msgid "j must be provided when with=FALSE"
+msgstr ""
+
+#: data.table.R:227
+msgid "%s must be TRUE or FALSE"
+msgstr ""
+
+#: data.table.R:269
+msgid ""
+"The symbol .. is invalid. The .. prefix must be followed by at least one "
+"character."
+msgstr ""
+
+#: data.table.R:273
+#, c-format
+msgid ""
+"Variable '..%s' does exist in calling scope though, so please just removed "
+"the .. prefix from that variable name in calling scope."
+msgstr ""
+
+#: data.table.R:277
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because you used the .. prefix.%s"
+msgstr ""
+
+#: data.table.R:279
+msgid ""
+"Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' "
+"variable in calling scope for clarity."
+msgstr ""
+
+#: data.table.R:287
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because you set with=FALSE. Also, please use .. symbol prefix and remove "
+"with=FALSE."
+msgstr ""
+
+#: data.table.R:295
+msgid ""
+"You have wrapped := with {} which is ok but then := must be the only thing "
+"inside {}. You have something else inside {} as well. Consider placing the "
+"{} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;"
+"tmpVar1*tmpVar2}]"
+msgstr ""
+
+#: data.table.R:313
+msgid ""
+":= with keyby is only possible when i is not supplied since you can't setkey "
+"on a subset of rows. Either change keyby to by or remove i"
+msgstr ""
+
+#: data.table.R:315
+msgid "nomatch isn't relevant together with :=, ignoring nomatch"
+msgstr ""
+
+#: data.table.R:371
+msgid ""
+"not-join '!' prefix is present on i but nomatch is provided. Please remove "
+"nomatch."
+msgstr ""
+
+#: data.table.R:399
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting "
+"the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). "
+"Please double-check the syntax. Run traceback(), and debugger() to get a "
+"line number."
+msgstr ""
+
+#: data.table.R:409
+#, c-format
+msgid "'%s' is not found in calling scope and it is not a column name either"
+msgstr ""
+
+#: data.table.R:412
+#, c-format
+msgid ""
+"'%s' is not found in calling scope, but it is a column of type %s. If you "
+"wish to select rows where that column contains TRUE, or perhaps that column "
+"contains row numbers of itself to select, try DT[(col)], DT[DT$col], or "
+"DT[col==TRUE] is particularly clear and is optimized"
+msgstr ""
+
+#: data.table.R:415
+msgid ""
+"%s. When the first argument inside DT[...] is a single symbol (e.g. "
+"DT[var]), data.table looks for var in calling scope."
+msgstr ""
+
+#: data.table.R:427
+msgid ""
+"i is invalid type (matrix). Perhaps in future a 2 column matrix could return "
+"a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report "
+"to data.table issue tracker if you'd like this, or add your comments to FR "
+"#657."
+msgstr ""
+
+#: data.table.R:450
+msgid ""
+"When i is a data.table (or character vector), the columns to join by must be "
+"specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, "
+"and, marked as sorted, see ?setkey), or by sharing column names between x "
+"and i (i.e., a natural join). Keyed joins might have further speed benefits "
+"on very large data due to x being sorted in RAM."
+msgstr ""
+
+#: data.table.R:458
+msgid "Attempting to do natural join but no common columns in provided tables"
+msgstr ""
+
+#: data.table.R:461
+msgid "Joining but 'x' has no key, natural join using all 'x' columns"
+msgstr ""
+
+#: data.table.R:463
+msgid "Joining but 'x' has no key, natural join using: %s"
+msgstr ""
+
+#: data.table.R:492
+msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
+msgstr ""
+
+#: data.table.R:495
+msgid "done in %s"
+msgstr ""
+
+#: data.table.R:522
+msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
+msgstr ""
+
+#: data.table.R:561
+msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
+msgstr ""
+
+#: data.table.R:573
+msgid "Reordering %d rows after bmerge done in ..."
+msgstr ""
+
+#: data.table.R:590
+msgid "logical error. i is not a data.table, but 'on' argument is provided."
+msgstr ""
+
+#: data.table.R:594
+msgid "i has evaluated to type %s. Expecting logical, integer or double."
+msgstr ""
+
+#: data.table.R:616
+msgid ""
+"i evaluates to a logical vector length %d but there are %d rows. Recycling "
+"of logical i is no longer allowed as it hides more bugs than is worth the "
+"rare convenience. Explicitly use rep(...,length=.N) if you really need to "
+"recycle."
+msgstr ""
+
+#: data.table.R:619
+msgid ""
+"Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 "
+"(Jan 2019)"
+msgstr ""
+
+#: data.table.R:634
+msgid "Inverting irows for notjoin done in ..."
+msgstr ""
+
+#: data.table.R:691
+msgid ""
+"with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
+"Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] "
+"to assign to column name(s) held in variable myVar. See ?':=' for other "
+"examples. As warned in 2014, this is now a warning."
+msgstr ""
+
+#: data.table.R:694
+msgid ""
+"with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+msgstr ""
+
+#: data.table.R:741
+msgid "Item %d of j is %d which is outside the column number range [1,ncol=%d]"
+msgstr ""
+
+#: data.table.R:744
+msgid "j mixes positives and negatives"
+msgstr ""
+
+#: data.table.R:752
+msgid ""
+"When with=FALSE, j-argument should be of type logical/character/integer "
+"indicating the columns to select."
+msgstr ""
+
+#: data.table.R:766
+msgid ""
+"'by' contains .I but only the following are currently supported: by=.I, by=."
+"(.I), by=c(.I), by=list(.I)"
+msgstr ""
+
+#: data.table.R:790
+msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
+msgstr ""
+
+#: data.table.R:800
+msgid ""
+"'by' is a character vector length %d but one or more items include a comma. "
+"Either pass a vector of column names (which can contain spaces, but no "
+"commas), or pass a vector length 1 containing comma separated column names. "
+"See ?data.table for other possibilities."
+msgstr ""
+
+#: data.table.R:807
+msgid "At least one entry of by is empty"
+msgstr ""
+
+#: data.table.R:834
+msgid "by index '%s' but that index has 0 length. Ignoring."
+msgstr ""
+
+#: data.table.R:857
+msgid "i clause present and columns used in by detected, only these subset: %s"
+msgstr ""
+
+#: data.table.R:860
+msgid ""
+"i clause present but columns used in by not detected. Having to subset all "
+"columns before evaluating 'by': '%s'"
+msgstr ""
+
+#: data.table.R:882
+msgid ""
+"'by' appears to evaluate to column names but isn't c() or key(). Use "
+"by=list(...) if you can. Otherwise, by=eval%s should work. This is for "
+"efficiency so data.table can detect which columns are needed."
+msgstr ""
+
+#: data.table.R:893
+msgid ""
+"'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
+"includes data.table and data.frame which are lists, too)"
+msgstr ""
+
+#: data.table.R:897
+msgid ""
+"Column or expression %d of 'by' or 'keyby' is type '%s' which is not "
+"currently supported. If you have a compelling use case, please add it to "
+"https://github.com/Rdatatable/data.table/issues/1597. As a workaround, "
+"consider converting the column to a supported type, e.g. by=sapply(list_col, "
+"toString), whilst taking care to maintain distinctness in the process."
+msgstr ""
+
+#: data.table.R:903
+msgid ""
+"%s Each must be length %d; the same length as there are rows in x (after "
+"subsetting if i is provided)."
+msgstr ""
+
+#: data.table.R:923
+msgid ""
+"by-expression '%s' is not named, and the auto-generated name '%s' clashed "
+"with variable(s) in j. Therefore assigning the entire by-expression as name."
+msgstr ""
+
+#: data.table.R:957
+msgid "Item %d of the .() or list() passed to j is missing"
+msgstr ""
+
+#: data.table.R:963
+msgid ""
+"j may not evaluate to the same number of columns for each group; if you're "
+"sure this warning is in error, please put the branching logic outside of [ "
+"for efficiency"
+msgstr ""
+
+#: data.table.R:965
+msgid ""
+"Different branches of j expression produced different auto-named columns: "
+"%s; using the most \"last\" names. If this was intentional (e.g., you know "
+"only one branch will ever be used in a given query because the branch is "
+"controlled by a function argument), please (1) pull this branch out of the "
+"call; (2) explicitly provide missing defaults for each branch in all cases; "
+"or (3) use the same name for each branch and re-name it in a follow-up call."
+msgstr ""
+
+#: data.table.R:1035
+msgid ""
+"When .SDcols is a function, it is applied to each column; the output of this "
+"function must be a non-missing boolean scalar signalling inclusion/exclusion "
+"of the column. However, these conditions were not met for: %s"
+msgstr ""
+
+#: data.table.R:1041
+msgid ".SDcols missing at the following indices: %s"
+msgstr ""
+
+#: data.table.R:1043
+msgid ".SDcols is a logical vector of length %d but there are %d columns"
+msgstr ""
+
+#: data.table.R:1049
+msgid ".SDcols is numeric but has both +ve and -ve indices"
+msgstr ""
+
+#: data.table.R:1051
+msgid ".SDcols is numeric but out of bounds [1, %d] at: %s"
+msgstr ""
+
+#: data.table.R:1055
+msgid ".SDcols should be column numbers or names"
+msgstr ""
+
+#: data.table.R:1057
+msgid "Some items of .SDcols are not column names: %s"
+msgstr ""
+
+#: data.table.R:1070
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+
+#: data.table.R:1090
+msgid "New ansvars: %s"
+msgstr ""
+
+#: data.table.R:1099
+msgid ""
+"This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
+"data.table."
+msgstr ""
+
+#: data.table.R:1102
+msgid "Detected that j uses these columns: %s"
+msgstr ""
+
+#: data.table.R:1115
+msgid ""
+".SD is locked. Using := in .SD's j is reserved for possible future use; a "
+"tortuously flexible way to modify by group. Use := in j directly to modify "
+"by group by reference."
+msgstr ""
+
+#: data.table.R:1126
+msgid "In %s(col1=val1, col2=val2, ...) form, all arguments must be named."
+msgstr ""
+
+#: data.table.R:1149
+msgid ""
+"In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the "
+"last argument has no name. Did you forget a trailing comma?"
+msgstr ""
+
+#: data.table.R:1151
+msgid ""
+"In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but "
+"these arguments lack names: %s."
+msgstr ""
+
+#: data.table.R:1158
+msgid ""
+"LHS of := must be a symbol, or an atomic vector (column names or positions)."
+msgstr ""
+
+#: data.table.R:1163
+msgid ""
+"LHS of := appears to be column positions but are outside [1,ncol] range. New "
+"columns can only be added by name."
+msgstr ""
+
+#: data.table.R:1166
+msgid ""
+"LHS of := isn't column names ('character') or positions ('integer' or "
+"'numeric')"
+msgstr ""
+
+#: data.table.R:1182
+msgid ""
+"No rows match i. No new columns to add so not evaluating RHS of :=\n"
+"Assigning to 0 row subset of %d rows"
+msgstr ""
+
+#: data.table.R:1197
+msgid ""
+"Invalid .internal.selfref detected and fixed by taking a (shallow) copy of "
+"the data.table so that := can add this new column by reference. At an "
+"earlier point, this data.table has been copied by R (or was created manually "
+"using structure() or similar). Avoid names<- and attr<- which in R currently "
+"(and oddly) may copy the whole data.table. Use set* syntax instead to avoid "
+"copying: ?set, ?setnames and ?setattr. If this message doesn't help, please "
+"report your use case to the data.table issue tracker so the root cause can "
+"be fixed or this message improved."
+msgstr ""
+
+#: data.table.R:1205
+msgid ""
+"Growing vector of column pointers from truelength %d to %d. A shallow copy "
+"has been taken, see ?setalloccol. Only a potential issue if two variables "
+"point to the same data (we can't yet detect that well) and if not you can "
+"safely ignore this. To avoid this message you could setalloccol() first, "
+"deep copy first using copy(), wrap with suppressWarnings() or increase the "
+"'datatable.alloccol' option."
+msgstr ""
+
+#: data.table.R:1207
+msgid ""
+"Note that the shallow copy will assign to the environment from which := was "
+"called. That means for example that if := was called within a function, the "
+"original table may be unaffected."
+msgstr ""
+
+#: data.table.R:1228
+msgid ""
+"Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] "
+"syntax is only valid when i is length 1, but its length is %d"
+msgstr ""
+
+#: data.table.R:1297
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because this symbol was prefixed with .. in the j= parameter."
+msgstr ""
+
+#: data.table.R:1383
+msgid ""
+"j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' "
+"is not found. If you intended to select columns using a variable in calling "
+"scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar "
+"to a file system path."
+msgstr ""
+
+#: data.table.R:1471
+msgid ""
+"The column '.N' can't be grouped because it conflicts with the special .N "
+"variable. Try setnames(DT,'.N','N') first."
+msgstr ""
+
+#: data.table.R:1472
+msgid ""
+"The column '.I' can't be grouped because it conflicts with the special .I "
+"variable. Try setnames(DT,'.I','I') first."
+msgstr ""
+
+#: data.table.R:1491
+msgid ""
+"Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
+"explicitly to choose custom units"
+msgstr ""
+
+#: data.table.R:1500
+msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
+msgstr ""
+
+#: data.table.R:1527
+msgid "Finding groups using forderv ..."
+msgstr ""
+
+#: data.table.R:1541 data.table.R:1573
+msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
+msgstr ""
+
+#: data.table.R:1549
+msgid "Getting back original order ..."
+msgstr ""
+
+#: data.table.R:1561
+msgid "Finding groups using uniqlist on key ..."
+msgstr ""
+
+#: data.table.R:1565
+msgid "Finding groups using uniqlist on index '%s' ..."
+msgstr ""
+
+#: data.table.R:1784
+msgid "lapply optimization changed j from '%s' to '%s'"
+msgstr ""
+
+#: data.table.R:1786
+msgid "lapply optimization is on, j unchanged as '%s'"
+msgstr ""
+
+#: data.table.R:1795 data.table.R:1819
+msgid "GForce optimized j to '%s' (see ?GForce)"
+msgstr ""
+
+#: data.table.R:1820
+msgid ""
+"GForce is on, but not activated for this query; left j unchanged (see ?"
+"GForce)"
+msgstr ""
+
+#: data.table.R:1839
+msgid ""
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
+msgstr ""
+
+#: data.table.R:1843
+msgid "Old mean optimization changed j from '%s' to '%s'"
+msgstr ""
+
+#: data.table.R:1845
+msgid "Old mean optimization is on, left j unchanged."
+msgstr ""
+
+#: data.table.R:1855
+msgid "All optimizations are turned off"
+msgstr ""
+
+#: data.table.R:1856
+msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
+msgstr ""
+
+#: data.table.R:1885
+msgid "Making each group and running j (GForce %s) ..."
+msgstr ""
+
+#: data.table.R:1981
+msgid "setkey() after the := with keyby= ..."
+msgstr ""
+
+#: data.table.R:1985
+msgid ""
+"The setkey() normally performed by keyby= has been skipped (as if by= was "
+"used) because := is being used together with keyby= but the keyby= contains "
+"some expressions. To avoid this warning, use by= instead, or provide "
+"existing column names to keyby=."
+msgstr ""
+
+#: data.table.R:2011
+msgid "setkey() afterwards for keyby=.EACHI ..."
+msgstr ""
+
+#: data.table.R:2077
+msgid "rownames and rownames.value cannot both be used at the same time"
+msgstr ""
+
+#: data.table.R:2082
+msgid ""
+"length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a "
+"single column name or number. Consider rownames.value= instead."
+msgstr ""
+
+#: data.table.R:2086
+msgid ""
+"length(rownames)==0 but should be a single column name or number, or NULL"
+msgstr ""
+
+#: data.table.R:2090
+msgid ""
+"rownames is TRUE but key has multiple columns %s; taking first column x[,1] "
+"as rownames"
+msgstr ""
+
+#: data.table.R:2100
+msgid "'%s' is not a column of x"
+msgstr ""
+
+#: data.table.R:2106
+msgid ""
+"as.integer(rownames)==%d which is outside the column number range [1,ncol="
+"%d]."
+msgstr ""
+
+#: data.table.R:2111
+msgid "length(rownames.value)==%d but should be nrow(x)==%d"
+msgstr ""
+
+#: data.table.R:2207
+msgid ""
+"When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
+msgstr ""
+
+#: data.table.R:2217
+msgid "j must be an atomic vector, see ?is.atomic"
+msgstr ""
+
+#: data.table.R:2218
+msgid "NA in j"
+msgstr ""
+
+#: data.table.R:2224
+msgid "j must be vector of column name or positions"
+msgstr ""
+
+#: data.table.R:2225
+msgid ""
+"Attempt to assign to column position greater than ncol(x). Create the column "
+"by name, instead. This logic intends to catch (most likely) user errors."
+msgstr ""
+
+#: data.table.R:2292
+msgid ""
+"data.table inherits from data.frame (from v1.5), but this data.table does "
+"not. Has it been created manually (e.g. by using 'structure' rather than "
+"'data.table') or saved to disk using a prior version of data.table?"
+msgstr ""
+
+#: data.table.R:2301
+msgid "attempting to assign invalid object to dimnames of a data.table"
+msgstr ""
+
+#: data.table.R:2302
+msgid "data.tables do not have rownames"
+msgstr ""
+
+#: data.table.R:2303 data.table.R:2672
+msgid "Can't assign %d names to a %d-column data.table"
+msgstr ""
+
+#: data.table.R:2367
+msgid "'subset' must evaluate to logical"
+msgstr ""
+
+#: data.table.R:2410
+msgid "Argument 'invert' must be logical TRUE/FALSE"
+msgstr ""
+
+#: data.table.R:2451
+msgid "x argument must be a data.table"
+msgstr ""
+
+#: data.table.R:2456
+msgid "group length is 0 but data nrow > 0"
+msgstr ""
+
+#: data.table.R:2458
+msgid ""
+"passing 'f' argument together with 'by' is not allowed, use 'by' when split "
+"by column in data.table and 'f' when split by external factor"
+msgstr ""
+
+#: data.table.R:2466
+msgid "Either 'by' or 'f' argument must be supplied"
+msgstr ""
+
+#: data.table.R:2468
+msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
+msgstr ""
+
+#: data.table.R:2469
+msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
+msgstr ""
+
+#: data.table.R:2470
+msgid "Argument 'by' must refer to column names in x"
+msgstr ""
+
+#: data.table.R:2471
+msgid ""
+"Argument 'by' must refer only to atomic-type columns, but the following "
+"columns are non-atomic: %s"
+msgstr ""
+
+#: data.table.R:2518
+msgid "Processing split.data.table with: %s"
+msgstr ""
+
+#: data.table.R:2603
+msgid ""
+"x is not a data.table|frame. Shallow copy is a copy of the vector of column "
+"pointers (only), so is only meaningful for data.table|frame"
+msgstr ""
+
+#: data.table.R:2612
+msgid "setalloccol attempting to modify `*tmp*`"
+msgstr ""
+
+#: data.table.R:2647
+msgid ""
+"Input is a length=1 logical that points to the same address as R's global "
+"value. Therefore the attribute has not been set by reference, rather on a "
+"copy. You will need to assign the result back to a variable. See issue #1281."
+msgstr ""
+
+#: data.table.R:2662
+msgid "x is not a data.table or data.frame"
+msgstr ""
+
+#: data.table.R:2664
+msgid "x has %d columns but its names are length %d"
+msgstr ""
+
+#: data.table.R:2671
+msgid "Passed a vector of type '%s'. Needs to be type 'character'."
+msgstr ""
+
+#: data.table.R:2684
+msgid "'new' is not a character vector or a function"
+msgstr ""
+
+#: data.table.R:2686
+msgid "NA in 'new' at positions %s"
+msgstr ""
+
+#: data.table.R:2687
+msgid "Some duplicates exist in 'old': %s"
+msgstr ""
+
+#: data.table.R:2689
+msgid "'old' is type %s but should be integer, double or character"
+msgstr ""
+
+#: data.table.R:2690
+msgid "'old' is length %d but 'new' is length %d"
+msgstr ""
+
+#: data.table.R:2691
+msgid "NA (or out of bounds) in 'old' at positions %s"
+msgstr ""
+
+#: data.table.R:2694
+msgid ""
+"Item %d of 'old' is '%s' which appears several times in column names. Just "
+"the first will be changed. There are %d other items in 'old' that are also "
+"duplicated in column names."
+msgstr ""
+
+#: data.table.R:2702
+msgid ""
+"Items of 'old' not found in column names: %s. Consider skip_absent=TRUE."
+msgstr ""
+
+#: data.table.R:2743
+msgid "Provide either before= or after= but not both"
+msgstr ""
+
+#: data.table.R:2745
+msgid "before=/after= accept a single column name or number, not more than one"
+msgstr ""
+
+#: data.table.R:2801
+msgid "Input is %s but should be a plain list of items to be stacked"
+msgstr ""
+
+#: data.table.R:2805
+msgid ""
+"idcol must be a logical or character vector of length 1. If logical TRUE the "
+"id column will named '.id'."
+msgstr ""
+
+#: data.table.R:2810
+msgid "use.names=NA invalid"
+msgstr ""
+
+#: data.table.R:2812
+msgid ""
+"use.names='check' cannot be used explicitly because the value 'check' is new "
+"in v1.12.2 and subject to change. It is just meant to convey default "
+"behavior. See ?rbindlist."
+msgstr ""
+
+#: data.table.R:2827
+msgid ""
+"Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) "
+"are defined for use in j, once only and in particular ways. Note that "
+"namespace-qualification like data.table::`:=`(...) is not supported. See "
+"help(\":=\")."
+msgstr ""
+
+#: data.table.R:2844
+msgid ""
+"setDF only accepts data.table, data.frame or list of equal length as input"
+msgstr ""
+
+#: data.table.R:2845
+msgid "rownames contains duplicates"
+msgstr ""
+
+#: data.table.R:2852 data.table.R:2863 data.table.R:2886
+msgid "rownames incorrect length; expected %d names, got %d"
+msgstr ""
+
+#: data.table.R:2871
+msgid "All elements in argument 'x' to 'setDF' must be of same length"
+msgstr ""
+
+#: data.table.R:2900
+msgid "Cannot find symbol %s"
+msgstr ""
+
+#: data.table.R:2907
+msgid ""
+"Cannot convert '%1$s' to data.table by reference because binding is locked. "
+"It is very likely that '%1$s' resides within a package (or an environment) "
+"that is locked to prevent modifying its variable bindings. Try copying the "
+"object to your current environment, ex: var <- copy(var) and then using "
+"setDT again."
+msgstr ""
+
+#: data.table.R:2964
+msgid ""
+"Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
+msgstr ""
+
+#: data.table.R:2979
+msgid "Item '%s' not found in names of input list"
+msgstr ""
+
+#: data.table.R:3004 data.table.R:3029
+msgid "'prefix' must be NULL or a character vector of length 1."
+msgstr ""
+
+#: data.table.R:3007 data.table.R:3032
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
+msgstr ""
+
+#: data.table.R:3011 data.table.R:3036
+msgid "x is a list, 'cols' cannot be 0-length."
+msgstr ""
+
+#: data.table.R:3173
+msgid ""
+"It looks like you re-used `:=` in argument %d a functional assignment "
+"call -- use `=` instead: %s(col1=val1, col2=val2, ...)"
+msgstr ""
+
+#: data.table.R:3239
+msgid ""
+"RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no "
+"recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
+msgstr ""
+
+#: data.table.R:3271
+msgid ""
+"Subsetting optimization disabled because the cross-product of RHS values "
+"exceeds 1e4, causing memory problems."
+msgstr ""
+
+#: data.table.R:3289
+msgid "Optimized subsetting with key %s"
+msgstr ""
+
+#: data.table.R:3308 data.table.R:3320
+msgid "Optimized subsetting with index '%s'"
+msgstr ""
+
+#: data.table.R:3315
+msgid "Creating new index '%s'"
+msgstr ""
+
+#: data.table.R:3316
+msgid "Creating index %s done in ..."
+msgstr ""
+
+#: data.table.R:3354
+msgid ""
+"'on' argument should be a named atomic vector of column names indicating "
+"which columns in 'i' should be joined with which columns in 'x'."
+msgstr ""
+
+#: data.table.R:3395
+msgid ""
+"Found more than one operator in one 'on' statement: %s. Please specify a "
+"single operator."
+msgstr ""
+
+#: data.table.R:3418
+msgid ""
+"'on' contains no column name: %s. Each 'on' clause must contain one or two "
+"column names."
+msgstr ""
+
+#: data.table.R:3420
+msgid ""
+"'on' contains more than 2 column names: %s. Each 'on' clause must contain "
+"one or two column names."
+msgstr ""
+
+#: data.table.R:3425
+msgid "Invalid join operators %s. Only allowed operators are %s."
+msgstr ""
+
+#: data.table.R:719
+msgid "column not removed because not found: %s"
+msgid_plural "columns not removed because not found: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: data.table.R:734
+msgid "column not found: %s"
+msgid_plural "columns not found: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: data.table.R:902
+msgid "The item in the 'by' or 'keyby' list is length %s."
+msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
+msgstr[0] ""
+msgstr[1] ""
