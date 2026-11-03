@@ -418,21 +418,7 @@ test.list <- atime::atime_test_list(
     Fixed = "3376b44e549315f35118daf23676298fc941d8f3", # Merge commit of fix PR (https://github.com/Rdatatable/data.table/pull/7828).
     # Reset the shared base S3 table to match the version under test (see "Caveat" in the intro above).
     expr = {
-      ns = environment(data.table::as.IDate)
-      s3_table = get(".__S3MethodsTable__.", envir = baseenv())
-      s3_generics = c("chooseOpsMethod.IDate" = "chooseOpsMethod", "-.IDate" = "-")
-      for (s3_method in names(s3_generics)) {
-        if (exists(s3_method, envir = s3_table, inherits = FALSE)) {
-          rm(list = s3_method, envir = s3_table)
-        }
-        if (exists(s3_method, envir = ns, inherits = FALSE)) {
-          base::registerS3method(
-            s3_generics[[s3_method]], "IDate",
-            get(s3_method, envir = ns, inherits = FALSE),
-            envir = ns)
-        }
-      }
-      outer(short_date, data.table::as.IDate(long_date), `-`)
+      outer(short_date, data.table::as.IDate(long_date), data.table:::`-.IDate`)
     }),
 
   # https://github.com/Rdatatable/data.table/pull/7144 added the speedup code and this performance test.
