@@ -139,6 +139,8 @@ test.list <- atime::atime_test_list(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
+    # extend onLoad to disable cedta()
+    cat("\n.datatable.aware = TRUE\n", file=file.path(new.pkg.path, "R", "onLoad.R"), append=TRUE)
     pkg_find_replace(
       file.path("src", "Makevars.*in"),
       "@PKG_CFLAGS@", "@PKG_CFLAGS@ -DSTRING_PTR_RO=STRING_PTR_RO")
@@ -476,6 +478,20 @@ test.list <- atime::atime_test_list(
     Slow = "df59dd637403e65d7fa90d48bb0dfec2764d6744", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7c73bf0d4f760066feb7256896375727656e398d) in the PR (https://github.com/Rdatatable/data.table/pull/7917/commits) that improves efficiency
     Fast = "10bfd70ffbcf880d74e0a0f0377be76e9556333b", # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/7917) that hoists REAL()/INTEGER()/STRING_ELT() out of the row loop
     expr = data.table:::melt(DT, measure.vars = measure(letter, number = as.integer))),
+
+  # Guards the constant per-call overhead of [.data.table while it is split into modules (#852).
+  "DT[i,j,by] per-call overhead for #852" = atime::atime_test(
+    N = 2^seq(0, 14),
+    seconds.limit = 0.1,
+    setup = {
+      dt = data.table(a = 1:10, g = rep(1:2, 5L), v = as.numeric(1:10))
+    },
+    Before = "7b7f63b04693991e014e245c8d4a0bc6b9dc38c6", # master (https://github.com/Rdatatable/data.table/commit/7b7f63b04693991e014e245c8d4a0bc6b9dc38c6) before modularization of [.data.table started
+    expr = for (k in seq_len(N)) {
+      data.table:::`[.data.table`(dt, a > 2L, .(s = sum(v)), by = g)
+      data.table:::`[.data.table`(dt, .(2L), on = "g", v)
+      data.table:::`[.data.table`(dt, , w := v * 2)
+    }),
 
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
