@@ -35,7 +35,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL, env = NULL, 
+  drop, on = NULL, env = NULL,
   showProgress = getOption("datatable.showProgress", interactive()))
 }
 \arguments{
