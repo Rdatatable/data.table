@@ -87,6 +87,9 @@ test(1.48, DT[, a, keyby=NULL], data.table(a=1:6))
 test(1.49, DT[, a, .SDcols="b"], 1:6, warning="This j doesn't use .SD but .SDcols has been supplied")
 test(1.50, DT[, .(a, )], error="Item 2 of the .() or list() passed to j is missing")
 test(1.51, DT[on="b"], DT, warning=c("When on= is provided but not i=", "i and j are both missing so ignoring the other arguments"))
+# raised in helper but reported as coming from [.data.table
+test(1.52, tryCatch(DT[, .(a, )], error=conditionCall)[[1L]], quote(`[.data.table`))
+test(1.53, tryCatch(DT[, if (.N > 1L) .(a) else .(z=a), by=b], warning=conditionCall)[[1L]], quote(`[.data.table`))
 
 # forms of i
 test(1.61, DT[matrix(1:2, ncol=1L)], DT[1:2,])

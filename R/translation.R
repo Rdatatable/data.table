@@ -5,7 +5,11 @@ catf = function(fmt, ..., sep=" ", domain="R-data.table") {
 }
 
 raise_condition = function(signal, message, classes, immediate=FALSE, appendLF=FALSE) {
-  obj = list(message=message, call=sys.call(sys.nframe()-2L))
+  n = sys.nframe() - 2L # the caller of stopf() etc.
+  # helpers extracted from [.data.table carry class "dt_query_helper"; their conditions report the call of [.data.table (or whoever called them)
+  parents = sys.parents()
+  while (n > 0L && parents[n] > 0L && inherits(sys.function(n), "dt_query_helper")) n = parents[n]
+  obj = list(message=message, call=sys.call(n))
   # NB: append _after_ translation
   if (appendLF) obj$message = paste0(obj$message, "\n")
   setattr(obj, "class", classes)
