@@ -270,7 +270,7 @@ head(flights)
 flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
 ```
 
-Limpiemos de nuevo y convirtamos nuestras columnas de factores recién creadas en columnas de caracteres. Esta vez, usaremos `.SDcols`, que acepta una función para decidir qué columnas incluir. En este caso, `is.factor()` devolverá las columnas que son factores. Para más información sobre el **S**subconjunto de **D**atos, también hay una viñeta de uso de SD (https://cran.r-project.org/package=data.table/vignettes/datatable-sd-usage.html).
+Limpiemos de nuevo y convirtamos nuestras columnas de factores recién creadas en columnas de caracteres. Esta vez, usaremos `.SDcols`, que acepta una función para decidir qué columnas incluir. En este caso, `is.factor()` devolverá las columnas que son factores. Para más información sobre el **S**ubconjunto de **D**atos, también hay una [viñeta de uso de SD ('vignette("datatable-sd-usage", package="data.table")')](datatable-sd-usage.html).
 
 A veces, también es útil llevar un registro de las columnas que transformamos. De esta manera, incluso después de convertirlas, podremos llamar a las columnas específicas que actualizamos.
 
