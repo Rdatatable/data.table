@@ -42,7 +42,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
   DTfun = data.table:::DT
-  endsWith = data.table:::endsWith
   endsWithAny = data.table:::endsWithAny
   forder = data.table:::forder
   forderv = data.table:::forderv
@@ -17316,7 +17315,6 @@ test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or leng
 needed_chars = c("\u0105", "\u017E", "\u016B", "\u012F", "\u0173", "\u0117", "\u0161", "\u0119")
 txt = parse(text='readLines(testDir("issue_563_fread.txt"))')
 test(2194.7, requires_utf8=needed_chars, endsWithAny(eval(txt), 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
-test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
 
 # uniqueN(x, by=character()) was internal error, #4594
 DT = data.table(idx=c(1L,2L,1L,3L), value="val")
