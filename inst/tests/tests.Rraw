@@ -9768,16 +9768,16 @@ if (!haszlib()) {
   test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
                  output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
   test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
-  test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+  test(1658.423, file.size(f1) < file.size(f2))  # 74 < 804
   if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
   fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
   fwrite(DT, file=f4<-tempfile(), compress="gzip", compressLevel=1)   # test compressLevel
   fwrite(DT, file=f5<-tempfile(), compress="gzip", compressLevel=9)
   # col.names=FALSE must not disable gzip header, #6852
   fwrite(DT, file=f6<-tempfile(), compress="gzip", col.names=FALSE)
-  test(1658.441, file.info(f3)$size, file.info(f1)$size)
-  test(1658.442, file.info(f4)$size >= file.info(f1)$size)
-  test(1658.443, file.info(f1)$size >= file.info(f5)$size)
+  test(1658.441, file.size(f3), file.size(f1))
+  test(1658.442, file.size(f4) >= file.size(f1))
+  test(1658.443, file.size(f1) >= file.size(f5))
   if (test_R.utils) test(1658.444, fread(f6, col.names = c("a", "b")), DT)
   unlink(c(f1,f2,f3,f4,f5,f6))
 }
@@ -9803,7 +9803,7 @@ fwrite(DT, f2, bom=TRUE)
 f2con = file(f2, encoding="UTF-8")
 test(1658.51, length(readLines(f2con)), 27L)
 close(f2con)
-test(1658.52, file.info(f1)$size, file.info(f2)$size)
+test(1658.52, file.size(f1), file.size(f2))
 unlink(c(f1, f2))
 
 # compression error -5 due to only 3 bytes (bom) in first block; #3599
@@ -11326,7 +11326,7 @@ line255 = paste(rep("123,456,789,0AB",16),collapse=",")
 test(1770.1, nchar(line255), 255L)
 for (i in 1:256) cat(line255, "\x0A", sep="", file=ff)  # use \n line ending even on Windows
 close(ff)
-test(1770.2, file.info(f)$size, 65536)
+test(1770.2, file.size(f), 65536)
 test(1770.3, fread(f)[256,V64], "0AB")
 test(1770.4, fread(f, skip="spam"), error="not found in input")
 unlink(f)
@@ -11335,7 +11335,7 @@ ff = file(f<-tempfile(), open="wb")
 for (i in 1:255) cat(line255, "\x0A", sep="", file=ff)
 cat(line255, "C", sep="", file=ff)
 close(ff)
-test(1770.5, file.info(f)$size, 65536)
+test(1770.5, file.size(f), 65536)
 test(1770.6, fread(f)[256,V64], "0ABC")
 test(1770.7, fread(f, skip="spam"), error="not found in input")
 unlink(f)
@@ -11657,14 +11657,14 @@ for (mul in c(16, 128, 512, 1024, 2048)) {
   cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
   close(ff)
   DT = data.table(V1=rep(1234L, mul), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=4L)
-  test(1801 + log2(mul)/100 + 0.001, file.info(f)$size, mul*32, context=sprintf("mul=%d [file size]", mul))
+  test(1801 + log2(mul)/100 + 0.001, file.size(f), mul*32, context=sprintf("mul=%d [file size]", mul))
   test(1801 + log2(mul)/100 + 0.002, fread(f), DT, context=sprintf("mul=%d [fread]", mul))
 }
 # Test without the newline
 ff = file(f<-tempfile(), open="wb")
 cat(paste("1", paste(rep("1234,5678,9012,3456,7890,zyxw,4", 128), collapse="\x0A"), sep=""), file=ff)
 close(ff)
-test(1803.1, file.info(f)$size, 4096)
+test(1803.1, file.size(f), 4096)
 DT = data.table(V1=rep(1234L, 128), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="zyxw", V7=4L)
 DT[1, 1] = 11234L
 test(1803.2, fread(f), DT)

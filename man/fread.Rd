@@ -241,7 +241,7 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MiB):", round(file.info("test.csv")$size/1024^2),"\n")
+cat("File size (MiB):", round(file.size("test.csv")/1024^2),"\n")
 # 50 MiB (1e6 rows x 6 columns)
 
 system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
