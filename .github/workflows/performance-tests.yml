@@ -65,6 +65,7 @@ jobs:
       - name: Post or update PR comment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PICRD_API_KEY: ${{ secrets.PICRD_API_KEY }}
           PR_NUMBER: ${{ github.event.number }}
         shell: bash
         run: |
