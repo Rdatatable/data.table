@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           uploadImage() {
-            curl --fail --retry 3 -sS -F "file=@$1" -F "visibility=unlisted" https://picrd.com/api/upload | jq -r '.image_url // empty' || true
+            curl --fail --retry 3 -sS -H "Authorization: Bearer $PICRD_API_KEY" -F "file=@$1" -F "visibility=unlisted" https://picrd.com/api/upload | jq -r '.image_url // empty' || true
           }
           PREVIEW_URL=$(uploadImage .ci/atime/tests_preview_facet.png)
           ALL_URL=$(uploadImage .ci/atime/tests_all_facet.png)
