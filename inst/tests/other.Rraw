@@ -395,6 +395,11 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   test(16.22, fread(f, skip = 'var1,', yaml = TRUE),
        DT_yaml, warning = 'Combining a search.*YAML.*')
 
+  # yaml=TRUE with text= a single string containing newlines, #7896
+  txt = paste(readLines(f), collapse="\n")
+  test(16.23, fread(text=txt, yaml=TRUE), DT_yaml)
+  test(16.24, fread(txt, yaml=TRUE), DT_yaml)
+
   # fwrite csvy: #3534
   tmp = tempfile()
   DT = data.table(a = 1:5, b = c(pi, 1:4), c = letters[1:5])
