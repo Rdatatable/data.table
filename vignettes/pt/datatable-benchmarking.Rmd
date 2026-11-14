@@ -1,0 +1,156 @@
+---
+title: "Benchmarking com data.table"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format:
+    options:
+      toc: true
+      number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Benchmarking data.table}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+```
+
+<style>
+h2 {
+    font-size: 20px;
+}
+
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
+</style>
+
+```{r, echo=FALSE, file='../_translation_links.R'}
+```
+`{r} .write.translation.links("As traduções deste documento estão disponíveis em: %s")`
+
+Este documento serve como guia para medir o desempenho de `data.table`. É um único lugar para documentar boas práticas e armadilhas a evitar.
+
+# fread: limpar caches
+
+Idealmente, cada chamada ao `fread` deve ser executada em uma sessão nova com os seguintes comandos antes da execução do R. Isso limpa o cache de arquivos do sistema operacional na RAM e o cache do disco.
+
+```sh
+free -g
+sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+sudo lshw -class disk
+sudo hdparm -t /dev/sda
+```
+
+Ao comparar `fread` com soluções fora do R, tenha em mente que o R exige que os valores das colunas de caracteres sejam adicionados ao _cache global de strings do R_. Isso leva tempo ao ler os dados, mas operações posteriores se beneficiam, pois as strings já estarão em cache. Portanto, além de medir tarefas isoladas (como apenas `fread`), é uma boa ideia medir o tempo total de um fluxo completo de tarefas, como leitura dos dados, manipulação e geração do resultado final.
+
+# subset: limite para otimização de índice em consultas compostas
+
+A otimização de índice para consultas com filtros compostos não será usada quando o produto cruzado dos elementos fornecidos para filtrar exceder 1e4 elementos.
+
+```r
+DT = data.table(V1=1:10, V2=1:10, V3=1:10, V4=1:10)
+setindex(DT)
+v = c(1L, rep(11L, 9))
+length(v)^4               # cross product of elements in filter
+#[1] 10000                # <= 10000
+DT[V1 %in% v & V2 %in% v & V3 %in% v & V4 %in% v, verbose=TRUE]
+#Optimized subsetting with index 'V1__V2__V3__V4'
+#on= matches existing index, using index
+#Starting bmerge ...done in 0.000sec
+#...
+v = c(1L, rep(11L, 10))
+length(v)^4               # cross product of elements in filter
+#[1] 14641                # > 10000
+DT[V1 %in% v & V2 %in% v & V3 %in% v & V4 %in% v, verbose=TRUE]
+#Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.
+#...
+```
+
+# subset: benchmarking com uso de índices
+
+Por conveniência, o `data.table` cria automaticamente um índice nos campos usados para filtrar dados. Isso adiciona alguma sobrecarga na primeira execução, mas reduz bastante o tempo de consulta dessas colunas nas execuções seguintes. Para medir desempenho, a melhor forma é medir separadamente a criação do índice e a consulta usando o índice. Com esses tempos, fica fácil decidir a melhor estratégia para seu caso de uso.
+
+Para controlar o uso de índices, use as opções abaixo:
+
+```r
+options(datatable.auto.index=TRUE)
+options(datatable.use.index=TRUE)
+```
+
+- `use.index=FALSE` força a consulta a não usar índices, mesmo que existam, mas chaves existentes ainda são usadas para otimização.
+- `auto.index=FALSE` desativa a criação automática de índices ao filtrar dados não indexados, mas índices criados anteriormente ou via `setindex` ainda serão usados.
+
+Outras duas opções controlam a otimização global, incluindo uso de índices:
+
+```r
+options(datatable.optimize=2L)
+options(datatable.optimize=3L)
+```
+
+`options(datatable.optimize=2L)` desativa completamente a otimização de subsets, enquanto `options(datatable.optimize=3L)` a reativa. Essas opções afetam várias outras otimizações e, portanto, não devem ser usadas quando o objetivo for apenas controlar índices. Veja mais em `?datatable.optimize`.
+
+# operações *por referência*
+
+Ao fazer benchmarking de funções `set*`, faz sentido medir apenas a primeira execução. Essas funções modificam o objeto por referência, então execuções seguintes usarão a `data.table` já modificada, distorcendo os resultados.
+
+Para proteger sua `data.table` de modificações por referência, você pode usar `copy` ou `data.table:::shallow`. Tenha em mente que `copy` pode ser caro, pois duplica todo o objeto. Normalmente não queremos incluir esse tempo na medição da tarefa.
+
+# tente medir processos atômicos
+
+Se seu benchmark for publicado, será muito mais informativo se você separar e medir o tempo de processos atômicos. Assim, fica claro quanto tempo foi gasto na leitura dos dados, limpeza, transformação e exportação.
+
+Claro, se o objetivo for mostrar um fluxo completo (_end-to-end_), faz sentido apresentar o tempo total. Mesmo assim, separar as etapas ajuda a entender os principais gargalos.
+
+Há casos em que benchmarking atômico pode não ser ideal, como ao *ler um csv* seguido de *agrupamento*. O R precisa preencher o _cache global de strings_, o que adiciona custo na leitura, mas pode acelerar operações como agrupamento. Nesses casos, ao comparar com outras linguagens, pode ser útil considerar o tempo total.
+
+# evite coerção de classe
+
+A menos que esse seja exatamente o objetivo da medição, prepare os objetos de entrada com a classe esperada para cada ferramenta sendo comparada.
+
+# evite `microbenchmark(..., times=100)`
+
+Repetir benchmarks muitas vezes normalmente não representa bem ferramentas de processamento de dados. Isso faz sentido para cálculos muito pequenos, mas não para fluxos reais, que consistem em várias etapas executadas uma única vez.
+
+Matt disse uma vez:
+
+> Sou muito cauteloso com benchmarks abaixo de 1 segundo. Prefiro 10 segundos ou mais em uma única execução, aumentando o tamanho dos dados. Um número de repetições como 500 é um sinal de alerta. De 3 a 5 execuções já são suficientes com dados maiores. Overhead de chamadas e coleta de lixo afetam muito em escalas pequenas.
+
+Isso é muito válido. Quanto menor o tempo medido, maior o ruído relativo. Esse ruído vem de dispatch de métodos, inicialização de pacotes, etc. O foco deve estar em cenários reais.
+
+# processamento multithread
+
+Um dos principais fatores que impacta o tempo é o número de threads disponíveis na sessão R. Em versões recentes do `data.table`, algumas funções são paralelizadas.
+
+Você pode controlar o número de threads com `setDTthreads`:
+
+```r
+setDTthreads(0)    # usa todos os núcleos disponíveis (padrão)
+getDTthreads()     # verifica quantos núcleos estão sendo usados
+```
+
+# dentro de loops prefira `set` em vez de `:=`
+
+A menos que você esteja usando índice em *subatribuição por referência*, prefira `set`, que não tem o overhead da chamada `[.data.table`.
+
+```r
+DT = data.table(a=3:1, b=letters[1:3])
+setindex(DT, a)
+
+# for (...) {                 # imagine loop here
+
+  DT[a==2L, b := "z"]         # sub-assign by reference, uses index
+  DT[, d := "z"]              # não usa índice e tem overhead de `[.data.table`
+  set(DT, j="d", value="z")   # sem overhead, mas sem índice ainda
+
+# }
+```
+
+# dentro de loops prefira `setDT` em vez de `data.table()`
+
+Atualmente, `data.table()` possui overhead. Portanto, dentro de loops é preferível usar `as.data.table()` ou `setDT()` em uma lista válida.
