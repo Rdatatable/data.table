@@ -142,14 +142,11 @@ static void Field(FieldParseContext *ctx);
 //=================================================================================================
 
 /**
- * Drops `const` qualifier from a `const char*` variable, equivalent of
- * `const_cast<char*>` in C++.
+ * Drops `const` qualifier from any scalar object, equivalent of
+ * `const_cast` in C++.
  */
-static char* const_cast(const char *ptr)
-{
-  union { const char *a; char *b; } tmp = { ptr };
-  return tmp.b;
-}
+#define const_cast(x) (((union{typeof(x) a; typeof(+(*(x)))* b;}){.a=(x)}).b)
+
 
 /**
  * Free any resources / memory buffers allocated by the fread() function, and
