@@ -1,0 +1,57 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: frolladaptive 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: frolladaptive.c:19 frolladaptive.c:214
+#, c-format
+msgid "%s: processing algo %u took %.3fs\n"
+msgstr ""
+
+#: frolladaptive.c:29 frolladaptive.c:218
+#, c-format
+msgid "%s: running for input length %<PRIu64>, hasna %d, narm %d\n"
+msgstr ""
+
+#: frolladaptive.c:35 frolladaptive.c:224
+#, c-format
+msgid "%s: Unable to allocate memory for cumsum"
+msgstr ""
+
+#: frolladaptive.c:58 frolladaptive.c:147 frolladaptive.c:247 frolladaptive.c:326
+#, c-format
+msgid ""
+"%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
+"input, use default hasNA=NA to avoid this warning"
+msgstr ""
+
+#: frolladaptive.c:61 frolladaptive.c:151 frolladaptive.c:250 frolladaptive.c:330
+#, c-format
+msgid ""
+"%s: NA (or other non-finite) value(s) are present in input, re-running with "
+"extra care for NAs\n"
+msgstr ""
+
+#: frolladaptive.c:71 frolladaptive.c:260
+#, c-format
+msgid "%s: Unable to allocate memory for cum NA counter"
+msgstr ""
+
+#: frolladaptive.c:114 frolladaptive.c:298
+#, c-format
+msgid "%s: running in parallel for input length %<PRIu64>, hasna %d, narm %d\n"
+msgstr ""
+
+#: frolladaptive.c:153 frolladaptive.c:332
+#, c-format
+msgid ""
+"%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
+"so in 'exact' implementation NAs were handled already, no need to re-run\n"
+msgstr ""

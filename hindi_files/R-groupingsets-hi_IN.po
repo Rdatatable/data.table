@@ -1,0 +1,149 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: groupingsets 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: groupingsets.R:7 groupingsets.R:25 groupingsets.R:47
+msgid "Argument 'x' must be a data.table object"
+msgstr ""
+
+#: groupingsets.R:9 groupingsets.R:27 groupingsets.R:53
+msgid ""
+"Argument 'by' must be a character vector of column names used in grouping."
+msgstr ""
+
+#: groupingsets.R:11 groupingsets.R:29 groupingsets.R:59
+msgid "Argument 'id' must be a logical scalar."
+msgstr ""
+
+#: groupingsets.R:31
+msgid "Argument 'j' is required"
+msgstr ""
+
+#: groupingsets.R:49
+msgid ""
+"Argument 'x' is a 0-column data.table; no measure to apply grouping over."
+msgstr ""
+
+#: groupingsets.R:51
+msgid "Input data.table must not contain duplicate column names."
+msgstr ""
+
+#: groupingsets.R:55
+msgid "Argument 'by' must have unique column names for grouping."
+msgstr ""
+
+#: groupingsets.R:57
+msgid "Argument 'sets' must be a list of character vectors."
+msgstr ""
+
+#: groupingsets.R:63
+msgid ""
+"Argument 'label', if not NULL, must be a scalar or a named list of scalars."
+msgstr ""
+
+#: groupingsets.R:65
+msgid "When argument 'label' is a list, all of the list elements must be named."
+msgstr ""
+
+#: groupingsets.R:67
+msgid ""
+"When argument 'label' is a list, the element names must not contain "
+"duplicates."
+msgstr ""
+
+#: groupingsets.R:70
+msgid ""
+"All columns used in 'sets' argument must be in 'by' too. Columns used in "
+"'sets' but not present in 'by': %s"
+msgstr ""
+
+#: groupingsets.R:72
+msgid ""
+"When using `id=TRUE` the 'x' data.table must not have a column named "
+"'grouping'."
+msgstr ""
+
+#: groupingsets.R:74
+msgid ""
+"Character vectors in 'sets' list must not have duplicated column names within "
+"a single grouping set."
+msgstr ""
+
+#: groupingsets.R:76
+msgid ""
+"'sets' contains a duplicate (i.e., equivalent up to sorting) element at index "
+"%d; as such, there will be duplicate rows in the output -- note that grouping "
+"by A,B and B,A will produce the same aggregations. Use "
+"`sets=unique(lapply(sets, sort))` to eliminate duplicates."
+msgstr ""
+
+#: groupingsets.R:82
+msgid ""
+"When argument 'label' is a list, all element names must be (1) in 'by', or "
+"(2) the first element of the class in the data.table 'x' of a variable in "
+"'by', or (3) one of %s. Element names not satisfying this condition: %s"
+msgstr ""
+
+#: groupingsets.R:92
+#, c-format
+msgid "%s (label: %s; data: %s)"
+msgstr ""
+
+#: groupingsets.R:96
+msgid ""
+"When argument 'label' is a list, the class of each 'label' element with name "
+"in 'by' must match the class of the corresponding column of the data.table "
+"'x'. Class mismatch for: %s"
+msgstr ""
+
+#: groupingsets.R:100
+#, c-format
+msgid "(label name: %s; label class[1]: %s)"
+msgstr ""
+
+#: groupingsets.R:103
+msgid ""
+"When argument 'label' is a list, the name of each element of 'label' not in "
+"'by' must match the first element of the class of the element value. "
+"Mismatches: %s"
+msgstr ""
+
+#: groupingsets.R:110
+msgid ""
+"Expression passed to grouping sets function must not update by reference. Use "
+"':=' on results of your grouping function."
+msgstr ""
+
+#: groupingsets.R:117
+msgid ""
+"When using `id=TRUE` the 'j' expression must not evaluate to a column named "
+"'grouping'."
+msgstr ""
+
+#: groupingsets.R:119
+msgid ""
+"There exists duplicated column names in the results, ensure the column passed/"
+"evaluated in `j` and those in `by` are not overlapping."
+msgstr ""
+
+#: groupingsets.R:142
+#, c-format
+msgid "%s (label: %s)"
+msgstr ""
+
+#: groupingsets.R:143
+msgid ""
+"For the following variables, the 'label' value was already in the data: %s"
+msgstr ""
+
+#: groupingsets.R:150
+msgid "Using integer64 class columns require to have 'bit64' package installed."
+msgstr ""
