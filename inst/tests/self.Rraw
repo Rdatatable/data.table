@@ -12,3 +12,13 @@ test(1.1, test(0, warning("a"), warning=c("a", "b"), check_value=FALSE), FALSE,
           output="Test 0 produced 1 warnings but expected 2\nExpected: a\n          b\nObserved: a")
 test(1.2, test(0, {warning("a"); warning("b")}, warning="a", check_value=FALSE), FALSE,
           output="Test 0 produced 2 warnings but expected 1\nExpected: a\nObserved: a\n          b")
+
+# test() distinguishes NA and NaN, especially in vectors
+test(2.1, test(0, NA_real_, NaN), FALSE,
+          output="First 1 different of 1 \\(1 total.*x.*NA.*First 1 different of 1.*y.*NaN")
+test(2.2, test(0, list(NA), list(NaN)), FALSE,
+          output="x = list\\(NA\\).*y = list\\(NaN\\)")
+test(2.3, test(0, c(1, NA), c(1, NaN)), FALSE,
+          output="First 1 different of 1 \\(2 total.*x.*NA.*First 1 different of 1.*y.*NaN")
+test(2.4, test(0, c(1, NA, NA, NaN, 2, 3), c(1, NA, NaN, NaN, NA, NaN)), FALSE,
+          output="First 3 different of 3 \\(6 total.*NA.*2.*3.*First 3 different of 3.*NaN.*NA.*NaN")
