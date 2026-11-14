@@ -2,11 +2,23 @@ rowwiseDT = function(...) {
   x = substitute(list(...))[-1L]
   if (is.null(nms <- names(x)))
     stopf("Must provide at least one column (use `name=`). See ?rowwiseDT for details")
+  if (length(key_pos <- which(nms == "key" & nzchar(x))) > 0L) {
+    if (length(key_pos) > 1L)
+      stopf("Key specified more than once")
+    if (length(key <- eval(x[[key_pos]], parent.frame())) == 1L)
+      key = cols_from_csv(key)
+    x = x[-key_pos]
+    nms = nms[-key_pos]
+  } else {
+    key_pos = 0L
+  }
   header_pos = which(nzchar(nms))
   if (any(nzchar(x[header_pos])))
     stopf("Named arguments must be empty")
   if (!identical(header_pos, seq_along(header_pos)))
     stopf("Header must be the first N arguments")
+  if (key_pos && !key_pos %in% c(1L, length(x) + 1L))
+    stopf("Key specification must be either the first or the last argument")
   header = nms[header_pos]
   ncols = length(header)
   body = lapply(x[-header_pos], eval, envir = parent.frame())
@@ -27,5 +39,7 @@ rowwiseDT = function(...) {
   body = split(body, rep(seq_len(nrows), each = ncols))
   ans = rbindlist(body)
   setnames(ans, header)
+  if (key_pos)
+    setkeyv(ans, key)
   ans
 }
