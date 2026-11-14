@@ -1,0 +1,736 @@
+---
+title: "data.table में Joins"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Joins in data.table}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+```
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+इस विगनेट में आप `data.table` syntax में उपलब्ध resources का उपयोग करके किसी भी join operation को करना सीखेंगे।
+
+यह मानता है कि आप `data.table` syntax से परिचित हैं। यदि ऐसा नहीं है, तो कृपया निम्नलिखित vignettes पढ़ें:
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
+
+***
+
+## 1. उदाहरण डेटा परिभाषित करना
+
+Real-life examples के साथ available method का उपयोग कैसे करें, इसे दिखाने के लिए एक छोटे supermarket का **normalized database** simulate करते हैं और database में निम्न tables define करते हैं:
+
+1. `Products`, एक table जिसमें rows विभिन्न products की characteristics देती हैं। Framework ***missing values*** को कैसे handle करता है यह दिखाने के लिए एक `id` को `NA` रखा गया है।
+
+```{r, define_products}
+Products = rowwiseDT(
+  id=,        name=, price=,   unit=, type=,
+   1L,     "banana",   0.63,  "unit", "natural",
+   2L,    "carrots",   0.89,    "lb", "natural",
+   3L,    "popcorn",   2.99,  "unit", "processed",
+   4L,       "soda",   1.49, "ounce", "processed",
+   NA, "toothpaste",   2.99,  "unit", "processed"
+)
+```
+
+2. `NewTax`, एक table जिसमें rows processed products पर उनकी units के आधार पर कुछ taxes define करती हैं।
+
+```{r define_new_tax}
+NewTax = data.table(
+  unit = c("unit", "ounce"),
+  type = "processed",
+  tax_prop = c(0.65, 0.20)
+)
+
+NewTax
+```
+
+
+3. `ProductReceived`, एक table जिसकी rows weekly incoming inventory को simulate करती हैं।
+
+```{r define_product_received}
+set.seed(2156)
+
+# NB: Jan 8, 2024 is a Monday.
+receipt_dates = seq(from=as.IDate("2024-01-08"), length.out=10L, by="week")
+
+ProductReceived = data.table(
+  id=1:10, # unique identifier for an supply transaction
+  date=receipt_dates,
+  product_id=sample(c(NA, 1:3, 6L), size=10L, replace=TRUE), # NB: product '6' is not recorded in Products above.
+  count=sample(c(50L, 100L, 150L), size=10L, replace=TRUE)
+)
+
+ProductReceived
+```
+
+4. `ProductSales`, एक table जिसकी rows customer transactions को simulate करती हैं।
+
+```{r define_product_sales}
+set.seed(5415)
+
+# Monday-Friday (4 days later) for each of the weeks present in ProductReceived
+possible_weekdays <- as.IDate(sapply(receipt_dates, `+`, 0:4))
+
+ProductSales = data.table(
+  id = 1:10,
+  date = sort(sample(possible_weekdays, 10L)),
+  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE), # NB: product '7' is in neither Products nor ProductReceived.
+  count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
+)
+
+ProductSales
+```
+
+## 2. `data.table` joining syntax
+
+Join operations करने के लिए `data.table` syntax का लाभ लेने से पहले हमें यह जानना होगा कि सफल joins करने में कौन-से arguments मदद करते हैं।
+
+अगला diagram प्रत्येक basic argument का description दिखाता है। आगे के sections में हम दिखाएँगे कि प्रत्येक का उपयोग कैसे करें और धीरे-धीरे complexity बढ़ाएँगे।
+
+```
+x[i, on, nomatch]
+| |  |   |
+| |  |   \__ If NULL only returns rows linked in x and i tables
+| |  \____ a character vector or list defining match logic
+| \_____ primary data.table, list or data.frame
+\____ secondary data.table
+```
+
+**ध्यान दें**: याद रखें कि `data.table` में standard argument order `dt[i, j, by]` है। Join operations में `on` और `nomatch` arguments को नाम से pass करने की recommendation है, ताकि `j` और `by` की आवश्यकता न होने पर उनका उपयोग न करना पड़े।
+
+## 3. Equi joins
+
+यह सबसे सामान्य और सरल case है, जहाँ tables के बीच common elements खोजकर उन्हें combine किया जा सकता है।
+
+Tables के बीच relationship हो सकता है:
+
+- **One to one**: जब प्रत्येक matching value दोनों tables में unique हो।
+- **One to many**: जब कुछ matching values एक table में repeated हों और दूसरे में unique हों।
+- **Many to many**: जब matching values दोनों tables में कई बार repeated हों।
+
+आगे के अधिकतर examples में हम *one to many* matches करेंगे, लेकिन *many to many* matches के लिए उपलब्ध resources भी समझाएँगे।
+
+
+### 3.1. Right join
+
+इस method का उपयोग तब करें जब आपको एक या अधिक references के आधार पर 2 tables के columns combine करने हों लेकिन ***दाईं ओर स्थित table (square brackets के अंदर वाली table) की सभी rows बनाए रखनी हों***।
+
+हमारे supermarket context में received products के बारे में अधिक details देखने के लिए right join कर सकते हैं, क्योंकि यह relation *one to many* है; इसके लिए `on` argument को vector pass करेंगे।
+
+```{r}
+Products[ProductReceived,
+         on = c(id = "product_id")]
+```
+
+काफी चीज़ें बदली हैं, इसलिए नई characteristics को निम्न groups में समझते हैं:
+
+- **Column level**
+  - नए `data.table` में columns का *पहला group* `x` table से आता है।
+  - नए `data.table` में columns का *दूसरा group* `i` table से आता है।
+  - यदि join operation में कोई **name conflict** हो (दोनों tables में same column name), तो **right-hand table** (`i` position वाली table) के column names में ***prefix*** `i.` जुड़ता है।
+  
+- **Row level**
+  - `ProductReceived` table की row 1 में मौजूद missing `product_id`, `Products` table के missing `id` से सफलतापूर्वक match हुआ; इसलिए `NA` ***values को किसी अन्य value की तरह treat किया जाता है***।
+  - `i` table की सभी rows रखी गईं, जिनमें शामिल हैं:
+    - Non-matching rows, जैसे `product_id = 6` वाली row।
+    - वे rows जिनमें वही `product_id` कई बार repeat होता है।
+    
+#### 3.1.1. List argument द्वारा joining
+
+यदि आप विगनेट follow कर रहे हैं, तो आपने देखा होगा कि हमने `on` argument में tables के relations define करने के लिए vector उपयोग किया। यह विशेष रूप से **अपने functions बनाते समय** उपयोगी है, लेकिन columns-to-match define करने के लिए **list** का उपयोग भी एक alternative है।
+
+इस capability का उपयोग करने के लिए हमारे पास 2 equivalent alternatives हैं:
+
+- Related columns को base R `list` function में wrap करना।
+
+```r
+Products[ProductReceived,
+         on = list(id = product_id)]
+```
+
+- Related columns को `list` alias `.` में wrap करना।
+
+```r
+Products[ProductReceived,
+         on = .(id = product_id)]
+```
+
+#### 3.1.2. `on` argument define करने के alternatives
+
+पिछले सभी examples में हमने match किए जाने वाले column names `on` argument को pass किए, लेकिन `data.table` इस syntax के alternatives भी देता है।
+
+- **Natural join**: Common column names के आधार पर matching के columns select करता है। इस method को दिखाने के लिए `Products` table में column `id` का नाम `product_id` करते हैं और keyword `.NATURAL` उपयोग करते हैं।
+
+```{r}
+ProductsChangedName = setnames(copy(Products), "id", "product_id")
+ProductsChangedName
+
+ProductsChangedName[ProductReceived, on = .NATURAL]
+```
+
+- **Keyed join**: Columns के names से स्वतंत्र रूप से keyed columns के आधार पर matching के columns select करता है। इस method को दिखाने के लिए दोनों tables में keys को same order में define करना होगा।
+
+```{r}
+ProductsKeyed = setkey(copy(Products), id)
+key(ProductsKeyed)
+
+ProductReceivedKeyed = setkey(copy(ProductReceived), product_id)
+key(ProductReceivedKeyed)
+
+ProductsKeyed[ProductReceivedKeyed]
+```
+
+#### 3.1.3. Joining के बाद operations
+
+Join के बाद अक्सर कुछ additional transformations करनी होती हैं। इसके लिए निम्न alternatives हैं:
+
+- Brackets की एक और pair `[]` जोड़कर नई instruction chain करना।
+- `j` argument को उन columns की list pass करना जिन्हें रखना या create करना है।
+
+हमारी recommendation है कि संभव हो तो दूसरा alternative उपयोग करें, क्योंकि यह पहले की तुलना में **तेज़** है और **कम memory** उपयोग करता है।
+
+##### `j` argument के साथ shared column names manage करना
+
+`j` argument उन joins को manage करने के लिए अच्छे alternatives देता है जहाँ tables **कई columns के same names share करती हैं**। Default रूप से सभी columns अपना source `x` table से लेते हैं, लेकिन source स्पष्ट करने के लिए `x.` prefix उपयोग कर सकते हैं, और `x` table के `i` argument में declared table के किसी column को उपयोग करने के लिए `i.` prefix उपयोग कर सकते हैं।
+
+छोटे supermarket पर लौटते हैं। `ProductReceived` table को `Products` table से update करने के बाद, मान लें हम निम्न changes करना चाहते हैं:
+
+- Column names `id` से `product_id` और `i.id` से `received_id` में बदलना।
+- `total_value` जोड़ना।
+
+```{r}
+Products[
+  ProductReceived,
+  on = c("id" = "product_id"),
+  j = .(product_id = x.id,
+        name = x.name,
+        price,
+        received_id = i.id,
+        date = i.date,
+        count,
+        total_value = price * count)
+]
+```
+
+
+##### `data.table` में `on` के साथ summarizing
+
+इस alternative का उपयोग `x` table में मौजूद columns के आधार पर aggregated results लौटाने के लिए भी कर सकते हैं।
+
+उदाहरण के लिए, हमें यह जानने में रुचि हो सकती है कि दिनों के दौरान प्रत्येक product खरीदने पर कितना पैसा खर्च किया।
+
+```{r}
+dt1 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+  by = .EACHI,
+  j = .(total_value_received  = sum(price * count))
+]
+
+# alternative using multiple [] queries
+dt2 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+][, .(total_value_received  = sum(price * count)),
+  by = "product_id"
+]
+
+identical(dt1, dt2)
+```
+
+#### 3.1.4. कई columns के आधार पर joining
+
+अब तक हमने केवल 1 column के आधार पर `data.table`s join किए हैं, लेकिन यह जानना महत्वपूर्ण है कि package कई columns match करके tables join कर सकता है।
+
+इसे दिखाने के लिए मान लें कि हम `Products` table को **update** करने हेतु `NewTax` से `tax_prop` जोड़ना चाहते हैं।
+
+```{r}
+NewTax[Products, on = c("unit", "type")]
+```
+
+### 3.2. Inner join
+
+इस method का उपयोग तब करें जब एक या अधिक references के आधार पर 2 tables के columns combine करने हों लेकिन ***केवल वही rows रखनी हों जो दोनों tables में match करती हैं***।
+
+इस operation के लिए किसी भी पिछले join operation में केवल `nomatch = NULL` जोड़ना है, जिससे वही matching results लौटेंगे।
+
+```{r}
+# First Table
+Products[ProductReceived,
+         on = c("id" = "product_id"),
+         nomatch = NULL]
+
+# Second Table
+ProductReceived[Products,
+                on = .(product_id = id),
+                nomatch = NULL]
+```
+
+दोनों tables में समान information होने के बावजूद कुछ महत्वपूर्ण differences हैं:
+
+- उनका column ordering अलग है।
+- उनके column names में differences हैं:
+  - पहली table का `id` column वही information रखता है जो दूसरी table का `product_id` रखता है।
+  - पहली table का `i.id` column वही information रखता है जो दूसरी table का `id` रखता है।
+
+### 3.3. Anti-join
+
+यह method **केवल वे rows रखता है जो दूसरी table की किसी भी row से match नहीं करतीं**।
+
+इस technique को apply करने के लिए `i` argument में स्थित table को negate (`!`) कर सकते हैं।
+
+```{r}
+Products[!ProductReceived,
+         on = c("id" = "product_id")]
+```
+
+जैसा आप देख सकते हैं, result में केवल 'soda' है, क्योंकि वही एक product था जो `ProductReceived` table में मौजूद नहीं था।
+
+```{r}
+ProductReceived[!Products,
+                on = c("product_id" = "id")]
+```
+
+इस case में operation `product_id = 6` वाली row लौटाता है, क्योंकि वह `Products` table में मौजूद नहीं है।
+
+### 3.4. Semi join
+
+यह method **केवल वे rows extract करता है जो दूसरी table की किसी row से match करती हैं**, लेकिन tables के columns combine नहीं करता।
+
+यह subset-as-join जैसा है, लेकिन इस बार हम `i` को पूरी table pass कर रहे हैं, इसलिए सुनिश्चित करना होगा कि:
+
+- `x` table की कोई row, `i` argument को दी गई table में row duplication के कारण duplicate न हो।
+
+- `x` की सभी remaining rows अपना original row order बनाए रखें।
+
+
+इसे करने के लिए निम्न steps apply कर सकते हैं:
+
+1. `which = TRUE` के साथ **inner join** करें ताकि `x` table की प्रत्येक matching row से संबंधित row numbers save हो जाएँ।
+
+```{r}
+SubSetRows = Products[
+  ProductReceived,
+  on = .(id = product_id),
+  nomatch = NULL,
+  which = TRUE
+]
+
+SubSetRows
+```
+
+2. Unique row ids select और sort करें।
+
+```{r}
+SubSetRowsSorted = sort(unique(SubSetRows))
+
+SubSetRowsSorted
+```
+
+
+3. `x` की रखी जाने वाली rows select करें।
+
+```{r}
+Products[SubSetRowsSorted]
+```
+  
+
+### 3.5. Left join
+
+इस method का उपयोग तब करें जब एक या अधिक references के आधार पर 2 tables के columns combine करने हों लेकिन ***बाईं ओर वाली table की सभी rows बनाए रखनी हों***।
+
+इस operation के लिए केवल **दोनों tables का order exchange** करना है और `on` argument में column names उसी के अनुसार बदलने हैं।
+
+```{r}
+ProductReceived[Products,
+                on = list(product_id = id)]
+```
+
+कुछ महत्वपूर्ण considerations:
+
+- **Column level**
+  - Columns का *पहला group* अब `ProductReceived` table से आता है क्योंकि वही `x` table है।
+  - Columns का *दूसरा group* अब `Products` table से आता है क्योंकि वही `i` table है।
+  - किसी column में `i.` prefix नहीं जोड़ा गया।
+  
+- **Row level**
+  - `i` table की सभी rows रखी गईं: `Products` की soda entry, जिसे `ProductReceived` की किसी row ने match नहीं किया, result का हिस्सा बनी रहती है।
+  - `product_id = 6` से संबंधित row अब result का हिस्सा नहीं है क्योंकि वह `Products` table में मौजूद नहीं है।
+
+
+#### 3.5.1. Chain operations के बाद joining
+
+`data.table` की प्रमुख features में से एक है कि brackets chain करके final result save करने से पहले कई operations apply किए जा सकते हैं।
+
+```r
+DT[
+  ...
+][
+  ...
+][
+  ...
+]
+```
+
+अब तक, यदि इन सभी operations के बाद **हम किसी row को हटाए बिना नए columns join करना चाहते**, तो chaining process रोकना, temporary table save करना और बाद में join operation apply करना पड़ता।
+
+इस situation से बचने के लिए special symbol `.SD` का उपयोग करके **changed table के आधार पर right join** किया जा सकता है।
+
+```{r}
+NewTax[Products,
+       on = c("unit", "type")
+][, ProductReceived[.SD,
+                    on = list(product_id = id)],
+  .SDcols = !c("unit", "type")]
+```
+
+### 3.6. Many-to-many join
+
+कभी-कभी हम **duplicated `id` values** वाले columns के आधार पर tables join करना चाहते हैं ताकि बाद में कुछ transformations की जा सकें।
+
+इस situation को दिखाने के लिए `product_id == 1L` का example लेते हैं, जिसकी `ProductReceived` table में 4 rows हैं।
+
+```{r}
+ProductReceived[product_id == 1L]
+```
+
+और `ProductSales` table में भी 4 rows हैं।
+
+```{r}
+ProductSales[product_id == 1L]
+```
+
+इस join के लिए `i` table में केवल उस product तक join सीमित करने हेतु `product_id == 1L` filter करना है और `allow.cartesian = TRUE` set करना है, ताकि एक table की प्रत्येक row दूसरी table की हर row के साथ combine हो सके।
+
+```{r}
+ProductReceived[ProductSales[list(1L),
+                             on = "product_id",
+                             nomatch = NULL],
+                on = "product_id",
+                allow.cartesian = TRUE]
+```
+
+Result समझने के बाद यही process **सभी products** पर apply कर सकते हैं।
+
+```{r}
+ProductReceived[ProductSales,
+                on = "product_id",
+                allow.cartesian = TRUE]
+```
+
+**ध्यान दें**: `allow.cartesian` default रूप से FALSE है क्योंकि user आमतौर पर ऐसा नहीं चाहता और ऐसा cross join result में बहुत बड़ी number of rows बना सकता है। उदाहरण के लिए यदि Table A में 100 rows और Table B में 50 rows हैं, तो Cartesian product से 5000 rows (100 * 50) बनेंगी। बड़े datasets के लिए यह जल्दी memory-intensive हो सकता है।
+
+
+#### 3.6.1. एक match चुनना
+
+Tables join करने के बाद हमें पता चल सकता है कि required information निकालने के लिए केवल एक single join result चाहिए। इस case में 2 alternatives हैं:
+
+- **पहला match** चुन सकते हैं, अगले example में `id = 2` से represented।
+
+```{r}
+ProductReceived[ProductSales[product_id == 1L],
+                on = .(product_id),
+                allow.cartesian = TRUE,
+                mult = "first"]
+```
+
+- **अंतिम match** चुन सकते हैं, अगले example में `id = 9` से represented।
+
+```{r}
+ProductReceived[ProductSales[product_id == 1L],
+                on = .(product_id),
+                allow.cartesian = TRUE,
+                mult = "last"]
+```
+
+#### 3.6.2. Cross join
+
+यदि किसी particular id column की परवाह किए बिना **सभी possible row combinations** चाहिए, तो निम्न process follow कर सकते हैं:
+
+1. दोनों tables में constant value वाला नया column बनाएँ।
+
+```{r}
+ProductsTempId = copy(Products)[, temp_id := 1L]
+```
+
+2. उसी नए column के आधार पर दोनों tables join करें और process समाप्त होने पर उसे remove कर दें, क्योंकि join के बाद उसकी आवश्यकता नहीं रहती।
+
+```{r}
+AllProductsMix =
+  ProductsTempId[ProductsTempId,
+                 on = "temp_id",
+                 allow.cartesian = TRUE]
+
+AllProductsMix[, temp_id := NULL]
+
+# Removing type to make easier to see the result when printing the table
+AllProductsMix[, !c("type", "i.type")]
+```
+
+
+### 3.7. Full join
+
+इस method का उपयोग तब करें जब एक या अधिक references के आधार पर 2 tables के columns combine करने हों ***बिना किसी row को हटाए***।
+
+जैसा पिछले section में देखा, पिछले operations में से कोई भी missing `product_id = 6` और **soda** (`product_id = 4`) दोनों को एक साथ result में नहीं रख सकता।
+
+इस समस्या को हल करने के लिए `merge` function उपयोग कर सकते हैं, भले native `data.table` joining syntax की तुलना में इसका performance कम हो।
+
+```{r}
+merge(x = Products,
+      y = ProductReceived,
+      by.x = "id",
+      by.y = "product_id",
+      all = TRUE,
+      sort = FALSE)
+```
+
+
+## 4. Non-equi join
+
+Non-equi join वह join है जहाँ matching rows की condition equality के अलावा comparison operators जैसे `<`, `>`, `<=`, या `>=` पर आधारित होती है। इससे **अधिक flexible joining criteria** संभव होते हैं। `data.table` में non-equi joins विशेष रूप से इन operations के लिए उपयोगी हैं:
+
+- Nearest match ढूँढना।
+- Tables के बीच value ranges compare करना।
+
+यह अच्छा alternative है जब right या inner join apply करने के बाद आप:
+
+- Tables के numeric columns की comparisons के आधार पर returned rows की संख्या कम करना चाहते हैं।
+- Final result में table x *(secondary `data.table`)* के columns retain नहीं करना चाहते।
+
+यह कैसे काम करता है दिखाने के लिए product 2 की sales और receives पर focus करते हैं।
+  
+```{r}
+ProductSalesProd2 = ProductSales[product_id == 2L]
+ProductReceivedProd2 = ProductReceived[product_id == 2L]
+```
+
+यदि उदाहरण के लिए जानना हो कि कौन-सी receive किसी sales date से पहले हुई थी, तो निम्न apply कर सकते हैं।
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = "product_id",
+                     allow.cartesian = TRUE
+][date < i.date]
+```
+
+यदि वही logic सीधे `on` को दी गई list पर apply करें तो क्या होता है?
+
+- क्योंकि यह operation अभी भी right join है, यह `i` table की सभी rows लौटाता है, लेकिन `id` और `count` की values केवल तब दिखाता है जब rules meet हों।
+
+- `ProductReceivedProd2` से संबंधित date इस नई table से omit हो गई।
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, date < date)]
+```
+
+अब join apply करने के बाद result को केवल उन cases तक limit कर सकते हैं जो सभी joining criteria meet करते हैं।
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, date < date),
+                     nomatch = NULL]
+```
+
+### 4.1 Non-equi joins में output column names
+
+Non-equi joins (`<`, `>`, `<=`, `>=`) करते समय column names इस प्रकार assign होते हैं:
+
+- Left operand (`x` column) result में column name निर्धारित करता है।
+- Right operand (`i` column) values देता है लेकिन अपना original name retain नहीं करता।
+- Default रूप से `data.table` join condition में उपयोग किए गए `i` column को retain नहीं करता जब तक explicitly request न किया जाए।
+
+Non-equi joins में operator की left side (जैसे `x_int` in `x_int >= i_int`) `x` का column होना चाहिए, जबकि right side (जैसे `i_int`) `i` का column होना चाहिए।
+
+Non-equi joins अभी arbitrary expressions support नहीं करते (लेकिन [#1639](https://github.com/Rdatatable/data.table/issues/1639) देखें)। उदाहरण के लिए `on = .(x_int >= i_int)` valid है, लेकिन `on = .(x_int >= i_int + 1L)` नहीं। ऐसी non-equi join करने के लिए पहले expression को नए column के रूप में जोड़ें, जैसे `i[, i_int_plus_one := i_int + 1L]`, फिर `.on(x_int >= i_int_plus_one)` करें।
+
+```{r non_equi_join_example}
+x <- data.table(x_int = 2:4, lower = letters[1:3])
+i <- data.table(i_int = c(2L, 4L, 5L), UPPER = LETTERS[1:3])
+x[i, on = .(x_int >= i_int)]
+```
+
+मुख्य बातें:
+
+- Output column (`x_int`) का name `x` से आता है, लेकिन values `i` के `i_int` से आती हैं।
+- अंतिम row में `NA` है क्योंकि `x` की कोई row `i` की अंतिम row (`UPPER == "C"`) से match नहीं करती।
+- `x` की multiple rows `i` की पहली row `UPPER == "A"` से match करने के लिए लौटती हैं।
+
+यदि `i` से `i_int` column रखना है, तो उसे result में explicitly select करना होगा:
+
+```{r retain_i_column}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
+```
+
+इस case में prefixes (`x.` और `i.`) strictly necessary नहीं हैं क्योंकि names unambiguous हैं, लेकिन उनका उपयोग output में स्पष्ट करता है कि `i_int` `i` से और `x_int` `x` से आया है।
+
+यदि unmatched rows exclude करनी हैं (_inner join_), तो `nomatch = NULL` उपयोग करें:
+
+```{r retain_i_column_inner_join}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER), nomatch = NULL]
+```
+
+## 5. Rolling join
+
+Rolling joins विशेष रूप से time-series data analysis में उपयोगी हैं। वे sorted column—आमतौर पर date या time column—में **nearest value के आधार पर rows match** करने देते हैं।
+
+यह तब उपयोगी है जब अलग-अलग sources के data को align करना हो **जहाँ timestamps exact match न करते हों**, या सबसे recent value को carry forward करना हो।
+
+उदाहरण के लिए financial data में, प्रत्येक transaction को सबसे recent stock price assign करने के लिए rolling join उपयोग कर सकते हैं, भले price updates और transactions exact same time पर न हों।
+
+
+हमारे supermarket example में sales को सबसे recent product information से match करने के लिए rolling join उपयोग कर सकते हैं।
+
+मान लें Bananas और Carrots की price हर month की first date पर बदलती है।
+
+```{r}
+ProductPriceHistory = data.table(
+  product_id = rep(1:2, each = 3),
+  date = rep(as.IDate(c("2024-01-01", "2024-02-01", "2024-03-01")), 2),
+  price = c(0.59, 0.63, 0.65,  # Banana prices
+            0.79, 0.89, 0.99)  # Carrot prices
+)
+
+ProductPriceHistory
+```
+
+अब sale date के आधार पर प्रत्येक product को अलग price देकर right join कर सकते हैं।
+
+```{r}
+ProductPriceHistory[ProductSales,
+                    on = .(product_id, date),
+                    roll = TRUE,
+                    j = .(product_id, date, count, price)]
+```
+
+यदि केवल matching cases देखने हैं, तो inner rolling join करने के लिए `nomatch = NULL` argument जोड़ना पर्याप्त है।
+
+```{r}
+ProductPriceHistory[ProductSales,
+                    on = .(product_id, date),
+                    roll = TRUE,
+                    nomatch = NULL,
+                    j = .(product_id, date, count, price)]
+```
+
+## 6. Joining speed का लाभ उठाना
+
+### 6.1. Joins के रूप में subsets
+
+जैसा पिछले section में देखा, `x` table को `i` table में available values से filter किया जाता है। यह process `i` argument को Boolean expression pass करने से तेज़ है।
+
+`x` table को speed से filter करने के लिए पूरी `data.table` pass करना आवश्यक नहीं; original table से रखने या हटाने वाली values के vectors की `list()` pass कर सकते हैं।
+
+उदाहरण के लिए market ने 100 units bananas (`product_id = 1`) या popcorn (`product_id = 3`) जिन dates पर receive किए, उन्हें filter करने के लिए निम्न उपयोग कर सकते हैं:
+
+```{r}
+ProductReceived[list(c(1L, 3L), 100L),
+                on = c("product_id", "count")]
+```
+
+अंततः हम join operation के आधार पर filter कर रहे हैं, इसलिए code ने **एक ऐसी row लौटाई जो original table में मौजूद नहीं थी**। इस behaviour से बचने के लिए हमेशा `nomatch = NULL` argument जोड़ने की recommendation है।
+
+```{r}
+ProductReceived[list(c(1L, 3L), 100L),
+                on = c("product_id", "count"),
+                nomatch = NULL]
+```
+
+
+इस technique का उपयोग values के किसी combination को filter out करने के लिए भी कर सकते हैं: `i` argument में expression को negate करने के लिए `!` prefix दें और `nomatch` को default value पर रखें। उदाहरण के लिए पहले filter की गई 2 rows को बाहर कर सकते हैं।
+
+```{r}
+ProductReceived[!list(c(1L, 3L), 100L),
+                on = c("product_id", "count")]
+```
+
+यदि single **character column** के लिए केवल एक value filter करनी हो, तो `list()` function call omit कर सकते हैं और filter की जाने वाली value सीधे `i` argument में pass कर सकते हैं।
+
+```{r}
+Products[c("banana","popcorn"),
+         on = "name",
+         nomatch = NULL]
+
+Products[!"popcorn",
+         on = "name"]
+```
+
+### 6.2. By-reference updating
+
+Joins के दौरान columns को **by reference** (बिना copy) modify करने के लिए `:=` उपयोग करें। General syntax: `x[i, on=, (cols) := val]`।
+
+**Simple One-to-One Update**
+
+`Products` को `ProductPriceHistory` की prices से update करें:
+
+```{r}
+Products[ProductPriceHistory, 
+         on = .(id = product_id), 
+         price := i.price]
+
+Products
+```
+
+- `i.price`, `ProductPriceHistory` की price को refer करता है।
+- `Products` को in-place modify करता है।
+
+**`.EACHI` के साथ Grouped Updates**
+
+प्रत्येक product के लिए last price/date प्राप्त करें:
+
+```{r Updating_with_the_Latest_Record}
+Products[ProductPriceHistory,
+         on = .(id = product_id),
+         `:=`(price = last(i.price), last_updated = last(i.date)),
+         by = .EACHI]
+
+Products
+```
+
+- `by = .EACHI`, i की rows के अनुसार group करता है (प्रत्येक ProductPriceHistory row के लिए 1 group)।
+- `last()` अंतिम value लौटाता है।
+
+**Efficient Right Join Update**
+
+Copy किए बिना `ProductPriceHistory` में product details जोड़ें:
+
+```{r}
+cols <- setdiff(names(Products), "id")
+ProductPriceHistory[, (cols) := 
+  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
+
+ProductPriceHistory
+```
+
+- `i` में `.SD`, `ProductPriceHistory` को refer करता है।
+- `j` में `.SD`, `Products` को refer करता है।
+- `:=` और `setnafill()` दोनों `ProductPriceHistory` को by reference update करते हैं।
+
+## संदर्भ
+
+- *data.table Rolling Joins को समझना*: https://www.r-bloggers.com/2016/06/understanding-data-table-rolling-joins/
+
+- *data.table के साथ Semi-join*: https://stackoverflow.com/questions/18969420/perform-a-semi-join-with-data-table
+
+- *data.table के साथ Cross join*: https://stackoverflow.com/questions/10600060/how-to-do-cross-join-in-r
+
+- *data.table का उपयोग करके full join कैसे करें?*: https://stackoverflow.com/questions/15170741/how-does-one-do-a-full-join-using-data-table
+
+- *Enhanced data.frame*: https://rdatatable.gitlab.io/data.table/reference/data.table.html

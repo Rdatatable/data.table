@@ -1,0 +1,302 @@
+---
+title: "तेज़ Read और तेज़ Write"
+date: "`{r} Sys.Date()`"
+output: litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Fast Read and Fast Write}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+require(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+`data.table` R package के `fread()` और `fwrite()` functions केवल बड़ी files पर speed के लिए optimized नहीं हैं, बल्कि छोटे datasets के साथ काम करने के लिए भी शक्तिशाली और सुविधाजनक features देते हैं। यह विगनेट efficient data import और export के लिए उनकी usability, flexibility और performance को highlight करता है।
+
+***
+
+## 1. fread()
+
+### **1.1 Command line tools का सीधे उपयोग**
+`data.table` का `fread()` function shell commands से pipe किए गए data को पढ़ सकता है, जिससे data के R में आने से पहले ही उसे filter या preprocess किया जा सकता है।
+
+```{r}
+# Create a sample file with some unwanted lines
+writeLines(
+'HEADER: Some metadata
+HEADER: More metadata
+1 2.0 3.0
+2 4.5 6.7
+HEADER: Yet more
+3 8.9 0.1
+4 1.2 3.4',
+"example_data.txt")
+
+library(data.table)
+fread("grep -v HEADER example_data.txt")
+```
+
+`-v` option, `grep` को उन सभी lines को लौटाने के लिए कहता है जिनमें string 'HEADER' नहीं है।
+
+> "वर्षों से बहुत से उच्च-गुणवत्ता वाले engineers ने command tool grep को देखा और सुधार किया है, इसलिए बहुत संभावना है कि यह जितना तेज़ हो सकता है उतना ही तेज़ है, साथ ही सही, सुविधाजनक, online अच्छी तरह documented, सीखने में आसान और specific tasks के solutions खोजने में सरल है। यदि आपको अधिक complex string filtering करनी हो (जैसे lines की शुरुआत या अंत में strings match करना), तो grep syntax बहुत शक्तिशाली है। इसका syntax सीखना अन्य languages और environments में भी उपयोगी transferable skill है।"
+>
+> — Matt Dowle
+
+अधिक detail के लिए यह [example](https://stackoverflow.com/questions/36256706/fread-together-with-grepl/36270543#36270543) देखें।
+
+Windows पर `grep` जैसे command-line tools Rtools, Cygwin, या Windows Subsystem for Linux (WSL) जैसे environments के माध्यम से उपलब्ध होते हैं। Linux और macOS पर ये tools सामान्यतः operating system में ही शामिल होते हैं।
+
+#### 1.1.1 Text string से सीधे पढ़ना
+
+`fread()` R में `text` argument का उपयोग करके character string से सीधे data पढ़ सकता है। यह reproducible examples बनाने, code snippets test करने, या R session के भीतर programmatically generated data के साथ काम करने के लिए विशेष रूप से उपयोगी है। String की प्रत्येक line को newline character `\n` से अलग होना चाहिए।
+
+```{r}
+my_data_string = "colA,colB,colC\n1,apple,TRUE\n2,banana,FALSE\n3,orange,TRUE"
+dt_from_text = fread(text = my_data_string)
+print(dt_from_text)
+```
+
+#### 1.1.2 URLs से पढ़ना
+
+`fread()` किसी web URL को character string के रूप में उसके `file` argument को देकर सीधे data पढ़ सकता है।
+इससे internet से data download और read एक ही step में किया जा सकता है।
+
+  ```{r}
+  # dt = fread("https://people.sc.fsu.edu/~jburkardt/data/csv/airtravel.csv")
+  # print(dt)
+  ```
+
+#### 1.1.3 Compressed files का automatic decompression
+
+कई cases में `fread()` सामान्य compression extensions वाली files को explicit connection object या shell commands के बिना सीधे automatically detect और decompress कर सकता है। यह file extension check करके काम करता है।
+
+**आमतौर पर supported extensions में शामिल हैं:**
+- `.gz` / `.bz2` (gzip / bzip2): Supported और सीधे काम करते हैं।
+- `.zip` / `.tar` (ZIP / tar archives, single file): Supported—यदि archive में केवल एक file है तो `fread()` पहली file पढ़ेगा।
+
+**ध्यान दें**: यदि archive में multiple files हों, तो `fread()` error के साथ fail होगा।
+
+### 1.2 Automatic separator और skip detection
+
+`fread` delimiter और header detection को automate करता है, इसलिए अधिकांश cases में इन्हें manually specify करने की आवश्यकता नहीं होती। आप केवल filename देते हैं—`fread` structure को intelligently detect करता है:
+
+**Separator Detection**
+
+`fread` common separators (`,`,`\t`, `|`, space, `:`, `;`) test करता है और sampled rows में सबसे consistent number of fields देने वाले separator को चुनता है। Non-standard delimiters के लिए `sep=` parameter से इसे override किया जा सकता है।
+
+**Header Detection**
+
+किसी भी `skip` या `nrows` settings (यदि दी गई हों) apply करने के बाद consistent number of fields वाली पहली row examine की जाती है:
+
+यदि इस line के सभी fields character के रूप में interpret किए जा सकते हैं और values data row जैसी strongly दिखाई नहीं देतीं (उदाहरण के लिए पूरी तरह numeric-looking strings वाली row को फिर भी data माना जा सकता है), तो सामान्यतः उसे header (column names) के रूप में उपयोग किया जाता है।
+
+**ध्यान दें:** `keepLeadingZeros = TRUE` set करने से यह logic प्रभावित हो सकती है। क्योंकि इससे leading zeros वाले numeric columns को `character` माना जाता है, `fread` किसी data row को गलती से header row समझ सकता है। ऐसे cases में explicitly `header = FALSE` set करने की recommendation है।
+
+अन्यथा (जैसे line में detected numeric types हों, या character strings numbers जैसी strongly दिखती हों और data हो सकती हों), उसे data row माना जाता है और default column names (`V1`, `V2`, …) assign किए जाते हैं।
+
+आप `header = TRUE` या `header = FALSE` से `fread` को explicitly बता सकते हैं कि header मौजूद है या नहीं।
+
+**Skip Detection**
+
+Default रूप से (`skip="auto"`), `fread` data header से पहले blank lines और comment lines (जैसे `#` से शुरू होने वाली) automatically skip करेगा।
+Manually अलग number of lines skip करने के लिए उपयोग करें
+
+* पहले `n` lines skip करने के लिए `skip=n`।
+* किसी substring वाली line खोजने के लिए `skip="string"` (आमतौर पर column names से, जैसे `skip="Date"`)। Reading पहली matching line से शुरू होती है। Metadata skip करने या multi-table files में sub-tables select करने के लिए यह उपयोगी है। यह feature `gdata` package के `read.xls` function से inspired है।
+
+### 1.3 High-Quality Automatic Column Type Detection
+
+कई real-world datasets में ऐसे columns होते हैं जो शुरुआत में blank, zero-filled, या numeric दिखाई देते हैं लेकिन बाद में characters रखते हैं। ऐसी inconsistencies को संभालने के लिए `fread()` robust column-type detection strategy उपयोग करता है।
+
+v1.10.5 से `fread()` file के कई equally spaced points—start, middle और end सहित—से contiguous rows के blocks पढ़कर sample करता है। Sample की कुल rows file size और structure के आधार पर dynamically चुनी जाती हैं और आमतौर पर लगभग 10,000 होती हैं, लेकिन कम या थोड़ी अधिक भी हो सकती हैं। यह wide sampling data में बाद में होने वाले type changes (जैसे `001` से `0A0`, या blanks का populated होना) detect करने में मदद करती है।
+
+**mmap के साथ Efficient File Access**
+
+इस sampling को efficiently implement करने के लिए `fread()` operating system की memory-mapped file access (`mmap`) उपयोग करता है, जिससे sequential scanning के बिना file में arbitrary positions पर jump किया जा सकता है। यह lazy, on-demand strategy बहुत बड़ी files पर भी sampling को लगभग instantaneous बनाती है।
+
+यदि jump quoted field के भीतर land करता है जिसमें newlines हों, तो `fread()` बाद की lines test करता है जब तक expected number of fields वाली 5 consecutive rows न मिल जाएँ, जिससे complex files में भी correct parsing सुनिश्चित होती है।
+
+**Accurate और Optimized Type Detection**
+
+प्रत्येक column का type नीचे दी ordered list से आवश्यक minimum type के आधार पर infer किया जाता है:
+
+`logical` < `integer` < `integer64` < `double` < `character`
+
+इससे सुनिश्चित होता है:
+
+- सही type के साथ memory की एक ही बार up-front allocation
+- File को दोबारा पढ़ने या manually `colClasses` set करने से बचाव
+- बेहतर speed और memory efficiency
+
+**Out-of-Sample Type Exceptions**
+
+यदि type change sampled rows के बाहर होता है, तो `fread()` उसे automatically detect करता है और सही type assignment सुनिश्चित करने के लिए user intervention के बिना file दोबारा पढ़ता है। उदाहरण के लिए integer के रूप में sampled column में बाद में `00A` हो सकता है—जिससे character के रूप में automatic reread trigger होगा।
+
+जब `verbose=TRUE` enabled हो, तो सभी detection logic और rereads का detail दिया जाता है।
+
+### 1.4 End-of-File पर Early Error Detection
+
+क्योंकि बड़ा sample file के बिल्कुल end को explicitly शामिल करता है, इसलिए inconsistent number of columns, malformed footer, या matching closing quote के बिना opening quote जैसे critical issues लगभग तुरंत detect और report किए जा सकते हैं।
+यह early error detection पूरी file process करने या excessive memory allocate करने की unnecessary overhead से बचाता है, केवल final step पर failure मिलने की स्थिति से पहले ही।
+विशेष रूप से large datasets के साथ काम करते समय यह faster feedback और अधिक efficient resource usage सुनिश्चित करता है।
+
+### 1.5 `integer64` Support
+
+Default रूप से `fread`, 2<sup>31</sup> से बड़े integers detect करके full precision बनाए रखने के लिए उन्हें `bit64::integer64` के रूप में पढ़ता है। इस behaviour को तीन तरीकों से override किया जा सकता है:
+
+- Per-column: Individual columns का type specify करने के लिए `colClasses` argument उपयोग करें।
+
+- Per-call: सभी detected `integer64` columns कैसे read हों, यह set करने के लिए `fread()` में `integer64` argument उपयोग करें।
+
+- Globally: सभी fread calls के default behaviour को बदलने के लिए अपने R session या `.Rprofile` file में option `datatable.integer64` set करें।
+
+`integer64` argument (और corresponding option) निम्न values स्वीकार करता है:
+
+- `"integer64"` (default): Large integers को full precision के साथ `bit64::integer64` के रूप में पढ़ता है।
+
+- `"double"` या `"numeric"`: Large integers को double-precision numbers के रूप में पढ़ता है, जिससे precision silently lose हो सकती है (base R के `utils::read.csv` जैसा)।
+
+- `"character"`: Large integers को character strings के रूप में पढ़ता है।
+
+Global default check या set करने के लिए उपयोग करें:
+
+```{r}
+# fread's default behavior is to treat large integers as "integer64"; however, this global setting can be changed:
+options(datatable.integer64 = "double")   # Example: set globally to "double"
+getOption("datatable.integer64") 
+```
+
+### 1.6 Name या Position से Columns Drop या Select करना
+
+Memory बचाने और performance सुधारने के लिए `fread()` के `select` या `drop` arguments का उपयोग करके केवल आवश्यक columns पढ़ें।
+
+- यदि केवल कुछ columns चाहिए, तो `select` उपयोग करें।
+- यदि केवल कुछ columns exclude करने हैं, तो `drop` उपयोग करें—इससे उन सभी columns की list नहीं देनी पड़ेगी जिन्हें रखना है।
+
+मुख्य बातें:
+- `select`: रखने वाले column names/positions का vector (बाकी discard होते हैं)।
+- `drop`: discard करने वाले column names/positions का vector (बाकी रहते हैं)।
+- `select` और `drop` को एक साथ उपयोग न करें—दोनों mutually exclusive हैं।
+- यदि specified column file में missing हो तो `fread()` warning देगा।
+
+Details के लिए R में `?fread` चलाकर manual page देखें।
+
+### 1.7 Automatic Quote Escape Detection (No-Escape सहित)
+
+`fread` automatically detect करता है कि quotes कैसे escaped हैं—including doubled ("") या backslash-escaped (\") quotes—बिना user input की आवश्यकता के। यह data के बड़े sample (point 3 देखें) से निर्धारित होता है और पूरी file के विरुद्ध validate किया जाता है।
+
+Supported Scenarios:
+- Quoted fields के अंदर unescaped quotes
+उदाहरण: `"This "quote" is invalid, but fread works anyway"` — जब तक column count consistent रहता है, supported है:
+
+```{r}
+data.table::fread(text='x,y\n"This "quote" is invalid, but fread works anyway",1')
+```
+
+- Quotes से शुरू होने वाले unquoted fields
+उदाहरण: `Invalid"Field,10,20` — correctly पहचाना जाता है कि यह quoted field नहीं है।
+
+```{r}
+data.table::fread(text='x,y\nNot"Valid,1')
+```
+
+Requirements और Limitations:
+- Escaping rules और column counts पूरी file में consistent होने चाहिए।
+
+- `fill=TRUE` होने पर supported नहीं—उस case में file को RFC4180-compliant quoting/escaping follow करना होगा।
+
+Version-Specific Robustness:
+v1.10.6 से `fread` पूरी file में full-column-count consistency (default `fill=FALSE`) का उपयोग करके ambiguities अधिक reliably resolve करता है। Ambiguity के कारण parsing fail होने पर warnings जारी होती हैं।
+
+## 2. fwrite()
+
+`fwrite()`, `fread()` का fast file-writer companion है।
+यह speed, sensible defaults और ease of use के लिए design किया गया है, और `fread` में मिलने वाली कई सुविधाओं को mirror करता है।
+
+### 2.1 Intelligent और Minimalist Quoting (`quote="auto"`)
+
+जब data strings के रूप में लिखा जाता है (चाहे inherently, जैसे character columns, या choice से, जैसे `dateTimeAs="ISO"`), तो `quote="auto"` (default) intelligently fields quote करता है:
+
+**Contextual Quoting**: Fields केवल आवश्यकता होने पर quote होते हैं। ऐसा तब होता है जब उनमें delimiter `(sep)`, double quote `(")`, newline `(\n)`, carriage return `(\r)` हो, या field empty string `("")` हो। Empty string को quote करने से file पढ़ते समय उसे NA value से अलग पहचाना जा सकता है।
+
+**Direct Numeric Output में Bypass**: यदि specific columns अपने underlying numeric types में लिखे जाते हैं (जैसे `POSIXct` के लिए `dateTimeAs="epoch"`, या user ने Date को पहले integer में convert कर दिया हो), तो उन numeric fields पर quoting logic naturally bypass हो जाती है, जिससे efficiency बढ़ती है।
+
+```{r}
+dt_quoting_scenario = data.table(
+  text_field = c("Contains,a,comma", "Contains \"a quote\"", "Clean_text", "", NA),
+  numeric_field = 1:5
+)
+temp_quote_adv = tempfile(fileext = ".csv")
+
+fwrite(dt_quoting_scenario, temp_quote_adv)
+# Note the output: the empty string is quoted (""), but the NA is not.
+cat(readLines(temp_quote_adv), sep = "\n")
+```
+
+### 2.2 Fine-Grained Date/Time Serialization (`dateTimeAs` argument)
+
+POSIXct/Date types के लिए precise control देता है:
+
+- `dateTimeAs="ISO"` (POSIXct के लिए Default): ISO 8601 format (जैसे YYYY-MM-DDTHH:MM:SS.ffffffZ), जो unambiguous interchange के लिए sub-second precision सुरक्षित रखता है।
+
+- `dateTimeAs="epoch"`: POSIXct को epoch से seconds (numeric) के रूप में लिखता है।
+
+```{r}
+dt_timestamps = data.table(
+  ts = as.POSIXct("2023-10-26 14:35:45.123456", tz = "GMT"),
+  dt = as.Date("2023-11-15")
+)
+temp_dt_iso = tempfile(fileext = ".csv")
+fwrite(dt_timestamps, temp_dt_iso, dateTimeAs = "ISO")
+cat(readLines(temp_dt_iso), sep = "\n")
+unlink(temp_dt_iso)
+```
+
+### 2.3 `bit64::integer64` को संभालना
+
+**Large Integers के लिए Full Precision**: `fwrite`, `bit64::integer64` columns को full precision वाली strings में convert करके लिखता है। इससे data loss या silent double conversion से बचाव होता है जो कम specialized writers में हो सकता है। यह IDs या measurements के लिए critical है जिन्हें R के standard `32-bit` integer range या `53-bit` double precision से अधिक चाहिए।
+
+**Direct Handling**: Specialized numerics की यह direct और careful handling unnecessary intermediate conversions के बिना data integrity और efficient I/O सुनिश्चित करती है।
+
+```{r}
+if (requireNamespace("bit64", quietly = TRUE)) {
+  dt_i64 = data.table(uid = bit64::as.integer64("1234567890123456789"), val = 100)
+  temp_i64_out = tempfile(fileext = ".csv")
+  fwrite(dt_i64, temp_i64_out)
+  cat(readLines(temp_i64_out), sep = "\n")
+  unlink(temp_i64_out)
+}
+```
+
+### 2.4 Column Order और Subset Control
+
+File में लिखे जाने वाले columns का order और subset control करने के लिए `fwrite()` call करने से पहले `data.table` subset करें। `fwrite()` में `col.names` argument logical (TRUE/FALSE) है जो यह control करता है कि header row लिखी जाए या नहीं; यह नहीं कि कौन-से columns लिखे जाएँ।
+
+```{r}
+dt = data.table(A = 1:3, B = 4:6, C = 7:9)
+
+# Write only columns C and A, in that order
+fwrite(dt[, .(C, A)], "out.csv")
+cat(readLines("out.csv"), sep = "\n")
+file.remove("out.csv")
+```
+
+## 3. Performance पर एक Note
+
+यद्यपि यह विगनेट features और usability पर केंद्रित है, `fread` और `fwrite` का primary motivation speed है।
+
+Detailed और up-to-date performance comparisons में रुचि रखने वाले users के लिए हम ये external blog posts recommend करते हैं, जो rigorous analysis के लिए `atime` package उपयोग करते हैं:
+
+- **[data.table asymptotic timings](https://tdhock.github.io/blog/2023/dt-atime-figures/)**: `fread` और `fwrite` performance की तुलना `readr` और `arrow` जैसे अन्य popular R packages से करता है।
+- **[Benchmarking data.table with polars, duckdb, and pandas](https://tdhock.github.io/blog/2024/pandas-dt/)**: `data.table` I/O और grouping performance की तुलना leading Python libraries से करता है।
+
+ये benchmarks लगातार दिखाते हैं कि `fread` और `fwrite`, R ecosystem में performance के लिए अत्यंत competitive हैं और अक्सर state-of-the-art स्तर पर होते हैं।
+
+***

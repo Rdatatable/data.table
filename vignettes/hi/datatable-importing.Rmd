@@ -1,0 +1,290 @@
+---
+title: "data.table को Import करना"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Importing data.table}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE, message = FALSE}
+litedown::reactor(comment = "# ")
+.old.th = data.table::setDTthreads(1)
+```
+
+<style>
+h2 {
+    font-size: 20px;
+}
+</style>
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+यह दस्तावेज़ अन्य R packages में `data.table` को dependency के रूप में उपयोग करने पर केंद्रित है। यदि आप किसी non-R application से `data.table` के C code का उपयोग करना चाहते हैं, या उसके C functions को सीधे call करना चाहते हैं, तो इस विगनेट के [अंतिम section](#non-r-api) पर जाएँ।
+
+`data.table` को import करना अन्य R packages को import करने से अलग नहीं है। यह विगनेट इस विषय से जुड़े सबसे सामान्य प्रश्नों का उत्तर देने के लिए है; यहाँ दिए गए lessons अन्य R packages पर भी लागू किए जा सकते हैं।
+
+## `data.table` को import क्यों करें
+
+`data.table` की सबसे बड़ी features में से एक उसका concise syntax है, जो exploratory analysis को तेज़ और लिखने/समझने में आसान बनाता है; यही सुविधा package authors को `data.table` उपयोग करने के लिए प्रेरित कर सकती है। दूसरा, और शायद अधिक महत्वपूर्ण कारण, high performance है। जब आप अपने package के heavy computing tasks `data.table` को सौंपते हैं, तो आमतौर पर बिना उन numerical optimization tricks को स्वयं फिर से विकसित किए top performance मिलती है।
+
+## `data.table` को import करना आसान है
+
+`data.table` को dependency के रूप में उपयोग करना बहुत आसान है क्योंकि `data.table` की अपनी कोई dependency नहीं है। यह operating system और R दोनों dependencies पर लागू होता है। इसका अर्थ है कि यदि आपकी machine पर R installed है, तो `data.table` install करने के लिए आवश्यक सब कुछ पहले से मौजूद है। इसका यह भी अर्थ है कि आपके package में `data.table` dependency जोड़ने से अन्य recursive dependencies की chain install नहीं करनी पड़ेगी, इसलिए offline installation के लिए भी यह बहुत सुविधाजनक है।
+
+## `DESCRIPTION` file {#DESCRIPTION}
+
+Package में dependency define करने का पहला स्थान `DESCRIPTION` file है। सामान्यतः आपको `Imports:` field के अंतर्गत `data.table` जोड़ना होगा। ऐसा करने पर आपके package के compile/install होने से पहले `data.table` का install होना आवश्यक होगा। जैसा ऊपर बताया गया, कोई अन्य package install नहीं होगा क्योंकि `data.table` की अपनी dependencies नहीं हैं। आप dependency का minimum required version भी specify कर सकते हैं; उदाहरण के लिए यदि आपका package `fwrite` function उपयोग करता है, जिसे `data.table` version 1.9.8 में introduce किया गया था, तो आपको `Imports: data.table (>= 1.9.8)` लिखना चाहिए। इससे सुनिश्चित होगा कि users आपके package को install कर सकें उससे पहले installed `data.table` version 1.9.8 या बाद का हो। `Imports:` field के अलावा आप `Depends: data.table` भी उपयोग कर सकते हैं, लेकिन हम इस approach को strongly discourage करते हैं (और भविष्य में disallow भी कर सकते हैं), क्योंकि इससे `data.table` user के workspace में load हो जाता है; यानी user ने माँगा न हो तब भी उनकी scripts में `data.table` functionality enable हो जाती है। User पर `data.table` थोपे बिना package के भीतर इसका उपयोग करने का उचित तरीका `Imports:` है। वास्तव में हमें उम्मीद है कि R में `Depends:` field अंततः deprecated हो, क्योंकि यही बात सभी packages पर लागू होती है।
+
+## `NAMESPACE` file {#NAMESPACE}
+
+अगला कदम यह define करना है कि आपका package `data.table` की कौन-सी content उपयोग करता है। यह `NAMESPACE` file में किया जाना चाहिए। सामान्यतः package authors `import(data.table)` उपयोग करना चाहेंगे, जो `data.table` से सभी exported functions (अर्थात `data.table` की अपनी `NAMESPACE` file में listed functions) import करेगा।
+
+आप केवल `data.table` functions का subset भी उपयोग करना चाह सकते हैं; उदाहरण के लिए कुछ packages केवल `data.table` के high-performance CSV reader और writer का उपयोग कर सकते हैं, जिसके लिए `NAMESPACE` file में `importFrom(data.table, fread, fwrite)` जोड़ सकते हैं। किसी package के सभी functions को _कुछ specific functions को छोड़कर_ import करना भी संभव है, जैसे `import(data.table, except=c(fread, fwrite))`।
+
+[“undefined globals” वाले section](#globals) में `data.table` की non-standard evaluation से संबंधित note भी अवश्य पढ़ें।
+
+## उपयोग
+
+उदाहरण के लिए हम `a.pkg` package में दो functions define करेंगे जो `data.table` उपयोग करते हैं। एक function, `gen`, सरल `data.table` generate करेगा; दूसरा, `aggr`, उसका simple aggregation करेगा।
+
+```r
+gen = function (n = 100L) {
+  dt = as.data.table(list(id = seq_len(n)))
+  dt[, grp := ((id - 1) %% 26) + 1
+     ][, grp := letters[grp]
+       ][]
+}
+aggr = function (x) {
+  stopifnot(
+    is.data.table(x),
+    "grp" %in% names(x)
+  )
+  x[, .N, by = grp]
+}
+```
+
+## Testing
+
+अपने package में tests अवश्य शामिल करें। `data.table` की प्रत्येक major release से पहले हम reverse dependencies check करते हैं। इसका अर्थ है कि यदि `data.table` में कोई change आपके code को तोड़ता है, तो हम breaking change पकड़कर नई version release करने से पहले आपको सूचित कर सकते हैं। यह निश्चित रूप से इस assumption पर आधारित है कि आप अपना package CRAN या Bioconductor पर publish करेंगे। सबसे basic test आपके package directory में plaintext R script `tests/test.R` हो सकती है:
+
+```r
+library(a.pkg)
+dt = gen()
+stopifnot(nrow(dt) == 100)
+dt2 = aggr(dt)
+stopifnot(nrow(dt2) < 100)
+```
+
+Package test करते समय आप `R CMD check --no-stop-on-test-error` उपयोग करना चाह सकते हैं, जो error आने के बाद भी जारी रहेगा और आपके सभी tests चलाएगा (पहली failed script line पर रुकने के बजाय)।
+
+## `testthat` का उपयोग करके Testing
+
+Tests के लिए `testthat` package का उपयोग बहुत सामान्य है। `data.table` import करने वाले package को test करना अन्य packages को test करने से अलग नहीं है। Example test script `tests/testthat/test-pkg.R`:
+
+```r
+context("pkg tests")
+
+test_that("generate dt", { expect_true(nrow(gen()) == 100) })
+test_that("aggregate dt", { expect_true(nrow(aggr(gen())) < 100) })
+```
+
+यदि `data.table` Suggests में है (लेकिन Imports में नहीं), तो `testthat::test_package` या `testthat::test_check` से testing करते समय "object not found" errors से बचने के लिए R/* files में से किसी एक में `.datatable.aware=TRUE` declare करना होगा।
+
+## "Undefined global functions or variables" से निपटना {#globals}
+
+R की deferred evaluation का `data.table` द्वारा उपयोग (विशेष रूप से `:=` के left-hand side पर) `R CMD check` द्वारा अच्छी तरह पहचाना नहीं जाता। इससे package check के दौरान नीचे जैसे `NOTE`s आते हैं:
+
+```
+* checking R code for possible problems ... NOTE
+aggr: no visible binding for global variable 'grp'
+gen: no visible binding for global variable 'grp'
+gen: no visible binding for global variable 'id'
+Undefined global functions or variables:
+grp id
+```
+
+इससे निपटने का सबसे आसान तरीका है उन variables को अपने package के भीतर पहले से define करके `NULL` set करना, और चाहें तो comment जोड़ना (जैसा नीचे `gen` के refined version में किया गया है)। जहाँ संभव हो, symbols के बजाय character vector भी उपयोग कर सकते हैं (जैसे नीचे `aggr` में):
+
+```r
+gen = function (n = 100L) {
+  id = grp = NULL # due to NSE notes in R CMD check
+  dt = as.data.table(list(id = seq_len(n)))
+  dt[, grp := ((id - 1) %% 26) + 1
+     ][, grp := letters[grp]
+       ][]
+}
+aggr = function (x) {
+  stopifnot(
+    is.data.table(x),
+    "grp" %in% names(x)
+  )
+  x[, .N, by = "grp"]
+}
+```
+
+`data.table` के special symbols (जैसे `.SD` और `.N`) और assignment operator (`:=`) का case थोड़ा अलग है (`?.N` में अधिक जानकारी और ऐसे symbols की पूरी list देखें)। भविष्य में यदि हम इनके exported value को बदलें तो किसी issue से बचने के लिए आप जिन values का उपयोग करते हैं उन्हें `data.table` namespace से import करना चाहिए। उदाहरण के लिए यदि `.N`, `.I`, और `:=` उपयोग करना है, तो minimal `NAMESPACE` इस प्रकार होगा:
+
+```r
+importFrom(data.table, .N, .I, ':=')
+```
+
+इससे बहुत सरल है केवल `import(data.table)` उपयोग करना, जो `data.table` से export किए गए किसी भी object को आपके package code में उपयोग करने की व्यापक अनुमति देगा।
+
+यदि आपको `id` और `grp` का package namespace में globally variables के रूप में registered होना ठीक लगता है, तो `?globalVariables` उपयोग कर सकते हैं। ध्यान रखें कि इन notes का code या उसकी functionality पर कोई प्रभाव नहीं पड़ता; यदि package publish नहीं करना है, तो इन्हें ignore करना चुन सकते हैं।
+
+## Options देते और उपयोग करते समय आवश्यक सावधानी
+
+R packages में customization options देने की सामान्य practice है `options(name=val)` से set करना और `getOption("name", default)` से fetch करना। Function arguments अक्सर `getOption()` call specify करते हैं ताकि user को (`?fun` या `args(fun)` से) पता हो कि किसी parameter का default कौन-सा option control करता है; उदाहरण `fun(..., verbose=getOption("datatable.verbose", FALSE))`। सभी `data.table` options `datatable.` से शुरू होते हैं ताकि अन्य packages के options से conflict न हो। User केवल `options(datatable.verbose=TRUE)` call करके verbosity चालू कर सकता है। यह सभी data.table function calls को प्रभावित करता है जब तक explicit `verbose=FALSE` न दिया गया हो; जैसे `fun(..., verbose=FALSE)`।
+
+R में option mechanism _global_ है। इसका अर्थ है कि यदि user अपने उपयोग के लिए कोई `data.table` option set करता है, तो वही setting `data.table` उपयोग करने वाले किसी भी package के अंदर के code को भी प्रभावित करती है। `datatable.verbose` जैसे option के लिए यही desired behaviour है क्योंकि उद्देश्य है जहाँ से भी `data.table` operations originate हों उन्हें trace और log करना; verbosity चालू करने से results नहीं बदलते। R का एक और unique तथा production के लिए उत्कृष्ट option `options(warn=2)` है, जो सभी warnings को errors में बदल देता है। यहाँ भी उद्देश्य है कि किसी भी package की warning छूट न जाए। 6 `datatable.print.*` options और 3 optimization options हैं जो operation results को प्रभावित नहीं करते। लेकिन एक `data.table` option ऐसा था जो result बदलता था और concern बना: `datatable.nomatch`। यह option default join को outer से inner बदलता है। [Aside: default join outer है क्योंकि outer अधिक सुरक्षित है; missing data silently drop नहीं करता; और names तथा indices द्वारा matching के base R तरीके से consistent है।] कुछ users inner join को default पसंद करते थे और हमने उनके लिए यह option दिया था। लेकिन user द्वारा यह option set करने से `data.table` उपयोग करने वाले packages के भीतर joins का behaviour अनजाने में बदल सकता था। इसलिए v1.12.4 (Oct 2019) में `datatable.nomatch` option उपयोग होने पर message print किया गया, और v1.14.2 से इसे warning के साथ ignore किया जाता है। इस concern वाला यही एकमात्र `data.table` option था।
+
+## Troubleshooting
+
+यदि data.table उपयोग करने वाला package बनाते समय कोई समस्या आए, तो पहले पुष्टि करें कि problem clean R session में R console का उपयोग करके reproducible है: `R CMD check package.name`।
+
+Developers को मिलने वाली कई common issues helper tools से संबंधित होती हैं, जो package development tasks automate करने के लिए बने हैं; जैसे R code files के metadata से `NAMESPACE` file generate करने के लिए `roxygen` का उपयोग। अन्य issues package build और check helpers से संबंधित होते हैं। दुर्भाग्य से इन helpers के कभी-कभी unintended/hidden side effects होते हैं, जो समस्या के source को अस्पष्ट कर सकते हैं। इसलिए R console से दोबारा जाँचें (command line पर R चलाएँ) और सुनिश्चित करें कि import, `DESCRIPTION` तथा `NAMESPACE` files में ऊपर दिए [instructions](#DESCRIPTION) [के अनुसार](#NAMESPACE) defined है।
+
+यदि plain R console build और check से problem reproduce नहीं होती, तो helper tools के साथ `data.table` interaction से जुड़े पुराने issues से सहायता मिल सकती है: [devtools#192](https://github.com/r-lib/devtools/issues/192) या [devtools#1472](https://github.com/r-lib/devtools/issues/1472)।
+
+## License
+
+Version 1.10.5 से `data.table` Mozilla Public License (MPL) के अंतर्गत licensed है। GPL से change के कारण पूरे [यहाँ](https://github.com/Rdatatable/data.table/pull/2456) पढ़े जा सकते हैं और MPL के बारे में Wikipedia पर [यहाँ](https://en.wikipedia.org/wiki/Mozilla_Public_License) तथा [यहाँ](https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses) अधिक पढ़ सकते हैं।
+
+## `data.table` को वैकल्पिक रूप से import करना: Suggests
+
+यदि आप `data.table` को conditionally उपयोग करना चाहते हैं, अर्थात केवल जब वह installed हो, तो `DESCRIPTION` file में `Imports: data.table` के बजाय `Suggests: data.table` उपयोग करें। Default रूप से इससे package install करते समय `data.table` install करना आवश्यक नहीं होगा। इसके लिए package code में `data.table` का conditional उपयोग भी करना होगा, जो `?requireNamespace` function से किया जाना चाहिए। नीचे का example `data.table` के fast CSV writer `?fwrite` का conditional use दिखाता है। यदि `data.table` package installed नहीं है, तो उसके बजाय बहुत धीमा base R `?write.table` function उपयोग होता है।
+
+```r
+my.write = function (x) {
+  if(requireNamespace("data.table", quietly=TRUE)) {
+    data.table::fwrite(x, "data.csv")
+  } else {
+    write.table(x, "data.csv")
+  }
+}
+```
+
+इसका थोड़ा विस्तारित version यह भी सुनिश्चित करेगा कि installed `data.table` version इतना नया हो कि उसमें `fwrite` function उपलब्ध हो:
+
+```r
+my.write = function (x) {
+  if(requireNamespace("data.table", quietly=TRUE) &&
+    utils::packageVersion("data.table") >= "1.9.8") {
+    data.table::fwrite(x, "data.csv")
+  } else {
+    write.table(x, "data.csv")
+  }
+}
+```
+
+जब किसी package को suggested dependency के रूप में उपयोग करते हैं, तो उसे `NAMESPACE` file में `import` नहीं करना चाहिए। केवल `DESCRIPTION` file में उल्लेख करें।
+Package code (R/* files) में `data.table` functions उपयोग करते समय `data.table::` prefix देना होगा क्योंकि उनमें से कोई import नहीं किया गया है।
+Package tests (जैसे tests/testthat/test* files) में `data.table` उपयोग करते समय R/* files में से किसी एक में `.datatable.aware=TRUE` declare करना होगा।
+
+## `Imports` में `data.table`, लेकिन कुछ भी imported नहीं
+
+कुछ users ([उदाहरण](https://github.com/Rdatatable/data.table/issues/2341)) अपनी `NAMESPACE` file में `importFrom` या `import` उपयोग न करना और इसके बजाय internal code में हर जगह `data.table::` qualification उपयोग करना पसंद कर सकते हैं (और निश्चित रूप से `DESCRIPTION` में `data.table` को `Imports:` के अंतर्गत रखते हुए)।
+
+इस case में un-exported function `[.data.table`, safeguard के रूप में `[.data.frame` को call करने लगेगा क्योंकि `data.table` को यह पता नहीं होता कि parent package जानता है कि वह `data.table` की query API syntax के विरुद्ध calls करने का प्रयास कर रहा है (जिससे unexpected behaviour हो सकता है क्योंकि `[.data.frame` और `[.data.table` calls की structure fundamentally अलग है, उदाहरण के लिए बाद वाले में बहुत अधिक arguments हैं)।
+
+यदि package development के लिए यही आपका preferred approach है, तो अपने R source code में कहीं भी `.datatable.aware = TRUE` define करें (export करने की आवश्यकता नहीं)। इससे `data.table` को पता चलता है कि package developer के रूप में आपने जानबूझकर code को `data.table` functionality पर निर्भर बनाया है, भले `NAMESPACE` file देखकर यह स्पष्ट न हो।
+
+`data.table` runtime पर तय करता है कि calling function `data.table` उपयोग करने के बारे में aware है या नहीं, internal `cedta` function (**C**alling **E**nvironment is **D**ata **T**able **A**ware) से। यह आपके package के `?getNamespaceImports` check करने के अलावा इस variable का अस्तित्व भी जाँचता है (अन्य चीज़ों के साथ)।
+
+## Dependencies पर अतिरिक्त जानकारी
+
+Packages dependency define करने की अधिक canonical documentation के लिए official manual देखें: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html)।
+
+## data.table C routines को Import करना
+
+कुछ internally used C routines अब [datatableAPI.h](https://github.com/Rdatatable/data.table/blob/master/inst/include/datatableAPI.h) में exported हैं, इसलिए अन्य R packages के C code में उपयोग किए जा सकते हैं। Details के लिए [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html) और usage के लिए [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) का _Linking to native routines in other packages_ section देखें।
+
+## data.table पर अपनी Depends dependency को Imports में कैसे बदलें
+
+अपने package में `data.table` की `Depends` dependency को `Imports` dependency में बदलने के लिए ये steps follow करें:
+
+### Step 0. सुनिश्चित करें कि आपका package शुरुआत में R CMD check pass कर रहा है
+
+### Step 1. DESCRIPTION file update करके data.table को Depends के बजाय Imports में रखें
+
+**पहले:**
+```dcf
+Depends:
+    R (>= 3.5.0),
+    data.table
+Imports:
+```
+
+**बाद में:**
+```dcf
+Depends:
+    R (>= 3.5.0)
+Imports:
+    data.table
+```
+
+### Step 2.1: `R CMD check` चलाएँ
+
+किसी missing import या symbol की पहचान के लिए `R CMD check` चलाएँ। यह step मदद करता है:
+
+- `data.table` के उन functions या symbols को automatically detect करने में जिन्हें explicitly import नहीं किया गया है।
+- `.N`, `.SD`, और `:=` जैसे missing special symbols को flag करने में।
+- `NAMESPACE` file में क्या जोड़ना है इस पर immediate feedback देने में।
+
+ध्यान दें: ऐसे सभी usages `R CMD check` से नहीं पकड़े जाते। विशेष रूप से `R CMD check` formulas में कुछ symbols/functions skip करता है और `parse(text = "data.table(a = 1)")` जैसी parsed expressions को पूरी तरह miss कर देगा। इन edge cases को detect करने के लिए packages को अच्छी test coverage चाहिए।
+
+### Step 2.2: NAMESPACE file modify करें
+
+`R CMD check` results के आधार पर सुनिश्चित करें कि `data.table` के सभी उपयोग किए गए functions, special symbols, S3 generics और S4 classes imported हैं।
+
+इसका अर्थ है symbols, functions और S3 generics के लिए आवश्यकतानुसार `importFrom(data.table, ...)` directives और S4 classes के लिए `importClassesFrom(data.table, ...)` directives जोड़ना। इसे सही ढंग से करने की पूरी details के लिए ‘Writing R Extensions’ देखें।
+
+#### Blanket import
+
+वैकल्पिक रूप से आप `data.table` के सभी functions एक साथ import कर सकते हैं, हालाँकि सामान्यतः इसकी recommendation नहीं की जाती:
+
+```r
+import(data.table)
+```
+
+**Blanket Imports से बचने का कारण:**
+1. **Documentation**: NAMESPACE file यह document करने का अच्छा तरीका हो सकती है कि आप किन packages पर कैसे depend करते हैं।
+2. **Conflicts से बचाव**: Blanket imports आपको subtle breakage के लिए खुला छोड़ते हैं। उदाहरण के लिए यदि आप `import(pkgA)` और `import(pkgB)` करते हैं, लेकिन बाद में pkgB भी वही function export करने लगे जो pkgA करता है, तो namespace conflicts के कारण आपका package break हो जाएगा; `R CMD check` और CRAN इसकी अनुमति नहीं देते।
+
+### Step 3: Package की R/ directory के बाहर वाली R code files update करें
+
+जब आप package को `Depends` से `Imports` में बदलते हैं, तो package load होने पर dependency automatically attach नहीं होगी। यह examples, tests, vignettes और demos के लिए महत्वपूर्ण हो सकता है, जहाँ `Imports` packages को explicitly attach करना आवश्यक है।
+
+**पहले (`Depends` के साथ):**
+```r
+# data.table functions are directly available
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+**बाद में (`Imports` के साथ):**
+```r
+# Explicitly load data.table in user scripts or vignettes
+library(data.table)
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+### `Imports` उपयोग करने के लाभ
+- **User-Friendliness**: `Depends` users के `search()` path को बदलता है, संभवतः उनकी इच्छा के बिना।
+- **Namespace Management**: केवल वे functions उपलब्ध रहते हैं जिन्हें आपका package explicitly import करता है, जिससे function name clashes का risk कम होता है।
+- **Cleaner Package Loading**: Package dependencies search path से attach नहीं होतीं, जिससे loading process अधिक साफ़ और संभावित रूप से तेज़ होती है।
+- **Easier Maintenance**: Upstream dependencies की APIs evolve होने पर maintenance आसान होता है। `Depends` पर बहुत अधिक निर्भरता समय के साथ conflicts और compatibility issues पैदा कर सकती है।
+
+```{r, echo = FALSE, message = FALSE}
+data.table::setDTthreads(.old.th)
+```
