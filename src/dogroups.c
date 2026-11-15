@@ -43,7 +43,6 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // we restore the true truelength for when R starts to use vector truelength.
   SEXP list_el;
   const int n = length(x);
-  // use length() not LENGTH() because isNewList() is true for NULL
   if (n==0)
     return false;
   if (isVectorAtomic(x))
@@ -362,7 +361,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (njval==0) njval = LENGTH(jval);   // for first group, then the rest (when non 0) must conform to the first >0 group
     if (njval!=LENGTH(jval)) error(_("j doesn't evaluate to the same number of columns for each group"));  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
     for (int j=0; j<njval; ++j) {
-      int k = length(VECTOR_ELT(jval,j));  // might be NULL, so length not LENGTH
+      int k = length(VECTOR_ELT(jval,j));
       maxn = k>maxn ? k : maxn;
     }
     if (ansloc + maxn > estn) {
