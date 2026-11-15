@@ -2,17 +2,6 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #include <Rversion.h>
-#if R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
-#  define ALTREP(x) 0     // #2866
-#  define USE_RINTERNALS  // #3301
-#  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
-#  define STRING_PTR_RO STRING_PTR
-#  define INTEGER_RO INTEGER
-#  define REAL_RO REAL
-#  define COMPLEX_RO COMPLEX
-#  define RAW_RO RAW
-#  define LOGICAL_RO LOGICAL
-#endif
 #if R_VERSION < R_Version(4, 5, 0)
 #  define R_getVar(x, env, inherits) findVar(x, env)
 #  define isDataFrame(x) isFrame(x) // #6180

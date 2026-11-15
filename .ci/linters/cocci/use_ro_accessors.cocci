@@ -4,40 +4,54 @@ type T;
 const T *variable;
 expression E;
 @@
-- variable = RAW(E)
-+ variable = RAW_RO(E)
+  variable =
+- RAW(E)
++ RAW_RO(E)
 
 @@
 type T;
 const T *variable;
 expression E;
 @@
-- variable = LOGICAL(E)
-+ variable = LOGICAL_RO(E)
+  variable =
+- LOGICAL(E)
++ LOGICAL_RO(E)
 
 @@
 type T;
 const T *variable;
 expression E;
 @@
-- variable = INTEGER(E)
-+ variable = INTEGER_RO(E)
+  variable =
+- INTEGER(E)
++ INTEGER_RO(E)
 
 @@
 type T;
 const T *variable;
 expression E;
 @@
-- variable = REAL(E)
-+ variable = REAL_RO(E)
+  variable =
+- REAL(E)
++ REAL_RO(E)
 
 @@
 type T;
 const T *variable;
 expression E;
 @@
-- variable = COMPLEX(E)
-+ variable = COMPLEX_RO(E)
+  variable =
+- COMPLEX(E)
++ COMPLEX_RO(E)
+
+@@
+type T;
+const T *variable;
+expression E;
+@@
+  variable =
+- STRING_PTR(E)
++ STRING_PTR_RO(E)
 
 /* Just use _RO accessors directly instead of 'const' casting the writeable one */
 @@

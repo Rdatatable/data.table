@@ -101,7 +101,7 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
   cran.home = "../../.."
   tbl.dl = c(
     sprintf("<tr><td> Reference manual: </td><td> <a href=\"%s.pdf\">%s.pdf</a>, <a href=\"%s/library/%s/html/00Index.html\">00Index.html</a> </td></tr>", pkg, pkg, cran.home, pkg),
-    if (nrow(vign)) sprintf("<tr><td>Vignettes:</td><td>%s</td></tr>", paste(sprintf("<a href=\"%s/library/data.table/doc/%s\">%s</a><br/>", cran.home, vign[,"PDF"], vign[,"Title"]), collapse="\n")), # location unline cran web/pkg/vignettes to not duplicate content, documentation is in ../../../library
+    if (nrow(vign)) sprintf("<tr><td>Vignettes:</td><td>%s</td></tr>", paste(sprintf("<a href=\"%s/library/data.table/doc/%s\">%s</a><br/>", cran.home, vign[,"PDF"], vign[,"Title"]), collapse="\n")), # location unlike cran web/pkg/vignettes to not duplicate content, documentation is in ../../../library
     sprintf("<tr><td> Package source: </td><td> <a href=\"%s/src/contrib/%s_%s.tar.gz\"> %s_%s.tar.gz </a> </td></tr>", cran.home,pkg, version, pkg, version),
     sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_dev_ver, r_rel_ver, r_old_ver), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
     sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_rel_ver, r_old_ver), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))

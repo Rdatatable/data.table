@@ -14,7 +14,7 @@
   \item{x}{data.table }
   \item{f}{Same as \code{\link[base:split]{split.data.frame}}. Use \code{by} argument instead, this is just for consistency with data.frame method.}
   \item{drop}{logical. Default \code{FALSE} will not drop empty list elements caused by factor levels not referred by that factors. Works also with new arguments of split data.table method.}
-  \item{by}{character vector. Column names on which split should be made. For \code{length(by) > 1L} and \code{flatten} FALSE it will result nested lists with data.tables on leafs.}
+  \item{by}{character vector. Column names on which split should be made. For \code{length(by) > 1L} and \code{flatten} FALSE it will result nested lists with data.tables on leaves.}
   \item{sorted}{When default \code{FALSE} it will retain the order of groups we are splitting on. When \code{TRUE} then sorted list(s) are returned. Does not have effect for \code{f} argument.}
   \item{keep.by}{logical default \code{TRUE}. Keep column provided to \code{by} argument.}
   \item{flatten}{logical default \code{TRUE} will unlist nested lists of data.tables. When using \code{f} results are always flattened to list of data.tables.}
@@ -25,7 +25,7 @@
     Argument \code{f} is just for consistency in usage to data.frame method. Recommended is to use \code{by} argument instead, it will be faster, more flexible, and by default will preserve order according to order in data.
 }
 \value{
-    List of \code{data.table}s. If using \code{flatten} FALSE and \code{length(by) > 1L} then recursively nested lists having \code{data.table}s as leafs of grouping according to \code{by} argument.
+    List of \code{data.table}s. If using \code{flatten} FALSE and \code{length(by) > 1L} then recursively nested lists having \code{data.table}s as leaves of grouping according to \code{by} argument.
 }
 \seealso{ \code{\link{data.table}}, \code{\link{rbindlist}} }
 \examples{

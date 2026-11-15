@@ -44,7 +44,7 @@ Contributors are requested not to use code assistants if they are not able to ev
 
 > You are respon­si­ble for ensur­ing the secu­rity and qual­ity of your code. We rec­om­mend you take the same pre­cau­tions when using code gen­er­ated by GitHub Copi­lot that you would when using any code you didn’t write your­self. These pre­cau­tions include rig­or­ous test­ing, IP [(= intel­lec­tual prop­erty)] scan­ning, and track­ing for secu­rity vul­ner­a­bil­i­ties.
 
-Security and quality is something that developer and PR reviewers can easily evaluate. Intellectual properly is not. It seems that GitHub/Microsoft does not provide any tools to perform mentioned intellectual property "scanning". Therefore we request contributors to the project not to use these kinds of code assistants. More info on the topic can be found in the [Hacker News](https://news.ycombinator.com/item?id=33240341) thread.
+Security and quality is something that developer and PR reviewers can easily evaluate. Intellectual property is not. It seems that GitHub/Microsoft does not provide any tools to perform mentioned intellectual property "scanning". Therefore we request contributors to the project not to use these kinds of code assistants. More info on the topic can be found in the [Hacker News](https://news.ycombinator.com/item?id=33240341) thread.
 
 Some files, like GHA configurations in .github/workflows, are not shipped to CRAN; you are free to use LLMs to improve these peripheral parts of the package. A good rule of thumb is to strictly exclude LLM edits to anything included in the `R CMD build` tar.gz, or put another way, restrict LLM edits to _only_ those files excluded with .Rbuildignore.
 

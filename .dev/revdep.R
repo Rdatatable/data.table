@@ -143,9 +143,9 @@ for (p in deps) {
     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
     install.packages(p, dependencies=TRUE)
-    # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
+    # To install its dependencies. The package itself is installed superfluously here because the tar.gz will be passed to R CMD check.
     # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
-    # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
+    # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence using install.packages first with repos= set.
 
     download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
     if (!file.exists(fn)) stop("Still does not exist!:", fn)
@@ -363,7 +363,7 @@ log = function(bioc=FALSE, fnam="~/fail.log", app="gedit") {
     if (bioc && i %in% .fail.bioc) {
       # for Bioconductor only, now include the git commit and date. Although Bioc dev check status online may show OK :
       #   https://bioconductor.org/checkResults/devel/bioc-LATEST/
-      # the Bioc package maintainer has to remember to bump the version number otherwise Bioc will not propogate it,
+      # the Bioc package maintainer has to remember to bump the version number otherwise Bioc will not propagate it,
       # and BiocManager::install(version="devel") will not update to the latest version, even though the Bioc dev
       # status online does update. For packages which fail/warn locally but state OK on Bioc check page, compare the
       # output here to the commit hash and date displayed by Bioc-dev check results. If there's a mismatch, contact
