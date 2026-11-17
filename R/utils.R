@@ -67,9 +67,6 @@ if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
   safe_rep_len = function(x, n) rep(x, length.out = n) # nolint: rep_len_linter.
 }
 
-# endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
-endsWith = function(...) internal_error("use endsWithAny instead of base::endsWith")
-
 startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
 endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)
 # For fread.R #5097 we need if any of the prefixes match, which one, and can return early on the first match

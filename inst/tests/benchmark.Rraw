@@ -104,7 +104,7 @@ if (FALSE) {
   d = "/tmp/"
   f = paste0(d,"test.txt")
   system.time(fwrite(DT, f, nThread=1))
-  file.info(f)$size/1024^3
+  file.size(f)/1024^3
   unlink(f)
   # ensure progress meter itself isn't taking time; e.g. too many calls to time() or clock()
   system.time(fwrite(DT, f, showProgress=FALSE, nThread=1))
@@ -116,7 +116,7 @@ if (FALSE) {
   unlink(f)
   unlink(f2)
   system.time(fwrite(DT, f2))  # try again, should work now space free'd
-  file.info(f2)$size/1024^3
+  file.size(f2)/1024^3
   unlink(f2)
 }
 
@@ -143,7 +143,7 @@ DT <- as.data.table(m)
 f <- tempfile()
 system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # eol fixed so size test passes on Windows
 system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # run again to force seg fault
-test(1664, abs(file.info(f)$size %/% 100000 - 62) <= 1.5)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
+test(1664, abs(file.size(f) %/% 100000 - 62) <= 1.5)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
 unlink(f)
 
 n=10000
@@ -327,7 +327,7 @@ if (getDTthreads() == 1L) {
 } else {
   N = if (TRUE) 2e6 else 1e9   # offline speed check
   fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
-  test(1760.1, file.info(f)$size > 4*1024*1024)
+  test(1760.1, file.size(f) > 4*1024*1024)
   test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
   unlink(f)
 }
