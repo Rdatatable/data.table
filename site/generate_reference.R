@@ -42,6 +42,9 @@ topic_links = character()
 for (topic in all_info) topic_links[topic$aliases] = paste0('reference/', topic$name, '.html')
 
 html_meta = xfun::yaml_load(readLines('site/_litedown.yml'))$output$html$meta
+# taken from knitr::pat_html() to match what Rd2HTML(Rhtml = TRUE) generates
+Rhtml.begin = "^\\s*<!--\\s*begin.rcode\\s*(.*)"
+Rhtml.end = "^\\s*end.rcode\\s*-->"
 
 for (rd_file in rd_files) {
   info = all_info[[rd_file]]
@@ -54,12 +57,12 @@ for (rd_file in rd_files) {
   # The <!--begin.rcode ... end.rcode--> blocks are unsafe to parse as HTML, as an --> inside R code would terminate the comment.
   env = new.env()
   html_text = readLines(temp_html)
-  begin.rcode = which(startsWith(html_text, "<!--begin.rcode"))
-  end.rcode = which(html_text == "end.rcode-->")
+  begin.rcode = which(grepl(Rhtml.begin, html_text))
+  end.rcode = which(grepl(Rhtml.end, html_text))
   stopifnot(length(begin.rcode) == length(end.rcode), begin.rcode < end.rcode)
   for (i in seq_along(begin.rcode)) {
     text = html_text[begin.rcode[i]:end.rcode[i]]
-    text[1] = sub('^<!--begin[.]rcode(.*)', '```{r}\n#| \\1', text[1])
+    text[1] = sub(Rhtml.begin, '```{r}\n#| \\1', text[1])
     text[length(text)] = '```'
     html_text[begin.rcode[i]] = litedown::fuse(text = text, envir = env)
     html_text[(begin.rcode[i]+1):end.rcode[i]] = ""
