@@ -22016,3 +22016,7 @@ test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z",
 x = seq(as.IDate("1999-01-01"), as.IDate("2027-12-31"), by="day")
 test(2389.1, isoweek(x), as.integer(format(x, "%V")))
 test(2389.2, isoyear(x), as.integer(format(x, "%G")))
+test(2390.1, fread('"a";"b"\n"x";" 123"\n"y";" 456"\n"z";" 789"', sep=";"), data.table(a=c("x", "y", "z"), b=c(123L, 456L, 789L)))
+test(2390.2, fread('"a";"b"\n"x";"123 "\n"y";"456 "\n"z";"789 "', sep=";"), data.table(a=c("x", "y", "z"), b=c(123L, 456L, 789L)))
+test(2390.3, fread('"a";"b"\n"x";" 12.5 "\n"y";" 45.6 "', sep=";"), data.table(a=c("x", "y"), b=c(12.5, 45.6)))
+test(2390.4, fread('"a";"b"\n" abc ";123\n" def ";456', sep=";"), data.table(a=c(" abc ", " def "), b=c(123L, 456L)))
