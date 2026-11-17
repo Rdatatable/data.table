@@ -4,6 +4,8 @@
 library(tools)
 library(xml2)
 library(data.table) # attach for use in examples via litedown::fuse(env)
+library(xfun) # import the record_print generic for .S3method to work
+.S3method('record_print', 'data.table', function (x, ...) capture.output(print(x)))
 
 # Create reference directory
 ref_dir = "site/reference"
