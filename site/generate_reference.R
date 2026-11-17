@@ -3,7 +3,7 @@
 
 library(tools)
 library(xml2)
-library(data.table)
+library(data.table) # attach for use in examples via litedown::fuse(env)
 
 # Create reference directory
 ref_dir = "site/reference"
