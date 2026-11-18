@@ -22014,3 +22014,11 @@ test(2388.24, nafill(c("a", NA, NA, "z"), type="nocb", limit=1), c("a", NA, "z",
 x = seq(as.IDate("1999-01-01"), as.IDate("2027-12-31"), by="day")
 test(2389.1, isoweek(x), as.integer(format(x, "%V")))
 test(2389.2, isoyear(x), as.integer(format(x, "%G")))
+
+# zsv format handling # as of zsv@094745ac094f7a17bf95fc5f0a29580ad24a1a81
+fwrite(fread(text = "id~u8-index~0~zsv,year~u16-partition{2024@0|2025@30|2026@45},city~str,amount~f64
+1,2024,Bern,2.5
+2,2024,Basel,
+4,2025,Zug,1.5
+5,2026,Bern,3"), zsv<-tempfile(fileext=".zsv"))
+test(2390.01, names(fread(zsv)), c("id","year","city","amount"))
