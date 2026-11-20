@@ -370,6 +370,21 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   } else {
     setattr(ans, "class", "data.frame")
   }
+  # detect zsv headers
+  zsv = isTRUE(base::endsWith(names(ans)[1L], "~zsv"))
+  if (zsv) {
+    truecolnames = function(x) {
+      pos = regexpr("~", x, fixed = TRUE)
+      i = pos > 0L
+      if (!sum(i)) internal_error("truecolnames should be called only when ~zsv marker was detected in first column name") # nocov
+      ans = x
+      ans[i] = substr(x[i], 1L, pos[i] - 1L)
+      ans
+    }
+    if (verbose)
+      catf('Detected zsv header format: trim zsv to csv\n')
+    setnames(ans, truecolnames(names(ans)))
+  }
   # #1027, make.unique -> make.names as spotted by @DavidArenberg
   if (check.names) {
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
