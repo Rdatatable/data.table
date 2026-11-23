@@ -118,6 +118,8 @@
 
 10. `fwrite()` returns a clearer error message when `na = data.frame()` is used, [#7866](https://github.com/Rdatatable/data.table/issues/7866). Thanks @mcol for the report and the fix.
 
+11. `fread()` will now detect and automatically trim [zsv](https://codeberg.org/jangorecki/zsv) metadata embedded in column names of a csv file. [#7963](https://github.com/Rdatatable/data.table/pull/7963)
+
 
 ## data.table [v1.18.6.1](https://github.com/Rdatatable/data.table/milestone/47) (22 August 2026)
 
