@@ -12,7 +12,7 @@ copy_names = function(ans, nm) {
 
 floor_to_int = function(x) {
   if (is.double(x) && !inherits(x, "integer64")) as.integer(floor(unclass(x)))
-  else as.integer(x)
+  else as.integer(x)           # integer: no double round trip. integer64, complex, etc.: dispatch to their own methods
 }
 
 as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
@@ -43,7 +43,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
 
 as.IDate.Date = function(x, ...) {
   nm = names(x)
-  x = floor_to_int(x)                 # if already integer, x will be left unchanged as the original input
+  x = floor_to_int(x)               # Convert to integer, rounding fractional values down
   class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
   copy_names(x, nm)
 }
