@@ -8,9 +8,10 @@ name: R-CMD-check-occasional
 
 jobs:
   R-CMD-check-occasional:
-    runs-on: ${{ matrix.os }}
+    # R < 4.0.3 binaries are unavailable on ubuntu-26.04 (ubuntu-latest)
+    runs-on: ${{ (matrix.os == 'ubuntu-latest' && (matrix.r == '3.5' || matrix.r == '3.6')) && 'ubuntu-24.04' || matrix.os }}
 
-    name: ${{ matrix.os }} (${{ matrix.r }}, ${{ matrix.locale }})
+    name: ${{ (matrix.os == 'ubuntu-latest' && (matrix.r == '3.5' || matrix.r == '3.6')) && 'ubuntu-24.04' || matrix.os }} (${{ matrix.r }}, ${{ matrix.locale }})
 
     strategy:
       fail-fast: false
