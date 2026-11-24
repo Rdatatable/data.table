@@ -3,6 +3,9 @@
 
 library(tools)
 library(xml2)
+library(data.table) # attach for use in examples via litedown::fuse(env)
+library(xfun) # import the record_print generic for .S3method to work
+.S3method('record_print', 'data.table', function (x, ...) capture.output(print(x)))
 
 # Create reference directory
 ref_dir = "site/reference"
@@ -41,6 +44,9 @@ topic_links = character()
 for (topic in all_info) topic_links[topic$aliases] = paste0('reference/', topic$name, '.html')
 
 html_meta = xfun::yaml_load(readLines('site/_litedown.yml'))$output$html$meta
+# taken from knitr::pat_html() to match what Rd2HTML(Rhtml = TRUE) generates
+Rhtml.begin = "^\\s*<!--\\s*begin.rcode\\s*(.*)"
+Rhtml.end = "^\\s*end.rcode\\s*-->"
 
 for (rd_file in rd_files) {
   info = all_info[[rd_file]]
@@ -48,8 +54,23 @@ for (rd_file in rd_files) {
   out_file = file.path(ref_dir, paste0(info$name, ".html"))
 
   temp_html = tempfile(fileext = ".html")
-  Rd2HTML(rd_file, out = temp_html, package = "data.table", Links = topic_links, Links2 = character())
-  html_root = read_html(temp_html)
+  Rd2HTML(rd_file, out = temp_html, package = "data.table", Links = topic_links, Links2 = character(), Rhtml = TRUE)
+
+  # The <!--begin.rcode ... end.rcode--> blocks are unsafe to parse as HTML, as an --> inside R code would terminate the comment.
+  env = new.env()
+  html_text = readLines(temp_html)
+  begin.rcode = which(grepl(Rhtml.begin, html_text))
+  end.rcode = which(grepl(Rhtml.end, html_text))
+  stopifnot(length(begin.rcode) == length(end.rcode), begin.rcode < end.rcode)
+  for (i in seq_along(begin.rcode)) {
+    text = html_text[begin.rcode[i]:end.rcode[i]]
+    text[1] = sub(Rhtml.begin, '```{r}\n#| \\1', text[1])
+    text[length(text)] = '```'
+    html_text[begin.rcode[i]] = litedown::fuse(text = text, envir = env)
+    html_text[(begin.rcode[i]+1):end.rcode[i]] = ""
+  }
+
+  html_root = read_html(paste(html_text, collapse = '\n'))
 
   if (!is.null(html_meta$lang))
     xml_attr(html_root, 'lang') = html_meta$lang
