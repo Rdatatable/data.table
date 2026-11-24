@@ -1,0 +1,364 @@
+---
+title: "सेकेंडरी इंडेक्स और ऑटो इंडेक्सिंग"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Secondary indices and auto indexing}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+यह विगनेट मानता है कि पाठक data.table के `[i, j, by]` सिंटैक्स और तेज़ key-आधारित subsets बनाने की प्रक्रिया से परिचित है। यदि आप इन अवधारणाओं से परिचित नहीं हैं, तो पहले निम्नलिखित विगनेट पढ़ें:
+
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) 
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
+
+***
+
+## डेटा {#data}
+
+हम वही `flights` डेटा उपयोग करेंगे जो [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में उपयोग किया गया है।
+
+```{r, echo = FALSE}
+options(width = 100L)
+```
+
+```{r}
+flights <- fread("flights14.csv")
+head(flights)
+dim(flights)
+```
+
+## परिचय
+
+इस विगनेट में हम
+
+* *secondary indices* पर चर्चा करेंगे और ऐसे उदाहरणों के माध्यम से समझेंगे कि उनकी आवश्यकता क्यों है, जहाँ keys सेट करना हमेशा आदर्श नहीं होता,
+
+* फिर से तेज़ subsetting करेंगे, लेकिन इस बार नए `on` argument का उपयोग करके, जो कार्य के लिए आंतरिक रूप से (अस्थायी रूप से) secondary indices बनाता है और यदि कोई पहले से मौजूद हो तो उसका पुनः उपयोग करता है,
+
+* और अंत में *auto indexing* देखेंगे, जो एक कदम आगे जाकर secondary indices को अपने आप बनाता है, लेकिन subsetting के लिए मूल R सिंटैक्स का उपयोग करता है।
+
+## 1. सेकेंडरी इंडेक्स
+
+### a) सेकेंडरी इंडेक्स क्या हैं?
+
+Secondary indices, *data.table* में `keys` के समान होते हैं, लेकिन इनके बीच दो प्रमुख अंतर हैं:
+
+* यह RAM में पूरे data.table को भौतिक रूप से पुनः क्रमित *नहीं* करता। इसके बजाय, यह केवल दिए गए कॉलमों के लिए क्रम की गणना करता है और उस *order vector* को `index` नामक अतिरिक्त attribute में संग्रहीत करता है।
+
+* एक data.table के लिए एक से अधिक secondary index हो सकते हैं (जैसा कि हम नीचे देखेंगे)।
+
+#### Keyed बनाम Indexed Subsetting
+
+हालाँकि **keys** और **indices** दोनों तेज़ binary-search subsetting संभव बनाते हैं, लेकिन उनके उपयोग में महत्वपूर्ण अंतर हैं:
+
+**Keyed subsetting** (कॉलम का अप्रत्यक्ष मिलान)
+
+```{r keyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setkey(DT, a)                # Set key, reordering DT
+DT[.(TRUE)]                  # 'on' is optional; if omitted, the key is used
+```
+
+**Indexed subsetting** (कॉलम का स्पष्ट उल्लेख)
+
+```{r unkeyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setindex(DT, a)              # Set index only (no reorder)
+DT[.(TRUE), on = "a"]        # 'on' is required
+```
+
+### b) सेकेंडरी इंडेक्स सेट करना और प्राप्त करना
+
+#### -- *data.table* `flights` में `origin` कॉलम को secondary index के रूप में कैसे सेट करें?
+
+```{r}
+setindex(flights, origin)
+head(flights)
+
+## alternatively we can provide character vectors to the function 'setindexv()'
+# setindexv(flights, "origin") # useful to program with
+
+# 'index' attribute added
+names(attributes(flights))
+```
+
+* `setindex` और `setindexv()` data.table में secondary index जोड़ने की अनुमति देते हैं।
+
+* ध्यान दें कि `flights` को `origin` के बढ़ते क्रम में भौतिक रूप से पुनः व्यवस्थित **नहीं** किया गया है, जैसा कि `setkey()` के साथ होता।
+
+* यह भी ध्यान दें कि `flights` में `index` attribute जोड़ा गया है।
+
+* `setindex(flights, NULL)` सभी secondary indices हटा देगा।
+
+#### -- `flights` में अब तक सेट किए गए सभी secondary indices कैसे प्राप्त करें?
+
+```{r}
+indices(flights)
+
+setindex(flights, origin, dest)
+indices(flights)
+```
+
+* `indices()` फ़ंक्शन data.table में वर्तमान सभी secondary indices लौटाता है। यदि कोई मौजूद नहीं है, तो `NULL` लौटाया जाता है।
+
+* ध्यान दें कि `origin, dest` कॉलमों पर एक और index बनाने से `origin` कॉलम पर पहले बनाया गया index समाप्त नहीं होता; अर्थात हम एक से अधिक secondary indices रख सकते हैं।
+
+### c) हमें सेकेंडरी इंडेक्स की आवश्यकता क्यों है?
+
+#### -- data.table को पुनः क्रमित करना महँगा हो सकता है और हमेशा आदर्श नहीं होता
+
+मान लीजिए कि आप `origin` कॉलम में "JFK" मान के लिए तेज़ key-आधारित subset करना चाहते हैं। हम इसे इस प्रकार करेंगे:
+
+```r
+## not run
+setkey(flights, origin)
+flights["JFK"] # or flights[.("JFK")]
+```
+
+#### `setkey()` के लिए आवश्यक है:
+
+a) दिए गए कॉलम(ों), यहाँ `origin`, के लिए order vector की गणना करना, और
+
+b) गणना किए गए order vector के आधार पर पूरे data.table को by reference पुनः क्रमित करना।
+
+#
+
+क्रम की गणना स्वयं अधिक समय लेने वाला भाग नहीं है, क्योंकि data.table integer, character और numeric vectors पर वास्तविक radix sorting का उपयोग करता है। हालाँकि, पूरे data.table को पुनः क्रमित करना समय लेने वाला हो सकता है (rows और columns की संख्या पर निर्भर करता है)।
+
+यदि हमारे कार्य में उसी कॉलम पर बार-बार subsetting शामिल नहीं है, तो data.table के आयामों के आधार पर पुनः क्रमित करने में लगने वाला समय तेज़ key-आधारित subsetting के लाभ को लगभग समाप्त कर सकता है।
+
+#### -- अधिकतम केवल एक `key` हो सकती है
+
+अब यदि हम यही ऑपरेशन `dest` कॉलम पर "LAX" मान के लिए दोहराना चाहें, तो हमें फिर से `setkey()` करना होगा।
+
+```r
+## not run
+setkey(flights, dest)
+flights["LAX"]
+```
+
+और इससे `flights` फिर से `dest` के आधार पर पुनः क्रमित होता है। वास्तव में हम चाहते हैं कि पुनः क्रमित करने वाले चरण को हटाकर तेज़ subsetting कर सकें।
+
+और यही काम *secondary indices* संभव बनाते हैं!
+
+#### -- सेकेंडरी इंडेक्स का पुनः उपयोग किया जा सकता है
+
+क्योंकि एक से अधिक secondary indices हो सकते हैं, और index बनाना केवल order vector को attribute के रूप में संग्रहीत करने जितना सरल है, इसलिए यदि index पहले से मौजूद है तो order vector को फिर से गणना करने में लगने वाला समय भी बचाया जा सकता है।
+
+#### -- नया `on` argument अधिक साफ़ सिंटैक्स तथा secondary indices का स्वचालित निर्माण और पुनः उपयोग संभव बनाता है
+
+जैसा कि हम अगले सेक्शन में देखेंगे, `on` argument कई लाभ देता है:
+
+#### `on` argument
+
+* यह आवश्यकता के समय secondary indices की गणना करके subsetting सक्षम करता है। इससे हर बार `setindex()` करने की आवश्यकता समाप्त हो जाती है।
+
+* केवल attributes की जाँच करके मौजूदा indices का आसानी से पुनः उपयोग करने देता है।
+
+* subset किए जाने वाले कॉलमों को सीधे सिंटैक्स का हिस्सा बनाकर अधिक साफ़ सिंटैक्स देता है। इससे बाद में कोड देखते समय उसे समझना आसान होता है।
+
+    ध्यान दें कि `on` argument का उपयोग keyed subsets पर भी किया जा सकता है। वास्तव में बेहतर readability के लिए हम keys का उपयोग करते समय भी `on` argument देने की सलाह देते हैं।
+
+#
+
+## 2. `on` argument और सेकेंडरी इंडेक्स का उपयोग करके तेज़ subsetting
+
+### a) `i` में तेज़ subsets
+
+#### -- `on` का उपयोग करके वे सभी rows subset करें जहाँ origin airport *"JFK"* से मेल खाता है
+
+```{r}
+flights["JFK", on = "origin"]
+
+## alternatively
+# flights[.("JFK"), on = "origin"] (or)
+# flights[list("JFK"), on = "origin"]
+```
+
+* यह statement भी आवश्यक index को उसी समय गणना करके तेज़ binary-search आधारित subset करता है। हालाँकि ध्यान दें कि यह index को अपने आप attribute के रूप में सहेजता नहीं है। भविष्य में यह व्यवहार बदल सकता है।
+
+* यदि हमने पहले ही `setindex()` का उपयोग करके secondary index बना लिया होता, तो `on` उसे दोबारा गणना करने के बजाय पुनः उपयोग करता। इसे हम `verbose = TRUE` का उपयोग करके देख सकते हैं:
+
+    ```{r}
+    setindex(flights, origin)
+    flights["JFK", on = "origin", verbose = TRUE][1:5]
+    ```
+
+#### -- `origin` *और* `dest` कॉलमों के आधार पर subset कैसे करें?
+
+उदाहरण के लिए, यदि हम `"JFK", "LAX"` संयोजन को subset करना चाहते हैं, तो:
+
+```{r}
+flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
+```
+
+* `on` argument, `i-argument` में दिए गए क्रम के अनुरूप कॉलम नामों का character vector स्वीकार करता है।
+
+* क्योंकि secondary index की गणना में बहुत कम समय लगता है, इसलिए जब तक कार्य में एक ही कॉलम पर बार-बार subsetting शामिल न हो, हमें `setindex()` का उपयोग करने की आवश्यकता नहीं है।
+
+* स्पष्टता/readability के लिए `i` में inputs को नाम देना सहायक हो सकता है, उदाहरण के लिए,
+
+```{r}
+flights[.(origin = "JFK", dest = "LAX"), on = c("origin", "dest")]
+```
+
+इससे स्पष्ट हो जाता है कि `j` की कौन-सी entries, `on` के किस element से संबंधित हैं।
+
+### b) `j` में चयन
+
+नीचे जिन सभी operations पर हम चर्चा करेंगे, वे [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) विगनेट में पहले देखे गए operations से अलग नहीं हैं। अंतर केवल इतना है कि keys सेट करने के बजाय हम `on` argument का उपयोग करेंगे।
+
+#### -- `origin = "LGA"` और `dest = "TPA"` के अनुरूप केवल `arr_delay` कॉलम को data.table के रूप में लौटाएँ
+
+```{r}
+flights[.("LGA", "TPA"), .(arr_delay), on = c("origin", "dest")]
+```
+
+### c) Chaining
+
+#### -- ऊपर प्राप्त परिणाम पर chaining का उपयोग करके कॉलम को घटते क्रम में व्यवस्थित करें।
+
+```{r}
+flights[.("LGA", "TPA"), .(arr_delay), on = c("origin", "dest")][order(-arr_delay)]
+```
+
+### d) `j` में गणना या *do* करना
+
+#### -- `origin = "LGA"` और `dest = "TPA"` के अनुरूप अधिकतम arrival delay ज्ञात करें।
+
+```{r}
+flights[.("LGA", "TPA"), max(arr_delay), on = c("origin", "dest")]
+```
+
+### e) `j` में `:=` का उपयोग करके by reference *sub-assign* करना
+
+हम यह उदाहरण [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) और [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) विगनेट में पहले ही देख चुके हैं। आइए `flights` *data.table* में उपलब्ध सभी `hours` देखें:
+
+```{r}
+# get all 'hours' in flights
+flights[, sort(unique(hour))]
+```
+
+हम देखते हैं कि डेटा में कुल `25` unique values हैं। *0* और *24* दोनों घंटे मौजूद प्रतीत होते हैं। आइए *24* को *0* से बदलें, लेकिन इस बार keys सेट करने के बजाय `on` का उपयोग करें।
+
+```{r}
+flights[.(24L), hour := 0L, on = "hour"]
+```
+
+अब जाँचते हैं कि `hour` कॉलम में `24` को `0` से बदला गया है या नहीं।
+
+```{r}
+flights[, sort(unique(hour))]
+```
+
+* यह secondary indices का विशेष रूप से बड़ा लाभ है। पहले `hour` की केवल कुछ rows अपडेट करने के लिए भी हमें उस पर `setkey()` करना पड़ता था, जिससे पूरा data.table अनिवार्य रूप से पुनः क्रमित हो जाता था। `on` के साथ क्रम बना रहता है और ऑपरेशन बहुत तेज़ होता है। कोड देखकर यह भी स्पष्ट रहता है कि हम कौन-सा कार्य करना चाहते थे।
+
+### f) `by` का उपयोग करके aggregation
+
+#### -- `origin = "JFK"` के अनुरूप प्रत्येक `month` के लिए अधिकतम departure delay प्राप्त करें। परिणाम को `month` के अनुसार क्रमित करें
+
+```{r}
+ans <- flights["JFK", max(dep_delay), keyby = month, on = "origin"]
+head(ans)
+```
+
+* यदि हमने `on` का उपयोग नहीं किया होता, जो आवश्यकता के समय आंतरिक रूप से secondary indices बनाता है, तो हमें `key` को फिर से `origin, dest` पर सेट करना पड़ता।
+
+### g) *mult* argument
+
+अन्य arguments, जिनमें `mult` भी शामिल है, ठीक उसी प्रकार काम करते हैं जैसा हमने [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) विगनेट में देखा था। `mult` का default value "all" है। इसके बजाय हम चुन सकते हैं कि केवल "first" या "last" matching rows लौटाई जाएँ।
+
+#### -- केवल पहली matching row subset करें जहाँ `dest`, *"BOS"* और *"DAY"* से मेल खाता हो
+
+```{r}
+flights[c("BOS", "DAY"), on = "dest", mult = "first"]
+```
+
+#### -- केवल अंतिम matching row subset करें जहाँ `origin`, *"LGA", "JFK", "EWR"* से और `dest`, *"XNA"* से मेल खाता हो
+
+```{r}
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), on = c("origin", "dest"), mult = "last"]
+```
+
+### h) *nomatch* argument
+
+हम `nomatch` argument का उपयोग करके चुन सकते हैं कि मेल न खाने वाली queries `NA` लौटाएँ या उन्हें पूरी तरह छोड़ दिया जाए।
+
+#### -- पिछले उदाहरण से केवल वही सभी rows subset करें जहाँ match मौजूद हो
+
+```{r}
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"), nomatch = NULL]
+```
+
+* "JFK" और "XNA" को जोड़ने वाली कोई flight नहीं है। इसलिए परिणाम में उस row को छोड़ दिया जाता है।
+
+## 3. ऑटो इंडेक्सिंग
+
+पहले हमने देखा कि *keys* का उपयोग करके binary search के माध्यम से तेज़ subset कैसे किया जाता है। फिर हमने पाया कि secondary indices का उपयोग करके performance को और बेहतर किया जा सकता है और सिंटैक्स को अधिक साफ़ बनाया जा सकता है।
+
+यही काम *auto indexing* करता है। फिलहाल यह केवल binary operators `==` और `%in%` के लिए लागू है। एक index अपने आप बनाया जाता है *और* attribute के रूप में सहेजा जाता है। अर्थात `on` argument के विपरीत, जो हर बार आवश्यकता के समय index की गणना करता है (जब तक कोई पहले से मौजूद न हो), यहाँ secondary index बनाया जाता है।
+
+लाभ को स्पष्ट रूप से दिखाने के लिए पर्याप्त बड़ा data.table बनाकर शुरू करते हैं।
+
+```{r}
+set.seed(1L)
+dt = data.table(x = sample(1e5L, 1e7L, TRUE), y = runif(100L))
+print(object.size(dt), units = "Mb")
+```
+
+जब हम पहली बार किसी एक कॉलम पर `==` या `%in%` का उपयोग करते हैं, तो secondary index अपने आप बन जाता है और subset करने के लिए उसका उपयोग किया जाता है।
+
+```{r}
+## have a look at all the attribute names
+names(attributes(dt))
+
+## run thefirst time
+(t1 <- system.time(ans <- dt[x == 989L]))
+head(ans)
+
+## secondary index is created
+names(attributes(dt))
+
+indices(dt)
+```
+
+पहली बार subset करने में लगने वाला समय = index बनाने का समय + subset करने का समय होता है। क्योंकि secondary index बनाने में केवल order vector बनाना शामिल है, इसलिए कई मामलों में यह संयुक्त ऑपरेशन vector scans से तेज़ होता है। लेकिन वास्तविक लाभ बाद के subsets में मिलता है। वे अत्यंत तेज़ होते हैं।
+
+```{r}
+## successive subsets
+(t2 <- system.time(dt[x == 989L]))
+system.time(dt[x %in% 1989:2012])
+```
+
+* पहली बार चलाने में `r sprintf("%.3f", t1["elapsed"])` सेकंड लगे, जबकि दूसरी बार `r sprintf("%.3f", t2["elapsed"])` सेकंड लगे।
+
+* global argument `options(datatable.auto.index = FALSE)` सेट करके auto indexing को बंद किया जा सकता है।
+
+* auto indexing बंद करने पर भी `setindex` या `setindexv` से स्पष्ट रूप से बनाए गए indices का उपयोग किया जा सकता है। indices को पूरी तरह बंद करने के लिए global argument `options(datatable.use.index = FALSE)` सेट कर सकते हैं।
+
+#
+
+हाल के संस्करण में हमने auto indexing को एक से अधिक कॉलम वाली expressions (जिन्हें `&` operator से जोड़ा गया हो) तक विस्तारित किया है। भविष्य में हम binary search को `<`, `<=`, `>` और `>=` जैसे और binary operators के साथ काम करने के लिए विस्तारित करने की योजना बना रहे हैं।
+
+हम [अगले विगनेट (`vignette("datatable-joins", package="data.table")`)](datatable-joins.html) में keys और secondary indices का उपयोग करके तेज़ *subsets* से *joins* की ओर बढ़ेंगे।
+
+***
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
+

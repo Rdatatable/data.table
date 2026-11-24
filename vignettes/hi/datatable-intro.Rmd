@@ -1,0 +1,733 @@
+---
+title: "data.table का परिचय"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Introduction to data.table}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+यह विगनेट `data.table` syntax, उसके general form, rows को *subset* करने, columns पर *select और compute* करने, तथा *group द्वारा* aggregations करने का परिचय देता है। Base R की `data.frame` data structure से परिचित होना उपयोगी है, लेकिन इस विगनेट को समझने के लिए आवश्यक नहीं।
+
+***
+
+## `data.table` का उपयोग करके डेटा विश्लेषण
+
+*subset*, *group*, *update*, *join* आदि data-manipulation operations स्वाभाविक रूप से एक-दूसरे से जुड़े हैं। इन *related operations को साथ रखने* से:
+
+* अंतिम लक्ष्य प्राप्त करने के लिए operations का set चाहे जो हो, syntax *संक्षिप्त* और *consistent* रहता है।
+
+* Analysis करते समय प्रत्येक operation को उपलब्ध functions के संभावित बहुत बड़े set में से किसी specific function से map करने का cognitive burden नहीं रहता, जिससे analysis *fluidly* किया जा सकता है।
+
+* प्रत्येक operation के लिए आवश्यक data को ठीक-ठीक जानकर operations को internally और बहुत प्रभावी तरीके से *automatically* optimise किया जा सकता है, जिससे code बहुत तेज़ और memory-efficient बनता है।
+
+संक्षेप में, यदि आप *programming* और *compute* time को बहुत कम करना चाहते हैं, तो यह package आपके लिए है। `data.table` की philosophy इसे संभव बनाती है। हमारा लक्ष्य इस vignette series के माध्यम से इसे समझाना है।
+
+## डेटा {#data}
+
+इस विगनेट में हम [flights](https://github.com/arunsrinivasan/flights) package (केवल GitHub पर उपलब्ध) से प्राप्त [NYC-flights14](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) data उपयोग करेंगे। इसमें 2014 में New York City airports से depart हुई सभी flights का Bureau of Transportation Statistics का On-Time flights data है ([nycflights13](https://github.com/tidyverse/nycflights13) से inspired)। Data केवल Jan-Oct'14 के लिए उपलब्ध है।
+
+`data.table` के fast-and-friendly file reader `fread` का उपयोग करके `flights` को सीधे इस प्रकार load कर सकते हैं:
+
+```{r, echo = FALSE}
+options(width = 100L)
+```
+
+```{r}
+input <- if (file.exists("flights14.csv")) {
+   "flights14.csv"
+} else {
+  "https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv"
+}
+flights <- fread(input)
+flights
+dim(flights)
+```
+
+अतिरिक्त जानकारी: `fread` सीधे `http` और `https` URLs स्वीकार करता है, साथ ही `sed` और `awk` output जैसे operating-system commands भी। Examples के लिए `?fread` देखें।
+
+## परिचय
+
+इस विगनेट में हम
+
+1. Basics से शुरू करेंगे - `data.table` क्या है, उसका general form, rows को *subset* कैसे करें, columns पर *select और compute* कैसे करें;
+
+2. फिर group द्वारा data aggregations करना देखेंगे।
+
+## 1. Basics {#basics-1}
+
+### a) `data.table` क्या है? {#what-is-datatable-1a}
+
+`data.table` एक R package है जो `data.frame` का **enhanced version** देता है; `data.frame`, `base` R में data store करने की standard structure है। ऊपर [Data](#data) section में हमने `fread()` से `data.table` बनाना देखा, लेकिन वैकल्पिक रूप से `data.table()` function से भी बना सकते हैं। उदाहरण:
+
+```{r}
+DT = data.table(
+  ID = c("b","b","b","a","a","c"),
+  a = 1:6,
+  b = 7:12,
+  c = 13:18
+)
+DT
+class(DT$ID)
+```
+
+Existing objects को भी `setDT()` (`data.frame` और `list` structures के लिए) या `as.data.table()` (अन्य structures के लिए) से `data.table` में convert कर सकते हैं। Difference की अधिक details (जो इस विगनेट के scope से बाहर हैं) के लिए `?setDT` और `?as.data.table` देखें।
+
+#### ध्यान दें:
+
+* Row numbers को `:` के साथ print किया जाता है ताकि row number और first column visually अलग दिखें।
+
+* जब print की जाने वाली rows की संख्या global option `datatable.print.nrows` (default = `r getOption("datatable.print.nrows")`) से अधिक होती है, तो यह automatically केवल top 5 और bottom 5 rows print करता है (जैसा [Data](#data) section में देखा जा सकता है)। बड़े `data.frame` में larger tables को print-and-page होते हुए कभी बहुत लंबा इंतज़ार करना पड़ सकता है। यह restriction उसमें मदद करती है, और default number इस प्रकार query कर सकते हैं:
+
+    ```{.r}
+    getOption("datatable.print.nrows")
+    ```
+
+* Option `datatable.prettyprint.char` control करता है कि character columns print करते समय प्रत्येक entry के कितने characters दिखाई दें। Limit से अधिक entries `...` के साथ truncate होती हैं (`strtrim()` के माध्यम से)। इसे इस प्रकार set कर सकते हैं:
+
+    ```{r}
+    old = options(datatable.prettyprint.char = 5L)
+    data.table(x = 1:2, y = c("abcdefghij", "klmnopqrstuv"))
+    options(old)  # reset to default
+    ```
+
+* `data.table` कभी भी *row names* set या use नहीं करता। इसका कारण [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) विगनेट में देखेंगे।
+
+### b) General form - `data.table` किस तरह *enhanced* है? {#enhanced-1b}
+
+`data.frame` के विपरीत, `data.table` के frame के भीतर, अर्थात `[ ... ]` में, केवल rows subset और columns select करने से *काफी अधिक* किया जा सकता है (ध्यान दें: SQL से analogy या relevance के कारण `DT[...]` के अंदर expressions लिखने को हम कभी-कभी "`DT` query करना" भी कह सकते हैं)। इसे समझने के लिए पहले `data.table` syntax का *general form* देखना होगा, जैसा नीचे है:
+
+```r
+DT[i, j, by]
+
+##   R:                 i                 j        by
+## SQL:  where | order by   select | update  group by
+```
+
+SQL background वाले users शायद तुरंत इस syntax से relate कर सकें।
+
+#### इसे (ज़ोर से) पढ़ने का तरीका है:
+
+`DT` लें, `i` से rows subset/reorder करें, फिर `by` से group करते हुए `j` calculate करें।
+
+पहले `i` और `j` देखते हैं - rows subset करना और columns पर operate करना।
+
+### c) `i` में rows subset करना {#subset-i-1c}
+
+#### -- June महीने में origin airport "JFK" वाली सभी flights प्राप्त करें।
+
+```{r}
+ans <- flights[origin == "JFK" & month == 6L]
+head(ans)
+```
+
+* `data.table` के frame के भीतर columns को *variables की तरह* refer किया जा सकता है, ठीक SQL या Stata की तरह। इसलिए हम `origin` और `month` को variables की तरह सीधे refer करते हैं। हर बार `flights$` prefix जोड़ने की आवश्यकता नहीं। फिर भी `flights$origin` और `flights$month` भी सही काम करेंगे।
+
+* Condition `origin == "JFK" & month == 6L` satisfy करने वाले *row indices* compute होते हैं, और क्योंकि कोई अन्य operation नहीं है, उन *row indices* से संबंधित `flights` की सभी columns को `data.table` के रूप में लौटा दिया जाता है।
+
+* `i` की condition के बाद comma आवश्यक नहीं है। लेकिन `flights[origin == "JFK" & month == 6L, ]` भी सही काम करेगा। `data.frame` में, हालाँकि, comma आवश्यक है।
+
+#### -- `flights` की पहली दो rows प्राप्त करें। {#subset-rows-integer}
+
+```{r}
+ans <- flights[1:2]
+ans
+```
+
+* इस case में कोई condition नहीं है। Row indices पहले ही `i` में दिए गए हैं। इसलिए उन *row indices* पर `flights` की सभी columns वाला `data.table` लौटता है।
+
+#### -- `flights` को पहले `origin` column के अनुसार *ascending* order में, और फिर `dest` के अनुसार *descending* order में sort करें:
+
+इसे करने के लिए R function `order()` का उपयोग कर सकते हैं।
+
+```{r}
+ans <- flights[order(origin, -dest)]
+head(ans)
+```
+
+#### `order()` internally optimised है
+
+* `data.table` के frame में `character` columns पर decreasing order में sort करने के लिए "-" का उपयोग कर सकते हैं।
+
+* इसके अतिरिक्त, `data.table` के frame के भीतर `order(...)`, speed के लिए `data.table` का internal fast radix order `forder()` उपयोग करता है। इस sort ने R के `base::order` पर इतना compelling improvement दिया कि R project ने 2016 में R 3.3.0 के लिए `data.table` algorithm को default sort के रूप में adopt किया (reference के लिए `?sort` और [R Release NEWS](https://cran.r-project.org/doc/manuals/r-release/NEWS.pdf) देखें)।
+
+`data.table` के fast order पर अधिक detail *`data.table` internals* विगनेट में देखेंगे।
+
+### d) `j` में column(s) select करना {#select-j-1d}
+
+#### -- `arr_delay` column select करें, लेकिन उसे *vector* के रूप में लौटाएँ।
+
+```{r}
+ans <- flights[, arr_delay]
+head(ans)
+```
+
+* क्योंकि `data.table` के frame में columns को variables की तरह refer किया जा सकता है, हम subset करने वाले *variable* को सीधे refer करते हैं। हमें *सभी rows* चाहिए, इसलिए `i` को छोड़ देते हैं।
+
+* यह `arr_delay` column की *सभी* rows लौटाता है।
+
+#### -- `arr_delay` column select करें, लेकिन इस बार `data.table` के रूप में लौटाएँ।
+
+```{r}
+ans <- flights[, list(arr_delay)]
+head(ans)
+```
+
+* हम *variables* (column names) को `list()` में wrap करते हैं, जिससे `data.table` return होना सुनिश्चित होता है। Single column name को `list()` में wrap न करने पर vector return होता है, जैसा [पिछले example](#select-j-1d) में देखा।
+
+* `data.table`, columns को `list()` के बजाय `.()` में wrap करने की भी अनुमति देता है। यह `list()` का *alias* है; दोनों का अर्थ समान है। आप जो पसंद करें उपयोग करें; हमने देखा है कि अधिकतर users conciseness के लिए `.()` पसंद करते हैं, इसलिए आगे हम `.()` उपयोग करेंगे।
+
+`data.table` (और `data.frame` भी) internally एक `list` है, इस शर्त के साथ कि प्रत्येक element की length समान हो और `list` में `class` attribute हो। `j` को `list` return करने की अनुमति देने से उसे बहुत efficiently `data.table` में convert करके return किया जा सकता है।
+
+#### टिप: {#tip-1}
+
+जब तक `j-expression` एक `list` लौटाती है, list का प्रत्येक element resulting `data.table` में एक column बन जाएगा। इससे `j` बहुत powerful हो जाता है, जैसा हम जल्द देखेंगे। अधिक complicated queries बनाने के लिए इसे समझना भी बहुत महत्वपूर्ण है!
+
+#### -- `arr_delay` और `dep_delay` दोनों columns select करें।
+
+```{r}
+ans <- flights[, .(arr_delay, dep_delay)]
+head(ans)
+
+## alternatively
+# ans <- flights[, list(arr_delay, dep_delay)]
+```
+
+* दोनों columns को `.()` या `list()` में wrap करें। बस इतना ही।
+
+#### -- `arr_delay` और `dep_delay` दोनों columns select करें *और* उनके नाम `delay_arr` और `delay_dep` रखें।
+
+क्योंकि `.()` केवल `list()` का alias है, columns को उसी तरह name कर सकते हैं जैसे `list` बनाते समय करते हैं।
+
+```{r}
+ans <- flights[, .(delay_arr = arr_delay, delay_dep = dep_delay)]
+head(ans)
+```
+
+### e) `j` में compute या *do* करना
+
+#### -- कितनी trips का total delay < 0 रहा है?
+
+```{r}
+ans <- flights[, sum( (arr_delay + dep_delay) < 0 )]
+ans
+```
+
+#### यहाँ क्या हो रहा है?
+
+* `data.table` का `j` केवल *columns select* करने से अधिक कर सकता है - यह *expressions*, अर्थात *columns पर computing*, handle कर सकता है। यह आश्चर्यजनक नहीं होना चाहिए, क्योंकि columns को variables की तरह refer कर सकते हैं। इसलिए उन variables पर functions call करके *compute* भी कर सकते हैं। यहाँ ठीक यही हो रहा है।
+
+### f) `i` में subset *और* `j` में operation
+
+#### -- June महीने में origin airport "JFK" वाली सभी flights के average arrival और departure delay calculate करें।
+
+```{r}
+ans <- flights[origin == "JFK" & month == 6L,
+               .(m_arr = mean(arr_delay), m_dep = mean(dep_delay))]
+ans
+```
+
+* पहले `i` में subset करके matching *row indices* ढूँढते हैं जहाँ `origin` airport `"JFK"` और `month` `6L` है। अभी हम उन rows से संबंधित _पूरे_ `data.table` को subset *नहीं* करते।
+
+* अब `j` देखते हैं और पाते हैं कि यह केवल *दो columns* उपयोग करता है। और हमें उनका `mean()` compute करना है। इसलिए matching rows के केवल उन्हीं columns को subset करके उनका `mean()` compute करते हैं।
+
+क्योंकि query के तीन main components (`i`, `j` और `by`) `[...]` के भीतर *एक साथ* हैं, `data.table` evaluation से पहले तीनों को देख सकता है और query को एक साथ optimise कर सकता है, बजाय हर component को अलग optimise करने के। इसलिए speed और memory efficiency दोनों के लिए पूरे subset से बच सकते हैं (अर्थात `arr_delay` और `dep_delay` के अलावा बाकी columns को subset करने से बचते हैं)।
+
+#### -- 2014 में June महीने में "JFK" airport से कितनी trips हुईं?
+
+```{r}
+ans <- flights[origin == "JFK" & month == 6L, length(dest)]
+ans
+```
+
+Function `length()` को input argument चाहिए। हमें केवल subset में rows की संख्या compute करनी है। `length()` के input argument के रूप में कोई अन्य column भी उपयोग कर सकते थे। यह approach SQL के `SELECT COUNT(dest) FROM flights WHERE origin = 'JFK' AND month = 6` की याद दिलाता है।
+
+इस प्रकार का operation काफी बार होता है, विशेष रूप से grouping के दौरान (जैसा अगले section में देखेंगे), इसलिए `data.table` इसके लिए *special symbol* `.N` देता है।
+
+### g) `i` में non-existing elements संभालना
+
+#### -- Non-existing elements query करने पर क्या होता है?
+
+ऐसे elements के लिए `data.table` query करते समय जो मौजूद नहीं हैं, behaviour उपयोग किए गए method के अनुसार बदलता है।
+
+```r
+setkeyv(flights, "origin")
+```
+
+* **Key-based subsetting: `dt["d"]`**
+
+  यह key column `x` पर right join करता है, जिससे `d` वाली row और not-found columns के लिए `NA` मिलता है। `setkeyv` उपयोग करने पर table specified keys के अनुसार sort होती है और internal index बनता है, जिससे efficient subsetting के लिए binary search संभव होती है।
+
+  ```r
+  flights["XYZ"]
+  # Returns:
+  #    origin year month day dep_time sched_dep_time dep_delay arr_time sched_arr_time arr_delay carrier flight tailnum ...
+  # 1:    XYZ   NA    NA  NA       NA             NA        NA       NA             NA        NA      NA     NA      NA ...
+  ```
+
+* **Logical subsetting: `dt[x == "d"]`**
+  
+  यह standard subset operation करता है जिसमें कोई matching row नहीं मिलती, इसलिए empty `data.table` लौटता है।
+
+  ```r
+    flights[origin == "XYZ"]
+  # Returns:
+  # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+  ```
+
+* **`nomatch=NULL` के साथ exact match**
+  
+  Non-existing elements के लिए `NA` के बिना exact matches हेतु `nomatch=NULL` उपयोग करें:
+
+  ```r
+  flights["XYZ", nomatch=NULL]
+  # Returns:
+  # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+  ```
+
+इन behaviours को समझना data में non-existing elements के साथ काम करते समय confusion से बचा सकता है।
+
+#### Special symbol `.N`: {#special-N}
+
+`.N` एक special built-in variable है जो _current group_ में observations की संख्या रखता है। `by` के साथ यह विशेष रूप से उपयोगी है, जैसा अगले section में देखेंगे। Group-by operations न होने पर यह simply subset की rows की संख्या लौटाता है।
+
+अब जब यह पता है, तो `.N` का उपयोग करके वही task इस प्रकार कर सकते हैं:
+
+```{r}
+ans <- flights[origin == "JFK" & month == 6L, .N]
+ans
+```
+
+* फिर से, `i` में subset करके वे *row indices* प्राप्त करते हैं जहाँ `origin` airport *"JFK"* और `month` *6* है।
+
+* हम देखते हैं कि `j` केवल `.N` उपयोग करता है, कोई अन्य columns नहीं। इसलिए पूरा subset materialise नहीं होता। हम केवल subset की rows की संख्या लौटाते हैं (जो row indices की length है)।
+
+* ध्यान दें कि `.N` को `list()` या `.()` में wrap नहीं किया। इसलिए vector return होता है।
+
+उसी operation को `nrow(flights[origin == "JFK" & month == 6L])` से भी कर सकते थे। लेकिन इसमें पहले `i` के *row indices* से संबंधित पूरा `data.table` subset करना पड़ता और *फिर* `nrow()` से rows return होतीं, जो unnecessary और inefficient है। इसे और अन्य optimisation aspects को *`data.table` design* विगनेट में detail में cover करेंगे।
+
+### h) बहुत अच्छा! लेकिन `j` में columns को names से कैसे refer करें (`data.frame` की तरह)? {#refer-j}
+
+यदि आप column names explicitly लिख रहे हैं, तो `data.frame` की तुलना में कोई difference नहीं है (v1.9.8 से)।
+
+#### -- `arr_delay` और `dep_delay` दोनों columns को `data.frame` के तरीके से select करें।
+
+```{r j_cols_no_with}
+ans <- flights[, c("arr_delay", "dep_delay")]
+head(ans)
+```
+
+यदि desired columns character vector में stored हैं, तो दो options हैं: `..` prefix का उपयोग या `with` argument का उपयोग।
+
+#### -- `..` prefix का उपयोग करके variable में named columns select करें
+
+```{r j_cols_dot_prefix}
+select_cols = c("arr_delay", "dep_delay")
+flights[ , ..select_cols]
+```
+
+Unix terminal से परिचित users के लिए `..` prefix "up-one-level" command की याद दिला सकता है। यहाँ भी analogous behaviour है -- `..`, `data.table` को `select_cols` variable को "एक level ऊपर" खोजने का संकेत देता है, अर्थात इस case में global environment में।
+
+#### -- `with = FALSE` का उपयोग करके variable में named columns select करें
+
+```{r j_cols_with}
+flights[ , select_cols, with = FALSE]
+```
+
+Argument का नाम R function `with()` के कारण `with` रखा गया है क्योंकि functionality समान है। मान लें आपके पास `data.frame` `DF` है और वे सभी rows subset करनी हैं जहाँ `x > 1`। `base` R में आप निम्न कर सकते हैं:
+
+```{r}
+DF = data.frame(x = c(1,1,1,2,2,3,3,3), y = 1:8)
+
+## (1) normal way
+DF[DF$x > 1, ] # data.frame needs that ',' as well
+
+## (2) using with
+DF[with(DF, x > 1), ]
+```
+
+* (2) में `with()` उपयोग करने से `DF` के column `x` को variable की तरह उपयोग कर सकते हैं।
+
+    इसी कारण `data.table` में argument का नाम `with` है। `with = FALSE` set करने से columns को variables की तरह refer करने की क्षमता disable होती है, जिससे "`data.frame` mode" restore होता है।
+
+* `-` या `!` का उपयोग करके columns को *deselect* भी कर सकते हैं। उदाहरण:
+
+    ```r
+    ## not run
+
+    # returns all columns except arr_delay and dep_delay
+    ans <- flights[, !c("arr_delay", "dep_delay")]
+    # or
+    ans <- flights[, -c("arr_delay", "dep_delay")]
+    ```
+
+* `v1.9.5+` से start और end column names देकर भी select कर सकते हैं, जैसे first three columns के लिए `year:day`।
+
+    ```r
+    ## not run
+
+    # returns year,month and day
+    ans <- flights[, year:day]
+    # returns day, month and year
+    ans <- flights[, day:year]
+    # returns all columns except year, month and day
+    ans <- flights[, -(year:day)]
+    ans <- flights[, !(year:day)]
+    ```
+
+    Interactive work में यह विशेष रूप से उपयोगी है।
+
+`data.table` में `with = TRUE` default है क्योंकि `j` को expressions handle करने देने से हम बहुत अधिक कर सकते हैं - विशेष रूप से `by` के साथ, जैसा अभी देखेंगे।
+
+## 2. Aggregations
+
+पिछले section में हमने `data.table` के general form से `i` और `j` देखे। अब देखेंगे कि इन्हें `by` के साथ combine करके *group द्वारा* operations कैसे किए जाएँ। कुछ examples देखते हैं।
+
+### a) `by` का उपयोग करके grouping
+
+#### -- प्रत्येक origin airport के लिए trips की संख्या कैसे प्राप्त करें?
+
+```{r}
+ans <- flights[, .(.N), by = .(origin)]
+ans
+
+## or equivalently using a character vector in 'by'
+# ans <- flights[, .(.N), by = "origin"]
+```
+
+* हम जानते हैं कि `.N` [एक special variable है](#special-N) जो current group की rows की संख्या रखता है। `origin` से grouping करने पर प्रत्येक group के लिए rows की संख्या `.N` मिलती है।
+
+* `head(flights)` करने पर देख सकते हैं कि origin airports का order *"JFK"*, *"LGA"*, और *"EWR"* है। Grouping variables का original order result में preserve रहता है। _इसे याद रखना महत्वपूर्ण है!_
+
+* क्योंकि `j` में returned column को हमने name नहीं दिया, special symbol `.N` पहचानकर उसका नाम automatically `N` रखा गया।
+
+* `by` column names का character vector भी स्वीकार करता है। Programmatically coding के लिए यह विशेष रूप से उपयोगी है, जैसे grouping columns (एक `character` vector के रूप में) को function argument लेने वाला function design करना।
+
+* जब `j` और `by` में केवल एक column या expression refer करना हो, तो `.()` notation छोड़ी जा सकती है। यह केवल convenience के लिए है। इसके बजाय यह भी कर सकते हैं:
+
+    ```{r}
+    ans <- flights[, .N, by = origin]
+    ans
+    ```
+
+    आगे जहाँ applicable होगा, हम यह convenient form उपयोग करेंगे।
+
+#### -- Carrier code `"AA"` के लिए प्रत्येक origin airport से trips की संख्या कैसे calculate करें? {#origin-N}
+
+Unique carrier code `"AA"`, *American Airlines Inc.* को दर्शाता है।
+
+```{r}
+ans <- flights[carrier == "AA", .N, by = origin]
+ans
+```
+
+* पहले `i` से expression `carrier == "AA"` के row indices प्राप्त करते हैं।
+
+* उन *row indices* का उपयोग करके `origin` से group करते हुए rows की संख्या प्राप्त करते हैं। फिर से, यहाँ वास्तव में कोई columns materialise नहीं होते क्योंकि `j-expression` को कोई column subset करने की आवश्यकता नहीं, इसलिए यह fast और memory-efficient है।
+
+#### -- Carrier code `"AA"` के लिए प्रत्येक `origin, dest` pair की total trips कैसे प्राप्त करें? {#origin-dest-N}
+
+```{r}
+ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
+head(ans)
+
+## or equivalently using a character vector in 'by'
+# ans <- flights[carrier == "AA", .N, by = c("origin", "dest")]
+```
+
+* `by` multiple columns स्वीकार करता है। Grouping के लिए सभी columns दे देते हैं। `by` में `.()` का उपयोग फिर ध्यान दें -- यह केवल `list()` का shorthand है, और `list()` भी उपयोग हो सकता है। इस विगनेट में हम `.()` ही उपयोग करेंगे।
+
+#### -- Carrier code `"AA"` के लिए प्रत्येक month में प्रत्येक `orig,dest` pair का average arrival और departure delay कैसे प्राप्त करें? {#origin-dest-month}
+
+```{r}
+ans <- flights[carrier == "AA",
+        .(mean(arr_delay), mean(dep_delay)),
+        by = .(origin, dest, month)]
+ans
+```
+
+* क्योंकि `j` की expressions के लिए column names नहीं दिए, वे automatically `V1` और `V2` बने।
+
+* फिर ध्यान दें कि grouping columns का input order result में preserve होता है।
+
+अब यदि result को grouping columns `origin`, `dest` और `month` के अनुसार order करना हो तो?
+
+### b) Sorted `by`: `keyby`
+
+`data.table` द्वारा groups का original order retain करना intentional और by design है। कई cases में original order preserve करना essential है। लेकिन कभी grouping variables से automatically sort करना चाहते हैं।
+
+#### -- सभी grouping variables से सीधे order कैसे करें?
+
+```{r}
+ans <- flights[carrier == "AA",
+        .(mean(arr_delay), mean(dep_delay)),
+        keyby = .(origin, dest, month)]
+ans
+```
+
+* हमने केवल `by` को `keyby` में बदला। इससे result grouping variables के increasing order में automatically order हो जाता है। वास्तव में `by` की internal implementation पहले sort करती है और फिर original table order recover करती है; इसलिए `keyby` अक्सर `by` से तेज़ होता है क्योंकि उसे यह second step नहीं करना पड़ता।
+
+**Keys:** वास्तव में `keyby`, *सिर्फ ordering* से थोड़ा अधिक करता है। Ordering के बाद `sorted` नाम का `attribute` set करके *key भी set* करता है।
+
+`keys` के बारे में [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) विगनेट में अधिक सीखेंगे; फिलहाल बस इतना जानना पर्याप्त है कि `keyby` से `by` में specified columns के अनुसार result automatically order किया जा सकता है।
+
+### c) Chaining
+
+[Carrier *"AA"* के लिए प्रत्येक `origin, dest` pair की total trips प्राप्त करने](#origin-dest-N) वाले task को फिर देखते हैं।
+
+```{r}
+ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
+```
+
+#### -- `ans` को `origin` के ascending order और `dest` के descending order में कैसे order करें?
+
+Intermediate result को variable में store करके उस variable पर `order(origin, -dest)` उपयोग कर सकते हैं। यह काफी straightforward लगता है।
+
+```{r}
+ans <- ans[order(origin, -dest)]
+head(ans)
+```
+
+* याद करें कि `data.table` के frame में `order()` के अंदर `character` column पर `-` उपयोग कर सकते हैं। यह `data.table` के internal query optimisation के कारण संभव है।
+
+* यह भी याद करें कि `data.table` के frame में `order(...)` speed के लिए automatically `data.table` के internal fast radix order `forder()` का उपयोग करता है।
+
+लेकिन इसमें intermediate result assign करना और फिर उसे overwrite करना पड़ता है। हम *chaining* expressions से इस temporary intermediate assignment को पूरी तरह avoid कर सकते हैं।
+
+```{r}
+ans <- flights[carrier == "AA", .N, by = .(origin, dest)][order(origin, -dest)]
+head(ans, 10)
+```
+
+* Expressions को एक के बाद एक जोड़ सकते हैं, operations की *chain* बनाते हुए, जैसे `DT[ ... ][ ... ][ ... ]`।
+
+* या उन्हें vertically भी chain कर सकते हैं:
+
+    ```r
+    DT[ ...
+       ][ ...
+         ][ ...
+           ]
+    ```
+
+### d) `by` में Expressions
+
+#### -- क्या `by` *expressions* भी स्वीकार कर सकता है या केवल columns?
+
+हाँ। उदाहरण के लिए यदि जानना हो कि कितनी flights late start हुईं लेकिन early (या on time) पहुँचीं, कितनी late start और late arrive हुईं, आदि...
+
+```{r}
+ans <- flights[, .N, .(dep_delay>0, arr_delay>0)]
+ans
+```
+
+* अंतिम row `dep_delay > 0 = TRUE` और `arr_delay > 0 = FALSE` से संबंधित है। हम देख सकते हैं कि `r flights[!is.na(arr_delay) & !is.na(dep_delay), .N, .(dep_delay>0, arr_delay>0)][, N[4L]]` flights late start हुईं लेकिन early (या on time) पहुँचीं।
+
+* ध्यान दें कि `by-expression` को कोई names नहीं दिए। इसलिए result में names automatically assign हुए। `j` की तरह इन expressions को किसी `list` के elements की तरह name कर सकते हैं, उदाहरण `DT[, .N, .(dep_delayed = dep_delay>0, arr_delayed = arr_delay>0)]`।
+
+* Expressions के साथ अन्य columns भी दे सकते हैं, उदाहरण: `DT[, .N, by = .(a, b>0)]`।
+
+### e) `j` में Multiple columns - `.SD`
+
+#### -- क्या हर column के लिए `mean()` अलग-अलग compute करना पड़ेगा?
+
+निश्चित रूप से हर column के लिए एक-एक करके `mean(myCol)` type करना practical नहीं है। यदि 100 columns का `mean()` निकालना हो तो?
+
+इसे efficiently और concisely कैसे करें? [इस tip](#tip-1) को याद करें - *"जब तक `j`-expression `list` लौटाती है, list का प्रत्येक element resulting `data.table` में column बन जाएगा"*। यदि grouping के दौरान *प्रत्येक group के data subset* को variable की तरह refer कर सकें, तो पहले से परिचित (या जल्द परिचित होने वाले) base function `lapply()` से उस variable की सभी columns पर loop कर सकते हैं। `data.table` specific कोई नया function name सीखने की आवश्यकता नहीं।
+
+#### Special symbol `.SD`: {#special-SD}
+
+`data.table` `.SD` नाम का *special* symbol देता है। इसका अर्थ है **S**ubset of **D**ata। यह स्वयं एक `data.table` है जो `by` से defined *current group* का data रखता है।
+
+याद करें कि `data.table` internally एक `list` भी है जिसमें सभी columns की length समान होती है।
+
+`.SD` कैसा दिखता है यह देखने के लिए [पहले वाला `data.table` `DT`](#what-is-datatable-1a) उपयोग करते हैं।
+
+```{r}
+DT
+
+DT[, print(.SD), by = ID]
+```
+
+* Default रूप से `.SD` में *grouping columns को छोड़कर* बाकी सभी columns होते हैं।
+
+* यह original order preserve करके भी generate होता है - पहले `ID = "b"`, फिर `ID = "a"`, और फिर `ID = "c"` से संबंधित data।
+
+(Multiple) columns पर compute करने के लिए base R function `lapply()` सीधे उपयोग कर सकते हैं।
+
+```{r}
+DT[, lapply(.SD, mean), by = ID]
+```
+
+* `.SD` उस group के लिए columns `a`, `b` और `c` से संबंधित rows रखता है। इन प्रत्येक columns पर परिचित base function `lapply()` से `mean()` compute करते हैं।
+
+* प्रत्येक group तीन elements की list लौटाता है जिनमें mean values होती हैं और ये resulting `data.table` के columns बनेंगे।
+
+* क्योंकि `lapply()` एक `list` लौटाता है, इसे अतिरिक्त `.()` में wrap करने की आवश्यकता नहीं (आवश्यक हो तो [यह tip](#tip-1) देखें)।
+
+हम लगभग वहाँ पहुँच गए। एक छोटी बात बाकी है। हमारे `flights` `data.table` में हम केवल `arr_delay` और `dep_delay` दो columns का `mean()` calculate करना चाहते थे। लेकिन default रूप से `.SD` में grouping variables के अलावा सभी columns होंगे।
+
+#### -- केवल वे columns कैसे specify करें जिन पर `mean()` compute करना है?
+
+#### .SDcols
+
+Argument `.SDcols` का उपयोग करें। यह column names या column indices स्वीकार करता है। उदाहरण `.SDcols = c("arr_delay", "dep_delay")` सुनिश्चित करता है कि प्रत्येक group के लिए `.SD` में केवल ये दो columns हों।
+
+[Part g)](#refer-j) की तरह, रखने वाले columns के बजाय हटाने वाले columns भी `-` या `!` से specify कर सकते हैं। इसके अलावा consecutive columns को `colA:colB` से select और `!(colA:colB)` या `-(colA:colB)` से deselect कर सकते हैं।
+
+अब `.SD` और `.SDcols` का उपयोग करके `origin`, `dest` और `month` से grouped `arr_delay` और `dep_delay` columns का `mean()` निकालते हैं।
+
+```{r}
+flights[carrier == "AA",                       ## Only on trips with carrier "AA"
+        lapply(.SD, mean),                     ## compute the mean
+        by = .(origin, dest, month),           ## for every 'origin,dest,month'
+        .SDcols = c("arr_delay", "dep_delay")] ## for just those specified in .SDcols
+```
+
+### f) प्रत्येक group के लिए `.SD` subset करना:
+
+#### -- प्रत्येक `month` के लिए पहली दो rows कैसे लौटाएँ?
+
+```{r}
+ans <- flights[, head(.SD, 2), by = month]
+head(ans)
+```
+
+* `.SD` एक `data.table` है जो *उस group* की सभी rows रखता है। हम केवल पहली दो rows subset करते हैं, जैसा [यहाँ](#subset-rows-integer) पहले देखा।
+
+* प्रत्येक group के लिए `head(.SD, 2)` पहली दो rows `data.table` के रूप में लौटाता है, जो स्वयं `list` भी है, इसलिए इसे `.()` में wrap करने की आवश्यकता नहीं।
+
+### g) `j` को इतना flexible क्यों रखा गया है?
+
+ताकि syntax consistent रहे और नए functions सीखने के बजाय पहले से उपलब्ध (और familiar) base functions उपयोग करते रहें। इसे दिखाने के लिए उस `data.table` `DT` का उपयोग करते हैं जिसे शुरुआत में [What is a data.table?](#what-is-datatable-1a) section में बनाया था।
+
+#### -- `ID` के प्रत्येक group के लिए columns `a` और `b` को concatenate कैसे करें?
+
+```{r}
+DT[, .(val = c(a,b)), by = ID]
+```
+
+* बस इतना ही। किसी special syntax की आवश्यकता नहीं। केवल vectors concatenate करने वाला base function `c()` और [पहले वाली tip](#tip-1) जानना पर्याप्त है।
+
+#### -- यदि columns `a` और `b` की सभी values concatenate करनी हों, लेकिन list column के रूप में return करनी हों तो?
+
+```{r}
+DT[, .(val = list(c(a,b))), by = ID]
+```
+
+* यहाँ पहले प्रत्येक group के लिए `c(a,b)` से values concatenate करते हैं और उसे `list()` में wrap करते हैं। इसलिए प्रत्येक group के लिए सभी concatenated values की list लौटती है।
+
+* ध्यान दें कि commas केवल display के लिए हैं। List column की प्रत्येक cell में कोई भी object हो सकता है; इस example में प्रत्येक cell स्वयं एक vector है और कुछ cells में vectors दूसरों से लंबे हैं।
+
+जब आप `j` का उपयोग internalise करना शुरू करेंगे, तो syntax की शक्ति समझ आएगी। इसे समझने का बहुत उपयोगी तरीका है `print()` की मदद से प्रयोग करना।
+
+उदाहरण:
+
+```{r}
+## look at the difference between
+DT[, print(c(a,b)), by = ID] # (1)
+
+## and
+DT[, print(list(c(a,b))), by = ID] # (2)
+```
+
+```{r, echo = FALSE}
+p = function(x) paste0('<code>', paste(deparse(substitute(x)), collapse = ' '), ' = ', x, '</code>')
+```
+
+(1) में प्रत्येक group के लिए length = 6,4,2 वाला vector लौटता है। जबकि (2) प्रत्येक group के लिए length 1 की list लौटाता है, जिसकी पहली element में length 6,4,2 के vectors होते हैं। इसलिए (1) की length `{r} p(6+4+2)` होती है, जबकि (2) `{r} p(1+1+1)` लौटाता है।
+
+`j` की flexibility हमें किसी भी list object को data.table के element के रूप में store करने देती है। उदाहरण के लिए जब statistical models groups पर fit किए जाते हैं, तो इन models को data.table में store किया जा सकता है। Code concise और समझने में आसान रहता है।
+
+```{r}
+## Do long distance flights cover up departure delay more than short distance flights?
+## Does cover up vary by month?
+flights[, `:=`(makeup = dep_delay - arr_delay)]
+
+makeup.models <- flights[, .(fit = list(lm(makeup ~ distance))), by = .(month)]
+makeup.models[, .(coefdist = coef(fit[[1]])[2], rsq = summary(fit[[1]])$r.squared), by = .(month)]
+```
+
+Data.frames का उपयोग करके वही result प्राप्त करने के लिए अधिक complicated code चाहिए।
+
+```{r}
+setDF(flights)
+flights.split <- split(flights, f = flights$month)
+makeup.models.list <- lapply(flights.split, function(df) c(month = df$month[1], fit = list(lm(makeup ~ distance, data = df))))
+makeup.models.df <- do.call(rbind, makeup.models.list)
+data.frame(t(sapply(
+  makeup.models.df[, "fit"],
+  function(model) c(coefdist = coef(model)[2L], rsq =  summary(model)$r.squared)
+)))
+setDT(flights)
+```
+
+## सारांश
+
+`data.table` syntax का general form है:
+
+```r
+DT[i, j, by]
+```
+
+अब तक हमने देखा कि,
+
+#### `i` का उपयोग:
+
+* हम `data.frame` की तरह rows subset कर सकते हैं - अंतर यह है कि `DT$` बार-बार लिखने की आवश्यकता नहीं क्योंकि `data.table` के frame के भीतर columns variables की तरह दिखाई देते हैं।
+
+* `order()` से `data.table` sort भी कर सकते हैं, जो बेहतर performance के लिए internally data.table का fast order उपयोग करता है।
+
+`data.table` को key करके `i` में इससे भी बहुत अधिक किया जा सकता है, जिससे बहुत तेज़ subsets और joins संभव होते हैं। इसे [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) और [`vignette("datatable-joins", package="data.table")`](datatable-joins.html) vignettes में देखेंगे।
+
+#### `j` का उपयोग:
+
+1. Columns को `data.table` तरीके से select करें: `DT[, .(colA, colB)]`।
+
+2. Columns को `data.frame` तरीके से select करें: `DT[, c("colA", "colB")]`।
+
+3. Columns पर compute करें: `DT[, .(sum(colA), mean(colB))]`।
+
+4. आवश्यकता हो तो names दें: `DT[, .(sA = sum(colA), mB = mean(colB))]`।
+
+5. `i` के साथ combine करें: `DT[colA > value, sum(colB)]`।
+
+#### `by` का उपयोग:
+
+* `by` का उपयोग करके columns की *list*, column names का *character vector*, या यहाँ तक कि *expressions* देकर group कर सकते हैं। `j` की flexibility, `by` और `i` के साथ मिलकर बहुत powerful syntax बनाती है।
+
+* `by` multiple columns और *expressions* दोनों handle कर सकता है।
+
+* Grouped result automatically sort करने के लिए grouping columns को `keyby` कर सकते हैं।
+
+* परिचित base functions का उपयोग करके multiple columns पर operate करने के लिए `j` में `.SD` और `.SDcols` उपयोग कर सकते हैं। कुछ examples:
+
+    1. `DT[, lapply(.SD, fun), by = ..., .SDcols = ...]` - `by` में specified columns से grouping करते हुए `.SDcols` में specified सभी columns पर `fun` apply करता है।
+
+    2. `DT[, head(.SD, 2), by = ...]` - प्रत्येक group की पहली दो rows return करता है।
+
+    3. `DT[col > val, head(.SD, 1), by = ...]` - `i` को `j` और `by` के साथ combine करता है।
+
+#### और tip याद रखें:
+
+जब तक `j` एक `list` लौटाता है, list का प्रत्येक element resulting `data.table` में एक column बन जाएगा।
+
+[अगले विगनेट (`vignette("datatable-reference-semantics", package="data.table")`)](datatable-reference-semantics.html) में देखेंगे कि columns को *by reference add/update/delete* कैसे करें और उन्हें `i` तथा `by` के साथ कैसे combine करें।
+
+***
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

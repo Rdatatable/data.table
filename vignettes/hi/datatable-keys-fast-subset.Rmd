@@ -1,0 +1,501 @@
+---
+title: "Keys और तेज़ binary-search आधारित subset"
+date: "`{r} Sys.Date()`"
+output:
+  litedown::html_format
+vignette: >
+  %\VignetteIndexEntry{Keys and fast binary search based subset}
+  %\VignetteEngine{litedown::vignette}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`{r} .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ")
+.old.th = setDTthreads(1)
+```
+
+यह विगनेट उन पाठकों के लिए है जो पहले से *data.table* syntax, उसके general form, `i` में rows subset करने, columns पर select और compute करने, `j` में columns को *by reference* add/modify/delete करने तथा `by` का उपयोग करके group करने से परिचित हैं। यदि आप इन concepts से परिचित नहीं हैं, तो पहले [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) और [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) विगनेट पढ़ें।
+
+***
+
+## डेटा {#data}
+
+हम वही `flights` डेटा उपयोग करेंगे जो [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में उपयोग किया गया है।
+
+```{r, echo = FALSE}
+options(width = 100L)
+```
+
+```{r}
+flights <- fread("flights14.csv")
+head(flights)
+dim(flights)
+```
+
+## परिचय
+
+इस विगनेट में हम
+
+* पहले *data.table* में `key` की अवधारणा प्रस्तुत करेंगे, और `i` में *fast binary search* आधारित subsets करने के लिए keys सेट और उपयोग करेंगे,
+
+* देखेंगे कि key-based subsets को `j` और `by` के साथ ठीक उसी तरह combine किया जा सकता है जैसा पहले किया था,
+
+* अन्य उपयोगी arguments - `mult` और `nomatch` - देखेंगे,
+
+* और अंत में keys सेट करने के लाभ को देखकर निष्कर्ष निकालेंगे - *fast binary search based subsets* करना और उसकी तुलना traditional vector scan approach से करना।
+
+## 1. Keys
+
+### a) *Key* क्या है?
+
+[`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में हमने देखा कि `i` में logical expressions, row numbers और `order()` का उपयोग करके rows subset कैसे की जाती हैं। इस section में subsetting का एक और बेहद तेज़ तरीका देखेंगे - *keys* का उपयोग।
+
+लेकिन पहले *data.frames* से शुरुआत करते हैं। सभी *data.frames* में row names attribute होता है। नीचे दिए *data.frame* `DF` पर विचार करें।
+
+```{r}
+set.seed(1L)
+DF = data.frame(ID1 = sample(letters[1:2], 10, TRUE),
+                ID2 = sample(1:3, 10, TRUE),
+                val = sample(10),
+                stringsAsFactors = FALSE,
+                row.names = sample(LETTERS[1:10]))
+DF
+
+rownames(DF)
+```
+
+हम उसके row name का उपयोग करके किसी particular row को *subset* कर सकते हैं, जैसा नीचे दिखाया गया है:
+
+```{r}
+DF["C", ]
+```
+
+अर्थात row names लगभग *data.frame* की rows के लिए *index* की तरह होते हैं। हालाँकि,
+
+1. प्रत्येक row के लिए *ठीक एक* row name ही हो सकता है।
+
+    लेकिन किसी व्यक्ति (उदाहरण के लिए) के कम से कम दो names होते हैं - *first* और *second* name। Telephone directory को पहले *surname* और फिर *first name* के आधार पर व्यवस्थित करना उपयोगी होता है।
+
+2. और row names *unique* होने चाहिए।
+
+    ```r
+    rownames(DF) = sample(LETTERS[1:5], 10, TRUE)
+    # Warning: non-unique values when setting 'row.names': 'C', 'D'
+    # Error in `.rowNamesDF<-`(x, value = value): duplicate 'row.names' are not allowed
+    ```
+
+अब इसे *data.table* में convert करते हैं।
+
+```{r}
+DT = as.data.table(DF)
+DT
+
+rownames(DT)
+```
+
+* ध्यान दें कि row names reset हो गए हैं।
+
+* *data.tables* row names का कभी उपयोग नहीं करता। क्योंकि *data.tables*, *data.frames* से **inherit** करते हैं, इसलिए row names attribute फिर भी मौजूद होता है। लेकिन उसका उपयोग नहीं होता। थोड़ी देर में इसका कारण देखेंगे।
+
+    यदि आप row names सुरक्षित रखना चाहते हैं, तो `as.data.table()` में `keep.rownames = TRUE` उपयोग करें - इससे `rn` नाम का नया column बनेगा और row names उस column में assign होंगे।
+
+इसके बजाय *data.tables* में हम `keys` सेट और उपयोग करते हैं। `key` को **supercharged rownames** की तरह समझें।
+
+#### Keys और उनकी properties {#key-properties}
+
+1. हम *multiple columns* पर keys सेट कर सकते हैं और columns *different types* के हो सकते हैं -- *integer*, *numeric*, *character*, *factor*, *integer64* आदि। *list* और *complex* types अभी supported नहीं हैं।
+
+2. Uniqueness enforce नहीं की जाती, अर्थात duplicate key values allowed हैं। क्योंकि rows key के अनुसार sorted होती हैं, key columns में duplicates लगातार दिखाई देंगे।
+
+3. `key` सेट करने से *दो* काम होते हैं:
+
+    a. दिए गए column(s) के आधार पर *data.table* की rows को *by reference*, हमेशा *increasing* order में, physically reorder करता है।
+
+    b. `sorted` नाम का attribute *data.table* पर सेट करके उन columns को *key* columns के रूप में mark करता है।
+
+    क्योंकि rows reorder होती हैं, इसलिए एक *data.table* में अधिकतम एक key हो सकती है; उसे एक से अधिक तरीकों से simultaneously sort नहीं किया जा सकता।
+
+बाकी विगनेट में हम `flights` dataset के साथ काम करेंगे।
+
+### b) *data.table* पर keys सेट करना, प्राप्त करना और उपयोग करना
+
+#### -- *data.table* `flights` में `origin` column को key के रूप में कैसे सेट करें?
+
+```{r}
+setkey(flights, origin)
+head(flights)
+
+## alternatively we can provide character vectors to the function 'setkeyv()'
+# setkeyv(flights, "origin") # useful to program with
+```
+
+* आप `setkey()` function का उपयोग करके column names दे सकते हैं (बिना quote किए)। Interactive use के दौरान यह उपयोगी है।
+
+* वैकल्पिक रूप से column names का character vector `setkeyv()` function को pass कर सकते हैं। Functions बनाते समय columns को function arguments के रूप में key सेट करने के लिए pass करना हो तो यह विशेष रूप से उपयोगी है।
+
+* ध्यान दें कि result को वापस किसी variable को assign नहीं करना पड़ा। ऐसा इसलिए क्योंकि [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) विगनेट में देखे `:=` की तरह, `setkey()` और `setkeyv()` input *data.table* को *by reference* modify करते हैं। वे result invisibly लौटाते हैं।
+
+* अब *data.table* दिए गए column - `origin` - के अनुसार reorder (या sort) हो गया है। क्योंकि reorder by reference होता है, हमें केवल *data.table* की rows की संख्या के बराबर length वाले एक column जितनी अतिरिक्त memory चाहिए, इसलिए यह बहुत memory efficient है।
+
+* `data.table()` function से *data.tables* बनाते समय `key` argument का उपयोग करके सीधे keys भी सेट कर सकते हैं। यह column names का character vector लेता है।
+
+#### set* और `:=`:
+
+*data.table* में `:=` operator और सभी `set*` functions (जैसे `setkey`, `setorder`, `setnames` आदि) ही input object को *by reference* modify करते हैं।
+
+जब आप किसी *data.table* को कुछ columns पर *key* कर देते हैं, तो `i` में `.()` notation का उपयोग करके उन key columns पर query करके subset कर सकते हैं। याद रखें कि `.()` वास्तव में `list()` का *alias* है।
+
+#### -- Key column `origin` का उपयोग करके वे सभी rows subset करें जहाँ origin airport *"JFK"* से मेल खाता है
+
+```{r}
+flights[.("JFK")]
+
+## alternatively
+# flights[J("JFK")] (or)
+# flights[list("JFK")]
+```
+
+* *Key* column पहले ही `origin` पर set है। इसलिए value, यहाँ *"JFK"*, सीधे देना पर्याप्त है। `.()` syntax यह पहचानने में मदद करता है कि task में *data.table* के key column में *"JFK"* value lookup करनी है (यहाँ `flights` *data.table* का `origin` column)।
+
+* पहले `origin` में *"JFK"* value से संबंधित *row indices* प्राप्त होते हैं। और क्योंकि `j` में कोई expression नहीं है, उन row indices से संबंधित सभी columns लौटाए जाते हैं।
+
+* *Character* type की single-column key पर subsetting करते समय `.()` notation छोड़ी जा सकती है और values सीधे उपयोग की जा सकती हैं, ठीक वैसे जैसे *data.frames* पर row names से subset करते हैं।
+
+    ```r
+    flights["JFK"]              ## same as flights[.("JFK")]
+    ```
+
+* आवश्यकता अनुसार किसी भी संख्या में values subset कर सकते हैं
+
+    ```r
+    flights[c("JFK", "LGA")]    ## same as flights[.(c("JFK", "LGA"))]
+    ```
+
+    यह वे सभी columns लौटाता है जो उन rows से संबंधित हैं जहाँ `origin` column या तो *"JFK"* या *"LGA"* से match करता है।
+
+#### -- कैसे पता करें कि *data.table* किन column(s) से keyed है?
+
+`key()` function का उपयोग करके।
+
+```{r}
+key(flights)
+```
+
+* यह सभी key columns का character vector लौटाता है।
+
+* यदि कोई key set नहीं है, तो `NULL` लौटाता है।
+
+### c) Keys और multiple columns
+
+दोहराने के लिए, *keys* *supercharged* row names जैसे हैं। हम multiple columns पर key सेट कर सकते हैं और वे विभिन्न types के हो सकते हैं।
+
+#### -- `origin` *और* `dest` दोनों columns पर keys कैसे सेट करें?
+
+```{r}
+setkey(flights, origin, dest)
+head(flights)
+
+## or alternatively
+# setkeyv(flights, c("origin", "dest")) # provide a character vector of column names
+
+key(flights)
+```
+
+* यह *data.table* को पहले `origin` column और फिर `dest` के अनुसार *by reference* sort करता है।
+
+#### -- Key columns का उपयोग करके वे सभी rows subset करें जहाँ पहली key column `origin` *"JFK"* से और दूसरी key column `dest` *"MIA"* से match करती है
+
+```{r}
+flights[.("JFK", "MIA")]
+```
+
+#### यहाँ subset कैसे काम करता है? {#multiple-key-point}
+
+* Internally यह कैसे काम करता है, इसे समझना महत्वपूर्ण है। पहले *"JFK"* को पहली key column `origin` से match किया जाता है। फिर *उन matching rows के भीतर* *"MIA"* को दूसरी key column `dest` से match किया जाता है, जिससे वे *row indices* प्राप्त होते हैं जहाँ `origin` और `dest` दोनों दिए गए values से match करते हैं।
+
+* क्योंकि `j` नहीं दिया गया है, हम उन row indices से संबंधित *सभी columns* सीधे लौटाते हैं।
+
+#### -- वे सभी rows subset करें जहाँ केवल पहली key column `origin` *"JFK"* से match करती है
+
+```{r}
+key(flights)
+
+flights[.("JFK")] ## or in this case simply flights["JFK"], for convenience
+```
+
+* क्योंकि हमने दूसरी key column `dest` के लिए कोई value नहीं दी, यह केवल पहली key column `origin` में *"JFK"* match करता है और सभी matching rows लौटाता है।
+
+#### -- वे सभी rows subset करें जहाँ केवल दूसरी key column `dest` *"MIA"* से match करती है
+
+```{r}
+flights[.(unique(origin), "MIA")]
+```
+
+#### यहाँ क्या हो रहा है?
+
+* [इसे](#multiple-key-point) फिर पढ़ें। दूसरी key column के लिए दी गई value *"MIA"* को `dest` key column में matching values *उन matching rows पर* ढूँढनी होती हैं जो पहली key column `origin` से मिली हैं। हम *पहले* आने वाले key columns की values skip नहीं कर सकते। इसलिए key column `origin` की *सभी* unique values देते हैं।
+
+* *"MIA"* अपने आप `unique(origin)` की length, जो *3* है, के अनुरूप recycle हो जाता है।
+
+## 2. Keys को `j` और `by` के साथ combine करना
+
+अब तक हमने एक ही concept देखा है -- `i` में *row indices* प्राप्त करना, लेकिन एक अलग method, `keys`, का उपयोग करके। इसलिए यह आश्चर्यजनक नहीं होना चाहिए कि `j` और `by` में वही सब किया जा सकता है जो पिछले vignettes में देखा था। कुछ examples से इसे highlight करेंगे।
+
+### a) `j` में select करना
+
+#### -- `origin = "LGA"` और `dest = "TPA"` के अनुरूप `arr_delay` column को *data.table* के रूप में लौटाएँ।
+
+```{r}
+key(flights)
+flights[.("LGA", "TPA"), .(arr_delay)]
+```
+
+* `origin == "LGA"` और `dest == "TPA"` से संबंधित *row indices* *key-based subset* का उपयोग करके प्राप्त होते हैं।
+
+* Row indices मिलने के बाद `j` को देखते हैं, जिसमें केवल `arr_delay` column चाहिए। इसलिए उन *row indices* के लिए `arr_delay` column को उसी तरह select करते हैं जैसा [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) विगनेट में देखा था।
+
+* हम `with = FALSE` का उपयोग करके भी result लौटा सकते थे।
+
+    ```r
+    flights[.("LGA", "TPA"), "arr_delay", with = FALSE]
+    ```
+
+### b) Chaining
+
+#### -- ऊपर प्राप्त result पर chaining का उपयोग करके column को decreasing order में व्यवस्थित करें।
+
+```{r}
+flights[.("LGA", "TPA"), .(arr_delay)][order(-arr_delay)]
+```
+
+### c) `j` में compute या *do* करना
+
+#### -- `origin = "LGA"` और `dest = "TPA"` के अनुरूप maximum arrival delay ज्ञात करें।
+
+```{r}
+flights[.("LGA", "TPA"), max(arr_delay)]
+```
+
+* हम verify कर सकते हैं कि result पिछले example की पहली value (486) के समान है।
+
+### d) `j` में `:=` का उपयोग करके by reference *sub-assign* करना
+
+यह example हम [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) विगनेट में पहले देख चुके हैं। आइए `flights` *data.table* में उपलब्ध सभी `hours` देखें:
+
+```{r}
+# get all 'hours' in flights
+flights[, sort(unique(hour))]
+```
+
+हम देखते हैं कि डेटा में कुल `25` unique values हैं। *0* और *24* दोनों hours मौजूद प्रतीत होते हैं। आइए *24* को *0* से बदलें, लेकिन इस बार *key* का उपयोग करके।
+
+```{r}
+setkey(flights, hour)
+key(flights)
+flights[.(24), hour := 0L]
+key(flights)
+```
+
+* पहले `key` को `hour` पर set करते हैं। इससे `flights`, `hour` column के अनुसार reorder होता है और वह column `key` column के रूप में mark हो जाता है।
+
+* अब `.()` notation का उपयोग करके `hour` पर subset कर सकते हैं। हम *24* value के लिए subset करते हैं और संबंधित *row indices* प्राप्त करते हैं।
+
+* और उन row indices पर `key` column को value `0` से replace करते हैं।
+
+* क्योंकि हमने *key* column की values replace की हैं, *data.table* `flights` अब `hour` के अनुसार sorted नहीं है। इसलिए key automatically `NULL` set होकर हट जाती है।
+
+अब `hour` column में कोई *24* नहीं होना चाहिए।
+
+```{r}
+flights[, sort(unique(hour))]
+```
+
+### e) `by` का उपयोग करके aggregation
+
+पहले key को वापस `origin, dest` पर set करते हैं।
+
+```{r}
+setkey(flights, origin, dest)
+key(flights)
+```
+
+#### -- `origin = "JFK"` के अनुरूप प्रत्येक `month` के लिए maximum departure delay प्राप्त करें। Result को `month` के अनुसार order करें
+
+```{r}
+ans <- flights["JFK", max(dep_delay), keyby = month]
+head(ans)
+key(ans)
+```
+
+* हम *key* column `origin` पर subset करके *"JFK"* से संबंधित *row indices* प्राप्त करते हैं।
+
+* Row indices मिल जाने के बाद हमें केवल दो columns चाहिए - group करने के लिए `month` और प्रत्येक group का `max()` प्राप्त करने के लिए `dep_delay`। इसलिए *data.table* का query optimisation speed और memory efficiency के लिए `i` में मिले *row indices* से संबंधित केवल इन दो columns को subset करता है।
+
+* और उस subset पर *month* से group करके `max(dep_delay)` compute करते हैं।
+
+* हम `keyby` का उपयोग result को *month* से automatically key करने के लिए करते हैं। अब इसका अर्थ स्पष्ट है। Ordering के अलावा यह *month* को `key` column भी set करता है।
+
+## 3. अतिरिक्त arguments - `mult` और `nomatch`
+
+### a) *mult* argument
+
+`mult` argument का उपयोग करके प्रत्येक query के लिए चुन सकते हैं कि *सभी* matching rows लौटाई जाएँ, या केवल *पहली* अथवा *अंतिम*। Default value *"all"* है - यही अब तक देखा है।
+
+#### -- उन सभी rows में से केवल पहली matching row subset करें जहाँ `origin` *"JFK"* से और `dest` *"MIA"* से match करता है
+
+```{r}
+flights[.("JFK", "MIA"), mult = "first"]
+```
+
+#### -- उन सभी rows में से केवल अंतिम matching row subset करें जहाँ `origin` *"LGA", "JFK", "EWR"* से और `dest` *"XNA"* से match करता है
+
+```{r}
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last"]
+```
+
+* Query *"JFK", "XNA"* `flights` में किसी row से match नहीं करती, इसलिए `NA` लौटाती है।
+
+* एक बार फिर, दूसरी key column `dest` की query *"XNA"* को पहली key column `origin` की query की length के अनुरूप recycle किया जाता है, जिसकी length 3 है।
+
+### b) *nomatch* argument
+
+`nomatch` argument का उपयोग करके चुन सकते हैं कि match न होने वाली queries `NA` लौटाएँ या पूरी तरह skip हो जाएँ।
+
+#### -- पिछले example से, केवल तब सभी rows subset करें जब match हो
+
+```{r}
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
+```
+
+* `nomatch` की default value `NA` है। `nomatch = NULL` set करने से no-match queries skip हो जाती हैं।
+
+* Query “JFK”, “XNA” flights में किसी row से match नहीं करती और इसलिए skip हो जाती है।
+
+## 4. Binary search बनाम vector scans
+
+अब तक हमने देखा कि keys को set और use करके subset कैसे किया जाता है। लेकिन इसका लाभ क्या है? उदाहरण के लिए, यह करने के बजाय:
+
+```r
+# key by origin,dest columns
+flights[.("JFK", "MIA")]
+```
+
+हम यह कर सकते थे:
+
+```r
+flights[origin == "JFK" & dest == "MIA"]
+```
+
+एक स्पष्ट लाभ छोटा syntax है। लेकिन उससे भी अधिक महत्वपूर्ण, *binary search आधारित subsets* **बहुत तेज़** होते हैं।
+
+समय के साथ `data.table` में नए optimizations जुड़ते रहे हैं और वर्तमान में बाद वाली call अपने आप *binary search* उपयोग करने के लिए optimized हो जाती है।
+Slow *vector scan* उपयोग करने के लिए key हटानी पड़ती है।
+
+```r
+setkey(flights, NULL)
+flights[origin == "JFK" & dest == "MIA"]
+```
+
+### a) Binary search approach का performance
+
+समझाने के लिए 20 million rows और तीन columns वाला sample *data.table* बनाते हैं और columns `x` और `y` पर key करते हैं।
+
+```{r}
+set.seed(2L)
+N = 2e7L
+DT = data.table(x = sample(letters, N, TRUE),
+                y = sample(1000L, N, TRUE),
+                val = runif(N))
+print(object.size(DT), units = "MiB")
+```
+
+`DT` लगभग 380MiB है। यह वास्तव में बहुत बड़ा नहीं है, लेकिन concept दिखाने के लिए पर्याप्त है।
+
+Introduction to data.table section में हमने जो देखा, उसके आधार पर वे rows जहाँ `x = "g"` और `y = 877` हैं, इस प्रकार subset की जा सकती हैं:
+
+```{r}
+key(DT)
+## (1) Usual way of subsetting - vector scan approach
+t1 <- system.time(ans1 <- DT[x == "g" & y == 877L])
+t1
+head(ans1)
+dim(ans1)
+```
+
+अब keys का उपयोग करके subset करने का प्रयास करते हैं।
+
+```{r}
+setkeyv(DT, c("x", "y"))
+key(DT)
+## (2) Subsetting using keys
+t2 <- system.time(ans2 <- DT[.("g", 877L)])
+t2
+head(ans2)
+dim(ans2)
+
+identical(ans1$val, ans2$val)
+```
+
+* Speed-up **~`{r} round(t1[3]/max(t2[3], .001))`x** है!
+
+### b) *data.table* को key करने से subsets इतने तेज़ क्यों होते हैं?
+
+इसे समझने के लिए पहले देखते हैं कि *vector scan approach* (method 1) क्या करता है।
+
+#### Vector scan approach
+
+* Column `x` में value *"g"* को सभी 20 million rows पर एक-एक करके खोजा जाता है। इससे size 20 million का *logical vector* बनता है, जिसमें `x` की value के अनुसार `TRUE, FALSE या NA` values होती हैं।
+
+* इसी प्रकार, column `y` में `877` को सभी 20 million rows पर एक-एक करके खोजा जाता है और एक अन्य logical vector में store किया जाता है।
+
+* Intermediate logical vectors पर element-wise `&` operations किए जाते हैं और वे सभी rows लौटती हैं जहाँ expression `TRUE` evaluate होती है।
+
+इसे हम *vector scan approach* कहते हैं। यह काफी inefficient है, विशेष रूप से बड़ी tables पर और repeated subsetting की स्थिति में, क्योंकि हर बार सभी rows scan करनी पड़ती हैं।
+
+अब binary search approach (method 2) देखते हैं। [Properties of key](#key-properties) से याद करें - *keys सेट करने से data.table key columns के अनुसार reorder होता है*। क्योंकि data sorted है, हमें *पूरे column की length scan नहीं करनी पड़ती*! इसके बजाय *binary search* का उपयोग करके value को `O(log n)` में खोज सकते हैं, जबकि *vector scan approach* में `O(n)` लगता है; यहाँ `n`, *data.table* की rows की संख्या है।
+
+#### Binary search approach
+
+यहाँ एक बहुत सरल illustration है। नीचे दिए (sorted) numbers पर विचार करें:
+
+```
+1, 5, 10, 19, 22, 23, 30
+```
+
+मान लें binary search का उपयोग करके value *1* की matching position ढूँढनी है। क्योंकि हमें पता है कि data *sorted* है, हम इस प्रकार आगे बढ़ेंगे:
+
+* बीच की value = 19 से शुरू करें। क्या 1 == 19? नहीं। 1 < 19।
+
+* क्योंकि खोजी जाने वाली value 19 से छोटी है, वह 19 से पहले कहीं होनी चाहिए। इसलिए >= 19 वाले शेष आधे हिस्से को discard कर सकते हैं।
+
+* अब set घटकर *1, 5, 10* रह गया। फिर middle value = 5 लें। क्या 1 == 5? नहीं। 1 < 5।
+
+* अब set घटकर *1* रह गया। क्या 1 == 1? हाँ। संबंधित index भी 1 है। और यही एकमात्र match है।
+
+इसके विपरीत vector scan approach को सभी values (यहाँ 7) scan करनी पड़तीं।
+
+हम देख सकते हैं कि प्रत्येक search के साथ searches की संख्या आधी होती जाती है। इसी कारण *binary search* आधारित subsets **अत्यंत तेज़** होते हैं। क्योंकि *data.tables* के प्रत्येक column की rows memory में contiguous locations पर रहती हैं, operations बहुत cache-efficient तरीके से होते हैं (यह भी *speed* बढ़ाता है)।
+
+इसके अतिरिक्त, क्योंकि matching row indices सीधे मिल जाते हैं और उन विशाल logical vectors (जिनकी length *data.table* की rows के बराबर होती है) को बनाने की आवश्यकता नहीं होती, यह काफी **memory efficient** भी है।
+
+## सारांश
+
+इस विगनेट में हमने *data.table* को key करके `i` में rows subset करने का एक और method सीखा। Keys set करने से *binary search* के माध्यम से बहुत तेज़ subsets किए जा सकते हैं। विशेष रूप से हमने देखा कि कैसे
+
+* *data.table* पर key set करें और key का उपयोग करके subset करें।
+
+* keys के माध्यम से subset करें, जो `i` में *row indices* प्राप्त करता है, लेकिन बहुत तेज़।
+
+* key-based subsets को `j` और `by` के साथ combine करें। ध्यान दें कि `j` और `by` operations पहले जैसे ही हैं।
+
+Key-based subsets **अत्यंत तेज़** होते हैं और विशेष रूप से तब उपयोगी हैं जब task में *repeated subsetting* शामिल हो। लेकिन key set करके *data.table* को physically reorder करना हमेशा desirable नहीं हो सकता। [अगले विगनेट (`vignette("datatable-secondary-indices-and-auto-indexing", package="data.table")`)](datatable-secondary-indices-and-auto-indexing.html) में हम इसे एक *नई* feature -- *secondary indexes* -- से address करेंगे।
+
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
