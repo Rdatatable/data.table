@@ -10,6 +10,11 @@ copy_names = function(ans, nm) {
   ans
 }
 
+floor_to_int = function(x) {
+  if (is.double(x) && !inherits(x, "integer64")) as.integer(floor(unclass(x)))
+  else as.integer(x)
+}
+
 as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
   if (is.character(x)) {
@@ -23,7 +28,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
     # standard epoch
     nm = names(x)
-    x = as.integer(x)
+    x = floor_to_int(x)
     class(x) = c("IDate", "Date")
     # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
     # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now >3.1.0, we can use class<- again
@@ -32,13 +37,13 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     copy_names(x, nm)
   } else {
     # only call expensive as.IDate.character if we have to
-    as.IDate(origin, ...) + copy_names(as.integer(x), names(x))
+    as.IDate(origin, ...) + copy_names(floor_to_int(x), names(x))
   }
 }
 
 as.IDate.Date = function(x, ...) {
   nm = names(x)
-  x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
+  x = floor_to_int(x)                 # if already integer, x will be left unchanged as the original input
   class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
   copy_names(x, nm)
 }
