@@ -1344,7 +1344,9 @@ static int detect_types(const char **pch, int ncol, bool *bumped)
       }
       if (*ch == quote && quote) {  // && quote to exclude quote='\0' (user passed quote="")
         ch++;
+        skip_white(&ch);
         fun[tmpType[field]](&fctx);
+        skip_white(&ch);
         if (*ch == quote) {
           ch++;
           skip_white(&ch);
@@ -2685,10 +2687,12 @@ int freadMain(freadMainArgs _args)
                 if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
                 if (*tch == quote && quote) { quoted = true; tch++; }
               } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
+              if (quoted) skip_white(&tch);
               fun[IGNORE_BUMP(thisType)](&fctx);
     
               bool typeBump = false;
               if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
+                skip_white(&tch);
                 if (*tch == quote) tch++;
                 else typeBump = true;
               }
