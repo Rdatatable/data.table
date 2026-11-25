@@ -276,7 +276,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     call_args = names(match.call())
     if (is.character(skip))
       warningf("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
-    yaml_res = .read_yaml_header(input, skip, verbose)
+    yaml_res = .read_yaml_header(input, skip, verbose, input_is_data = !identical(input, file))  # file is NULL when input is the data itself, #7896
     yaml_header = yaml_res$yaml_header
     n_read = yaml_res$n_read
     yaml_names = names(yaml_header)
@@ -450,10 +450,11 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 }
 
 # nocov start. Covered only in other.Rraw
-.read_yaml_header = function(f, skip, verbose) {
+.read_yaml_header = function(f, skip, verbose, input_is_data=FALSE) {
   # create connection to stream header lines from file:
   #   https://stackoverflow.com/questions/9871307
-  con = base::file(f, 'r')
+  # f can also be the data itself (text= or input= with \n or \r). Decided by the caller rather than by looking for \n in f, since a file name may contain a newline, #7896
+  con = if (input_is_data) textConnection(f) else base::file(f, 'r')
   # NB: close() won't be right if 'f' itself can be a file connection (#561)
   on.exit(close(con))
 
