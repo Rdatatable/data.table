@@ -96,6 +96,8 @@
 
 21. GForce grouping is again faster when running single-threaded, e.g. after `setDTthreads(1)`, [#3330](https://github.com/Rdatatable/data.table/issues/3330). The batching used to parallelize `gsum()` and `gmean()` is skipped when only one thread is available. Also, `mean()` of an `integer` or `logical` column by group no longer coerces the whole column to `double` first, which made it slower than in v1.12.0 regardless of the number of threads. Thanks @jangorecki for the benchmarks, @mattdowle for the report, and @ben-schwen for the fix.
 
+22. `as.IDate()` now correctly handles fractional `Date` and numeric inputs by rounding down instead of truncating toward zero, [#7952](https://github.com/Rdatatable/data.table/issues/7952). Thanks to @TimTaylor for reporting, @ben-schwen for suggesting the approach, and @simplymayank for implementing the fix.
+
 ### Notes
 
 1. {data.table} now depends on R 3.5.0 (2018).
