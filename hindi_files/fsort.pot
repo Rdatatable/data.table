@@ -1,0 +1,74 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fsort 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fsort.c:106
+msgid "Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"
+msgstr ""
+
+#: fsort.c:119
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr ""
+
+#: fsort.c:121
+msgid "x must be a vector of type double currently"
+msgstr ""
+
+#: fsort.c:147
+#, c-format
+msgid "Failed to allocate %d bytes in fsort()."
+msgstr ""
+
+#: fsort.c:173
+#, c-format
+msgid "Range = [%g,%g]\n"
+msgstr ""
+
+#: fsort.c:174
+msgid "Cannot yet handle negatives."
+msgstr ""
+
+#: fsort.c:196
+#, c-format
+msgid ""
+"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize="
+"%<PRIu64>)\n"
+msgstr ""
+
+#: fsort.c:266
+msgid "Top 20 MSB counts: "
+msgstr ""
+
+#: fsort.c:266
+#, c-format
+msgid "%<PRId64> "
+msgstr ""
+
+#: fsort.c:266
+msgid "\n"
+msgstr ""
+
+#: fsort.c:333
+#, c-format
+msgid ""
+"OpenMP %d did not assign threads to iterations monotonically. Please search "
+"Stack Overflow for this message."
+msgstr ""
+
+#: fsort.c:335
+msgid "Unable to allocate working memory"
+msgstr ""
+
+#: fsort.c:345
+#, c-format
+msgid "%d: %.3f (%4.1f%%)\n"
+msgstr ""

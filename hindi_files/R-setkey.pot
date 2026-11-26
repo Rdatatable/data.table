@@ -1,0 +1,155 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: setkey 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: setkey.R:3
+msgid ""
+"x may no longer be the character name of the data.table. The possibility was "
+"undocumented and has been removed."
+msgstr ""
+
+#: setkey.R:23
+msgid ""
+"key(x)<-value is deprecated and not supported. Please change to use setkey() "
+"with perhaps copy(). Has been warning since 2012."
+msgstr ""
+
+#: setkey.R:39
+msgid "x is not a data.table"
+msgstr ""
+
+#: setkey.R:40
+msgid ""
+"cols is not a character vector. Please see further information in ?setkey."
+msgstr ""
+
+#: setkey.R:41
+msgid ""
+"Setting a physical key on .SD is reserved for possible future use; to modify "
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
+msgstr ""
+
+#: setkey.R:43
+msgid ""
+"cols is a character vector of zero length. Removed the key, but use NULL "
+"instead, or wrap with suppressWarnings() to avoid this warning."
+msgstr ""
+
+#: setkey.R:47
+msgid "cols is the empty string. Use NULL to remove the key."
+msgstr ""
+
+#: setkey.R:48 setkey.R:262
+msgid "cols contains some blanks."
+msgstr ""
+
+#: setkey.R:51 setkey.R:266
+msgid "some columns are not in the data.table: %s"
+msgstr ""
+
+#: setkey.R:59 setkey.R:267
+msgid ""
+"x contains a column called '.xi'. Conflicts with internal use by data.table."
+msgstr ""
+
+#: setkey.R:62
+msgid ""
+"Column '%s' is type '%s' which is not supported as a key column type, "
+"currently."
+msgstr ""
+
+#: setkey.R:70
+msgid "forder took %.03f sec"
+msgstr ""
+
+#: setkey.R:82
+msgid "reorder took %s"
+msgstr ""
+
+#: setkey.R:84
+msgid "x is already ordered by these columns, no need to call reorder"
+msgstr ""
+
+#: setkey.R:137
+msgid "x is vector but 'by' is supplied"
+msgstr ""
+
+#: setkey.R:153
+msgid "x is a single vector, non-NULL 'by' doesn't make sense"
+msgstr ""
+
+#: setkey.R:184
+msgid "Attempting to order a 0-column data.table or data.frame."
+msgstr ""
+
+#: setkey.R:189
+msgid ""
+"The first item passed to [f]order is a plain list but there are more items. "
+"It should be a data.table or data.frame."
+msgstr ""
+
+#: setkey.R:206
+msgid "Internal code should not be being called on type double"
+msgstr ""
+
+#: setkey.R:214
+msgid ""
+"Input is not a vector of type double. New parallel sort has only been done "
+"for double vectors so far. Using one thread."
+msgstr ""
+
+#: setkey.R:215
+msgid ""
+"New parallel sort has not been implemented for decreasing=TRUE so far. Using "
+"one thread."
+msgstr ""
+
+#: setkey.R:216
+msgid ""
+"New parallel sort has not been implemented for vectors containing NA values "
+"so far. Using one thread."
+msgstr ""
+
+#: setkey.R:228 setkey.R:254
+msgid "x must be a data.frame or data.table"
+msgstr ""
+
+#: setkey.R:256
+msgid "na.last must be logical TRUE/FALSE"
+msgstr ""
+
+#: setkey.R:257
+msgid ""
+"cols is not a character vector. Please see further information in ?setorder."
+msgstr ""
+
+#: setkey.R:259
+msgid ""
+"cols is a character vector of zero length. Use NULL instead, or wrap with "
+"suppressWarnings() to avoid this warning."
+msgstr ""
+
+#: setkey.R:270
+msgid "Column '%s' is type '%s' which is not supported for ordering currently."
+msgstr ""
+
+#: setkey.R:314
+msgid ""
+"'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try "
+"setting sorted = FALSE"
+msgstr ""
+
+#: setkey.R:329
+msgid ""
+"Cross product of elements provided to CJ() would result in %.0f rows which "
+"exceeds .Machine$integer.max == %d"
+msgstr ""
