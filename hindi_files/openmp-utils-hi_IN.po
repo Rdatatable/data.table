@@ -1,0 +1,66 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: openmp-utils 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: openmp-utils.c:23
+#, c-format
+msgid ""
+"Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any "
+"characters that are not a digit [0-9]. See ?data.table::setDTthreads."
+msgstr ""
+"अमान्य %s=="%s" को अनदेखा किया जा रहा है। यह एक पूर्णांक >= 1 नहीं है।"
+"कृपया किसी भी कैरेक्टर (character) को हटा दें जो अंक [0-9] नहीं है। अधिक जानकारी के लिए ?data.table::setDTthreads देखें।"
+
+#: openmp-utils.c:44
+#, c-format
+msgid ""
+"Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an "
+"integer between 2 and 100. Default is 50. See ?setDTtheads."
+msgstr ""
+"अमान्य R_DATATABLE_NUM_PROCS_PERCENT==%d को अनदेखा किया जा रहा है। यदि इसका उपयोग किया गया है, तो यह 2 और 100 के बीच का एक पूर्णांक होना चाहिए।"
+"डिफ़ॉल्ट (default) 50 है। अधिक जानकारी के लिए ?setDTthreads देखें।"
+
+#: openmp-utils.c:79
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr "%s को TRUE या FALSE होना चाहिए"
+
+#: openmp-utils.c:82
+msgid ""
+"This installation of data.table has not been compiled with OpenMP support.\n"
+msgstr ""
+"इस data.table की स्थापना में OpenMP समर्थन के साथ संकलित नहीं किया गया है।\n"
+
+#: openmp-utils.c:84
+#, c-format
+msgid "  OpenMP version (_OPENMP)       %d\n"
+msgstr "  OpenMP वर्जन (version) (_OPENMP)     %d\n"
+
+#: openmp-utils.c:100
+#, c-format
+msgid "  data.table is using %d threads with throttle==%d. See ?setDTthreads.\n"
+msgstr "  data.table %d थ्रेड्स (threads) का उपयोग कर रहा है जिसमें throttle==%d है। अधिक जानकारी के लिए ?setDTthreads देखें।\n"
+
+#: openmp-utils.c:108
+msgid ""
+"restore_after_fork= must be TRUE, FALSE, or NULL (default). "
+"getDTthreads(verbose=TRUE) reports the current setting.\n"
+msgstr ""
+"restore_after_fork= को TRUE, FALSE, या NULL (डिफ़ॉल्ट (default)) होना चाहिए।"
+"getDTthreads(verbose=TRUE) वर्तमान सेटिंग (setting) की सूचना देता है।\n"
+
+#: openmp-utils.c:114
+msgid "'throttle' must be a single number, non-NA, and >=1"
+msgstr "'throttle' एक सिंगल (single) संख्या, non-NA, और >=1 होना चाहिए।"
+
+#: openmp-utils.c:128
+msgid "threads= must be either NULL or a single number >= 0. See ?setDTthreads."
+msgstr "threads= या तो NULL होना चाहिए या एक सिंगल (single) संख्या >= 0। अधिक जानकारी के लिए ?setDTthreads देखें।"
