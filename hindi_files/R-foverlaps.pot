@@ -1,0 +1,154 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: foverlaps 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: foverlaps.R:3
+msgid ""
+"y and x must both be data.tables. Use `setDT()` to convert list/data.frames "
+"to data.tables by reference or as.data.table() to convert to data.tables by "
+"copying."
+msgstr ""
+
+#: foverlaps.R:9
+msgid "maxgap must be a non-negative integer value of length 1"
+msgstr ""
+
+#: foverlaps.R:11
+msgid "minoverlap must be a positive integer value of length 1"
+msgstr ""
+
+#: foverlaps.R:13
+msgid "which must be a logical vector of length 1. Either TRUE/FALSE"
+msgstr ""
+
+#: foverlaps.R:15
+msgid "nomatch must either be NA or NULL"
+msgstr ""
+
+#: foverlaps.R:20
+msgid "maxgap and minoverlap arguments are not yet implemented."
+msgstr ""
+
+#: foverlaps.R:22
+msgid ""
+"y must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) "
+"first, see ?setkey. Also check the examples in ?foverlaps."
+msgstr ""
+
+#: foverlaps.R:24
+msgid ""
+"'by.x' and 'by.y' should contain at least two column names (or numbers) "
+"each - corresponding to 'start' and 'end' points of intervals. Please see ?"
+"foverlaps and examples for more info."
+msgstr ""
+
+#: foverlaps.R:27
+msgid ""
+"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by."
+"x <= length(x)"
+msgstr ""
+
+#: foverlaps.R:32
+msgid ""
+"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by."
+"y <= length(y)"
+msgstr ""
+
+#: foverlaps.R:36
+msgid "A non-empty vector of column names or numbers is required for by.x"
+msgstr ""
+
+#: foverlaps.R:38
+msgid "A non-empty vector of column names or numbers is required for by.y"
+msgstr ""
+
+#: foverlaps.R:40
+msgid ""
+"The first %d columns of y's key must be identical to the columns specified "
+"in by.y."
+msgstr ""
+
+#: foverlaps.R:42
+msgid "Elements listed in 'by.x' must be valid names in data.table x"
+msgstr ""
+
+#: foverlaps.R:44
+msgid ""
+"Duplicate columns are not allowed in overlap joins. This may change in the "
+"future."
+msgstr ""
+
+#: foverlaps.R:46
+msgid ""
+"length(by.x) != length(by.y). Columns specified in by.x should correspond to "
+"columns specified in by.y and should be of same lengths."
+msgstr ""
+
+#: foverlaps.R:57
+msgid ""
+"The last two columns in by.x should correspond to the 'start' and 'end' "
+"intervals in data.table x and must be integer/numeric type."
+msgstr ""
+
+#: foverlaps.R:61 foverlaps.R:63 foverlaps.R:70 foverlaps.R:72
+msgid ""
+"NA values in data.table %s '%s' column: '%s'. All rows with NA values in the "
+"range columns must be removed for foverlaps() to work."
+msgstr ""
+
+#: foverlaps.R:64
+msgid ""
+"All entries in column '%s' should be <= corresponding entries in column '%s' "
+"in data.table x."
+msgstr ""
+
+#: foverlaps.R:67
+msgid ""
+"The last two columns in by.y should correspond to the 'start' and 'end' "
+"intervals in data.table y and must be integer/numeric type."
+msgstr ""
+
+#: foverlaps.R:73
+msgid ""
+"All entries in column '%s' should be <= corresponding entries in column '%s' "
+"in data.table y."
+msgstr ""
+
+#: foverlaps.R:78
+msgid ""
+"Some interval cols are of type POSIXct while others are not. Please ensure "
+"all interval cols are (or are not) of POSIXct type"
+msgstr ""
+
+#: foverlaps.R:84
+msgid ""
+"POSIXct interval cols have mixed timezones. Overlaps are performed on the "
+"internal numerical representation of POSIXct objects (always in UTC epoch "
+"time), therefore printed values may give the impression that values don't "
+"overlap but their internal representations do Please ensure that POSIXct "
+"type interval cols have identical 'tzone' attributes to avoid confusion."
+msgstr ""
+
+#: foverlaps.R:132
+msgid "unique() + setkey() operations done in ..."
+msgstr ""
+
+#: foverlaps.R:158
+msgid "binary search(es) done in ..."
+msgstr ""
+
+#: foverlaps.R:165 foverlaps.R:167 foverlaps.R:171
+msgid "Not yet implemented"
+msgstr ""
+
+#: foverlaps.R:170
+msgid "maxgap > minoverlap. maxgap will have no effect here."
+msgstr ""
